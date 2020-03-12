@@ -5,6 +5,7 @@ import (
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,13 +41,12 @@ func init() {
 	viper.SetDefault("author", "NAME HERE <EMAIL ADDRESS>")
 	viper.SetDefault("license", "apache")
 
-	rootCmd.AddCommand(addCmd)
-	rootCmd.AddCommand(initCmd)
 }
 
-func er(msg interface{}) {
-	fmt.Println("Error:", msg)
-	os.Exit(1)
+func errorAndExit(err error, msg string) {
+	log.WithFields(log.Fields{
+		"err": err,
+	}).Fatal(msg)
 }
 
 func initConfig() {
@@ -57,7 +57,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			er(err)
+			errorAndExit(err, "Couldn't load home dir")
 		}
 
 		// Search config in home directory with name ".cobra" (without extension).
