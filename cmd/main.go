@@ -1,14 +1,22 @@
 package main
 
 import (
+	"os"
+
 	commands "github.com/checkmarxDev/ast-cli/commands"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func main() {
-	cfg := LoadConfig()
-	level, err := log.ParseLevel(cfg.LogLevel)
+	cfg, err := LoadConfig()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err": err,
+		}).Fatal("Failed to load ast-cli configuration")
+	}
+
+	var level log.Level
+	level, err = log.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"err":      err,
@@ -21,8 +29,8 @@ func main() {
 
 	log.WithFields(log.Fields{
 		"configuration": *cfg,
-	}).Debug("Starting scans service with configuration")
+	}).Debug("Starting ast-cli service with configuration")
 
-	log.Info("Trying to Start Scans service")
+	log.Info("Trying to start ast-cli service")
 	commands.Execute()
 }
