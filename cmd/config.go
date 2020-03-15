@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -9,7 +10,7 @@ const (
 	scansEp    = "SCANS_ENDPOINT"
 	projectsEp = "PROJECTS_ENDPOINT"
 	resultsEp  = "RESULTS_ENDPOINT"
-	logLevel   = "LOG_LEVEL"
+	logLevel   = "CLI_LOG_LEVEL"
 )
 
 type Config struct {
@@ -26,7 +27,11 @@ func LoadConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("env")
 	if err := viper.ReadInConfig(); err != nil {
-		return nil, err
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Info("Config file no set")
+		} else {
+			return nil, err
+		}
 	}
 
 	viper.SetDefault(logLevel, "DEBUG")
@@ -43,7 +48,7 @@ func LoadConfig() (*Config, error) {
 	if results == "" {
 		return requiredErr(resultsEp)
 	}
-	logLevel := viper.GetString("LOG_LEVEL")
+	logLevel := viper.GetString(logLevel)
 	return &Config{
 		ScansEndpoint:    scans,
 		ProjectsEndpoint: projects,
