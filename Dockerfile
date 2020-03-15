@@ -12,7 +12,7 @@ RUN go mod download
 # COPY the source code as the last step
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o bin/ast-cli cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o bin/ast-cli cmd/main.go cmd/config.go
 
 #runtime image
 FROM scratch
