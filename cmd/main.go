@@ -1,10 +1,9 @@
 package main
 
 import (
-	"os"
-
-	commands "github.com/checkmarxDev/ast-cli/commands"
+	commands "github.com/checkmarxDev/ast-cli/internal/commands"
 	log "github.com/sirupsen/logrus"
+	"os"
 )
 
 func main() {
