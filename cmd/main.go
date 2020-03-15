@@ -31,5 +31,6 @@ func main() {
 	}).Debug("Starting ast-cli service with configuration")
 
 	log.Info("Trying to start ast-cli service")
+
 	commands.Execute()
 }
