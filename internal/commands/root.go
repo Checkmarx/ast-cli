@@ -16,8 +16,5 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-//func errorAndExit(err error, msg string) {
-//	log.WithFields(log.Fields{
-//		"err": err,
-//	}).Fatal(msg)
-//}
+// docker build -t ast-cli .
+// docker run --env-file ./config.env ast-cli
