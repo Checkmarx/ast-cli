@@ -11,7 +11,7 @@ import (
 )
 
 type ScansWrapper interface {
-	Create(input string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
+	Create(input []byte) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
 	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
@@ -22,8 +22,8 @@ type ScansHTTPWrapper struct {
 	contentType string
 }
 
-func (s *ScansHTTPWrapper) Create(input string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	resp, err := http.Post(s.endpoint, s.contentType, bytes.NewBufferString(input))
+func (s *ScansHTTPWrapper) Create(input []byte) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+	resp, err := http.Post(s.endpoint, s.contentType, bytes.NewBuffer(input))
 	if err != nil {
 		msg := "Failed to create a scan"
 		log.WithFields(log.Fields{
