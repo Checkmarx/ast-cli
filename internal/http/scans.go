@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	scansRest "github.com/checkmarxDev/scans/api/v1/rest"
 	scansModels "github.com/checkmarxDev/scans/pkg/scans"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 type ScansWrapper interface {
-	Create(scan *scansRest.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
+	Create(input string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
 	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
@@ -23,17 +22,8 @@ type ScansHTTPWrapper struct {
 	contentType string
 }
 
-func (s *ScansHTTPWrapper) Create(scan *scansRest.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	payload, err := json.Marshal(scan)
-	if err != nil {
-		msg := "Failed to serialize scan body"
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error(msg)
-		return nil, nil, errors.Wrapf(err, msg)
-	}
-
-	resp, err := http.Post(s.endpoint, s.contentType, bytes.NewBuffer(payload))
+func (s *ScansHTTPWrapper) Create(input string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+	resp, err := http.Post(s.endpoint, s.contentType, bytes.NewBufferString(input))
 	if err != nil {
 		msg := "Failed to create a scan"
 		log.WithFields(log.Fields{
