@@ -4,17 +4,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	rootCmd = &cobra.Command{
+type CLI interface {
+	Execute() error
+}
+
+type AstCLI struct {
+	rootCmd *cobra.Command
+}
+
+// Execute executes the root command.
+func (cli *AstCLI) Execute() error {
+	return cli.rootCmd.Execute()
+}
+
+func NewAstCLI(scansEndpoint, projectsEndpoint, resultsEndpoint string) CLI {
+	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
 	}
-)
-
-// Execute executes the root command.
-func Execute() error {
-	return rootCmd.Execute()
+	scanCmd := NewScanCommand(scansEndpoint)
+	rootCmd.AddCommand(scanCmd)
+	return &AstCLI{
+		rootCmd: rootCmd,
+	}
 }
-
-// docker build -t ast-cli .
-// docker run --env-file ./config.env ast-cli

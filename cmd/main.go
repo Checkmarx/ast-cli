@@ -1,37 +1,58 @@
 package main
 
 import (
+	"fmt"
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
-	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 )
 
+const (
+	scansEp           = "SCANS_ENDPOINT"
+	scansEpDisplay    = "Scans endpoint"
+	projectsEp        = "PROJECTS_ENDPOINT"
+	projectsEpDisplay = "Projects endpoint"
+	resultsEp         = "RESULTS_ENDPOINT"
+	resultsEpDisplay  = "Results endpoint"
+	logLevel          = "CLI_LOG_LEVEL"
+)
+
 func main() {
-	cfg, err := LoadConfig()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Fatal("Failed to load ast-cli configuration")
+	viper.AutomaticEnv()
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+	viper.SetConfigType("env")
+	_ = viper.ReadInConfig()
+
+	viper.SetDefault(logLevel, "DEBUG")
+
+	scans := viper.GetString(scansEp)
+	if scans == "" {
+		requiredErrAndExit(scansEp, scansEpDisplay)
+	}
+	projects := viper.GetString(projectsEp)
+	if projects == "" {
+		requiredErrAndExit(projectsEp, projectsEpDisplay)
+	}
+	results := viper.GetString(resultsEp)
+	if results == "" {
+		requiredErrAndExit(resultsEp, resultsEpDisplay)
 	}
 
-	var level log.Level
-	level, err = log.ParseLevel(cfg.LogLevel)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err":      err,
-			"logLevel": cfg.LogLevel,
-		}).Fatal("Failed to parse log level")
-	}
+	astCli := commands.NewAstCLI(scans, projects, results)
+	_ = astCli.Execute()
 
-	log.SetLevel(level)
-	log.SetOutput(os.Stdout)
+}
 
-	log.WithFields(log.Fields{
-		"configuration": *cfg,
-	}).Debug("Starting ast-cli service with configuration")
+// When building an executable for Windows and providing a name,
+// be sure to explicitly specify the .exe suffix when setting the executable’s name.
+// env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
 
-	log.Info("Trying to start ast-cli service")
+func errorAndExit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
+}
 
-	_ = commands.Execute()
-
+func requiredErrAndExit(key, displayName string) {
+	errorAndExit(fmt.Sprintf("%s is required. Please specify it using the environment variable %s or in a config.env file.", displayName, key))
 }
