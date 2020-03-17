@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +18,14 @@ func (cli *AstCLI) Execute() error {
 	return cli.rootCmd.Execute()
 }
 
-func NewAstCLI(scansEndpoint, projectsEndpoint, resultsEndpoint string) CLI {
+func NewAstCLI(astApiURL, scansPath, projectsPath, uploadsPath, resultsPath string) CLI {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
 	}
-	scanCmd := NewScanCommand(scansEndpoint)
+	scansURL := fmt.Sprintf("%s/%s", astApiURL, scansPath)
+	uploadsURL := fmt.Sprintf("%s/%s", astApiURL, uploadsPath)
+	scanCmd := NewScanCommand(scansURL, uploadsURL)
 	rootCmd.AddCommand(scanCmd)
 	return &AstCLI{
 		rootCmd: rootCmd,

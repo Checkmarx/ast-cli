@@ -18,12 +18,12 @@ type ScansWrapper interface {
 }
 
 type ScansHTTPWrapper struct {
-	endpoint    string
+	url         string
 	contentType string
 }
 
 func (s *ScansHTTPWrapper) Create(input []byte) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	resp, err := http.Post(s.endpoint, s.contentType, bytes.NewBuffer(input))
+	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(input))
 	if err != nil {
 		msg := "Failed to create a scan"
 		log.WithFields(log.Fields{
@@ -52,9 +52,6 @@ func (s *ScansHTTPWrapper) Create(input []byte) (*scansModels.ScanResponseModel,
 		return &model, nil, nil
 
 	default:
-		log.WithFields(log.Fields{
-			"status_code": resp.StatusCode,
-		}).Error("Unknown response status code")
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
 	}
 }
@@ -71,18 +68,14 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel
 	panic("implement me")
 }
 
-func NewHTTPScansWrapper(endpoint string) ScansWrapper {
+func NewHTTPScansWrapper(url string) ScansWrapper {
 	return &ScansHTTPWrapper{
-		endpoint:    endpoint,
+		url:         url,
 		contentType: "application/json",
 	}
 }
 
 func responseParsingFailed(err error, statusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
 	msg := "Failed to parse a scan response"
-	log.WithFields(log.Fields{
-		"err":         err,
-		"status_code": statusCode,
-	}).Error(msg)
 	return nil, nil, errors.Wrapf(err, msg)
 }

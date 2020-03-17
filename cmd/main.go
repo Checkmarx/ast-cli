@@ -8,13 +8,13 @@ import (
 )
 
 const (
-	scansEp           = "SCANS_ENDPOINT"
-	scansEpDisplay    = "Scans endpoint"
-	projectsEp        = "PROJECTS_ENDPOINT"
-	projectsEpDisplay = "Projects endpoint"
-	resultsEp         = "RESULTS_ENDPOINT"
-	resultsEpDisplay  = "Results endpoint"
-	logLevel          = "CLI_LOG_LEVEL"
+	astEp        = "AST_ENDPOINT"
+	astEpDisplay = "AST endpoint"
+	scansPath    = "SCANS_PATH"
+	projectsPath = "PROJECTS_PATH"
+	resultsPath  = "RESULTS_PATH"
+	uploadsPath  = "UPLOADS_PATH"
+	logLevel     = "CLI_LOG_LEVEL"
 )
 
 func main() {
@@ -24,22 +24,22 @@ func main() {
 	viper.SetConfigType("env")
 	_ = viper.ReadInConfig()
 
+	viper.SetDefault(scansPath, "scans")
+	viper.SetDefault(projectsPath, "projects")
+	viper.SetDefault(uploadsPath, "uploads")
+	viper.SetDefault(resultsPath, "results")
 	viper.SetDefault(logLevel, "DEBUG")
 
-	scans := viper.GetString(scansEp)
-	if scans == "" {
-		requiredErrAndExit(scansEp, scansEpDisplay)
+	ast := viper.GetString(astEp)
+	if ast == "" {
+		requiredErrAndExit(astEp, astEpDisplay)
 	}
-	projects := viper.GetString(projectsEp)
-	if projects == "" {
-		requiredErrAndExit(projectsEp, projectsEpDisplay)
-	}
-	results := viper.GetString(resultsEp)
-	if results == "" {
-		requiredErrAndExit(resultsEp, resultsEpDisplay)
-	}
+	scans := viper.GetString(scansPath)
+	projects := viper.GetString(projectsPath)
+	uploads := viper.GetString(uploadsPath)
+	results := viper.GetString(resultsPath)
 
-	astCli := commands.NewAstCLI(scans, projects, results)
+	astCli := commands.NewAstCLI(ast, scans, projects, uploads, results)
 	_ = astCli.Execute()
 
 }
@@ -47,6 +47,7 @@ func main() {
 // When building an executable for Windows and providing a name,
 // be sure to explicitly specify the .exe suffix when setting the executable’s name.
 // env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
+// "bin/ast.exe" scan create  --sources c:\CODE\ast\example\sources.zip  -f  ./payloads/uploads.json
 
 func errorAndExit(msg string) {
 	fmt.Println(msg)
