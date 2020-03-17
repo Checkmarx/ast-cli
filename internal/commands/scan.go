@@ -5,33 +5,44 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	clihttp "github.com/checkmarxDev/ast-cli/internal/http"
 	"github.com/checkmarxDev/scans/pkg/scans"
-
-	http "github.com/checkmarxDev/ast-cli/internal/http"
 	"github.com/spf13/cobra"
 )
 
-func NewScanCommand(endpoint string) *cobra.Command {
+func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage AST scans",
 	}
-	scansWrapper := http.NewHTTPScansWrapper(endpoint)
 
+	scansWrapper := clihttp.NewHTTPScansWrapper(scansURL)
+	uploadsWrapper := clihttp.NewUploadsHttpWrapper(uploadsURL)
 	var scanInput string
 	var scanInputFile string
+	var sourcesFile string
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates and runs a new scan",
 		Run: func(cmd *cobra.Command, args []string) {
 			var input []byte
 			var err error
+			if sourcesFile != "" {
+				//Send a request to uploads service
+				var preSignedURL *string
+				preSignedURL, err = uploadsWrapper.Create(sourcesFile)
+				if err != nil {
+					fmt.Printf("Failed to upload sources file: %s\n", err.Error())
+					return
+				}
+				fmt.Println(*preSignedURL)
+			}
 			if scanInputFile != "" {
 				// Reading from input file
 				fmt.Printf("Reading input from file %s\n", scanInputFile)
 				input, err = ioutil.ReadFile(scanInputFile)
 				if err != nil {
-					fmt.Printf("Failed opening input file: %s\n", err.Error())
+					fmt.Printf("Failed to open input file: %s\n", err.Error())
 					return
 				}
 			} else if scanInput != "" {
@@ -53,6 +64,7 @@ func NewScanCommand(endpoint string) *cobra.Command {
 			fmt.Println(errorModel)
 		},
 	}
+	createScanCmd.Flags().StringVarP(&sourcesFile, "sources", "s", "", "A path to the sources file to scan")
 	createScanCmd.Flags().StringVarP(&scanInput, "input", "i", "", "The object representing the requested scan, in JSON format")
 	createScanCmd.Flags().StringVarP(&scanInputFile, "inputFile", "f", "", "A file holding the requested scan object in JSON format. Takes precedence over --input")
 
@@ -71,10 +83,5 @@ func NewScanCommand(endpoint string) *cobra.Command {
 		},
 	}
 	scanCmd.AddCommand(createScanCmd, getScanCmd, deleteScanCmd)
-	fmt.Println(scansWrapper)
 	return scanCmd
-}
-
-func init() {
-
 }
