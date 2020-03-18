@@ -3,15 +3,16 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
 	scansModels "github.com/checkmarxDev/scans/pkg/scans"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type ScansWrapper interface {
-	Create(input []byte) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
+	Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
 	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
@@ -22,22 +23,23 @@ type ScansHTTPWrapper struct {
 	contentType string
 }
 
-func (s *ScansHTTPWrapper) Create(input []byte) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(input))
+func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+	jsonBytes, err := json.Marshal(model)
 	if err != nil {
-		msg := "Failed to create a scan"
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error(msg)
-		return nil, nil, errors.Wrapf(err, msg)
+		return nil, nil, err
+	}
+
+	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return nil, nil, err
 	}
 
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
+
 	switch resp.StatusCode {
-	case http.StatusBadRequest:
+	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := scansModels.ErrorModel{}
-		decoder := json.NewDecoder(resp.Body)
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responseParsingFailed(err, resp.StatusCode)
@@ -49,6 +51,9 @@ func (s *ScansHTTPWrapper) Create(input []byte) (*scansModels.ScanResponseModel,
 		if err != nil {
 			return responseParsingFailed(err, resp.StatusCode)
 		}
+		// TODO remove
+		modelBytes, _ := json.Marshal(model)
+		fmt.Printf("Created scan. Response from server is %s", string(modelBytes))
 		return &model, nil, nil
 
 	default:

@@ -1,9 +1,9 @@
 {
   "project": {
-    "name": "test",
+    "id": "test",
     "type": "upload",
     "handler": {
-      "url": "http://minio:9000/uploads/2020_03_10_12_56_57.016_Sources.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ast%2F20200310%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20200310T125657Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=e5702471efb97cc61a6a9b30914f19fc8c94eac1b9d39172cef9dfffa7692632"
+      "url": "MOSHIKO"
     },
     "tags": {
     }
