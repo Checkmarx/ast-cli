@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
@@ -51,9 +50,6 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 		if err != nil {
 			return responseParsingFailed(err, resp.StatusCode)
 		}
-		// TODO remove
-		modelBytes, _ := json.Marshal(model)
-		fmt.Printf("Created scan. Response from server is %s", string(modelBytes))
 		return &model, nil, nil
 
 	default:
@@ -66,7 +62,32 @@ func (s *ScansHTTPWrapper) Get() (*scansModels.ResponseModel, *scansModels.Error
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	panic("implement me")
+	resp, err := http.Get(s.url + "/" + scanID)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := scansModels.ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return responseParsingFailed(err, resp.StatusCode)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := scansModels.ScanResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return responseParsingFailed(err, resp.StatusCode)
+		}
+		return &model, nil, nil
+
+	default:
+		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+	}
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
