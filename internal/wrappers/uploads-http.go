@@ -1,4 +1,4 @@
-package http
+package wrappers
 
 import (
 	"bytes"
@@ -17,10 +17,6 @@ import (
 const (
 	httpClientTimeout = 5
 )
-
-type UploadsWrapper interface {
-	Create(sourcesFile string) (*string, error)
-}
 
 type UploadsHTTPWrapper struct {
 	url string

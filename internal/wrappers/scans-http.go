@@ -1,4 +1,4 @@
-package http
+package wrappers
 
 import (
 	"bytes"
@@ -9,13 +9,6 @@ import (
 	scansModels "github.com/checkmarxDev/scans/pkg/scans"
 	"github.com/pkg/errors"
 )
-
-type ScansWrapper interface {
-	Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
-	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
-	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
-	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
-}
 
 type ScansHTTPWrapper struct {
 	url         string
