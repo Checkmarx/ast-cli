@@ -19,7 +19,7 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 	}
 
 	scansWrapper := clihttp.NewHTTPScansWrapper(scansURL)
-	uploadsWrapper := clihttp.NewUploadsHttpWrapper(uploadsURL)
+	uploadsWrapper := clihttp.NewUploadsHTTPWrapper(uploadsURL)
 	var scanInput string
 	var scanInputFile string
 	var sourcesFile string
@@ -46,16 +46,16 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 				return
 			}
 			var scanModel = scansApi.Scan{}
-			var scanReponseModel *scans.ScanResponseModel
+			var scanResponseModel *scans.ScanResponseModel
 			var errorModel *scans.ErrorModel
-			//Try to parse to a scan model in order to manipulate the request payload
+			// Try to parse to a scan model in order to manipulate the request payload
 			err = json.Unmarshal(input, &scanModel)
 			if err != nil {
-				fmt.Printf("Failed creating a scan: Input in bad format - %s", err.Error())
+				fmt.Printf("Failed creating a scan: Input in bad format - %s\n", err.Error())
 				return
 			}
 			if sourcesFile != "" {
-				//Send a request to uploads service
+				// Send a request to uploads service
 				var preSignedURL *string
 				preSignedURL, err = uploadsWrapper.Create(sourcesFile)
 				if err != nil {
@@ -80,27 +80,59 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 				fmt.Printf("Payload to scans service: %s\n", string(payload))
 			}
 
-			scanReponseModel, errorModel, err = scansWrapper.Create(&scanModel)
+			scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 			if err != nil {
-				fmt.Printf("Failed creating a scan: %s", err.Error())
+				fmt.Printf("Failed creating a scan: %s\n", err.Error())
 				return
 			}
-			// TODO remove
-			fmt.Println(scanReponseModel)
-			fmt.Println(errorModel)
+
+			// Checking the response
+			if errorModel != nil {
+				fmt.Printf("Failed creating a scan: CODE: %d, %s\n", errorModel.Code, errorModel.Message)
+			} else if scanResponseModel != nil {
+				fmt.Printf("Scan created successfully: Scan ID %s\n", scanResponseModel.ID)
+			}
 		},
 	}
-	createScanCmd.Flags().StringVarP(&sourcesFile, "sources", "s", "", "A path to the sources file to scan")
-	createScanCmd.Flags().StringVarP(&scanInput, "input", "i", "", "The object representing the requested scan, in JSON format")
-	createScanCmd.Flags().StringVarP(&scanInputFile, "inputFile", "f", "", "A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.Flags().StringVarP(&sourcesFile, "sources", "s", "",
+		"A path to the sources file to scan")
+	createScanCmd.Flags().StringVarP(&scanInput, "input", "i", "",
+		"The object representing the requested scan, in JSON format")
+	createScanCmd.Flags().StringVarP(&scanInputFile, "inputFile", "f", "",
+		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 
+	getAllScanCmd := &cobra.Command{
+		Use:   "get-all",
+		Short: "Returns all scans in the system",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Get all scans running")
+		},
+	}
+
+	var scanID string
 	getScanCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Returns information about a scan",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Get scan running")
+			var scanResponseModel *scans.ScanResponseModel
+			var errorModel *scans.ErrorModel
+			var err error
+			scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
+			if err != nil {
+				fmt.Printf("Failed getting a scan: %s\n", err.Error())
+				return
+			}
+			// Checking the response
+			if errorModel != nil {
+				fmt.Printf("Failed getting a scan: CODE: %d, %s\n", errorModel.Code, errorModel.Message)
+			} else if scanResponseModel != nil {
+				fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
+				fmt.Printf("Status: %s\n", scanResponseModel.Status)
+			}
 		},
 	}
+	getScanCmd.Flags().StringVar(&scanID, "id", "", "The scan ID to get information about")
+
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Stops a scan from running",
@@ -108,6 +140,6 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 			fmt.Println("Delete scan running")
 		},
 	}
-	scanCmd.AddCommand(createScanCmd, getScanCmd, deleteScanCmd)
+	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
 	return scanCmd
 }

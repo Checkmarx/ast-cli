@@ -14,15 +14,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	httpClientTimeout = 5
+)
+
 type UploadsWrapper interface {
 	Create(sourcesFile string) (*string, error)
 }
 
-type UploadsHttpWrapper struct {
+type UploadsHTTPWrapper struct {
 	url string
 }
 
-func (u UploadsHttpWrapper) Create(sourcesFile string) (*string, error) {
+func (u UploadsHTTPWrapper) Create(sourcesFile string) (*string, error) {
 	var body bytes.Buffer
 
 	// Create a multipart writer
@@ -60,7 +64,7 @@ func (u UploadsHttpWrapper) Create(sourcesFile string) (*string, error) {
 	req.Header.Set("Content-Type", multiPartWriter.FormDataContentType())
 
 	var client = &http.Client{
-		Timeout: time.Second * time.Duration(5),
+		Timeout: time.Second * time.Duration(httpClientTimeout),
 	}
 	var resp *http.Response
 	fmt.Printf("Uploading file to %s\n", u.url)
@@ -74,7 +78,6 @@ func (u UploadsHttpWrapper) Create(sourcesFile string) (*string, error) {
 	switch resp.StatusCode {
 	case http.StatusBadRequest:
 		errorModel := uploads.ErrorModel{}
-		decoder := json.NewDecoder(resp.Body)
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, errors.Errorf("Parsing error model failed - %s", err.Error())
@@ -94,8 +97,8 @@ func (u UploadsHttpWrapper) Create(sourcesFile string) (*string, error) {
 	}
 }
 
-func NewUploadsHttpWrapper(url string) UploadsWrapper {
-	return &UploadsHttpWrapper{
+func NewUploadsHTTPWrapper(url string) UploadsWrapper {
+	return &UploadsHTTPWrapper{
 		url: url,
 	}
 }
