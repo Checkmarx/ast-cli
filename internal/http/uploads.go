@@ -63,7 +63,7 @@ func (u UploadsHttpWrapper) Create(sourcesFile string) (*string, error) {
 		Timeout: time.Second * time.Duration(5),
 	}
 	var resp *http.Response
-	fmt.Printf("Uploading to %s\n", u.url)
+	fmt.Printf("Uploading file to %s\n", u.url)
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request failed - %s", err.Error())
