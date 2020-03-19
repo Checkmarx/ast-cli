@@ -53,7 +53,10 @@ func responseParsingFailed(err error, statusCode int) (*scansModels.ScanResponse
 	return nil, nil, errors.Wrapf(err, msg)
 }
 
-func handleResponse(resp *http.Response, err error, successStatusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func handleResponse(
+	resp *http.Response,
+	err error,
+	successStatusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}

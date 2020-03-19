@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
@@ -12,28 +13,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
+func NewScanCommand(scansURL, uploadsURL string, verbose bool) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage AST scans",
 	}
 
-	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
-	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	var scanInput string
 	var scanInputFile string
 	var sourcesFile string
+	var incremental bool
+
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
+	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
+
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates and runs a new scan",
-		Run:   runCreateScanCommand(scanInput, scanInputFile, sourcesFile, scansWrapper, uploadsWrapper),
+		Run:   runCreateScanCommand(scanInput, scanInputFile, sourcesFile, verbose, incremental, scansWrapper, uploadsWrapper),
 	}
-	createScanCmd.Flags().StringVarP(&sourcesFile, "sources", "s", "",
+	createScanCmd.LocalFlags().StringVarP(&sourcesFile, "sources", "s", "",
 		"A path to the sources file to scan")
-	createScanCmd.Flags().StringVarP(&scanInput, "input", "i", "",
+	createScanCmd.LocalFlags().StringVarP(&scanInput, "input", "i", "",
 		"The object representing the requested scan, in JSON format")
-	createScanCmd.Flags().StringVarP(&scanInputFile, "inputFile", "f", "",
+	createScanCmd.LocalFlags().StringVarP(&scanInputFile, "inputFile", "f", "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.LocalFlags().BoolVar(&incremental, "incremental", false,
+		"Make this scan incremental ")
 
 	getAllScanCmd := &cobra.Command{
 		Use:   "get-all",
@@ -53,21 +59,21 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 		Short: "Stops a scan from running",
 		Run:   runDeleteScanCommand(deleteScanID, scansWrapper),
 	}
-	deleteScanCmd.Flags().StringVar(&deleteScanID, "id", "", "The scan ID to delete")
 
 	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
 	return scanCmd
 }
 
-func runCreateScanCommand(scanInput, scanInputFile, sourcesFile string,
+func runCreateScanCommand(scanInput, scanInputFile, sourcesFile string, verbose, incremental bool,
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		var input []byte
 		var err error
+
 		if scanInputFile != "" {
 			// Reading from input file
-			fmt.Printf("Reading input from file %s\n", scanInputFile)
+			PrintIfVerbose(verbose, fmt.Sprintf("Reading input from file %s", scanInputFile))
 			input, err = ioutil.ReadFile(scanInputFile)
 			if err != nil {
 				fmt.Printf("Failed to open input file: %s\n", err.Error())
@@ -75,6 +81,7 @@ func runCreateScanCommand(scanInput, scanInputFile, sourcesFile string,
 			}
 		} else if scanInput != "" {
 			// Reading from standard input
+			PrintIfVerbose(verbose, "Reading input from console")
 			input = bytes.NewBufferString(scanInput).Bytes()
 		} else {
 			// No input was given
@@ -110,12 +117,20 @@ func runCreateScanCommand(scanInput, scanInputFile, sourcesFile string,
 			}
 			scanModel.Project.Type = scansApi.UploadProject
 			scanModel.Project.Handler = projectHandlerModelSerialized
-			// TODO remove
-			var payload []byte
-			payload, _ = json.Marshal(scanModel)
-			fmt.Printf("Payload to scans service: %s\n", string(payload))
 		}
+		var payload []byte
+		payload, _ = json.Marshal(scanModel)
+		PrintIfVerbose(verbose, fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
 
+		// Support for incremental scan
+		scanModel.Config = []scansApi.Config{
+			{
+				Type: scansApi.SastConfig,
+				Value: map[string]string{
+					"incremental": strconv.FormatBool(incremental),
+				},
+			},
+		}
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
 			fmt.Printf("Failed creating a scan: %s\n", err.Error())
