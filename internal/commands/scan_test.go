@@ -32,6 +32,11 @@ func TestRunCreateCommandWithNoInput(t *testing.T) {
 
 func TestRunGetScanByIdCommand(t *testing.T) {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
-	runCommand := runGetScanByIDCommand("MOCK", scansMockWrapper)
-	runCommand(nil, nil)
+	runCommand := runGetScanByIDCommand(scansMockWrapper)
+	runCommand(nil, []string{"MOCK"})
+}
+func TestRunGetScanByIdCommandNoArg(t *testing.T) {
+	scansMockWrapper := &wrappers.ScansMockWrapper{}
+	runCommand := runGetScanByIDCommand(scansMockWrapper)
+	runCommand(nil, []string{})
 }

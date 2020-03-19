@@ -41,13 +41,11 @@ func NewScanCommand(scansURL, uploadsURL string) *cobra.Command {
 		Run:   runGetAllScansCommand(scansWrapper),
 	}
 
-	var getScanID string
 	getScanCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Returns information about a scan",
-		Run:   runGetScanByIDCommand(getScanID, scansWrapper),
+		Run:   runGetScanByIDCommand(scansWrapper),
 	}
-	getScanCmd.Flags().StringVar(&getScanID, "id", "", "The scan ID to get information about")
 
 	var deleteScanID string
 	deleteScanCmd := &cobra.Command{
@@ -139,11 +137,16 @@ func runGetAllScansCommand(wrapper wrappers.ScansWrapper) func(cmd *cobra.Comman
 	}
 }
 
-func runGetScanByIDCommand(scanID string, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) {
+func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		var scanResponseModel *scans.ScanResponseModel
 		var errorModel *scans.ErrorModel
 		var err error
+		if len(args) == 0 {
+			fmt.Printf("Please provide a scan ID")
+			return
+		}
+		scanID := args[0]
 		scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 		if err != nil {
 			fmt.Printf("Failed getting a scan: %s\n", err.Error())

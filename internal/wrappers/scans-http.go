@@ -22,32 +22,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 	}
 
 	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansModels.ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responseParsingFailed(err, resp.StatusCode)
-		}
-		return nil, &errorModel, nil
-	case http.StatusCreated:
-		model := scansModels.ScanResponseModel{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return responseParsingFailed(err, resp.StatusCode)
-		}
-		return &model, nil, nil
-
-	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
-	}
+	return handleResponse(resp, err, http.StatusCreated)
 }
 
 func (s *ScansHTTPWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
@@ -59,28 +34,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseMode
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansModels.ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responseParsingFailed(err, resp.StatusCode)
-		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		model := scansModels.ScanResponseModel{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return responseParsingFailed(err, resp.StatusCode)
-		}
-		return &model, nil, nil
-
-	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
-	}
+	return handleResponse(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
@@ -97,4 +51,32 @@ func NewHTTPScansWrapper(url string) ScansWrapper {
 func responseParsingFailed(err error, statusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
 	msg := "Failed to parse a scan response"
 	return nil, nil, errors.Wrapf(err, msg)
+}
+
+func handleResponse(resp *http.Response, err error, successStatusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+	if err != nil {
+		return nil, nil, err
+	}
+	decoder := json.NewDecoder(resp.Body)
+
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := scansModels.ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return responseParsingFailed(err, resp.StatusCode)
+		}
+		return nil, &errorModel, nil
+	case successStatusCode:
+		model := scansModels.ScanResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return responseParsingFailed(err, resp.StatusCode)
+		}
+		return &model, nil, nil
+
+	default:
+		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+	}
 }
