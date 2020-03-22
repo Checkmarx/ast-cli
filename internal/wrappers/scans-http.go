@@ -38,7 +38,16 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseMode
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
-	panic("implement me")
+	client := &http.Client{}
+	req, err := http.NewRequest("DELETE", s.url+"/"+scanID, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	return handleResponse(resp, err, http.StatusOK)
 }
 
 func NewHTTPScansWrapper(url string) ScansWrapper {

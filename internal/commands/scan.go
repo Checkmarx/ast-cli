@@ -20,6 +20,7 @@ import (
 const (
 	failedCreating = "Failed creating a scan"
 	failedGetting  = "Failed getting a scan"
+	failedDeleting = "Failed deleting a scan"
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
@@ -185,9 +186,26 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 	}
 }
 
-func runDeleteScanCommand(scanID string, wrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runDeleteScanCommand(scanID string, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Delete scan running")
+		var scanResponseModel *scans.ScanResponseModel
+		var errorModel *scans.ErrorModel
+		var err error
+		if len(args) == 0 {
+			return errors.Errorf("%s: Please provide a scan ID", failedDeleting)
+		}
+		scanID := args[0]
+		scanResponseModel, errorModel, err = scansWrapper.Delete(scanID)
+		if err != nil {
+			return errors.Wrapf(err, "%s\n", failedDeleting)
+		}
+		// Checking the response
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
+		} else if scanResponseModel != nil {
+			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
+			fmt.Printf("Status: %s\n", scanResponseModel.Status)
+		}
 		return nil
 	}
 }
