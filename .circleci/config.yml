@@ -101,7 +101,6 @@ workflows:
   release-publish-workflow:
     jobs:    
       - publish-github-release:
-          name: publish-github-release
           filters:
             branches:
               only:
