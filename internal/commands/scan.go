@@ -15,8 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO print flags if verbose
-
 const (
 	failedCreating = "Failed creating a scan"
 	failedGetting  = "Failed getting a scan"
@@ -83,6 +81,11 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanInput, _ = cmd.Flags().GetString(inputFlag)
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
+
+		PrintIfVerbose(verbose, fmt.Sprintf("%s: %v", incrementalFlag, incremental))
+		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFlag, scanInput))
+		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
+		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
 
 		if scanInputFile != "" {
 			// Reading from input file
