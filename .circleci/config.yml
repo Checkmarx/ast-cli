@@ -76,6 +76,7 @@ jobs:
       - run: go mod download
       - run: go build -o bin/ast cmd/main.go
       - run: go get github.com/tcnksm/ghr
+      - run:
           name: Publish GitHub release
           command: ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ./bin/
       - save_cache: # Store cache in the /go/pkg directory
