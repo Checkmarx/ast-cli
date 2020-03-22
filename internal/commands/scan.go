@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	failedCreating = "Failed creating a scan"
-	failedGetting  = "Failed getting a scan"
-	failedDeleting = "Failed deleting a scan"
+	failedCreating   = "Failed creating a scan"
+	failedGetting    = "Failed getting a scan"
+	failedDeleting   = "Failed deleting a scan"
+	failedGettingAll = "Failed getting all"
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
@@ -53,11 +54,10 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
 
-	var deleteScanID string
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Stops a scan from running",
-		RunE:  runDeleteScanCommand(deleteScanID, scansWrapper),
+		RunE:  runDeleteScanCommand(scansWrapper),
 	}
 
 	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
@@ -158,9 +158,25 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	}
 }
 
-func runGetAllScansCommand(wrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Get all scans running")
+		var allScansModel *scans.ResponseModel
+		var errorModel *scans.ErrorModel
+		var err error
+
+		allScansModel, errorModel, err = scansWrapper.Get()
+		if err != nil {
+			return errors.Wrapf(err, "%s\n", failedGettingAll)
+		}
+		// Checking the response
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
+		} else if allScansModel != nil && allScansModel.Scans != nil {
+			for _, scan := range allScansModel.Scans {
+				fmt.Printf("Scan ID %s:\n", scan.ID)
+				fmt.Printf("Status: %s\n", scan.Status)
+			}
+		}
 		return nil
 	}
 }
@@ -189,7 +205,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 	}
 }
 
-func runDeleteScanCommand(scanID string, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var scanResponseModel *scans.ScanResponseModel
 		var errorModel *scans.ErrorModel
