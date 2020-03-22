@@ -27,8 +27,6 @@ func TestRunCreateCommandWithFile(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "Failed creating a scan: Failed to open input file: open "+
-		"./payloads/nonsense.json: The system cannot find the file specified.")
 	err = executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/uploads.json", "--sources", "./payloads/sources.zip")
 	assert.NilError(t, err)
 }
