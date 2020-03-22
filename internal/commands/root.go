@@ -28,7 +28,8 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.Uploa
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, "Verbose mode")
 
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
-	rootCmd.AddCommand(scanCmd)
+	versionCmd := NewVersionCommand()
+	rootCmd.AddCommand(scanCmd, versionCmd)
 	return rootCmd
 }
 
