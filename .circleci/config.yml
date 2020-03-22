@@ -95,11 +95,10 @@ jobs:
       - run: go build -o bin/ast cmd/main.go
       - run: go get github.com/tcnksm/ghr
       - run:
-          name: Get binary version
-          command: VERSION=$(./bin/ast version)
-      - run:
           name: Publish GitHub release
-          command: ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
+          command: |
+            VERSION=$(./bin/ast version)
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
