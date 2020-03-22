@@ -6,6 +6,10 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	unknownFlag = "unknown flag: --Chibutero"
+)
+
 func TestScanHelp(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "help", "scan")
@@ -68,7 +72,7 @@ func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "get", "--Chibutero")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "unknown flag: --Chibutero")
+	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
@@ -87,11 +91,24 @@ func TestRunGetDeleteByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "delete", "--Chibutero")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "unknown flag: --Chibutero")
+	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunDeleteScanByIdCommand(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "delete", "MOCK")
 	assert.NilError(t, err)
+}
+
+func TestRunGetAllCommand(t *testing.T) {
+	cmd := createASTCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "get-all")
+	assert.NilError(t, err)
+}
+
+func TestRunGetAllCommandFlagNonExist(t *testing.T) {
+	cmd := createASTCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "get-all", "--Chibutero")
+	assert.Assert(t, err != nil)
+	assert.Assert(t, err.Error() == unknownFlag)
 }

@@ -10,6 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	failedToParseGetAll = "Failed to parse get-all response"
+)
+
 type ScansHTTPWrapper struct {
 	url         string
 	contentType string
@@ -26,7 +30,32 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 }
 
 func (s *ScansHTTPWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
-	panic("implement me")
+	resp, err := http.Get(s.url)
+	if err != nil {
+		return nil, nil, err
+	}
+	decoder := json.NewDecoder(resp.Body)
+
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := scansModels.ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := scansModels.ResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+		}
+		return &model, nil, nil
+
+	default:
+		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+	}
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {

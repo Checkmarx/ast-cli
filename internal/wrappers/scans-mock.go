@@ -20,7 +20,14 @@ func (m *ScansMockWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 
 func (m *ScansMockWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
 	fmt.Println("Called Get in ScansMockWrapper")
-	return nil, nil, nil
+	return &scansModels.ResponseModel{
+		Scans: []scansModels.ScanResponseModel{
+			{
+				ID:     "MOCK",
+				Status: "STATUS",
+			},
+		},
+	}, nil, nil
 }
 
 func (m *ScansMockWrapper) GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
