@@ -3,41 +3,43 @@ package commands
 import (
 	"fmt"
 
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
 
-type CLI interface {
-	Execute() error
-}
+const (
+	verboseFlag     = "verbose"
+	verboseFlagSh   = "v"
+	sourcesFlag     = "sources"
+	sourcesFlagSh   = "s"
+	inputFlag       = "input"
+	inputFlagSh     = "i"
+	inputFileFlag   = "inputFile"
+	inputFileFlagSh = "f"
+	incrementalFlag = "incremental"
+)
 
-type AstCLI struct {
-	rootCmd *cobra.Command
-}
-
-// Execute executes the root command.
-func (cli *AstCLI) Execute() error {
-	return cli.rootCmd.Execute()
-}
-
-func NewAstCLI(astAPIURL, scansPath, projectsPath, uploadsPath, resultsPath string) CLI {
-	var verbose bool
+// Return an AST CLI root command to execute
+func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
 	}
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose mode")
+	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, "Verbose mode")
 
-	scansURL := fmt.Sprintf("%s/%s", astAPIURL, scansPath)
-	uploadsURL := fmt.Sprintf("%s/%s", astAPIURL, uploadsPath)
-	scanCmd := NewScanCommand(scansURL, uploadsURL, verbose)
+	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	rootCmd.AddCommand(scanCmd)
-	return &AstCLI{
-		rootCmd: rootCmd,
-	}
+	return rootCmd
 }
 
 func PrintIfVerbose(verbose bool, msg string) {
 	if verbose {
 		fmt.Println(msg)
 	}
+}
+
+func createASTCommand() *cobra.Command {
+	scansMockWrapper := &wrappers.ScansMockWrapper{}
+	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
+	return NewAstCLI(scansMockWrapper, uploadsMockWrapper)
 }

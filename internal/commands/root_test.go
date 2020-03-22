@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"gotest.tools/assert"
 )
 
@@ -16,7 +18,15 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func TestNewAstCLI(t *testing.T) {
-	cli := NewAstCLI("url", "scans", "projects", "uploads", "results")
-	assert.Assert(t, cli != nil)
+func TestRootHelp(t *testing.T) {
+	cmd := createASTCommand()
+	args := fmt.Sprintf("--help")
+	err := executeTestCommand(cmd, args)
+	assert.NilError(t, err)
+}
+
+func executeTestCommand(cmd *cobra.Command, args ...string) error {
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	return cmd.Execute()
 }
