@@ -15,10 +15,16 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - run: 
+          name: Config GOPRIVATE environment variable
+          command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
+      - run:
+          name: Config Git credentials
+          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      # - run: go mod download
+#       - run: go mod download
       - run: 
           name: go test with coverage
           command: |
@@ -51,6 +57,12 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - run:
+          name: Config GOPRIVATE environment variable
+          command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
+      - run:
+          name: Config Git credentials
+          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
@@ -70,6 +82,12 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
+      - run:
+          name: Config GOPRIVATE environment variable
+          command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
+      - run:
+          name: Config Git credentials
+          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
