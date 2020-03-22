@@ -33,5 +33,8 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*scansModels.ScanResponseMode
 
 func (m *ScansMockWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
 	fmt.Println("Called Delete in ScansMockWrapper")
-	return nil, nil, nil
+	return &scansModels.ScanResponseModel{
+		ID:     scanID,
+		Status: "STATUS",
+	}, nil, nil
 }
