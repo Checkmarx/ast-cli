@@ -64,5 +64,5 @@ func main() {
 // When building an executable for Windows and providing a name,
 // be sure to explicitly specify the .exe suffix when setting the executable’s name.
 // env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
-// "bin/ast.exe" scan create  --sources c:\CODE\ast\example\sources.zip  --inputFile  ./payloads/uploads.json
+// "bin/ast.exe" -v scan create   --inputFile  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
 // "bin/ast.exe" scan get  --id 4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
