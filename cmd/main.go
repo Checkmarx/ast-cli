@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/spf13/viper"
 )
@@ -18,7 +20,7 @@ const (
 	uploadsPath        = "UPLOADS_PATH"
 	logLevel           = "CLI_LOG_LEVEL"
 	successfulExitCode = 0
-	// failureExitCode    = 1
+	failureExitCode    = 1
 )
 
 func main() {
@@ -43,12 +45,19 @@ func main() {
 	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
 
 	scans := viper.GetString(scansPath)
-	projects := viper.GetString(projectsPath)
 	uploads := viper.GetString(uploadsPath)
-	results := viper.GetString(resultsPath)
 
-	astCli := commands.NewAstCLI(ast, scans, projects, uploads, results)
-	_ = astCli.Execute()
+	scansURL := fmt.Sprintf("%s/%s", ast, scans)
+	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
+	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
+
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper)
+	err := astCli.Execute()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(failureExitCode)
+	}
 	os.Exit(successfulExitCode)
 }
 
