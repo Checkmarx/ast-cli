@@ -1,0 +1,21 @@
+{
+  "project": {
+    "id": "test",
+    "type": "upload",
+    "handler": {
+      "url": "MOSHIKO"
+    },
+    "tags": {
+    }
+  },
+  "config": [
+    {
+      "type": "sast",
+      "value": {
+        "presetName": "Default"
+      }
+    }
+  ],
+  "tags": {
+  }
+}
