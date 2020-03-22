@@ -25,6 +25,12 @@ func TestRootHelp(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRootVersion(t *testing.T) {
+	cmd := createASTCommand()
+	err := executeTestCommand(cmd, "version")
+	assert.NilError(t, err)
+}
+
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
