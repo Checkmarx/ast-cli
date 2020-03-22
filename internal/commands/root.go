@@ -29,6 +29,7 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.Uploa
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	versionCmd := NewVersionCommand()
 	rootCmd.AddCommand(scanCmd, versionCmd)
+	rootCmd.SilenceUsage = true
 	return rootCmd
 }
 

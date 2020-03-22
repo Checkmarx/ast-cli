@@ -158,9 +158,11 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			for _, scan := range allScansModel.Scans {
+				fmt.Println("----------------------------")
 				fmt.Printf("Scan ID %s:\n", scan.ID)
 				fmt.Printf("Status: %s\n", scan.Status)
 			}
+			fmt.Println("----------------------------")
 		}
 		return nil
 	}
@@ -177,11 +179,11 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		scanID := args[0]
 		scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedGetting)
+			return errors.Wrapf(err, "%s", failedGetting)
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedGetting, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
 			fmt.Printf("Status: %s\n", scanResponseModel.Status)
