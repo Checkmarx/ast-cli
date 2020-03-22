@@ -22,48 +22,6 @@ const (
 	failedGettingAll = "Failed getting all"
 )
 
-func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
-	scanCmd := &cobra.Command{
-		Use:   "scan",
-		Short: "Manage AST scans",
-	}
-
-	createScanCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates and runs a new scan",
-		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
-	}
-	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
-		"A path to the sources file to scan")
-	createScanCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested scan, in JSON format")
-	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-	createScanCmd.PersistentFlags().Bool(incrementalFlag, false,
-		"Make this scan incremental ")
-
-	getAllScanCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all scans in the system",
-		RunE:  runGetAllScansCommand(scansWrapper),
-	}
-
-	getScanCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a scan",
-		RunE:  runGetScanByIDCommand(scansWrapper),
-	}
-
-	deleteScanCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Stops a scan from running",
-		RunE:  runDeleteScanCommand(scansWrapper),
-	}
-
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
-	return scanCmd
-}
-
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -156,6 +114,48 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		return nil
 	}
+}
+
+func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+	scanCmd := &cobra.Command{
+		Use:   "scan",
+		Short: "Manage AST scans",
+	}
+
+	createScanCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Creates and runs a new scan",
+		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
+	}
+	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
+		"A path to the sources file to scan")
+	createScanCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
+		"The object representing the requested scan, in JSON format")
+	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
+		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.PersistentFlags().Bool(incrementalFlag, false,
+		"Make this scan incremental ")
+
+	getAllScanCmd := &cobra.Command{
+		Use:   "get-all",
+		Short: "Returns all scans in the system",
+		RunE:  runGetAllScansCommand(scansWrapper),
+	}
+
+	getScanCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Returns information about a scan",
+		RunE:  runGetScanByIDCommand(scansWrapper),
+	}
+
+	deleteScanCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Stops a scan from running",
+		RunE:  runDeleteScanCommand(scansWrapper),
+	}
+
+	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
+	return scanCmd
 }
 
 func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
