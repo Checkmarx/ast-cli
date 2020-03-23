@@ -12,7 +12,8 @@
     {
       "type": "sast",
       "value": {
-        "presetName": "Default"
+        "incremental": "false",
+        "presetName": "Checkmarx Default"
       }
     }
   ],

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -28,19 +27,16 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		var input []byte
 		var err error
 
-		var incremental bool
 		var verbose bool
 		var scanInputFile string
 		var scanInput string
 		var sourcesFile string
 
-		incremental, _ = cmd.Flags().GetBool(incrementalFlag)
 		verbose, _ = cmd.Flags().GetBool(verboseFlag)
 		scanInput, _ = cmd.Flags().GetString(inputFlag)
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
 
-		PrintIfVerbose(verbose, fmt.Sprintf("%s: %v", incrementalFlag, incremental))
 		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFlag, scanInput))
 		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
 		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
@@ -92,15 +88,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		payload, _ = json.Marshal(scanModel)
 		PrintIfVerbose(verbose, fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
 
-		// Support for incremental scan
-		scanModel.Config = []scansApi.Config{
-			{
-				Type: scansApi.SastConfig,
-				Value: map[string]string{
-					"incremental": strconv.FormatBool(incremental),
-				},
-			},
-		}
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
@@ -133,8 +120,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-	createScanCmd.PersistentFlags().Bool(incrementalFlag, false,
-		"Make this scan incremental ")
 
 	getAllScanCmd := &cobra.Command{
 		Use:   "get-all",
@@ -173,9 +158,11 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			for _, scan := range allScansModel.Scans {
+				fmt.Println("----------------------------")
 				fmt.Printf("Scan ID %s:\n", scan.ID)
 				fmt.Printf("Status: %s\n", scan.Status)
 			}
+			fmt.Println("----------------------------")
 		}
 		return nil
 	}
@@ -192,11 +179,11 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		scanID := args[0]
 		scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedGetting)
+			return errors.Wrapf(err, "%s", failedGetting)
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedGetting, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
 			fmt.Printf("Status: %s\n", scanResponseModel.Status)

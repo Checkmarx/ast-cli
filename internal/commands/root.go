@@ -16,7 +16,6 @@ const (
 	inputFlagSh     = "i"
 	inputFileFlag   = "inputFile"
 	inputFileFlagSh = "f"
-	incrementalFlag = "incremental"
 )
 
 // Return an AST CLI root command to execute
@@ -30,6 +29,7 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.Uploa
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	versionCmd := NewVersionCommand()
 	rootCmd.AddCommand(scanCmd, versionCmd)
+	rootCmd.SilenceUsage = true
 	return rootCmd
 }
 
