@@ -52,13 +52,6 @@ func TestRunCreateCommandWithInputBadFormat(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
-func TestRunCreateCommandWithIncremental(t *testing.T) {
-	cmd := createASTCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "create", "--incremental", "--inputFile", "./payloads/uploads.json",
-		"--sources", "./payloads/sources.zip")
-	assert.NilError(t, err)
-}
-
 func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "get")
