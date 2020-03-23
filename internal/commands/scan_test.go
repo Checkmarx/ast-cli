@@ -103,3 +103,9 @@ func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
+
+func TestRunTagsCommand(t *testing.T) {
+	cmd := createASTCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "tags")
+	assert.NilError(t, err)
+}
