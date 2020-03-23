@@ -46,13 +46,17 @@ func main() {
 
 	scans := viper.GetString(scansPath)
 	uploads := viper.GetString(uploadsPath)
+	projects := viper.GetString(projectsPath)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
+	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
+
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper)
 	err := astCli.Execute()
 	if err != nil {
 		fmt.Println(err.Error())

@@ -19,7 +19,9 @@ const (
 )
 
 // Return an AST CLI root command to execute
-func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+func NewAstCLI(scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
@@ -27,8 +29,9 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.Uploa
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, "Verbose mode")
 
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
+	projectCmd := NewProjectCommand(projectsWrapper)
 	versionCmd := NewVersionCommand()
-	rootCmd.AddCommand(scanCmd, versionCmd)
+	rootCmd.AddCommand(scanCmd, projectCmd, versionCmd)
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }
@@ -42,5 +45,6 @@ func PrintIfVerbose(verbose bool, msg string) {
 func createASTCommand() *cobra.Command {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
 	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
-	return NewAstCLI(scansMockWrapper, uploadsMockWrapper)
+	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
+	return NewAstCLI(scansMockWrapper, uploadsMockWrapper, projectsMockWrapper)
 }
