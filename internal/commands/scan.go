@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	failedCreating   = "Failed creating a scan"
-	failedGetting    = "Failed getting a scan"
-	failedDeleting   = "Failed deleting a scan"
-	failedGettingAll = "Failed getting all"
+	failedCreating    = "Failed creating a scan"
+	failedGetting     = "Failed getting a scan"
+	failedGettingTags = "Failed getting tags"
+	failedDeleting    = "Failed deleting a scan"
+	failedGettingAll  = "Failed getting all"
 )
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
@@ -139,7 +140,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runDeleteScanCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd)
+	tagsCmd := &cobra.Command{
+		Use:   "tags",
+		Short: "Get a list of all available tags to filter by",
+		RunE:  runGetTagsCommand(scansWrapper),
+	}
+
+	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -211,6 +218,28 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		} else if scanResponseModel != nil {
 			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
 			fmt.Printf("Status: %s\n", scanResponseModel.Status)
+		}
+		return nil
+	}
+}
+
+func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		var tags *[]string
+		var errorModel *scans.ErrorModel
+		var err error
+		tags, errorModel, err = scansWrapper.Tags()
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingTags)
+		}
+		// Checking the response
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingTags, errorModel.Code, errorModel.Message)
+		} else if tags != nil {
+			fmt.Println("Tags:")
+			for _, t := range *tags {
+				fmt.Println(t)
+			}
 		}
 		return nil
 	}

@@ -10,4 +10,5 @@ type ScansWrapper interface {
 	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
 	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
+	Tags() (*[]string, *scansModels.ErrorModel, error)
 }

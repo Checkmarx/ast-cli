@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	unknownFlag = "unknown flag: --Chibutero"
+	unknownFlag        = "unknown flag: --chibutero"
+	subcommandRequired = "subcommand is required"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -20,10 +21,10 @@ func TestScanNoSub(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "scan")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "subcommand is required")
+	assert.Assert(t, err.Error() == subcommandRequired)
 }
 
-func TestRunCreateCommandWithFile(t *testing.T) {
+func TestRunCreateScanCommandWithFile(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
@@ -31,14 +32,14 @@ func TestRunCreateCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunCreateCommandWithNoInput(t *testing.T) {
+func TestRunCreateScanCommandWithNoInput(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed creating a scan: no input was given\n")
 }
 
-func TestRunCreateCommandWithInput(t *testing.T) {
+func TestRunCreateScanCommandWithInput(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create", "--input", "{\"project\":{\"id\":\"test\",\"type\":\"upload\",\"handler\":"+
 		"{\"url\":\"MOSHIKO\"},\"tags\":{}},\"config\":"+
@@ -46,7 +47,7 @@ func TestRunCreateCommandWithInput(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunCreateCommandWithInputBadFormat(t *testing.T) {
+func TestRunCreateScanCommandWithInputBadFormat(t *testing.T) {
 	cmd := createASTCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create", "--input", "[]", "--sources", "./payloads/sources.zip")
 	assert.Assert(t, err != nil)
@@ -61,7 +62,7 @@ func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get", "--Chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "get", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
@@ -78,9 +79,9 @@ func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed deleting a scan: Please provide a scan ID")
 }
 
-func TestRunGetDeleteByIdCommandFlagNonExist(t *testing.T) {
+func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "delete", "--Chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "delete", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
@@ -99,7 +100,13 @@ func TestRunGetAllCommand(t *testing.T) {
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get-all", "--Chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "get-all", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
+}
+
+func TestRunTagsCommand(t *testing.T) {
+	cmd := createASTCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "tags")
+	assert.NilError(t, err)
 }
