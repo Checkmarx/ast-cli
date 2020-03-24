@@ -45,3 +45,7 @@ func (m *ScansMockWrapper) Delete(scanID string) (*scansModels.ScanResponseModel
 		Status: "STATUS",
 	}, nil, nil
 }
+func (m *ScansMockWrapper) Tags() (*[]string, *scansModels.ErrorModel, error) {
+	fmt.Println("Called Tags in ScansMockWrapper")
+	return &[]string{"t1"}, nil, nil
+}
