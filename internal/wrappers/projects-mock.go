@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"fmt"
+
 	projApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
 	projModels "github.com/checkmarxDev/scans/pkg/projects"
 )

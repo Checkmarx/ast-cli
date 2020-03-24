@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
 	projApi "github.com/checkmarxDev/scans/api/v1/rest/projects"

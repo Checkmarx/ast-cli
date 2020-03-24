@@ -11,19 +11,19 @@ import (
 	projModels "github.com/checkmarxDev/scans/pkg/projects"
 )
 
-type ProjectsHttpWrapper struct {
+type ProjectsHTTPWrapper struct {
 	url         string
 	contentType string
 }
 
 func NewHTTPProjectsWrapper(url string) ProjectsWrapper {
-	return &ProjectsHttpWrapper{
+	return &ProjectsHTTPWrapper{
 		url:         url,
 		contentType: "application/json",
 	}
 }
 
-func (p *ProjectsHttpWrapper) Create(model *projApi.Project) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Create(model *projApi.Project) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
 		return nil, nil, err
@@ -33,7 +33,7 @@ func (p *ProjectsHttpWrapper) Create(model *projApi.Project) (*projModels.Projec
 	return handleProjectsResponse(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHttpWrapper) Get() (*projModels.ResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Get() (*projModels.ResponseModel, *projModels.ErrorModel, error) {
 	resp, err := http.Get(p.url)
 	if err != nil {
 		return nil, nil, err
@@ -62,7 +62,7 @@ func (p *ProjectsHttpWrapper) Get() (*projModels.ResponseModel, *projModels.Erro
 	}
 }
 
-func (p *ProjectsHttpWrapper) GetByID(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) GetByID(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
 	resp, err := http.Get(p.url + "/" + projectID)
 	if err != nil {
 		return nil, nil, err
@@ -70,7 +70,7 @@ func (p *ProjectsHttpWrapper) GetByID(projectID string) (*projModels.ProjectResp
 	return handleProjectsResponse(resp, err, http.StatusOK)
 }
 
-func (p *ProjectsHttpWrapper) Delete(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", p.url+"/"+projectID, nil)
 	if err != nil {
@@ -83,7 +83,7 @@ func (p *ProjectsHttpWrapper) Delete(projectID string) (*projModels.ProjectRespo
 	return handleProjectsResponse(resp, err, http.StatusOK)
 }
 
-func (p *ProjectsHttpWrapper) Tags() (*[]string, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Tags() (*[]string, *projModels.ErrorModel, error) {
 	resp, err := http.Get(p.url + "/tags")
 	if err != nil {
 		return nil, nil, err
