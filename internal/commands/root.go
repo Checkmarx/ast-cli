@@ -42,7 +42,7 @@ func PrintIfVerbose(verbose bool, msg string) {
 	}
 }
 
-func createASTCommand() *cobra.Command {
+func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
 	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
 	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
