@@ -33,7 +33,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projApi.Project) (*projModels.Projec
 	return handleProjectsResponse(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHTTPWrapper) Get() (*projModels.ResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Get() (*projModels.SlicedProjectsResponseModel, *projModels.ErrorModel, error) {
 	resp, err := http.Get(p.url)
 	if err != nil {
 		return nil, nil, err
@@ -50,7 +50,7 @@ func (p *ProjectsHTTPWrapper) Get() (*projModels.ResponseModel, *projModels.Erro
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := projModels.ResponseModel{}
+		model := projModels.SlicedProjectsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)

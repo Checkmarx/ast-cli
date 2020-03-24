@@ -7,7 +7,7 @@ import (
 
 type ScansWrapper interface {
 	Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
-	Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error)
+	Get() (*scansModels.SlicedScansResponseModel, *scansModels.ErrorModel, error)
 	GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error)
 	Tags() (*[]string, *scansModels.ErrorModel, error)

@@ -125,7 +125,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 
 func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allProjectsModel *projModels.ResponseModel
+		var allProjectsModel *projModels.SlicedProjectsResponseModel
 		var errorModel *projModels.ErrorModel
 		var err error
 

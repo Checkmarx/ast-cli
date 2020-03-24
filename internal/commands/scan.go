@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -98,6 +99,10 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
+			cmdOut := cmd.OutOrStdout()
+			if cmdOut != os.Stdout {
+				fmt.Fprintf(cmdOut, scanResponseModel.ID)
+			}
 			fmt.Printf("Scan created successfully: Scan ID %s\n", scanResponseModel.ID)
 		}
 		return nil
@@ -152,7 +157,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 
 func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scans.ResponseModel
+		var allScansModel *scans.SlicedScansResponseModel
 		var errorModel *scans.ErrorModel
 		var err error
 

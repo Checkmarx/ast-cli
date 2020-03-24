@@ -18,9 +18,9 @@ func (m *ScansMockWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
+func (m *ScansMockWrapper) Get() (*scansModels.SlicedScansResponseModel, *scansModels.ErrorModel, error) {
 	fmt.Println("Called Get in ScansMockWrapper")
-	return &scansModels.ResponseModel{
+	return &scansModels.SlicedScansResponseModel{
 		Scans: []scansModels.ScanResponseModel{
 			{
 				ID:     "MOCK",

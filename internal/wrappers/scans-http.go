@@ -30,7 +30,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 	return handleResponse(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get() (*scansModels.SlicedScansResponseModel, *scansModels.ErrorModel, error) {
 	resp, err := http.Get(s.url)
 	if err != nil {
 		return nil, nil, err
@@ -47,7 +47,7 @@ func (s *ScansHTTPWrapper) Get() (*scansModels.ResponseModel, *scansModels.Error
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := scansModels.ResponseModel{}
+		model := scansModels.SlicedScansResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
