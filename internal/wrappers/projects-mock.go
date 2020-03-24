@@ -16,9 +16,9 @@ func (p *ProjectsMockWrapper) Create(model *projApi.Project) (*projModels.Projec
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get() (*projModels.ResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) Get() (*projModels.SlicedProjectsResponseModel, *projModels.ErrorModel, error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
-	return &projModels.ResponseModel{
+	return &projModels.SlicedProjectsResponseModel{
 		Projects: []projModels.ProjectResponseModel{
 			{
 				ID: "MOCK",

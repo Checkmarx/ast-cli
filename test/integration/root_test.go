@@ -6,11 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"gotest.tools/assert"
+	"github.com/spf13/cobra"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -24,12 +23,15 @@ const (
 	uploadsPath  = "UPLOADS_PATH"
 )
 
-var (
-	astRootCommand *cobra.Command
-)
-
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
+	// Run all tests
+	exitVal := m.Run()
+	log.Println("CLI integration tests done")
+	os.Exit(exitVal)
+}
+
+func createASTIntegrationTestCommand() *cobra.Command {
 	log.Println("Reading env variables")
 	viper.AutomaticEnv()
 	viper.AddConfigPath(".")
@@ -62,24 +64,10 @@ func TestMain(m *testing.M) {
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 
-	astRootCommand = commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper)
-	// Run all tests
-	exitVal := m.Run()
-	log.Println("CLI integration tests done")
-	os.Exit(exitVal)
+	return commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper)
 }
 
-func execute(args ...string) error {
-	astRootCommand.SetArgs(args)
-	return astRootCommand.Execute()
-}
-
-func TestRootHelp(t *testing.T) {
-	err := execute("--help")
-	assert.NilError(t, err)
-}
-
-func TestRootVersion(t *testing.T) {
-	err := execute("version")
-	assert.NilError(t, err)
+func execute(cmd *cobra.Command, args ...string) error {
+	cmd.SetArgs(args)
+	return cmd.Execute()
 }
