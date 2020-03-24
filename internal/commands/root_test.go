@@ -19,14 +19,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestRootHelp(t *testing.T) {
-	cmd := createASTCommand()
+	cmd := createASTTestCommand()
 	args := fmt.Sprintf("--help")
 	err := executeTestCommand(cmd, args)
 	assert.NilError(t, err)
 }
 
 func TestRootVersion(t *testing.T) {
-	cmd := createASTCommand()
+	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "version")
 	assert.NilError(t, err)
 }
