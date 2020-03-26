@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
-	scansModels "github.com/checkmarxDev/scans/pkg/scans"
 	"github.com/pkg/errors"
 )
 
@@ -20,7 +19,7 @@ type ScansHTTPWrapper struct {
 	contentType string
 }
 
-func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
 		return nil, nil, err
@@ -30,7 +29,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansModels.ScanRespon
 	return handleResponse(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get() (*scansModels.SlicedScansResponseModel, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get() (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
 	resp, err := http.Get(s.url)
 	if err != nil {
 		return nil, nil, err
@@ -40,14 +39,14 @@ func (s *ScansHTTPWrapper) Get() (*scansModels.SlicedScansResponseModel, *scansM
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansModels.ErrorModel{}
+		errorModel := scansApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := scansModels.SlicedScansResponseModel{}
+		model := scansApi.SlicedScansResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
@@ -59,7 +58,7 @@ func (s *ScansHTTPWrapper) Get() (*scansModels.SlicedScansResponseModel, *scansM
 	}
 }
 
-func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
 	resp, err := http.Get(s.url + "/" + scanID)
 	if err != nil {
 		return nil, nil, err
@@ -67,7 +66,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansModels.ScanResponseMode
 	return handleResponse(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", s.url+"/"+scanID, nil)
 	if err != nil {
@@ -80,7 +79,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansModels.ScanResponseModel
 	return handleResponse(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) Tags() (*[]string, *scansModels.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
 	resp, err := http.Get(s.url + "/tags")
 	if err != nil {
 		return nil, nil, err
@@ -90,7 +89,7 @@ func (s *ScansHTTPWrapper) Tags() (*[]string, *scansModels.ErrorModel, error) {
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansModels.ErrorModel{}
+		errorModel := scansApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)
@@ -116,7 +115,7 @@ func NewHTTPScansWrapper(url string) ScansWrapper {
 	}
 }
 
-func responseParsingFailed(err error) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func responseParsingFailed(err error) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
 	msg := "Failed to parse a scan response"
 	return nil, nil, errors.Wrapf(err, msg)
 }
@@ -124,7 +123,7 @@ func responseParsingFailed(err error) (*scansModels.ScanResponseModel, *scansMod
 func handleResponse(
 	resp *http.Response,
 	err error,
-	successStatusCode int) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+	successStatusCode int) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -133,14 +132,14 @@ func handleResponse(
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansModels.ErrorModel{}
+		errorModel := scansApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responseParsingFailed(err)
 		}
 		return nil, &errorModel, nil
 	case successStatusCode:
-		model := scansModels.ScanResponseModel{}
+		model := scansApi.ScanResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return responseParsingFailed(err)
