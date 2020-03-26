@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
@@ -37,7 +38,8 @@ func (u UploadsHTTPWrapper) Create(sourcesFile string) (*string, error) {
 
 	// Initialize the file field
 	var fileWriter io.Writer
-	fileWriter, err = multiPartWriter.CreateFormFile("sources", sourcesFile)
+	sourcesFileName := filepath.Base(sourcesFile)
+	fileWriter, err = multiPartWriter.CreateFormFile("sources", sourcesFileName)
 	if err != nil {
 		return nil, errors.Errorf("Failed creating FormFile - %s", err.Error())
 	}
