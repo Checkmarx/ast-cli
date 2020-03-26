@@ -5,7 +5,7 @@
       "value": {
         "engineConfiguration": "<TODO> url to the engine configuration file",
         "extensions": "<TODO> url to the extensions file",
-        "incremental": "false",
+        "incremental": "true",
         "presetName": "Checkmarx Default"
       }
     }
