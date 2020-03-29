@@ -37,8 +37,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/census-instrumentation/opencensus-proto v0.2.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
-github.com/checkmarxDev/scans v1.2.5 h1:CnHHhoqXd5NSsubx+ffTFdjdHo3NAIzPgzBC1rwXL5s=
-github.com/checkmarxDev/scans v1.2.5/go.mod h1:hcAM6h2mAq8iC+IgqaKUPDFsKoYJEnLJFFPt/wJdnhA=
+github.com/checkmarxDev/scans v1.2.7 h1:yGOZaWttkY0Ll6B2rQi70PKoRnh9VjMDPmtJjI71H/E=
+github.com/checkmarxDev/scans v1.2.7/go.mod h1:hcAM6h2mAq8iC+IgqaKUPDFsKoYJEnLJFFPt/wJdnhA=
 github.com/checkmarxDev/uploads v1.0.0 h1:Bypl38qpKyYM/P4WH+qnMC/cMrmXL+3gDgAZ8dc+wSY=
 github.com/checkmarxDev/uploads v1.0.0/go.mod h1:7WMSc96f012/4O3+3rYV2vhKI9GTEBGNVkp56b8F0ok=
 github.com/cheggaaa/pb v1.0.28/go.mod h1:pQciLPpbU0oxA0h+VJYYLxO+XeDQb5pZijXscXHm81s=

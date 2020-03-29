@@ -4,15 +4,15 @@ package integration
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"testing"
-
-	"github.com/spf13/cobra"
-
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"math/rand"
+	"os"
+	"testing"
+	"time"
 )
 
 const (
@@ -23,7 +23,17 @@ const (
 	projectsPath = "PROJECTS_PATH"
 	resultsPath  = "RESULTS_PATH"
 	uploadsPath  = "UPLOADS_PATH"
+	letterBytes  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
+
+func RandomizeString(length int) string {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[seededRand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
