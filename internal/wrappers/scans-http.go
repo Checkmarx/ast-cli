@@ -26,7 +26,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	}
 
 	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(jsonBytes))
-	return handleResponse(resp, err, http.StatusCreated)
+	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
 func (s *ScansHTTPWrapper) Get() (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
@@ -63,20 +63,17 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 	if err != nil {
 		return nil, nil, err
 	}
-	return handleResponse(resp, err, http.StatusOK)
+	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("DELETE", s.url+"/"+scanID, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	resp, err := client.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	return handleResponse(resp, err, http.StatusOK)
+	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
@@ -112,41 +109,5 @@ func NewHTTPScansWrapper(url string) ScansWrapper {
 	return &ScansHTTPWrapper{
 		url:         url,
 		contentType: "application/json",
-	}
-}
-
-func responseParsingFailed(err error) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	msg := "Failed to parse a scan response"
-	return nil, nil, errors.Wrapf(err, msg)
-}
-
-func handleResponse(
-	resp *http.Response,
-	err error,
-	successStatusCode int) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	if err != nil {
-		return nil, nil, err
-	}
-	decoder := json.NewDecoder(resp.Body)
-
-	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansApi.ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responseParsingFailed(err)
-		}
-		return nil, &errorModel, nil
-	case successStatusCode:
-		model := scansApi.ScanResponseModel{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return responseParsingFailed(err)
-		}
-		return &model, nil, nil
-
-	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
 	}
 }

@@ -37,13 +37,11 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*scansRESTApi.ScanResponseMod
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Delete(scanID string) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error) {
+func (m *ScansMockWrapper) Delete(scanID string) (*scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Delete in ScansMockWrapper")
-	return &scansRESTApi.ScanResponseModel{
-		ID:     scanID,
-		Status: "STATUS",
-	}, nil, nil
+	return nil, nil
 }
+
 func (m *ScansMockWrapper) Tags() (*[]string, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Tags in ScansMockWrapper")
 	return &[]string{"t1"}, nil, nil
