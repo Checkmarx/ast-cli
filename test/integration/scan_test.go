@@ -93,6 +93,8 @@ func TestRunScanSourcesFile(t *testing.T) {
 	assert.Assert(t, cmp.Equal(getIncScan.ID, createdIncScan.ID))
 	assert.Assert(t, getIncScan.Status == scansRESTApi.ScanCompleted)
 
+	// TODO Test get scan tags
+
 	// TODO get inc results
 	// TODO Compare numbers
 }

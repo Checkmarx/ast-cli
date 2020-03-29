@@ -147,7 +147,7 @@ func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 			cmdOut := cmd.OutOrStdout()
 			if cmdOut != os.Stdout {
 				var allProjectsJSON []byte
-				allProjectsJSON, err = json.Marshal(allProjectsModel.Projects)
+				allProjectsJSON, err = json.Marshal(allProjectsModel)
 				if err != nil {
 					return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
 				}
