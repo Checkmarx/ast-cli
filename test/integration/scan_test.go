@@ -5,13 +5,13 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"log"
-	"testing"
-	"time"
-
+	"fmt"
 	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
 	"gotest.tools/assert/cmp"
+	"io/ioutil"
+	"log"
+	"strconv"
+	"testing"
 
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -33,7 +33,7 @@ func TestScansE2E(t *testing.T) {
 	// Wait for the inc scan to finish. See it's completed successfully
 	time.Sleep(time.Duration(incScanWaitTime) * time.Second)
 	getScanByID(t, incScanID, scansRESTApi.ScanCompleted)
-	getAllScans(t, scanID, incScanID)
+	getAllScans(t)
 	getScansTags(t)
 }
 
@@ -60,13 +60,15 @@ func deleteScan(t *testing.T) {
 
 }
 
-func getAllScans(t *testing.T, scanID, incScanID string) {
+func getAllScans(t *testing.T) {
 	b := bytes.NewBufferString("")
 	getAllCommand := createASTIntegrationTestCommand()
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	err := execute(getAllCommand, "-v", "scan", "get-all", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
+	l := strconv.FormatUint(limit, 10)
+	o := strconv.FormatUint(offset, 10)
+	err := execute(getAllCommand, "-v", "scan", "get-all", "--limit", l, "--offset", o)
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte

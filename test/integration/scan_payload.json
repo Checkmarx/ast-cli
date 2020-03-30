@@ -10,6 +10,7 @@
       }
     }
   ],
+  "tags": ["s1","s2","s3"],
   "project": {
     "handler": {
       "url": "http://minio:9000/uploads/2020_03_22_18_30_51.595_Sources.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ast%2F20200322%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20200322T183051Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=00dc54dede9eb8d476df2b43e599cae14f8853930d0c387f1f4164215e7dd787"
