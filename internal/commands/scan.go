@@ -46,8 +46,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "Returns all scans in the system",
 		RunE:  runGetAllScansCommand(scansWrapper),
 	}
-	getAllScansCmd.PersistentFlags().StringP(limitFlag, limitFlagSh, "", limitUsage)
-	getAllScansCmd.PersistentFlags().StringP(offsetFlag, offsetFlagSh, "", offsetUsage)
+	getAllScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	getAllScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
 	getScanCmd := &cobra.Command{
 		Use:   "get",
