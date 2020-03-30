@@ -14,53 +14,15 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestE2E(t *testing.T) {
+func TestProjectsE2E(t *testing.T) {
 	projectFromFile := createProjectFromInputFile(t)
 	projectID := createProjectFromInput(t, RandomizeString(5), []string{})
 	deleteProject(t, projectID)
 	getAllProjects(t, projectFromFile)
 	getProjectByID(t, projectFromFile)
 	_ = createProjectFromInput(t, RandomizeString(5), []string{"A", "B", "D"})
-	getTags(t)
-	// TODO Get tags and check for [A, B, C, D]
+	getProjectTags(t)
 	deleteProject(t, projectFromFile)
-}
-func getTags(t *testing.T) {
-	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand()
-	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "project", "tags")
-	assert.NilError(t, err, "Getting tags should pass")
-	// Read response from buffer
-	var tagsJSON []byte
-	tagsJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading tags JSON should pass")
-	tags := []string{}
-	err = json.Unmarshal(tagsJSON, &tags)
-	assert.NilError(t, err, "Parsing tags JSON should pass")
-	assert.Assert(t, tags != nil)
-	assert.Assert(t, len(tags) == 4)
-}
-
-func getProjectByID(t *testing.T, projectID string) {
-	b := bytes.NewBufferString("")
-	getProjectCommand := createASTIntegrationTestCommand()
-	getProjectCommand.SetOut(b)
-	err := execute(getProjectCommand, "-v", "project", "get", projectID)
-	assert.NilError(t, err, "Getting a project should pass")
-	// Read response from buffer
-	var projectJSON []byte
-	projectJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading project response JSON should pass")
-	project := projectsRESTApi.ProjectResponseModel{}
-	err = json.Unmarshal(projectJSON, &project)
-	assert.NilError(t, err, "Parsing project response JSON should pass")
-	assert.Assert(t, projectID == project.ID)
-	assert.Assert(t, project.Tags != nil)
-	assert.Assert(t, len(project.Tags) == 3)
-	assert.Assert(t, project.Tags[0] == "A")
-	assert.Assert(t, project.Tags[1] == "B")
-	assert.Assert(t, project.Tags[2] == "C")
 }
 
 func createProjectFromInputFile(t *testing.T) string {
@@ -95,10 +57,25 @@ func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
 	return createdProject.ID
 }
 
-func deleteProject(t *testing.T, projectID string) {
-	deleteProjCommand := createASTIntegrationTestCommand()
-	err := execute(deleteProjCommand, "-v", "project", "delete", projectID)
-	assert.NilError(t, err, "Deleting a project should pass")
+func getProjectByID(t *testing.T, projectID string) {
+	b := bytes.NewBufferString("")
+	getProjectCommand := createASTIntegrationTestCommand()
+	getProjectCommand.SetOut(b)
+	err := execute(getProjectCommand, "-v", "project", "get", projectID)
+	assert.NilError(t, err, "Getting a project should pass")
+	// Read response from buffer
+	var projectJSON []byte
+	projectJSON, err = ioutil.ReadAll(b)
+	assert.NilError(t, err, "Reading project response JSON should pass")
+	project := projectsRESTApi.ProjectResponseModel{}
+	err = json.Unmarshal(projectJSON, &project)
+	assert.NilError(t, err, "Parsing project response JSON should pass")
+	assert.Assert(t, projectID == project.ID)
+	assert.Assert(t, project.Tags != nil)
+	assert.Assert(t, len(project.Tags) == 3)
+	assert.Assert(t, project.Tags[0] == "A")
+	assert.Assert(t, project.Tags[1] == "B")
+	assert.Assert(t, project.Tags[2] == "C")
 }
 
 func getAllProjects(t *testing.T, projectID string) {
@@ -119,4 +96,27 @@ func getAllProjects(t *testing.T, projectID string) {
 	assert.Assert(t, allProjects.TotalCount == 1, "Total should be 1")
 	assert.Assert(t, len(allProjects.Projects) == 1, "Total should be 1")
 	assert.Assert(t, allProjects.Projects[0].ID == projectID)
+}
+
+func deleteProject(t *testing.T, projectID string) {
+	deleteProjCommand := createASTIntegrationTestCommand()
+	err := execute(deleteProjCommand, "-v", "project", "delete", projectID)
+	assert.NilError(t, err, "Deleting a project should pass")
+}
+
+func getProjectTags(t *testing.T) {
+	b := bytes.NewBufferString("")
+	tagsCommand := createASTIntegrationTestCommand()
+	tagsCommand.SetOut(b)
+	err := execute(tagsCommand, "-v", "project", "tags")
+	assert.NilError(t, err, "Getting tags should pass")
+	// Read response from buffer
+	var tagsJSON []byte
+	tagsJSON, err = ioutil.ReadAll(b)
+	assert.NilError(t, err, "Reading tags JSON should pass")
+	tags := []string{}
+	err = json.Unmarshal(tagsJSON, &tags)
+	assert.NilError(t, err, "Parsing tags JSON should pass")
+	assert.Assert(t, tags != nil)
+	assert.Assert(t, len(tags) == 4)
 }
