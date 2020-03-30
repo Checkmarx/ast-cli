@@ -59,11 +59,14 @@ func createScanSourcesFile(t *testing.T) string {
 func deleteScan(t *testing.T) {
 
 }
+
 func getAllScans(t *testing.T, scanID, incScanID string) {
 	b := bytes.NewBufferString("")
 	getAllCommand := createASTIntegrationTestCommand()
 	getAllCommand.SetOut(b)
-	err := execute(getAllCommand, "-v", "scan", "get-all")
+	var limit uint64 = 40
+	var offset uint64 = 0
+	err := execute(getAllCommand, "-v", "scan", "get-all", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -72,11 +75,10 @@ func getAllScans(t *testing.T, scanID, incScanID string) {
 	allScans := scansRESTApi.SlicedScansResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
-	assert.Assert(t, allScans.Offset == 0, "offset should be 0")
+	assert.Assert(t, uint64(allScans.Limit) == limit, fmt.Sprintf("limit should be %d", limit))
+	assert.Assert(t, uint64(allScans.Offset) == offset, fmt.Sprintf("offset should be %d", offset))
 	assert.Assert(t, allScans.TotalCount == 2, "Total should be 2")
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
-	assert.Assert(t, allScans.Scans[0].ID == incScanID)
-	assert.Assert(t, allScans.Scans[1].ID == scanID)
 }
 func getScanByID(t *testing.T, scanID string, status string) {
 	getBuffer := bytes.NewBufferString("")
@@ -95,6 +97,7 @@ func getScanByID(t *testing.T, scanID string, status string) {
 	assert.Assert(t, string(getScan.Status) == status)
 }
 
+// TODO add tags and check them
 func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
 	tagsCommand := createASTIntegrationTestCommand()
@@ -129,5 +132,3 @@ func createIncScan(t *testing.T) string {
 	assert.Assert(t, createdIncScan.Status == scansRESTApi.ScanCreated)
 	return createdIncScan.ID
 }
-
-// TODO check for limit and offset like in projects

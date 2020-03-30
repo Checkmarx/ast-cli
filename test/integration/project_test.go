@@ -23,7 +23,6 @@ func TestProjectsE2E(t *testing.T) {
 	getProjectByID(t, projectFromFile)
 	_ = createProjectFromInput(t, RandomizeString(5), []string{"A", "B", "D"})
 	getProjectTags(t)
-	deleteProject(t, projectFromFile)
 }
 
 func createProjectFromInputFile(t *testing.T) string {
@@ -94,8 +93,8 @@ func getAllProjects(t *testing.T, projectID string) {
 	allProjects := projectsRESTApi.SlicedProjectsResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allProjects)
 	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Assert(t, uint64(allProjects.Limit) == limit, fmt.Sprintf("Limit should be %d", limit))
-	assert.Assert(t, uint64(allProjects.Offset) == offset, fmt.Sprintf("Offset should be %d", offset))
+	assert.Assert(t, uint64(allProjects.Limit) == limit, fmt.Sprintf("limit should be %d", limit))
+	assert.Assert(t, uint64(allProjects.Offset) == offset, fmt.Sprintf("offset should be %d", offset))
 	assert.Assert(t, allProjects.TotalCount == 1, "Total should be 1")
 	assert.Assert(t, len(allProjects.Projects) == 1, "Total should be 1")
 	assert.Assert(t, allProjects.Projects[0].ID == projectID)
