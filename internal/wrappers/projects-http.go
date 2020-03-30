@@ -40,7 +40,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHTTPWrapper) Get(limit, offset uint) (
+func (p *ProjectsHTTPWrapper) Get(limit, offset uint64) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
 	resp, err := getRequestWithLimitAndOffset(p.url, limit, offset)
@@ -126,15 +126,15 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	}
 }
 
-func getRequestWithLimitAndOffset(url string, limit, offset uint) (*http.Response, error) {
+func getRequestWithLimitAndOffset(url string, limit, offset uint64) (*http.Response, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	q := req.URL.Query()
-	q.Add(limitQueryParam, strconv.FormatUint(uint64(limit), 10))
-	q.Add(offsetQueryParam, strconv.FormatUint(uint64(offset), 10))
+	q.Add(limitQueryParam, strconv.FormatUint(limit, 10))
+	q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
 	return resp, err

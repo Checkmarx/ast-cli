@@ -6,7 +6,7 @@ import (
 
 type ProjectsWrapper interface {
 	Create(model *projectsRESTApi.Project) (*projectsRESTApi.ProjectResponseModel, *projectsRESTApi.ErrorModel, error)
-	Get(limit, offset uint) (*projectsRESTApi.SlicedProjectsResponseModel, *projectsRESTApi.ErrorModel, error)
+	Get(limit, offset uint64) (*projectsRESTApi.SlicedProjectsResponseModel, *projectsRESTApi.ErrorModel, error)
 	GetByID(projectID string) (*projectsRESTApi.ProjectResponseModel, *projectsRESTApi.ErrorModel, error)
 	Delete(projectID string) (*projectsRESTApi.ErrorModel, error)
 	Tags() (*[]string, *projectsRESTApi.ErrorModel, error)

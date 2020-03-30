@@ -48,10 +48,10 @@ func PrintIfVerbose(verbose bool, msg string) {
 	}
 }
 
-func getLimitAndOffset(cmd *cobra.Command) (limit, offset uint) {
+func getLimitAndOffset(cmd *cobra.Command) (limit, offset uint64) {
 	verbose, _ := cmd.Flags().GetBool(verboseFlag)
-	limit, _ = cmd.Flags().GetUint(limitFlag)
-	offset, _ = cmd.Flags().GetUint(offsetFlag)
+	limit, _ = cmd.Flags().GetUint64(limitFlag)
+	offset, _ = cmd.Flags().GetUint64(offsetFlag)
 	PrintIfVerbose(verbose, fmt.Sprintf("%s: %d", limitFlag, limit))
 	PrintIfVerbose(verbose, fmt.Sprintf("%s: %d", offsetFlag, offset))
 	return

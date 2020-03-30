@@ -18,7 +18,7 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get(limit, offset uint) (
+func (p *ProjectsMockWrapper) Get(limit, offset uint64) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
