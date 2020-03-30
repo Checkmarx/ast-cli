@@ -34,7 +34,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHTTPWrapper) Get() (
+func (p *ProjectsHTTPWrapper) Get(limit, offset uint) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
 	resp, err := http.Get(p.url)
