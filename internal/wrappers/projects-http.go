@@ -133,8 +133,12 @@ func getRequestWithLimitAndOffset(url string, limit, offset uint64) (*http.Respo
 		return nil, err
 	}
 	q := req.URL.Query()
-	q.Add(limitQueryParam, strconv.FormatUint(limit, 10))
-	q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
+	if limit > 0 {
+		q.Add(limitQueryParam, strconv.FormatUint(limit, 10))
+	}
+	if offset > 0 {
+		q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
+	}
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
 	return resp, err
