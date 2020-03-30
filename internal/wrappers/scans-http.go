@@ -29,7 +29,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get(limit, offset uint) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
 	resp, err := getRequestWithLimitAndOffset(s.url, limit, offset)
 	if err != nil {
 		return nil, nil, err

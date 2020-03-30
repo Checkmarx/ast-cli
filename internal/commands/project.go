@@ -41,8 +41,8 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "Returns all projects in the system",
 		RunE:  runGetAllProjectsCommand(projectsWrapper),
 	}
-	getAllProjCmd.PersistentFlags().UintP(limitFlag, limitFlagSh, 0, limitUsage)
-	getAllProjCmd.PersistentFlags().UintP(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	getAllProjCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	getAllProjCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
 	getProjCmd := &cobra.Command{
 		Use:   "get",
@@ -156,9 +156,9 @@ func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 				}
 				fmt.Fprintln(cmdOut, string(allProjectsJSON))
 			}
-			for _, scan := range allProjectsModel.Projects {
+			for _, project := range allProjectsModel.Projects {
 				var responseModelJSON []byte
-				responseModelJSON, err = json.Marshal(scan)
+				responseModelJSON, err = json.Marshal(project)
 				if err != nil {
 					return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
 				}

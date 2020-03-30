@@ -72,8 +72,7 @@ func getAllScans(t *testing.T, scanID, incScanID string) {
 	allScans := scansRESTApi.SlicedScansResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
-	assert.Assert(t, allScans.Limit == 20, "Limit should be 20")
-	assert.Assert(t, allScans.Offset == 0, "Offset should be 0")
+	assert.Assert(t, allScans.Offset == 0, "offset should be 0")
 	assert.Assert(t, allScans.TotalCount == 2, "Total should be 2")
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 	assert.Assert(t, allScans.Scans[0].ID == incScanID)
@@ -130,3 +129,5 @@ func createIncScan(t *testing.T) string {
 	assert.Assert(t, createdIncScan.Status == scansRESTApi.ScanCreated)
 	return createdIncScan.ID
 }
+
+// TODO check for limit and offset like in projects
