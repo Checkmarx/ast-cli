@@ -4,10 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+)
+
+const (
+	limitQueryParam  = "limit"
+	offsetQueryParam = "offset"
 )
 
 type ProjectsHTTPWrapper struct {
@@ -37,7 +43,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(limit, offset uint) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := http.Get(p.url)
+	resp, err := getRequestWithLimitAndOffset(p.url, limit, offset)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,4 +124,18 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
 	}
+}
+
+func getRequestWithLimitAndOffset(url string, limit, offset uint) (*http.Response, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	q := req.URL.Query()
+	q.Add(limitQueryParam, strconv.FormatUint(uint64(limit), 10))
+	q.Add(offsetQueryParam, strconv.FormatUint(uint64(offset), 10))
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	return resp, err
 }
