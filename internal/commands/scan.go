@@ -175,22 +175,12 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 			cmdOut := cmd.OutOrStdout()
 			if cmdOut != os.Stdout {
 				var allScansJSON []byte
-				allScansJSON, err = json.Marshal(allScansModel.Scans)
+				allScansJSON, err = json.Marshal(allScansModel)
 				if err != nil {
 					return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGettingAll)
 				}
 				fmt.Fprintln(cmdOut, string(allScansJSON))
 			}
-			for _, scan := range allScansModel.Scans {
-				var responseModelJSON []byte
-				responseModelJSON, err = json.Marshal(scan)
-				if err != nil {
-					return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGettingAll)
-				}
-				fmt.Fprintln(os.Stdout, "----------------------------")
-				fmt.Fprintln(os.Stdout, string(responseModelJSON))
-			}
-			fmt.Fprintln(os.Stdout, "----------------------------")
 		}
 		return nil
 	}
