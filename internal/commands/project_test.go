@@ -100,6 +100,22 @@ func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
+func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "project", "get-all", "--limit", "40")
+	assert.NilError(t, err)
+	err = executeTestCommand(cmd, "-v", "project", "get-all", "-l", "40")
+	assert.NilError(t, err)
+}
+
+func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "project", "get-all", "--offset", "150")
+	assert.NilError(t, err)
+	err = executeTestCommand(cmd, "-v", "project", "get-all", "-o", "150")
+	assert.NilError(t, err)
+}
+
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "tags")

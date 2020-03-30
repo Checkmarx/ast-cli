@@ -16,6 +16,12 @@ const (
 	inputFlagSh     = "i"
 	inputFileFlag   = "inputFile"
 	inputFileFlagSh = "f"
+	limitFlag       = "limit"
+	limitFlagSh     = "l"
+	limitUsage      = "The number of items to return"
+	offsetFlag      = "offset"
+	offsetFlagSh    = "o"
+	offsetUsage     = "The number of items to skip before collecting the results"
 )
 
 // Return an AST CLI root command to execute
@@ -42,9 +48,11 @@ func PrintIfVerbose(verbose bool, msg string) {
 	}
 }
 
-func createASTTestCommand() *cobra.Command {
-	scansMockWrapper := &wrappers.ScansMockWrapper{}
-	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
-	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
-	return NewAstCLI(scansMockWrapper, uploadsMockWrapper, projectsMockWrapper)
+func getLimitAndOffset(cmd *cobra.Command) (limit, offset uint) {
+	verbose, _ := cmd.Flags().GetBool(verboseFlag)
+	limit, _ = cmd.Flags().GetUint(limitFlag)
+	offset, _ = cmd.Flags().GetUint(offsetFlag)
+	PrintIfVerbose(verbose, fmt.Sprintf("%s: %d", limitFlag, limit))
+	PrintIfVerbose(verbose, fmt.Sprintf("%s: %d", offsetFlag, offset))
+	return
 }

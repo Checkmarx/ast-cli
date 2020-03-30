@@ -41,11 +41,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 
-	getAllScanCmd := &cobra.Command{
+	getAllScansCmd := &cobra.Command{
 		Use:   "get-all",
 		Short: "Returns all scans in the system",
 		RunE:  runGetAllScansCommand(scansWrapper),
 	}
+	getAllScansCmd.PersistentFlags().StringP(limitFlag, limitFlagSh, "", limitUsage)
+	getAllScansCmd.PersistentFlags().StringP(offsetFlag, offsetFlagSh, "", offsetUsage)
 
 	getScanCmd := &cobra.Command{
 		Use:   "get",
@@ -65,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScansCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -163,8 +165,9 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		var allScansModel *scansRESTApi.SlicedScansResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
+		limit, offset := getLimitAndOffset(cmd)
 
-		allScansModel, errorModel, err = scansWrapper.Get()
+		allScansModel, errorModel, err = scansWrapper.Get(limit, offset)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

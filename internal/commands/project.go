@@ -20,6 +20,52 @@ const (
 	failedDeletingProj = "Failed deleting a project"
 )
 
+func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
+	projCmd := &cobra.Command{
+		Use:   "project",
+		Short: "Manage AST projects",
+	}
+
+	createProjCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Creates a new project",
+		RunE:  runCreateProjectCommand(projectsWrapper),
+	}
+	createProjCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
+		"The object representing the requested project, in JSON format")
+	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
+		"A file holding the requested project object in JSON format. Takes precedence over --input")
+
+	getAllProjCmd := &cobra.Command{
+		Use:   "get-all",
+		Short: "Returns all projects in the system",
+		RunE:  runGetAllProjectsCommand(projectsWrapper),
+	}
+	getAllProjCmd.PersistentFlags().UintP(limitFlag, limitFlagSh, 0, limitUsage)
+	getAllProjCmd.PersistentFlags().UintP(offsetFlag, offsetFlagSh, 0, offsetUsage)
+
+	getProjCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Returns information about a project",
+		RunE:  runGetProjectByIDCommand(projectsWrapper),
+	}
+
+	deleteProjCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a project",
+		RunE:  runDeleteProjectCommand(projectsWrapper),
+	}
+
+	tagsCmd := &cobra.Command{
+		Use:   "tags",
+		Short: "Get a list of all available tags",
+		RunE:  runGetProjectsTagsCommand(projectsWrapper),
+	}
+
+	projCmd.AddCommand(createProjCmd, getProjCmd, getAllProjCmd, deleteProjCmd, tagsCmd)
+	return projCmd
+}
+
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte
@@ -86,57 +132,14 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	}
 }
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
-	projCmd := &cobra.Command{
-		Use:   "project",
-		Short: "Manage AST projects",
-	}
-
-	createProjCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates a new project",
-		RunE:  runCreateProjectCommand(projectsWrapper),
-	}
-	createProjCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested project, in JSON format")
-	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested project object in JSON format. Takes precedence over --input")
-
-	getAllProjCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all projects in the system",
-		RunE:  runGetAllProjectsCommand(projectsWrapper),
-	}
-
-	getProjCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a project",
-		RunE:  runGetProjectByIDCommand(projectsWrapper),
-	}
-
-	deleteProjCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete a project",
-		RunE:  runDeleteProjectCommand(projectsWrapper),
-	}
-
-	tagsCmd := &cobra.Command{
-		Use:   "tags",
-		Short: "Get a list of all available tags",
-		RunE:  runGetProjectsTagsCommand(projectsWrapper),
-	}
-
-	projCmd.AddCommand(createProjCmd, getProjCmd, getAllProjCmd, deleteProjCmd, tagsCmd)
-	return projCmd
-}
-
 func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
+		limit, offset := getLimitAndOffset(cmd)
 
-		allProjectsModel, errorModel, err = projectsWrapper.Get()
+		allProjectsModel, errorModel, err = projectsWrapper.Get(limit, offset)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

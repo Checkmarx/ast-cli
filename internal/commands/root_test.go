@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
 )
@@ -18,6 +20,13 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 	log.Println("Commands tests done")
 	os.Exit(exitVal)
+}
+
+func createASTTestCommand() *cobra.Command {
+	scansMockWrapper := &wrappers.ScansMockWrapper{}
+	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
+	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
+	return NewAstCLI(scansMockWrapper, uploadsMockWrapper, projectsMockWrapper)
 }
 
 func TestRootHelp(t *testing.T) {
