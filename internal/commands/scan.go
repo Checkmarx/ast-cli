@@ -259,10 +259,14 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingTags, errorModel.Code, errorModel.Message)
 		} else if tags != nil {
-			fmt.Println("Tags:")
-			for _, t := range *tags {
-				fmt.Println(t)
+			var tagsJSON []byte
+			tagsJSON, err = json.Marshal(tags)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize scan tags response ", failedGettingTags)
 			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintln(os.Stdout, "-----Tags-----")
+			fmt.Fprintln(cmdOut, string(tagsJSON))
 		}
 		return nil
 	}

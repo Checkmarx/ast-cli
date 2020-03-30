@@ -85,7 +85,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (
 		return nil, err
 	}
 	resp, err := client.Do(req)
-	return handleProjectResponseWithNoBody(resp, err, http.StatusOK)
+	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
 func (p *ProjectsHTTPWrapper) Tags() (
