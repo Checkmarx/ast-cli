@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strconv"
 	"testing"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
@@ -82,7 +83,9 @@ func getAllProjects(t *testing.T, projectID string) {
 	b := bytes.NewBufferString("")
 	getAllCommand := createASTIntegrationTestCommand()
 	getAllCommand.SetOut(b)
-	err := execute(getAllCommand, "-v", "project", "get-all")
+	var limit uint64 = 40
+	var offset uint64 = 0
+	err := execute(getAllCommand, "-v", "project", "get-all", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
 	assert.NilError(t, err, "Getting all projects should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -91,8 +94,8 @@ func getAllProjects(t *testing.T, projectID string) {
 	allProjects := projectsRESTApi.SlicedProjectsResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allProjects)
 	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Assert(t, allProjects.Limit == 20, "Limit should be 20")
-	assert.Assert(t, allProjects.Offset == 0, "Offset should be 0")
+	assert.Assert(t, uint64(allProjects.Limit) == limit, fmt.Sprintf("Limit should be %d", limit))
+	assert.Assert(t, uint64(allProjects.Offset) == offset, fmt.Sprintf("Offset should be %d", offset))
 	assert.Assert(t, allProjects.TotalCount == 1, "Total should be 1")
 	assert.Assert(t, len(allProjects.Projects) == 1, "Total should be 1")
 	assert.Assert(t, allProjects.Projects[0].ID == projectID)

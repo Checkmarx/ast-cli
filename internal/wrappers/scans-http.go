@@ -30,7 +30,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 }
 
 func (s *ScansHTTPWrapper) Get(limit, offset uint) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := http.Get(s.url)
+	resp, err := getRequestWithLimitAndOffset(s.url, limit, offset)
 	if err != nil {
 		return nil, nil, err
 	}
