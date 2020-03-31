@@ -83,6 +83,7 @@ func getAllScans(t *testing.T) {
 	assert.Assert(t, allScans.TotalCount == 2, "Total should be 2")
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 }
+
 func getScanByID(t *testing.T, scanID string, status string) {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand()
