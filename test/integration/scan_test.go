@@ -12,6 +12,7 @@ import (
 	"log"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -99,7 +100,6 @@ func getScanByID(t *testing.T, scanID string, status string) {
 	assert.Assert(t, string(getScan.Status) == status)
 }
 
-// TODO add tags and check them
 func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
 	tagsCommand := createASTIntegrationTestCommand()
