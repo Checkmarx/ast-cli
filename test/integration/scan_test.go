@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
@@ -27,13 +28,19 @@ func TestScansE2E(t *testing.T) {
 	scanID := createScanSourcesFile(t)
 	log.Printf("Waiting %d seconds for the full scan to complete...\n", fullScanWaitTime)
 	// Wait for the scan to finish. See it's completed successfully
-	time.Sleep(time.Duration(fullScanWaitTime) * time.Second)
-	getScanByID(t, scanID, scansRESTApi.ScanCompleted)
+	scanCompletedCh := make(chan bool, 1)
+	pollScanUntilStatus(t, scanID, scanCompletedCh, scansRESTApi.ScanCompleted, fullScanWaitTime, 5)
+	scanCompleted := <-scanCompletedCh
+	assert.Assert(t, scanCompleted, "Full scan should be completed")
+
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
 	// Wait for the inc scan to finish. See it's completed successfully
-	time.Sleep(time.Duration(incScanWaitTime) * time.Second)
-	getScanByID(t, incScanID, scansRESTApi.ScanCompleted)
+	incScanCompletedCh := make(chan bool, 1)
+	pollScanUntilStatus(t, incScanID, incScanCompletedCh, scansRESTApi.ScanCompleted, incScanWaitTime, 5)
+	incScanCompleted := <-incScanCompletedCh
+	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
+
 	getAllScans(t)
 	getScansTags(t)
 }
@@ -84,7 +91,7 @@ func getAllScans(t *testing.T) {
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 }
 
-func getScanByID(t *testing.T, scanID string, status string) {
+func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand()
 	getCommand.SetOut(getBuffer)
@@ -98,7 +105,7 @@ func getScanByID(t *testing.T, scanID string, status string) {
 	err = json.Unmarshal(getScanJSON, &getScan)
 	assert.NilError(t, err, "Parsing scan response JSON should pass")
 	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
-	assert.Assert(t, string(getScan.Status) == status)
+	return &getScan
 }
 
 func getScansTags(t *testing.T) {
@@ -134,4 +141,22 @@ func createIncScan(t *testing.T) string {
 	assert.NilError(t, err, "Parsing incremental scan response JSON should pass")
 	assert.Assert(t, createdIncScan.Status == scansRESTApi.ScanCreated)
 	return createdIncScan.ID
+}
+
+func pollScanUntilStatus(t *testing.T, scanID string, ch chan<- bool, requiredStatus scansRESTApi.ScanStatus, timeout, sleep int) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+	for {
+		log.Printf("Polling scan %s\n", scanID)
+		scan := getScanByID(t, scanID)
+		if string(scan.Status) == string(requiredStatus) {
+			ch <- true
+			return
+		} else {
+			time.Sleep(time.Duration(sleep) * time.Second)
+		}
+	}
+
+	<-ctx.Done()
+	ch <- false
 }

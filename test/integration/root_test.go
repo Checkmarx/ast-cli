@@ -67,16 +67,19 @@ func createASTIntegrationTestCommand() *cobra.Command {
 	scans := viper.GetString(scansPath)
 	uploads := viper.GetString(uploadsPath)
 	projects := viper.GetString(projectsPath)
+	results := viper.GetString(resultsPath)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
+	resultsURL := fmt.Sprintf("%s/%s", ast, results)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 
-	return commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper)
+	return commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
 }
 
 func execute(cmd *cobra.Command, args ...string) error {

@@ -37,7 +37,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		var errorModel *wrappers.ResultError
 		var err error
 		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a project ID", failedGettingResults)
+			return errors.Errorf("%s: Please provide a scan ID", failedGettingResults)
 		}
 		scanID := args[0]
 		limit, offset := getLimitAndOffset(cmd)
