@@ -1,29 +1,50 @@
-package main
+// +build integration
+
+package integration
 
 import (
 	"fmt"
-	"os"
-
+	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-
-	commands "github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log"
+	"math/rand"
+	"os"
+	"testing"
+	"time"
 )
 
 const (
-	astSchema          = "AST_SCHEMA"
-	astHost            = "AST_HOST"
-	astPort            = "80"
-	scansPath          = "SCANS_PATH"
-	projectsPath       = "PROJECTS_PATH"
-	resultsPath        = "RESULTS_PATH"
-	uploadsPath        = "UPLOADS_PATH"
-	logLevel           = "CLI_LOG_LEVEL"
-	successfulExitCode = 0
-	failureExitCode    = 1
+	astSchema    = "AST_SCHEMA"
+	astHost      = "AST_HOST"
+	astPort      = "80"
+	scansPath    = "SCANS_PATH"
+	projectsPath = "PROJECTS_PATH"
+	resultsPath  = "RESULTS_PATH"
+	uploadsPath  = "UPLOADS_PATH"
+	letterBytes  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
-func main() {
+func RandomizeString(length int) string {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[seededRand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func TestMain(m *testing.M) {
+	log.Println("CLI integration tests started")
+	// Run all tests
+	exitVal := m.Run()
+	log.Println("CLI integration tests done")
+	os.Exit(exitVal)
+}
+
+func createASTIntegrationTestCommand() *cobra.Command {
+	log.Println("Reading env variables")
 	viper.AutomaticEnv()
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
@@ -37,7 +58,6 @@ func main() {
 	viper.SetDefault(projectsPath, "projects")
 	viper.SetDefault(uploadsPath, "uploads")
 	viper.SetDefault(resultsPath, "results")
-	viper.SetDefault(logLevel, "DEBUG")
 
 	schema := viper.GetString(astSchema)
 	host := viper.GetString(astHost)
@@ -59,17 +79,10 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
-	err := astCli.Execute()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(failureExitCode)
-	}
-	os.Exit(successfulExitCode)
+	return commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
 }
 
-// When building an executable for Windows and providing a name,
-// be sure to explicitly specify the .exe suffix when setting the executable’s name.
-// env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
-// "bin/ast.exe" -v scan create   --inputFile  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
-// "bin/ast.exe" scan get  --id 4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
+func execute(cmd *cobra.Command, args ...string) error {
+	cmd.SetArgs(args)
+	return cmd.Execute()
+}

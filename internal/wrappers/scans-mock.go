@@ -3,25 +3,24 @@ package wrappers
 import (
 	"fmt"
 
-	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
-	scansModels "github.com/checkmarxDev/scans/pkg/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
 )
 
 type ScansMockWrapper struct {
 }
 
-func (m *ScansMockWrapper) Create(model *scansApi.Scan) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (m *ScansMockWrapper) Create(model *scansRESTApi.Scan) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Create in ScansMockWrapper")
-	return &scansModels.ScanResponseModel{
+	return &scansRESTApi.ScanResponseModel{
 		ID:     model.ScanID,
 		Status: "MOCK",
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get() (*scansModels.ResponseModel, *scansModels.ErrorModel, error) {
+func (m *ScansMockWrapper) Get(limit, offset uint64) (*scansRESTApi.SlicedScansResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Get in ScansMockWrapper")
-	return &scansModels.ResponseModel{
-		Scans: []scansModels.ScanResponseModel{
+	return &scansRESTApi.SlicedScansResponseModel{
+		Scans: []scansRESTApi.ScanResponseModel{
 			{
 				ID:     "MOCK",
 				Status: "STATUS",
@@ -30,22 +29,20 @@ func (m *ScansMockWrapper) Get() (*scansModels.ResponseModel, *scansModels.Error
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) GetByID(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (m *ScansMockWrapper) GetByID(scanID string) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called GetByID in ScansMockWrapper")
-	return &scansModels.ScanResponseModel{
+	return &scansRESTApi.ScanResponseModel{
 		ID:     scanID,
 		Status: "STATUS",
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Delete(scanID string) (*scansModels.ScanResponseModel, *scansModels.ErrorModel, error) {
+func (m *ScansMockWrapper) Delete(scanID string) (*scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Delete in ScansMockWrapper")
-	return &scansModels.ScanResponseModel{
-		ID:     scanID,
-		Status: "STATUS",
-	}, nil, nil
+	return nil, nil
 }
-func (m *ScansMockWrapper) Tags() (*[]string, *scansModels.ErrorModel, error) {
+
+func (m *ScansMockWrapper) Tags() (*[]string, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Tags in ScansMockWrapper")
 	return &[]string{"t1"}, nil, nil
 }
