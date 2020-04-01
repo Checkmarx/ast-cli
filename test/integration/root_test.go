@@ -57,7 +57,7 @@ func createASTIntegrationTestCommand() *cobra.Command {
 	viper.SetDefault(scansPath, "scans")
 	viper.SetDefault(projectsPath, "projects")
 	viper.SetDefault(uploadsPath, "uploads")
-	viper.SetDefault(resultsPath, "results")
+	viper.SetDefault(resultsPath, "scan")
 
 	schema := viper.GetString(astSchema)
 	host := viper.GetString(astHost)
