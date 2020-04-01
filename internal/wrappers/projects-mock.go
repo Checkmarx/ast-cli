@@ -3,23 +3,28 @@ package wrappers
 import (
 	"fmt"
 
-	projApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
-	projModels "github.com/checkmarxDev/scans/pkg/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
 )
 
 type ProjectsMockWrapper struct{}
 
-func (p *ProjectsMockWrapper) Create(model *projApi.Project) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
+	*projectsRESTApi.ProjectResponseModel,
+	*projectsRESTApi.ErrorModel,
+	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
-	return &projModels.ProjectResponseModel{
+	return &projectsRESTApi.ProjectResponseModel{
 		ID: model.ID,
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get() (*projModels.ResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) Get(limit, offset uint64) (
+	*projectsRESTApi.SlicedProjectsResponseModel,
+	*projectsRESTApi.ErrorModel,
+	error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
-	return &projModels.ResponseModel{
-		Projects: []projModels.ProjectResponseModel{
+	return &projectsRESTApi.SlicedProjectsResponseModel{
+		Projects: []projectsRESTApi.ProjectResponseModel{
 			{
 				ID: "MOCK",
 			},
@@ -27,21 +32,27 @@ func (p *ProjectsMockWrapper) Get() (*projModels.ResponseModel, *projModels.Erro
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) GetByID(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) GetByID(projectID string) (
+	*projectsRESTApi.ProjectResponseModel,
+	*projectsRESTApi.ErrorModel,
+	error) {
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
-	return &projModels.ProjectResponseModel{
+	return &projectsRESTApi.ProjectResponseModel{
 		ID: projectID,
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Delete(projectID string) (*projModels.ProjectResponseModel, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) Delete(projectID string) (
+	*projectsRESTApi.ErrorModel,
+	error) {
 	fmt.Println("Called Delete in ProjectsMockWrapper")
-	return &projModels.ProjectResponseModel{
-		ID: projectID,
-	}, nil, nil
+	return nil, nil
 }
 
-func (p *ProjectsMockWrapper) Tags() (*[]string, *projModels.ErrorModel, error) {
+func (p *ProjectsMockWrapper) Tags() (
+	*[]string,
+	*projectsRESTApi.ErrorModel,
+	error) {
 	fmt.Println("Called Tags in ProjectsMockWrapper")
 	return &[]string{"t1"}, nil, nil
 }

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	projApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
-	projModels "github.com/checkmarxDev/scans/pkg/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +19,52 @@ const (
 	failedGettingProj  = "Failed getting a project"
 	failedDeletingProj = "Failed deleting a project"
 )
+
+func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
+	projCmd := &cobra.Command{
+		Use:   "project",
+		Short: "Manage AST projects",
+	}
+
+	createProjCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Creates a new project",
+		RunE:  runCreateProjectCommand(projectsWrapper),
+	}
+	createProjCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
+		"The object representing the requested project, in JSON format")
+	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
+		"A file holding the requested project object in JSON format. Takes precedence over --input")
+
+	getAllProjCmd := &cobra.Command{
+		Use:   "get-all",
+		Short: "Returns all projects in the system",
+		RunE:  runGetAllProjectsCommand(projectsWrapper),
+	}
+	getAllProjCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	getAllProjCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+
+	getProjCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Returns information about a project",
+		RunE:  runGetProjectByIDCommand(projectsWrapper),
+	}
+
+	deleteProjCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a project",
+		RunE:  runDeleteProjectCommand(projectsWrapper),
+	}
+
+	tagsCmd := &cobra.Command{
+		Use:   "tags",
+		Short: "Get a list of all available tags",
+		RunE:  runGetProjectsTagsCommand(projectsWrapper),
+	}
+
+	projCmd.AddCommand(createProjCmd, getProjCmd, getAllProjCmd, deleteProjCmd, tagsCmd)
+	return projCmd
+}
 
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -51,9 +97,9 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 			// No input was given
 			return errors.Errorf("%s: no input was given\n", failedCreatingProj)
 		}
-		var projModel = projApi.Project{}
-		var projResponseModel *projModels.ProjectResponseModel
-		var errorModel *projModels.ErrorModel
+		var projModel = projectsRESTApi.Project{}
+		var projResponseModel *projectsRESTApi.ProjectResponseModel
+		var errorModel *projectsRESTApi.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
@@ -73,63 +119,27 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			fmt.Printf("Project created successfully:\n")
+			var responseModelJSON []byte
+			responseModelJSON, err = json.Marshal(projResponseModel)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize project response ", failedCreatingProj)
+			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintln(os.Stdout, "Project created successfully")
+			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
 }
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
-	projCmd := &cobra.Command{
-		Use:   "project",
-		Short: "Manage AST projects",
-	}
-
-	createProjCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates a new project",
-		RunE:  runCreateProjectCommand(projectsWrapper),
-	}
-	createProjCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested project, in JSON format")
-	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested project object in JSON format. Takes precedence over --input")
-
-	getAllProjCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all projects in the system",
-		RunE:  runGetAllProjectsCommand(projectsWrapper),
-	}
-
-	getProjCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a project",
-		RunE:  runGetProjectByIDCommand(projectsWrapper),
-	}
-
-	deleteProjCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete a project",
-		RunE:  runDeleteProjectCommand(projectsWrapper),
-	}
-
-	tagsCmd := &cobra.Command{
-		Use:   "tags",
-		Short: "Get a list of all available tags",
-		RunE:  runGetProjectsTagsCommand(projectsWrapper),
-	}
-
-	projCmd.AddCommand(createProjCmd, getProjCmd, getAllProjCmd, deleteProjCmd, tagsCmd)
-	return projCmd
-}
-
 func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allProjectsModel *projModels.ResponseModel
-		var errorModel *projModels.ErrorModel
+		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
+		var errorModel *projectsRESTApi.ErrorModel
 		var err error
+		limit, offset := getLimitAndOffset(cmd)
 
-		allProjectsModel, errorModel, err = projectsWrapper.Get()
+		allProjectsModel, errorModel, err = projectsWrapper.Get(limit, offset)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
@@ -137,11 +147,25 @@ func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			for _, proj := range allProjectsModel.Projects {
-				fmt.Println("----------------------------")
-				fmt.Printf("Project ID %s:\n", proj.ID)
+			cmdOut := cmd.OutOrStdout()
+			if cmdOut != os.Stdout {
+				var allProjectsJSON []byte
+				allProjectsJSON, err = json.Marshal(allProjectsModel)
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
+				}
+				fmt.Fprintln(cmdOut, string(allProjectsJSON))
 			}
-			fmt.Println("----------------------------")
+			for _, project := range allProjectsModel.Projects {
+				var responseModelJSON []byte
+				responseModelJSON, err = json.Marshal(project)
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
+				}
+				fmt.Fprintln(os.Stdout, "----------------------------")
+				fmt.Fprintln(os.Stdout, string(responseModelJSON))
+			}
+			fmt.Fprintln(os.Stdout, "----------------------------")
 		}
 		return nil
 	}
@@ -149,8 +173,8 @@ func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var projectResponseModel *projModels.ProjectResponseModel
-		var errorModel *projModels.ErrorModel
+		var projectResponseModel *projectsRESTApi.ProjectResponseModel
+		var errorModel *projectsRESTApi.ErrorModel
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a project ID", failedGettingProj)
@@ -164,7 +188,14 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			fmt.Printf("Project ID %s:\n", projectResponseModel.ID)
+			var responseModelJSON []byte
+			responseModelJSON, err = json.Marshal(projectResponseModel)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGetting)
+			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintf(os.Stdout, "-----Project ID %s-----\n", projectResponseModel.ID)
+			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
@@ -172,22 +203,19 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 
 func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var projectResponseModel *projModels.ProjectResponseModel
-		var errorModel *projModels.ErrorModel
+		var errorModel *projectsRESTApi.ErrorModel
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a project ID", failedDeletingProj)
 		}
 		projectID := args[0]
-		projectResponseModel, errorModel, err = projectsWrapper.Delete(projectID)
+		errorModel, err = projectsWrapper.Delete(projectID)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedDeletingProj)
 		}
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedDeletingProj, errorModel.Code, errorModel.Message)
-		} else if projectResponseModel != nil {
-			fmt.Printf("Project ID %s:\n", projectResponseModel.ID)
 		}
 		return nil
 	}
@@ -196,7 +224,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var tags *[]string
-		var errorModel *projModels.ErrorModel
+		var errorModel *projectsRESTApi.ErrorModel
 		var err error
 		tags, errorModel, err = projectsWrapper.Tags()
 		if err != nil {
@@ -206,10 +234,14 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingTags, errorModel.Code, errorModel.Message)
 		} else if tags != nil {
-			fmt.Println("Tags:")
-			for _, t := range *tags {
-				fmt.Println(t)
+			var tagsJSON []byte
+			tagsJSON, err = json.Marshal(tags)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize project tags response ", failedGettingTags)
 			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintln(os.Stdout, "-----Tags-----")
+			fmt.Fprintln(cmdOut, string(tagsJSON))
 		}
 		return nil
 	}

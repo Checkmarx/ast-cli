@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
-	"github.com/checkmarxDev/scans/pkg/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,54 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedGettingAll  = "Failed getting all"
 )
+
+func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+	scanCmd := &cobra.Command{
+		Use:   "scan",
+		Short: "Manage AST scans",
+	}
+
+	createScanCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create and run a new scan",
+		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
+	}
+	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
+		"A path to the sources file to scan")
+	createScanCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
+		"The object representing the requested scan, in JSON format")
+	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
+		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+
+	getAllScansCmd := &cobra.Command{
+		Use:   "get-all",
+		Short: "Returns all scans in the system",
+		RunE:  runGetAllScansCommand(scansWrapper),
+	}
+	getAllScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	getAllScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+
+	getScanCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Returns information about a scan",
+		RunE:  runGetScanByIDCommand(scansWrapper),
+	}
+
+	deleteScanCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Stops a scan from running",
+		RunE:  runDeleteScanCommand(scansWrapper),
+	}
+
+	tagsCmd := &cobra.Command{
+		Use:   "tags",
+		Short: "Get a list of all available tags to filter by",
+		RunE:  runGetTagsCommand(scansWrapper),
+	}
+
+	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScansCmd, deleteScanCmd, tagsCmd)
+	return scanCmd
+}
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
@@ -57,9 +106,9 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			// No input was given
 			return errors.Errorf("%s: no input was given\n", failedCreating)
 		}
-		var scanModel = scansApi.Scan{}
-		var scanResponseModel *scans.ScanResponseModel
-		var errorModel *scans.ErrorModel
+		var scanModel = scansRESTApi.Scan{}
+		var scanResponseModel *scansRESTApi.ScanResponseModel
+		var errorModel *scansRESTApi.ErrorModel
 		// Try to parse to a scan model in order to manipulate the request payload
 		err = json.Unmarshal(input, &scanModel)
 		if err != nil {
@@ -73,7 +122,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}
 			// We are in upload mode - populate fields accordingly
-			projectHandlerModel := scansApi.UploadProjectHandler{
+			projectHandlerModel := scansRESTApi.UploadProjectHandler{
 				URL: *preSignedURL,
 			}
 			var projectHandlerModelSerialized []byte
@@ -82,7 +131,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s: Failed to upload sources file: Failed to serialize project handler",
 					failedCreating)
 			}
-			scanModel.Project.Type = scansApi.UploadProject
+			scanModel.Project.Type = scansRESTApi.UploadProject
 			scanModel.Project.Handler = projectHandlerModelSerialized
 		}
 		var payload []byte
@@ -98,65 +147,27 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			fmt.Printf("Scan created successfully: Scan ID %s\n", scanResponseModel.ID)
+			var responseModelJSON []byte
+			responseModelJSON, err = json.Marshal(scanResponseModel)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize scan response ", failedCreating)
+			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintln(os.Stdout, "Scan created successfully")
+			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
 }
 
-func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
-	scanCmd := &cobra.Command{
-		Use:   "scan",
-		Short: "Manage AST scans",
-	}
-
-	createScanCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Creates and runs a new scan",
-		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
-	}
-	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
-		"A path to the sources file to scan")
-	createScanCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested scan, in JSON format")
-	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-
-	getAllScanCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all scans in the system",
-		RunE:  runGetAllScansCommand(scansWrapper),
-	}
-
-	getScanCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a scan",
-		RunE:  runGetScanByIDCommand(scansWrapper),
-	}
-
-	deleteScanCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Stops a scan from running",
-		RunE:  runDeleteScanCommand(scansWrapper),
-	}
-
-	tagsCmd := &cobra.Command{
-		Use:   "tags",
-		Short: "Get a list of all available tags to filter by",
-		RunE:  runGetTagsCommand(scansWrapper),
-	}
-
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScanCmd, deleteScanCmd, tagsCmd)
-	return scanCmd
-}
-
 func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scans.ResponseModel
-		var errorModel *scans.ErrorModel
+		var allScansModel *scansRESTApi.SlicedScansResponseModel
+		var errorModel *scansRESTApi.ErrorModel
 		var err error
+		limit, offset := getLimitAndOffset(cmd)
 
-		allScansModel, errorModel, err = scansWrapper.Get()
+		allScansModel, errorModel, err = scansWrapper.Get(limit, offset)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
@@ -164,12 +175,15 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			for _, scan := range allScansModel.Scans {
-				fmt.Println("----------------------------")
-				fmt.Printf("Scan ID %s:\n", scan.ID)
-				fmt.Printf("Status: %s\n", scan.Status)
+			cmdOut := cmd.OutOrStdout()
+			if cmdOut != os.Stdout {
+				var allScansJSON []byte
+				allScansJSON, err = json.Marshal(allScansModel)
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGettingAll)
+				}
+				fmt.Fprintln(cmdOut, string(allScansJSON))
 			}
-			fmt.Println("----------------------------")
 		}
 		return nil
 	}
@@ -177,8 +191,8 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 
 func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var scanResponseModel *scans.ScanResponseModel
-		var errorModel *scans.ErrorModel
+		var scanResponseModel *scansRESTApi.ScanResponseModel
+		var errorModel *scansRESTApi.ErrorModel
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
@@ -192,8 +206,14 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
-			fmt.Printf("Status: %s\n", scanResponseModel.Status)
+			var responseModelJSON []byte
+			responseModelJSON, err = json.Marshal(scanResponseModel)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGetting)
+			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintf(os.Stdout, "-----Scan ID %s-----\n", scanResponseModel.ID)
+			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
@@ -201,23 +221,19 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 
 func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var scanResponseModel *scans.ScanResponseModel
-		var errorModel *scans.ErrorModel
+		var errorModel *scansRESTApi.ErrorModel
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedDeleting)
 		}
 		scanID := args[0]
-		scanResponseModel, errorModel, err = scansWrapper.Delete(scanID)
+		errorModel, err = scansWrapper.Delete(scanID)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedDeleting)
 		}
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
-		} else if scanResponseModel != nil {
-			fmt.Printf("Scan ID %s:\n", scanResponseModel.ID)
-			fmt.Printf("Status: %s\n", scanResponseModel.Status)
 		}
 		return nil
 	}
@@ -226,7 +242,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var tags *[]string
-		var errorModel *scans.ErrorModel
+		var errorModel *scansRESTApi.ErrorModel
 		var err error
 		tags, errorModel, err = scansWrapper.Tags()
 		if err != nil {
@@ -236,10 +252,14 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingTags, errorModel.Code, errorModel.Message)
 		} else if tags != nil {
-			fmt.Println("Tags:")
-			for _, t := range *tags {
-				fmt.Println(t)
+			var tagsJSON []byte
+			tagsJSON, err = json.Marshal(tags)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize scan tags response ", failedGettingTags)
 			}
+			cmdOut := cmd.OutOrStdout()
+			fmt.Fprintln(os.Stdout, "-----Tags-----")
+			fmt.Fprintln(cmdOut, string(tagsJSON))
 		}
 		return nil
 	}

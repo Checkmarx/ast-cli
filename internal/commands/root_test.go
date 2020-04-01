@@ -1,3 +1,5 @@
+// +build !integration
+
 package commands
 
 import (
@@ -5,6 +7,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
@@ -18,15 +22,23 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
+func createASTTestCommand() *cobra.Command {
+	scansMockWrapper := &wrappers.ScansMockWrapper{}
+	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
+	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
+	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
+	return NewAstCLI(scansMockWrapper, uploadsMockWrapper, projectsMockWrapper, resultsMockWrapper)
+}
+
 func TestRootHelp(t *testing.T) {
-	cmd := createASTCommand()
+	cmd := createASTTestCommand()
 	args := fmt.Sprintf("--help")
 	err := executeTestCommand(cmd, args)
 	assert.NilError(t, err)
 }
 
 func TestRootVersion(t *testing.T) {
-	cmd := createASTCommand()
+	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "version")
 	assert.NilError(t, err)
 }

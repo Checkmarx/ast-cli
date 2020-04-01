@@ -3,10 +3,9 @@
     "id": "test",
     "type": "upload",
     "handler": {
-      "url": "MOSHIKO"
+      "url": ""
     },
-    "tags": {
-    }
+    "tags": []
   },
   "config": [
     {
@@ -17,6 +16,5 @@
       }
     }
   ],
-  "tags": {
-  }
+  "tags": []
 }
