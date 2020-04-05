@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
@@ -11,43 +12,63 @@ import (
 )
 
 const (
-	astSchema          = "AST_SCHEMA"
-	astHost            = "AST_HOST"
-	astPort            = "80"
-	scansPath          = "SCANS_PATH"
-	projectsPath       = "PROJECTS_PATH"
-	resultsPath        = "RESULTS_PATH"
-	uploadsPath        = "UPLOADS_PATH"
-	logLevel           = "CLI_LOG_LEVEL"
+	astSchemaEnv    = "AST_SCHEMA"
+	astHostEnv      = "AST_HOST"
+	astPortEnv      = "AST_PORT"
+	scansPathEnv    = "SCANS_PATH"
+	projectsPathEnv = "PROJECTS_PATH"
+	resultsPathEnv  = "RESULTS_PATH"
+	uploadsPathEnv  = "UPLOADS_PATH"
+
 	successfulExitCode = 0
 	failureExitCode    = 1
 )
 
 func main() {
-	viper.AutomaticEnv()
-	viper.AddConfigPath(".")
-	viper.SetConfigName("config")
-	viper.SetConfigType("env")
-	_ = viper.ReadInConfig()
+	// Key ast_schema will be bound to AST_SCHEMA
+	astSchemaKey := strings.ToLower(astSchemaEnv)
+	err := bindKeyToEnvAndDefault(astSchemaKey, astSchemaEnv, "http")
+	exitIfError(err)
+	schema := viper.GetString(astSchemaKey)
 
-	viper.SetDefault(astSchema, "http")
-	viper.SetDefault(astHost, "localhost")
-	viper.SetDefault(astPort, "80")
-	viper.SetDefault(scansPath, "scans")
-	viper.SetDefault(projectsPath, "projects")
-	viper.SetDefault(uploadsPath, "uploads")
-	viper.SetDefault(resultsPath, "results")
-	viper.SetDefault(logLevel, "DEBUG")
+	astHostKey := strings.ToLower(astHostEnv)
+	err = bindKeyToEnvAndDefault(astHostKey, astHostEnv, "localhost")
+	exitIfError(err)
+	host := viper.GetString(astHostKey)
 
-	schema := viper.GetString(astSchema)
-	host := viper.GetString(astHost)
-	port := viper.GetString(astPort)
+	astPortKey := strings.ToLower(astPortEnv)
+	err = bindKeyToEnvAndDefault(astPortKey, astPortEnv, "80")
+	exitIfError(err)
+	port := viper.GetString(astPortKey)
+
+	scansPathKey := strings.ToLower(scansPathEnv)
+	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "scans")
+	exitIfError(err)
+	scans := viper.GetString(scansPathKey)
+
+	projectsPathKey := strings.ToLower(projectsPathEnv)
+	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "projects")
+	exitIfError(err)
+	projects := viper.GetString(projectsPathKey)
+
+	resultsPathKey := strings.ToLower(resultsPathEnv)
+	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "results")
+	exitIfError(err)
+	results := viper.GetString(resultsPathKey)
+
+	uploadsPathKey := strings.ToLower(uploadsPathEnv)
+	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "uploads")
+	exitIfError(err)
+	uploads := viper.GetString(uploadsPathKey)
+
+	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
+	exitIfError(err)
+	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
+	exitIfError(err)
+	err = bindKeyToEnvAndDefault(commands.AstAuthenticationHostConfigKey, commands.AstAuthenticationHostEnv, "")
+	exitIfError(err)
+
 	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
-
-	scans := viper.GetString(scansPath)
-	uploads := viper.GetString(uploadsPath)
-	projects := viper.GetString(projectsPath)
-	results := viper.GetString(resultsPath)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
@@ -60,12 +81,23 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 
 	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
-	err := astCli.Execute()
+
+	err = astCli.Execute()
+	exitIfError(err)
+	os.Exit(successfulExitCode)
+}
+
+func exitIfError(err error) {
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(failureExitCode)
 	}
-	os.Exit(successfulExitCode)
+}
+
+func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
+	err := viper.BindEnv(key, env)
+	viper.SetDefault(key, defaultVal)
+	return err
 }
 
 // When building an executable for Windows and providing a name,
