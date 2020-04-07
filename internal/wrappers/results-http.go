@@ -14,6 +14,7 @@ const (
 type ResultsHTTPWrapper struct {
 	url         string
 	contentType string
+	credentials *Credentials
 }
 
 func NewHTTPResultsWrapper(url string) ResultsWrapper {

@@ -48,7 +48,6 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
-		RunE:  login,
 	}
 
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)
@@ -74,6 +73,7 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	return rootCmd
 }
 
+/*
 func login(cmd *cobra.Command, args []string) error {
 	accessKeyID := viper.GetString(AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(AccessKeySecretConfigKey)
@@ -85,7 +85,7 @@ func login(cmd *cobra.Command, args []string) error {
 	fmt.Println("Secret IS:", accessKeySecret)
 	return err
 }
-
+*/
 func PrintIfVerbose(verbose bool, msg string) {
 	if verbose {
 		fmt.Println(msg)

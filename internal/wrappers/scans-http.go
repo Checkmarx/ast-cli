@@ -17,6 +17,7 @@ const (
 type ScansHTTPWrapper struct {
 	url         string
 	contentType string
+	credentials *Credentials
 }
 
 func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {

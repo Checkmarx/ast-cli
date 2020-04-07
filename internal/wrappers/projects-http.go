@@ -19,6 +19,7 @@ const (
 type ProjectsHTTPWrapper struct {
 	url         string
 	contentType string
+	credentials *Credentials
 }
 
 func NewHTTPProjectsWrapper(url string) ProjectsWrapper {
