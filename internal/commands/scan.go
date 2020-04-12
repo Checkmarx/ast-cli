@@ -117,7 +117,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if sourcesFile != "" {
 			// Send a request to uploads service
 			var preSignedURL *string
-			preSignedURL, err = uploadsWrapper.Create(sourcesFile)
+			preSignedURL, err = uploadsWrapper.UploadFile(sourcesFile)
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}

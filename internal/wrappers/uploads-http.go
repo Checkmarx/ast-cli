@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
@@ -20,14 +18,15 @@ const (
 )
 
 type UploadsHTTPWrapper struct {
-	url string
+	url         string
+	credentials *Credentials
 }
 
-func (u UploadsHTTPWrapper) Create(sourcesFile string) (*string, error) {
-	var body bytes.Buffer
-
-	// Create a multipart writer
-	multiPartWriter := multipart.NewWriter(&body)
+func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
+	preSignedURL, err := u.getPresignedURLForUploading()
+	if err != nil {
+		return nil, errors.Errorf("Failed creating pre-signed URL - %s", err.Error())
+	}
 
 	file, err := os.Open(sourcesFile)
 	if err != nil {
@@ -36,40 +35,54 @@ func (u UploadsHTTPWrapper) Create(sourcesFile string) (*string, error) {
 	// Close the file later
 	defer file.Close()
 
-	// Initialize the file field
-	var fileWriter io.Writer
-	sourcesFileName := filepath.Base(sourcesFile)
-	fileWriter, err = multiPartWriter.CreateFormFile("sources", sourcesFileName)
+	// read all of the contents of our uploaded file into a
+	// byte array
+	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, errors.Errorf("Failed creating FormFile - %s", err.Error())
+		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
 	}
-
-	// Copy the actual file content to the field field's writer
-	_, err = io.Copy(fileWriter, file)
-	if err != nil {
-		return nil, errors.Errorf("Failed to copy file: %s", err.Error())
-	}
-	// We completed adding the file and the fields, let's close the multipart writer
-	// So it writes the ending boundary
-	multiPartWriter.Close()
 
 	var req *http.Request
-	req, err = http.NewRequest("POST", u.url, &body)
+	req, err = http.NewRequest("PUT", *preSignedURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
 	}
-	// We need to set the content type from the writer, it includes necessary boundary as well
-	req.Header.Set("Content-Type", multiPartWriter.FormDataContentType())
 
 	var client = &http.Client{
 		Timeout: time.Second * time.Duration(httpClientTimeout),
 	}
 	var resp *http.Response
-	fmt.Printf("Uploading file to %s\n", u.url)
+	fmt.Printf("Uploading file to %s\n", *preSignedURL)
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request failed - %s", err.Error())
 	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return preSignedURL, nil
+	default:
+		return nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+	}
+}
+
+func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
+	req, err := http.NewRequest("POST", u.url, nil)
+	if err != nil {
+		return nil, errors.Errorf("Requesting pre-signed URL failed - %s", err.Error())
+	}
+
+	var client = &http.Client{
+		Timeout: time.Second * time.Duration(httpClientTimeout),
+	}
+	var resp *http.Response
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return nil, errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
+	}
+
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 

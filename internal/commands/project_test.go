@@ -44,7 +44,7 @@ func TestRunCreateProjectCommandWithInput(t *testing.T) {
 
 func TestRunCreateProjectCommandWithInputBadFormat(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "create", "--input", "[]")
+	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "[]")
 	assert.Assert(t, err != nil)
 }
 
