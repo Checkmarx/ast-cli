@@ -1,9 +1,5 @@
 package wrappers
 
-import (
-	"math/big"
-)
-
 type ResultsWrapper interface {
 	GetByScanID(scanID string, limit, offset uint64) ([]ResultResponseModel, *ResultError, error)
 }
@@ -39,7 +35,7 @@ type ResultNode struct {
 
 type ResultResponseModel struct {
 	// Query ID
-	QueryID int32 `json:"queryID,omitempty"`
+	QueryID string `json:"queryID,omitempty"`
 	// Query name
 	QueryName string `json:"queryName,omitempty"`
 	// Query group; sperate by ':'
@@ -47,15 +43,15 @@ type ResultResponseModel struct {
 	// Severity of result
 	Severity string `json:"severity,omitempty"`
 	// Common Weakness Enumeration ID
-	CweID int32 `json:"cweID,omitempty"`
+	CweID string `json:"cweID,omitempty"`
 	// ID of the path. changes from scan to scan.
 	PathID int32 `json:"pathID,omitempty"`
 	// ID of the Similarity feature (Indicator to identify a result by its first and last nodes)
-	SimilarityID int32 `json:"similarityID,omitempty"`
+	SimilarityID string `json:"similarityID,omitempty"`
 	// Same as similarityID but can change in the future (SAST feature)
-	UniqueID int32 `json:"uniqueID,omitempty"`
+	UniqueID string `json:"uniqueID,omitempty"`
 	// Confidence Level of the exsitin of the result
-	ConfidenceLevel big.Float `json:"confidenceLevel,omitempty"`
+	ConfidenceLevel int32 `json:"confidenceLevel,omitempty"`
 
 	Nodes []ResultNode `json:"nodes,omitempty"`
 	// ID of the customer tenant
@@ -65,7 +61,7 @@ type ResultResponseModel struct {
 	// Creation date of the result
 	CreatedAt string `json:"createdAt,omitempty"`
 
-	Classification string `json:"classification,omitempty"`
+	Classification int32 `json:"classification,omitempty"`
 	// Groups arrays
 	Groups []string `json:"groups,omitempty"`
 	// ID of the customer tenant
@@ -73,7 +69,7 @@ type ResultResponseModel struct {
 	// ID created from queryMetaInfo + similarityID + files name
 	PathSystemIDBySimiAndFilesPaths string `json:"pathSystemIDBySimiAndFilesPaths,omitempty"`
 	// enum of the current state(new,old,fixed)
-	Status string `json:"status,omitempty"`
+	Status int32 `json:"status,omitempty"`
 	// TBD
 	MetadataJSON string `json:"metadataJSON,omitempty"`
 	// TBD

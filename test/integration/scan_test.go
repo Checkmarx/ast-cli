@@ -7,13 +7,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
-	"gotest.tools/assert/cmp"
 	"io/ioutil"
 	"log"
 	"strconv"
 	"testing"
 	"time"
+
+	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	"gotest.tools/assert/cmp"
 
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -33,6 +34,9 @@ func TestScansE2E(t *testing.T) {
 	scanCompleted := <-scanCompletedCh
 	assert.Assert(t, scanCompleted, "Full scan should be completed")
 
+	// Validate the results for full scan
+	scanResults := getResultsNumberForScan(t, scanID)
+	assert.Assert(t, scanResults == numOfFullScanResults, "Wrong number of full scan results")
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
 	// Wait for the inc scan to finish. See it's completed successfully
@@ -40,6 +44,10 @@ func TestScansE2E(t *testing.T) {
 	pollScanUntilStatus(t, incScanID, incScanCompletedCh, scansRESTApi.ScanCompleted, incScanWaitTime, 5)
 	incScanCompleted := <-incScanCompletedCh
 	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
+
+	// Validate the results for inc scan
+	incScanResults := getResultsNumberForScan(t, incScanID)
+	assert.Assert(t, incScanResults == numOfIncScanResults, "Wrong number of inc scan results")
 
 	getAllScans(t)
 	getScansTags(t)
@@ -151,6 +159,9 @@ func pollScanUntilStatus(t *testing.T, scanID string, ch chan<- bool, requiredSt
 		scan := getScanByID(t, scanID)
 		if string(scan.Status) == string(requiredStatus) {
 			ch <- true
+			return
+		} else if string(scan.Status) == scansRESTApi.ScanFailed || string(scan.Status) == scansRESTApi.ScanCanceled {
+			ch <- false
 			return
 		} else {
 			time.Sleep(time.Duration(sleep) * time.Second)
