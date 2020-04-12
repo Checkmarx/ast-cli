@@ -15,7 +15,6 @@ const (
 type ResultsHTTPWrapper struct {
 	url         string
 	contentType string
-	credentials *Credentials
 }
 
 func NewHTTPResultsWrapper(url string) ResultsWrapper {
@@ -25,7 +24,8 @@ func NewHTTPResultsWrapper(url string) ResultsWrapper {
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) ([]ResultResponseModel, *ResultError, error) {
+func (r *ResultsHTTPWrapper) GetByScanID(scanID string,
+	limit, offset uint64) ([]ResultResponseModel, *ResultError, error) {
 	resp, err := getRequestWithLimitAndOffset(fmt.Sprintf("%s/%s/items", r.url, scanID), limit, offset)
 	if err != nil {
 		return nil, nil, err

@@ -23,9 +23,9 @@ func TestProjectNoSub(t *testing.T) {
 
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "create", "--inputFile", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "project", "create", "--input-file", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
-	err = executeTestCommand(cmd, "-v", "project", "create", "--inputFile", "./payloads/projects.json")
+	err = executeTestCommand(cmd, "-v", "project", "create", "--input-file", "./payloads/projects.json")
 	assert.NilError(t, err)
 }
 

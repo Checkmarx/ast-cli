@@ -19,7 +19,6 @@ const (
 type ProjectsHTTPWrapper struct {
 	url         string
 	contentType string
-	credentials *Credentials
 }
 
 func NewHTTPProjectsWrapper(url string) ProjectsWrapper {
@@ -37,7 +36,16 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 		return nil, nil, err
 	}
 
-	resp, err := http.Post(p.url, p.contentType, bytes.NewBuffer(jsonBytes))
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPost, p.url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -76,7 +84,13 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := http.Get(p.url + "/" + projectID)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", p.url+"/"+projectID, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -99,7 +113,13 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	*[]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := http.Get(p.url + "/tags")
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", p.url+"/tags", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -141,6 +161,10 @@ func getRequestWithLimitAndOffset(url string, limit, offset uint64) (*http.Respo
 		q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
 	}
 	req.URL.RawQuery = q.Encode()
+	req, err = GetRequestWithCredentials(req)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := client.Do(req)
 	return resp, err
 }

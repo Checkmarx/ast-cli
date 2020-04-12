@@ -55,9 +55,9 @@ func TestScansE2E(t *testing.T) {
 func createScanSourcesFile(t *testing.T) string {
 	// Create a full scan
 	b := bytes.NewBufferString("")
-	createCommand := createASTIntegrationTestCommand()
+	createCommand := createASTIntegrationTestCommand(t)
 	createCommand.SetOut(b)
-	err := execute(createCommand, "-v", "scan", "create", "--inputFile", "scan_payload.json", "--sources", "sources.zip")
+	err := execute(createCommand, "-v", "scan", "create", "--input-file", "scan_payload.json", "--sources", "sources.zip")
 	assert.NilError(t, err, "Creating a scan should pass")
 	// Read response from buffer
 	var createdScanJSON []byte
@@ -77,7 +77,7 @@ func deleteScan(t *testing.T) {
 
 func getAllScans(t *testing.T) {
 	b := bytes.NewBufferString("")
-	getAllCommand := createASTIntegrationTestCommand()
+	getAllCommand := createASTIntegrationTestCommand(t)
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
@@ -100,7 +100,7 @@ func getAllScans(t *testing.T) {
 
 func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
-	getCommand := createASTIntegrationTestCommand()
+	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
 	err := execute(getCommand, "-v", "scan", "get", scanID)
 	assert.NilError(t, err)
@@ -117,7 +117,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 
 func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand()
+	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
 	err := execute(tagsCommand, "-v", "scan", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
@@ -135,9 +135,9 @@ func getScansTags(t *testing.T) {
 func createIncScan(t *testing.T) string {
 	// Create an incremental scan
 	incBuff := bytes.NewBufferString("")
-	createIncCommand := createASTIntegrationTestCommand()
+	createIncCommand := createASTIntegrationTestCommand(t)
 	createIncCommand.SetOut(incBuff)
-	err := execute(createIncCommand, "-v", "scan", "create", "--inputFile", "scan_inc_payload.json", "--sources", "sources_inc.zip")
+	err := execute(createIncCommand, "-v", "scan", "create", "--input-file", "scan_inc_payload.json", "--sources", "sources_inc.zip")
 	assert.NilError(t, err, "Creating an incremental scan should pass")
 	// Read response from buffer
 	var createdIncScanJSON []byte
