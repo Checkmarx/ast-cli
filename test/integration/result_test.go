@@ -13,11 +13,6 @@ import (
 	"gotest.tools/assert"
 )
 
-const (
-	numOfFullScanResults = 575
-	numOfIncScanResults  = 572
-)
-
 func getResultsNumberForScan(t *testing.T, scanID string) int {
 	b := bytes.NewBufferString("")
 	getResultsCmd := createASTIntegrationTestCommand()
