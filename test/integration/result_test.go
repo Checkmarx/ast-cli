@@ -15,7 +15,7 @@ import (
 
 func getResultsNumberForScan(t *testing.T, scanID string) int {
 	b := bytes.NewBufferString("")
-	getResultsCmd := createASTIntegrationTestCommand()
+	getResultsCmd := createASTIntegrationTestCommand(t)
 	getResultsCmd.SetOut(b)
 	var limit uint64 = 600
 	var offset uint64 = 0

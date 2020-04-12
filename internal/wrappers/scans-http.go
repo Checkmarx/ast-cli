@@ -17,7 +17,13 @@ const (
 type ScansHTTPWrapper struct {
 	url         string
 	contentType string
-	credentials *Credentials
+}
+
+func NewHTTPScansWrapper(url string) ScansWrapper {
+	return &ScansHTTPWrapper{
+		url:         url,
+		contentType: "application/json",
+	}
 }
 
 func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
@@ -25,8 +31,21 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	if err != nil {
 		return nil, nil, err
 	}
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPost, s.url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return nil, nil, err
+	}
+	req, err = GetRequestWithCredentials(req)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(jsonBytes))
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -60,10 +79,16 @@ func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansRespo
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := http.Get(s.url + "/" + scanID)
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, s.url+"/"+scanID, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+	req, err = GetRequestWithCredentials(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := client.Do(req)
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
@@ -73,12 +98,27 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
+	req, err = GetRequestWithCredentials(req)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := client.Do(req)
 	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
-	resp, err := http.Get(s.url + "/tags")
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", s.url+"/tags", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err = GetRequestWithCredentials(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,12 +143,5 @@ func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
-	}
-}
-
-func NewHTTPScansWrapper(url string) ScansWrapper {
-	return &ScansHTTPWrapper{
-		url:         url,
-		contentType: "application/json",
 	}
 }

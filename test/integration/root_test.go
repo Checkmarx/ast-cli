@@ -8,23 +8,33 @@ import (
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gotest.tools/assert"
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
 
 const (
-	astSchema    = "AST_SCHEMA"
-	astHost      = "AST_HOST"
-	astPort      = "80"
-	scansPath    = "SCANS_PATH"
-	projectsPath = "PROJECTS_PATH"
-	resultsPath  = "RESULTS_PATH"
-	uploadsPath  = "UPLOADS_PATH"
-	letterBytes  = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	astSchemaEnv       = "AST_SCHEMA"
+	astHostEnv         = "AST_HOST"
+	astPortEnv         = "AST_PORT"
+	scansPathEnv       = "SCANS_PATH"
+	projectsPathEnv    = "PROJECTS_PATH"
+	resultsPathEnv     = "RESULTS_PATH"
+	uploadsPathEnv     = "UPLOADS_PATH"
+	letterBytes        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	successfulExitCode = 0
+	failureExitCode    = 1
 )
+
+func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
+	err := viper.BindEnv(key, env)
+	viper.SetDefault(key, defaultVal)
+	return err
+}
 
 func RandomizeString(length int) string {
 	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -43,31 +53,50 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func createASTIntegrationTestCommand() *cobra.Command {
-	log.Println("Reading env variables")
-	viper.AutomaticEnv()
-	viper.AddConfigPath(".")
-	viper.SetConfigName("config")
-	viper.SetConfigType("env")
-	_ = viper.ReadInConfig()
+func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	astSchemaKey := strings.ToLower(astSchemaEnv)
+	err := bindKeyToEnvAndDefault(astSchemaKey, astSchemaEnv, "http")
+	assert.NilError(t, err)
+	schema := viper.GetString(astSchemaKey)
 
-	viper.SetDefault(astSchema, "http")
-	viper.SetDefault(astHost, "localhost")
-	viper.SetDefault(astPort, "80")
-	viper.SetDefault(scansPath, "scans")
-	viper.SetDefault(projectsPath, "projects")
-	viper.SetDefault(uploadsPath, "uploads")
-	viper.SetDefault(resultsPath, "scan")
+	astHostKey := strings.ToLower(astHostEnv)
+	err = bindKeyToEnvAndDefault(astHostKey, astHostEnv, "localhost")
+	assert.NilError(t, err)
+	host := viper.GetString(astHostKey)
 
-	schema := viper.GetString(astSchema)
-	host := viper.GetString(astHost)
-	port := viper.GetString(astPort)
+	astPortKey := strings.ToLower(astPortEnv)
+	err = bindKeyToEnvAndDefault(astPortKey, astPortEnv, "80")
+	assert.NilError(t, err)
+	port := viper.GetString(astPortKey)
+
+	scansPathKey := strings.ToLower(scansPathEnv)
+	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "scans")
+	assert.NilError(t, err)
+	scans := viper.GetString(scansPathKey)
+
+	projectsPathKey := strings.ToLower(projectsPathEnv)
+	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "projects")
+	assert.NilError(t, err)
+	projects := viper.GetString(projectsPathKey)
+
+	resultsPathKey := strings.ToLower(resultsPathEnv)
+	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "results")
+	assert.NilError(t, err)
+	results := viper.GetString(resultsPathKey)
+
+	uploadsPathKey := strings.ToLower(uploadsPathEnv)
+	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "uploads")
+	assert.NilError(t, err)
+	uploads := viper.GetString(uploadsPathKey)
+
+	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
+	assert.NilError(t, err)
+	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
+	assert.NilError(t, err)
+	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
+	assert.NilError(t, err)
+
 	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
-
-	scans := viper.GetString(scansPath)
-	uploads := viper.GetString(uploadsPath)
-	projects := viper.GetString(projectsPath)
-	results := viper.GetString(resultsPath)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
@@ -79,7 +108,8 @@ func createASTIntegrationTestCommand() *cobra.Command {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 
-	return commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	return astCli
 }
 
 func execute(cmd *cobra.Command, args ...string) error {

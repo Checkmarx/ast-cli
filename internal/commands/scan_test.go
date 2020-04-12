@@ -28,9 +28,9 @@ func TestScanNoSub(t *testing.T) {
 
 func TestRunCreateScanCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "scan", "create", "--input-file", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
-	err = executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/uploads.json", "--sources", "./payloads/sources.zip")
+	err = executeTestCommand(cmd, "-v", "scan", "create", "--input-file", "./payloads/uploads.json", "--sources", "./payloads/sources.zip")
 	assert.NilError(t, err)
 }
 

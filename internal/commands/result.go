@@ -41,6 +41,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		}
 		scanID := args[0]
 		limit, offset := getLimitAndOffset(cmd)
+
 		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(scanID, limit, offset)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingResults)

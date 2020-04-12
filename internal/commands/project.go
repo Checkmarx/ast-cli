@@ -226,6 +226,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		var tags *[]string
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
+
 		tags, errorModel, err = projectsWrapper.Tags()
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingTags)

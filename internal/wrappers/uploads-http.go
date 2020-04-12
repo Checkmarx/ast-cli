@@ -18,8 +18,7 @@ const (
 )
 
 type UploadsHTTPWrapper struct {
-	url         string
-	credentials *Credentials
+	url string
 }
 
 func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {

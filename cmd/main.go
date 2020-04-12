@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	// TODO change to URI for AST
 	astSchemaEnv    = "AST_SCHEMA"
 	astHostEnv      = "AST_HOST"
 	astPortEnv      = "AST_PORT"
@@ -65,7 +66,7 @@ func main() {
 	exitIfError(err)
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
 	exitIfError(err)
-	err = bindKeyToEnvAndDefault(commands.AstAuthenticationHostConfigKey, commands.AstAuthenticationHostEnv, "")
+	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
 	exitIfError(err)
 
 	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
@@ -103,5 +104,5 @@ func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
 // When building an executable for Windows and providing a name,
 // be sure to explicitly specify the .exe suffix when setting the executable’s name.
 // env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
-// "bin/ast.exe" -v scan create   --inputFile  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
+// "bin/ast.exe" -v scan create   --input-file  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
 // "bin/ast.exe" scan get   4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
