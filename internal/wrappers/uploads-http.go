@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
+	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
@@ -30,10 +28,6 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Failed creating pre-signed URL - %s", err.Error())
 	}
 
-	// Create a multipart writer
-	var body bytes.Buffer
-	multiPartWriter := multipart.NewWriter(&body)
-
 	file, err := os.Open(sourcesFile)
 	if err != nil {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())
@@ -41,30 +35,18 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	// Close the file later
 	defer file.Close()
 
-	// Initialize the file field
-	var fileWriter io.Writer
-	sourcesFileName := filepath.Base(sourcesFile)
-	fileWriter, err = multiPartWriter.CreateFormFile("sources", sourcesFileName)
+	// read all of the contents of our uploaded file into a
+	// byte array
+	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, errors.Errorf("Failed creating FormFile - %s", err.Error())
+		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
 	}
-
-	// Copy the actual file content to the field field's writer
-	_, err = io.Copy(fileWriter, file)
-	if err != nil {
-		return nil, errors.Errorf("Failed to copy file: %s", err.Error())
-	}
-	// We completed adding the file and the fields, let's close the multipart writer
-	// So it writes the ending boundary
-	multiPartWriter.Close()
 
 	var req *http.Request
-	req, err = http.NewRequest("PUT", *preSignedURL, &body)
+	req, err = http.NewRequest("PUT", *preSignedURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
 	}
-	// We need to set the content type from the writer, it includes necessary boundary as well
-	req.Header.Set("Content-Type", multiPartWriter.FormDataContentType())
 
 	var client = &http.Client{
 		Timeout: time.Second * time.Duration(httpClientTimeout),
