@@ -18,9 +18,7 @@ import (
 )
 
 const (
-	astSchemaEnv       = "AST_SCHEMA"
-	astHostEnv         = "AST_HOST"
-	astPortEnv         = "AST_PORT"
+	astURIEnv          = "AST_URI"
 	scansPathEnv       = "SCANS_PATH"
 	projectsPathEnv    = "PROJECTS_PATH"
 	resultsPathEnv     = "RESULTS_PATH"
@@ -54,38 +52,28 @@ func TestMain(m *testing.M) {
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
-	astSchemaKey := strings.ToLower(astSchemaEnv)
-	err := bindKeyToEnvAndDefault(astSchemaKey, astSchemaEnv, "http")
+	astURIKey := strings.ToLower(astURIEnv)
+	err := bindKeyToEnvAndDefault(astURIKey, astURIEnv, "http://localhost:80")
 	assert.NilError(t, err)
-	schema := viper.GetString(astSchemaKey)
-
-	astHostKey := strings.ToLower(astHostEnv)
-	err = bindKeyToEnvAndDefault(astHostKey, astHostEnv, "localhost")
-	assert.NilError(t, err)
-	host := viper.GetString(astHostKey)
-
-	astPortKey := strings.ToLower(astPortEnv)
-	err = bindKeyToEnvAndDefault(astPortKey, astPortEnv, "80")
-	assert.NilError(t, err)
-	port := viper.GetString(astPortKey)
+	ast := viper.GetString(astURIKey)
 
 	scansPathKey := strings.ToLower(scansPathEnv)
-	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "scans")
+	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "api/scans")
 	assert.NilError(t, err)
 	scans := viper.GetString(scansPathKey)
 
 	projectsPathKey := strings.ToLower(projectsPathEnv)
-	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "projects")
+	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "api/projects")
 	assert.NilError(t, err)
 	projects := viper.GetString(projectsPathKey)
 
 	resultsPathKey := strings.ToLower(resultsPathEnv)
-	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "results")
+	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "api/results")
 	assert.NilError(t, err)
 	results := viper.GetString(resultsPathKey)
 
 	uploadsPathKey := strings.ToLower(uploadsPathEnv)
-	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "uploads")
+	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
 	assert.NilError(t, err)
 	uploads := viper.GetString(uploadsPathKey)
 
@@ -95,8 +83,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
 	assert.NilError(t, err)
-
-	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
