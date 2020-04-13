@@ -42,7 +42,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	}
 
 	var req *http.Request
-	req, err = http.NewRequest("PUT", *preSignedURL, bytes.NewReader(fileBytes))
+	req, err = http.NewRequest(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes))
 	if err != nil {
 		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
 	}
@@ -67,17 +67,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 }
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
-	req, err := http.NewRequest("POST", u.url, nil)
-	if err != nil {
-		return nil, errors.Errorf("Requesting pre-signed URL failed - %s", err.Error())
-	}
-
-	var client = &http.Client{
-		Timeout: time.Second * time.Duration(httpClientTimeout),
-	}
-	var resp *http.Response
-
-	resp, err = client.Do(req)
+	resp, err := SendHTTPRequest(http.MethodPost, u.url, nil)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
