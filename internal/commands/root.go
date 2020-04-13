@@ -34,6 +34,8 @@ const (
 	AstAuthenticationURIEnv       = "AST_AUTHENTICATION_URI"
 	astAuthenticationURIFlag      = "auth-uri"
 	astAuthenticationURIFlagUsage = "The authentication URI for AST"
+	insecureFlag                  = "insecure"
+	insecureFlagUsage             = "Ignore TLS certificate validations"
 )
 
 var (
@@ -56,16 +58,16 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	rootCmd.PersistentFlags().String(accessKeyIDFlag, "", accessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
+	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
 	// and can be overridden by command flag --key
 	_ = viper.BindPFlag(AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
-	// Bind the viper key ast_access_key_secret to flag --secret of the root command and
-	// to the environment variable AST_ACCESS_KEY_SECRET so that it will be taken from environment variables first
-	// and can be overridden by command flag --secret
 	_ = viper.BindPFlag(AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
+	// Key here is the actual flag since it doesn't use an environment variable
+	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
 
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)

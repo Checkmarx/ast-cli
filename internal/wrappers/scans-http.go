@@ -31,26 +31,18 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	if err != nil {
 		return nil, nil, err
 	}
-	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, s.url, bytes.NewBuffer(jsonBytes))
+	resp, err := SendHTTPRequest(http.MethodPost, s.url, bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		return nil, nil, err
 	}
-	req, err = GetRequestWithCredentials(req)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
 func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := getRequestWithLimitAndOffset(s.url, limit, offset)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,46 +71,23 @@ func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansRespo
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodGet, s.url+"/"+scanID, nil)
+	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/"+scanID, nil)
 	if err != nil {
 		return nil, nil, err
 	}
-	req, err = GetRequestWithCredentials(req)
-	if err != nil {
-		return nil, nil, err
-	}
-	resp, err := client.Do(req)
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("DELETE", s.url+"/"+scanID, nil)
+	resp, err := SendHTTPRequest(http.MethodDelete, s.url+"/"+scanID, nil)
 	if err != nil {
 		return nil, err
 	}
-	req, err = GetRequestWithCredentials(req)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
 	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", s.url+"/tags", nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err = GetRequestWithCredentials(req)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	resp, err := client.Do(req)
+	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/tags", nil)
 	if err != nil {
 		return nil, nil, err
 	}

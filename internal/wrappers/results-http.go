@@ -13,23 +13,25 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	url         string
-	contentType string
+	url string
 }
 
 func NewHTTPResultsWrapper(url string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		url:         url,
-		contentType: "application/json",
+		url: url,
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(scanID string,
-	limit, offset uint64) ([]ResultResponseModel, *ResultError, error) {
-	resp, err := getRequestWithLimitAndOffset(fmt.Sprintf("%s/%s/items", r.url, scanID), limit, offset)
+func (r *ResultsHTTPWrapper) GetByScanID(
+	scanID string,
+	limit,
+	offset uint64) ([]ResultResponseModel, *ResultError, error) {
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet,
+		fmt.Sprintf("%s/%s/items", r.url, scanID), limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
