@@ -102,7 +102,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	err := execute(getCommand, "-v", "scan", "get", scanID)
+	err := execute(getCommand, "-v", "scan", "show", scanID)
 	assert.NilError(t, err)
 	// Read response from buffer
 	var getScanJSON []byte

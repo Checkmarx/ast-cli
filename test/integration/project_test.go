@@ -61,7 +61,7 @@ func getProjectByID(t *testing.T, projectID string) {
 	b := bytes.NewBufferString("")
 	getProjectCommand := createASTIntegrationTestCommand(t)
 	getProjectCommand.SetOut(b)
-	err := execute(getProjectCommand, "-v", "project", "get", projectID)
+	err := execute(getProjectCommand, "-v", "project", "show", projectID)
 	assert.NilError(t, err, "Getting a project should pass")
 	// Read response from buffer
 	var projectJSON []byte

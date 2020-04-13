@@ -90,4 +90,4 @@ func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
 // be sure to explicitly specify the .exe suffix when setting the executable’s name.
 // env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
 // "bin/ast.exe" -v scan create   --input-file  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
-// "bin/ast.exe" scan get   4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
+// "bin/ast.exe" scan list   4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
