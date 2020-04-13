@@ -57,21 +57,21 @@ func TestRunCreateScanCommandWithInputBadFormat(t *testing.T) {
 
 func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get")
+	err := executeTestCommand(cmd, "-v", "scan", "show")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed getting a scan: Please provide a scan ID")
 }
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get", "--chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "show", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get", "MOCK")
+	err := executeTestCommand(cmd, "-v", "scan", "show", "MOCK")
 	assert.NilError(t, err)
 }
 func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {

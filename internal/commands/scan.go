@@ -49,9 +49,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
 	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
-	getScanCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a scan",
+	showScanCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show information about a scan",
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
 
@@ -67,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, getScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 

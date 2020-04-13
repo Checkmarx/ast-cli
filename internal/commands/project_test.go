@@ -50,7 +50,7 @@ func TestRunCreateProjectCommandWithInputBadFormat(t *testing.T) {
 
 func TestRunGetProjectByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get")
+	err := executeTestCommand(cmd, "-v", "project", "show")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed getting a project: Please provide a project ID")
 }
@@ -64,7 +64,7 @@ func TestRunGetProjectByIdCommandFlagNonExist(t *testing.T) {
 
 func TestRunGetProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get", "MOCK")
+	err := executeTestCommand(cmd, "-v", "project", "show", "MOCK")
 	assert.NilError(t, err)
 }
 func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {

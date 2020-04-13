@@ -44,9 +44,9 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	listProjectsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
 	listProjectsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
-	getProjCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a project",
+	showProjectCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show information about a project",
 		RunE:  runGetProjectByIDCommand(projectsWrapper),
 	}
 
@@ -62,7 +62,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runGetProjectsTagsCommand(projectsWrapper),
 	}
 
-	projCmd.AddCommand(createProjCmd, getProjCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
+	projCmd.AddCommand(createProjCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
 

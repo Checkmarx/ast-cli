@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	failedToParseGetResults = "Failed to parse get results"
+	failedToParseGetResults = "Failed to parse list results"
 )
 
 type ResultsHTTPWrapper struct {
