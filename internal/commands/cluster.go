@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -10,18 +11,6 @@ func NewClusterCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Manage AST cluster",
 	}
-
-	// installClusterCmd := &cobra.Command{
-	// 	Use:   "install",
-	// 	Short: "Install a new cluster",
-	// 	RunE:  runInstallClusterCommand(projectsWrapper),
-	// }
-
-	// lsClusterCmd := &cobra.Command{
-	// 	Use:   "ls",
-	// 	Short: "Returns cluster information",
-	// 	RunE:  runLsClusterCommand(projectsWrapper),
-	// }
 
 	deployClusterCmd := &cobra.Command{
 		Use:   "deploy",
