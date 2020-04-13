@@ -89,30 +89,30 @@ func TestRunDeleteProjectByIdCommand(t *testing.T) {
 
 func TestRunGetAllProjectsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get-all")
+	err := executeTestCommand(cmd, "-v", "project", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get-all", "--chibutero")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get-all", "--limit", "40")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--limit", "40")
 	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "project", "get-all", "-l", "40")
+	err = executeTestCommand(cmd, "-v", "project", "list", "-l", "40")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "get-all", "--offset", "150")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--offset", "150")
 	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "project", "get-all", "-o", "150")
+	err = executeTestCommand(cmd, "-v", "project", "list", "-o", "150")
 	assert.NilError(t, err)
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	failedToParseGetAll = "Failed to parse get-all response"
+	failedToParseGetAll = "Failed to parse list response"
 	failedToParseTags   = "Failed to parse tags response"
 )
 
