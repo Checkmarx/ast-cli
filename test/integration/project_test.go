@@ -84,7 +84,7 @@ func getAllProjects(t *testing.T, projectID string) {
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	err := execute(getAllCommand, "-v", "project", "get-all", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
+	err := execute(getAllCommand, "-v", "project", "list", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
 	assert.NilError(t, err, "Getting all projects should pass")
 	// Read response from buffer
 	var getAllJSON []byte

@@ -83,7 +83,7 @@ func getAllScans(t *testing.T) {
 	var offset uint64 = 0
 	l := strconv.FormatUint(limit, 10)
 	o := strconv.FormatUint(offset, 10)
-	err := execute(getAllCommand, "-v", "scan", "get-all", "--limit", l, "--offset", o)
+	err := execute(getAllCommand, "-v", "scan", "list", "--limit", l, "--offset", o)
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte

@@ -96,13 +96,13 @@ func TestRunDeleteScanByIdCommand(t *testing.T) {
 
 func TestRunGetAllCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get-all")
+	err := executeTestCommand(cmd, "-v", "scan", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get-all", "--chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }

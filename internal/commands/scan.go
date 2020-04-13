@@ -41,13 +41,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 
-	getAllScansCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all scans in the system",
+	listScansCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all scans in the system",
 		RunE:  runGetAllScansCommand(scansWrapper),
 	}
-	getAllScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	getAllScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
 	getScanCmd := &cobra.Command{
 		Use:   "get",
@@ -67,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScansCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, getScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 
