@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -29,11 +28,13 @@ func NewClusterCommand() *cobra.Command {
 		Short: "Deploy AST resources",
 		RunE:  runDeployClusterCommand(),
 	}
-
 	clusterCmd.AddCommand(deployClusterCmd)
 	return clusterCmd
 }
+
 func runDeployClusterCommand() func(cmd *cobra.Command, args []string) error {
-	fmt.Println("deploy cluster")
-	return nil
+	return func(cmd *cobra.Command, args []string) error {
+		fmt.Println("deploy cluster")
+		return nil
+	}
 }
