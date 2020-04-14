@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	installScriptPath = "./test.sh"
+	installScriptPath = "./installation-scripts/cluster-install.sh"
 )
 
 func NewClusterCommand() *cobra.Command {
