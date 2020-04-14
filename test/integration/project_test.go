@@ -27,15 +27,15 @@ func TestProjectsE2E(t *testing.T) {
 
 func createProjectFromInputFile(t *testing.T) string {
 	b := bytes.NewBufferString("")
-	createProjCommand := createASTIntegrationTestCommand()
+	createProjCommand := createASTIntegrationTestCommand(t)
 	createProjCommand.SetOut(b)
-	err := execute(createProjCommand, "-v", "project", "create", "--inputFile", "project_payload.json")
+	err := execute(createProjCommand, "-v", "project", "create", "--input-file", "project_payload.json")
 	return executeCreateProject(t, err, b)
 }
 
 func createProjectFromInput(t *testing.T, projectID string, tags []string) string {
 	b := bytes.NewBufferString("")
-	createProjCommand := createASTIntegrationTestCommand()
+	createProjCommand := createASTIntegrationTestCommand(t)
 	createProjCommand.SetOut(b)
 	tagsJSON, err := json.Marshal(tags)
 	assert.NilError(t, err, "Marshaling tags should pass")
@@ -59,9 +59,9 @@ func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
 
 func getProjectByID(t *testing.T, projectID string) {
 	b := bytes.NewBufferString("")
-	getProjectCommand := createASTIntegrationTestCommand()
+	getProjectCommand := createASTIntegrationTestCommand(t)
 	getProjectCommand.SetOut(b)
-	err := execute(getProjectCommand, "-v", "project", "get", projectID)
+	err := execute(getProjectCommand, "-v", "project", "show", projectID)
 	assert.NilError(t, err, "Getting a project should pass")
 	// Read response from buffer
 	var projectJSON []byte
@@ -80,11 +80,11 @@ func getProjectByID(t *testing.T, projectID string) {
 
 func getAllProjects(t *testing.T, projectID string) {
 	b := bytes.NewBufferString("")
-	getAllCommand := createASTIntegrationTestCommand()
+	getAllCommand := createASTIntegrationTestCommand(t)
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	err := execute(getAllCommand, "-v", "project", "get-all", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
+	err := execute(getAllCommand, "-v", "project", "list", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
 	assert.NilError(t, err, "Getting all projects should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -101,14 +101,14 @@ func getAllProjects(t *testing.T, projectID string) {
 }
 
 func deleteProject(t *testing.T, projectID string) {
-	deleteProjCommand := createASTIntegrationTestCommand()
+	deleteProjCommand := createASTIntegrationTestCommand(t)
 	err := execute(deleteProjCommand, "-v", "project", "delete", projectID)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
 
 func getProjectTags(t *testing.T) {
 	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand()
+	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
 	err := execute(tagsCommand, "-v", "project", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
