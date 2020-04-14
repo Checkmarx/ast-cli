@@ -16,12 +16,12 @@ func TestResultHelp(t *testing.T) {
 
 func TestRunGetResultsByScanIDCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "result", "get")
+	err := executeTestCommand(cmd, "-v", "result", "list")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "Failed getting results: Please provide a scan ID")
+	assert.Assert(t, err.Error() == "Failed listing results: Please provide a scan ID")
 }
 func TestRunGetResultsByScanIDCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "result", "get", "MOCK")
+	err := executeTestCommand(cmd, "-v", "result", "list", "MOCK")
 	assert.NilError(t, err)
 }

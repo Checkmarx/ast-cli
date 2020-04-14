@@ -28,9 +28,9 @@ func TestScanNoSub(t *testing.T) {
 
 func TestRunCreateScanCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "scan", "create", "--input-file", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
-	err = executeTestCommand(cmd, "-v", "scan", "create", "--inputFile", "./payloads/uploads.json", "--sources", "./payloads/sources.zip")
+	err = executeTestCommand(cmd, "-v", "scan", "create", "--input-file", "./payloads/uploads.json", "--sources", "./payloads/sources.zip")
 	assert.NilError(t, err)
 }
 
@@ -57,21 +57,21 @@ func TestRunCreateScanCommandWithInputBadFormat(t *testing.T) {
 
 func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get")
+	err := executeTestCommand(cmd, "-v", "scan", "show")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed getting a scan: Please provide a scan ID")
 }
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get", "--chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "show", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get", "MOCK")
+	err := executeTestCommand(cmd, "-v", "scan", "show", "MOCK")
 	assert.NilError(t, err)
 }
 func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
@@ -96,13 +96,13 @@ func TestRunDeleteScanByIdCommand(t *testing.T) {
 
 func TestRunGetAllCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get-all")
+	err := executeTestCommand(cmd, "-v", "scan", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "get-all", "--chibutero")
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }

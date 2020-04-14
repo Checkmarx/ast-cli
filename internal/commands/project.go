@@ -36,17 +36,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested project object in JSON format. Takes precedence over --input")
 
-	getAllProjCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all projects in the system",
-		RunE:  runGetAllProjectsCommand(projectsWrapper),
+	listProjectsCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all projects in the system",
+		RunE:  runListProjectsCommand(projectsWrapper),
 	}
-	getAllProjCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	getAllProjCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listProjectsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	listProjectsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
-	getProjCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a project",
+	showProjectCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show information about a project",
 		RunE:  runGetProjectByIDCommand(projectsWrapper),
 	}
 
@@ -62,7 +62,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runGetProjectsTagsCommand(projectsWrapper),
 	}
 
-	projCmd.AddCommand(createProjCmd, getProjCmd, getAllProjCmd, deleteProjCmd, tagsCmd)
+	projCmd.AddCommand(createProjCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
 
@@ -132,7 +132,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	}
 }
 
-func runGetAllProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
+func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
@@ -226,6 +226,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		var tags *[]string
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
+
 		tags, errorModel, err = projectsWrapper.Tags()
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingTags)
