@@ -36,6 +36,8 @@ const (
 	astAuthenticationURIFlagUsage = "The authentication URI for AST"
 	insecureFlag                  = "insecure"
 	insecureFlagUsage             = "Ignore TLS certificate validations"
+	inventoryFlag                 = "inventory"
+	keyFileFlag                   = "key-file"
 )
 
 var (
