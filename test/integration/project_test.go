@@ -22,6 +22,7 @@ func TestProjectsE2E(t *testing.T) {
 	getAllProjects(t, projectFromFile)
 	getAllProjectsPretty(t, projectFromFile)
 	getProjectByID(t, projectFromFile)
+	getProjectByIDPretty(t, projectFromFile)
 	_ = createProjectFromInput(t, RandomizeString(5), []string{"A", "B", "D"})
 	getProjectTags(t)
 }
@@ -56,6 +57,12 @@ func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
 	assert.NilError(t, err, "Parsing project response JSON should pass")
 	log.Printf("Project ID %s created in test", createdProject.ID)
 	return createdProject.ID
+}
+
+func getProjectByIDPretty(t *testing.T, projectID string) {
+	getProjectCommand := createASTIntegrationTestCommand(t)
+	err := execute(getProjectCommand, "-v", "--format", "pretty", "project", "show", projectID)
+	assert.NilError(t, err, "Getting a project should pass")
 }
 
 func getProjectByID(t *testing.T, projectID string) {

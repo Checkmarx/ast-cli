@@ -149,27 +149,6 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 	}
 }
 
-func outputProjects(cmd *cobra.Command, model *projectsRESTApi.SlicedProjectsResponseModel) error {
-	if IsJSONFormat() {
-		var allProjectsJSON []byte
-		allProjectsJSON, err := json.Marshal(model)
-		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(allProjectsJSON))
-	} else if IsPrettyFormat() {
-		for _, project := range model.Projects {
-			outputSingleProject(&projectsRESTApi.ProjectResponseModel{
-				ID:      project.ID,
-				Created: project.Created,
-				Updated: project.Updated,
-				Tags:    project.Tags,
-			})
-		}
-	}
-	return nil
-}
-
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var projectResponseModel *projectsRESTApi.ProjectResponseModel
@@ -187,14 +166,10 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			var responseModelJSON []byte
-			responseModelJSON, err = json.Marshal(projectResponseModel)
+			err = outputProject(cmd, projectResponseModel)
 			if err != nil {
-				return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGetting)
+				return err
 			}
-			cmdOut := cmd.OutOrStdout()
-			fmt.Fprintf(os.Stdout, "-----Project ID %s-----\n", projectResponseModel.ID)
-			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
@@ -245,6 +220,27 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		}
 		return nil
 	}
+}
+
+func outputProjects(cmd *cobra.Command, model *projectsRESTApi.SlicedProjectsResponseModel) error {
+	if IsJSONFormat() {
+		var allProjectsJSON []byte
+		allProjectsJSON, err := json.Marshal(model)
+		if err != nil {
+			return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(allProjectsJSON))
+	} else if IsPrettyFormat() {
+		for _, project := range model.Projects {
+			outputSingleProject(&projectsRESTApi.ProjectResponseModel{
+				ID:      project.ID,
+				Created: project.Created,
+				Updated: project.Updated,
+				Tags:    project.Tags,
+			})
+		}
+	}
+	return nil
 }
 
 func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseModel) error {
