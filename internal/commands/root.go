@@ -74,8 +74,9 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	resultCmd := NewResultCommand(resultsWrapper)
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
+	appCmd := NewAppCommand()
 
-	rootCmd.AddCommand(clusterCmd, scanCmd, projectCmd, resultCmd, versionCmd)
+	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, versionCmd, clusterCmd, appCmd)
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }
