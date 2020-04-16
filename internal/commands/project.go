@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/pkg/errors"
 
@@ -214,9 +213,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize project tags response ", failedGettingTags)
 			}
-			cmdOut := cmd.OutOrStdout()
-			fmt.Fprintln(os.Stdout, "-----Tags-----")
-			fmt.Fprintln(cmdOut, string(tagsJSON))
+			fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
 		}
 		return nil
 	}
