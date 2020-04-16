@@ -20,7 +20,7 @@ func NewAppCommand() *cobra.Command {
 
 	deployAppCmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy AST into exsiting cluster",
+		Short: "Deploy AST into existing cluster",
 		RunE:  runDeployAppCommand(),
 	}
 
