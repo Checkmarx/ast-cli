@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	inventoryFlag     = "inventory"
+	keyFileFlag       = "key-file"
 	installScriptPath = "./installation-scripts/cluster-install.sh"
 )
 
