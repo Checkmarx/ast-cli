@@ -49,6 +49,15 @@ func TestRunCreateScanCommandWithInput(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunCreateScanCommandWithInputPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "--format", "pretty", "scan",
+		"create", "--input", "{\"project\":{\"id\":\"test\",\"type\":\"upload\",\"handler\":"+
+			"{\"url\":\"MOSHIKO\"},\"tags\":[]},\"config\":"+
+			"[{\"type\":\"sast\",\"value\":{\"presetName\":\"Default\"}}],\"tags\":[]}", "--sources", "./payloads/sources.zip")
+	assert.NilError(t, err)
+}
+
 func TestRunCreateScanCommandWithInputBadFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "create", "--input", "[]", "--sources", "./payloads/sources.zip")
@@ -59,7 +68,7 @@ func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "show")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "Failed getting a scan: Please provide a scan ID")
+	assert.Assert(t, err.Error() == "Failed showing a scan: Please provide a scan ID")
 }
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
