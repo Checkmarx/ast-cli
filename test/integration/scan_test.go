@@ -48,7 +48,8 @@ func TestScansE2E(t *testing.T) {
 	incScanResults := getResultsNumberForScan(t, incScanID)
 	assert.Assert(t, incScanResults < scanResults, "Wrong number of inc scan results")
 
-	getAllScans(t)
+	listScansPretty(t)
+	listScans(t)
 	getScansTags(t)
 }
 
@@ -75,7 +76,7 @@ func deleteScan(t *testing.T) {
 
 }
 
-func getAllScans(t *testing.T) {
+func listScans(t *testing.T) {
 	b := bytes.NewBufferString("")
 	getAllCommand := createASTIntegrationTestCommand(t)
 	getAllCommand.SetOut(b)
@@ -98,6 +99,16 @@ func getAllScans(t *testing.T) {
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 }
 
+func listScansPretty(t *testing.T) {
+	getAllCommand := createASTIntegrationTestCommand(t)
+	var limit uint64 = 40
+	var offset uint64 = 0
+	l := strconv.FormatUint(limit, 10)
+	o := strconv.FormatUint(offset, 10)
+	err := execute(getAllCommand, "-v", "--format", "pretty", "scan", "list", "--limit", l, "--offset", o)
+	assert.NilError(t, err, "Getting all scans should pass")
+}
+
 func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
@@ -113,6 +124,11 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	assert.NilError(t, err, "Parsing scan response JSON should pass")
 	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
 	return &getScan
+}
+func getScanByIDPretty(t *testing.T, scanID string) {
+	getCommand := createASTIntegrationTestCommand(t)
+	err := execute(getCommand, "-v", "--format", "pretty", "scan", "show", scanID)
+	assert.NilError(t, err)
 }
 
 func getScansTags(t *testing.T) {
@@ -156,6 +172,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, ch chan<- bool, requiredSt
 	for {
 		log.Printf("Polling scan %s\n", scanID)
 		scan := getScanByID(t, scanID)
+		getScanByIDPretty(t, scanID)
 		if string(scan.Status) == string(requiredStatus) {
 			ch <- true
 			return
