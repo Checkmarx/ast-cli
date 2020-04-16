@@ -42,6 +42,19 @@ func TestRunCreateProjectCommandWithInput(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
+	assert.Assert(t, err != nil)
+	assert.Assert(t, err.Error() == "Invalid format non-sense")
+}
+
+func TestRunCreateProjectCommandWithInputPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "--format", "pretty", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
+	assert.NilError(t, err)
+}
+
 func TestRunCreateProjectCommandWithInputBadFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "[]")

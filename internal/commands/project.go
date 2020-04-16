@@ -71,27 +71,24 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		var input []byte
 		var err error
 
-		var verbose bool
 		var projInputFile string
 		var projInput string
-
-		verbose, _ = cmd.Flags().GetBool(verboseFlag)
 		projInput, _ = cmd.Flags().GetString(inputFlag)
 		projInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 
-		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFlag, projInput))
-		PrintIfVerbose(verbose, fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
+		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, projInput))
+		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
 
 		if projInputFile != "" {
 			// Reading project from input file
-			PrintIfVerbose(verbose, fmt.Sprintf("Reading project input from file %s", projInputFile))
+			PrintIfVerbose(fmt.Sprintf("Reading project input from file %s", projInputFile))
 			input, err = ioutil.ReadFile(projInputFile)
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to open input file", failedCreatingProj)
 			}
 		} else if projInput != "" {
 			// Reading from standard input
-			PrintIfVerbose(verbose, "Reading project input from console")
+			PrintIfVerbose("Reading project input from console")
 			input = bytes.NewBufferString(projInput).Bytes()
 		} else {
 			// No input was given
@@ -108,7 +105,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
-		PrintIfVerbose(verbose, fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
+		PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
 
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
@@ -119,17 +116,35 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			var responseModelJSON []byte
-			responseModelJSON, err = json.Marshal(projResponseModel)
+			err = outputProject(cmd, projResponseModel)
 			if err != nil {
-				return errors.Wrapf(err, "%s: failed to serialize project response ", failedCreatingProj)
+				return err
 			}
-			cmdOut := cmd.OutOrStdout()
-			fmt.Fprintln(os.Stdout, "Project created successfully")
-			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
+}
+
+func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseModel) error {
+	if err := ValidateFormat(); err != nil {
+		return err
+	}
+
+	if IsJSONFormat() {
+		responseModelJSON, err := json.Marshal(model)
+		if err != nil {
+			return errors.Wrapf(err, "%s: failed to serialize project response ", failedCreatingProj)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(responseModelJSON))
+	} else if IsPrettyFormat() {
+		fmt.Println("-----------New project created-----------------")
+		fmt.Println("Project ID:", model.ID)
+		fmt.Println("Created at:", model.Created)
+		fmt.Println("Updated at:", model.Updated)
+		fmt.Println("Tags:", model.Tags)
+		fmt.Println("-----------------------------------------------")
+	}
+	return nil
 }
 
 func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
