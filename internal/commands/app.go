@@ -1,15 +1,17 @@
 package commands
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 const (
-	deployScriptPath = "./installation-scripts/ast-install.sh"
+	deployScriptPath   = "./installation-scripts/ast-install.sh"
+	failedDeployingApp = "Failed deploying AST app"
+	failedShowingApp   = "Failed showing AST app"
 )
 
 func NewAppCommand() *cobra.Command {
@@ -44,7 +46,7 @@ func runDeployAppCommand() func(cmd *cobra.Command, args []string) error {
 		}
 		err = cmdSh.Run()
 		if err != nil {
-			fmt.Println(err)
+			return errors.Wrapf(err, "%s:Failed to run script", failedDeployingApp)
 		}
 		return nil
 	}
@@ -59,7 +61,7 @@ func runShowAppCommand() func(cmd *cobra.Command, args []string) error {
 		command.Stderr = os.Stderr
 		err = command.Run()
 		if err != nil {
-			fmt.Println(err)
+			return errors.Wrapf(err, "%s:Failed to run kubectl command", failedShowingApp)
 		}
 		return nil
 	}

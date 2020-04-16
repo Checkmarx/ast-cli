@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,9 +10,11 @@ import (
 )
 
 const (
-	inventoryFlag     = "inventory"
-	keyFileFlag       = "key-file"
-	installScriptPath = "./installation-scripts/cluster-install.sh"
+	inventoryFlag           = "inventory"
+	keyFileFlag             = "key-file"
+	installScriptPath       = "./installation-scripts/cluster-install.sh"
+	failedInstallingCluster = "Failed installing the cluster"
+	failedShowingCluster    = "Failed showing the cluster"
 )
 
 func NewClusterCommand() *cobra.Command {
@@ -80,7 +81,7 @@ func runInstallClusterCommand() func(cmd *cobra.Command, args []string) error {
 		}
 		err = cmdSh.Run()
 		if err != nil {
-			fmt.Println(err)
+			return errors.Wrapf(err, "%s:Failed to run script", failedInstallingCluster)
 		}
 		return nil
 	}
@@ -95,7 +96,7 @@ func runShowClusterCommand() func(cmd *cobra.Command, args []string) error {
 		command.Stderr = os.Stderr
 		err = command.Run()
 		if err != nil {
-			fmt.Println(err)
+			return errors.Wrapf(err, "%s:Failed to run kubectl command", failedShowingCluster)
 		}
 		return nil
 	}
