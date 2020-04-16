@@ -43,7 +43,6 @@ func NewClusterCommand() *cobra.Command {
 
 func runInstallClusterCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		// var input []byte
 		var err error
 
 		var keyFile string
