@@ -41,17 +41,17 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 
-	getAllScansCmd := &cobra.Command{
-		Use:   "get-all",
-		Short: "Returns all scans in the system",
+	listScansCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all scans in the system",
 		RunE:  runGetAllScansCommand(scansWrapper),
 	}
-	getAllScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	getAllScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
+	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 
-	getScanCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Returns information about a scan",
+	showScanCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show information about a scan",
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
 
@@ -67,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, getScanCmd, getAllScansCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -184,6 +184,16 @@ func runGetAllScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 				}
 				fmt.Fprintln(cmdOut, string(allScansJSON))
 			}
+			for _, scan := range allScansModel.Scans {
+				var responseModelJSON []byte
+				responseModelJSON, err = json.Marshal(scan)
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
+				}
+				fmt.Fprintln(os.Stdout, "----------------------------")
+				fmt.Fprintln(os.Stdout, string(responseModelJSON))
+			}
+			fmt.Fprintln(os.Stdout, "----------------------------")
 		}
 		return nil
 	}
