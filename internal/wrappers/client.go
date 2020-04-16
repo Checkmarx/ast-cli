@@ -49,18 +49,30 @@ func SendHTTPRequest(method, url string, body io.Reader) (*http.Response, error)
 	return resp, nil
 }
 
-func SendHTTPRequestWithLimitAndOffset(method, url string, limit, offset uint64, body io.Reader) (*http.Response, error) {
+func SendHTTPRequestWithLimitAndOffset(method, url string, params map[string]string,
+	limit, offset uint64, body io.Reader) (*http.Response, error) {
+	if params == nil {
+		params = make(map[string]string)
+	}
+	if limit > 0 {
+		params[limitQueryParam] = strconv.FormatUint(limit, 10)
+	}
+	if offset > 0 {
+		params[offsetQueryParam] = strconv.FormatUint(offset, 10)
+	}
+	return SendHTTPRequestWithQueryParams(method, url, params, body)
+}
+
+func SendHTTPRequestWithQueryParams(method, url string, params map[string]string,
+	body io.Reader) (*http.Response, error) {
 	client := getClient()
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 	q := req.URL.Query()
-	if limit > 0 {
-		q.Add(limitQueryParam, strconv.FormatUint(limit, 10))
-	}
-	if offset > 0 {
-		q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
+	for k, v := range params {
+		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
 	req, err = enrichWithCredentials(req)
