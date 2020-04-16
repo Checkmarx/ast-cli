@@ -3,7 +3,7 @@ package wrappers
 import (
 	"fmt"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 type ProjectsMockWrapper struct{}

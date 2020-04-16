@@ -3,7 +3,7 @@ package wrappers
 import (
 	"fmt"
 
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 )
 
 type ScansMockWrapper struct {

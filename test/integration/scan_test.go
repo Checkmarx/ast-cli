@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"gotest.tools/assert/cmp"
 
 	"github.com/spf13/viper"
