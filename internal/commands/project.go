@@ -117,7 +117,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		} else if projResponseModel != nil {
 			err = outputProject(cmd, projResponseModel)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
 		return nil
@@ -248,7 +248,7 @@ func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseMod
 	if IsJSONFormat() {
 		responseModelJSON, err := json.Marshal(model)
 		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize project response ", failedCreatingProj)
+			return errors.Wrapf(err, "Failed to serialize project response")
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(responseModelJSON))
 	} else if IsPrettyFormat() {
@@ -263,5 +263,4 @@ func outputSingleProject(model *projectsRESTApi.ProjectResponseModel) {
 	fmt.Println("Created at:", model.Created)
 	fmt.Println("Updated at:", model.Updated)
 	fmt.Println("Tags:", model.Tags)
-	fmt.Println("----------------------------")
 }
