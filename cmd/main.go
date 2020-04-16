@@ -75,7 +75,6 @@ func main() {
 
 func exitIfError(err error) {
 	if err != nil {
-		// fmt.Println(err.Error())
 		os.Exit(failureExitCode)
 	}
 }
