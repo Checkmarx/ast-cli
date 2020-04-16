@@ -10,14 +10,20 @@ import (
 )
 
 const (
-	failedToParseGetAll = "Failed to parse get-all response"
+	failedToParseGetAll = "Failed to parse list response"
 	failedToParseTags   = "Failed to parse tags response"
 )
 
 type ScansHTTPWrapper struct {
 	url         string
 	contentType string
-	credentials *Credentials
+}
+
+func NewHTTPScansWrapper(url string) ScansWrapper {
+	return &ScansHTTPWrapper{
+		url:         url,
+		contentType: "application/json",
+	}
 }
 
 func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
@@ -25,13 +31,18 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	if err != nil {
 		return nil, nil, err
 	}
-
-	resp, err := http.Post(s.url, s.contentType, bytes.NewBuffer(jsonBytes))
+	resp, err := SendHTTPRequest(http.MethodPost, s.url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return nil, nil, err
+	}
+	if err != nil {
+		return nil, nil, err
+	}
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
 func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := getRequestWithLimitAndOffset(s.url, limit, offset)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,7 +71,7 @@ func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansRespo
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := http.Get(s.url + "/" + scanID)
+	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/"+scanID, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -68,17 +79,15 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("DELETE", s.url+"/"+scanID, nil)
+	resp, err := SendHTTPRequest(http.MethodDelete, s.url+"/"+scanID, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := client.Do(req)
 	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
-	resp, err := http.Get(s.url + "/tags")
+	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/tags", nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,12 +112,5 @@ func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
-	}
-}
-
-func NewHTTPScansWrapper(url string) ScansWrapper {
-	return &ScansHTTPWrapper{
-		url:         url,
-		contentType: "application/json",
 	}
 }

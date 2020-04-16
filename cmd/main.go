@@ -12,9 +12,7 @@ import (
 )
 
 const (
-	astSchemaEnv    = "AST_SCHEMA"
-	astHostEnv      = "AST_HOST"
-	astPortEnv      = "AST_PORT"
+	astURIEnv       = "AST_URI"
 	scansPathEnv    = "SCANS_PATH"
 	projectsPathEnv = "PROJECTS_PATH"
 	resultsPathEnv  = "RESULTS_PATH"
@@ -25,39 +23,29 @@ const (
 )
 
 func main() {
-	// Key ast_schema will be bound to AST_SCHEMA
-	astSchemaKey := strings.ToLower(astSchemaEnv)
-	err := bindKeyToEnvAndDefault(astSchemaKey, astSchemaEnv, "http")
+	// Key ast_uri will be bound to AST_URI
+	astURIKey := strings.ToLower(astURIEnv)
+	err := bindKeyToEnvAndDefault(astURIKey, astURIEnv, "http://localhost:80")
 	exitIfError(err)
-	schema := viper.GetString(astSchemaKey)
-
-	astHostKey := strings.ToLower(astHostEnv)
-	err = bindKeyToEnvAndDefault(astHostKey, astHostEnv, "localhost")
-	exitIfError(err)
-	host := viper.GetString(astHostKey)
-
-	astPortKey := strings.ToLower(astPortEnv)
-	err = bindKeyToEnvAndDefault(astPortKey, astPortEnv, "80")
-	exitIfError(err)
-	port := viper.GetString(astPortKey)
+	ast := viper.GetString(astURIKey)
 
 	scansPathKey := strings.ToLower(scansPathEnv)
-	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "scans")
+	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "api/scans")
 	exitIfError(err)
 	scans := viper.GetString(scansPathKey)
 
 	projectsPathKey := strings.ToLower(projectsPathEnv)
-	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "projects")
+	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "api/projects")
 	exitIfError(err)
 	projects := viper.GetString(projectsPathKey)
 
 	resultsPathKey := strings.ToLower(resultsPathEnv)
-	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "results")
+	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "api/results")
 	exitIfError(err)
 	results := viper.GetString(resultsPathKey)
 
 	uploadsPathKey := strings.ToLower(uploadsPathEnv)
-	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "uploads")
+	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
 	exitIfError(err)
 	uploads := viper.GetString(uploadsPathKey)
 
@@ -65,10 +53,8 @@ func main() {
 	exitIfError(err)
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
 	exitIfError(err)
-	err = bindKeyToEnvAndDefault(commands.AstAuthenticationHostConfigKey, commands.AstAuthenticationHostEnv, "")
+	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
 	exitIfError(err)
-
-	ast := fmt.Sprintf("%s://%s:%s/api", schema, host, port)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
@@ -103,5 +89,5 @@ func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
 // When building an executable for Windows and providing a name,
 // be sure to explicitly specify the .exe suffix when setting the executable’s name.
 // env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
-// "bin/ast.exe" -v scan create   --inputFile  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
-// "bin/ast.exe" scan get  --id 4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
+// "bin/ast.exe" -v scan create   --input-file  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
+// "bin/ast.exe" scan list   4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb
