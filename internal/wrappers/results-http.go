@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -26,8 +25,9 @@ func (r *ResultsHTTPWrapper) GetByScanID(
 	scanID string,
 	limit,
 	offset uint64) ([]ResultResponseModel, *ResultError, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet,
-		fmt.Sprintf("%s/%s/items", r.url, scanID), limit, offset, nil)
+	params := make(map[string]string)
+	params["scanid"] = scanID
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, r.url, params, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
