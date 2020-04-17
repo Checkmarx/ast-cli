@@ -44,7 +44,8 @@ var (
 func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
-	resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
+	resultsWrapper wrappers.ResultsWrapper,
+	queueWrapper wrappers.QueueWrapper) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
@@ -67,8 +68,9 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
 	versionCmd := NewVersionCommand()
+	queueCmd := NewQueueCommand(queueWrapper)
 
-	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, versionCmd)
+	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, queueCmd, versionCmd)
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }

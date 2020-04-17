@@ -12,14 +12,14 @@ import (
 )
 
 const (
-	astSchemaEnv    = "AST_SCHEMA"
-	astHostEnv      = "AST_HOST"
-	astPortEnv      = "AST_PORT"
-	scansPathEnv    = "SCANS_PATH"
-	projectsPathEnv = "PROJECTS_PATH"
-	resultsPathEnv  = "RESULTS_PATH"
-	uploadsPathEnv  = "UPLOADS_PATH"
-
+	astSchemaEnv       = "AST_SCHEMA"
+	astHostEnv         = "AST_HOST"
+	astPortEnv         = "AST_PORT"
+	scansPathEnv       = "SCANS_PATH"
+	projectsPathEnv    = "PROJECTS_PATH"
+	resultsPathEnv     = "RESULTS_PATH"
+	uploadsPathEnv     = "UPLOADS_PATH"
+	queuePathEnv       = "QUEUE_PATH"
 	successfulExitCode = 0
 	failureExitCode    = 1
 )
@@ -61,6 +61,11 @@ func main() {
 	exitIfError(err)
 	uploads := viper.GetString(uploadsPathKey)
 
+	queuePathKey := strings.ToLower(queuePathEnv)
+	err = bindKeyToEnvAndDefault(queuePathKey, queuePathEnv, "sast-rm")
+	exitIfError(err)
+	queue := viper.GetString(queuePathKey)
+
 	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
 	exitIfError(err)
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
@@ -74,13 +79,15 @@ func main() {
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	queueURL := fmt.Sprintf("%s/%s", ast, queue)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
+	queueWrapper := wrappers.NewQueueHTTPWrapper(queueURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, queueWrapper)
 
 	err = astCli.Execute()
 	exitIfError(err)
