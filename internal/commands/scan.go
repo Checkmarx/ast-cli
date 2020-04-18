@@ -258,6 +258,7 @@ func outputScans(cmd *cobra.Command, allScansModel *scansRESTApi.SlicedScansResp
 		for _, scan := range allScansModel.Scans {
 			prettySingleScan(&scansRESTApi.ScanResponseModel{
 				ID:        scan.ID,
+				Status:    scan.Status,
 				CreatedAt: scan.CreatedAt,
 				UpdatedAt: scan.UpdatedAt,
 				Tags:      scan.Tags,
@@ -286,6 +287,7 @@ func outputScan(cmd *cobra.Command, model *scansRESTApi.ScanResponseModel) error
 func prettySingleScan(model *scansRESTApi.ScanResponseModel) {
 	fmt.Println("----------------------------")
 	fmt.Println("Scan ID:", model.ID)
+	fmt.Println("Status:", model.Status)
 	fmt.Println("Created at:", model.CreatedAt)
 	fmt.Println("Updated at:", model.UpdatedAt)
 	fmt.Println("Tags:", model.Tags)

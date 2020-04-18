@@ -50,14 +50,47 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		} else if resultResponseModel != nil {
-			var responseModelJSON []byte
-			responseModelJSON, err = json.Marshal(resultResponseModel)
+			err = outputResults(cmd, resultResponseModel)
 			if err != nil {
-				return errors.Wrapf(err, "%s: failed to serialize results response ", failedListingResults)
+				return err
 			}
-			cmdOut := cmd.OutOrStdout()
-			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
 	}
+}
+
+func outputResults(cmd *cobra.Command, model []wrappers.ResultResponseModel) error {
+	if IsJSONFormat() {
+		var resultsJSON []byte
+		resultsJSON, err := json.Marshal(model)
+		if err != nil {
+			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+	} else if IsPrettyFormat() {
+		for i := 0; i < len(model); i++ {
+			outputSingleResult(&wrappers.ResultResponseModel{
+				QueryID:      model[i].QueryID,
+				QueryName:    model[i].QueryName,
+				Severity:     model[i].Severity,
+				CweID:        model[i].CweID,
+				SimilarityID: model[i].SimilarityID,
+				ID:           model[i].ID,
+				FirstScanID:  model[i].FirstScanID,
+				FirstFoundAt: model[i].FirstFoundAt,
+				FoundAt:      model[i].FoundAt,
+				Status:       model[i].Status,
+			})
+		}
+	}
+	return nil
+}
+
+func outputSingleResult(model *wrappers.ResultResponseModel) {
+	fmt.Println("----------------------------")
+	fmt.Println("Query ID:", model.QueryID)
+	fmt.Println("Query Name:", model.QueryName)
+	fmt.Println("Severity:", model.Severity)
+	fmt.Println("CWE ID:", model.CweID)
+	fmt.Println("Similarity ID:", model.SimilarityID)
 }
