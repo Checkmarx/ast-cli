@@ -18,14 +18,16 @@ import (
 )
 
 const (
-	astURIEnv          = "AST_URI"
-	scansPathEnv       = "SCANS_PATH"
-	projectsPathEnv    = "PROJECTS_PATH"
-	resultsPathEnv     = "RESULTS_PATH"
-	uploadsPathEnv     = "UPLOADS_PATH"
-	letterBytes        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	successfulExitCode = 0
-	failureExitCode    = 1
+	astURIEnv              = "AST_URI"
+	scansPathEnv           = "SCANS_PATH"
+	projectsPathEnv        = "PROJECTS_PATH"
+	resultsPathEnv         = "RESULTS_PATH"
+	uploadsPathEnv         = "UPLOADS_PATH"
+	letterBytes            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
+	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
+	successfulExitCode     = 0
+	failureExitCode        = 1
 )
 
 func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
@@ -82,6 +84,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
 	assert.NilError(t, err)
 	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
+	assert.NilError(t, err)
+
+	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
+	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	assert.NilError(t, err)
+
+	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
+	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
 	assert.NilError(t, err)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)

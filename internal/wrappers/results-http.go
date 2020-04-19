@@ -21,12 +21,9 @@ func NewHTTPResultsWrapper(url string) ResultsWrapper {
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(
-	scanID string,
-	limit,
-	offset uint64) ([]ResultResponseModel, *ResultError, error) {
+func (r *ResultsHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ResultError, error) {
 	params := make(map[string]string)
-	params["scanid"] = scanID
+	params["scan-id"] = scanID
 	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, r.url, params, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
@@ -44,12 +41,12 @@ func (r *ResultsHTTPWrapper) GetByScanID(
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := []ResultResponseModel{}
+		model := ResultsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-		return model, nil, nil
+		return &model, nil, nil
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
