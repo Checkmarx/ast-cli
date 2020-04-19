@@ -16,6 +16,7 @@ const (
 	scansPathEnv           = "SCANS_PATH"
 	projectsPathEnv        = "PROJECTS_PATH"
 	resultsPathEnv         = "RESULTS_PATH"
+	bflPathEnv             = "BFL_PATH"
 	uploadsPathEnv         = "UPLOADS_PATH"
 	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
 	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
@@ -46,6 +47,11 @@ func main() {
 	exitIfError(err)
 	results := viper.GetString(resultsPathKey)
 
+	bflPathKey := strings.ToLower(bflPathEnv)
+	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	exitIfError(err)
+	bfl := viper.GetString(bflPathKey)
+
 	uploadsPathKey := strings.ToLower(uploadsPathEnv)
 	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
 	exitIfError(err)
@@ -70,13 +76,15 @@ func main() {
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper)
 
 	err = astCli.Execute()
 	exitIfError(err)

@@ -43,7 +43,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(limit, offset uint64) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, make(map[string]string), limit, offset, nil)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, nil, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}

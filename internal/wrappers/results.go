@@ -1,10 +1,10 @@
 package wrappers
 
 type ResultsWrapper interface {
-	GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ResultError, error)
+	GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ErrorModel, error)
 }
 
-type ResultError struct {
+type ErrorModel struct {
 	Code    int32       `json:"code,omitempty"`
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`

@@ -42,7 +42,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 }
 
 func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, make(map[string]string), limit, offset, nil)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, nil, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
