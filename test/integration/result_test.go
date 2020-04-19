@@ -27,8 +27,8 @@ func getResultsNumberForScan(t *testing.T, scanID string) int {
 	var getAllJSON []byte
 	getAllJSON, err = ioutil.ReadAll(b)
 	assert.NilError(t, err, "Reading all results response JSON should pass")
-	allResults := []wrappers.ResultResponseModel{}
-	err = json.Unmarshal(getAllJSON, &allResults)
+	resultsReponseModel := wrappers.ResultsResponseModel{}
+	err = json.Unmarshal(getAllJSON, &resultsReponseModel)
 	assert.NilError(t, err, "Parsing all results response JSON should pass")
-	return len(allResults)
+	return resultsReponseModel.TotalCount
 }

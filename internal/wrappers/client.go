@@ -7,10 +7,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
+)
+
+const (
+	expiryGraceSeconds = 10
 )
 
 type ClientCredentialsInfo struct {
@@ -92,15 +98,35 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 	accessKeyID := viper.GetString("ast_access_key_id")
 	accessKeySecret := viper.GetString("ast_access_key_secret")
 
-	credentialsInfo, err := getClientCredentials(authHost, accessKeyID, accessKeySecret)
+	accessToken, err := getClientCredentials(authHost, accessKeyID, accessKeySecret)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Add("Authorization", credentialsInfo.AccessToken)
+	request.Header.Add("Authorization", *accessToken)
 	return request, nil
 }
 
-func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*ClientCredentialsInfo, error) {
+func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*string, error) {
+	// Try to load access token from file, if not expired
+	credentialsFilePath := viper.GetString("credentials_file_path")
+	tokenExpirySeconds := viper.GetInt("token_expiry_seconds")
+
+	if info, err := os.Stat(credentialsFilePath); err == nil {
+		// Credentials file exists. Check for access token validity
+		modifiedAt := info.ModTime()
+		expired := time.Since(modifiedAt) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+		if !expired {
+			b, err := ioutil.ReadFile(credentialsFilePath)
+			if err != nil {
+				return nil, err
+			}
+			accessToken := string(b)
+			return &accessToken, nil
+		}
+	}
+
+	// Here the file can either not exist, exist and failed opening or the token has expired.
+	// We don't care. Create a new token.
 	payload := strings.NewReader(getCredentialsPayload(accessKeyID, accessKeySecret))
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	if err != nil {
@@ -113,12 +139,18 @@ func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*
 	}
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
-	info := ClientCredentialsInfo{}
-	err = json.Unmarshal(body, &info)
+	credentialsInfo := ClientCredentialsInfo{}
+	err = json.Unmarshal(body, &credentialsInfo)
 	if err != nil {
 		return nil, err
 	}
-	return &info, nil
+
+	// We have a new access token. Save it to file
+	accessToken := credentialsInfo.AccessToken
+	accessTokenData := []byte(accessToken)
+	_ = ioutil.WriteFile(credentialsFilePath, accessTokenData, 0644)
+
+	return &accessToken, nil
 }
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {

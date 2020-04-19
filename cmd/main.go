@@ -12,11 +12,13 @@ import (
 )
 
 const (
-	astURIEnv       = "AST_URI"
-	scansPathEnv    = "SCANS_PATH"
-	projectsPathEnv = "PROJECTS_PATH"
-	resultsPathEnv  = "RESULTS_PATH"
-	uploadsPathEnv  = "UPLOADS_PATH"
+	astURIEnv              = "AST_URI"
+	scansPathEnv           = "SCANS_PATH"
+	projectsPathEnv        = "PROJECTS_PATH"
+	resultsPathEnv         = "RESULTS_PATH"
+	uploadsPathEnv         = "UPLOADS_PATH"
+	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
+	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
 
 	successfulExitCode = 0
 	failureExitCode    = 1
@@ -54,6 +56,14 @@ func main() {
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
 	exitIfError(err)
 	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
+	exitIfError(err)
+
+	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
+	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	exitIfError(err)
+
+	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
+	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)

@@ -1,7 +1,7 @@
 package wrappers
 
 type ResultsWrapper interface {
-	GetByScanID(scanID string, limit, offset uint64) ([]ResultResponseModel, *ResultError, error)
+	GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ResultError, error)
 }
 
 type ResultError struct {
@@ -46,4 +46,9 @@ type ResultNode struct {
 	NodeID       int32  `json:"-"`
 	DomType      string `json:"domType,omitempty"`
 	NodeSystemID string `json:"nodeSystemID,omitempty"`
+}
+
+type ResultsResponseModel struct {
+	Results    []ResultResponseModel
+	TotalCount int
 }

@@ -33,7 +33,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var resultResponseModel []wrappers.ResultResponseModel
+		var resultResponseModel *wrappers.ResultsResponseModel
 		var errorModel *wrappers.ResultError
 		var err error
 		if len(args) == 0 {
@@ -59,7 +59,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func outputResults(cmd *cobra.Command, model []wrappers.ResultResponseModel) error {
+func outputResults(cmd *cobra.Command, model *wrappers.ResultsResponseModel) error {
 	if IsJSONFormat() {
 		var resultsJSON []byte
 		resultsJSON, err := json.Marshal(model)
@@ -68,18 +68,18 @@ func outputResults(cmd *cobra.Command, model []wrappers.ResultResponseModel) err
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
 	} else if IsPrettyFormat() {
-		for i := 0; i < len(model); i++ {
+		for i := 0; i < len(model.Results); i++ {
 			outputSingleResult(&wrappers.ResultResponseModel{
-				QueryID:      model[i].QueryID,
-				QueryName:    model[i].QueryName,
-				Severity:     model[i].Severity,
-				CweID:        model[i].CweID,
-				SimilarityID: model[i].SimilarityID,
-				ID:           model[i].ID,
-				FirstScanID:  model[i].FirstScanID,
-				FirstFoundAt: model[i].FirstFoundAt,
-				FoundAt:      model[i].FoundAt,
-				Status:       model[i].Status,
+				QueryID:      model.Results[i].QueryID,
+				QueryName:    model.Results[i].QueryName,
+				Severity:     model.Results[i].Severity,
+				CweID:        model.Results[i].CweID,
+				SimilarityID: model.Results[i].SimilarityID,
+				ID:           model.Results[i].ID,
+				FirstScanID:  model.Results[i].FirstScanID,
+				FirstFoundAt: model.Results[i].FirstFoundAt,
+				FoundAt:      model.Results[i].FoundAt,
+				Status:       model.Results[i].Status,
 			})
 		}
 	}
