@@ -261,6 +261,7 @@ func outputScans(cmd *cobra.Command, allScansModel *scansRESTApi.SlicedScansResp
 				Status:    scan.Status,
 				CreatedAt: scan.CreatedAt,
 				UpdatedAt: scan.UpdatedAt,
+				ProjectID: scan.ProjectID,
 				Tags:      scan.Tags,
 			})
 		}
@@ -285,10 +286,11 @@ func outputScan(cmd *cobra.Command, model *scansRESTApi.ScanResponseModel) error
 	return nil
 }
 func prettySingleScan(model *scansRESTApi.ScanResponseModel) {
-	fmt.Println("----------------------------")
 	fmt.Println("Scan ID:", model.ID)
+	fmt.Println("Project ID:", model.ProjectID)
 	fmt.Println("Status:", model.Status)
 	fmt.Println("Created at:", model.CreatedAt)
 	fmt.Println("Updated at:", model.UpdatedAt)
 	fmt.Println("Tags:", model.Tags)
+	fmt.Println()
 }

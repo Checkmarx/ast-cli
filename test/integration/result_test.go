@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"strconv"
 	"testing"
 
@@ -21,6 +22,7 @@ func getResultsNumberForScan(t *testing.T, scanID string) int {
 	var offset uint64 = 0
 	l := strconv.FormatUint(limit, 10)
 	o := strconv.FormatUint(offset, 10)
+	log.Println("LIMIT IS ", l)
 	err := execute(getResultsCmd, "-v", "result", "list", scanID, "--limit", l, "--offset", o)
 	assert.NilError(t, err, "Getting all results should pass")
 	// Read response from buffer

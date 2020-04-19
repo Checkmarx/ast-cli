@@ -23,6 +23,7 @@ const (
 	projectsPathEnv        = "PROJECTS_PATH"
 	resultsPathEnv         = "RESULTS_PATH"
 	uploadsPathEnv         = "UPLOADS_PATH"
+	bflPathEnv             = "BFL_PATH"
 	letterBytes            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
 	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
@@ -79,6 +80,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	uploads := viper.GetString(uploadsPathKey)
 
+	bflPathKey := strings.ToLower(bflPathEnv)
+	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	assert.NilError(t, err)
+	bfl := viper.GetString(bflPathKey)
+
 	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
@@ -98,13 +104,15 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper)
 	return astCli
 }
 

@@ -17,6 +17,7 @@
 bin/*
 *.env
 
+credentials.ast
 
 
 # Local .terraform directories

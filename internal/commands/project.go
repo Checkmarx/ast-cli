@@ -259,7 +259,6 @@ func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseMod
 }
 
 func outputSingleProject(model *projectsRESTApi.ProjectResponseModel) {
-	fmt.Println("----------------------------")
 	fmt.Println("Project ID:", model.ID)
 	fmt.Println("Created at:", model.CreatedAt)
 	fmt.Println("Updated at:", model.UpdatedAt)

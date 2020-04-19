@@ -40,6 +40,7 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for full scan
 	scanResults := getResultsNumberForScan(t, scanID)
+	log.Println("SCAN RESULTS IS ", scanResults)
 	assert.Assert(t, scanResults == scanResultsNum, "Wrong number of scan results")
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
@@ -51,6 +52,7 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for inc scan
 	incScanResults := getResultsNumberForScan(t, incScanID)
+	log.Println("INC SCAN RESULTS IS ", incScanResults)
 	assert.Assert(t, incScanResults == incScanResultsNum, "Wrong number of inc scan results")
 
 	listScansPretty(t)
