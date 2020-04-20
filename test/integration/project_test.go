@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"gotest.tools/assert"
 )
 
@@ -109,8 +109,6 @@ func getAllProjects(t *testing.T, projectID string) {
 	allProjects := projectsRESTApi.SlicedProjectsResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allProjects)
 	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Assert(t, uint64(allProjects.Limit) == limit, fmt.Sprintf("limit should be %d", limit))
-	assert.Assert(t, uint64(allProjects.Offset) == offset, fmt.Sprintf("offset should be %d", offset))
 	assert.Assert(t, allProjects.TotalCount == 1, "Total should be 1")
 	assert.Assert(t, len(allProjects.Projects) == 1, "Total should be 1")
 	assert.Assert(t, allProjects.Projects[0].ID == projectID)

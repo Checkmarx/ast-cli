@@ -9,7 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"github.com/spf13/cobra"
 )
 
@@ -230,10 +231,10 @@ func outputProjects(cmd *cobra.Command, model *projectsRESTApi.SlicedProjectsRes
 	} else if IsPrettyFormat() {
 		for _, project := range model.Projects {
 			outputSingleProject(&projectsRESTApi.ProjectResponseModel{
-				ID:      project.ID,
-				Created: project.Created,
-				Updated: project.Updated,
-				Tags:    project.Tags,
+				ID:        project.ID,
+				CreatedAt: project.CreatedAt,
+				UpdatedAt: project.UpdatedAt,
+				Tags:      project.Tags,
 			})
 		}
 	}
@@ -258,9 +259,8 @@ func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseMod
 }
 
 func outputSingleProject(model *projectsRESTApi.ProjectResponseModel) {
-	fmt.Println("----------------------------")
 	fmt.Println("Project ID:", model.ID)
-	fmt.Println("Created at:", model.Created)
-	fmt.Println("Updated at:", model.Updated)
+	fmt.Println("Created at:", model.CreatedAt)
+	fmt.Println("Updated at:", model.UpdatedAt)
 	fmt.Println("Tags:", model.Tags)
 }

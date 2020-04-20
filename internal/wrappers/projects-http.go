@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 const (
@@ -43,7 +43,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(limit, offset uint64) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, limit, offset, nil)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, nil, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}

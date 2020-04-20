@@ -109,6 +109,12 @@ func TestRunGetAllCommand(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunGetAllCommandPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty")
+	assert.NilError(t, err)
+}
+
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")

@@ -12,11 +12,14 @@ import (
 )
 
 const (
-	astURIEnv       = "AST_URI"
-	scansPathEnv    = "SCANS_PATH"
-	projectsPathEnv = "PROJECTS_PATH"
-	resultsPathEnv  = "RESULTS_PATH"
-	uploadsPathEnv  = "UPLOADS_PATH"
+	astURIEnv              = "AST_URI"
+	scansPathEnv           = "SCANS_PATH"
+	projectsPathEnv        = "PROJECTS_PATH"
+	resultsPathEnv         = "RESULTS_PATH"
+	bflPathEnv             = "BFL_PATH"
+	uploadsPathEnv         = "UPLOADS_PATH"
+	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
+	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
 
 	successfulExitCode = 0
 	failureExitCode    = 1
@@ -44,6 +47,11 @@ func main() {
 	exitIfError(err)
 	results := viper.GetString(resultsPathKey)
 
+	bflPathKey := strings.ToLower(bflPathEnv)
+	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	exitIfError(err)
+	bfl := viper.GetString(bflPathKey)
+
 	uploadsPathKey := strings.ToLower(uploadsPathEnv)
 	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
 	exitIfError(err)
@@ -56,17 +64,27 @@ func main() {
 	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
 	exitIfError(err)
 
+	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
+	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	exitIfError(err)
+
+	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
+	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
+	exitIfError(err)
+
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper)
 
 	err = astCli.Execute()
 	exitIfError(err)
@@ -84,9 +102,3 @@ func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
 	viper.SetDefault(key, defaultVal)
 	return err
 }
-
-// When building an executable for Windows and providing a name,
-// be sure to explicitly specify the .exe suffix when setting the executable’s name.
-// env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd
-// "bin/ast.exe" -v scan create   --input-file  ./internal/commands/payloads/uploads.json --sources ./internal/commands/payloads/sources.zip
-// "bin/ast.exe" scan list   4d9a9189-ddcc-4aa0-ba2f-9d6d7f92eceb

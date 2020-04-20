@@ -6,18 +6,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
 	"testing"
 	"time"
 
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"gotest.tools/assert/cmp"
 
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
+)
+
+const (
+	scanResultsNum    = 575
+	incScanResultsNum = 572
 )
 
 func TestScansE2E(t *testing.T) {
@@ -36,6 +40,8 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for full scan
 	scanResults := getResultsNumberForScan(t, scanID)
+	log.Println("SCAN RESULTS IS ", scanResults)
+	assert.Assert(t, scanResults == scanResultsNum, "Wrong number of scan results")
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
 	// Wait for the inc scan to finish. See it's completed successfully
@@ -46,7 +52,8 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for inc scan
 	incScanResults := getResultsNumberForScan(t, incScanID)
-	assert.Assert(t, incScanResults < scanResults, "Wrong number of inc scan results")
+	log.Println("INC SCAN RESULTS IS ", incScanResults)
+	assert.Assert(t, incScanResults == incScanResultsNum, "Wrong number of inc scan results")
 
 	listScansPretty(t)
 	listScans(t)
@@ -93,10 +100,6 @@ func listScans(t *testing.T) {
 	allScans := scansRESTApi.SlicedScansResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
-	assert.Assert(t, uint64(allScans.Limit) == limit, fmt.Sprintf("limit should be %d", limit))
-	assert.Assert(t, uint64(allScans.Offset) == offset, fmt.Sprintf("offset should be %d", offset))
-	assert.Assert(t, allScans.TotalCount == 2, "Total should be 2")
-	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 }
 
 func listScansPretty(t *testing.T) {
