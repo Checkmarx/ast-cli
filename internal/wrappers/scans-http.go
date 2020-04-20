@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"github.com/pkg/errors"
 )
 
@@ -42,7 +42,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 }
 
 func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, limit, offset, nil)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, nil, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}

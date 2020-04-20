@@ -8,23 +8,23 @@ import (
 )
 
 const (
-	failedToParseGetResults = "Failed to parse list results"
+	failedToParseBFL = "Failed to parse BFL"
 )
 
-type ResultsHTTPWrapper struct {
+type BFLHTTPWrapper struct {
 	url string
 }
 
-func NewHTTPResultsWrapper(url string) ResultsWrapper {
-	return &ResultsHTTPWrapper{
+func NewHTTPBFLWrapper(url string) BFLWrapper {
+	return &BFLHTTPWrapper{
 		url: url,
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ErrorModel, error) {
+func (b *BFLHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*BFLResponseModel, *ErrorModel, error) {
 	params := make(map[string]string)
 	params["scan-id"] = scanID
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, r.url, params, limit, offset, nil)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, b.url, params, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -37,14 +37,14 @@ func (r *ResultsHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*
 		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, nil, errors.Wrapf(err, failedToParseBFL)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := ResultsResponseModel{}
+		model := BFLResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, nil, errors.Wrapf(err, failedToParseBFL)
 		}
 		return &model, nil, nil
 

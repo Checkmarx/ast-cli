@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 
 	"github.com/spf13/cobra"
 )
@@ -257,10 +257,12 @@ func outputScans(cmd *cobra.Command, allScansModel *scansRESTApi.SlicedScansResp
 	} else if IsPrettyFormat() {
 		for _, scan := range allScansModel.Scans {
 			prettySingleScan(&scansRESTApi.ScanResponseModel{
-				ID:      scan.ID,
-				Created: scan.Created,
-				Updated: scan.Updated,
-				Tags:    scan.Tags,
+				ID:        scan.ID,
+				Status:    scan.Status,
+				CreatedAt: scan.CreatedAt,
+				UpdatedAt: scan.UpdatedAt,
+				ProjectID: scan.ProjectID,
+				Tags:      scan.Tags,
 			})
 		}
 	}
@@ -284,9 +286,11 @@ func outputScan(cmd *cobra.Command, model *scansRESTApi.ScanResponseModel) error
 	return nil
 }
 func prettySingleScan(model *scansRESTApi.ScanResponseModel) {
-	fmt.Println("----------------------------")
 	fmt.Println("Scan ID:", model.ID)
-	fmt.Println("Created at:", model.Created)
-	fmt.Println("Updated at:", model.Updated)
+	fmt.Println("Project ID:", model.ProjectID)
+	fmt.Println("Status:", model.Status)
+	fmt.Println("Created at:", model.CreatedAt)
+	fmt.Println("Updated at:", model.UpdatedAt)
 	fmt.Println("Tags:", model.Tags)
+	fmt.Println()
 }

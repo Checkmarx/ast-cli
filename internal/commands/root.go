@@ -51,10 +51,12 @@ var (
 )
 
 // Return an AST CLI root command to execute
-func NewAstCLI(scansWrapper wrappers.ScansWrapper,
+func NewAstCLI(
+	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
-	resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
+	resultsWrapper wrappers.ResultsWrapper,
+	bflWrapper wrappers.BFLWrapper) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
@@ -81,11 +83,12 @@ func NewAstCLI(scansWrapper wrappers.ScansWrapper,
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
+	bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
 
-	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, versionCmd, clusterCmd, appCmd)
+	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, versionCmd, clusterCmd, appCmd, bflCmd)
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }

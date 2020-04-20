@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	projectsApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
-	scansApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	projectsApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"github.com/pkg/errors"
 )
 

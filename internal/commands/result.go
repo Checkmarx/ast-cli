@@ -33,8 +33,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var resultResponseModel []wrappers.ResultResponseModel
-		var errorModel *wrappers.ResultError
+		var resultResponseModel *wrappers.ResultsResponseModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
@@ -50,14 +50,64 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		} else if resultResponseModel != nil {
-			var responseModelJSON []byte
-			responseModelJSON, err = json.Marshal(resultResponseModel)
-			if err != nil {
-				return errors.Wrapf(err, "%s: failed to serialize results response ", failedListingResults)
+			if IsJSONFormat() {
+				var resultsJSON []byte
+				resultsJSON, err = json.Marshal(resultResponseModel)
+				if err != nil {
+					return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+			} else if IsPrettyFormat() {
+				err = outputResultsPretty(resultResponseModel.Results)
+				if err != nil {
+					return err
+				}
 			}
-			cmdOut := cmd.OutOrStdout()
-			fmt.Fprintln(cmdOut, string(responseModelJSON))
 		}
 		return nil
+	}
+}
+
+func outputResultsPretty(results []wrappers.ResultResponseModel) error {
+	fmt.Println("************ Results ************")
+	for i := 0; i < len(results); i++ {
+		outputSingleResult(&wrappers.ResultResponseModel{
+			QueryID:                         results[i].QueryID,
+			QueryName:                       results[i].QueryName,
+			Severity:                        results[i].Severity,
+			CweID:                           results[i].CweID,
+			SimilarityID:                    results[i].SimilarityID,
+			UniqueID:                        results[i].UniqueID,
+			FirstScanID:                     results[i].FirstScanID,
+			FirstFoundAt:                    results[i].FirstFoundAt,
+			FoundAt:                         results[i].FoundAt,
+			Status:                          results[i].Status,
+			PathSystemID:                    results[i].PathSystemID,
+			PathSystemIDBySimiAndFilesPaths: results[i].PathSystemIDBySimiAndFilesPaths,
+			Nodes:                           results[i].Nodes,
+		})
+		fmt.Println()
+	}
+	return nil
+}
+
+func outputSingleResult(model *wrappers.ResultResponseModel) {
+	fmt.Println("Result Unique ID:", model.UniqueID)
+	fmt.Println("Query ID:", model.QueryID)
+	fmt.Println("Query Name:", model.QueryName)
+	fmt.Println("Severity:", model.Severity)
+	fmt.Println("CWE ID:", model.CweID)
+	fmt.Println("Similarity ID:", model.SimilarityID)
+	fmt.Println("First Scan ID:", model.FirstScanID)
+	fmt.Println("Found At:", model.FoundAt)
+	fmt.Println("First Found At:", model.FirstFoundAt)
+	fmt.Println("Status:", model.Status)
+	fmt.Println("Path System ID:", model.PathSystemID)
+	fmt.Println("Path System ID (by similarity and file paths):", model.PathSystemIDBySimiAndFilesPaths)
+	fmt.Println()
+	fmt.Println("************ Nodes ************")
+	for i := 0; i < len(model.Nodes); i++ {
+		outputSingleResultNodePretty(model.Nodes[i])
+		fmt.Println()
 	}
 }
