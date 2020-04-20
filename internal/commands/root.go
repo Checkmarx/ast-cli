@@ -42,6 +42,7 @@ const (
 	formatFlagUsage               = "Format for the output. One of [json, pretty]. Default is JSON"
 	formatJSON                    = "json"
 	formatPretty                  = "pretty"
+	filterFlag                    = "filter"
 )
 
 var (

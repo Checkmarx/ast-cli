@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
@@ -61,10 +62,10 @@ func SendHTTPRequestWithLimitAndOffset(method, url string, params map[string]str
 		params = make(map[string]string)
 	}
 	if limit > 0 {
-		params[limitQueryParam] = strconv.FormatUint(limit, 10)
+		params[commonParams.LimitQueryParam] = strconv.FormatUint(limit, 10)
 	}
 	if offset > 0 {
-		params[offsetQueryParam] = strconv.FormatUint(offset, 10)
+		params[commonParams.OffsetQueryParam] = strconv.FormatUint(offset, 10)
 	}
 	return SendHTTPRequestWithQueryParams(method, url, params, body)
 }
