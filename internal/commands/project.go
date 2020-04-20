@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
+
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/pkg/errors"
 
@@ -18,6 +21,15 @@ const (
 	failedCreatingProj = "Failed creating a project"
 	failedGettingProj  = "Failed getting a project"
 	failedDeletingProj = "Failed deleting a project"
+)
+
+var (
+	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.IDQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.TagsQueryParam}, ","))
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
@@ -41,7 +53,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "List all projects in the system",
 		RunE:  runListProjectsCommand(projectsWrapper),
 	}
-	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
+	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
