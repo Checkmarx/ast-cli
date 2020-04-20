@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/pkg/errors"
 )
 
@@ -22,10 +21,8 @@ func NewHTTPResultsWrapper(url string) ResultsWrapper {
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ErrorModel, error) {
-	params := make(map[string]string)
-	params[commonParams.ScanIDQueryParam] = scanID
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, r.url, params, limit, offset, nil)
+func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*ResultsResponseModel, *ErrorModel, error) {
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.url, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}

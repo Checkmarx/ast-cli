@@ -41,8 +41,8 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get(limit, offset uint64) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, s.url, nil, limit, offset, nil)
+func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.url, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -89,9 +90,11 @@ func listScans(t *testing.T) {
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	l := strconv.FormatUint(limit, 10)
-	o := strconv.FormatUint(offset, 10)
-	err := execute(getAllCommand, "-v", "scan", "list", "--limit", l, "--offset", o)
+
+	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
+	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
+
+	err := execute(getAllCommand, "-v", "scan", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -106,9 +109,9 @@ func listScansPretty(t *testing.T) {
 	getAllCommand := createASTIntegrationTestCommand(t)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	l := strconv.FormatUint(limit, 10)
-	o := strconv.FormatUint(offset, 10)
-	err := execute(getAllCommand, "-v", "--format", "pretty", "scan", "list", "--limit", l, "--offset", o)
+	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
+	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
+	err := execute(getAllCommand, "-v", "--format", "pretty", "scan", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all scans should pass")
 }
 

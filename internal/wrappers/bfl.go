@@ -1,7 +1,7 @@
 package wrappers
 
 type BFLWrapper interface {
-	GetByScanID(scanID string, limit, offset uint64) (*BFLResponseModel, *ErrorModel, error)
+	GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error)
 }
 
 type BFLResponseModel struct {

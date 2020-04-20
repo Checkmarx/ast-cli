@@ -69,7 +69,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte
 		var err error
-		var allFilters map[string]string
 
 		var projInputFile string
 		var projInput string
@@ -78,11 +77,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, projInput))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
-
-		_, err = getFilters(cmd)
-		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingProj)
-		}
 
 		if projInputFile != "" {
 			// Reading project from input file
@@ -134,10 +128,13 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 	return func(cmd *cobra.Command, args []string) error {
 		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
-		var err error
-		getFilters(cmd)
 
-		allProjectsModel, errorModel, err = projectsWrapper.Get(0, 0)
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
+
+		allProjectsModel, errorModel, err = projectsWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

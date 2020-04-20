@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/pkg/errors"
 )
 
@@ -22,10 +21,8 @@ func NewHTTPBFLWrapper(url string) BFLWrapper {
 	}
 }
 
-func (b *BFLHTTPWrapper) GetByScanID(scanID string, limit, offset uint64) (*BFLResponseModel, *ErrorModel, error) {
-	params := make(map[string]string)
-	params[commonParams.ScanIDQueryParam] = scanID
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, b.url, params, limit, offset, nil)
+func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error) {
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.url, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}

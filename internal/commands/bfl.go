@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,19 +30,19 @@ func runGetBFLByScanIDCommand(bflWrapper wrappers.BFLWrapper) func(cmd *cobra.Co
 	return func(cmd *cobra.Command, args []string) error {
 		var bflResponseModel *wrappers.BFLResponseModel
 		var errorModel *wrappers.ErrorModel
-		var err error
-		var allFilters map[string]string
+
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedGettingBfl)
 		}
+
 		scanID := args[0]
-		allFilters, err = getFilters(cmd)
+		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBfl)
 		}
-		fmt.Println("FILTERS===============>", allFilters)
+		params[commonParams.ScanIDQueryParam] = scanID
 
-		bflResponseModel, errorModel, err = bflWrapper.GetByScanID(scanID, 0, 0)
+		bflResponseModel, errorModel, err = bflWrapper.GetByScanID(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBfl)
 		}
