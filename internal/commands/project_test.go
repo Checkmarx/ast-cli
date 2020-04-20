@@ -121,6 +121,14 @@ func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunGetAllProjectsCommandWithLimitPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "--limit", "40")
+	assert.NilError(t, err)
+	err = executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "-l", "40")
+	assert.NilError(t, err)
+}
+
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--offset", "150")

@@ -28,6 +28,6 @@ func TestRunGetResultsByScanIDCommand(t *testing.T) {
 
 func TestRunGetResultsByScanIDCommandPretty(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "--format", "pretty", "result", "list", "MOCK")
+	err := executeTestCommand(cmd, "-v", "result", "--format", "pretty", "list", "MOCK")
 	assert.NilError(t, err)
 }
