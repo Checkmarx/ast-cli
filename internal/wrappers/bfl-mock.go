@@ -2,7 +2,7 @@ package wrappers
 
 type BFLMockWrapper struct{}
 
-func (b *BFLMockWrapper) GetByScanID(scanID string, limit, offset uint64) (*BFLResponseModel, *ErrorModel, error) {
+func (b *BFLMockWrapper) GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error) {
 	const mock = "MOCK"
 	return &BFLResponseModel{
 		ID: mock,

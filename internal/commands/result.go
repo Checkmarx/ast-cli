@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -38,10 +40,15 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
-		scanID := args[0]
-		getFilters(cmd)
 
-		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(scanID, 0, 0)
+		scanID := args[0]
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingResults)
+		}
+		params[commonParams.ScanIDQueryParam] = scanID
+
+		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}

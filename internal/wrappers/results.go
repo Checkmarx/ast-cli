@@ -1,7 +1,7 @@
 package wrappers
 
 type ResultsWrapper interface {
-	GetByScanID(scanID string, limit, offset uint64) (*ResultsResponseModel, *ErrorModel, error)
+	GetByScanID(params map[string]string) (*ResultsResponseModel, *ErrorModel, error)
 }
 
 type ErrorModel struct {

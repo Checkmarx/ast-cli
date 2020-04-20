@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	params "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 
@@ -26,7 +26,7 @@ const (
 
 var (
 	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans, Available filters:%s",
-		strings.Join([]string{params.ScanIDsQueryParam}, ","))
+		strings.Join([]string{commonParams.ScanIDsQueryParam}, ","))
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
@@ -163,10 +163,12 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 	return func(cmd *cobra.Command, args []string) error {
 		var allScansModel *scansRESTApi.SlicedScansResponseModel
 		var errorModel *scansRESTApi.ErrorModel
-		var err error
-		getFilters(cmd)
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
 
-		allScansModel, errorModel, err = scansWrapper.Get(0, 0)
+		allScansModel, errorModel, err = scansWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
