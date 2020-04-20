@@ -10,11 +10,6 @@ import (
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
-const (
-	limitQueryParam  = "limit"
-	offsetQueryParam = "offset"
-)
-
 type ProjectsHTTPWrapper struct {
 	url string
 }

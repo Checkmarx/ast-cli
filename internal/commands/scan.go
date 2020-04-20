@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	params "github.com/checkmarxDev/ast-cli/internal/params"
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 
@@ -20,6 +22,11 @@ const (
 	failedGettingTags = "Failed getting tags"
 	failedDeleting    = "Failed deleting a scan"
 	failedGettingAll  = "Failed listing"
+)
+
+var (
+	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans, Available filters:%s",
+		strings.Join([]string{params.ScanIDsQueryParam}, ","))
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
@@ -47,6 +54,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
 	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
 		Use:   "show",
