@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
@@ -13,6 +14,21 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
+)
+
+var (
+	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.ScanIDQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.SortQueryParam,
+			commonParams.IncludeNodesQueryParam,
+			commonParams.NodeIDsQueryParam,
+			commonParams.QueryQueryParam,
+			commonParams.GroupQueryParam,
+			commonParams.StatusQueryParam,
+			commonParams.SeverityQueryParam}, ","))
 )
 
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
@@ -26,7 +42,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
-	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
+	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
 
 	resultCmd.AddCommand(listResultsCmd)
 	return resultCmd
