@@ -24,8 +24,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
-	listResultsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listResultsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	resultCmd.AddCommand(listResultsCmd)
 	return resultCmd
@@ -40,9 +39,9 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
 		scanID := args[0]
-		limit, offset := getLimitAndOffset(cmd)
+		getFilters(cmd)
 
-		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(scanID, limit, offset)
+		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(scanID, 0, 0)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}

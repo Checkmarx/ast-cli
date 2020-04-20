@@ -52,8 +52,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "List all scans in the system",
 		RunE:  runListScansCommand(scansWrapper),
 	}
-	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
 	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
@@ -166,9 +164,9 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		var allScansModel *scansRESTApi.SlicedScansResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
-		limit, offset := getLimitAndOffset(cmd)
+		getFilters(cmd)
 
-		allScansModel, errorModel, err = scansWrapper.Get(limit, offset)
+		allScansModel, errorModel, err = scansWrapper.Get(0, 0)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

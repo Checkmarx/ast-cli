@@ -115,25 +115,19 @@ func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
 
 func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "list", "--limit", "40")
-	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "project", "list", "-l", "40")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllProjectsCommandWithLimitPretty(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "--limit", "40")
-	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "-l", "40")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "--filter", "--limit=40")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "list", "--offset", "150")
-	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "project", "list", "-o", "150")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--filter", "offset=150")
 	assert.NilError(t, err)
 }
 
