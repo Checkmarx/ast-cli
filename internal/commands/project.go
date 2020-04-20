@@ -41,8 +41,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "List all projects in the system",
 		RunE:  runListProjectsCommand(projectsWrapper),
 	}
-	listProjectsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listProjectsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
@@ -70,6 +69,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte
 		var err error
+		var allFilters map[string]string
 
 		var projInputFile string
 		var projInput string
@@ -78,6 +78,11 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, projInput))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
+
+		_, err = getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedCreatingProj)
+		}
 
 		if projInputFile != "" {
 			// Reading project from input file
@@ -130,9 +135,9 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
-		limit, offset := getLimitAndOffset(cmd)
+		getFilters(cmd)
 
-		allProjectsModel, errorModel, err = projectsWrapper.Get(limit, offset)
+		allProjectsModel, errorModel, err = projectsWrapper.Get(0, 0)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

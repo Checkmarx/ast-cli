@@ -19,9 +19,7 @@ func NewBFLCommand(bflWrapper wrappers.BFLWrapper) *cobra.Command {
 		Short: "Retrieve Best Fix Location for a given scan ID",
 		RunE:  runGetBFLByScanIDCommand(bflWrapper),
 	}
-
-	bflCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	bflCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	bflCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	return bflCmd
 }
@@ -31,13 +29,18 @@ func runGetBFLByScanIDCommand(bflWrapper wrappers.BFLWrapper) func(cmd *cobra.Co
 		var bflResponseModel *wrappers.BFLResponseModel
 		var errorModel *wrappers.ErrorModel
 		var err error
+		var allFilters map[string]string
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedGettingBfl)
 		}
 		scanID := args[0]
-		limit, offset := getLimitAndOffset(cmd)
+		allFilters, err = getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingBfl)
+		}
+		fmt.Println("FILTERS===============>", allFilters)
 
-		bflResponseModel, errorModel, err = bflWrapper.GetByScanID(scanID, limit, offset)
+		bflResponseModel, errorModel, err = bflWrapper.GetByScanID(scanID, 0, 0)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBfl)
 		}

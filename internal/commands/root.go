@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	keyValueSizeBecauseOfLinter   = 2
 	verboseFlag                   = "verbose"
 	verboseFlagSh                 = "v"
 	verboseUsage                  = "Verbose mode"
@@ -21,12 +22,6 @@ const (
 	inputFlagSh                   = "i"
 	inputFileFlag                 = "input-file"
 	inputFileFlagSh               = "f"
-	limitFlag                     = "limit"
-	limitFlagSh                   = "l"
-	limitUsage                    = "The number of items to return"
-	offsetFlag                    = "offset"
-	offsetFlagSh                  = "o"
-	offsetUsage                   = "The number of items to skip before collecting the results"
 	AccessKeyIDEnv                = "AST_ACCESS_KEY_ID"
 	accessKeyIDFlag               = "key"
 	accessKeyIDFlagUsage          = "The access key ID for AST"
@@ -100,12 +95,20 @@ func PrintIfVerbose(msg string) {
 	}
 }
 
-func getLimitAndOffset(cmd *cobra.Command) (limit, offset uint64) {
-	limit, _ = cmd.Flags().GetUint64(limitFlag)
-	offset, _ = cmd.Flags().GetUint64(offsetFlag)
-	PrintIfVerbose(fmt.Sprintf("%s: %d", limitFlag, limit))
-	PrintIfVerbose(fmt.Sprintf("%s: %d", offsetFlag, offset))
-	return
+func getFilters(cmd *cobra.Command) (map[string]string, error) {
+	filters, err := cmd.Flags().GetStringSlice(filterFlag)
+	if err != nil {
+		return nil, err
+	}
+	allFilters := make(map[string]string)
+	for _, filter := range filters {
+		filterKeyVal := strings.Split(filter, "=")
+		if len(filterKeyVal) != keyValueSizeBecauseOfLinter {
+			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
+		}
+		allFilters[filterKeyVal[0]] = filterKeyVal[1]
+	}
+	return allFilters, nil
 }
 
 func IsJSONFormat() bool {

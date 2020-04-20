@@ -31,3 +31,17 @@ func TestRunGetBFLByScanIDCommandPretty(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "bfl", "--format", "pretty", "list", "MOCK")
 	assert.NilError(t, err)
 }
+func TestRunGetBFLByScanIDCommandFilters(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "bfl", "--format", "pretty", "list", "MOCK", "--filter")
+	assert.Assert(t, err != nil)
+	cmd = createASTTestCommand()
+	err = executeTestCommand(cmd, "-v", "bfl", "--format", "pretty", "list", "MOCK", "--filter", "a=b=c")
+	assert.Assert(t, err != nil)
+	cmd = createASTTestCommand()
+	err = executeTestCommand(cmd, "-v", "bfl", "--format", "pretty", "list", "MOCK", "--filter", "a")
+	assert.Assert(t, err != nil)
+	cmd = createASTTestCommand()
+	err = executeTestCommand(cmd, "-v", "bfl", "--format", "pretty", "list", "MOCK", "--filter", "a=b")
+	assert.NilError(t, err)
+}
