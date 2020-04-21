@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	keyValueSizeBecauseOfLinter   = 2
+	keyValuePairSize              = 2
 	verboseFlag                   = "verbose"
 	verboseFlagSh                 = "v"
 	verboseUsage                  = "Verbose mode"
@@ -103,7 +103,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
-		if len(filterKeyVal) != keyValueSizeBecauseOfLinter {
+		if len(filterKeyVal) != keyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
 		allFilters[filterKeyVal[0]] = filterKeyVal[1]
