@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
+
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/pkg/errors"
 
@@ -18,6 +21,15 @@ const (
 	failedCreatingProj = "Failed creating a project"
 	failedGettingProj  = "Failed getting a project"
 	failedDeletingProj = "Failed deleting a project"
+)
+
+var (
+	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.IDQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.TagsQueryParam}, ","))
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
@@ -41,8 +53,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "List all projects in the system",
 		RunE:  runListProjectsCommand(projectsWrapper),
 	}
-	listProjectsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listProjectsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
@@ -129,10 +140,13 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 	return func(cmd *cobra.Command, args []string) error {
 		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
-		var err error
-		limit, offset := getLimitAndOffset(cmd)
 
-		allProjectsModel, errorModel, err = projectsWrapper.Get(limit, offset)
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
+
+		allProjectsModel, errorModel, err = projectsWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

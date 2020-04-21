@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 
@@ -20,6 +22,19 @@ const (
 	failedGettingTags = "Failed getting tags"
 	failedDeleting    = "Failed deleting a scan"
 	failedGettingAll  = "Failed listing"
+)
+
+var (
+	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.ScanIDsQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.FromDateQueryParam,
+			commonParams.ToDateQueryParam,
+			commonParams.StatusQueryParam,
+			commonParams.TagsQueryParam,
+			commonParams.ProjectIDQueryParam}, ","))
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
@@ -45,8 +60,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "List all scans in the system",
 		RunE:  runListScansCommand(scansWrapper),
 	}
-	listScansCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listScansCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
 		Use:   "show",
@@ -157,10 +171,12 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 	return func(cmd *cobra.Command, args []string) error {
 		var allScansModel *scansRESTApi.SlicedScansResponseModel
 		var errorModel *scansRESTApi.ErrorModel
-		var err error
-		limit, offset := getLimitAndOffset(cmd)
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
 
-		allScansModel, errorModel, err = scansWrapper.Get(limit, offset)
+		allScansModel, errorModel, err = scansWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

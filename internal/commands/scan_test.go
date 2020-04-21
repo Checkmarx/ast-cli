@@ -115,6 +115,17 @@ func TestRunGetAllCommandPretty(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunGetAllCommandLimitPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty", "--filter", "limit=40")
+	assert.NilError(t, err)
+}
+func TestRunGetAllCommandOffsetPretty(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty", "--filter", "offset=0")
+	assert.NilError(t, err)
+}
+
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")
