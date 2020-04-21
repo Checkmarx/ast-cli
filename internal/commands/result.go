@@ -3,6 +3,9 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -11,6 +14,21 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
+)
+
+var (
+	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.ScanIDQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.SortQueryParam,
+			commonParams.IncludeNodesQueryParam,
+			commonParams.NodeIDsQueryParam,
+			commonParams.QueryQueryParam,
+			commonParams.GroupQueryParam,
+			commonParams.StatusQueryParam,
+			commonParams.SeverityQueryParam}, ","))
 )
 
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
@@ -24,8 +42,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
-	listResultsCmd.PersistentFlags().Uint64P(limitFlag, limitFlagSh, 0, limitUsage)
-	listResultsCmd.PersistentFlags().Uint64P(offsetFlag, offsetFlagSh, 0, offsetUsage)
+	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
 
 	resultCmd.AddCommand(listResultsCmd)
 	return resultCmd
@@ -39,10 +56,15 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
-		scanID := args[0]
-		limit, offset := getLimitAndOffset(cmd)
 
-		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(scanID, limit, offset)
+		scanID := args[0]
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingResults)
+		}
+		params[commonParams.ScanIDQueryParam] = scanID
+
+		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}

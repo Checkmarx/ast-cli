@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -53,20 +52,6 @@ func SendHTTPRequest(method, url string, body io.Reader) (*http.Response, error)
 		return nil, err
 	}
 	return resp, nil
-}
-
-func SendHTTPRequestWithLimitAndOffset(method, url string, params map[string]string,
-	limit, offset uint64, body io.Reader) (*http.Response, error) {
-	if params == nil {
-		params = make(map[string]string)
-	}
-	if limit > 0 {
-		params[limitQueryParam] = strconv.FormatUint(limit, 10)
-	}
-	if offset > 0 {
-		params[offsetQueryParam] = strconv.FormatUint(offset, 10)
-	}
-	return SendHTTPRequestWithQueryParams(method, url, params, body)
 }
 
 func SendHTTPRequestWithQueryParams(method, url string, params map[string]string,
