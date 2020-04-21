@@ -12,7 +12,7 @@ const (
 	FromDateQueryParam     = "from-date"
 	ToDateQueryParam       = "to-date"
 	SeverityQueryParam     = "severity"
-	GroupQueryParam        = "to-date"
+	GroupQueryParam        = "group"
 	QueryQueryParam        = "query"
 	NodeIDsQueryParam      = "node-ids"
 	IncludeNodesQueryParam = "include-nodes"
