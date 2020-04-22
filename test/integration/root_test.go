@@ -4,31 +4,24 @@ package integration
 
 import (
 	"fmt"
+	"log"
+	"math/rand"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/checkmarxDev/ast-cli/internal/commands"
+	params "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
-	"log"
-	"math/rand"
-	"os"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
-	astURIEnv              = "AST_URI"
-	scansPathEnv           = "SCANS_PATH"
-	projectsPathEnv        = "PROJECTS_PATH"
-	resultsPathEnv         = "RESULTS_PATH"
-	uploadsPathEnv         = "UPLOADS_PATH"
-	bflPathEnv             = "BFL_PATH"
-	letterBytes            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
-	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
-	successfulExitCode     = 0
-	failureExitCode        = 1
+	letterBytes        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	successfulExitCode = 0
+	failureExitCode    = 1
 )
 
 func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
@@ -55,49 +48,43 @@ func TestMain(m *testing.M) {
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
-	astURIKey := strings.ToLower(astURIEnv)
-	err := bindKeyToEnvAndDefault(astURIKey, astURIEnv, "http://localhost:80")
+	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
 	assert.NilError(t, err)
-	ast := viper.GetString(astURIKey)
+	ast := viper.GetString(params.AstURIKey)
 
-	scansPathKey := strings.ToLower(scansPathEnv)
-	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "api/scans")
+	err = bindKeyToEnvAndDefault(params.ScansPathKey, params.ScansPathEnv, "api/scans")
 	assert.NilError(t, err)
-	scans := viper.GetString(scansPathKey)
+	scans := viper.GetString(params.ScansPathKey)
 
-	projectsPathKey := strings.ToLower(projectsPathEnv)
-	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "api/projects")
+	err = bindKeyToEnvAndDefault(params.ProjectsPathKey, params.ProjectsPathEnv, "api/projects")
 	assert.NilError(t, err)
-	projects := viper.GetString(projectsPathKey)
+	projects := viper.GetString(params.ProjectsPathKey)
 
-	resultsPathKey := strings.ToLower(resultsPathEnv)
-	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "api/results")
+	err = bindKeyToEnvAndDefault(params.ResultsPathKey, params.ResultsPathEnv, "api/results")
 	assert.NilError(t, err)
-	results := viper.GetString(resultsPathKey)
+	results := viper.GetString(params.ResultsPathKey)
 
-	uploadsPathKey := strings.ToLower(uploadsPathEnv)
-	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
+	err = bindKeyToEnvAndDefault(params.BflPathKey, params.BflPathEnv, "api/bfl")
 	assert.NilError(t, err)
-	uploads := viper.GetString(uploadsPathKey)
+	bfl := viper.GetString(params.BflPathKey)
 
-	bflPathKey := strings.ToLower(bflPathEnv)
-	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	err = bindKeyToEnvAndDefault(params.UploadsPathKey, params.UploadsPathEnv, "api/uploads")
 	assert.NilError(t, err)
-	bfl := viper.GetString(bflPathKey)
+	uploads := viper.GetString(params.UploadsPathKey)
 
-	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
-	assert.NilError(t, err)
-	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
-	assert.NilError(t, err)
-	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
+	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
-	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
-	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
 	assert.NilError(t, err)
 
-	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
-	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
+	err = bindKeyToEnvAndDefault(params.AstAuthenticationURIConfigKey, params.AstAuthenticationURIEnv, "")
+	assert.NilError(t, err)
+
+	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
+	assert.NilError(t, err)
+
+	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	assert.NilError(t, err)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
