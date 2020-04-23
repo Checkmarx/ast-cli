@@ -36,7 +36,6 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for full scan
 	scanResults := getResultsNumberForScan(t, scanID)
-	assert.Assert(t, scanResults == numOfFullScanResults, "Wrong number of full scan results")
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
 	// Wait for the inc scan to finish. See it's completed successfully
@@ -47,18 +46,19 @@ func TestScansE2E(t *testing.T) {
 
 	// Validate the results for inc scan
 	incScanResults := getResultsNumberForScan(t, incScanID)
-	assert.Assert(t, incScanResults == numOfIncScanResults, "Wrong number of inc scan results")
+	assert.Assert(t, incScanResults < scanResults, "Wrong number of inc scan results")
 
-	getAllScans(t)
+	listScansPretty(t)
+	listScans(t)
 	getScansTags(t)
 }
 
 func createScanSourcesFile(t *testing.T) string {
 	// Create a full scan
 	b := bytes.NewBufferString("")
-	createCommand := createASTIntegrationTestCommand()
+	createCommand := createASTIntegrationTestCommand(t)
 	createCommand.SetOut(b)
-	err := execute(createCommand, "-v", "scan", "create", "--inputFile", "scan_payload.json", "--sources", "sources.zip")
+	err := execute(createCommand, "-v", "scan", "create", "--input-file", "scan_payload.json", "--sources", "sources.zip")
 	assert.NilError(t, err, "Creating a scan should pass")
 	// Read response from buffer
 	var createdScanJSON []byte
@@ -76,15 +76,15 @@ func deleteScan(t *testing.T) {
 
 }
 
-func getAllScans(t *testing.T) {
+func listScans(t *testing.T) {
 	b := bytes.NewBufferString("")
-	getAllCommand := createASTIntegrationTestCommand()
+	getAllCommand := createASTIntegrationTestCommand(t)
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
 	l := strconv.FormatUint(limit, 10)
 	o := strconv.FormatUint(offset, 10)
-	err := execute(getAllCommand, "-v", "scan", "get-all", "--limit", l, "--offset", o)
+	err := execute(getAllCommand, "-v", "scan", "list", "--limit", l, "--offset", o)
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -99,11 +99,21 @@ func getAllScans(t *testing.T) {
 	assert.Assert(t, len(allScans.Scans) == 2, "Total should be 2")
 }
 
+func listScansPretty(t *testing.T) {
+	getAllCommand := createASTIntegrationTestCommand(t)
+	var limit uint64 = 40
+	var offset uint64 = 0
+	l := strconv.FormatUint(limit, 10)
+	o := strconv.FormatUint(offset, 10)
+	err := execute(getAllCommand, "-v", "--format", "pretty", "scan", "list", "--limit", l, "--offset", o)
+	assert.NilError(t, err, "Getting all scans should pass")
+}
+
 func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
-	getCommand := createASTIntegrationTestCommand()
+	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	err := execute(getCommand, "-v", "scan", "get", scanID)
+	err := execute(getCommand, "-v", "scan", "show", scanID)
 	assert.NilError(t, err)
 	// Read response from buffer
 	var getScanJSON []byte
@@ -115,10 +125,15 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
 	return &getScan
 }
+func getScanByIDPretty(t *testing.T, scanID string) {
+	getCommand := createASTIntegrationTestCommand(t)
+	err := execute(getCommand, "-v", "--format", "pretty", "scan", "show", scanID)
+	assert.NilError(t, err)
+}
 
 func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand()
+	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
 	err := execute(tagsCommand, "-v", "scan", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
@@ -136,9 +151,9 @@ func getScansTags(t *testing.T) {
 func createIncScan(t *testing.T) string {
 	// Create an incremental scan
 	incBuff := bytes.NewBufferString("")
-	createIncCommand := createASTIntegrationTestCommand()
+	createIncCommand := createASTIntegrationTestCommand(t)
 	createIncCommand.SetOut(incBuff)
-	err := execute(createIncCommand, "-v", "scan", "create", "--inputFile", "scan_inc_payload.json", "--sources", "sources_inc.zip")
+	err := execute(createIncCommand, "-v", "scan", "create", "--input-file", "scan_inc_payload.json", "--sources", "sources_inc.zip")
 	assert.NilError(t, err, "Creating an incremental scan should pass")
 	// Read response from buffer
 	var createdIncScanJSON []byte
@@ -157,6 +172,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, ch chan<- bool, requiredSt
 	for {
 		log.Printf("Polling scan %s\n", scanID)
 		scan := getScanByID(t, scanID)
+		getScanByIDPretty(t, scanID)
 		if string(scan.Status) == string(requiredStatus) {
 			ch <- true
 			return

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/pkg/errors"
 
@@ -17,15 +16,12 @@ const (
 )
 
 type ProjectsHTTPWrapper struct {
-	url         string
-	contentType string
-	credentials *Credentials
+	url string
 }
 
 func NewHTTPProjectsWrapper(url string) ProjectsWrapper {
 	return &ProjectsHTTPWrapper{
-		url:         url,
-		contentType: "application/json",
+		url: url,
 	}
 }
 
@@ -37,14 +33,17 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 		return nil, nil, err
 	}
 
-	resp, err := http.Post(p.url, p.contentType, bytes.NewBuffer(jsonBytes))
+	resp, err := SendHTTPRequest(http.MethodPost, p.url, bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return nil, nil, err
+	}
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
 func (p *ProjectsHTTPWrapper) Get(limit, offset uint64) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := getRequestWithLimitAndOffset(p.url, limit, offset)
+	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, limit, offset, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,22 +75,18 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := http.Get(p.url + "/" + projectID)
+	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/"+projectID, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (p *ProjectsHTTPWrapper) Delete(projectID string) (
-	*projectsRESTApi.ErrorModel,
-	error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("DELETE", p.url+"/"+projectID, nil)
+func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
+	resp, err := SendHTTPRequest(http.MethodDelete, p.url+"/"+projectID, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := client.Do(req)
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -99,10 +94,11 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	*[]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := http.Get(p.url + "/tags")
+	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/tags", nil)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
@@ -125,22 +121,4 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
 	}
-}
-
-func getRequestWithLimitAndOffset(url string, limit, offset uint64) (*http.Response, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	q := req.URL.Query()
-	if limit > 0 {
-		q.Add(limitQueryParam, strconv.FormatUint(limit, 10))
-	}
-	if offset > 0 {
-		q.Add(offsetQueryParam, strconv.FormatUint(offset, 10))
-	}
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	return resp, err
 }
