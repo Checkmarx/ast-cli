@@ -1,0 +1,20 @@
+{
+  "config": [
+    {
+      "type": "sast",
+      "value": {
+        "incremental": "false",
+        "presetName": "Checkmarx Default",
+	"pool": "private"
+      }
+    }
+  ],
+  "tags": ["s1","s2","s3"],
+  "project": {
+    "handler": {
+      "url": ""},
+    "id": "inc_scan",
+    "type": "upload"
+  },
+  "scanID": ""
+}
