@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -22,12 +21,8 @@ func NewHTTPResultsWrapper(url string) ResultsWrapper {
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(
-	scanID string,
-	limit,
-	offset uint64) ([]ResultResponseModel, *ResultError, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet,
-		fmt.Sprintf("%s/%s/items", r.url, scanID), limit, offset, nil)
+func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*ResultsResponseModel, *ErrorModel, error) {
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.url, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -37,19 +32,19 @@ func (r *ResultsHTTPWrapper) GetByScanID(
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ResultError{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := []ResultResponseModel{}
+		model := ResultsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-		return model, nil, nil
+		return &model, nil, nil
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)

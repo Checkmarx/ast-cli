@@ -3,7 +3,7 @@ package wrappers
 import (
 	"fmt"
 
-	scansRESTApi "github.com/checkmarxDev/scans/api/v1/rest/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 )
 
 type ScansMockWrapper struct {
@@ -17,7 +17,7 @@ func (m *ScansMockWrapper) Create(model *scansRESTApi.Scan) (*scansRESTApi.ScanR
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get(limit, offset uint64) (*scansRESTApi.SlicedScansResponseModel, *scansRESTApi.ErrorModel, error) {
+func (m *ScansMockWrapper) Get(params map[string]string) (*scansRESTApi.SlicedScansResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Get in ScansMockWrapper")
 	return &scansRESTApi.SlicedScansResponseModel{
 		Scans: []scansRESTApi.ScanResponseModel{
