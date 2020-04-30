@@ -4,28 +4,33 @@ package integration
 
 import (
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gotest.tools/assert"
 	"log"
 	"math/rand"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gotest.tools/assert"
 )
 
 const (
-	astURIEnv          = "AST_URI"
-	scansPathEnv       = "SCANS_PATH"
-	projectsPathEnv    = "PROJECTS_PATH"
-	resultsPathEnv     = "RESULTS_PATH"
-	uploadsPathEnv     = "UPLOADS_PATH"
-	letterBytes        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	successfulExitCode = 0
-	failureExitCode    = 1
+	astURIEnv              = "AST_URI"
+	scansPathEnv           = "SCANS_PATH"
+	projectsPathEnv        = "PROJECTS_PATH"
+	resultsPathEnv         = "RESULTS_PATH"
+	uploadsPathEnv         = "UPLOADS_PATH"
+	bflPathEnv             = "BFL_PATH"
+	sastRmPathEnv          = "SAST_RM_PATH"
+	letterBytes            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
+	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
+	successfulExitCode     = 0
+	failureExitCode        = 1
 )
 
 func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
@@ -77,6 +82,16 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	uploads := viper.GetString(uploadsPathKey)
 
+	bflPathKey := strings.ToLower(bflPathEnv)
+	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	assert.NilError(t, err)
+	bfl := viper.GetString(bflPathKey)
+
+	sastRmPathKey := strings.ToLower(sastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	assert.NilError(t, err)
+	sastrm := viper.GetString(sastRmPathKey)
+
 	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
@@ -84,17 +99,29 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
 	assert.NilError(t, err)
 
+	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
+	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	assert.NilError(t, err)
+
+	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
+	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
+	assert.NilError(t, err)
+
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
+	rmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(rmURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper, rmWrapper)
 	return astCli
 }
 

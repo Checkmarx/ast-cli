@@ -7,12 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
-)
-
-const (
-	limitQueryParam  = "limit"
-	offsetQueryParam = "offset"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 type ProjectsHTTPWrapper struct {
@@ -40,10 +35,10 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHTTPWrapper) Get(limit, offset uint64) (
+func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithLimitAndOffset(http.MethodGet, p.url, limit, offset, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.url, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}

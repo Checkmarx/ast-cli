@@ -3,7 +3,7 @@ package wrappers
 import (
 	"fmt"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 type ProjectsMockWrapper struct{}
@@ -18,7 +18,7 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get(limit, offset uint64) (
+func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	*projectsRESTApi.SlicedProjectsResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {

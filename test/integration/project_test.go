@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/api/v1/rest/projects"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"gotest.tools/assert"
 )
 
@@ -90,7 +90,9 @@ func getAllProjectsPretty(t *testing.T, projectID string) {
 	getAllCommand := createASTIntegrationTestCommand(t)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	err := execute(getAllCommand, "-v", "--format", "pretty", "project", "list", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
+	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
+	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
+	err := execute(getAllCommand, "-v", "--format", "pretty", "project", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all projects should pass")
 }
 
@@ -100,7 +102,9 @@ func getAllProjects(t *testing.T, projectID string) {
 	getAllCommand.SetOut(b)
 	var limit uint64 = 40
 	var offset uint64 = 0
-	err := execute(getAllCommand, "-v", "project", "list", "--limit", strconv.FormatUint(limit, 10), "--offset", strconv.FormatUint(offset, 10))
+	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
+	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
+	err := execute(getAllCommand, "-v", "project", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all projects should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -109,8 +113,6 @@ func getAllProjects(t *testing.T, projectID string) {
 	allProjects := projectsRESTApi.SlicedProjectsResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allProjects)
 	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Assert(t, uint64(allProjects.Limit) == limit, fmt.Sprintf("limit should be %d", limit))
-	assert.Assert(t, uint64(allProjects.Offset) == offset, fmt.Sprintf("offset should be %d", offset))
 	assert.Assert(t, allProjects.TotalCount == 1, "Total should be 1")
 	assert.Assert(t, len(allProjects.Projects) == 1, "Total should be 1")
 	assert.Assert(t, allProjects.Projects[0].ID == projectID)
