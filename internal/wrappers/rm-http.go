@@ -2,9 +2,10 @@ package wrappers
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
 )
@@ -20,20 +21,26 @@ func (s *sastrmHTTPWrapper) GetStats(m StatMetric, r StatResolution) ([]*rm.Coun
 		"metric":     string(m),
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed get stats")
 	}
 	cc := rm.CounterCollection{}
-	json.Unmarshal(data, &cc)
+	err = json.Unmarshal(data, &cc)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed unmarshal stats")
+	}
 	return cc.Events, err
 }
 
 func (s *sastrmHTTPWrapper) GetScans() ([]*rm.Scan, error) {
 	data, err := readData(s.url + "/scans")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed get scans")
 	}
 	sp := rm.ScansCollection{}
-	json.Unmarshal(data, &sp)
+	err = json.Unmarshal(data, &sp)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed unmarshal scans")
+	}
 	return sp.Scans, err
 }
 
@@ -69,10 +76,13 @@ func readData(url string, params ...map[string]string) ([]byte, error) {
 func (s *sastrmHTTPWrapper) GetEngines() ([]*rm.Engine, error) {
 	data, err := readData(s.url + "/engines")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed get engines")
 	}
 	wp := rm.EnginesCollection{}
-	json.Unmarshal(data, &wp)
+	err = json.Unmarshal(data, &wp)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed unmarshal engines")
+	}
 	return wp.Engines, err
 }
 

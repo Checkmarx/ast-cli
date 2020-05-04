@@ -3,7 +3,7 @@ package commands
 import (
 	"time"
 
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	"github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -80,7 +80,7 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func scanViews(scans []*rm.Scan) []*ScanView {
+func scanViews(scans []*rest.Scan) []*ScanView {
 	result := make([]*ScanView, 0, len(scans))
 	for _, s := range scans {
 		result = append(result, &ScanView{
@@ -96,7 +96,7 @@ func scanViews(scans []*rm.Scan) []*ScanView {
 	return result
 }
 
-func engineViews(engines []*rm.Engine) []*EngineView {
+func engineViews(engines []*rest.Engine) []*EngineView {
 	result := make([]*EngineView, 0, len(engines))
 	for _, w := range engines {
 		result = append(result, &EngineView{
@@ -117,14 +117,14 @@ type ScanView struct {
 	Priority   float32           `json:"priority"`
 	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.111;name:Queued at" json:"queued-at"`
 	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.111;name:Running at" json:"running-at"`
-	Engine     string            `format:"maxlen:11"json:"worker"`
+	Engine     string            `format:"maxlen:13" json:"worker"`
 	Constrains map[string]string `json:"constrains"`
 }
 
 type EngineView struct {
-	ID           string            `format:"maxlen:11"json:"id"`
+	ID           string            `format:"maxlen:13" json:"id"`
 	Status       string            `json:"status"`
-	ScanID       string            `format:"maxlen:8"json:"scan"`
+	ScanID       string            `format:"maxlen:8" json:"scan"`
 	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.111;name:Discovered at" json:"registered-at"`
 	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.111;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
