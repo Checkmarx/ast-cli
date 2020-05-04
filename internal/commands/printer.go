@@ -45,6 +45,9 @@ type property struct {
 }
 
 func printList(w io.Writer, entities []*entity) {
+	if len(entities) == 0 {
+		return
+	}
 	maxColumn := entities[0].maxKey()
 	format := fmt.Sprintf("%%-%ds : %%v\n", maxColumn)
 	for _, e := range entities {
