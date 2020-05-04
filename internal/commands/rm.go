@@ -53,7 +53,7 @@ type rmCommands struct {
 func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 	scans, err := c.rmWrapper.GetScans()
 	if err != nil {
-		return errors.Wrap(err, "failed get scans")
+		return err
 	}
 	Print(cmd.OutOrStdout(), scanViews(scans))
 	return nil
@@ -73,7 +73,7 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 	resolution := wrappers.StatResolution(cmd.Flag("resolution").Value.String())
 	stats, err := c.rmWrapper.GetStats(metric, resolution)
 	if err != nil {
-		return errors.Wrap(err, "failed get engines")
+		return err
 	}
 
 	Print(cmd.OutOrStdout(), stats)
