@@ -24,7 +24,6 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-#       - run: go mod download
       - run: 
           name: go test with coverage
           command: |
@@ -66,7 +65,6 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      - run: go mod download
       - run:
           name: Run golangci-lint
           command: golangci-lint run ./...
