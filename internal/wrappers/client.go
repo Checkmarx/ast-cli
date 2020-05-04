@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/spf13/viper"
@@ -81,11 +83,20 @@ func SendHTTPRequestWithQueryParams(method, url string, params map[string]string
 }
 
 func enrichWithCredentials(request *http.Request) (*http.Request, error) {
-	authHost := viper.GetString(commonParams.AstAuthenticationURIConfigKey)
+	authURI := viper.GetString(commonParams.AstAuthenticationURIConfigKey)
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	failedToAuth := "Failed to authenticate - please provide an %s"
 
-	accessToken, err := getClientCredentials(authHost, accessKeyID, accessKeySecret)
+	if authURI == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "authentication URI"))
+	} else if accessKeyID == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+	} else if accessKeySecret == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+	}
+
+	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
 	if err != nil {
 		return nil, err
 	}
