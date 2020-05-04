@@ -55,8 +55,6 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed get scans")
 	}
-	//scansJson, _ := json.Marshal(scanViews(scans))
-	//fmt.Fprintln(cmd.OutOrStdout(), string(scansJson))
 	Print(cmd.OutOrStdout(), scanViews(scans))
 	return nil
 }
