@@ -16,11 +16,11 @@ import (
 
 func Print(w io.Writer, view interface{}) error {
 	if IsJSONFormat() {
-		viewJson, err := json.Marshal(view)
+		viewJSON, err := json.Marshal(view)
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(w, string(viewJson))
+		fmt.Fprintln(w, string(viewJSON))
 	} else if IsPrettyFormat() {
 		entities := toEntities(view)
 		printList(w, entities)
@@ -62,25 +62,30 @@ func printTable(w io.Writer, entities []*entity) {
 	colWidth := getColumnWidth(entities)
 	// print header
 	for i := 0; i < len(colWidth); i++ {
-		cf := fmt.Sprintf("%%-%ds ", colWidth[i])
-		fmt.Fprintf(w, cf, entities[0].Properties[i].Key)
+		key := entities[0].Properties[i].Key
+		fmt.Fprint(w, key, pad(colWidth[i], key))
 	}
 	fmt.Fprintln(w)
 	// print delimiter
 	for i := 0; i < len(colWidth); i++ {
-		cf := fmt.Sprintf("%%-%ds ", colWidth[i])
 		line := strings.Repeat("-", len(entities[0].Properties[i].Key))
-		fmt.Fprintf(w, cf, line)
+		fmt.Fprint(w, line, pad(colWidth[i], line))
 	}
 	fmt.Fprintln(w)
 	// print rows by columns
 	for _, e := range entities {
 		for i := 0; i < len(colWidth); i++ {
-			cf := fmt.Sprintf("%%-%ds ", colWidth[i])
-			fmt.Fprintf(w, cf, e.Properties[i].Value)
+			val := e.Properties[i].Value
+			fmt.Fprint(w, val, pad(colWidth[i], val))
 		}
 		fmt.Fprintln(w)
 	}
+}
+
+func pad(width int, key string) string {
+	padLen := width - len(key) + 1
+	const nonBreakingSpace = string('\u00A0')
+	return strings.Repeat(nonBreakingSpace, padLen)
 }
 
 func getColumnWidth(entities []*entity) []int {
