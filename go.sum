@@ -45,10 +45,8 @@ github.com/census-instrumentation/opencensus-proto v0.2.0/go.mod h1:f6KPmirojxKA
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/checkmarxDev/repostore v1.0.2/go.mod h1:D+HCXjZCKPY0ZoTZaIzi1yNZMzO+M61rXxulQxXKzY8=
-github.com/checkmarxDev/sast-rm v1.0.1 h1:7WaVxFn0fTXjVqiVOTt3TQqqG0O6pY0WhlT/tyZaMIc=
-github.com/checkmarxDev/sast-rm v1.0.1/go.mod h1:KGWN7u86lDfo1l9gQac1Oa+jL486ptGKYbS9I99BGLQ=
-github.com/checkmarxDev/sast-rm v1.0.2 h1:4PD8F2CAvLBGD1JjHeSFK74fpi2WBeOEw+ZIUBhePqM=
-github.com/checkmarxDev/sast-rm v1.0.2/go.mod h1:BAzJJ3Pm5gi/GiDbNPxQN4VXN8IVbHiO/vPapfc7f/8=
+github.com/checkmarxDev/sast-rm v1.0.3 h1:QOJHOzFXCiCLZ9Wa+LsXZTZ0QiVMzveTYPCwVykOEB0=
+github.com/checkmarxDev/sast-rm v1.0.3/go.mod h1:BAzJJ3Pm5gi/GiDbNPxQN4VXN8IVbHiO/vPapfc7f/8=
 github.com/checkmarxDev/scans v1.2.2/go.mod h1:76lXRiVKa8XL7ST9qEQZUSnma4vUQ0GomTCSRfV4TsY=
 github.com/checkmarxDev/scans v1.2.7 h1:yGOZaWttkY0Ll6B2rQi70PKoRnh9VjMDPmtJjI71H/E=
 github.com/checkmarxDev/scans v1.2.7/go.mod h1:hcAM6h2mAq8iC+IgqaKUPDFsKoYJEnLJFFPt/wJdnhA=

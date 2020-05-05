@@ -27,12 +27,22 @@ func Print(w io.Writer, view interface{}) error {
 	} else if IsTableFormat() {
 		entities := toEntities(view)
 		printTable(w, entities)
+	} else {
+		return errors.Errorf("Invalid format %s", viper.GetString(formatFlag))
 	}
-	return errors.Errorf("Invalid format %s", viper.GetString(formatFlag))
+	return nil
+}
+
+func IsJSONFormat() bool {
+	return strings.EqualFold(viper.GetString(formatFlag), formatJSON)
+}
+
+func IsPrettyFormat() bool {
+	return strings.EqualFold(viper.GetString(formatFlag), formatPretty)
 }
 
 func IsTableFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), "table")
+	return strings.EqualFold(viper.GetString(formatFlag), formatTable)
 }
 
 type entity struct {
@@ -48,6 +58,7 @@ func printList(w io.Writer, entities []*entity) {
 	if len(entities) == 0 {
 		return
 	}
+	fmt.Fprintln(w)
 	maxColumn := entities[0].maxKey()
 	format := fmt.Sprintf("%%-%ds : %%v\n", maxColumn)
 	for _, e := range entities {
@@ -62,6 +73,7 @@ func printTable(w io.Writer, entities []*entity) {
 	if len(entities) == 0 {
 		return
 	}
+	fmt.Fprintln(w)
 	colWidth := getColumnWidth(entities)
 	// print header
 	for i := 0; i < len(colWidth); i++ {
@@ -83,6 +95,7 @@ func printTable(w io.Writer, entities []*entity) {
 		}
 		fmt.Fprintln(w)
 	}
+	fmt.Fprintln(w)
 }
 
 func pad(width int, key string) string {

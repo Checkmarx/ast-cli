@@ -34,8 +34,8 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	statsCmd.Flags().StringP("resolution", "r", "hour",
 		"Resolution, one of: hour, day, week")
 
-	statsCmd.Flags().StringP("metric", "m", "running",
-		"Metric, one of: scan-queued, scan-orphan, engine-waiting, running")
+	statsCmd.Flags().StringP("metric", "m", "scan-pending",
+		"Metric, one of: scan-pending, scan-orphan, scan-running, scan-total, engine-waiting, engine-running, engine-total")
 
 	sastrmCmd := &cobra.Command{
 		Use:     "sast-resources",
@@ -80,10 +80,10 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func scanViews(scans []*rest.Scan) []*ScanView {
-	result := make([]*ScanView, 0, len(scans))
+func scanViews(scans []*rest.Scan) []*rmScanView {
+	result := make([]*rmScanView, 0, len(scans))
 	for _, s := range scans {
-		result = append(result, &ScanView{
+		result = append(result, &rmScanView{
 			ID:         s.ID,
 			State:      string(s.State),
 			Priority:   s.Priority,
@@ -96,10 +96,10 @@ func scanViews(scans []*rest.Scan) []*ScanView {
 	return result
 }
 
-func engineViews(engines []*rest.Engine) []*EngineView {
-	result := make([]*EngineView, 0, len(engines))
+func engineViews(engines []*rest.Engine) []*rmEngineView {
+	result := make([]*rmEngineView, 0, len(engines))
 	for _, w := range engines {
-		result = append(result, &EngineView{
+		result = append(result, &rmEngineView{
 			ID:           w.ID,
 			Status:       string(w.Status),
 			ScanID:       w.ScanID,
@@ -111,7 +111,7 @@ func engineViews(engines []*rest.Engine) []*EngineView {
 	return result
 }
 
-type ScanView struct {
+type rmScanView struct {
 	ID         string            `format:"maxlen:8" json:"id"`
 	State      string            `json:"state"`
 	Priority   float32           `json:"priority"`
@@ -121,7 +121,7 @@ type ScanView struct {
 	Constrains map[string]string `json:"constrains"`
 }
 
-type EngineView struct {
+type rmEngineView struct {
 	ID           string            `format:"maxlen:13" json:"id"`
 	Status       string            `json:"status"`
 	ScanID       string            `format:"maxlen:8" json:"scan"`

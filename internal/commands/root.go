@@ -34,9 +34,10 @@ const (
 	insecureFlag                  = "insecure"
 	insecureFlagUsage             = "Ignore TLS certificate validations"
 	formatFlag                    = "format"
-	formatFlagUsage               = "Format for the output. One of [json, pretty]. Default is JSON"
+	formatFlagUsage               = "Format for the output. One of [json, pretty, table]"
 	formatJSON                    = "json"
 	formatPretty                  = "pretty"
+	formatTable                   = "table"
 	filterFlag                    = "filter"
 )
 
@@ -120,18 +121,4 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		allFilters[filterKeyVal[0]] = filterKeyVal[1]
 	}
 	return allFilters, nil
-}
-
-func IsJSONFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatJSON)
-}
-func IsPrettyFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatPretty)
-}
-
-func ValidateFormat() error {
-	if !(IsPrettyFormat() || IsJSONFormat()) {
-		return errors.Errorf("Invalid format %s", viper.GetString(formatFlag))
-	}
-	return nil
 }
