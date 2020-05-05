@@ -32,7 +32,7 @@ func (s *sastrmHTTPWrapper) GetStats(m StatMetric, r StatResolution) ([]*rm.Coun
 }
 
 func (s *sastrmHTTPWrapper) GetScans() ([]*rm.Scan, error) {
-	data, err := readData(s.url + "/scans")
+	data, err := readData(s.url+"/scans", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed get scans")
 	}
@@ -44,21 +44,8 @@ func (s *sastrmHTTPWrapper) GetScans() ([]*rm.Scan, error) {
 	return sp.Scans, err
 }
 
-func readData(url string, params ...map[string]string) ([]byte, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	if len(params) > 0 {
-		q := req.URL.Query()
-		for k, v := range params[0] {
-			q.Add(k, v)
-		}
-		req.URL.RawQuery = q.Encode()
-	}
-
-	resp, err := client.Do(req)
+func readData(url string, params map[string]string) ([]byte, error) {
+	resp, err := SendHTTPRequestWithQueryParams("GET", url, params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +61,7 @@ func readData(url string, params ...map[string]string) ([]byte, error) {
 }
 
 func (s *sastrmHTTPWrapper) GetEngines() ([]*rm.Engine, error) {
-	data, err := readData(s.url + "/engines")
+	data, err := readData(s.url+"/engines", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed get engines")
 	}

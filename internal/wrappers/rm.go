@@ -5,7 +5,7 @@ import rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
 type StatMetric string
 
 const (
-	StatMetricScanQueued    = "scan-queued"
+	StatMetricScanQueued    = "scan-pending"
 	StatMetricScanOrphan    = "scan-orphan"
 	StatMetricEngineWaiting = "engine-waiting"
 	StatMetricRunning       = "running"

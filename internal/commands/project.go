@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
@@ -127,7 +128,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			err = outputProject(cmd, projResponseModel)
+			err = Print(cmd.OutOrStdout(), toProjectViews(*projResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
@@ -154,7 +155,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			err = outputProjects(cmd, allProjectsModel)
+			err = Print(cmd.OutOrStdout(), toProjectViews(allProjectsModel.Projects...))
 			if err != nil {
 				return err
 			}
@@ -180,7 +181,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			err = outputProject(cmd, projectResponseModel)
+			err = Print(cmd.OutOrStdout(), toProjectViews(*projectResponseModel))
 			if err != nil {
 				return err
 			}
@@ -233,48 +234,20 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		return nil
 	}
 }
-
-func outputProjects(cmd *cobra.Command, model *projectsRESTApi.SlicedProjectsResponseModel) error {
-	if IsJSONFormat() {
-		var allProjectsJSON []byte
-		allProjectsJSON, err := json.Marshal(model)
-		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize project response ", failedGettingAll)
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(allProjectsJSON))
-	} else if IsPrettyFormat() {
-		for _, project := range model.Projects {
-			outputSingleProject(&projectsRESTApi.ProjectResponseModel{
-				ID:        project.ID,
-				CreatedAt: project.CreatedAt,
-				UpdatedAt: project.UpdatedAt,
-				Tags:      project.Tags,
-			})
-		}
+func toProjectViews(models ...projectsRESTApi.ProjectResponseModel) []scansProjectView {
+	result := make([]scansProjectView, len(models))
+	for i, model := range models {
+		result[i].ID = model.ID
+		result[i].CreatedAt = model.CreatedAt
+		result[i].UpdatedAt = model.UpdatedAt
+		result[i].Tags = model.Tags
 	}
-	return nil
+	return result
 }
 
-func outputProject(cmd *cobra.Command, model *projectsRESTApi.ProjectResponseModel) error {
-	if err := ValidateFormat(); err != nil {
-		return err
-	}
-
-	if IsJSONFormat() {
-		responseModelJSON, err := json.Marshal(model)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to serialize project response")
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(responseModelJSON))
-	} else if IsPrettyFormat() {
-		outputSingleProject(model)
-	}
-	return nil
-}
-
-func outputSingleProject(model *projectsRESTApi.ProjectResponseModel) {
-	fmt.Println("Project ID:", model.ID)
-	fmt.Println("Created at:", model.CreatedAt)
-	fmt.Println("Updated at:", model.UpdatedAt)
-	fmt.Println("Tags:", model.Tags)
+type scansProjectView struct {
+	ID        string    `format:"name:Project ID"`
+	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
+	Tags      []string
 }
