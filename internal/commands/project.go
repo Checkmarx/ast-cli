@@ -139,7 +139,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allProjectsModel *projectsRESTApi.SlicedProjectsResponseModel
+		var allProjectsModel *projectsRESTApi.ProjectsCollectionResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
 
 		params, err := getFilters(cmd)
@@ -249,5 +249,5 @@ type scansProjectView struct {
 	ID        string    `format:"name:Project ID"`
 	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
-	Tags      []string
+	Tags      map[string]string
 }
