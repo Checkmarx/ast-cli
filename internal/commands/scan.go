@@ -275,7 +275,8 @@ type scansScanView struct {
 
 func toScanViews(scans ...scansRESTApi.ScanResponseModel) []*scansScanView {
 	views := make([]*scansScanView, len(scans))
-	for i, scan := range scans {
+	for i := 0; i < len(scans); i++ {
+		scan := scans[i]
 		views[i] = &scansScanView{
 			ID:        scan.ID,
 			Status:    string(scan.Status),
