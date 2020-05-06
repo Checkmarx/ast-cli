@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
@@ -31,10 +32,10 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunStatsCommand,
 	}
 
-	statsCmd.Flags().StringP("resolution", "r", "hour",
+	statsCmd.PersistentFlags().StringP("resolution", "r", "hour",
 		"Resolution, one of: hour, day, week")
 
-	statsCmd.Flags().StringP("metric", "m", "scan-pending",
+	statsCmd.PersistentFlags().StringP("metric", "m", "scan-pending",
 		"Metric, one of: scan-pending, scan-orphan, scan-running, scan-total, engine-waiting, engine-running, engine-total")
 
 	sastrmCmd := &cobra.Command{
@@ -51,6 +52,7 @@ type rmCommands struct {
 }
 
 func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
+	PrintIfVerbose(fmt.Sprint("Reading sast resources scans"))
 	scans, err := c.rmWrapper.GetScans()
 	if err != nil {
 		return err
@@ -60,6 +62,7 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
+	PrintIfVerbose(fmt.Sprint("Reading sast resources engines"))
 	engines, err := c.rmWrapper.GetEngines()
 	if err != nil {
 		return errors.Wrap(err, "failed get engines")
@@ -69,8 +72,17 @@ func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
-	metric := wrappers.StatMetric(cmd.Flag("metric").Value.String())
-	resolution := wrappers.StatResolution(cmd.Flag("resolution").Value.String())
+	metricName := cmd.Flag("metric").Value.String()
+	metric, ok := wrappers.StatMetrics[metricName]
+	if !ok {
+		return errors.Errorf("unknown metric %s", metricName)
+	}
+	resolutionName := cmd.Flag("resolution").Value.String()
+	resolution, ok := wrappers.StatResolutions[resolutionName]
+	if !ok {
+		return errors.Errorf("unknown resolution %s", resolutionName)
+	}
+	PrintIfVerbose(fmt.Sprintf("Reading sast resources statistics metric:%s, resolution:%s", metric, resolution))
 	stats, err := c.rmWrapper.GetStats(metric, resolution)
 	if err != nil {
 		return err
