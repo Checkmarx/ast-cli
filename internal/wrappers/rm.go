@@ -22,6 +22,13 @@ var StatMetrics = map[string]StatMetric{
 	"engine-waiting": StatMetricEngineWaiting,
 	"engine-running": StatMetricEngineRunning,
 	"engine-total":   StatMetricEngineTotal,
+	"sp":             StatMetricScanPending,
+	"sr":             StatMetricScanRunning,
+	"so":             StatMetricScanOrphan,
+	"st":             StatMetricScanTotal,
+	"ew":             StatMetricEngineWaiting,
+	"er":             StatMetricEngineRunning,
+	"et":             StatMetricEngineTotal,
 }
 
 var StatResolutions = map[string]StatResolution{
