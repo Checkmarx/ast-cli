@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -158,7 +159,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = outputScan(cmd, scanResponseModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
@@ -169,7 +170,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scansRESTApi.SlicedScansResponseModel
+		var allScansModel *scansRESTApi.ScansCollectionResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -184,7 +185,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = outputScans(cmd, allScansModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(allScansModel.Scans...))
 			if err != nil {
 				return err
 			}
@@ -210,7 +211,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = outputScan(cmd, scanResponseModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -263,50 +264,27 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 	}
 }
 
-func outputScans(cmd *cobra.Command, allScansModel *scansRESTApi.SlicedScansResponseModel) error {
-	if IsJSONFormat() {
-		allScansJSON, err := json.Marshal(allScansModel)
-		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGettingAll)
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(allScansJSON))
-	} else if IsPrettyFormat() {
-		for _, scan := range allScansModel.Scans {
-			prettySingleScan(&scansRESTApi.ScanResponseModel{
-				ID:        scan.ID,
-				Status:    scan.Status,
-				CreatedAt: scan.CreatedAt,
-				UpdatedAt: scan.UpdatedAt,
-				ProjectID: scan.ProjectID,
-				Tags:      scan.Tags,
-			})
-		}
-	}
-	return nil
+type scansScanView struct {
+	ID        string `format:"name:Scan ID"`
+	ProjectID string `format:"name:Project ID"`
+	Status    string
+	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
+	Tags      map[string]string
 }
 
-func outputScan(cmd *cobra.Command, model *scansRESTApi.ScanResponseModel) error {
-	if err := ValidateFormat(); err != nil {
-		return err
-	}
-
-	if IsJSONFormat() {
-		responseModelJSON, err := json.Marshal(model)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to serialize scan response")
+func toScanViews(scans ...scansRESTApi.ScanResponseModel) []*scansScanView {
+	views := make([]*scansScanView, len(scans))
+	for i := 0; i < len(scans); i++ {
+		scan := scans[i]
+		views[i] = &scansScanView{
+			ID:        scan.ID,
+			Status:    string(scan.Status),
+			CreatedAt: scan.CreatedAt,
+			UpdatedAt: scan.UpdatedAt,
+			ProjectID: scan.ProjectID,
+			Tags:      scan.Tags,
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(responseModelJSON))
-	} else if IsPrettyFormat() {
-		prettySingleScan(model)
 	}
-	return nil
-}
-func prettySingleScan(model *scansRESTApi.ScanResponseModel) {
-	fmt.Println("Scan ID:", model.ID)
-	fmt.Println("Project ID:", model.ProjectID)
-	fmt.Println("Status:", model.Status)
-	fmt.Println("Created at:", model.CreatedAt)
-	fmt.Println("Updated at:", model.UpdatedAt)
-	fmt.Println("Tags:", model.Tags)
-	fmt.Println()
+	return views
 }
