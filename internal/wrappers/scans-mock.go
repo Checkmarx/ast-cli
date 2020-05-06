@@ -3,6 +3,8 @@ package wrappers
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 )
 
@@ -12,14 +14,14 @@ type ScansMockWrapper struct {
 func (m *ScansMockWrapper) Create(model *scansRESTApi.Scan) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Create in ScansMockWrapper")
 	return &scansRESTApi.ScanResponseModel{
-		ID:     model.ScanID,
+		ID:     uuid.New().String(),
 		Status: "MOCK",
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get(params map[string]string) (*scansRESTApi.SlicedScansResponseModel, *scansRESTApi.ErrorModel, error) {
+func (m *ScansMockWrapper) Get(params map[string]string) (*scansRESTApi.ScansCollectionResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Get in ScansMockWrapper")
-	return &scansRESTApi.SlicedScansResponseModel{
+	return &scansRESTApi.ScansCollectionResponseModel{
 		Scans: []scansRESTApi.ScanResponseModel{
 			{
 				ID:     "MOCK",
