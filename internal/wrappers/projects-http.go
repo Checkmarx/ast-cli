@@ -36,7 +36,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 }
 
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
-	*projectsRESTApi.SlicedProjectsResponseModel,
+	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.url, params, nil)
 	if err != nil {
@@ -54,7 +54,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := projectsRESTApi.SlicedProjectsResponseModel{}
+		model := projectsRESTApi.ProjectsCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
