@@ -170,7 +170,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scansRESTApi.SlicedScansResponseModel
+		var allScansModel *scansRESTApi.ScansCollectionResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -270,7 +270,7 @@ type scansScanView struct {
 	Status    string
 	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
-	Tags      []string
+	Tags      map[string]string
 }
 
 func toScanViews(scans ...scansRESTApi.ScanResponseModel) []*scansScanView {

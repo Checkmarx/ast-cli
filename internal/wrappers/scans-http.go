@@ -41,7 +41,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.SlicedScansResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollectionResponseModel, *scansApi.ErrorModel, error) {
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.url, params, nil)
 	if err != nil {
 		return nil, nil, err
@@ -58,7 +58,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.SlicedScansR
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := scansApi.SlicedScansResponseModel{}
+		model := scansApi.ScansCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
