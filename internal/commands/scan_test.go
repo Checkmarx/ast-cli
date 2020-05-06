@@ -49,6 +49,16 @@ func TestRunCreateScanCommandWithInput(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunCreateScanCommandWithInputAndTags(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "create", "--input", "{\"project\":{\"id\":\"test\",\"type\":\"upload\",\"handler\":"+
+		"{\"url\":\"MOSHIKO\"},\"tags\":{}},\"config\":"+
+		"[{\"type\":\"sast\",\"value\":{\"presetName\":\"Default\"}}]}",
+		"--sources", "./payloads/sources.zip",
+		"-t", "lala=topola", "-tag", "trali=vali")
+	assert.NilError(t, err)
+}
+
 func TestRunCreateScanCommandWithInputPretty(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "--format", "pretty", "scan",
