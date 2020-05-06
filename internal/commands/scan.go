@@ -54,6 +54,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.PersistentFlags().StringSliceP(scanTagsFlag, scanTagsFlagSh, []string{},
+		"Scan tags")
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -97,10 +99,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanInput, _ = cmd.Flags().GetString(inputFlag)
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
+		scanTags, _ := cmd.Flags().GetStringSlice(scanTagsFlagSh)
 
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, scanInput))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
+		PrintIfVerbose(fmt.Sprintf("%s: %v", scanTagsFlag, scanTags))
 
 		if scanInputFile != "" {
 			// Reading from input file
@@ -144,6 +148,10 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			}
 			scanModel.Project.Type = scansRESTApi.UploadProject
 			scanModel.Project.Handler = projectHandlerModelSerialized
+		}
+
+		if len(scanTags) > 0 {
+			scanModel.Tags
 		}
 		var payload []byte
 		payload, _ = json.Marshal(scanModel)

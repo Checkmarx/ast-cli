@@ -22,6 +22,8 @@ const (
 	inputFlagSh                   = "i"
 	inputFileFlag                 = "input-file"
 	inputFileFlagSh               = "f"
+	scanTagsFlag                  = "tags"
+	scanTagsFlagSh                = "t"
 	AccessKeyIDEnv                = "AST_ACCESS_KEY_ID"
 	accessKeyIDFlag               = "key"
 	accessKeyIDFlagUsage          = "The access key ID for AST"
