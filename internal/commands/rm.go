@@ -127,8 +127,8 @@ type rmScanView struct {
 	ID         string            `format:"maxlen:8" json:"id"`
 	State      string            `json:"state"`
 	Priority   float32           `json:"priority"`
-	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.111;name:Queued at" json:"queued-at"`
-	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.111;name:Running at" json:"running-at"`
+	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.000;name:Queued at" json:"queued-at"`
+	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.000;name:Running at" json:"running-at"`
 	Engine     string            `format:"maxlen:13" json:"worker"`
 	Constrains map[string]string `json:"constrains"`
 }
@@ -137,7 +137,7 @@ type rmEngineView struct {
 	ID           string            `format:"maxlen:13" json:"id"`
 	Status       string            `json:"status"`
 	ScanID       string            `format:"maxlen:8" json:"scan"`
-	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.111;name:Discovered at" json:"registered-at"`
-	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.111;name:Heartbeat at" json:"updated-at"`
+	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.000;name:Discovered at" json:"registered-at"`
+	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.000;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
 }
