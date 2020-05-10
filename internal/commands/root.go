@@ -36,9 +36,9 @@ const (
 	insecureFlag                  = "insecure"
 	insecureFlagUsage             = "Ignore TLS certificate validations"
 	formatFlag                    = "format"
-	formatFlagUsage               = "Format for the output. One of [json, pretty, table]"
+	formatFlagUsage               = "Format for the output. One of [json, list, table]"
 	formatJSON                    = "json"
-	formatPretty                  = "pretty"
+	formatList                    = "list"
 	formatTable                   = "table"
 	filterFlag                    = "filter"
 )
@@ -68,7 +68,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
-	rootCmd.PersistentFlags().String(formatFlag, formatJSON, formatFlagUsage)
+	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
