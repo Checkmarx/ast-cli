@@ -33,15 +33,12 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	}
 
 	statsCmd.PersistentFlags().StringP("resolution", "r", "hour",
-		"Resolution, one of: hour, day, week")
-
-	statsCmd.PersistentFlags().StringP("metric", "m", "scan-pending",
-		"Metric, one of: scan-pending, scan-orphan, scan-running, scan-total, engine-waiting, engine-running, engine-total")
+		"Resolution, one of: minute, hour, day, week")
 
 	sastrmCmd := &cobra.Command{
 		Use:     "sast-resources",
 		Aliases: []string{"sr"},
-		Short:   "AST sast queue status",
+		Short:   "AST sast queue status (short form: 'sr')",
 	}
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
 	return sastrmCmd
@@ -72,18 +69,13 @@ func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
-	metricName := cmd.Flag("metric").Value.String()
-	metric, ok := wrappers.StatMetrics[metricName]
-	if !ok {
-		return errors.Errorf("unknown metric %s", metricName)
-	}
 	resolutionName := cmd.Flag("resolution").Value.String()
 	resolution, ok := wrappers.StatResolutions[resolutionName]
 	if !ok {
 		return errors.Errorf("unknown resolution %s", resolutionName)
 	}
-	PrintIfVerbose(fmt.Sprintf("Reading sast resources statistics metric:%s, resolution:%s", metric, resolution))
-	stats, err := c.rmWrapper.GetStats(metric, resolution)
+	PrintIfVerbose(fmt.Sprintf("Reading sast resources statistics per %s", resolution))
+	stats, err := c.rmWrapper.GetStats(resolution)
 	if err != nil {
 		return err
 	}
