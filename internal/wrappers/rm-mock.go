@@ -9,11 +9,37 @@ import (
 type SastRmMockWrapper struct {
 }
 
-func (s *SastRmMockWrapper) GetStats(metric StatMetric, resolution StatResolution) ([]*rest.Counter, error) {
-	return []*rest.Counter{
+func (s *SastRmMockWrapper) GetStats(_ StatResolution) ([]*rest.Metric, error) {
+	return []*rest.Metric{
 		{
-			Time:  time.Now(),
-			Count: 1,
+			ScansPending:   1,
+			ScansRunning:   1,
+			ScansOrphan:    1,
+			ScansTotal:     1,
+			EnginesWaiting: 1,
+			EnginesRunning: 1,
+			EnginesTotal:   1,
+			Time:           time.Now(),
+		},
+		{
+			ScansPending:   2,
+			ScansRunning:   2,
+			ScansOrphan:    2,
+			ScansTotal:     2,
+			EnginesWaiting: 2,
+			EnginesRunning: 2,
+			EnginesTotal:   2,
+			Time:           time.Now().Add(-time.Minute),
+		},
+		{
+			ScansPending:   3,
+			ScansRunning:   3,
+			ScansOrphan:    3,
+			ScansTotal:     3,
+			EnginesWaiting: 3,
+			EnginesRunning: 3,
+			EnginesTotal:   3,
+			Time:           time.Now().Add(-time.Minute * 2),
 		},
 	}, nil
 }
