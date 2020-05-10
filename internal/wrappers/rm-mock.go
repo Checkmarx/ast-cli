@@ -39,7 +39,7 @@ func (s *SastRmMockWrapper) GetStats(_ StatResolution) ([]*rest.Metric, error) {
 			EnginesWaiting: 3,
 			EnginesRunning: 3,
 			EnginesTotal:   3,
-			Time:           time.Now().Add(-time.Minute * 2),
+			Time:           time.Now().Add(-time.Minute * 2), //nolint:gomnd
 		},
 	}, nil
 }
