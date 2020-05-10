@@ -137,6 +137,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}
+			PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
+
 			// We are in upload mode - populate fields accordingly
 			projectHandlerModel := scansRESTApi.UploadProjectHandler{
 				URL: *preSignedURL,

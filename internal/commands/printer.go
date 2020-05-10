@@ -21,7 +21,7 @@ func Print(w io.Writer, view interface{}) error {
 			return err
 		}
 		fmt.Fprintln(w, string(viewJSON))
-	} else if IsPrettyFormat() {
+	} else if IsListFormat() {
 		entities := toEntities(view)
 		printList(w, entities)
 	} else if IsTableFormat() {
@@ -37,8 +37,9 @@ func IsJSONFormat() bool {
 	return strings.EqualFold(viper.GetString(formatFlag), formatJSON)
 }
 
-func IsPrettyFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatPretty)
+func IsListFormat() bool {
+	return strings.EqualFold(viper.GetString(formatFlag), formatList) ||
+		strings.EqualFold(viper.GetString(formatFlag), "pretty") // for compatibility
 }
 
 func IsTableFormat() bool {

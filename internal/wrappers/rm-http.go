@@ -15,20 +15,19 @@ type sastrmHTTPWrapper struct {
 	contentType string
 }
 
-func (s *sastrmHTTPWrapper) GetStats(m StatMetric, r StatResolution) ([]*rm.Counter, error) {
+func (s *sastrmHTTPWrapper) GetStats(r StatResolution) ([]*rm.Metric, error) {
 	data, err := readData(s.url+"/stats", map[string]string{
 		"resolution": string(r),
-		"metric":     string(m),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed get stats")
 	}
-	cc := rm.CounterCollection{}
+	cc := rm.MetricsCollection{}
 	err = json.Unmarshal(data, &cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed unmarshal stats")
 	}
-	return cc.Events, err
+	return cc.Metrics, err
 }
 
 func (s *sastrmHTTPWrapper) GetScans() ([]*rm.Scan, error) {
