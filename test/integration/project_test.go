@@ -20,9 +20,9 @@ func TestProjectsE2E(t *testing.T) {
 	projectID := createProjectFromInput(t, RandomizeString(5), []string{})
 	deleteProject(t, projectID)
 	getAllProjects(t, projectFromFile)
-	getAllProjectsPretty(t, projectFromFile)
+	getAllProjectsList(t, projectFromFile)
 	getProjectByID(t, projectFromFile)
-	getProjectByIDPretty(t, projectFromFile)
+	getProjectByIDList(t, projectFromFile)
 	_ = createProjectFromInput(t, RandomizeString(5), []string{"A", "B", "D"})
 	getProjectTags(t)
 }
@@ -59,9 +59,9 @@ func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
 	return createdProject.ID
 }
 
-func getProjectByIDPretty(t *testing.T, projectID string) {
+func getProjectByIDList(t *testing.T, projectID string) {
 	getProjectCommand := createASTIntegrationTestCommand(t)
-	err := execute(getProjectCommand, "-v", "--format", "pretty", "project", "show", projectID)
+	err := execute(getProjectCommand, "-v", "--format", "list", "project", "show", projectID)
 	assert.NilError(t, err, "Getting a project should pass")
 }
 
@@ -86,13 +86,13 @@ func getProjectByID(t *testing.T, projectID string) {
 	assert.Assert(t, project.Tags[2] == "C")
 }
 
-func getAllProjectsPretty(t *testing.T, projectID string) {
+func getAllProjectsList(t *testing.T, projectID string) {
 	getAllCommand := createASTIntegrationTestCommand(t)
 	var limit uint64 = 40
 	var offset uint64 = 0
 	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
 	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
-	err := execute(getAllCommand, "-v", "--format", "pretty", "project", "list", "--filter", lim, "--filter", off)
+	err := execute(getAllCommand, "-v", "--format", "list", "project", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all projects should pass")
 }
 

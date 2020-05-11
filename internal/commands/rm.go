@@ -32,8 +32,8 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunStatsCommand,
 	}
 
-	statsCmd.PersistentFlags().StringP("resolution", "r", "hour",
-		"Resolution, one of: minute, hour, day, week")
+	statsCmd.PersistentFlags().StringP("resolution", "r", "moment",
+		"Resolution, one of: minute, hour, day, week, moment")
 
 	sastrmCmd := &cobra.Command{
 		Use:     "sast-resources",
