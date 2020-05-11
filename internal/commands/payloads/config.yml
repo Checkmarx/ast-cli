@@ -1,0 +1,35 @@
+database:
+  host: fdsfsf
+  port:
+  name:
+  username:
+  password:
+
+network:
+  entrypointPort:
+  entrypointTLSPort:
+  privateKeyFile:
+  publicKeyFile:
+
+objectStore:
+  accessKeyId:
+  secretAccessKey:
+
+messageQueue:
+  username:
+  password:
+
+accessControl:
+  username:
+  password:
+
+log:
+  level:
+  rotation:
+    maxSizeMB:
+    maxAgeDays:
+
+
+# instead of struct, use map string string
+# then if the entry in yaml was memtioned - it will overriden unless empty
+# else not

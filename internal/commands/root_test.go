@@ -22,6 +22,10 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
+func toFlag(flag string) string {
+	return fmt.Sprintf("--%s", flag)
+}
+
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
 	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}

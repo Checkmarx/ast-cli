@@ -54,12 +54,7 @@ func runDeployAppCommand() func(cmd *cobra.Command, args []string) error {
 
 func runShowAppCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var err error
-
-		command := exec.Command("kubectl", "get", "pods")
-		command.Stdout = os.Stdout
-		command.Stderr = os.Stderr
-		err = command.Run()
+		err := runBashCommand("kubectl", "get", "pods")
 		if err != nil {
 			return errors.Wrapf(err, "%s:Failed to run kubectl command", failedShowingApp)
 		}
