@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -88,6 +90,7 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
+	aioCmd := NewAIOCommand()
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 
 	rootCmd.AddCommand(scanCmd,
@@ -96,6 +99,7 @@ func NewAstCLI(
 		versionCmd,
 		clusterCmd,
 		appCmd,
+		aioCmd,
 		bflCmd,
 		rmCmd,
 	)
@@ -123,4 +127,11 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		allFilters[filterKeyVal[0]] = filterKeyVal[1]
 	}
 	return allFilters, nil
+}
+
+func runBashCommand(name string, args ...string) error {
+	bashCommand := exec.Command(name, args...)
+	bashCommand.Stdout = os.Stdout
+	bashCommand.Stderr = os.Stderr
+	return bashCommand.Run()
 }
