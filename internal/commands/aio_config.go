@@ -21,9 +21,9 @@ func mergeConfigurationWithEnv(configuration *config.AIOConfiguration) error {
 	dotEnvInput, err := ioutil.ReadFile(dotEnvFilePath)
 	if err != nil {
 		fmt.Println("failed dot enving")
+
 		return errors.Wrapf(err, "%s: Failed to open .env file", failedInstallingAIO)
 	}
 	fmt.Println("DOT ENV content is:", string(dotEnvInput))
-
 	return nil
 }
