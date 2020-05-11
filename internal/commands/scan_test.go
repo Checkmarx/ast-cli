@@ -61,7 +61,7 @@ func TestRunCreateScanCommandWithInputAndTags(t *testing.T) {
 
 func TestRunCreateScanCommandWithInputPretty(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "--format", "pretty", "scan",
+	err := executeTestCommand(cmd, "-v", "--format", "list", "scan",
 		"create", "--input", "{\"project\":{\"id\":\"test\",\"type\":\"upload\",\"handler\":"+
 			"{\"url\":\"MOSHIKO\"},\"tags\":{}},\"config\":"+
 			"[{\"type\":\"sast\",\"value\":{\"presetName\":\"Default\"}}],\"tags\":{}}", "--sources", "./payloads/sources.zip")
@@ -119,20 +119,20 @@ func TestRunGetAllCommand(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetAllCommandPretty(t *testing.T) {
+func TestRunGetAllCommandList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty")
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list")
 	assert.NilError(t, err)
 }
 
-func TestRunGetAllCommandLimitPretty(t *testing.T) {
+func TestRunGetAllCommandLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty", "--filter", "limit=40")
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
-func TestRunGetAllCommandOffsetPretty(t *testing.T) {
+func TestRunGetAllCommandOffsetList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "pretty", "--filter", "offset=0")
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "offset=0")
 	assert.NilError(t, err)
 }
 
