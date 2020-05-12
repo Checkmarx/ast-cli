@@ -12,5 +12,3 @@ do
     esac
 done
 echo $log_rotation_size#$log_rotation_age_days#$tls_private_key_file#$tls_certificate_file
-# cd c/CODE/ast-cli/internal/commands/.scripts-test
-#  ./install.sh log_rotation_size=10M log_rotation_age_days=5 tls_private_key_file=/path/to/private.path tls_certificate_file=/path/to/cert.path
