@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/pkg/errors"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -24,13 +26,10 @@ const (
 	inputFileFlagSh               = "f"
 	scanTagsFlag                  = "tag"
 	scanTagsFlagSh                = "t"
-	AccessKeyIDEnv                = "AST_ACCESS_KEY_ID"
 	accessKeyIDFlag               = "key"
 	accessKeyIDFlagUsage          = "The access key ID for AST"
-	AccessKeySecretEnv            = "AST_ACCESS_KEY_SECRET"
 	accessKeySecretFlag           = "secret"
 	accessKeySecretFlagUsage      = "The access key secret for AST"
-	AstAuthenticationURIEnv       = "AST_AUTHENTICATION_URI"
 	astAuthenticationURIFlag      = "auth-uri"
 	astAuthenticationURIFlagUsage = "The authentication URI for AST"
 	insecureFlag                  = "insecure"
@@ -41,12 +40,6 @@ const (
 	formatList                    = "list"
 	formatTable                   = "table"
 	filterFlag                    = "filter"
-)
-
-var (
-	AccessKeyIDConfigKey          = strings.ToLower(AccessKeyIDEnv)
-	AccessKeySecretConfigKey      = strings.ToLower(AccessKeySecretEnv)
-	AstAuthenticationURIConfigKey = strings.ToLower(AstAuthenticationURIEnv)
 )
 
 // Return an AST CLI root command to execute
@@ -73,9 +66,9 @@ func NewAstCLI(
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
 	// and can be overridden by command flag --key
-	_ = viper.BindPFlag(AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
-	_ = viper.BindPFlag(AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
-	_ = viper.BindPFlag(AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
+	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
+	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
+	_ = viper.BindPFlag(params.AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
