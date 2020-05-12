@@ -6,6 +6,7 @@ const (
 	ProjectsPathEnv         = "PROJECTS_PATH"
 	ResultsPathEnv          = "RESULTS_PATH"
 	BflPathEnv              = "BFL_PATH"
+	SastRmPathEnv           = "SAST_RM_PATH"
 	UploadsPathEnv          = "UPLOADS_PATH"
 	CredentialsFilePathEnv  = "CREDENTIALS_FILE_PATH"
 	TokenExpirySecondsEnv   = "TOKEN_EXPIRY_SECONDS"

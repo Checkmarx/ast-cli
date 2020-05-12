@@ -13,7 +13,7 @@ import (
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 
 	params "github.com/checkmarxDev/ast-cli/internal/params"
-  
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -79,7 +79,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
+	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
