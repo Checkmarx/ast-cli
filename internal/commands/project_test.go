@@ -49,9 +49,9 @@ func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
 
-func TestRunCreateProjectCommandWithInputPretty(t *testing.T) {
+func TestRunCreateProjectCommandWithInputList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "--format", "pretty", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
+	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
 	assert.NilError(t, err)
 }
 
@@ -119,9 +119,9 @@ func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetAllProjectsCommandWithLimitPretty(t *testing.T) {
+func TestRunGetAllProjectsCommandWithLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "pretty", "--filter", "--limit=40")
+	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "list", "--filter", "--limit=40")
 	assert.NilError(t, err)
 }
 
