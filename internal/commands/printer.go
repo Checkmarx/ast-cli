@@ -38,8 +38,7 @@ func IsJSONFormat() bool {
 }
 
 func IsListFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatList) ||
-		strings.EqualFold(viper.GetString(formatFlag), "pretty") // for compatibility
+	return strings.EqualFold(viper.GetString(formatFlag), formatList)
 }
 
 func IsTableFormat() bool {

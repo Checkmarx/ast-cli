@@ -9,7 +9,7 @@ import (
 )
 
 func TestSastResourcesScansCommand(t *testing.T) {
-	err := executeASTTestCommand("sast-resources", "scans", "--format", "pretty")
+	err := executeASTTestCommand("sast-resources", "scans", "--format", "list")
 	assert.NilError(t, err)
 	err = executeASTTestCommand("sr", "scans")
 	assert.NilError(t, err)
@@ -24,7 +24,7 @@ func TestSastResourcesEnginesCommand(t *testing.T) {
 	assert.NilError(t, err)
 	err = executeASTTestCommand("sr", "engines")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "engines", "--format", "pretty")
+	err = executeASTTestCommand("sr", "engines", "--format", "list")
 	assert.NilError(t, err)
 	err = executeASTTestCommand("sr", "engines", "-h")
 	assert.NilError(t, err)

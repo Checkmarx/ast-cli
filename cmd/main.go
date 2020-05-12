@@ -11,74 +11,58 @@ import (
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
+	params "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
 const (
-	astURIEnv              = "AST_URI"
-	scansPathEnv           = "SCANS_PATH"
-	projectsPathEnv        = "PROJECTS_PATH"
-	resultsPathEnv         = "RESULTS_PATH"
-	uploadsPathEnv         = "UPLOADS_PATH"
-	bflPathEnv             = "BFL_PATH"
-	sastRmPathEnv          = "SAST_RM_PATH"
-	credentialsFilePathEnv = "CREDENTIALS_FILE_PATH"
-	tokenExpirySecondsEnv  = "TOKEN_EXPIRY_SECONDS"
-
 	successfulExitCode = 0
 	failureExitCode    = 1
 )
 
 func main() {
-	// Key ast_uri will be bound to AST_URI
-	astURIKey := strings.ToLower(astURIEnv)
-	err := bindKeyToEnvAndDefault(astURIKey, astURIEnv, "http://localhost:80")
+	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
 	exitIfError(err)
-	ast := viper.GetString(astURIKey)
+	ast := viper.GetString(params.AstURIKey)
 
-	scansPathKey := strings.ToLower(scansPathEnv)
-	err = bindKeyToEnvAndDefault(scansPathKey, scansPathEnv, "api/scans")
+	err = bindKeyToEnvAndDefault(params.ScansPathKey, params.ScansPathEnv, "api/scans")
 	exitIfError(err)
-	scans := viper.GetString(scansPathKey)
+	scans := viper.GetString(params.ScansPathKey)
 
-	projectsPathKey := strings.ToLower(projectsPathEnv)
-	err = bindKeyToEnvAndDefault(projectsPathKey, projectsPathEnv, "api/projects")
+	err = bindKeyToEnvAndDefault(params.ProjectsPathKey, params.ProjectsPathEnv, "api/projects")
 	exitIfError(err)
-	projects := viper.GetString(projectsPathKey)
+	projects := viper.GetString(params.ProjectsPathKey)
 
-	resultsPathKey := strings.ToLower(resultsPathEnv)
-	err = bindKeyToEnvAndDefault(resultsPathKey, resultsPathEnv, "api/results")
+	err = bindKeyToEnvAndDefault(params.ResultsPathKey, params.ResultsPathEnv, "api/results")
 	exitIfError(err)
-	results := viper.GetString(resultsPathKey)
+	results := viper.GetString(params.ResultsPathKey)
 
-	bflPathKey := strings.ToLower(bflPathEnv)
-	err = bindKeyToEnvAndDefault(bflPathKey, bflPathEnv, "api/bfl")
+	err = bindKeyToEnvAndDefault(params.BflPathKey, params.BflPathEnv, "api/bfl")
 	exitIfError(err)
-	bfl := viper.GetString(bflPathKey)
+	bfl := viper.GetString(params.BflPathKey)
 
-	uploadsPathKey := strings.ToLower(uploadsPathEnv)
-	err = bindKeyToEnvAndDefault(uploadsPathKey, uploadsPathEnv, "api/uploads")
+	err = bindKeyToEnvAndDefault(params.UploadsPathKey, params.UploadsPathEnv, "api/uploads")
 	exitIfError(err)
-	uploads := viper.GetString(uploadsPathKey)
+	uploads := viper.GetString(params.UploadsPathKey)
 
-	sastRmPathKey := strings.ToLower(sastRmPathEnv)
-	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	sastRmPathKey := strings.ToLower(params.SastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, params.SastRmPathEnv, "api/sast-rm")
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
-	exitIfError(err)
-	err = bindKeyToEnvAndDefault(commands.AccessKeySecretConfigKey, commands.AccessKeySecretEnv, "")
-	exitIfError(err)
-	err = bindKeyToEnvAndDefault(commands.AstAuthenticationURIConfigKey, commands.AstAuthenticationURIEnv, "")
+	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
-	credentialsFilePathKey := strings.ToLower(credentialsFilePathEnv)
-	err = bindKeyToEnvAndDefault(credentialsFilePathKey, credentialsFilePathEnv, "credentials.ast")
+	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
 	exitIfError(err)
 
-	tokenExpirySecondsKey := strings.ToLower(tokenExpirySecondsEnv)
-	err = bindKeyToEnvAndDefault(tokenExpirySecondsKey, tokenExpirySecondsEnv, "300")
+	err = bindKeyToEnvAndDefault(params.AstAuthenticationURIConfigKey, params.AstAuthenticationURIEnv, "")
+	exitIfError(err)
+
+	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
+	exitIfError(err)
+
+	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
