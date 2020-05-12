@@ -24,12 +24,10 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      - run:
-          name: Switch to root
-          command: sudo su
       - run: 
           name: go test with coverage
           command: |
+            sudo su
             go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
