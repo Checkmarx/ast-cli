@@ -59,6 +59,7 @@ func NewAstCLI(
 	resultsWrapper wrappers.ResultsWrapper,
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
+	scriptsWrapper wrappers.ScriptsWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
@@ -90,7 +91,7 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
-	aioCmd := NewAIOCommand()
+	aioCmd := NewAIOCommand(scriptsWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 
 	rootCmd.AddCommand(scanCmd,

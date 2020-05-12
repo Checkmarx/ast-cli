@@ -1,36 +1,50 @@
 package config
 
+type Database struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Name     string `yaml:"name"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type Network struct {
+	EntrypointPort    string `yaml:"entrypointPort"`
+	EntrypointTLSPort string `yaml:"entrypointTLSPort"`
+	PrivateKeyFile    string `yaml:"privateKeyFile"`
+	CertificateFile   string `yaml:"certificateFile"`
+}
+
+type ObjectStore struct {
+	AccessKeyID     string `yaml:"accessKeyId"`
+	SecretAccessKey string `yaml:"secretAccessKey"`
+}
+
+type MessageQueue struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type AccessControl struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+type Log struct {
+	Level    string      `yaml:"level"`
+	Rotation LogRotation `yaml:"rotation"`
+}
+
+type LogRotation struct {
+	MaxSizeMB  string `yaml:"maxSizeMB"`
+	MaxAgeDays string `yaml:"maxAgeDays"`
+}
+
 type AIOConfiguration struct {
-	Database struct {
-		Host     interface{} `yaml:"host"`
-		Port     interface{} `yaml:"port"`
-		Name     interface{} `yaml:"name"`
-		Username interface{} `yaml:"username"`
-		Password interface{} `yaml:"password"`
-	} `yaml:"database"`
-	Network struct {
-		EntrypointPort    interface{} `yaml:"entrypointPort"`
-		EntrypointTLSPort interface{} `yaml:"entrypointTLSPort"`
-		PrivateKeyFile    interface{} `yaml:"privateKeyFile"`
-		PublicKeyFile     interface{} `yaml:"publicKeyFile"`
-	} `yaml:"network"`
-	ObjectStore struct {
-		AccessKeyID     interface{} `yaml:"accessKeyId"`
-		SecretAccessKey interface{} `yaml:"secretAccessKey"`
-	} `yaml:"objectStore"`
-	MessageQueue struct {
-		Username interface{} `yaml:"username"`
-		Password interface{} `yaml:"password"`
-	} `yaml:"messageQueue"`
-	AccessControl struct {
-		Username interface{} `yaml:"username"`
-		Password interface{} `yaml:"password"`
-	} `yaml:"accessControl"`
-	Log struct {
-		Level    interface{} `yaml:"level"`
-		Rotation struct {
-			MaxSizeMB  interface{} `yaml:"maxSizeMB"`
-			MaxAgeDays interface{} `yaml:"maxAgeDays"`
-		} `yaml:"rotation"`
-	} `yaml:"log"`
+	Database      Database      `yaml:"database"`
+	Network       Network       `yaml:"network"`
+	ObjectStore   ObjectStore   `yaml:"objectStore"`
+	MessageQueue  MessageQueue  `yaml:"messageQueue"`
+	AccessControl AccessControl `yaml:"accessControl"`
+	Log           Log           `yaml:"log"`
 }

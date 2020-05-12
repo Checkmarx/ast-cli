@@ -1,5 +1,5 @@
 database:
-  host: fdsfsf
+  host: KOFIKO
   port:
   name:
   username:
@@ -9,7 +9,7 @@ network:
   entrypointPort:
   entrypointTLSPort:
   privateKeyFile:
-  publicKeyFile:
+  certificateFile:
 
 objectStore:
   accessKeyId:
@@ -28,8 +28,3 @@ log:
   rotation:
     maxSizeMB:
     maxAgeDays:
-
-
-# instead of struct, use map string string
-# then if the entry in yaml was memtioned - it will overriden unless empty
-# else not
