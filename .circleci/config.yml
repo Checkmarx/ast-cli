@@ -24,6 +24,9 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+          name: Install sudo command
+          command: apt-get install -y sudo
       - run: 
           name: go test with coverage
           command: |
