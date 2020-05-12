@@ -27,7 +27,7 @@ jobs:
       - run: 
           name: go test with coverage
           command: |
-            sudo su
+            sudo su || true
             go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
