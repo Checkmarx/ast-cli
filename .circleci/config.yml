@@ -25,12 +25,12 @@ jobs:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
       - run:
-          name: test
-          command: sudo ls
+          name: Switch to root
+          command: sudo su
       - run: 
           name: go test with coverage
           command: |
-            sudo go test ./... -coverprofile cover.out
+            go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
           name: Check if total coverage is greater then 0
