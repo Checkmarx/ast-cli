@@ -19,11 +19,11 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 }
 
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
-	*projectsRESTApi.SlicedProjectsResponseModel,
+	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
-	return &projectsRESTApi.SlicedProjectsResponseModel{
+	return &projectsRESTApi.ProjectsCollectionResponseModel{
 		Projects: []projectsRESTApi.ProjectResponseModel{
 			{
 				ID: "MOCK",

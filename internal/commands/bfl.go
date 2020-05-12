@@ -67,7 +67,7 @@ func outputBFL(cmd *cobra.Command, model *wrappers.BFLResponseModel) error {
 			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingBfl)
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(bflJSON))
-	} else if IsPrettyFormat() {
+	} else if IsListFormat() {
 		fmt.Println("************ Best Fix Location ************")
 		fmt.Println("BFL ID:", model.ID)
 		fmt.Println()

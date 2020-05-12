@@ -41,7 +41,12 @@ func main() {
 	exitIfError(err)
 	uploads := viper.GetString(params.UploadsPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
+	sastRmPathKey := strings.ToLower(sastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	exitIfError(err)
+	sastrm := viper.GetString(sastRmPathKey)
+
+	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
 	exitIfError(err)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
@@ -60,6 +65,7 @@ func main() {
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
+	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
@@ -67,8 +73,16 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper)
+	astCli := commands.NewAstCLI(
+		scansWrapper,
+		uploadsWrapper,
+		projectsWrapper,
+		resultsWrapper,
+		bflWrapper,
+		rmWrapper,
+	)
 
 	err = astCli.Execute()
 	exitIfError(err)

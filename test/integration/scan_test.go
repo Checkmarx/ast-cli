@@ -105,13 +105,13 @@ func listScans(t *testing.T) {
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
 }
 
-func listScansPretty(t *testing.T) {
+func listScansList(t *testing.T) {
 	getAllCommand := createASTIntegrationTestCommand(t)
 	var limit uint64 = 40
 	var offset uint64 = 0
 	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
 	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
-	err := execute(getAllCommand, "-v", "--format", "pretty", "scan", "list", "--filter", lim, "--filter", off)
+	err := execute(getAllCommand, "-v", "--format", "list", "scan", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all scans should pass")
 }
 
@@ -131,9 +131,9 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
 	return &getScan
 }
-func getScanByIDPretty(t *testing.T, scanID string) {
+func getScanByIDList(t *testing.T, scanID string) {
 	getCommand := createASTIntegrationTestCommand(t)
-	err := execute(getCommand, "-v", "--format", "pretty", "scan", "show", scanID)
+	err := execute(getCommand, "-v", "--format", "list", "scan", "show", scanID)
 	assert.NilError(t, err)
 }
 
@@ -178,7 +178,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, ch chan<- bool, requiredSt
 	for {
 		log.Printf("Polling scan %s\n", scanID)
 		scan := getScanByID(t, scanID)
-		getScanByIDPretty(t, scanID)
+		getScanByIDList(t, scanID)
 		if string(scan.Status) == string(requiredStatus) {
 			ch <- true
 			return

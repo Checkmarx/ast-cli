@@ -79,7 +79,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 					return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
-			} else if IsPrettyFormat() {
+			} else if IsListFormat() {
 				err = outputResultsPretty(resultResponseModel.Results)
 				if err != nil {
 					return err
