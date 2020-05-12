@@ -46,7 +46,7 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 		logFile, _ := cmd.Flags().GetString(logFileFlag)
 		PrintIfVerbose(fmt.Sprintf("%s: %s", logFileFlag, logFile))
 
-		err := runBashCommand(scriptsWrapper.GetInstallScriptPath())
+		_, err := runBashCommand(scriptsWrapper.GetInstallScriptPath())
 		if err != nil {
 			return errors.Wrapf(err, "%s: Failed to run install command", failedInstallingAIO)
 		}
@@ -82,7 +82,7 @@ func up(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper) error {
 	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
 	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
 
-	err := runBashCommand(scriptsWrapper.GetUpScriptPath(),
+	_, err := runBashCommand(scriptsWrapper.GetUpScriptPath(),
 		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
 	if err != nil {
 		return errors.Wrapf(err, "%s: Failed to run up command", failedRunningAIO)

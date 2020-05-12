@@ -101,7 +101,7 @@ func main() {
 	}
 	executableDir := filepath.Dir(executablePath)
 	dotEnvFilePath := path.Join(executableDir, ".env")
-	scriptsDir := "./.scripts"
+	scriptsDir := "./.scripts-test"
 	installFilePath := "install.sh"
 	upFilePath := "up.sh"
 	downFilePath := "down.sh"

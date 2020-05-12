@@ -34,13 +34,7 @@ func createASTTestCommand() *cobra.Command {
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
 
-	dotEnvFilePath := "./payloads/.env"
-	scriptsDir := "./.scripts"
-	installFilePath := "install.sh"
-	upFilePath := "up.sh"
-	downFilePath := "down.sh"
-
-	scriptsWrapper := wrappers.NewScriptsFolderWrapper(dotEnvFilePath, scriptsDir, installFilePath, upFilePath, downFilePath)
+	scriptsWrapper := createTestScriptWrapper()
 
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
@@ -49,6 +43,17 @@ func createASTTestCommand() *cobra.Command {
 		bflMockWrapper,
 		rmMockWrapper,
 		scriptsWrapper)
+}
+
+func createTestScriptWrapper() wrappers.ScriptsWrapper {
+	dotEnvFilePath := "./payloads/.env"
+	scriptsDir := "./.scripts-test"
+	installFilePath := "install.sh"
+	upFilePath := "up.sh"
+	downFilePath := "down.sh"
+
+	scriptsWrapper := wrappers.NewScriptsFolderWrapper(dotEnvFilePath, scriptsDir, installFilePath, upFilePath, downFilePath)
+	return scriptsWrapper
 }
 
 func TestRootHelp(t *testing.T) {
