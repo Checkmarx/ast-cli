@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/spf13/viper"
 )
 
@@ -79,11 +83,20 @@ func SendHTTPRequestWithQueryParams(method, url string, params map[string]string
 }
 
 func enrichWithCredentials(request *http.Request) (*http.Request, error) {
-	authHost := viper.GetString("ast_authentication_uri")
-	accessKeyID := viper.GetString("ast_access_key_id")
-	accessKeySecret := viper.GetString("ast_access_key_secret")
+	authURI := viper.GetString(commonParams.AstAuthenticationURIConfigKey)
+	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	failedToAuth := "Failed to authenticate - please provide an %s"
 
-	accessToken, err := getClientCredentials(authHost, accessKeyID, accessKeySecret)
+	if authURI == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "authentication URI"))
+	} else if accessKeyID == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+	} else if accessKeySecret == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+	}
+
+	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
 	if err != nil {
 		return nil, err
 	}
@@ -93,8 +106,8 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 
 func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*string, error) {
 	// Try to load access token from file, if not expired
-	credentialsFilePath := viper.GetString("credentials_file_path")
-	tokenExpirySeconds := viper.GetInt("token_expiry_seconds")
+	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
+	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 
 	if info, err := os.Stat(credentialsFilePath); err == nil {
 		// Credentials file exists. Check for access token validity
@@ -106,12 +119,19 @@ func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*
 				return nil, err
 			}
 			accessToken := string(b)
+			if accessToken == "" {
+				return getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath)
+			}
 			return &accessToken, nil
 		}
 	}
 
 	// Here the file can either not exist, exist and failed opening or the token has expired.
 	// We don't care. Create a new token.
+	return getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath)
+}
+
+func getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath string) (*string, error) {
 	payload := strings.NewReader(getCredentialsPayload(accessKeyID, accessKeySecret))
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	if err != nil {
