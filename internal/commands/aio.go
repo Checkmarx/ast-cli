@@ -2,8 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
+
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/checkmarxDev/ast-cli/internal/config"
 	"github.com/pkg/errors"
@@ -14,9 +17,10 @@ const (
 	logFileFlag         = "log"
 	configFileFlag      = "config"
 	failedInstallingAIO = "Failed installing All-In-One"
+	failedRunningAIO    = "Failed running All-In-One"
 )
 
-func NewAIOCommand() *cobra.Command {
+func NewAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
 	aioCmd := &cobra.Command{
 		Use:   "aio",
 		Short: "All-In-One AST",
@@ -25,7 +29,7 @@ func NewAIOCommand() *cobra.Command {
 	installAIOCmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install All-In-One AST",
-		RunE:  runInstallAIOCommand,
+		RunE:  runInstallAIOCommand(scriptsWrapper),
 	}
 
 	installAIOCmd.PersistentFlags().String(logFileFlag, "",
@@ -37,12 +41,22 @@ func NewAIOCommand() *cobra.Command {
 	return aioCmd
 }
 
-func runInstallAIOCommand(cmd *cobra.Command, args []string) error {
-	var err error
-	logFile, _ := cmd.Flags().GetString(logFileFlag)
+func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		logFile, _ := cmd.Flags().GetString(logFileFlag)
+		PrintIfVerbose(fmt.Sprintf("%s: %s", logFileFlag, logFile))
+
+		err := runBashCommand(scriptsWrapper.GetInstallScriptPath())
+		if err != nil {
+			return errors.Wrapf(err, "%s: Failed to run install command", failedInstallingAIO)
+		}
+		return up(cmd, scriptsWrapper)
+	}
+}
+
+func up(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper) error {
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
-	PrintIfVerbose(fmt.Sprintf("%s: %s", logFileFlag, logFile))
-	PrintIfVerbose(fmt.Sprintf("%s: %s", configFileFlag, configFile))
+	configuration := config.AIOConfiguration{}
 
 	if configFile != "" {
 		// Reading configuration from config file
@@ -51,17 +65,27 @@ func runInstallAIOCommand(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAIO)
 		}
-		configuration := config.AIOConfiguration{}
+
 		err = yaml.Unmarshal(configInput, &configuration)
 		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("Unable to parse configuration file"))
 		}
-		err = mergeConfigurationWithEnv(&configuration)
+
+		err = mergeConfigurationWithEnv(&configuration, scriptsWrapper.GetDotEnvFilePath())
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("failed to merge configuration file with env file"))
+		}
 	}
 
-	err = runBashCommand("echo")
+	logMaxSize := fmt.Sprintf("log_rotation_size=%s", configuration.Log.Rotation.MaxSizeMB)
+	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
+	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
+	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
+
+	err := runBashCommand(scriptsWrapper.GetUpScriptPath(),
+		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
 	if err != nil {
-		return errors.Wrapf(err, "%s: Failed to run install command", failedInstallingAIO)
+		return errors.Wrapf(err, "%s: Failed to run up command", failedRunningAIO)
 	}
 	return nil
 }

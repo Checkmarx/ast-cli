@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -92,6 +95,19 @@ func main() {
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
 
+	executablePath, err := os.Executable()
+	if err != nil {
+		log.Fatalf("Error finding executable path: %v", err)
+	}
+	executableDir := filepath.Dir(executablePath)
+	dotEnvFilePath := path.Join(executableDir, ".env")
+	scriptsDir := "./.scripts"
+	installFilePath := "install.sh"
+	upFilePath := "up.sh"
+	downFilePath := "down.sh"
+
+	scriptsWrapper := wrappers.NewScriptsFolderWrapper(dotEnvFilePath, scriptsDir, installFilePath, upFilePath, downFilePath)
+
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		uploadsWrapper,
@@ -99,6 +115,7 @@ func main() {
 		resultsWrapper,
 		bflWrapper,
 		rmWrapper,
+		scriptsWrapper,
 	)
 
 	err = astCli.Execute()
