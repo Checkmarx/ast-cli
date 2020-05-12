@@ -15,8 +15,11 @@ Inside the command prompt run:
 
 ## Authentication
 In order to authenticate with AST there are 3 environment variables that needs to be set:
-**AST_AUTHENTICATION_URI**: The authentication URI used by AST
-**AST_ACCESS_KEY_ID**: The access key ID
+    
+**AST_AUTHENTICATION_URI**: The authentication URI used by AST  
+**AST_ACCESS_KEY_ID**: The access key ID  
 **AST_ACCESS_KEY_SECRET**: The access key secret
 
-Both access key ID and access key secret can be overriden by the flags **--key** and **--secret** respectively
+You can use [SETX](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx) (windows), [SETENV](https://www.computerhope.com/unix/usetenv.htm)  (linux) for permanent save     
+
+Both access key ID and access key secret can be overridden by the flags **--key** and **--secret** respectively

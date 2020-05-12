@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
+
 	params "github.com/checkmarxDev/ast-cli/internal/params"
+  
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -72,7 +74,12 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	uploads := viper.GetString(params.UploadsPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
+	sastRmPathKey := strings.ToLower(sastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	assert.NilError(t, err)
+	sastrm := viper.GetString(sastRmPathKey)
+
+	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
@@ -92,14 +99,16 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
+	rmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(rmURL)
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper)
+	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper, rmWrapper)
 	return astCli
 }
 

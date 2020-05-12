@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -54,6 +55,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.PersistentFlags().StringSliceP(scanTagsFlag, scanTagsFlagSh, []string{},
+		"Scan tags")
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -97,10 +100,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanInput, _ = cmd.Flags().GetString(inputFlag)
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
+		scanTagsRaw, _ := cmd.Flags().GetStringSlice(scanTagsFlag)
 
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, scanInput))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
+		PrintIfVerbose(fmt.Sprintf("%s: %v", scanTagsFlag, scanTagsRaw))
 
 		if scanInputFile != "" {
 			// Reading from input file
@@ -132,6 +137,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}
+			PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
+
 			// We are in upload mode - populate fields accordingly
 			projectHandlerModel := scansRESTApi.UploadProjectHandler{
 				URL: *preSignedURL,
@@ -144,6 +151,14 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			}
 			scanModel.Project.Type = scansRESTApi.UploadProject
 			scanModel.Project.Handler = projectHandlerModelSerialized
+		}
+
+		if len(scanTagsFlag) > 0 {
+			tags, perr := parseTags(scanTagsRaw)
+			if perr != nil {
+				return errors.Wrapf(err, "%s: Tags in bad format", failedCreating)
+			}
+			scanModel.Tags = tags
 		}
 		var payload []byte
 		payload, _ = json.Marshal(scanModel)
@@ -158,7 +173,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = outputScan(cmd, scanResponseModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
@@ -167,9 +182,21 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	}
 }
 
+func parseTags(flags []string) (map[string]string, error) {
+	tags := make(map[string]string)
+	for _, flag := range flags {
+		data := strings.Split(flag, "=")
+		if len(data) != 2 { //nolint:gomnd
+			return nil, errors.Errorf("Invalid tags. Tags should be in a KEY=VALUE format")
+		}
+		tags[data[0]] = data[1]
+	}
+	return tags, nil
+}
+
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scansRESTApi.SlicedScansResponseModel
+		var allScansModel *scansRESTApi.ScansCollectionResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -184,7 +211,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = outputScans(cmd, allScansModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(allScansModel.Scans...))
 			if err != nil {
 				return err
 			}
@@ -210,7 +237,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = outputScan(cmd, scanResponseModel)
+			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -263,50 +290,27 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 	}
 }
 
-func outputScans(cmd *cobra.Command, allScansModel *scansRESTApi.SlicedScansResponseModel) error {
-	if IsJSONFormat() {
-		allScansJSON, err := json.Marshal(allScansModel)
-		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize scan response ", failedGettingAll)
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(allScansJSON))
-	} else if IsPrettyFormat() {
-		for _, scan := range allScansModel.Scans {
-			prettySingleScan(&scansRESTApi.ScanResponseModel{
-				ID:        scan.ID,
-				Status:    scan.Status,
-				CreatedAt: scan.CreatedAt,
-				UpdatedAt: scan.UpdatedAt,
-				ProjectID: scan.ProjectID,
-				Tags:      scan.Tags,
-			})
-		}
-	}
-	return nil
+type scansScanView struct {
+	ID        string `format:"name:Scan ID"`
+	ProjectID string `format:"name:Project ID"`
+	Status    string
+	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
+	Tags      map[string]string
 }
 
-func outputScan(cmd *cobra.Command, model *scansRESTApi.ScanResponseModel) error {
-	if err := ValidateFormat(); err != nil {
-		return err
-	}
-
-	if IsJSONFormat() {
-		responseModelJSON, err := json.Marshal(model)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to serialize scan response")
+func toScanViews(scans ...scansRESTApi.ScanResponseModel) []*scansScanView {
+	views := make([]*scansScanView, len(scans))
+	for i := 0; i < len(scans); i++ {
+		scan := scans[i]
+		views[i] = &scansScanView{
+			ID:        scan.ID,
+			Status:    string(scan.Status),
+			CreatedAt: scan.CreatedAt,
+			UpdatedAt: scan.UpdatedAt,
+			ProjectID: scan.ProjectID,
+			Tags:      scan.Tags,
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(responseModelJSON))
-	} else if IsPrettyFormat() {
-		prettySingleScan(model)
 	}
-	return nil
-}
-func prettySingleScan(model *scansRESTApi.ScanResponseModel) {
-	fmt.Println("Scan ID:", model.ID)
-	fmt.Println("Project ID:", model.ProjectID)
-	fmt.Println("Status:", model.Status)
-	fmt.Println("Created at:", model.CreatedAt)
-	fmt.Println("Updated at:", model.UpdatedAt)
-	fmt.Println("Tags:", model.Tags)
-	fmt.Println()
+	return views
 }

@@ -24,6 +24,9 @@ const (
 	inputFlagSh                   = "i"
 	inputFileFlag                 = "input-file"
 	inputFileFlagSh               = "f"
+	scanTagsFlag                  = "tag"
+	scanTagsFlagSh                = "t"
+	AccessKeyIDEnv                = "AST_ACCESS_KEY_ID"
 	accessKeyIDFlag               = "key"
 	accessKeyIDFlagUsage          = "The access key ID for AST"
 	accessKeySecretFlag           = "secret"
@@ -33,9 +36,10 @@ const (
 	insecureFlag                  = "insecure"
 	insecureFlagUsage             = "Ignore TLS certificate validations"
 	formatFlag                    = "format"
-	formatFlagUsage               = "Format for the output. One of [json, pretty]. Default is JSON"
+	formatFlagUsage               = "Format for the output. One of [json, list, table]"
 	formatJSON                    = "json"
-	formatPretty                  = "pretty"
+	formatList                    = "list"
+	formatTable                   = "table"
 	filterFlag                    = "filter"
 )
 
@@ -45,7 +49,9 @@ func NewAstCLI(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
-	bflWrapper wrappers.BFLWrapper) *cobra.Command {
+	bflWrapper wrappers.BFLWrapper,
+	rmWrapper wrappers.SastRmWrapper,
+) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
@@ -56,7 +62,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
-	rootCmd.PersistentFlags().String(formatFlag, formatJSON, formatFlagUsage)
+	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -76,8 +82,17 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
+	rmCmd := NewSastResourcesCommand(rmWrapper)
 
-	rootCmd.AddCommand(scanCmd, projectCmd, resultCmd, versionCmd, clusterCmd, appCmd, bflCmd)
+	rootCmd.AddCommand(scanCmd,
+		projectCmd,
+		resultCmd,
+		versionCmd,
+		clusterCmd,
+		appCmd,
+		bflCmd,
+		rmCmd,
+	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }
@@ -102,18 +117,4 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		allFilters[filterKeyVal[0]] = filterKeyVal[1]
 	}
 	return allFilters, nil
-}
-
-func IsJSONFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatJSON)
-}
-func IsPrettyFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatPretty)
-}
-
-func ValidateFormat() error {
-	if !(IsPrettyFormat() || IsJSONFormat()) {
-		return errors.Errorf("Invalid format %s", viper.GetString(formatFlag))
-	}
-	return nil
 }

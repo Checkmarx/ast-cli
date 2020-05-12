@@ -24,7 +24,6 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-#       - run: go mod download
       - run: 
           name: go test with coverage
           command: |
@@ -66,7 +65,6 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
-      - run: go mod download
       - run:
           name: Run golangci-lint
           command: golangci-lint run ./...
@@ -92,7 +90,12 @@ jobs:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
       - run: go mod download
-      - run: go build -o bin/ast cmd/main.go
+      - run: 
+          name: Build Linux_amd64 binary 
+          command: GOOS=linux GOARCH=amd64 go build -o bin/ast cmd/main.go
+      - run:
+          name: Build Windows binary
+          command: GOOS=windows GOARCH=amd64 go build -o bin/ast.exe ./cmd
       - run: go get github.com/tcnksm/ghr
       - run:
           name: Publish GitHub release

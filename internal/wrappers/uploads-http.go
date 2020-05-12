@@ -3,7 +3,6 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -51,7 +50,6 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		Timeout: time.Second * time.Duration(httpClientTimeout),
 	}
 	var resp *http.Response
-	fmt.Printf("Uploading file to %s\n", *preSignedURL)
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request failed - %s", err.Error())
