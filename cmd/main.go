@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
@@ -41,12 +42,12 @@ func main() {
 	exitIfError(err)
 	uploads := viper.GetString(params.UploadsPathKey)
 
-	sastRmPathKey := strings.ToLower(sastRmPathEnv)
-	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	sastRmPathKey := strings.ToLower(params.SastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, params.SastRmPathEnv, "api/sast-rm")
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(commands.AccessKeyIDConfigKey, commands.AccessKeyIDEnv, "")
+	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
