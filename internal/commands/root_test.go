@@ -22,6 +22,10 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
+func toFlag(flag string) string {
+	return fmt.Sprintf("--%s", flag)
+}
+
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
 	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
@@ -29,7 +33,27 @@ func createASTTestCommand() *cobra.Command {
 	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
-	return NewAstCLI(scansMockWrapper, uploadsMockWrapper, projectsMockWrapper, resultsMockWrapper, bflMockWrapper, rmMockWrapper)
+
+	scriptsWrapper := createTestScriptWrapper()
+
+	return NewAstCLI(scansMockWrapper,
+		uploadsMockWrapper,
+		projectsMockWrapper,
+		resultsMockWrapper,
+		bflMockWrapper,
+		rmMockWrapper,
+		scriptsWrapper)
+}
+
+func createTestScriptWrapper() wrappers.ScriptsWrapper {
+	dotEnvFilePath := "./payloads/.env"
+	scriptsDir := "./.scripts-test"
+	installFilePath := "install.sh"
+	upFilePath := "up.sh"
+	downFilePath := "down.sh"
+
+	scriptsWrapper := wrappers.NewScriptsFolderWrapper(dotEnvFilePath, scriptsDir, installFilePath, upFilePath, downFilePath)
+	return scriptsWrapper
 }
 
 func TestRootHelp(t *testing.T) {

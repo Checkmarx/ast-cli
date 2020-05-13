@@ -1,0 +1,30 @@
+database:
+  host: KOFIKO
+  port:
+  name:
+  username:
+  password:
+
+network:
+  entrypointPort:
+  entrypointTLSPort:
+  privateKeyFile:
+  certificateFile:
+
+objectStore:
+  accessKeyId:
+  secretAccessKey:
+
+messageQueue:
+  username:
+  password:
+
+accessControl:
+  username:
+  password:
+
+log:
+  level:
+  rotation:
+    maxSizeMB:
+    maxAgeDays:

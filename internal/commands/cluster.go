@@ -10,11 +10,11 @@ import (
 )
 
 const (
-	inventoryFlag           = "inventory"
-	keyFileFlag             = "key-file"
-	installScriptPath       = "./installation-scripts/cluster-install.sh"
-	failedInstallingCluster = "Failed installing the cluster"
-	failedShowingCluster    = "Failed showing the cluster"
+	inventoryFlag            = "inventory"
+	keyFileFlag              = "key-file"
+	clusterInstallScriptPath = "./installation-scripts/cluster-install.sh"
+	failedInstallingCluster  = "Failed installing the cluster"
+	failedShowingCluster     = "Failed showing the cluster"
 )
 
 func NewClusterCommand() *cobra.Command {
@@ -75,7 +75,7 @@ func runInstallClusterCommand() func(cmd *cobra.Command, args []string) error {
 		}
 
 		cmdSh := &exec.Cmd{
-			Path:   installScriptPath,
+			Path:   clusterInstallScriptPath,
 			Stdout: os.Stdout,
 			Stderr: os.Stderr,
 		}
