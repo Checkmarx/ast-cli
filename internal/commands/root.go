@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -50,6 +52,7 @@ func NewAstCLI(
 	resultsWrapper wrappers.ResultsWrapper,
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
+	scriptsWrapper wrappers.ScriptsWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
@@ -81,6 +84,7 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
+	aioCmd := NewAIOCommand(scriptsWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 
 	rootCmd.AddCommand(scanCmd,
@@ -89,6 +93,7 @@ func NewAstCLI(
 		versionCmd,
 		clusterCmd,
 		appCmd,
+		aioCmd,
 		bflCmd,
 		rmCmd,
 	)
@@ -116,4 +121,10 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		allFilters[filterKeyVal[0]] = filterKeyVal[1]
 	}
 	return allFilters, nil
+}
+
+func runBashCommand(name string, args ...string) ([]byte, error) {
+	bashCommand := exec.Command(name, args...)
+	bashCommand.Stderr = os.Stderr
+	return bashCommand.Output()
 }
