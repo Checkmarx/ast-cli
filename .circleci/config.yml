@@ -31,9 +31,9 @@ jobs:
       - run:
           name: Install go 1.13
           command: 
-            sudo apt-get purge golang
-            sudo add-apt-repository ppa:gophers/archive
-            sudo apt update
+            sudo apt-get purge golang && \
+            sudo add-apt-repository ppa:gophers/archive && \
+            sudo apt update && \
             sudo apt install golang-1.13-go
       - run: go mod download
       - run: 
