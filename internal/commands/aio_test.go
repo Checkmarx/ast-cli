@@ -38,7 +38,7 @@ func TestRunBashCommand(t *testing.T) {
 	assert.NilError(t, err, "install command should succeed")
 	err = runBashCommand(scriptsWrapper.GetUpScriptPath(), upCmdStdOutputBuffer, upCmdStdErrorBuffer,
 		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
-	assert.NilError(t, err, "up command should succeed")
+	assert.NilError(t, err, "up script should succeed")
 	fmt.Println("****UP COMMAND OUTPUT*******")
 	actual := upCmdStdOutputBuffer.String()
 	expected := fmt.Sprintf("test_log_rotation_size#test_log_rotation_age_days#" +

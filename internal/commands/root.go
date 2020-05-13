@@ -1,8 +1,7 @@
 package commands
 
 import (
-	"bytes"
-	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -103,7 +102,7 @@ func NewAstCLI(
 
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(verboseFlag) {
-		fmt.Println(msg)
+		writeToStandardOutput(msg)
 	}
 }
 
@@ -123,7 +122,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
-func runBashCommand(name string, outBuffer, errBuffer *bytes.Buffer, args ...string) error {
+func runBashCommand(name string, outBuffer, errBuffer io.Writer, args ...string) error {
 	bashCommand := exec.Command(name, args...)
 	bashCommand.Stdout = outBuffer
 	bashCommand.Stderr = errBuffer
