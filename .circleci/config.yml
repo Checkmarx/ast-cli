@@ -28,7 +28,7 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-        - run: go version
+      - run: go version
 #       - run:
 #           name: Install go 1.13
 #           command: 
