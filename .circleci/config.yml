@@ -9,7 +9,7 @@ executors:
     resource_class: small
   circle-machine:
     machine:
-      image: ubuntu-1604:201903-01 #circleci/classic:201808-01
+      image: ubuntu-1604:202004-01
       #docker_layer_caching: true
 
 jobs:
@@ -28,13 +28,14 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-      - run:
-          name: Install go 1.13
-          command: 
-            sudo apt-get purge golang && \
-            sudo add-apt-repository ppa:gophers/archive && \
-            sudo apt-get update && \
-            sudo apt-get install golang-1.13-go -y
+        - run: go version
+#       - run:
+#           name: Install go 1.13
+#           command: 
+#             sudo apt-get purge golang && \
+#             sudo add-apt-repository ppa:gophers/archive && \
+#             sudo apt-get update && \
+#             sudo apt-get install golang-1.13-go -y
       - run: go mod download
       - run: 
           name: go test with coverage
