@@ -28,10 +28,10 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-      - run: go mod download
       - run: 
           name: go test with coverage
           command: |
+            echo 'Defaults env_keep += "GOPATH"' | sudo tee --append /etc/sudoers.d/env_keep && \
             sudo GOROOT=/usr/local/go go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
