@@ -30,9 +30,9 @@ jobs:
             - go-mod-v2-{{ checksum "go.sum" }}
       - run: go mod download
       - run: 
-          name: sudo go test with coverage
+          name: go test with coverage
           command: |
-            go test ./... -coverprofile cover.out
+            sudo go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
           name: Check if total coverage is greater then 0
