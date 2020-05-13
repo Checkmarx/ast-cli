@@ -28,6 +28,13 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
+      - run:
+          name: Install go 1.13
+          command: 
+            sudo apt-get purge golang
+            sudo add-apt-repository ppa:gophers/archive
+            sudo apt update
+            sudo apt install golang-1.13-go
       - run: go mod download
       - run: 
           name: go test with coverage
