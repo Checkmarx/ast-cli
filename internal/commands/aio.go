@@ -3,6 +3,9 @@ package commands
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
@@ -32,7 +35,7 @@ func NewAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
 		RunE:  runInstallAIOCommand(scriptsWrapper),
 	}
 
-	installAIOCmd.PersistentFlags().String(logFileFlag, "",
+	installAIOCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
 		"Installation log file path (optional)")
 	installAIOCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path to provide to the AIO installation (optional)")
@@ -43,15 +46,39 @@ func NewAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
 
 func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		logFile, _ := cmd.Flags().GetString(logFileFlag)
-		PrintIfVerbose(fmt.Sprintf("%s: %s", logFileFlag, logFile))
-
-		_, err := runBashCommand(scriptsWrapper.GetInstallScriptPath())
+		logFilePath, _ := cmd.Flags().GetString(logFileFlag)
+		PrintIfVerbose(fmt.Sprintf("Log file path: %s", logFilePath))
+		logFile, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to run install command", failedInstallingAIO)
+			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAIO)
 		}
-		return up(cmd, scriptsWrapper)
+		logrus.SetOutput(logFile)
+		logrus.RegisterExitHandler(closeLogFile(logFile))
+		writeInfoToConsoleAndLog("AIO installation started")
+		_, err = runBashCommand(scriptsWrapper.GetInstallScriptPath())
+		if err != nil {
+			msg := fmt.Sprintf("%s: Failed to run install command", failedInstallingAIO)
+			logrus.WithFields(logrus.Fields{
+				"err": err,
+			}).Println(msg)
+			return errors.Wrapf(err, msg)
+		}
+		err = up(cmd, scriptsWrapper)
+		if err != nil {
+			msg := fmt.Sprintf("%s: Failed to start AIO after installation", failedInstallingAIO)
+			logrus.WithFields(logrus.Fields{
+				"err": err,
+			}).Println(msg)
+			return errors.Wrapf(err, msg)
+		}
+		writeInfoToConsoleAndLog("AIO installation completed successfully")
+		return nil
 	}
+}
+
+func writeInfoToConsoleAndLog(msg string) {
+	fmt.Println(msg)
+	logrus.Println(msg)
 }
 
 func up(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper) error {
@@ -88,4 +115,12 @@ func up(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper) error {
 		return errors.Wrapf(err, "%s: Failed to run up command", failedRunningAIO)
 	}
 	return nil
+}
+
+func closeLogFile(logFile *os.File) func() {
+	return func() {
+		if logFile != nil {
+			logFile.Close()
+		}
+	}
 }
