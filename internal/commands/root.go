@@ -1,8 +1,8 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -123,8 +123,9 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
-func runBashCommand(name string, args ...string) ([]byte, error) {
+func runBashCommand(name string, outBuffer, errBuffer *bytes.Buffer, args ...string) error {
 	bashCommand := exec.Command(name, args...)
-	bashCommand.Stderr = os.Stderr
-	return bashCommand.Output()
+	bashCommand.Stdout = outBuffer
+	bashCommand.Stderr = errBuffer
+	return bashCommand.Run()
 }

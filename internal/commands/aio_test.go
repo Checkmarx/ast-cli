@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -29,14 +30,17 @@ func TestRunBashCommand(t *testing.T) {
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", "test_log_rotation_age_days")
 	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", "test_tls_private_key_file")
 	certificateFile := fmt.Sprintf("tls_certificate_file=%s", "test_tls_certificate_file")
-	var upOutput []byte
-	_, err := runBashCommand(scriptsWrapper.GetInstallScriptPath())
+	installCmdStdOutputBuffer := bytes.NewBufferString("")
+	installCmdStdErrorBuffer := bytes.NewBufferString("")
+	upCmdStdOutputBuffer := bytes.NewBufferString("")
+	upCmdStdErrorBuffer := bytes.NewBufferString("")
+	err := runBashCommand(scriptsWrapper.GetInstallScriptPath(), installCmdStdOutputBuffer, installCmdStdErrorBuffer)
 	assert.NilError(t, err, "install command should succeed")
-	upOutput, err = runBashCommand(scriptsWrapper.GetUpScriptPath(),
+	err = runBashCommand(scriptsWrapper.GetUpScriptPath(), upCmdStdOutputBuffer, upCmdStdErrorBuffer,
 		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
 	assert.NilError(t, err, "up command should succeed")
 	fmt.Println("****UP COMMAND OUTPUT*******")
-	actual := string(upOutput)
+	actual := upCmdStdOutputBuffer.String()
 	expected := fmt.Sprintf("test_log_rotation_size#test_log_rotation_age_days#" +
 		"test_tls_private_key_file#test_tls_certificate_file\n")
 	fmt.Println("EXPECTED:")
