@@ -31,8 +31,7 @@ jobs:
       - run: 
           name: go test with coverage
           command: |
-            echo 'Defaults env_keep += "GOPATH"' | sudo tee --append /etc/sudoers.d/env_keep && \
-            sudo go test ./... -coverprofile cover.out
+            sudo env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
           name: Check if total coverage is greater then 0
