@@ -28,6 +28,7 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
+      - run: go mod download
       - run: 
           name: go test with coverage
           command: |
