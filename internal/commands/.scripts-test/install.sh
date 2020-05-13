@@ -11,7 +11,7 @@ do
             *)
     esac
 done
-echo $log_rotation_size
-echo $log_rotation_age_days
+echo MOSHIKO  = $log_rotation_size
+echo MOSHIKO KOFIKO = $log_rotation_age_days
 echo $tls_private_key_file
 echo $tls_certificate_file
