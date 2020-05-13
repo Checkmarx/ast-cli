@@ -15,7 +15,7 @@ executors:
 jobs:
   unit-tests:
     executor: 
-      go-container
+      circle-machine
     working_directory: ~/repo
     steps:
       - checkout
