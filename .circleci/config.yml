@@ -31,7 +31,7 @@ jobs:
       - run: 
           name: go test with coverage
           command: |
-            sudo env "PATH=$PATH" go test ./... -coverprofile cover.out
+            sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
           name: Check if total coverage is greater then 0
