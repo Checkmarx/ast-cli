@@ -95,6 +95,7 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 		}
 
 		// Run the up command after installation
+		writeToStandardOutput("Trying to start AST...")
 		err = runUpScript(cmd, scriptsWrapper, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
 		upScriptOutput := upCmdStdOutputBuffer.String()
 		writeToInstallationLogIfNotEmpty(upScriptOutput)
@@ -107,7 +108,7 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 			writeToInstallationLogIfNotEmpty(upCmdStdErrorBuffer.String())
 			return errors.Wrapf(err, msg)
 		}
-
+		writeToStandardOutput("AST is up!")
 		writeToInstallationLog("AIO installation completed successfully")
 		writeToStandardOutput("AIO installation completed successfully")
 		return nil
@@ -127,13 +128,9 @@ func runStartAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to start AST")
-			logrus.WithFields(logrus.Fields{
-				"err": err,
-			}).Println(msg)
-			writeToInstallationLogIfNotEmpty(upCmdStdErrorBuffer.String())
 			return errors.Wrapf(err, msg)
 		}
-		writeToStandardOutput("AIO started successfully")
+		writeToStandardOutput("AST is up!")
 		return nil
 	}
 }
@@ -142,7 +139,6 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 	upCmdStdOutputBuffer, upCmdStdErrorBuffer io.Writer) error {
 	var err error
 	upScriptPath := scriptsWrapper.GetUpScriptPath()
-	writeToInstallationLog(fmt.Sprintf("Running up script from path %s", upScriptPath))
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
 	configuration := config.AIOConfiguration{}
 
@@ -189,7 +185,7 @@ func writeToInstallationLogIfNotEmpty(msg string) {
 	}
 }
 
-func writeToStandardOutput(msg ...string) {
+func writeToStandardOutput(msg string) {
 	fmt.Fprintln(os.Stdout, msg)
 }
 
