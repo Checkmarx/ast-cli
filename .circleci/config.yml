@@ -9,7 +9,7 @@ executors:
     resource_class: small
   circle-machine:
     machine:
-      image: ubuntu-1604:201903-01 #circleci/classic:201808-01
+      image: ubuntu-1604:202004-01
       #docker_layer_caching: true
 
 jobs:
@@ -28,11 +28,11 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-      - run: go mod download
       - run: 
           name: go test with coverage
           command: |
-            go test ./... -coverprofile cover.out
+            sudo chmod +x ./internal/commands/.scripts-test/install.sh
+            sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
           name: Check if total coverage is greater then 0
