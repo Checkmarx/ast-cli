@@ -9,13 +9,17 @@ import (
 
 func TestRunAIOInstallAndRunCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "aio", "install", toFlag(configFileFlag), "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "aio", "install",
+		toFlag(configFileFlag), "./payloads/nonsense.json",
+		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
 	assert.Assert(t, err != nil)
 }
 
 func TestRunAIOInstallAndRunCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "aio", "install", toFlag(configFileFlag), "./payloads/config.yml")
+	err := executeTestCommand(cmd, "-v", "aio", "install",
+		toFlag(configFileFlag), "./payloads/config.yml",
+		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
 	assert.NilError(t, err)
 }
 

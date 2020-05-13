@@ -8,10 +8,16 @@ When building an executable for Windows and providing a name,  be sure to explic
 Inside the command prompt run:
 **env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd** 
 
+### Linux
+**sudo env GOARCH=amd64 go build -o ./ast ./cmd** 
+
 ## Running the CLI
 
 ### Windows
 "bin/ast.exe" [commands]
+
+### Linux
+./ast [commands]
 
 ## Authentication
 In order to authenticate with AST there are 3 environment variables that needs to be set:
