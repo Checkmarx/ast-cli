@@ -8,17 +8,17 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestRunAIOInstallAndRunCommandWithFileNotFound(t *testing.T) {
+func TestRunSingleNodeInstallAndRunCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "aio", "install",
+	err := executeTestCommand(cmd, "-v", "single-node", "install",
 		toFlag(configFileFlag), "./payloads/nonsense.json",
 		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
 	assert.Assert(t, err != nil)
 }
 
-func TestRunAIOInstallAndRunCommandWithFile(t *testing.T) {
+func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "aio", "install",
+	err := executeTestCommand(cmd, "-v", "single-node", "install",
 		toFlag(configFileFlag), "./payloads/config.yml",
 		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
 	assert.NilError(t, err)

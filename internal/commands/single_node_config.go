@@ -34,13 +34,13 @@ const (
 	logLevel = "LOG_LEVEL"
 )
 
-func mergeConfigurationWithEnv(configuration *config.AIOConfiguration, dotEnvFilePath string) error {
+func mergeConfigurationWithEnv(configuration *config.SingleNodeConfiguration, dotEnvFilePath string) error {
 	viperInst := viper.New()
 	viperInst.SetConfigFile(dotEnvFilePath)
 	viperInst.SetConfigType("env")
 	err := viperInst.ReadInConfig() // Find and read the config file
 	if err != nil {
-		return errors.Wrapf(err, "%s: Failed to open .env file", failedInstallingAIO)
+		return errors.Wrapf(err, "%s: Failed to open .env file", failedInstallingAST)
 	}
 	// Overriding database environment variables
 	setIfNotEmpty(viperInst, dbHostEnv, configuration.Database.Host)
@@ -70,7 +70,7 @@ func mergeConfigurationWithEnv(configuration *config.AIOConfiguration, dotEnvFil
 
 	err = viperInst.WriteConfigAs(dotEnvFilePath)
 	if err != nil {
-		return errors.Wrapf(err, "%s: Failed to write modified .env file", failedInstallingAIO)
+		return errors.Wrapf(err, "%s: Failed to write modified .env file", failedInstallingAST)
 	}
 
 	return nil
