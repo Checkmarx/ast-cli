@@ -21,45 +21,52 @@ import (
 const (
 	logFileFlag         = "log"
 	configFileFlag      = "config"
-	failedInstallingAIO = "Failed installing All-In-One"
+	failedInstallingAST = "Failed installing AST"
 )
 
-func NewAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
-	aioCmd := &cobra.Command{
-		Use:   "aio",
-		Short: "All-In-One AST",
+func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
+	singleNodeCmd := &cobra.Command{
+		Use:   "single-node",
+		Short: "Single Node AST",
 	}
 
-	installAIOCmd := &cobra.Command{
+	installSingleNodeCmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install All-In-One AST",
-		RunE:  runInstallAIOCommand(scriptsWrapper),
+		Short: "Install Single Node AST",
+		RunE:  runInstallSingleNodeCommand(scriptsWrapper),
 	}
 
-	startAIOCmd := &cobra.Command{
+	startSingleNodeCmd := &cobra.Command{
 		Use:   "start",
-		Short: "Start All-In-One AST",
-		RunE:  runStartAIOCommand(scriptsWrapper),
+		Short: "Start AST",
+		RunE:  runStartSingleNodeCommand(scriptsWrapper),
+	}
+	stopSingleNodeCmd := &cobra.Command{
+		Use:   "stop",
+		Short: "Stop AST",
+		RunE:  runStopSingleNodeCommand(scriptsWrapper),
 	}
 
-	installAIOCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
+	installSingleNodeCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
 		"Installation log file path (optional)")
-	installAIOCmd.PersistentFlags().String(configFileFlag, "",
+	installSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path to provide to the AST installation (optional)")
-	startAIOCmd.PersistentFlags().String(configFileFlag, "",
+	startSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
+		"Configuration file path for AST (optional)")
+	stopSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
 
-	aioCmd.AddCommand(installAIOCmd, startAIOCmd)
-	return aioCmd
+	singleNodeCmd.AddCommand(installSingleNodeCmd, startSingleNodeCmd, stopSingleNodeCmd)
+	return singleNodeCmd
 }
 
-func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		logFilePath, _ := cmd.Flags().GetString(logFileFlag)
 		PrintIfVerbose(fmt.Sprintf("Log file path: %s", logFilePath))
 		logFile, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAIO)
+			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAST)
 		}
 
 		logrus.SetOutput(logFile)
@@ -74,7 +81,7 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 		upCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		installScriptPath := scriptsWrapper.GetInstallScriptPath()
-		installationStarted := "AIO installation started"
+		installationStarted := "Single node installation started"
 		writeToInstallationLog(installationStarted)
 		writeToStandardOutput(installationStarted)
 		writeToInstallationLog(fmt.Sprintf("Running installation script from path %s", installScriptPath))
@@ -85,7 +92,7 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 		writeToStandardOutputIfNotEmpty(installationScriptOutput)
 
 		if err != nil {
-			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAIO)
+			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAST)
 			logrus.WithFields(logrus.Fields{
 				"err": err,
 			}).Println(msg)
@@ -101,23 +108,23 @@ func runInstallAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobr
 		writeToInstallationLogIfNotEmpty(upScriptOutput)
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
 		if err != nil {
-			msg := fmt.Sprintf("%s: Failed to start AIO after installation", failedInstallingAIO)
+			msg := fmt.Sprintf("%s: Failed to start AST after installation", failedInstallingAST)
 			logrus.WithFields(logrus.Fields{
 				"err": err,
 			}).Println(msg)
 			writeToInstallationLogIfNotEmpty(upCmdStdErrorBuffer.String())
 			return errors.Wrapf(err, msg)
 		}
+		successfully := "Single node installation completed successfully"
 		writeToStandardOutput("AST is up!")
-		writeToInstallationLog("AIO installation completed successfully")
-		writeToStandardOutput("AIO installation completed successfully")
+		writeToInstallationLog(successfully)
+		writeToStandardOutput(successfully)
 		return nil
 	}
 }
 
-func runStartAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runStartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		// Run the up command after installation
 		upCmdStdOutputBuffer := bytes.NewBufferString("")
 		upCmdStdErrorBuffer := bytes.NewBufferString("")
 
@@ -135,12 +142,31 @@ func runStartAIOCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.
 	}
 }
 
+func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		downCmdStdOutputBuffer := bytes.NewBufferString("")
+		downCmdStdErrorBuffer := bytes.NewBufferString("")
+
+		writeToStandardOutput("Trying to stop AST...")
+		err := runDownScript(cmd, scriptsWrapper, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
+		downScriptOutput := downCmdStdOutputBuffer.String()
+		writeToInstallationLogIfNotEmpty(downScriptOutput)
+		writeToStandardOutputIfNotEmpty(downScriptOutput)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to stop AST")
+			return errors.Wrapf(err, msg)
+		}
+		writeToStandardOutput("AST is down!")
+		return nil
+	}
+}
+
 func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 	upCmdStdOutputBuffer, upCmdStdErrorBuffer io.Writer) error {
 	var err error
 	upScriptPath := scriptsWrapper.GetUpScriptPath()
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
-	configuration := config.AIOConfiguration{}
+	configuration := config.SingleNodeConfiguration{}
 
 	if configFile != "" {
 		var configInput []byte
@@ -148,7 +174,7 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 		PrintIfVerbose(fmt.Sprintf("Reading configuration from file %s", configFile))
 		configInput, err = ioutil.ReadFile(configFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAIO)
+			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAST)
 		}
 
 		err = yaml.Unmarshal(configInput, &configuration)
@@ -171,6 +197,46 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
+	}
+	return nil
+}
+
+func runDownScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
+	downCmdStdOutputBuffer, downCmdStdErrorBuffer io.Writer) error {
+	var err error
+	downScriptPath := scriptsWrapper.GetDownScriptPath()
+	configFile, _ := cmd.Flags().GetString(configFileFlag)
+	configuration := config.SingleNodeConfiguration{}
+
+	if configFile != "" {
+		var configInput []byte
+		// Reading configuration from config file
+		PrintIfVerbose(fmt.Sprintf("Reading configuration from file %s", configFile))
+		configInput, err = ioutil.ReadFile(configFile)
+		if err != nil {
+			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAST)
+		}
+
+		err = yaml.Unmarshal(configInput, &configuration)
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Unable to parse configuration file"))
+		}
+
+		err = mergeConfigurationWithEnv(&configuration, scriptsWrapper.GetDotEnvFilePath())
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("failed to merge configuration file with env file"))
+		}
+	}
+
+	logMaxSize := fmt.Sprintf("log_rotation_size=%s", configuration.Log.Rotation.MaxSizeMB)
+	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
+	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
+	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
+
+	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer,
+		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to run down script")
 	}
 	return nil
 }

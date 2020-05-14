@@ -40,7 +40,7 @@ type LogRotation struct {
 	MaxAgeDays string `yaml:"maxAgeDays"`
 }
 
-type AIOConfiguration struct {
+type SingleNodeConfiguration struct {
 	Database      Database      `yaml:"database"`
 	Network       Network       `yaml:"network"`
 	ObjectStore   ObjectStore   `yaml:"objectStore"`

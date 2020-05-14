@@ -83,7 +83,7 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
-	aioCmd := NewAIOCommand(scriptsWrapper)
+	aioCmd := NewSingleNodeCommand(scriptsWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 
 	rootCmd.AddCommand(scanCmd,
