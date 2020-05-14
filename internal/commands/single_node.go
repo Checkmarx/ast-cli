@@ -24,6 +24,8 @@ const (
 	failedInstallingAST = "Failed installing AST"
 )
 
+var logrusFileLogger = logrus.New()
+
 func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
@@ -68,12 +70,11 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 		if err != nil {
 			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAST)
 		}
-
-		logrus.SetOutput(logFile)
-		logrus.SetFormatter(&logrus.TextFormatter{
+		defer logFile.Close()
+		logrusFileLogger.SetOutput(logFile)
+		logrusFileLogger.SetFormatter(&logrus.TextFormatter{
 			DisableQuote: true,
 		})
-		logrus.RegisterExitHandler(closeLogFile(logFile))
 
 		installCmdStdOutputBuffer := bytes.NewBufferString("")
 		installCmdStdErrorBuffer := bytes.NewBufferString("")
@@ -93,7 +94,7 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 
 		if err != nil {
 			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAST)
-			logrus.WithFields(logrus.Fields{
+			logrusFileLogger.WithFields(logrus.Fields{
 				"err": err,
 			}).Println(msg)
 
@@ -109,7 +110,7 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
 		if err != nil {
 			msg := fmt.Sprintf("%s: Failed to start AST after installation", failedInstallingAST)
-			logrus.WithFields(logrus.Fields{
+			logrusFileLogger.WithFields(logrus.Fields{
 				"err": err,
 			}).Println(msg)
 			writeToInstallationLogIfNotEmpty(upCmdStdErrorBuffer.String())
@@ -242,7 +243,7 @@ func runDownScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 }
 
 func writeToInstallationLog(msg string) {
-	logrus.Println(msg)
+	logrusFileLogger.Println(msg)
 }
 
 func writeToInstallationLogIfNotEmpty(msg string) {
@@ -258,13 +259,5 @@ func writeToStandardOutput(msg string) {
 func writeToStandardOutputIfNotEmpty(msg string) {
 	if msg != "" {
 		writeToStandardOutput(msg)
-	}
-}
-
-func closeLogFile(logFile *os.File) func() {
-	return func() {
-		if logFile != nil {
-			logFile.Close()
-		}
 	}
 }
