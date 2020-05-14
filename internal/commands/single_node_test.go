@@ -24,6 +24,34 @@ func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunSingleNodeStartCommandWithFileNotFound(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "start",
+		toFlag(configFileFlag), "./payloads/nonsense.json")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeStartCommandWithFile(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "start",
+		toFlag(configFileFlag), "./payloads/config.yml")
+	assert.NilError(t, err)
+}
+
+func TestRunSingleNodeStopCommandWithFileNotFound(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "stop",
+		toFlag(configFileFlag), "./payloads/nonsense.json")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeStopCommandWithFile(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "stop",
+		toFlag(configFileFlag), "./payloads/config.yml")
+	assert.NilError(t, err)
+}
+
 func TestRunBashCommand(t *testing.T) {
 	scriptsWrapper := createTestScriptWrapper()
 	logMaxSize := fmt.Sprintf("log_rotation_size=%s", "test_log_rotation_size")
