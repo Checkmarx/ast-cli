@@ -173,11 +173,17 @@ func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *
 }
 func runRestartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		writeToStandardOutput("Trying to stop AST...")
 		err := runStopSingleNodeCommand(scriptsWrapper)(cmd, args)
 		if err != nil {
 			return err
 		}
-		return runStartSingleNodeCommand(scriptsWrapper)(cmd, args)
+		err = runStartSingleNodeCommand(scriptsWrapper)(cmd, args)
+		if err != nil {
+			return err
+		}
+		writeToStandardOutput("AST restarted successfully!")
+		return nil
 	}
 }
 func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
@@ -197,7 +203,7 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 		PrintIfVerbose(fmt.Sprintf("Reading configuration from file %s", configFile))
 		configInput, err = ioutil.ReadFile(configFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAST)
+			return errors.Wrapf(err, "Failed to open config file")
 		}
 
 		err = yaml.Unmarshal(configInput, &configuration)
