@@ -8,7 +8,8 @@ do
             log_rotation_age_days)    log_rotation_age_days=${VALUE} ;;
             tls_private_key_file)    tls_private_key_file=${VALUE} ;;
             tls_certificate_file)    tls_certificate_file=${VALUE} ;;
+          deploy_DB)    deploy_DB=${VALUE} ;;
             *)
     esac
 done
-echo $log_rotation_size#$log_rotation_age_days#$tls_private_key_file#$tls_certificate_file
+echo $log_rotation_size#$log_rotation_age_days#$tls_private_key_file#$tls_certificate_file#$(( deploy_DB == true ))
