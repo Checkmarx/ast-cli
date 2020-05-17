@@ -62,7 +62,7 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
 	exitIfError(err)
 
-	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.TokenExpirySecondsEnv, "300")
+	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
