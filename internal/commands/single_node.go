@@ -31,13 +31,11 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		Use:   "single-node",
 		Short: "Single Node AST",
 	}
-
 	installSingleNodeCmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install Single Node AST",
 		RunE:  runInstallSingleNodeCommand(scriptsWrapper),
 	}
-
 	startSingleNodeCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start AST",
@@ -48,6 +46,16 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		Short: "Stop AST",
 		RunE:  runStopSingleNodeCommand(scriptsWrapper),
 	}
+	restartSingleNodeCmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restart AST",
+		RunE:  runRestartSingleNodeCommand(scriptsWrapper),
+	}
+	healthSingleNodeCmd := &cobra.Command{
+		Use:   "health",
+		Short: "Show health information for AST",
+		RunE:  runHealthSingleNodeCommand,
+	}
 
 	installSingleNodeCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
 		"Installation log file path (optional)")
@@ -55,10 +63,13 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		"Configuration file path to provide to the AST installation (optional)")
 	startSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-	stopSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
+	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-
-	singleNodeCmd.AddCommand(installSingleNodeCmd, startSingleNodeCmd, stopSingleNodeCmd)
+	singleNodeCmd.AddCommand(installSingleNodeCmd,
+		startSingleNodeCmd,
+		stopSingleNodeCmd,
+		restartSingleNodeCmd,
+		healthSingleNodeCmd)
 	return singleNodeCmd
 }
 
@@ -70,7 +81,6 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 		if err != nil {
 			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAST)
 		}
-		defer logFile.Close()
 		logrusFileLogger.SetOutput(logFile)
 		logrusFileLogger.SetFormatter(&logrus.TextFormatter{
 			DisableQuote: true,
@@ -149,7 +159,7 @@ func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *
 		downCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		writeToStandardOutput("Trying to stop AST...")
-		err := runDownScript(cmd, scriptsWrapper, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
+		err := runDownScript(scriptsWrapper, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
 		downScriptOutput := downCmdStdOutputBuffer.String()
 		writeToInstallationLogIfNotEmpty(downScriptOutput)
 		writeToStandardOutputIfNotEmpty(downScriptOutput)
@@ -160,6 +170,18 @@ func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *
 		writeToStandardOutput("AST is down!")
 		return nil
 	}
+}
+func runRestartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		err := runStopSingleNodeCommand(scriptsWrapper)(cmd, args)
+		if err != nil {
+			return err
+		}
+		return runStartSingleNodeCommand(scriptsWrapper)(cmd, args)
+	}
+}
+func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
+	return nil
 }
 
 func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
@@ -193,49 +215,22 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
 	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
 	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
+	deployDB := fmt.Sprintf("deploy_DB=%t", configuration.Database.Host == "")
 
 	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
+		logMaxSize, logAgeDays, privateKeyFile, certificateFile, deployDB)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
 	return nil
 }
 
-func runDownScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
+func runDownScript(scriptsWrapper wrappers.ScriptsWrapper,
 	downCmdStdOutputBuffer, downCmdStdErrorBuffer io.Writer) error {
 	var err error
 	downScriptPath := scriptsWrapper.GetDownScriptPath()
-	configFile, _ := cmd.Flags().GetString(configFileFlag)
-	configuration := config.SingleNodeConfiguration{}
 
-	if configFile != "" {
-		var configInput []byte
-		// Reading configuration from config file
-		PrintIfVerbose(fmt.Sprintf("Reading configuration from file %s", configFile))
-		configInput, err = ioutil.ReadFile(configFile)
-		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to open config file", failedInstallingAST)
-		}
-
-		err = yaml.Unmarshal(configInput, &configuration)
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("Unable to parse configuration file"))
-		}
-
-		err = mergeConfigurationWithEnv(&configuration, scriptsWrapper.GetDotEnvFilePath())
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to merge configuration file with env file"))
-		}
-	}
-
-	logMaxSize := fmt.Sprintf("log_rotation_size=%s", configuration.Log.Rotation.MaxSizeMB)
-	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
-	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
-	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
-
-	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
+	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
