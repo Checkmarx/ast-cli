@@ -11,8 +11,8 @@ type Database struct {
 type Network struct {
 	EntrypointPort    string `yaml:"entrypointPort"`
 	EntrypointTLSPort string `yaml:"entrypointTLSPort"`
-	PrivateKeyFile    string `yaml:"privateKeyFile"`
-	CertificateFile   string `yaml:"certificateFile"`
+	PrivateKeyPath    string `yaml:"privateKeyPath"`
+	CertificatePath   string `yaml:"certificatePath"`
 }
 
 type ObjectStore struct {
