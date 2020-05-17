@@ -40,7 +40,7 @@ func mergeConfigurationWithEnv(configuration *config.SingleNodeConfiguration, do
 	viperInst.SetConfigType("env")
 	err := viperInst.ReadInConfig() // Find and read the config file
 	if err != nil {
-		return errors.Wrapf(err, "%s: Failed to open .env file", failedInstallingAST)
+		return errors.Wrapf(err, "Failed to open .env file")
 	}
 	// Overriding database environment variables
 	setIfNotEmpty(viperInst, dbHostEnv, configuration.Database.Host)
@@ -70,7 +70,7 @@ func mergeConfigurationWithEnv(configuration *config.SingleNodeConfiguration, do
 
 	err = viperInst.WriteConfigAs(dotEnvFilePath)
 	if err != nil {
-		return errors.Wrapf(err, "%s: Failed to write modified .env file", failedInstallingAST)
+		return errors.Wrapf(err, "Failed to write modified .env file")
 	}
 
 	return nil

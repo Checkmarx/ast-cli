@@ -40,14 +40,26 @@ func TestRunSingleNodeStartCommandWithFile(t *testing.T) {
 
 func TestRunSingleNodeStopCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "stop",
-		toFlag(configFileFlag), "./payloads/nonsense.json")
-	assert.Assert(t, err != nil)
+	err := executeTestCommand(cmd, "-v", "single-node", "stop", "./payloads/nonsense.json")
+	assert.NilError(t, err)
 }
 
 func TestRunSingleNodeStopCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "stop",
+	err := executeTestCommand(cmd, "-v", "single-node", "stop")
+	assert.NilError(t, err)
+}
+
+func TestRunSingleNodeRestartCommandWithFileNotFound(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "restart",
+		toFlag(configFileFlag), "./payloads/nonsense.json")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "restart",
 		toFlag(configFileFlag), "./payloads/config.yml")
 	assert.NilError(t, err)
 }
@@ -58,6 +70,7 @@ func TestRunBashCommand(t *testing.T) {
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", "test_log_rotation_age_days")
 	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", "test_tls_private_key_file")
 	certificateFile := fmt.Sprintf("tls_certificate_file=%s", "test_tls_certificate_file")
+	deployDB := fmt.Sprintf("deploy_DB=%s", "1")
 	installCmdStdOutputBuffer := bytes.NewBufferString("")
 	installCmdStdErrorBuffer := bytes.NewBufferString("")
 	upCmdStdOutputBuffer := bytes.NewBufferString("")
@@ -65,12 +78,12 @@ func TestRunBashCommand(t *testing.T) {
 	err := runBashCommand(scriptsWrapper.GetInstallScriptPath(), installCmdStdOutputBuffer, installCmdStdErrorBuffer)
 	assert.NilError(t, err, "install command should succeed")
 	err = runBashCommand(scriptsWrapper.GetUpScriptPath(), upCmdStdOutputBuffer, upCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyFile, certificateFile)
+		logMaxSize, logAgeDays, privateKeyFile, certificateFile, deployDB)
 	assert.NilError(t, err, "up script should succeed")
 	fmt.Println("****UP COMMAND OUTPUT*******")
 	actual := upCmdStdOutputBuffer.String()
 	expected := fmt.Sprintf("test_log_rotation_size#test_log_rotation_age_days#" +
-		"test_tls_private_key_file#test_tls_certificate_file\n")
+		"test_tls_private_key_file#test_tls_certificate_file#0\n")
 	fmt.Println("EXPECTED:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL:")
