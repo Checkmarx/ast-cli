@@ -6,8 +6,8 @@ do
     case "$KEY" in
             log_rotation_size)              log_rotation_size=${VALUE} ;;
             log_rotation_age_days)    log_rotation_age_days=${VALUE} ;;
-            tls_private_key_file)    tls_private_key_file=${VALUE} ;;
-            tls_certificate_file)    tls_certificate_file=${VALUE} ;;
+            private_key_path)    private_key_path=${VALUE} ;;
+            certificate_path)    certificate_path=${VALUE} ;;
             deploy_DB)    deploy_DB=${VALUE} ;;
             *)
     esac
