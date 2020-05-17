@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 
@@ -54,7 +55,7 @@ func runDeployAppCommand() func(cmd *cobra.Command, args []string) error {
 
 func runShowAppCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		_, err := runBashCommand("kubectl", "get", "pods")
+		err := runBashCommand("kubectl", bytes.NewBufferString(""), bytes.NewBufferString(""), "get", "pods")
 		if err != nil {
 			return errors.Wrapf(err, "%s:Failed to run kubectl command", failedShowingApp)
 		}
