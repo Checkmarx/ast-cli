@@ -51,11 +51,6 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		Short: "Restart AST",
 		RunE:  runRestartSingleNodeCommand(scriptsWrapper),
 	}
-	healthSingleNodeCmd := &cobra.Command{
-		Use:   "health",
-		Short: "Show health information for AST",
-		RunE:  runHealthSingleNodeCommand,
-	}
 
 	installSingleNodeCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
 		"Installation log file path (optional)")
@@ -68,8 +63,7 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 	singleNodeCmd.AddCommand(installSingleNodeCmd,
 		startSingleNodeCmd,
 		stopSingleNodeCmd,
-		restartSingleNodeCmd,
-		healthSingleNodeCmd)
+		restartSingleNodeCmd)
 	return singleNodeCmd
 }
 
@@ -185,9 +179,6 @@ func runRestartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 		writeToStandardOutput("AST restarted successfully!")
 		return nil
 	}
-}
-func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
-	return nil
 }
 
 func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,

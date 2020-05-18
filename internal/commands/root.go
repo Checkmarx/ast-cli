@@ -85,6 +85,7 @@ func NewAstCLI(
 	appCmd := NewAppCommand()
 	aioCmd := NewSingleNodeCommand(scriptsWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
+	healthCmd := NewHealthCommand()
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -95,6 +96,7 @@ func NewAstCLI(
 		aioCmd,
 		bflCmd,
 		rmCmd,
+		healthCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
