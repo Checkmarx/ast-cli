@@ -219,12 +219,14 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 
 	logMaxSize := fmt.Sprintf("log_rotation_size=%s", configuration.Log.Rotation.MaxSizeMB)
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
-	privateKeyFile := fmt.Sprintf("tls_private_key_file=%s", configuration.Network.PrivateKeyFile)
-	certificateFile := fmt.Sprintf("tls_certificate_file=%s", configuration.Network.CertificateFile)
+	privateKeyPath := fmt.Sprintf("private_key_path=%s", configuration.Network.PrivateKeyPath)
+	certificateFile := fmt.Sprintf("certificate_path=%s", configuration.Network.CertificatePath)
+	fqdn := fmt.Sprintf("certificate_path=%s", configuration.Network.FullyQualifiedDomainName)
 	deployDB := fmt.Sprintf("deploy_DB=%t", configuration.Database.Host == "")
+	deployTLS := fmt.Sprintf("deploy_TLS=%t", configuration.Network.CertificatePath != "")
 
 	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyFile, certificateFile, deployDB)
+		logMaxSize, logAgeDays, privateKeyPath, certificateFile, fqdn, deployTLS, deployDB)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}

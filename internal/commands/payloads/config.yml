@@ -8,8 +8,9 @@ database:
 network:
   entrypointPort:
   entrypointTLSPort:
-  privateKeyFile:
-  certificateFile:
+  privateKeyPath: priv
+  certificatePath:
+  fqdn:
 
 objectStore:
   accessKeyId:

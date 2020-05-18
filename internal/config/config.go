@@ -9,10 +9,11 @@ type Database struct {
 }
 
 type Network struct {
-	EntrypointPort    string `yaml:"entrypointPort"`
-	EntrypointTLSPort string `yaml:"entrypointTLSPort"`
-	PrivateKeyFile    string `yaml:"privateKeyFile"`
-	CertificateFile   string `yaml:"certificateFile"`
+	EntrypointPort           string `yaml:"entrypointPort"`
+	EntrypointTLSPort        string `yaml:"entrypointTLSPort"`
+	PrivateKeyPath           string `yaml:"privateKeyPath"`
+	CertificatePath          string `yaml:"certificatePath"`
+	FullyQualifiedDomainName string `yaml:"fqdn"`
 }
 
 type ObjectStore struct {
