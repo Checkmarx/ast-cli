@@ -33,6 +33,7 @@ func createASTTestCommand() *cobra.Command {
 	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
+	healthcheckMockWrapper := &wrappers.MockHealthcheckWrapper{}
 
 	scriptsWrapper := createTestScriptWrapper()
 
@@ -42,7 +43,8 @@ func createASTTestCommand() *cobra.Command {
 		resultsMockWrapper,
 		bflMockWrapper,
 		rmMockWrapper,
-		scriptsWrapper)
+		scriptsWrapper,
+		healthcheckMockWrapper)
 }
 
 func createTestScriptWrapper() wrappers.ScriptsWrapper {

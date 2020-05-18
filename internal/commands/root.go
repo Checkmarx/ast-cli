@@ -52,7 +52,7 @@ func NewAstCLI(
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
 	scriptsWrapper wrappers.ScriptsWrapper,
-) *cobra.Command {
+	healthcheckWrapper wrappers.HealthcheckWrapper) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
 		Short: "A CLI wrapping Checkmarx AST APIs",
@@ -85,7 +85,7 @@ func NewAstCLI(
 	appCmd := NewAppCommand()
 	aioCmd := NewSingleNodeCommand(scriptsWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
-	healthCmd := NewHealthCommand()
+	healthCmd := NewHealthCommand(healthcheckWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
@@ -45,10 +44,9 @@ func main() {
 	exitIfError(err)
 	uploads := viper.GetString(params.UploadsPathKey)
 
-	sastRmPathKey := strings.ToLower(params.SastRmPathEnv)
-	err = bindKeyToEnvAndDefault(sastRmPathKey, params.SastRmPathEnv, "api/sast-rm")
+	err = bindKeyToEnvAndDefault(params.SastRmPathKey, params.SastRmPathEnv, "api/sast-rm")
 	exitIfError(err)
-	sastrm := viper.GetString(sastRmPathKey)
+	sastrm := viper.GetString(params.SastRmPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -65,6 +63,9 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
+	err = bindKeyToEnvAndDefault(params.ASTWebAppURLKey, params.ASTWebAppURLEnv, "http://localhost:80")
+	exitIfError(err)
+
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
@@ -72,12 +73,14 @@ func main() {
 	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 
+	sastWebAppURL := viper.GetString(params.ASTWebAppURLKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
+	hcWrapper := wrappers.NewSimpleHealthcheckWrapper(sastWebAppURL)
 
 	executablePath, err := os.Executable()
 	if err != nil {
@@ -100,6 +103,7 @@ func main() {
 		bflWrapper,
 		rmWrapper,
 		scriptsWrapper,
+		hcWrapper,
 	)
 
 	err = astCli.Execute()
