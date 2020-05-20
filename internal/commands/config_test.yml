@@ -1,5 +1,5 @@
 database:
-  host: fdsfs
+  host:
   port:
   name:
   username:
@@ -8,8 +8,8 @@ database:
 network:
   entrypointPort:
   entrypointTLSPort:
-  privateKeyPath: priv
-  certificatePath: dfsdf
+  privateKeyPath:
+  certificatePath:
   fqdn:
 
 objectStore:
