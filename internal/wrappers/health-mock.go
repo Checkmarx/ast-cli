@@ -10,3 +10,7 @@ func NewMockHealthcheckWrapper(astWebAppURL string) HealthcheckWrapper {
 func (m *MockHealthcheckWrapper) CheckWebAppIsUp() error {
 	return nil
 }
+
+func (s *MockHealthcheckWrapper) CheckDatabaseHealth() error {
+	return nil
+}

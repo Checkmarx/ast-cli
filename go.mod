@@ -3,7 +3,7 @@ module github.com/checkmarxDev/ast-cli
 go 1.13
 
 require (
-	github.com/briandowns/spinner v1.11.1
+	github.com/checkmarxDev/healthcheck v1.1.0
 	github.com/checkmarxDev/sast-rm v1.1.1
 	github.com/checkmarxDev/scans v1.3.0
 	github.com/checkmarxDev/uploads v1.0.0

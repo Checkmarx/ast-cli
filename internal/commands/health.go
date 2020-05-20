@@ -23,6 +23,10 @@ func runHealthChecks(wrapper wrappers.HealthcheckWrapper) func(cmd *cobra.Comman
 				Name:    "AST Web Application Health Check",
 				Checker: wrapper.CheckWebAppIsUp,
 			},
+			{
+				Name:    "AST Database Health Check",
+				Checker: wrapper.CheckDatabaseHealth,
+			},
 		}
 
 		numOfPhases := len(healthChecks)

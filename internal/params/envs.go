@@ -14,4 +14,5 @@ const (
 	AstAuthenticationURIEnv = "AST_AUTHENTICATION_URI"
 	AccessKeySecretEnv      = "AST_ACCESS_KEY_SECRET"
 	ASTWebAppURLEnv         = "AST_WEB_APP_URL"
+	ASTHealthcheckEnv       = "AST_HEALTHCHECK_URL"
 )

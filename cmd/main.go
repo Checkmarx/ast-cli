@@ -19,6 +19,7 @@ const (
 	failureExitCode    = 1
 )
 
+// start script need to invoke the up.sh from a relative path and pass pwd
 func main() {
 	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
 	exitIfError(err)
@@ -63,9 +64,12 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
-	err = bindKeyToEnvAndDefault(params.ASTWebAppURLKey, params.ASTWebAppURLEnv, "http://localhost:80")
+	err = bindKeyToEnvAndDefault(params.ASTWebAppURLKey, params.ASTWebAppURLEnv, "http://localhost:80/#/projects")
 	exitIfError(err)
 
+	err = bindKeyToEnvAndDefault(params.ASTHealthcheckURLKey, params.ASTHealthcheckEnv, "http://127.0.0.1:5000")
+	exitIfError(err)
+	healthCheckURL := viper.GetString(params.ASTHealthcheckURLKey)
 	scansURL := fmt.Sprintf("%s/%s", ast, scans)
 	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
 	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
@@ -80,7 +84,7 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
-	hcWrapper := wrappers.NewSimpleHealthcheckWrapper(sastWebAppURL)
+	hcWrapper := wrappers.NewSimpleHealthcheckWrapper(sastWebAppURL, healthCheckURL)
 
 	executablePath, err := os.Executable()
 	if err != nil {
