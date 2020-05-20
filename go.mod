@@ -13,4 +13,5 @@ require (
 	github.com/spf13/viper v1.6.2
 	gopkg.in/yaml.v2 v2.2.4
 	gotest.tools v2.2.0+incompatible
+	gotest.tools/gotestsum v0.4.2 // indirect
 )
