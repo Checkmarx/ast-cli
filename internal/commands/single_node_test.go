@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/checkmarxDev/ast-cli/internal/config"
+
 	"gotest.tools/assert"
 )
 
@@ -13,7 +15,7 @@ func TestRunSingleNodeInstallAndRunCommandWithFileNotFound(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "single-node", "install",
 		toFlag(configFileFlag), "./payloads/nonsense.json",
 		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
@@ -24,29 +26,50 @@ func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunSingleNodeStartCommandWithFileNotFound(t *testing.T) {
+func TestRunSingleNodeUpCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "start",
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
 		toFlag(configFileFlag), "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
 }
 
-func TestRunSingleNodeStartCommandWithFile(t *testing.T) {
+func TestRunSingleNodeUpCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "start",
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
 		toFlag(configFileFlag), "./config_test.yml")
 	assert.NilError(t, err)
 }
-
-func TestRunSingleNodeStopCommandWithFileNotFound(t *testing.T) {
+func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "stop", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
+		toFlag(astInstallationFolder), "./non_existing_folder",
+		toFlag(configFileFlag), "./config_test.yml")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeUpCommandWithNoFileNoFolder(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
+		toFlag(astInstallationFolder), "./non_existing_folder")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeUpCommandWithFileWithFolder(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
+		toFlag(astInstallationFolder), "./")
 	assert.NilError(t, err)
 }
 
-func TestRunSingleNodeStopCommandWithFile(t *testing.T) {
+func TestRunSingleNodeDownCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "stop")
+	err := executeTestCommand(cmd, "-v", "single-node", "down", "./payloads/nonsense.json")
+	assert.NilError(t, err)
+}
+
+func TestRunSingleNodeDownCommandWithFile(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "down")
 	assert.NilError(t, err)
 }
 
@@ -65,32 +88,108 @@ func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
 }
 
 func TestRunBashCommand(t *testing.T) {
+	testConfig := config.SingleNodeConfiguration{
+		Database: config.Database{
+			Host:     "TEST_Host",
+			Port:     "TEST_Port",
+			Name:     "TEST_Name",
+			Username: "TEST_Username",
+			Password: "TEST_Password",
+		},
+		Network: config.Network{
+			EntrypointPort:           "TEST_EntrypointPort",
+			EntrypointTLSPort:        "TEST_EntrypointTLSPort",
+			FullyQualifiedDomainName: "TEST_FullyQualifiedDomainName",
+			TLS: config.TLS{
+				PrivateKeyPath:  "TEST_PrivateKeyPath",
+				CertificatePath: "TEST_CertificatePath",
+			},
+		},
+		ObjectStore: config.ObjectStore{
+			AccessKeyID:     "TEST_AccessKeyID",
+			SecretAccessKey: "TEST_SecretAccessKey",
+		},
+		MessageQueue: config.MessageQueue{
+			Username: "TEST_Username",
+			Password: "TEST_Password",
+		},
+		AccessControl: config.AccessControl{
+			Username: "TEST_Username",
+			Password: "TEST_Password",
+		},
+		Log: config.Log{
+			Level: "TEST_Level",
+			Rotation: config.LogRotation{
+				MaxSizeMB:  "TEST_MaxSizeMB",
+				MaxAgeDays: "TEST_MaxAgeDays",
+			},
+		},
+	}
 	cmd := createASTTestCommand()
-	logMaxSize := fmt.Sprintf("log_rotation_size=%s", "test_log_rotation_size")
-	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", "test_log_rotation_age_days")
-	privateKeyPath := fmt.Sprintf("private_key_path=%s", "test_private_key_path")
-	certificateFile := fmt.Sprintf("certificate_path=%s", "test_certificate_path")
-	fqdn := fmt.Sprintf("fqdn=%s", "test_fqdn")
-	deployDB := fmt.Sprintf("deploy_DB=%s", "1")
-	deployTLS := fmt.Sprintf("deploy_TLS=%s", "0")
 	installCmdStdOutputBuffer := bytes.NewBufferString("")
 	installCmdStdErrorBuffer := bytes.NewBufferString("")
 	upCmdStdOutputBuffer := bytes.NewBufferString("")
 	upCmdStdErrorBuffer := bytes.NewBufferString("")
+	// TODO add down test
+
 	installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
-	err := runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer)
+	err := runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer, []string{})
 	assert.NilError(t, err, "install command should succeed")
-	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyPath, certificateFile, deployDB, deployTLS, fqdn)
+
+	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
+	envs := getEnvVarsForCommand(&testConfig, installationFolder)
+	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer, envs)
 	assert.NilError(t, err, "up script should succeed")
-	fmt.Println("****UP COMMAND OUTPUT*******")
 	actual := upCmdStdOutputBuffer.String()
-	expected := fmt.Sprintf("test_log_rotation_size#test_log_rotation_age_days#" +
-		"test_private_key_path#test_certificate_path#test_fqdn#0#1\n")
-	fmt.Println("EXPECTED:")
+	expected := fmt.Sprintf("AST_INSTALLATION_PATH=%s,"+
+		"DATABASE_HOST=%s,"+
+		"DATABASE_PORT=%s,"+
+		"DATABASE_USER=%s,"+
+		"DATABASE_PASSWORD=%s,"+
+		"DATABASE_DB=%s,"+
+		"TRAEFIK_PORT=%s,"+
+		"TRAEFIK_SSL_PORT=%s,"+
+		"TLS_PRIVATE_KEY_PATH=%s,"+
+		"TLS_CERTIFICATE_PATH=%s,"+
+		"FQDN=%s,"+
+		"OBJECT_STORE_ACCESS_KEY_ID=%s,"+
+		"OBJECT_STORE_SECRET_ACCESS_KEY=%s,"+
+		"NATS_USERNAME=%s,"+
+		"NATS_PASSWORD=%s,"+
+		"KEYCLOAK_USER=%s,"+
+		"KEYCLOAK_PASSWORD=%s,"+
+		"LOG_LEVEL=%s,"+
+		"LOG_ROTATION_AGE_DAYS=%s,"+
+		"LOG_ROTATION_MAX_SIZE_MB=%s\n",
+		installationFolder,
+		testConfig.Database.Host,
+		testConfig.Database.Port,
+		testConfig.Database.Username,
+		testConfig.Database.Password,
+		testConfig.Database.Name,
+
+		testConfig.Network.EntrypointPort,
+		testConfig.Network.EntrypointTLSPort,
+		testConfig.Network.TLS.PrivateKeyPath,
+		testConfig.Network.TLS.CertificatePath,
+		testConfig.Network.FullyQualifiedDomainName,
+
+		testConfig.ObjectStore.AccessKeyID,
+		testConfig.ObjectStore.SecretAccessKey,
+
+		testConfig.MessageQueue.Username,
+		testConfig.MessageQueue.Password,
+
+		testConfig.AccessControl.Username,
+		testConfig.AccessControl.Password,
+
+		testConfig.Log.Level,
+		testConfig.Log.Rotation.MaxAgeDays,
+		testConfig.Log.Rotation.MaxSizeMB)
+	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
-	fmt.Println("ACTUAL:")
+	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
 	fmt.Println(actual)
 	assert.Assert(t, expected == actual)
 }

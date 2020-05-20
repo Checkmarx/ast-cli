@@ -7,13 +7,16 @@ type Database struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 }
+type TLS struct {
+	PrivateKeyPath  string `yaml:"privateKeyPath"`
+	CertificatePath string `yaml:"certificatePath"`
+}
 
 type Network struct {
 	EntrypointPort           string `yaml:"entrypointPort"`
 	EntrypointTLSPort        string `yaml:"entrypointTLSPort"`
-	PrivateKeyPath           string `yaml:"privateKeyPath"`
-	CertificatePath          string `yaml:"certificatePath"`
 	FullyQualifiedDomainName string `yaml:"fqdn"`
+	TLS                      TLS    `yaml:"tls"`
 }
 
 type ObjectStore struct {
