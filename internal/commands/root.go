@@ -121,8 +121,9 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
-func runBashCommand(name string, outBuffer, errBuffer io.Writer, args ...string) error {
-	bashCommand := exec.Command(name, args...)
+func runBashCommand(name string, outBuffer, errBuffer io.Writer, envs []string, arg ...string) error {
+	bashCommand := exec.Command(name, arg...)
+	bashCommand.Env = envs
 	bashCommand.Stdout = outBuffer
 	bashCommand.Stderr = errBuffer
 	return bashCommand.Run()

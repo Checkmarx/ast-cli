@@ -6,11 +6,12 @@ database:
   password:
 
 network:
-  entrypointPort:
-  entrypointTLSPort:
-  privateKeyPath:
-  certificatePath:
-  fqdn:
+    entrypointPort:
+    entrypointTLSPort:
+    fqdn:
+    tls:
+      privateKeyPath:
+      certificatePath:
 
 objectStore:
   accessKeyId:

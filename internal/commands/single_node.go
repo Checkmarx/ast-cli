@@ -36,21 +36,30 @@ func NewSingleNodeCommand() *cobra.Command {
 		Short: "Install Single Node AST",
 		RunE:  runInstallSingleNodeCommand(),
 	}
-	startSingleNodeCmd := &cobra.Command{
-		Use:   "start",
+	upSingleNodeCmd := &cobra.Command{
+		Use:   "up",
 		Short: "Start AST",
-		RunE:  runStartSingleNodeCommand(),
+		RunE:  runUpSingleNodeCommand(),
 	}
-	stopSingleNodeCmd := &cobra.Command{
-		Use:   "stop",
+	downSingleNodeCmd := &cobra.Command{
+		Use:   "down",
 		Short: "Stop AST",
-		RunE:  runStopSingleNodeCommand(),
+		RunE:  runDownSingleNodeCommand(),
 	}
 	restartSingleNodeCmd := &cobra.Command{
 		Use:   "restart",
 		Short: "Restart AST",
 		RunE:  runRestartSingleNodeCommand(),
 	}
+
+	updateSingleNodeCmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update AST",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+	}
+
 	healthSingleNodeCmd := &cobra.Command{
 		Use:   "health",
 		Short: "Show health information for AST",
@@ -61,17 +70,18 @@ func NewSingleNodeCommand() *cobra.Command {
 		"Installation log file path (optional)")
 	installSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path to provide to the AST installation (optional)")
-	startSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
+	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-	startSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "./",
+	upSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "./",
 		"AST installation folder path")
 	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
 	singleNodeCmd.AddCommand(installSingleNodeCmd,
-		startSingleNodeCmd,
-		stopSingleNodeCmd,
+		upSingleNodeCmd,
+		downSingleNodeCmd,
 		restartSingleNodeCmd,
-		healthSingleNodeCmd)
+		healthSingleNodeCmd,
+		updateSingleNodeCmd)
 	return singleNodeCmd
 }
 
@@ -90,8 +100,6 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 
 		installCmdStdOutputBuffer := bytes.NewBufferString("")
 		installCmdStdErrorBuffer := bytes.NewBufferString("")
-		upCmdStdOutputBuffer := bytes.NewBufferString("")
-		upCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
 		installationStarted := "Single node installation started"
@@ -99,7 +107,7 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 		writeToStandardOutput(installationStarted)
 		writeToInstallationLog(fmt.Sprintf("Running installation script from path %s", installScriptPath))
 
-		err = runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer)
+		err = runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer, []string{})
 		installationScriptOutput := installCmdStdOutputBuffer.String()
 		writeToInstallationLogIfNotEmpty(installationScriptOutput)
 		writeToStandardOutputIfNotEmpty(installationScriptOutput)
@@ -113,30 +121,14 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 			writeToInstallationLogIfNotEmpty(installCmdStdErrorBuffer.String())
 			return errors.Wrapf(err, msg)
 		}
-
-		// Run the up command after installation
-		writeToStandardOutput("Trying to start AST...")
-		err = runUpScript(cmd, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
-		upScriptOutput := upCmdStdOutputBuffer.String()
-		writeToInstallationLogIfNotEmpty(upScriptOutput)
-		writeToStandardOutputIfNotEmpty(upScriptOutput)
-		if err != nil {
-			msg := fmt.Sprintf("%s: Failed to start AST after installation", failedInstallingAST)
-			logrusFileLogger.WithFields(logrus.Fields{
-				"err": err,
-			}).Println(msg)
-			writeToInstallationLogIfNotEmpty(upCmdStdErrorBuffer.String())
-			return errors.Wrapf(err, msg)
-		}
 		successfully := "Single node installation completed successfully"
-		writeToStandardOutput("AST is up!")
 		writeToInstallationLog(successfully)
 		writeToStandardOutput(successfully)
 		return nil
 	}
 }
 
-func runStartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+func runUpSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		upCmdStdOutputBuffer := bytes.NewBufferString("")
 		upCmdStdErrorBuffer := bytes.NewBufferString("")
@@ -154,7 +146,7 @@ func runStartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func runStopSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		downCmdStdOutputBuffer := bytes.NewBufferString("")
 		downCmdStdErrorBuffer := bytes.NewBufferString("")
@@ -174,11 +166,11 @@ func runStopSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Trying to stop AST...")
-		err := runStopSingleNodeCommand()(cmd, args)
+		err := runDownSingleNodeCommand()(cmd, args)
 		if err != nil {
 			return err
 		}
-		err = runStartSingleNodeCommand()(cmd, args)
+		err = runUpSingleNodeCommand()(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -209,24 +201,12 @@ func runUpScript(cmd *cobra.Command, upCmdStdOutputBuffer, upCmdStdErrorBuffer i
 		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("Unable to parse configuration file"))
 		}
-
-		dotEnvFilePath := getPathRelativeToInstallation(".env", cmd)
-		err = mergeConfigurationWithEnv(&configuration, dotEnvFilePath)
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to merge configuration file with env file"))
-		}
 	}
 
-	logMaxSize := fmt.Sprintf("log_rotation_size=%s", configuration.Log.Rotation.MaxSizeMB)
-	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
-	privateKeyPath := fmt.Sprintf("private_key_path=%s", configuration.Network.PrivateKeyPath)
-	certificateFile := fmt.Sprintf("certificate_path=%s", configuration.Network.CertificatePath)
-	fqdn := fmt.Sprintf("fqdn=%s", configuration.Network.FullyQualifiedDomainName)
-	deployDB := fmt.Sprintf("deploy_DB=%t", configuration.Database.Host == "")
-	deployTLS := fmt.Sprintf("deploy_TLS=%t", configuration.Network.CertificatePath != "")
+	installationFolder, _ := cmd.Flags().GetString(astInstallationFolder)
+	envVars := getEnvVarsForCommand(&configuration, installationFolder)
+	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer, envVars)
 
-	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer,
-		logMaxSize, logAgeDays, privateKeyPath, certificateFile, fqdn, deployTLS, deployDB)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
@@ -237,7 +217,7 @@ func runDownScript(cmd *cobra.Command, downCmdStdOutputBuffer, downCmdStdErrorBu
 	var err error
 	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
-	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
+	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer, []string{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
