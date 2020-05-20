@@ -31,8 +31,8 @@ jobs:
       - run: 
           name: go test with coverage
           command: |
-            sudo chmod +x ./internal/commands/.scripts-test/install.sh ./internal/commands/.scripts-test/up.sh \
-            ./internal/commands/.scripts-test/down.sh
+            sudo chmod +x ./internal/commands/.scripts/install.sh ./internal/commands/.scripts/up.sh \
+            ./internal/commands/.scripts/down.sh
             sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
