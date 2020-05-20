@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	logFileFlag         = "log"
-	configFileFlag      = "config"
-	failedInstallingAST = "Failed installing AST"
+	logFileFlag           = "log"
+	configFileFlag        = "config"
+	astInstallationFolder = "folder"
+	failedInstallingAST   = "Failed installing AST"
 )
 
 var logrusFileLogger = logrus.New()
@@ -63,6 +64,8 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		"Configuration file path to provide to the AST installation (optional)")
 	startSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
+	startSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "",
+		"AST installation path")
 	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
 	singleNodeCmd.AddCommand(installSingleNodeCmd,
@@ -221,7 +224,7 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", configuration.Log.Rotation.MaxAgeDays)
 	privateKeyPath := fmt.Sprintf("private_key_path=%s", configuration.Network.PrivateKeyPath)
 	certificateFile := fmt.Sprintf("certificate_path=%s", configuration.Network.CertificatePath)
-	fqdn := fmt.Sprintf("certificate_path=%s", configuration.Network.FullyQualifiedDomainName)
+	fqdn := fmt.Sprintf("fqdn=%s", configuration.Network.FullyQualifiedDomainName)
 	deployDB := fmt.Sprintf("deploy_DB=%t", configuration.Database.Host == "")
 	deployTLS := fmt.Sprintf("deploy_TLS=%t", configuration.Network.CertificatePath != "")
 
