@@ -145,7 +145,6 @@ func runStartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd 
 		writeToStandardOutput("Trying to start AST...")
 		err := runUpScript(cmd, scriptsWrapper, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
 		upScriptOutput := upCmdStdOutputBuffer.String()
-		writeToInstallationLogIfNotEmpty(upScriptOutput)
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to start AST")
