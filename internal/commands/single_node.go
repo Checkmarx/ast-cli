@@ -6,10 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
 	"gopkg.in/yaml.v2"
 
@@ -27,7 +26,7 @@ const (
 
 var logrusFileLogger = logrus.New()
 
-func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command {
+func NewSingleNodeCommand() *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
 		Short: "Single Node AST",
@@ -35,22 +34,22 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 	installSingleNodeCmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install Single Node AST",
-		RunE:  runInstallSingleNodeCommand(scriptsWrapper),
+		RunE:  runInstallSingleNodeCommand(),
 	}
 	startSingleNodeCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start AST",
-		RunE:  runStartSingleNodeCommand(scriptsWrapper),
+		RunE:  runStartSingleNodeCommand(),
 	}
 	stopSingleNodeCmd := &cobra.Command{
 		Use:   "stop",
 		Short: "Stop AST",
-		RunE:  runStopSingleNodeCommand(scriptsWrapper),
+		RunE:  runStopSingleNodeCommand(),
 	}
 	restartSingleNodeCmd := &cobra.Command{
 		Use:   "restart",
 		Short: "Restart AST",
-		RunE:  runRestartSingleNodeCommand(scriptsWrapper),
+		RunE:  runRestartSingleNodeCommand(),
 	}
 	healthSingleNodeCmd := &cobra.Command{
 		Use:   "health",
@@ -64,8 +63,8 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 		"Configuration file path to provide to the AST installation (optional)")
 	startSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-	startSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "",
-		"AST installation path")
+	startSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "./",
+		"AST installation folder path")
 	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
 	singleNodeCmd.AddCommand(installSingleNodeCmd,
@@ -76,7 +75,7 @@ func NewSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) *cobra.Command
 	return singleNodeCmd
 }
 
-func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		logFilePath, _ := cmd.Flags().GetString(logFileFlag)
 		PrintIfVerbose(fmt.Sprintf("Log file path: %s", logFilePath))
@@ -94,7 +93,7 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 		upCmdStdOutputBuffer := bytes.NewBufferString("")
 		upCmdStdErrorBuffer := bytes.NewBufferString("")
 
-		installScriptPath := scriptsWrapper.GetInstallScriptPath()
+		installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
 		installationStarted := "Single node installation started"
 		writeToInstallationLog(installationStarted)
 		writeToStandardOutput(installationStarted)
@@ -117,7 +116,7 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 
 		// Run the up command after installation
 		writeToStandardOutput("Trying to start AST...")
-		err = runUpScript(cmd, scriptsWrapper, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
+		err = runUpScript(cmd, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
 		upScriptOutput := upCmdStdOutputBuffer.String()
 		writeToInstallationLogIfNotEmpty(upScriptOutput)
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
@@ -137,15 +136,14 @@ func runInstallSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cm
 	}
 }
 
-func runStartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runStartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		upCmdStdOutputBuffer := bytes.NewBufferString("")
 		upCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		writeToStandardOutput("Trying to start AST...")
-		err := runUpScript(cmd, scriptsWrapper, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
+		err := runUpScript(cmd, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
 		upScriptOutput := upCmdStdOutputBuffer.String()
-		writeToInstallationLogIfNotEmpty(upScriptOutput)
 		writeToStandardOutputIfNotEmpty(upScriptOutput)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to start AST")
@@ -156,15 +154,14 @@ func runStartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd 
 	}
 }
 
-func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runStopSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		downCmdStdOutputBuffer := bytes.NewBufferString("")
 		downCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		writeToStandardOutput("Trying to stop AST...")
-		err := runDownScript(scriptsWrapper, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
+		err := runDownScript(cmd, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
 		downScriptOutput := downCmdStdOutputBuffer.String()
-		writeToInstallationLogIfNotEmpty(downScriptOutput)
 		writeToStandardOutputIfNotEmpty(downScriptOutput)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to stop AST")
@@ -174,14 +171,14 @@ func runStopSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *
 		return nil
 	}
 }
-func runRestartSingleNodeCommand(scriptsWrapper wrappers.ScriptsWrapper) func(cmd *cobra.Command, args []string) error {
+func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Trying to stop AST...")
-		err := runStopSingleNodeCommand(scriptsWrapper)(cmd, args)
+		err := runStopSingleNodeCommand()(cmd, args)
 		if err != nil {
 			return err
 		}
-		err = runStartSingleNodeCommand(scriptsWrapper)(cmd, args)
+		err = runStartSingleNodeCommand()(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -193,10 +190,9 @@ func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
-	upCmdStdOutputBuffer, upCmdStdErrorBuffer io.Writer) error {
+func runUpScript(cmd *cobra.Command, upCmdStdOutputBuffer, upCmdStdErrorBuffer io.Writer) error {
 	var err error
-	upScriptPath := scriptsWrapper.GetUpScriptPath()
+	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
 	configuration := config.SingleNodeConfiguration{}
 
@@ -214,7 +210,8 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 			return errors.Wrapf(err, fmt.Sprintf("Unable to parse configuration file"))
 		}
 
-		err = mergeConfigurationWithEnv(&configuration, scriptsWrapper.GetDotEnvFilePath())
+		dotEnvFilePath := getPathRelativeToInstallation(".env", cmd)
+		err = mergeConfigurationWithEnv(&configuration, dotEnvFilePath)
 		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to merge configuration file with env file"))
 		}
@@ -236,10 +233,9 @@ func runUpScript(cmd *cobra.Command, scriptsWrapper wrappers.ScriptsWrapper,
 	return nil
 }
 
-func runDownScript(scriptsWrapper wrappers.ScriptsWrapper,
-	downCmdStdOutputBuffer, downCmdStdErrorBuffer io.Writer) error {
+func runDownScript(cmd *cobra.Command, downCmdStdOutputBuffer, downCmdStdErrorBuffer io.Writer) error {
 	var err error
-	downScriptPath := scriptsWrapper.GetDownScriptPath()
+	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
 	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
 	if err != nil {
@@ -266,4 +262,14 @@ func writeToStandardOutputIfNotEmpty(msg string) {
 	if msg != "" {
 		writeToStandardOutput(msg)
 	}
+}
+
+func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
+	installationFolder, _ := cmd.Flags().GetString(astInstallationFolder)
+	return path.Join(installationFolder, filePath)
+}
+
+func getScriptPathRelativeToInstallation(scriptFile string, cmd *cobra.Command) string {
+	scriptsDir := ".scripts"
+	return getPathRelativeToInstallation(path.Join(scriptsDir, scriptFile), cmd)
 }

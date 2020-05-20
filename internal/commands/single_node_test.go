@@ -19,7 +19,7 @@ func TestRunSingleNodeInstallAndRunCommandWithFileNotFound(t *testing.T) {
 func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "install",
-		toFlag(configFileFlag), "./payloads/config.yml",
+		toFlag(configFileFlag), "./config_test.yml",
 		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
 	assert.NilError(t, err)
 }
@@ -34,7 +34,7 @@ func TestRunSingleNodeStartCommandWithFileNotFound(t *testing.T) {
 func TestRunSingleNodeStartCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "start",
-		toFlag(configFileFlag), "./payloads/config.yml")
+		toFlag(configFileFlag), "./config_test.yml")
 	assert.NilError(t, err)
 }
 
@@ -60,12 +60,12 @@ func TestRunSingleNodeRestartCommandWithFileNotFound(t *testing.T) {
 func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "restart",
-		toFlag(configFileFlag), "./payloads/config.yml")
+		toFlag(configFileFlag), "./config_test.yml")
 	assert.NilError(t, err)
 }
 
 func TestRunBashCommand(t *testing.T) {
-	scriptsWrapper := createTestScriptWrapper()
+	cmd := createASTTestCommand()
 	logMaxSize := fmt.Sprintf("log_rotation_size=%s", "test_log_rotation_size")
 	logAgeDays := fmt.Sprintf("log_rotation_age_days=%s", "test_log_rotation_age_days")
 	privateKeyPath := fmt.Sprintf("private_key_path=%s", "test_private_key_path")
@@ -77,9 +77,11 @@ func TestRunBashCommand(t *testing.T) {
 	installCmdStdErrorBuffer := bytes.NewBufferString("")
 	upCmdStdOutputBuffer := bytes.NewBufferString("")
 	upCmdStdErrorBuffer := bytes.NewBufferString("")
-	err := runBashCommand(scriptsWrapper.GetInstallScriptPath(), installCmdStdOutputBuffer, installCmdStdErrorBuffer)
+	installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
+	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
+	err := runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer)
 	assert.NilError(t, err, "install command should succeed")
-	err = runBashCommand(scriptsWrapper.GetUpScriptPath(), upCmdStdOutputBuffer, upCmdStdErrorBuffer,
+	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer,
 		logMaxSize, logAgeDays, privateKeyPath, certificateFile, deployDB, deployTLS, fqdn)
 	assert.NilError(t, err, "up script should succeed")
 	fmt.Println("****UP COMMAND OUTPUT*******")
