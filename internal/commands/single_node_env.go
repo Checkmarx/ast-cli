@@ -8,6 +8,7 @@ import (
 
 const (
 	astInstallationPathEnv = "AST_INSTALLATION_PATH"
+	executionTypeEnv       = "EXECUTION_TYPE"
 
 	// Configurable database environment variables
 	dbHostEnv     = "DATABASE_HOST"
@@ -45,6 +46,7 @@ const (
 func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath string) []string {
 	return []string{
 		envKeyAndValue(astInstallationPathEnv, astInstallationPath),
+		envKeyAndValue(executionTypeEnv, configuration.Execution.Type),
 
 		envKeyAndValue(dbHostEnv, configuration.Database.Host),
 		envKeyAndValue(dbPortEnv, configuration.Database.Port),

@@ -89,6 +89,9 @@ func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
 
 func TestRunBashCommand(t *testing.T) {
 	testConfig := config.SingleNodeConfiguration{
+		Execution: config.Execution{
+			Type: "TEST_Type",
+		},
 		Database: config.Database{
 			Host:     "TEST_Host",
 			Port:     "TEST_Port",
@@ -163,7 +166,8 @@ func TestRunBashCommand(t *testing.T) {
 		"LOG_LEVEL=%s,"+
 		"LOG_ROTATION_AGE_DAYS=%s,"+
 		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
-		"EXTERNAL_ACCESS_IP=%s\n",
+		"EXTERNAL_ACCESS_IP=%s,"+
+		"EXECUTION_TYPE=%s\n",
 		installationFolder,
 		testConfig.Database.Host,
 		testConfig.Database.Port,
@@ -189,7 +193,8 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Log.Level,
 		testConfig.Log.Rotation.MaxAgeDays,
 		testConfig.Log.Rotation.MaxSizeMB,
-		testConfig.Network.ExternalAccessIP)
+		testConfig.Network.ExternalAccessIP,
+		testConfig.Execution.Type)
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
