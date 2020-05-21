@@ -17,11 +17,12 @@ const (
 	dbInstanceEnv = "DATABASE_DB"
 
 	// Configurable network environment variables
-	traefikPort     = "TRAEFIK_PORT"
-	traefikTLSPort  = "TRAEFIK_SSL_PORT"
-	privateKeyPath  = "TLS_PRIVATE_KEY_PATH"
-	certificatePath = "TLS_CERTIFICATE_PATH"
-	fqdn            = "FQDN"
+	traefikPort      = "TRAEFIK_PORT"
+	traefikTLSPort   = "TRAEFIK_SSL_PORT"
+	privateKeyPath   = "TLS_PRIVATE_KEY_PATH"
+	certificatePath  = "TLS_CERTIFICATE_PATH"
+	fqdn             = "FQDN"
+	externalAccessIP = "EXTERNAL_ACCESS_IP"
 
 	// Configurable object store environment variables
 	objectStoreAccessKeyID     = "OBJECT_STORE_ACCESS_KEY_ID"
@@ -56,6 +57,7 @@ func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInst
 		envKeyAndValue(privateKeyPath, configuration.Network.TLS.PrivateKeyPath),
 		envKeyAndValue(certificatePath, configuration.Network.TLS.CertificatePath),
 		envKeyAndValue(fqdn, configuration.Network.FullyQualifiedDomainName),
+		envKeyAndValue(externalAccessIP, configuration.Network.ExternalAccessIP),
 
 		envKeyAndValue(objectStoreAccessKeyID, configuration.ObjectStore.AccessKeyID),
 		envKeyAndValue(objectStoreSecretAccessKey, configuration.ObjectStore.SecretAccessKey),
