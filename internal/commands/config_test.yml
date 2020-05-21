@@ -1,3 +1,5 @@
+execution:
+  type:
 database:
   host:
   port:

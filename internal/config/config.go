@@ -1,5 +1,9 @@
 package config
 
+type Execution struct {
+	Type string `yaml:"type"`
+}
+
 type Database struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
@@ -46,6 +50,7 @@ type LogRotation struct {
 }
 
 type SingleNodeConfiguration struct {
+	Execution     Execution     `yaml:"execution"`
 	Database      Database      `yaml:"database"`
 	Network       Network       `yaml:"network"`
 	ObjectStore   ObjectStore   `yaml:"objectStore"`
