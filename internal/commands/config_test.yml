@@ -9,6 +9,7 @@ network:
     entrypointPort:
     entrypointTLSPort:
     fqdn:
+    externalAccessIP:
     tls:
       privateKeyPath:
       certificatePath:
