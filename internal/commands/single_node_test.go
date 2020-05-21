@@ -100,6 +100,7 @@ func TestRunBashCommand(t *testing.T) {
 			EntrypointPort:           "TEST_EntrypointPort",
 			EntrypointTLSPort:        "TEST_EntrypointTLSPort",
 			FullyQualifiedDomainName: "TEST_FullyQualifiedDomainName",
+			ExternalAccessIP:         "TEST_ExternalAccessIP",
 			TLS: config.TLS{
 				PrivateKeyPath:  "TEST_PrivateKeyPath",
 				CertificatePath: "TEST_CertificatePath",
@@ -161,7 +162,8 @@ func TestRunBashCommand(t *testing.T) {
 		"KEYCLOAK_PASSWORD=%s,"+
 		"LOG_LEVEL=%s,"+
 		"LOG_ROTATION_AGE_DAYS=%s,"+
-		"LOG_ROTATION_MAX_SIZE_MB=%s\n",
+		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
+		"EXTERNAL_ACCESS_IP=%s\n",
 		installationFolder,
 		testConfig.Database.Host,
 		testConfig.Database.Port,
@@ -186,7 +188,8 @@ func TestRunBashCommand(t *testing.T) {
 
 		testConfig.Log.Level,
 		testConfig.Log.Rotation.MaxAgeDays,
-		testConfig.Log.Rotation.MaxSizeMB)
+		testConfig.Log.Rotation.MaxSizeMB,
+		testConfig.Network.ExternalAccessIP)
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
