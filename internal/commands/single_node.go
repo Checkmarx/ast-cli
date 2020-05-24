@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	logFileFlag           = "log"
-	configFileFlag        = "config"
-	astInstallationFolder = "folder"
-	failedInstallingAST   = "Failed installing AST"
+	logFileFlag         = "log"
+	configFileFlag      = "config"
+	astInstallationDir  = "installation-dir"
+	failedInstallingAST = "Failed installing AST"
 )
 
 var logrusFileLogger = logrus.New()
@@ -72,7 +72,7 @@ func NewSingleNodeCommand() *cobra.Command {
 		"Configuration file path to provide to the AST installation (optional)")
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-	upSingleNodeCmd.PersistentFlags().String(astInstallationFolder, "./",
+	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, "./",
 		"AST installation folder path")
 	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
@@ -101,7 +101,7 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 		installCmdStdOutputBuffer := bytes.NewBufferString("")
 		installCmdStdErrorBuffer := bytes.NewBufferString("")
 
-		installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
+		installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
 		installationStarted := "Single node installation started"
 		writeToInstallationLog(installationStarted)
 		writeToStandardOutput(installationStarted)
@@ -203,7 +203,8 @@ func runUpScript(cmd *cobra.Command, upCmdStdOutputBuffer, upCmdStdErrorBuffer i
 		}
 	}
 
-	installationFolder, _ := cmd.Flags().GetString(astInstallationFolder)
+	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
+
 	envVars := getEnvVarsForCommand(&configuration, installationFolder)
 	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer, envVars)
 
@@ -245,7 +246,7 @@ func writeToStandardOutputIfNotEmpty(msg string) {
 }
 
 func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
-	installationFolder, _ := cmd.Flags().GetString(astInstallationFolder)
+	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
 	return path.Join(installationFolder, filePath)
 }
 

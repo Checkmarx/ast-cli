@@ -42,7 +42,7 @@ func TestRunSingleNodeUpCommandWithFile(t *testing.T) {
 func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationFolder), "./non_existing_folder",
+		toFlag(astInstallationDir), "./non_existing_folder",
 		toFlag(configFileFlag), "./config_test.yml")
 	assert.Assert(t, err != nil)
 }
@@ -50,14 +50,14 @@ func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 func TestRunSingleNodeUpCommandWithNoFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationFolder), "./non_existing_folder")
+		toFlag(astInstallationDir), "./non_existing_folder")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunSingleNodeUpCommandWithFileWithFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationFolder), "./")
+		toFlag(astInstallationDir), "./")
 	assert.NilError(t, err)
 }
 
@@ -136,7 +136,7 @@ func TestRunBashCommand(t *testing.T) {
 	upCmdStdErrorBuffer := bytes.NewBufferString("")
 	// TODO add down test
 
-	installScriptPath := getScriptPathRelativeToInstallation("install.sh", cmd)
+	installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	err := runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer, []string{})
 	assert.NilError(t, err, "install command should succeed")
