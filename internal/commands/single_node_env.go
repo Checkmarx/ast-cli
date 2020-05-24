@@ -18,8 +18,8 @@ const (
 	dbInstanceEnv = "DATABASE_DB"
 
 	// Configurable network environment variables
-	traefikPort      = "TRAEFIK_PORT"
-	traefikTLSPort   = "TRAEFIK_SSL_PORT"
+	traefikPort      = "ENTRYPOINT_PORT"
+	traefikTLSPort   = "ENTRYPOINT_TLS_PORT"
 	privateKeyPath   = "TLS_PRIVATE_KEY_PATH"
 	certificatePath  = "TLS_CERTIFICATE_PATH"
 	fqdn             = "FQDN"

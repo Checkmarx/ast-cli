@@ -152,8 +152,8 @@ func TestRunBashCommand(t *testing.T) {
 		"DATABASE_USER=%s,"+
 		"DATABASE_PASSWORD=%s,"+
 		"DATABASE_DB=%s,"+
-		"TRAEFIK_PORT=%s,"+
-		"TRAEFIK_SSL_PORT=%s,"+
+		"ENTRYPOINT_PORT=%s,"+
+		"ENTRYPOINT_TLS_PORT=%s,"+
 		"TLS_PRIVATE_KEY_PATH=%s,"+
 		"TLS_CERTIFICATE_PATH=%s,"+
 		"FQDN=%s,"+
