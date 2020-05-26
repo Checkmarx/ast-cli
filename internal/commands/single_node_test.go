@@ -39,6 +39,7 @@ func TestRunSingleNodeUpCommandWithFile(t *testing.T) {
 		toFlag(configFileFlag), "./config_test.yml")
 	assert.NilError(t, err)
 }
+
 func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
@@ -89,13 +90,10 @@ func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
 
 func TestRunBashCommand(t *testing.T) {
 	testConfig := config.SingleNodeConfiguration{
-		Execution: config.Execution{
-			Type: "TEST_Type",
-		},
 		Database: config.Database{
 			Host:     "TEST_Host",
 			Port:     "TEST_Port",
-			Name:     "TEST_Name",
+			Instance: "TEST_Instance",
 			Username: "TEST_Username",
 			Password: "TEST_Password",
 		},
@@ -108,18 +106,6 @@ func TestRunBashCommand(t *testing.T) {
 				PrivateKeyPath:  "TEST_PrivateKeyPath",
 				CertificatePath: "TEST_CertificatePath",
 			},
-		},
-		ObjectStore: config.ObjectStore{
-			AccessKeyID:     "TEST_AccessKeyID",
-			SecretAccessKey: "TEST_SecretAccessKey",
-		},
-		MessageQueue: config.MessageQueue{
-			Username: "TEST_Username",
-			Password: "TEST_Password",
-		},
-		AccessControl: config.AccessControl{
-			Username: "TEST_Username",
-			Password: "TEST_Password",
 		},
 		Log: config.Log{
 			Level: "TEST_Level",
@@ -151,29 +137,22 @@ func TestRunBashCommand(t *testing.T) {
 		"DATABASE_PORT=%s,"+
 		"DATABASE_USER=%s,"+
 		"DATABASE_PASSWORD=%s,"+
-		"DATABASE_DB=%s,"+
+		"DATABASE_INSTANCE=%s,"+
 		"ENTRYPOINT_PORT=%s,"+
 		"ENTRYPOINT_TLS_PORT=%s,"+
 		"TLS_PRIVATE_KEY_PATH=%s,"+
 		"TLS_CERTIFICATE_PATH=%s,"+
 		"FQDN=%s,"+
-		"OBJECT_STORE_ACCESS_KEY_ID=%s,"+
-		"OBJECT_STORE_SECRET_ACCESS_KEY=%s,"+
-		"NATS_USERNAME=%s,"+
-		"NATS_PASSWORD=%s,"+
-		"KEYCLOAK_USER=%s,"+
-		"KEYCLOAK_PASSWORD=%s,"+
 		"LOG_LEVEL=%s,"+
 		"LOG_ROTATION_AGE_DAYS=%s,"+
 		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
-		"EXTERNAL_ACCESS_IP=%s,"+
-		"EXECUTION_TYPE=%s\n",
+		"EXTERNAL_ACCESS_IP=%s\n",
 		installationFolder,
 		testConfig.Database.Host,
 		testConfig.Database.Port,
 		testConfig.Database.Username,
 		testConfig.Database.Password,
-		testConfig.Database.Name,
+		testConfig.Database.Instance,
 
 		testConfig.Network.EntrypointPort,
 		testConfig.Network.EntrypointTLSPort,
@@ -181,20 +160,10 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Network.TLS.CertificatePath,
 		testConfig.Network.FullyQualifiedDomainName,
 
-		testConfig.ObjectStore.AccessKeyID,
-		testConfig.ObjectStore.SecretAccessKey,
-
-		testConfig.MessageQueue.Username,
-		testConfig.MessageQueue.Password,
-
-		testConfig.AccessControl.Username,
-		testConfig.AccessControl.Password,
-
 		testConfig.Log.Level,
 		testConfig.Log.Rotation.MaxAgeDays,
 		testConfig.Log.Rotation.MaxSizeMB,
-		testConfig.Network.ExternalAccessIP,
-		testConfig.Execution.Type)
+		testConfig.Network.ExternalAccessIP)
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
