@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"io"
 	"os/exec"
 	"strings"
 
@@ -121,10 +120,8 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
-func runBashCommand(name string, outBuffer, errBuffer io.Writer, envs []string, arg ...string) error {
+func runBashCommand(name string, envs []string, arg ...string) ([]byte, error) {
 	bashCommand := exec.Command(name, arg...)
 	bashCommand.Env = envs
-	bashCommand.Stdout = outBuffer
-	bashCommand.Stderr = errBuffer
-	return bashCommand.Run()
+	return bashCommand.CombinedOutput()
 }
