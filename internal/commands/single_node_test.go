@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 
@@ -116,22 +115,19 @@ func TestRunBashCommand(t *testing.T) {
 		},
 	}
 	cmd := createASTTestCommand()
-	installCmdStdOutputBuffer := bytes.NewBufferString("")
-	installCmdStdErrorBuffer := bytes.NewBufferString("")
-	upCmdStdOutputBuffer := bytes.NewBufferString("")
-	upCmdStdErrorBuffer := bytes.NewBufferString("")
 	// TODO add down test
 
 	installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
-	err := runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer, []string{})
+	_, err := runBashCommand(installScriptPath, []string{})
 	assert.NilError(t, err, "install command should succeed")
 
 	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
 	envs := getEnvVarsForCommand(&testConfig, installationFolder)
-	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer, envs)
+	var actual []byte
+	actual, err = runBashCommand(upScriptPath, envs)
 	assert.NilError(t, err, "up script should succeed")
-	actual := upCmdStdOutputBuffer.String()
+
 	expected := fmt.Sprintf("AST_INSTALLATION_PATH=%s,"+
 		"DATABASE_HOST=%s,"+
 		"DATABASE_PORT=%s,"+
@@ -167,6 +163,6 @@ func TestRunBashCommand(t *testing.T) {
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
-	fmt.Println(actual)
-	assert.Assert(t, expected == actual)
+	fmt.Println(string(actual))
+	assert.Assert(t, expected == string(actual))
 }
