@@ -1,14 +1,11 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
-
-	"github.com/sirupsen/logrus"
 
 	"gopkg.in/yaml.v2"
 
@@ -23,8 +20,6 @@ const (
 	astInstallationDir  = "installation-dir"
 	failedInstallingAST = "Failed installing AST"
 )
-
-var logrusFileLogger = logrus.New()
 
 func NewSingleNodeCommand() *cobra.Command {
 	singleNodeCmd := &cobra.Command{
@@ -93,44 +88,43 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 	return func(cmd *cobra.Command, args []string) error {
 		logFilePath, _ := cmd.Flags().GetString(logFileFlag)
 		PrintIfVerbose(fmt.Sprintf("Log file path: %s", logFilePath))
-		logFile, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_CREATE, 0755)
+
+		var _, err = os.Stat(logFilePath)
+		// create file if not exists
+		if os.IsExist(err) {
+			err = os.Remove(logFilePath)
+			if err != nil {
+				return errors.Wrapf(err, "%s: Failed to delete current installation log file", failedInstallingAST)
+			}
+		}
+
+		logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY, 0755)
 		if err != nil {
 			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAST)
 		}
-		logrusFileLogger.SetOutput(logFile)
-		logrusFileLogger.SetFormatter(&logrus.TextFormatter{
-			DisableQuote: true,
-		})
-
-		installCmdStdOutputBuffer := bytes.NewBufferString("")
-		installCmdStdErrorBuffer := bytes.NewBufferString("")
 
 		installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
+
 		installationStarted := "Single node installation started"
-		writeToInstallationLog(installationStarted)
+		_ = writeToInstallationLog(logFile, installationStarted)
+		_ = writeToInstallationLog(logFile, fmt.Sprintf("Running installation script from path %s", installScriptPath))
 		writeToStandardOutput(installationStarted)
-		writeToInstallationLog(fmt.Sprintf("Running installation script from path %s", installScriptPath))
 
-		err = runBashCommand(installScriptPath, installCmdStdOutputBuffer, installCmdStdErrorBuffer, []string{})
-		installationScriptOutput := installCmdStdOutputBuffer.String()
-		installationErrScriptOutput := installCmdStdErrorBuffer.String()
-		writeToInstallationLogIfNotEmpty(installationScriptOutput)
-		writeToStandardOutputIfNotEmpty(installationScriptOutput)
-
-		writeToInstallationLogIfNotEmpty(installationErrScriptOutput)
-		writeToStandardOutputIfNotEmpty(installationErrScriptOutput)
+		var stdinAndErrOutput []byte
+		stdinAndErrOutput, err = runBashCommand(installScriptPath, []string{})
+		_ = writeToInstallationLog(logFile, string(stdinAndErrOutput))
+		writeToStandardOutput(string(stdinAndErrOutput))
 
 		if err != nil {
 			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAST)
-			logrusFileLogger.WithFields(logrus.Fields{
-				"err": err,
-			}).Println(msg)
-
-			writeToInstallationLogIfNotEmpty(installCmdStdErrorBuffer.String())
+			writeToStandardOutput(failedInstallingAST)
+			writeToStandardOutput(fmt.Sprintf("For more information, read the installation log located at %s",
+				logFilePath))
+			_ = writeToInstallationLog(logFile, msg)
 			return errors.Wrapf(err, msg)
 		}
 		successfully := "Single node installation completed successfully"
-		writeToInstallationLog(successfully)
+		_ = writeToInstallationLog(logFile, successfully)
 		writeToStandardOutput(successfully)
 		return nil
 	}
@@ -138,15 +132,8 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 
 func runUpSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		upCmdStdOutputBuffer := bytes.NewBufferString("")
-		upCmdStdErrorBuffer := bytes.NewBufferString("")
-
 		writeToStandardOutput("Trying to start AST...")
-		err := runUpScript(cmd, upCmdStdOutputBuffer, upCmdStdErrorBuffer)
-		upScriptOutput := upCmdStdOutputBuffer.String()
-		upErrScriptOutput := upCmdStdErrorBuffer.String()
-		writeToStandardOutputIfNotEmpty(upScriptOutput)
-		writeToStandardOutputIfNotEmpty(upErrScriptOutput)
+		err := runUpScript(cmd)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to start AST")
 			return errors.Wrapf(err, msg)
@@ -158,17 +145,8 @@ func runUpSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 
 func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		downCmdStdOutputBuffer := bytes.NewBufferString("")
-		downCmdStdErrorBuffer := bytes.NewBufferString("")
-
 		writeToStandardOutput("Trying to stop AST...")
-		err := runDownScript(cmd, downCmdStdOutputBuffer, downCmdStdErrorBuffer)
-
-		downScriptOutput := downCmdStdOutputBuffer.String()
-		downErrScriptOutput := downCmdStdErrorBuffer.String()
-
-		writeToStandardOutputIfNotEmpty(downScriptOutput)
-		writeToStandardOutputIfNotEmpty(downErrScriptOutput)
+		err := runDownScript(cmd)
 
 		if err != nil {
 			msg := fmt.Sprintf("Failed to stop AST")
@@ -178,6 +156,7 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 }
+
 func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Trying to stop AST...")
@@ -193,11 +172,12 @@ func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 		return nil
 	}
 }
+
 func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runUpScript(cmd *cobra.Command, upCmdStdOutputBuffer, upCmdStdErrorBuffer io.Writer) error {
+func runUpScript(cmd *cobra.Command) error {
 	var err error
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
@@ -219,17 +199,18 @@ func runUpScript(cmd *cobra.Command, upCmdStdOutputBuffer, upCmdStdErrorBuffer i
 	}
 
 	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
-
 	envVars := getEnvVarsForCommand(&configuration, installationFolder)
-	err = runBashCommand(upScriptPath, upCmdStdOutputBuffer, upCmdStdErrorBuffer, envVars)
 
+	var stdinAndErrOutput []byte
+	stdinAndErrOutput, err = runBashCommand(upScriptPath, envVars)
+	writeToStandardOutput(string(stdinAndErrOutput))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
 	return nil
 }
 
-func runDownScript(cmd *cobra.Command, downCmdStdOutputBuffer, downCmdStdErrorBuffer io.Writer) error {
+func runDownScript(cmd *cobra.Command) error {
 	var err error
 	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
@@ -237,31 +218,27 @@ func runDownScript(cmd *cobra.Command, downCmdStdOutputBuffer, downCmdStdErrorBu
 	envs := []string{
 		envKeyAndValue(astInstallationPathEnv, installationDir),
 	}
-	err = runBashCommand(downScriptPath, downCmdStdOutputBuffer, downCmdStdErrorBuffer, envs)
+
+	var stdinAndErrOutput []byte
+	stdinAndErrOutput, err = runBashCommand(downScriptPath, envs)
+	writeToStandardOutput(string(stdinAndErrOutput))
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
 	return nil
 }
 
-func writeToInstallationLog(msg string) {
-	logrusFileLogger.Println(msg)
-}
-
-func writeToInstallationLogIfNotEmpty(msg string) {
-	if msg != "" {
-		writeToInstallationLog(msg)
+func writeToInstallationLog(logFile io.StringWriter, msg string) error {
+	_, err := logFile.WriteString(msg)
+	if err != nil {
+		return err
 	}
+	_, err = logFile.WriteString("\n")
+	return err
 }
 
 func writeToStandardOutput(msg string) {
 	fmt.Fprintln(os.Stdout, msg)
-}
-
-func writeToStandardOutputIfNotEmpty(msg string) {
-	if msg != "" {
-		writeToStandardOutput(msg)
-	}
 }
 
 func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
