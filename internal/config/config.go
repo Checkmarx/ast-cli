@@ -3,7 +3,7 @@ package config
 type Database struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
-	Instance string `yaml:"name"`
+	Instance string `yaml:"instance"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 }
