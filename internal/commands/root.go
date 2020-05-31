@@ -2,7 +2,6 @@ package commands
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -131,7 +130,6 @@ func runBashCommand(name string, envs []string, arg ...string) (*bytes.Buffer, *
 	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
 	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
 	err := cmd.Run()
-	fmt.Println("ERROR IS ", err)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Error running command %s", name)
 	}
