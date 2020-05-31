@@ -99,7 +99,6 @@ func TestRunBashCommand(t *testing.T) {
 		},
 		Network: config.Network{
 			EntrypointPort:           "TEST_EntrypointPort",
-			EntrypointTLSPort:        "TEST_EntrypointTLSPort",
 			FullyQualifiedDomainName: "TEST_FullyQualifiedDomainName",
 			ExternalAccessIP:         "TEST_ExternalAccessIP",
 			TLS: config.TLS{
@@ -139,7 +138,6 @@ func TestRunBashCommand(t *testing.T) {
 		"DATABASE_PASSWORD=%s,"+
 		"DATABASE_INSTANCE=%s,"+
 		"ENTRYPOINT_PORT=%s,"+
-		"ENTRYPOINT_TLS_PORT=%s,"+
 		"TLS_PRIVATE_KEY_PATH=%s,"+
 		"TLS_CERTIFICATE_PATH=%s,"+
 		"FQDN=%s,"+
@@ -155,7 +153,6 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Database.Instance,
 
 		testConfig.Network.EntrypointPort,
-		testConfig.Network.EntrypointTLSPort,
 		testConfig.Network.TLS.PrivateKeyPath,
 		testConfig.Network.TLS.CertificatePath,
 		testConfig.Network.FullyQualifiedDomainName,
