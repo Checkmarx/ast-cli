@@ -18,7 +18,6 @@ const (
 
 	// Configurable network environment variables
 	traefikPort      = "ENTRYPOINT_PORT"
-	traefikTLSPort   = "ENTRYPOINT_TLS_PORT"
 	privateKeyPath   = "TLS_PRIVATE_KEY_PATH"
 	certificatePath  = "TLS_CERTIFICATE_PATH"
 	fqdn             = "FQDN"
@@ -41,7 +40,6 @@ func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInst
 		envKeyAndValue(dbInstanceEnv, configuration.Database.Instance),
 
 		envKeyAndValue(traefikPort, configuration.Network.EntrypointPort),
-		envKeyAndValue(traefikTLSPort, configuration.Network.EntrypointTLSPort),
 		envKeyAndValue(privateKeyPath, configuration.Network.TLS.PrivateKeyPath),
 		envKeyAndValue(certificatePath, configuration.Network.TLS.CertificatePath),
 		envKeyAndValue(fqdn, configuration.Network.FullyQualifiedDomainName),

@@ -15,7 +15,6 @@ type TLS struct {
 
 type Network struct {
 	EntrypointPort           string `yaml:"entrypointPort"`
-	EntrypointTLSPort        string `yaml:"entrypointTLSPort"`
 	FullyQualifiedDomainName string `yaml:"fqdn"`
 	TLS                      TLS    `yaml:"tls"`
 	ExternalAccessIP         string `yaml:"externalAccessIP"`
