@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -110,10 +111,11 @@ func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error
 		_ = writeToInstallationLog(logFile, fmt.Sprintf("Running installation script from path %s", installScriptPath))
 		writeToStandardOutput(installationStarted)
 
-		var stdinAndErrOutput []byte
-		stdinAndErrOutput, err = runBashCommand(installScriptPath, []string{})
-		_ = writeToInstallationLog(logFile, string(stdinAndErrOutput))
-		writeToStandardOutput(string(stdinAndErrOutput))
+		var stdOut *bytes.Buffer
+		var stdErr *bytes.Buffer
+		stdOut, stdErr, err = runBashCommand(installScriptPath, []string{})
+		_ = writeToInstallationLog(logFile, stdOut.String())
+		_ = writeToInstallationLog(logFile, stdErr.String())
 
 		if err != nil {
 			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAST)
@@ -201,9 +203,8 @@ func runUpScript(cmd *cobra.Command) error {
 	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
 	envVars := getEnvVarsForCommand(&configuration, installationFolder)
 
-	var stdinAndErrOutput []byte
-	stdinAndErrOutput, err = runBashCommand(upScriptPath, envVars)
-	writeToStandardOutput(string(stdinAndErrOutput))
+	_, _, err = runBashCommand(upScriptPath, envVars)
+
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
@@ -219,9 +220,7 @@ func runDownScript(cmd *cobra.Command) error {
 		envKeyAndValue(astInstallationPathEnv, installationDir),
 	}
 
-	var stdinAndErrOutput []byte
-	stdinAndErrOutput, err = runBashCommand(downScriptPath, envs)
-	writeToStandardOutput(string(stdinAndErrOutput))
+	_, _, err = runBashCommand(downScriptPath, envs)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
