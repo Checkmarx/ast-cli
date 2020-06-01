@@ -10,22 +10,6 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestRunSingleNodeInstallAndRunCommandWithFileNotFound(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "install",
-		toFlag(configFileFlag), "./payloads/nonsense.json",
-		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
-	assert.NilError(t, err)
-}
-
-func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "install",
-		toFlag(configFileFlag), "./config_test.yml",
-		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
-	assert.NilError(t, err)
-}
-
 func TestRunSingleNodeUpCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
@@ -100,7 +84,7 @@ func TestRunBashCommand(t *testing.T) {
 		Network: config.Network{
 			EntrypointPort:           "TEST_EntrypointPort",
 			FullyQualifiedDomainName: "TEST_FullyQualifiedDomainName",
-			ExternalAccessIP:         "TEST_ExternalAccessIP",
+			ExternalHostname:         "TEST_ExternalHostname",
 			TLS: config.TLS{
 				PrivateKeyPath:  "TEST_PrivateKeyPath",
 				CertificatePath: "TEST_CertificatePath",
@@ -120,10 +104,7 @@ func TestRunBashCommand(t *testing.T) {
 	var actualOut *bytes.Buffer
 	var err error
 
-	installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
-	_, _, err = runBashCommand(installScriptPath, []string{})
-	assert.NilError(t, err, "install command should succeed")
 
 	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
 	envs := getEnvVarsForCommand(&testConfig, installationFolder)
@@ -144,7 +125,7 @@ func TestRunBashCommand(t *testing.T) {
 		"LOG_LEVEL=%s,"+
 		"LOG_ROTATION_AGE_DAYS=%s,"+
 		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
-		"EXTERNAL_ACCESS_IP=%s\n",
+		"EXTERNAL_HOSTNAME=%s\n",
 		installationFolder,
 		testConfig.Database.Host,
 		testConfig.Database.Port,
@@ -160,7 +141,7 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Log.Level,
 		testConfig.Log.Rotation.MaxAgeDays,
 		testConfig.Log.Rotation.MaxSizeMB,
-		testConfig.Network.ExternalAccessIP)
+		testConfig.Network.ExternalHostname)
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
