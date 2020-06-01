@@ -1,9 +1,7 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -16,10 +14,8 @@ import (
 )
 
 const (
-	logFileFlag         = "log"
-	configFileFlag      = "config"
-	astInstallationDir  = "installation-dir"
-	failedInstallingAST = "Failed installing AST"
+	configFileFlag     = "config"
+	astInstallationDir = "installation-dir"
 )
 
 func NewSingleNodeCommand() *cobra.Command {
@@ -27,11 +23,7 @@ func NewSingleNodeCommand() *cobra.Command {
 		Use:   "single-node",
 		Short: "Single Node AST",
 	}
-	installSingleNodeCmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install Single Node AST",
-		RunE:  runInstallSingleNodeCommand(),
-	}
+
 	upSingleNodeCmd := &cobra.Command{
 		Use:   "up",
 		Short: "Start AST",
@@ -65,10 +57,6 @@ func NewSingleNodeCommand() *cobra.Command {
 	installationFolderUsage := "AST installation folder path"
 	installationFolderDefault := "./"
 
-	installSingleNodeCmd.PersistentFlags().String(logFileFlag, "./install.ast.log",
-		"Installation log file path (optional)")
-	installSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
-
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 
@@ -76,60 +64,13 @@ func NewSingleNodeCommand() *cobra.Command {
 
 	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
 		"Configuration file path for AST (optional)")
-	singleNodeCmd.AddCommand(installSingleNodeCmd,
+	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
 		restartSingleNodeCmd,
 		healthSingleNodeCmd,
 		updateSingleNodeCmd)
 	return singleNodeCmd
-}
-
-func runInstallSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		logFilePath, _ := cmd.Flags().GetString(logFileFlag)
-		PrintIfVerbose(fmt.Sprintf("Log file path: %s", logFilePath))
-
-		var _, err = os.Stat(logFilePath)
-		// create file if not exists
-		if os.IsExist(err) {
-			err = os.Remove(logFilePath)
-			if err != nil {
-				return errors.Wrapf(err, "%s: Failed to delete current installation log file", failedInstallingAST)
-			}
-		}
-
-		logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			return errors.Wrapf(err, "%s: Failed to open installation log file", failedInstallingAST)
-		}
-
-		installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
-
-		installationStarted := "Single node installation started"
-		_ = writeToInstallationLog(logFile, installationStarted)
-		_ = writeToInstallationLog(logFile, fmt.Sprintf("Running installation script from path %s", installScriptPath))
-		writeToStandardOutput(installationStarted)
-
-		var stdOut *bytes.Buffer
-		var stdErr *bytes.Buffer
-		stdOut, stdErr, err = runBashCommand(installScriptPath, []string{})
-		_ = writeToInstallationLog(logFile, stdOut.String())
-		_ = writeToInstallationLog(logFile, stdErr.String())
-
-		if err != nil {
-			msg := fmt.Sprintf("%s: Failed to run install script", failedInstallingAST)
-			writeToStandardOutput(failedInstallingAST)
-			writeToStandardOutput(fmt.Sprintf("For more information, read the installation log located at %s",
-				logFilePath))
-			_ = writeToInstallationLog(logFile, msg)
-			return errors.Wrapf(err, msg)
-		}
-		successfully := "Single node installation completed successfully"
-		_ = writeToInstallationLog(logFile, successfully)
-		writeToStandardOutput(successfully)
-		return nil
-	}
 }
 
 func runUpSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
@@ -225,15 +166,6 @@ func runDownScript(cmd *cobra.Command) error {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
 	return nil
-}
-
-func writeToInstallationLog(logFile io.StringWriter, msg string) error {
-	_, err := logFile.WriteString(msg)
-	if err != nil {
-		return err
-	}
-	_, err = logFile.WriteString("\n")
-	return err
 }
 
 func writeToStandardOutput(msg string) {

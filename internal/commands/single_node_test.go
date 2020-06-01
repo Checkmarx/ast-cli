@@ -10,22 +10,6 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestRunSingleNodeInstallAndRunCommandWithFileNotFound(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "install",
-		toFlag(configFileFlag), "./payloads/nonsense.json",
-		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
-	assert.NilError(t, err)
-}
-
-func TestRunSingleNodeInstallAndRunCommandWithFile(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "install",
-		toFlag(configFileFlag), "./config_test.yml",
-		toFlag(logFileFlag), fmt.Sprintf("%s.ast.log", t.Name()))
-	assert.NilError(t, err)
-}
-
 func TestRunSingleNodeUpCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
@@ -120,10 +104,7 @@ func TestRunBashCommand(t *testing.T) {
 	var actualOut *bytes.Buffer
 	var err error
 
-	installScriptPath := getScriptPathRelativeToInstallation("docker-install.sh", cmd)
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
-	_, _, err = runBashCommand(installScriptPath, []string{})
-	assert.NilError(t, err, "install command should succeed")
 
 	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
 	envs := getEnvVarsForCommand(&testConfig, installationFolder)
