@@ -21,7 +21,7 @@ const (
 	privateKeyPath   = "TLS_PRIVATE_KEY_PATH"
 	certificatePath  = "TLS_CERTIFICATE_PATH"
 	fqdn             = "FQDN"
-	externalAccessIP = "EXTERNAL_ACCESS_IP"
+	externalHostname = "EXTERNAL_HOSTNAME"
 
 	// Configurable logging environment variables
 	logLevel             = "LOG_LEVEL"
@@ -43,7 +43,7 @@ func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInst
 		envKeyAndValue(privateKeyPath, configuration.Network.TLS.PrivateKeyPath),
 		envKeyAndValue(certificatePath, configuration.Network.TLS.CertificatePath),
 		envKeyAndValue(fqdn, configuration.Network.FullyQualifiedDomainName),
-		envKeyAndValue(externalAccessIP, configuration.Network.ExternalAccessIP),
+		envKeyAndValue(externalHostname, configuration.Network.ExternalHostname),
 
 		envKeyAndValue(logLevel, configuration.Log.Level),
 		envKeyAndValue(logRotationAgeDays, configuration.Log.Rotation.MaxAgeDays),

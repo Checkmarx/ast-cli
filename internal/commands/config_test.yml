@@ -25,7 +25,7 @@ network:
   fqdn:
   # The external IPv4 used to access the AST. Default: 127.0.0.1
   # Example: 10.10.10.10 
-  externalAccessIP:
+  externalHostname:
   # For TLS , you must provide private key and certificate
   tls:
     # The absolute path to your private key in the host. Example: /home/myuser/mykey.pem. Default: None
