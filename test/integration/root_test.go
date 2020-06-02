@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,8 +75,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	uploads := viper.GetString(params.UploadsPathKey)
 
-	sastRmPathKey := strings.ToLower(sastRmPathEnv)
-	err = bindKeyToEnvAndDefault(sastRmPathKey, sastRmPathEnv, "api/sast-rm")
+	sastRmPathKey := strings.ToLower(params.SastRmPathEnv)
+	err = bindKeyToEnvAndDefault(sastRmPathKey, params.SastRmPathEnv, "api/sast-rm")
 	assert.NilError(t, err)
 	sastrm := viper.GetString(sastRmPathKey)
 

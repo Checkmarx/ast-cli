@@ -86,7 +86,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorMo
 }
 
 func (p *ProjectsHTTPWrapper) Tags() (
-	*[]string,
+	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
 	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/tags", nil)
@@ -106,12 +106,12 @@ func (p *ProjectsHTTPWrapper) Tags() (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		tags := []string{}
+		tags := map[string][]string{}
 		err = decoder.Decode(&tags)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)
 		}
-		return &tags, nil, nil
+		return tags, nil, nil
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)

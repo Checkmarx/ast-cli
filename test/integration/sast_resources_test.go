@@ -27,10 +27,10 @@ type scans struct {
 }
 
 func TestSastResourceE2E(t *testing.T) {
-	e := Engines()
+	e := Engines(t)
 	assert.Assert(t, cmp.Equal(e.Waiting, 1))
 	assert.Assert(t, cmp.Equal(e.Running, 0))
-	s := Scans()
+	s := Scans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
 	assert.Assert(t, cmp.Equal(s.Running, 0))
 
@@ -43,19 +43,19 @@ func TestSastResourceE2E(t *testing.T) {
 	pollScanUntilStatus(t, scanID, scanCompletedCh, scansRESTApi.ScanRunning, waitTimeSec, 5)
 	assert.Assert(t, <-scanCompletedCh, "Scan should be running")
 
-	e = Engines()
+	e = Engines(t)
 	assert.Assert(t, cmp.Equal(e.Waiting, 0))
 	assert.Assert(t, cmp.Equal(e.Running, 1))
-	s = Scans()
+	s = Scans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
 	assert.Assert(t, cmp.Equal(s.Running, 1))
 }
 
-func Scans() scans {
+func Scans(t *testing.T) scans {
 	scanCollection := rm.ScansCollection{}
 	invokeCommand(t, &scanCollection, "sr", "scans")
 	result := scans{}
-	for i, s := range scanCollection.Scans {
+	for _, s := range scanCollection.Scans {
 		if s.State == rm.AllocatedScanState || s.State == rm.RunningScanState {
 			result.Running++
 		} else if s.State == rm.QueuedScanState {
@@ -65,14 +65,14 @@ func Scans() scans {
 	return result
 }
 
-func Engines() engines {
+func Engines(t *testing.T) engines {
 	enginesCollection := rm.EnginesCollection{}
 	invokeCommand(t, &enginesCollection, "sr", "engines")
 	result := engines{}
-	for i, engine := range enginesCollection.Engines {
+	for _, engine := range enginesCollection.Engines {
 		if engine.Status == rm.AllocatedEngineStatus || engine.Status == rm.BusyEngineStatus {
 			result.Running++
-		} else if engine.State == rm.ReadyEngineStatus {
+		} else if engine.Status == rm.ReadyEngineStatus {
 			result.Waiting++
 		}
 	}
