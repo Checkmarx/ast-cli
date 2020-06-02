@@ -1,3 +1,5 @@
+// +build !integration
+
 package commands
 
 import (
@@ -145,6 +147,17 @@ func TestRunBashCommand(t *testing.T) {
 	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
 	fmt.Println(expected)
 	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
+	fmt.Println(actualOut.String())
+	assert.Assert(t, expected == actualOut.String())
+
+	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
+
+	actualOut, _, err = runBashCommand(downScriptPath, envs)
+	assert.NilError(t, err, "down script should succeed")
+
+	fmt.Println("EXPECTED FROM DOWN SCRIPT OUTPUT:")
+	fmt.Println(expected)
+	fmt.Println("ACTUAL FROM DOWN SCRIPT OUTPUT:")
 	fmt.Println(actualOut.String())
 	assert.Assert(t, expected == actualOut.String())
 }

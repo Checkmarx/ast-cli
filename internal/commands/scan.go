@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -114,6 +116,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to open input file", failedCreating)
 			}
+			wd, _ := os.Getwd()
+			PrintIfVerbose(fmt.Sprintf("Input file full path is  %s", filepath.Join(wd, scanInputFile)))
 		} else if scanInput != "" {
 			// Reading from standard input
 			PrintIfVerbose("Reading input from console")
@@ -173,7 +177,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
+			err = Print(cmd.OutOrStdout(), toScanView(scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
@@ -211,7 +215,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = Print(cmd.OutOrStdout(), toScanViews(allScansModel.Scans...))
+			err = Print(cmd.OutOrStdout(), toScanViews(allScansModel.Scans))
 			if err != nil {
 				return err
 			}
@@ -237,7 +241,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toScanViews(*scanResponseModel))
+			err = Print(cmd.OutOrStdout(), toScanView(scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -290,7 +294,7 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 	}
 }
 
-type scansScanView struct {
+type scanView struct {
 	ID        string `format:"name:Scan ID"`
 	ProjectID string `format:"name:Project ID"`
 	Status    string
@@ -299,18 +303,21 @@ type scansScanView struct {
 	Tags      map[string]string
 }
 
-func toScanViews(scans ...scansRESTApi.ScanResponseModel) []*scansScanView {
-	views := make([]*scansScanView, len(scans))
+func toScanViews(scans []scansRESTApi.ScanResponseModel) []*scanView {
+	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
-		scan := scans[i]
-		views[i] = &scansScanView{
-			ID:        scan.ID,
-			Status:    string(scan.Status),
-			CreatedAt: scan.CreatedAt,
-			UpdatedAt: scan.UpdatedAt,
-			ProjectID: scan.ProjectID,
-			Tags:      scan.Tags,
-		}
+		views[i] = toScanView(&scans[i])
 	}
 	return views
+}
+
+func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
+	return &scanView{
+		ID:        scan.ID,
+		Status:    string(scan.Status),
+		CreatedAt: scan.CreatedAt,
+		UpdatedAt: scan.UpdatedAt,
+		ProjectID: scan.ProjectID,
+		Tags:      scan.Tags,
+	}
 }

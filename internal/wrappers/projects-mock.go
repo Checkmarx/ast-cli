@@ -50,9 +50,13 @@ func (p *ProjectsMockWrapper) Delete(projectID string) (
 }
 
 func (p *ProjectsMockWrapper) Tags() (
-	*[]string,
+	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
 	fmt.Println("Called Tags in ProjectsMockWrapper")
-	return &[]string{"t1"}, nil, nil
+	return map[string][]string{
+		"t1": {
+			"v1",
+		},
+	}, nil, nil
 }
