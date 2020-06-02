@@ -56,7 +56,6 @@ func TestScansE2E(t *testing.T) {
 	log.Println("INC SCAN RESULTS IS ", incScanResults)
 	assert.Assert(t, incScanResults == incScanResultsNum, "Wrong number of inc scan results")
 
-	listScansPretty(t)
 	listScans(t)
 	getScansTags(t)
 }
@@ -100,7 +99,7 @@ func listScans(t *testing.T) {
 	var getAllJSON []byte
 	getAllJSON, err = ioutil.ReadAll(b)
 	assert.NilError(t, err, "Reading all scans response JSON should pass")
-	allScans := scansRESTApi.SlicedScansResponseModel{}
+	allScans := scansRESTApi.ScansCollectionResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
 }
