@@ -3,9 +3,11 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
@@ -35,6 +37,9 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 
 	// read all of the contents of our uploaded file into a
 	// byte array
+	wd, _ := os.Getwd()
+	fmt.Printf("Input file full path is  %s\n", filepath.Join(wd, sourcesFile))
+
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
@@ -82,7 +87,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		}
 		return nil, errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 
-	case http.StatusCreated:
+	case http.StatusOK:
 		model := uploads.UploadModel{}
 		err = decoder.Decode(&model)
 		if err != nil {

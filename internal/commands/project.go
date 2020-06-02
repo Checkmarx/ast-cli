@@ -234,16 +234,16 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		return nil
 	}
 }
-func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []scansProjectView {
-	result := make([]scansProjectView, len(models))
+func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView {
+	result := make([]projectView, len(models))
 	for i, model := range models {
 		result[i] = toProjectView(model)
 	}
 	return result
 }
 
-func toProjectView(model projectsRESTApi.ProjectResponseModel) scansProjectView {
-	return scansProjectView{
+func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView {
+	return projectView{
 		ID:        model.ID,
 		CreatedAt: model.CreatedAt,
 		UpdatedAt: model.UpdatedAt,
@@ -251,7 +251,7 @@ func toProjectView(model projectsRESTApi.ProjectResponseModel) scansProjectView 
 	}
 }
 
-type scansProjectView struct {
+type projectView struct {
 	ID        string    `format:"name:Project ID"`
 	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`

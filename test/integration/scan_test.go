@@ -26,6 +26,7 @@ const (
 )
 
 func TestScansE2E(t *testing.T) {
+	waitForResults := 10
 	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", "120")
 	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
 	viper.SetDefault("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS", "60")
@@ -38,10 +39,11 @@ func TestScansE2E(t *testing.T) {
 	pollScanUntilStatus(t, scanID, scanCompletedCh, scansRESTApi.ScanCompleted, fullScanWaitTime, 5)
 	scanCompleted := <-scanCompletedCh
 	assert.Assert(t, scanCompleted, "Full scan should be completed")
-
+	log.Println("Waiting for full scan results...")
+	time.Sleep(time.Duration(waitForResults) * time.Second)
 	// Validate the results for full scan
 	scanResults := getResultsNumberForScan(t, scanID)
-	log.Println("SCAN RESULTS IS ", scanResults)
+	log.Println("Full scan results number is", scanResults)
 	assert.Assert(t, scanResults == scanResultsNum, "Wrong number of scan results")
 	incScanID := createIncScan(t)
 	log.Printf("Waiting %d seconds for the incremental scan to complete...\n", incScanWaitTime)
@@ -50,10 +52,11 @@ func TestScansE2E(t *testing.T) {
 	pollScanUntilStatus(t, incScanID, incScanCompletedCh, scansRESTApi.ScanCompleted, incScanWaitTime, 5)
 	incScanCompleted := <-incScanCompletedCh
 	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
-
+	log.Println("Waiting for incremental scan results...")
 	// Validate the results for inc scan
+	time.Sleep(time.Duration(waitForResults) * time.Second)
 	incScanResults := getResultsNumberForScan(t, incScanID)
-	log.Println("INC SCAN RESULTS IS ", incScanResults)
+	log.Println("Incremental scan results number is", incScanResults)
 	assert.Assert(t, incScanResults == incScanResultsNum, "Wrong number of inc scan results")
 
 	listScans(t)
@@ -65,7 +68,7 @@ func createScanSourcesFile(t *testing.T) string {
 	b := bytes.NewBufferString("")
 	createCommand := createASTIntegrationTestCommand(t)
 	createCommand.SetOut(b)
-	err := execute(createCommand, "-v", "scan", "create", "--input-file", "scan_payload.json", "--sources", "sources.zip")
+	err := execute(createCommand, "-v", "--format", "json", "scan", "create", "--input-file", "scan_payload.json", "--sources", "sources.zip")
 	assert.NilError(t, err, "Creating a scan should pass")
 	// Read response from buffer
 	var createdScanJSON []byte
@@ -93,7 +96,7 @@ func listScans(t *testing.T) {
 	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
 	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
 
-	err := execute(getAllCommand, "-v", "scan", "list", "--filter", lim, "--filter", off)
+	err := execute(getAllCommand, "-v", "--format", "json", "scan", "list", "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
 	var getAllJSON []byte
@@ -118,7 +121,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	err := execute(getCommand, "-v", "scan", "show", scanID)
+	err := execute(getCommand, "-v", "--format", "json", "scan", "show", scanID)
 	assert.NilError(t, err)
 	// Read response from buffer
 	var getScanJSON []byte
@@ -140,7 +143,7 @@ func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
 	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "scan", "tags")
+	err := execute(tagsCommand, "-v", "--format", "json", "scan", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
 	// Read response from buffer
 	var tagsJSON []byte
@@ -158,7 +161,7 @@ func createIncScan(t *testing.T) string {
 	incBuff := bytes.NewBufferString("")
 	createIncCommand := createASTIntegrationTestCommand(t)
 	createIncCommand.SetOut(incBuff)
-	err := execute(createIncCommand, "-v", "scan", "create", "--input-file", "scan_inc_payload.json", "--sources", "sources_inc.zip")
+	err := execute(createIncCommand, "-v", "--format", "json", "scan", "create", "--input-file", "scan_inc_payload.json", "--sources", "sources_inc.zip")
 	assert.NilError(t, err, "Creating an incremental scan should pass")
 	// Read response from buffer
 	var createdIncScanJSON []byte
