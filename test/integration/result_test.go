@@ -23,7 +23,7 @@ func getResultsNumberForScan(t *testing.T, scanID string) int {
 	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
 	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
 
-	err := execute(getResultsCmd, "-v", "result", "list", scanID, "--filter", lim, "--filter", off)
+	err := execute(getResultsCmd, "-v", "--format", "json", "result", "list", scanID, "--filter", lim, "--filter", off)
 	assert.NilError(t, err, "Getting all results should pass")
 	// Read response from buffer
 	var getAllJSON []byte
