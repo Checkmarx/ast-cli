@@ -128,7 +128,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectViews(*projResponseModel))
+			err = Print(cmd.OutOrStdout(), toProjectView(*projResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
@@ -155,7 +155,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			err = Print(cmd.OutOrStdout(), toProjectViews(allProjectsModel.Projects...))
+			err = Print(cmd.OutOrStdout(), toProjectViews(allProjectsModel.Projects))
 			if err != nil {
 				return err
 			}
@@ -181,7 +181,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectViews(*projectResponseModel))
+			err = Print(cmd.OutOrStdout(), toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
 			}
@@ -212,7 +212,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var tags *[]string
+		var tags map[string][]string
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
 
@@ -234,18 +234,24 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		return nil
 	}
 }
-func toProjectViews(models ...projectsRESTApi.ProjectResponseModel) []scansProjectView {
-	result := make([]scansProjectView, len(models))
+func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView {
+	result := make([]projectView, len(models))
 	for i, model := range models {
-		result[i].ID = model.ID
-		result[i].CreatedAt = model.CreatedAt
-		result[i].UpdatedAt = model.UpdatedAt
-		result[i].Tags = model.Tags
+		result[i] = toProjectView(model)
 	}
 	return result
 }
 
-type scansProjectView struct {
+func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView {
+	return projectView{
+		ID:        model.ID,
+		CreatedAt: model.CreatedAt,
+		UpdatedAt: model.UpdatedAt,
+		Tags:      model.Tags,
+	}
+}
+
+type projectView struct {
 	ID        string    `format:"name:Project ID"`
 	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`

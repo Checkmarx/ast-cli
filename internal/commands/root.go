@@ -64,6 +64,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
+	// Default value is table. Should we? or JSON?
 	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
