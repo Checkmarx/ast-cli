@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	scanResultsNum    = 575
-	incScanResultsNum = 572
+	scanResultsNum    = 387
+	incScanResultsNum = 409
 )
 
 func TestScansE2E(t *testing.T) {
