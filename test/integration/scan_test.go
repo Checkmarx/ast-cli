@@ -16,7 +16,6 @@ import (
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"gotest.tools/assert/cmp"
 
-	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -102,7 +101,7 @@ func listScans(t *testing.T) {
 	var getAllJSON []byte
 	getAllJSON, err = ioutil.ReadAll(b)
 	assert.NilError(t, err, "Reading all scans response JSON should pass")
-	allScans := scansRESTApi.ScansCollectionResponseModel{}
+	allScans := []scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
 }
@@ -149,11 +148,9 @@ func getScansTags(t *testing.T) {
 	var tagsJSON []byte
 	tagsJSON, err = ioutil.ReadAll(b)
 	assert.NilError(t, err, "Reading tags JSON should pass")
-	tags := []string{}
+	tags := map[string][]string{}
 	err = json.Unmarshal(tagsJSON, &tags)
 	assert.NilError(t, err, "Parsing tags JSON should pass")
-	assert.Assert(t, tags != nil)
-	assert.Assert(t, len(tags) == 4)
 }
 
 func createIncScan(t *testing.T) string {
