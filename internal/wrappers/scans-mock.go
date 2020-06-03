@@ -44,7 +44,7 @@ func (m *ScansMockWrapper) Delete(scanID string) (*scansRESTApi.ErrorModel, erro
 	return nil, nil
 }
 
-func (m *ScansMockWrapper) Tags() (*[]string, *scansRESTApi.ErrorModel, error) {
+func (m *ScansMockWrapper) Tags() (map[string][]string, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Tags in ScansMockWrapper")
-	return &[]string{"t1"}, nil, nil
+	return map[string][]string{"t1": {"v1"}}, nil, nil
 }

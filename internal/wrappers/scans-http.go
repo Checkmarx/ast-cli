@@ -86,7 +86,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/tags", nil)
 	if err != nil {
 		return nil, nil, err
@@ -103,12 +103,12 @@ func (s *ScansHTTPWrapper) Tags() (*[]string, *scansApi.ErrorModel, error) {
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		tags := []string{}
+		tags := map[string][]string{}
 		err = decoder.Decode(&tags)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)
 		}
-		return &tags, nil, nil
+		return tags, nil, nil
 
 	default:
 		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)

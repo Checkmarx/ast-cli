@@ -272,7 +272,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var tags *[]string
+		var tags map[string][]string
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
 		tags, errorModel, err = scansWrapper.Tags()
