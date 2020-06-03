@@ -32,6 +32,11 @@ type ClientCredentialsInfo struct {
 	Scope            string `json:"scope"`
 }
 
+type ClientCredentialsError struct {
+	Error       string `json:"error"`
+	Description string `json:"error_description"`
+}
+
 func getClient() *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
@@ -142,8 +147,18 @@ func getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePat
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+
 	body, _ := ioutil.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		credentialsErr := ClientCredentialsError{}
+		err = json.Unmarshal(body, &credentialsErr)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.Errorf("%s: %s", credentialsErr.Error, credentialsErr.Description)
+	}
+
+	defer res.Body.Close()
 	credentialsInfo := ClientCredentialsInfo{}
 	err = json.Unmarshal(body, &credentialsInfo)
 	if err != nil {
