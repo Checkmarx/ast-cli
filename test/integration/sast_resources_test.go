@@ -67,7 +67,7 @@ func Scans(t *testing.T) scans {
 
 func Engines(t *testing.T) engines {
 	enginesCollection := rm.EnginesCollection{}
-	invokeCommand(t, &enginesCollection, "sr", "engines")
+	invokeCommand(t, &enginesCollection, "--format", "json", "sr", "engines")
 	result := engines{}
 	for _, engine := range enginesCollection.Engines {
 		if engine.Status == rm.AllocatedEngineStatus || engine.Status == rm.BusyEngineStatus {

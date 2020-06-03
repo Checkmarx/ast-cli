@@ -20,7 +20,6 @@ const (
 	traefikPort      = "ENTRYPOINT_PORT"
 	privateKeyPath   = "TLS_PRIVATE_KEY_PATH"
 	certificatePath  = "TLS_CERTIFICATE_PATH"
-	fqdn             = "FQDN"
 	externalHostname = "EXTERNAL_HOSTNAME"
 
 	// Configurable logging environment variables
@@ -42,7 +41,6 @@ func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInst
 		envKeyAndValue(traefikPort, configuration.Network.EntrypointPort),
 		envKeyAndValue(privateKeyPath, configuration.Network.TLS.PrivateKeyPath),
 		envKeyAndValue(certificatePath, configuration.Network.TLS.CertificatePath),
-		envKeyAndValue(fqdn, configuration.Network.FullyQualifiedDomainName),
 		envKeyAndValue(externalHostname, configuration.Network.ExternalHostname),
 
 		envKeyAndValue(logLevel, configuration.Log.Level),
