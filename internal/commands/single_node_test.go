@@ -84,9 +84,8 @@ func TestRunBashCommand(t *testing.T) {
 			Password: "TEST_Password",
 		},
 		Network: config.Network{
-			EntrypointPort:           "TEST_EntrypointPort",
-			FullyQualifiedDomainName: "TEST_FullyQualifiedDomainName",
-			ExternalHostname:         "TEST_ExternalHostname",
+			EntrypointPort:   "TEST_EntrypointPort",
+			ExternalHostname: "TEST_ExternalHostname",
 			TLS: config.TLS{
 				PrivateKeyPath:  "TEST_PrivateKeyPath",
 				CertificatePath: "TEST_CertificatePath",
@@ -123,7 +122,6 @@ func TestRunBashCommand(t *testing.T) {
 		"ENTRYPOINT_PORT=%s,"+
 		"TLS_PRIVATE_KEY_PATH=%s,"+
 		"TLS_CERTIFICATE_PATH=%s,"+
-		"FQDN=%s,"+
 		"LOG_LEVEL=%s,"+
 		"LOG_ROTATION_AGE_DAYS=%s,"+
 		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
@@ -138,7 +136,6 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Network.EntrypointPort,
 		testConfig.Network.TLS.PrivateKeyPath,
 		testConfig.Network.TLS.CertificatePath,
-		testConfig.Network.FullyQualifiedDomainName,
 
 		testConfig.Log.Level,
 		testConfig.Log.Rotation.MaxAgeDays,

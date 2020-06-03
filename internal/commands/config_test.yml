@@ -21,8 +21,6 @@ network:
   entrypointPort:
   # The entrypoint TLS port to use for AST for  HTTPS. Default: 443
   entrypointTLSPort:
-  # The Full Qualified Domain Name to use when access the AST. Example: ast.yourcompany.com. Default: empty
-  fqdn:
   # The external IPv4 used to access the AST. Default: 127.0.0.1
   # Example: 10.10.10.10 
   externalHostname:

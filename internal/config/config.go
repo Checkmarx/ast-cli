@@ -14,10 +14,9 @@ type TLS struct {
 }
 
 type Network struct {
-	EntrypointPort           string `yaml:"entrypointPort"`
-	FullyQualifiedDomainName string `yaml:"fqdn"`
-	TLS                      TLS    `yaml:"tls"`
-	ExternalHostname         string `yaml:"externalHostname"`
+	EntrypointPort   string `yaml:"entrypointPort"`
+	TLS              TLS    `yaml:"tls"`
+	ExternalHostname string `yaml:"externalHostname"`
 }
 type Log struct {
 	Level    string      `yaml:"level"`
