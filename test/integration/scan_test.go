@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/viper"
+
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
 	"gotest.tools/assert/cmp"
 
