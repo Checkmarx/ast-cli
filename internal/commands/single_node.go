@@ -70,7 +70,7 @@ func NewSingleNodeCommand() *cobra.Command {
 
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
-	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, "", astRoleFlagUsage)
+	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, params.ScaAgent, astRoleFlagUsage)
 	// Binding the AST_ROLE env var to the --role flag
 	_ = viper.BindPFlag(params.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
 
