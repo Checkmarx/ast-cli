@@ -13,4 +13,5 @@ const (
 	AccessKeyIDEnv          = "AST_ACCESS_KEY_ID"
 	AstAuthenticationURIEnv = "AST_AUTHENTICATION_URI"
 	AccessKeySecretEnv      = "AST_ACCESS_KEY_SECRET"
+	AstRoleEnv              = "AST_ROLE"
 )
