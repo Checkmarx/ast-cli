@@ -60,20 +60,6 @@ func TestRunSingleNodeDownCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunSingleNodeRestartCommandWithFileNotFound(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "restart",
-		toFlag(configFileFlag), "./payloads/nonsense.json")
-	assert.Assert(t, err != nil)
-}
-
-func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "restart",
-		toFlag(configFileFlag), "./config_test.yml")
-	assert.NilError(t, err)
-}
-
 func TestRunBashCommand(t *testing.T) {
 	testConfig := config.SingleNodeConfiguration{
 		Database: config.Database{

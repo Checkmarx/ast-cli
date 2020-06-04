@@ -34,11 +34,6 @@ func NewSingleNodeCommand() *cobra.Command {
 		Short: "Stop AST",
 		RunE:  runDownSingleNodeCommand(),
 	}
-	restartSingleNodeCmd := &cobra.Command{
-		Use:   "restart",
-		Short: "Restart AST",
-		RunE:  runRestartSingleNodeCommand(),
-	}
 
 	updateSingleNodeCmd := &cobra.Command{
 		Use:   "update",
@@ -62,12 +57,9 @@ func NewSingleNodeCommand() *cobra.Command {
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 
-	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
-		"Configuration file path for AST (optional)")
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
-		restartSingleNodeCmd,
 		healthSingleNodeCmd,
 		updateSingleNodeCmd)
 	return singleNodeCmd
@@ -96,22 +88,6 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 			return errors.Wrapf(err, msg)
 		}
 		writeToStandardOutput("AST is down!")
-		return nil
-	}
-}
-
-func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to stop AST...")
-		err := runDownSingleNodeCommand()(cmd, args)
-		if err != nil {
-			return err
-		}
-		err = runUpSingleNodeCommand()(cmd, args)
-		if err != nil {
-			return err
-		}
-		writeToStandardOutput("AST restarted successfully!")
 		return nil
 	}
 }
