@@ -5,6 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
+
+	"github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/spf13/viper"
 
 	"gopkg.in/yaml.v2"
 
@@ -16,6 +21,16 @@ import (
 const (
 	configFileFlag     = "config"
 	astInstallationDir = "installation-dir"
+	astRoleFlag        = "role"
+)
+
+var (
+	astRoleFlagUsage = fmt.Sprintf("The AST runtime role. Available roles are: %s",
+		strings.Join([]string{
+			commonParams.ScaAgent,
+			commonParams.SastALlInOne,
+			commonParams.SastManager,
+			commonParams.SastEngine}, ","))
 )
 
 func NewSingleNodeCommand() *cobra.Command {
@@ -34,11 +49,6 @@ func NewSingleNodeCommand() *cobra.Command {
 		Short: "Stop AST",
 		RunE:  runDownSingleNodeCommand(),
 	}
-	restartSingleNodeCmd := &cobra.Command{
-		Use:   "restart",
-		Short: "Restart AST",
-		RunE:  runRestartSingleNodeCommand(),
-	}
 
 	updateSingleNodeCmd := &cobra.Command{
 		Use:   "update",
@@ -53,21 +63,22 @@ func NewSingleNodeCommand() *cobra.Command {
 		Short: "Show health information for AST",
 		RunE:  runHealthSingleNodeCommand,
 	}
+
 	installationConfigFileUsage := "Configuration file path for AST (optional)"
 	installationFolderUsage := "AST installation folder path"
 	installationFolderDefault := "./"
 
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
+	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, "", astRoleFlagUsage)
+	// Binding the AST_ROLE env var to the --role flag
+	_ = viper.BindPFlag(params.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 
-	restartSingleNodeCmd.PersistentFlags().String(configFileFlag, "",
-		"Configuration file path for AST (optional)")
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
-		restartSingleNodeCmd,
 		healthSingleNodeCmd,
 		updateSingleNodeCmd)
 	return singleNodeCmd
@@ -100,22 +111,6 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func runRestartSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to stop AST...")
-		err := runDownSingleNodeCommand()(cmd, args)
-		if err != nil {
-			return err
-		}
-		err = runUpSingleNodeCommand()(cmd, args)
-		if err != nil {
-			return err
-		}
-		writeToStandardOutput("AST restarted successfully!")
-		return nil
-	}
-}
-
 func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
@@ -123,6 +118,7 @@ func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
 func runUpScript(cmd *cobra.Command) error {
 	var err error
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
+	role := viper.GetString(params.AstRoleKey)
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
 	configuration := config.SingleNodeConfiguration{}
 
@@ -142,7 +138,7 @@ func runUpScript(cmd *cobra.Command) error {
 	}
 
 	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
-	envVars := getEnvVarsForCommand(&configuration, installationFolder)
+	envVars := createEnvVarsForCommand(&configuration, installationFolder, role)
 
 	_, _, err = runBashCommand(upScriptPath, envVars)
 

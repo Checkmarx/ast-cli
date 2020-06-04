@@ -56,6 +56,9 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.AstAuthenticationURIConfigKey, params.AstAuthenticationURIEnv, "")
 	exitIfError(err)
 
+	err = bindKeyToEnvAndDefault(params.AstRoleKey, params.AstRoleEnv, "")
+	exitIfError(err)
+
 	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
 	exitIfError(err)
 

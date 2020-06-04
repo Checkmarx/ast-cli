@@ -19,6 +19,12 @@ func TestRunSingleNodeUpCommandWithFileNotFound(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
+func TestRunSingleNodeUpCommandHelp(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "up", "-h")
+	assert.NilError(t, err)
+}
+
 func TestRunSingleNodeUpCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
@@ -60,21 +66,8 @@ func TestRunSingleNodeDownCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunSingleNodeRestartCommandWithFileNotFound(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "restart",
-		toFlag(configFileFlag), "./payloads/nonsense.json")
-	assert.Assert(t, err != nil)
-}
-
-func TestRunSingleNodeRestartCommandWithFile(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "restart",
-		toFlag(configFileFlag), "./config_test.yml")
-	assert.NilError(t, err)
-}
-
 func TestRunBashCommand(t *testing.T) {
+	fmt.Println("**************************Testing running bash command*************")
 	testConfig := config.SingleNodeConfiguration{
 		Database: config.Database{
 			Host:     "TEST_Host",
@@ -100,7 +93,6 @@ func TestRunBashCommand(t *testing.T) {
 		},
 	}
 	cmd := createASTTestCommand()
-	// TODO add down test
 
 	var actualOut *bytes.Buffer
 	var err error
@@ -108,25 +100,29 @@ func TestRunBashCommand(t *testing.T) {
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 
 	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
-	envs := getEnvVarsForCommand(&testConfig, installationFolder)
+	role := "AST_TEST_ROLE"
+	envs := createEnvVarsForCommand(&testConfig, installationFolder, role)
 
 	actualOut, _, err = runBashCommand(upScriptPath, envs)
 	assert.NilError(t, err, "up script should succeed")
 
-	expected := fmt.Sprintf("AST_INSTALLATION_PATH=%s,"+
-		"DATABASE_HOST=%s,"+
-		"DATABASE_PORT=%s,"+
-		"DATABASE_USER=%s,"+
-		"DATABASE_PASSWORD=%s,"+
-		"DATABASE_INSTANCE=%s,"+
-		"ENTRYPOINT_PORT=%s,"+
-		"TLS_PRIVATE_KEY_PATH=%s,"+
-		"TLS_CERTIFICATE_PATH=%s,"+
-		"LOG_LEVEL=%s,"+
-		"LOG_ROTATION_AGE_DAYS=%s,"+
-		"LOG_ROTATION_MAX_SIZE_MB=%s,"+
-		"EXTERNAL_HOSTNAME=%s\n",
+	expected := fmt.Sprintf(
+		"AST_INSTALLATION_PATH=%s,"+
+			"AST_ROLE=%s,"+
+			"DATABASE_HOST=%s,"+
+			"DATABASE_PORT=%s,"+
+			"DATABASE_USER=%s,"+
+			"DATABASE_PASSWORD=%s,"+
+			"DATABASE_INSTANCE=%s,"+
+			"ENTRYPOINT_PORT=%s,"+
+			"TLS_PRIVATE_KEY_PATH=%s,"+
+			"TLS_CERTIFICATE_PATH=%s,"+
+			"LOG_LEVEL=%s,"+
+			"LOG_ROTATION_AGE_DAYS=%s,"+
+			"LOG_ROTATION_MAX_SIZE_MB=%s,"+
+			"EXTERNAL_HOSTNAME=%s\n",
 		installationFolder,
+		role,
 		testConfig.Database.Host,
 		testConfig.Database.Port,
 		testConfig.Database.Username,
@@ -141,9 +137,11 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Log.Rotation.MaxAgeDays,
 		testConfig.Log.Rotation.MaxSizeMB,
 		testConfig.Network.ExternalHostname)
-	fmt.Println("EXPECTED FROM UP SCRIPT OUTPUT:")
+	fmt.Println()
+	fmt.Println("EXPECTED from UP script:")
 	fmt.Println(expected)
-	fmt.Println("ACTUAL FROM UP SCRIPT OUTPUT:")
+	fmt.Println()
+	fmt.Println("ACTUAL from UP script:")
 	fmt.Println(actualOut.String())
 	assert.Assert(t, expected == actualOut.String())
 
@@ -151,10 +149,11 @@ func TestRunBashCommand(t *testing.T) {
 
 	actualOut, _, err = runBashCommand(downScriptPath, envs)
 	assert.NilError(t, err, "down script should succeed")
-
-	fmt.Println("EXPECTED FROM DOWN SCRIPT OUTPUT:")
+	fmt.Println()
+	fmt.Println("EXPECTED from DOWN script:")
 	fmt.Println(expected)
-	fmt.Println("ACTUAL FROM DOWN SCRIPT OUTPUT:")
+	fmt.Println()
+	fmt.Println("ACTUAL from DOWN script:")
 	fmt.Println(actualOut.String())
 	assert.Assert(t, expected == actualOut.String())
 }

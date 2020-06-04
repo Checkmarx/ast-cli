@@ -14,4 +14,5 @@ var (
 	AstAuthenticationURIConfigKey = strings.ToLower(AstAuthenticationURIEnv)
 	CredentialsFilePathKey        = strings.ToLower(CredentialsFilePathEnv)
 	TokenExpirySecondsKey         = strings.ToLower(TokenExpirySecondsEnv)
+	AstRoleKey                    = strings.ToLower(AstRoleEnv)
 )
