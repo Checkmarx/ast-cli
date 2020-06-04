@@ -3,6 +3,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/checkmarxDev/ast-cli/internal/config"
 )
 
@@ -28,9 +30,10 @@ const (
 	logRotationMaxSizeMB = "LOG_ROTATION_MAX_SIZE_MB"
 )
 
-func getEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath string) []string {
+func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath, astRole string) []string {
 	return []string{
 		envKeyAndValue(astInstallationPathEnv, astInstallationPath),
+		envKeyAndValue(params.AstRoleEnv, astRole),
 
 		envKeyAndValue(dbHostEnv, configuration.Database.Host),
 		envKeyAndValue(dbPortEnv, configuration.Database.Port),

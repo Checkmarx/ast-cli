@@ -18,3 +18,10 @@ const (
 	IncludeNodesQueryParam = "include-nodes"
 	SortQueryParam         = "sort"
 )
+
+const (
+	ScaAgent     = "SCA_AGENT"
+	SastManager  = "SAST_MANAGER"
+	SastEngine   = "SAST_ENGINE"
+	SastALlInOne = "SAST_ALL_IN_ONE"
+)
