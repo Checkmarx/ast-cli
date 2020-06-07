@@ -1,8 +1,8 @@
 package wrappers
 
-type HealthMockWrapper struct {
+type HealthCheckMockWrapper struct {
 }
 
-func (h *HealthMockWrapper) RunWebAppCheck() error {
+func (h *HealthCheckMockWrapper) RunWebAppCheck() error {
 	return nil
 }

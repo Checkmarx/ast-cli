@@ -1,12 +1,12 @@
 package wrappers
 
-type HealthHTTPWrapper struct {
+type HealthCheckHTTPWrapper struct {
 }
 
-func NewHTTPHealthWrapper() HealthWrapper {
-	return &HealthHTTPWrapper{}
+func NewHTTPHealthCheckWrapper() HealthCheckWrapper {
+	return &HealthCheckHTTPWrapper{}
 }
 
-func (h *HealthHTTPWrapper) RunWebAppCheck() error {
+func (h *HealthCheckHTTPWrapper) RunWebAppCheck() error {
 	return nil
 }

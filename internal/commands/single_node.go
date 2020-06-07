@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"io/ioutil"
 	"os"
 	"path"
@@ -33,7 +34,7 @@ var (
 			commonParams.SastEngine}, ","))
 )
 
-func NewSingleNodeCommand() *cobra.Command {
+func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
 		Short: "Single Node AST",
@@ -58,11 +59,7 @@ func NewSingleNodeCommand() *cobra.Command {
 		},
 	}
 
-	healthSingleNodeCmd := &cobra.Command{
-		Use:   "health",
-		Short: "Show health information for AST",
-		RunE:  runHealthSingleNodeCommand,
-	}
+	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper)
 
 	installationConfigFileUsage := "Configuration file path for AST (optional)"
 	installationFolderUsage := "AST installation folder path"
@@ -109,10 +106,6 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("AST is down!")
 		return nil
 	}
-}
-
-func runHealthSingleNodeCommand(cmd *cobra.Command, args []string) error {
-	return nil
 }
 
 func runUpScript(cmd *cobra.Command) error {
