@@ -78,6 +78,7 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
+	healthWrapper := wrappers.NewHTTPHealthWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -86,6 +87,7 @@ func main() {
 		resultsWrapper,
 		bflWrapper,
 		rmWrapper,
+		healthWrapper,
 	)
 
 	err = astCli.Execute()

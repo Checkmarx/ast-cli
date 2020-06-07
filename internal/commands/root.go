@@ -53,6 +53,7 @@ func NewAstCLI(
 	resultsWrapper wrappers.ResultsWrapper,
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
+	healthWrapper wrappers.HealthWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ast",
@@ -87,6 +88,7 @@ func NewAstCLI(
 	appCmd := NewAppCommand()
 	aioCmd := NewSingleNodeCommand()
 	rmCmd := NewSastResourcesCommand(rmWrapper)
+	healthCmd := NewHealthCommand(healthWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -97,6 +99,7 @@ func NewAstCLI(
 		aioCmd,
 		bflCmd,
 		rmCmd,
+		healthCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
