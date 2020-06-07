@@ -33,13 +33,16 @@ func createASTTestCommand() *cobra.Command {
 	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
+	healthMockWrapper := &wrappers.HealthMockWrapper{}
 
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
 		resultsMockWrapper,
 		bflMockWrapper,
-		rmMockWrapper)
+		rmMockWrapper,
+		healthMockWrapper,
+	)
 }
 
 func TestRootHelp(t *testing.T) {
