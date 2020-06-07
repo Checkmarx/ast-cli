@@ -6,16 +6,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewHealthCommand(healthWrapper wrappers.HealthWrapper) *cobra.Command {
+func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
 	return &cobra.Command{
-		Use:   "health",
-		Short: "Execute health check",
-		RunE:  runHealthChecks(healthWrapper),
+		Use:   "health-check",
+		Short: "Run AST health check",
+		RunE:  runAllHealthChecks(healthCheckWrapper),
 	}
 }
 
-func runWebAppHealthCheck(healthWrapper wrappers.HealthWrapper) error {
-	err := healthWrapper.RunWebAppCheck()
+func runWebAppHealthCheck(healthCheckWrapper wrappers.HealthCheckWrapper) error {
+	err := healthCheckWrapper.RunWebAppCheck()
 	if err == nil {
 		fmt.Printf("Web App status: OK\n")
 	}
@@ -24,8 +24,8 @@ func runWebAppHealthCheck(healthWrapper wrappers.HealthWrapper) error {
 
 }
 
-func runHealthChecks(healthWrapper wrappers.HealthWrapper) func(cmd *cobra.Command, args []string) error {
+func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		return runWebAppHealthCheck(healthWrapper)
+		return runWebAppHealthCheck(healthCheckWrapper)
 	}
 }

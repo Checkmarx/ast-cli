@@ -1,5 +1,5 @@
 package wrappers
 
-type HealthWrapper interface {
+type HealthCheckWrapper interface {
 	RunWebAppCheck() error
 }
