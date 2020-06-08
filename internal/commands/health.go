@@ -20,7 +20,7 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 func runWebAppHealthCheck(healthCheckWrapper wrappers.HealthCheckWrapper) error {
 	status, err := healthCheckWrapper.RunWebAppCheck()
 	if err != nil {
-		return errors.Wrapf(err, "Web app error")
+		return errors.Wrapf(err, "Web App error")
 	}
 
 	fmt.Printf("Web App status: %v", status)
