@@ -15,4 +15,5 @@ var (
 	CredentialsFilePathKey        = strings.ToLower(CredentialsFilePathEnv)
 	TokenExpirySecondsKey         = strings.ToLower(TokenExpirySecondsEnv)
 	AstRoleKey                    = strings.ToLower(AstRoleEnv)
+	AstWebAppHealthCheckPathKey   = strings.ToLower(AstWebAppHealthCheckPathEnv)
 )

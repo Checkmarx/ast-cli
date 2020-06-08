@@ -47,7 +47,7 @@ func createASTTestCommand() *cobra.Command {
 
 func TestRootHelp(t *testing.T) {
 	cmd := createASTTestCommand()
-	args := fmt.Sprintf("--help")
+	args := "--help"
 	err := executeTestCommand(cmd, args)
 	assert.NilError(t, err)
 }

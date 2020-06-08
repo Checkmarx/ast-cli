@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestWebAppHealthCheck(t *testing.T) {
