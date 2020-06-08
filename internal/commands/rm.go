@@ -49,7 +49,7 @@ type rmCommands struct {
 }
 
 func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
-	PrintIfVerbose(fmt.Sprint("Reading sast resources scans"))
+	PrintIfVerbose("Reading sast resources scans")
 	scans, err := c.rmWrapper.GetScans()
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
-	PrintIfVerbose(fmt.Sprint("Reading sast resources engines"))
+	PrintIfVerbose("Reading sast resources engines")
 	engines, err := c.rmWrapper.GetEngines()
 	if err != nil {
 		return errors.Wrap(err, "failed get engines")
