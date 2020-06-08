@@ -47,9 +47,17 @@ func main() {
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "/health-check")
+	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "health-check")
 	exitIfError(err)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
+
+	err = bindKeyToEnvAndDefault(params.AstHealthcheckURIKey, params.AstHealthcheckURIEnv, "http://localhost:1234")
+	exitIfError(err)
+	healthcheck := viper.GetString(params.AstHealthcheckURIKey)
+
+	err = bindKeyToEnvAndDefault(params.AstHealthcheckDBPathKey, params.AstHealthcheckDBPathEnv, "database")
+	exitIfError(err)
+	healthcheckDBPath := viper.GetString(params.AstHealthcheckDBPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -76,6 +84,7 @@ func main() {
 	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
+	healthcheckDBURL := fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
@@ -83,7 +92,7 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
-	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL)
+	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL, healthcheckDBURL)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
