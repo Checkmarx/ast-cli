@@ -3,6 +3,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +20,7 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 func runWebAppHealthCheck(healthCheckWrapper wrappers.HealthCheckWrapper) error {
 	status, err := healthCheckWrapper.RunWebAppCheck()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Web app error")
 	}
 
 	fmt.Printf("Web App status: %v", status)
