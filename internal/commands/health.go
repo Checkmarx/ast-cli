@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -15,13 +16,13 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 }
 
 func runWebAppHealthCheck(healthCheckWrapper wrappers.HealthCheckWrapper) error {
-	err := healthCheckWrapper.RunWebAppCheck()
-	if err == nil {
-		fmt.Printf("Web App status: OK\n")
+	status, err := healthCheckWrapper.RunWebAppCheck()
+	if err != nil {
+		return err
 	}
 
-	return err
-
+	fmt.Printf("Web App status: %v", status)
+	return nil
 }
 
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
