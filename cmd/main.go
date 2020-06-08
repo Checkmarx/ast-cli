@@ -47,6 +47,10 @@ func main() {
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
+	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "/health-check")
+	exitIfError(err)
+	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -71,6 +75,7 @@ func main() {
 	resultsURL := fmt.Sprintf("%s/%s", ast, results)
 	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
+	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
@@ -78,6 +83,7 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
+	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -86,6 +92,7 @@ func main() {
 		resultsWrapper,
 		bflWrapper,
 		rmWrapper,
+		healthCheckWrapper,
 	)
 
 	err = astCli.Execute()

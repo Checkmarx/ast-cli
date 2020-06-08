@@ -33,18 +33,21 @@ func createASTTestCommand() *cobra.Command {
 	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
+	healthMockWrapper := &wrappers.HealthCheckMockWrapper{}
 
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
 		resultsMockWrapper,
 		bflMockWrapper,
-		rmMockWrapper)
+		rmMockWrapper,
+		healthMockWrapper,
+	)
 }
 
 func TestRootHelp(t *testing.T) {
 	cmd := createASTTestCommand()
-	args := fmt.Sprintf("--help")
+	args := "--help"
 	err := executeTestCommand(cmd, args)
 	assert.NilError(t, err)
 }
