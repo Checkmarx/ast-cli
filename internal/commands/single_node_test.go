@@ -66,6 +66,20 @@ func TestRunSingleNodeDownCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunSingleNodeUpdateCommandWithFileNotFound(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "update",
+		toFlag(configFileFlag), "./payloads/nonsense.json")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeUpdateCommandWithFile(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "update",
+		toFlag(configFileFlag), "./config_test.yml")
+	assert.NilError(t, err)
+}
+
 func TestRunBashCommand(t *testing.T) {
 	fmt.Println("**************************Testing running bash command*************")
 	testConfig := config.SingleNodeConfiguration{

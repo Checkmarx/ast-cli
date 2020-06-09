@@ -54,9 +54,7 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	updateSingleNodeCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update AST",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
+		RunE:  runUpdateSingleNodeCommand(),
 	}
 
 	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper)
@@ -72,10 +70,12 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	_ = viper.BindPFlag(commonParams.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
+	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
+		updateSingleNodeCmd,
 		healthSingleNodeCmd,
 		updateSingleNodeCmd)
 	return singleNodeCmd
@@ -104,6 +104,21 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 			return errors.Wrapf(err, msg)
 		}
 		writeToStandardOutput("AST is down!")
+		return nil
+	}
+}
+
+func runUpdateSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		err := runDownSingleNodeCommand()(cmd, args)
+		if err != nil {
+			return err
+		}
+		err = runUpSingleNodeCommand()(cmd, args)
+		if err != nil {
+			return err
+		}
+		writeToStandardOutput("AST updated successfully!")
 		return nil
 	}
 }
