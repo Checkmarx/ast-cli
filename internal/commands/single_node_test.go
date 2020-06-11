@@ -99,10 +99,11 @@ func TestRunBashCommand(t *testing.T) {
 			},
 		},
 		Log: config.Log{
-			Level: "TEST_Level",
+			Level:    "TEST_Level",
+			Location: "TEST_Location",
 			Rotation: config.LogRotation{
-				MaxSizeMB:  "TEST_MaxSizeMB",
-				MaxAgeDays: "TEST_MaxAgeDays",
+				MaxSizeMB: "TEST_MaxSizeMB",
+				Count:     "TEST_Count",
 			},
 		},
 	}
@@ -132,7 +133,8 @@ func TestRunBashCommand(t *testing.T) {
 			"TLS_PRIVATE_KEY_PATH=%s,"+
 			"TLS_CERTIFICATE_PATH=%s,"+
 			"LOG_LEVEL=%s,"+
-			"LOG_ROTATION_AGE_DAYS=%s,"+
+			"LOG_LOCATION=%s,"+
+			"LOG_ROTATION_COUNT=%s,"+
 			"LOG_ROTATION_MAX_SIZE_MB=%s,"+
 			"EXTERNAL_HOSTNAME=%s\n",
 		installationFolder,
@@ -148,7 +150,8 @@ func TestRunBashCommand(t *testing.T) {
 		testConfig.Network.TLS.CertificatePath,
 
 		testConfig.Log.Level,
-		testConfig.Log.Rotation.MaxAgeDays,
+		testConfig.Log.Location,
+		testConfig.Log.Rotation.Count,
 		testConfig.Log.Rotation.MaxSizeMB,
 		testConfig.Network.ExternalHostname)
 	fmt.Println()

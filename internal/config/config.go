@@ -20,12 +20,13 @@ type Network struct {
 }
 type Log struct {
 	Level    string      `yaml:"level"`
+	Location string      `yaml:"location"`
 	Rotation LogRotation `yaml:"rotation"`
 }
 
 type LogRotation struct {
-	MaxSizeMB  string `yaml:"maxSizeMB"`
-	MaxAgeDays string `yaml:"maxAgeDays"`
+	MaxSizeMB string `yaml:"maxSizeMB"`
+	Count     string `yaml:"count"`
 }
 
 type SingleNodeConfiguration struct {
