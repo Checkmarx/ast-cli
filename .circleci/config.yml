@@ -97,11 +97,14 @@ jobs:
             - go-mod-v1-{{ checksum "go.sum" }}
       - run: go mod download
       - run: 
-          name: Build Linux_amd64 binary 
+          name: Build ast Linux_amd64 binary 
           command: GOOS=linux GOARCH=amd64 go build -o bin/ast cmd/main.go
       - run:
-          name: Build Windows binary
-          command: GOOS=windows GOARCH=amd64 go build -o bin/ast.exe ./cmd
+          name: Build ast Windows binary
+          command: GOOS=windows GOARCH=amd64 go build -o bin/ast.exe cmd/main.go
+      - run:
+          name: Build sca-agent Linux binary
+          command: GOOS=linux GOARCH=amd64 go build -o bin/sca-agent cmd/main.go
       - run: go get github.com/tcnksm/ghr
       - run:
           name: Publish GitHub release
