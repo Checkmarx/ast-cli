@@ -26,8 +26,9 @@ const (
 
 	// Configurable logging environment variables
 	logLevel             = "LOG_LEVEL"
-	logRotationAgeDays   = "LOG_ROTATION_AGE_DAYS"
+	logLocation          = "LOG_LOCATION"
 	logRotationMaxSizeMB = "LOG_ROTATION_MAX_SIZE_MB"
+	logRotationCount     = "LOG_ROTATION_COUNT"
 )
 
 func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath, astRole string) []string {
@@ -47,7 +48,8 @@ func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astI
 		envKeyAndValue(externalHostname, configuration.Network.ExternalHostname),
 
 		envKeyAndValue(logLevel, configuration.Log.Level),
-		envKeyAndValue(logRotationAgeDays, configuration.Log.Rotation.MaxAgeDays),
+		envKeyAndValue(logLocation, configuration.Log.Location),
+		envKeyAndValue(logRotationCount, configuration.Log.Rotation.Count),
 		envKeyAndValue(logRotationMaxSizeMB, configuration.Log.Rotation.MaxSizeMB),
 	}
 }
