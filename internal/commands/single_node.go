@@ -75,7 +75,6 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
-		updateSingleNodeCmd,
 		healthSingleNodeCmd,
 		updateSingleNodeCmd)
 	return singleNodeCmd
