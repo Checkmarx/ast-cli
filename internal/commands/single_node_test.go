@@ -80,30 +80,64 @@ func TestRunSingleNodeUpdateCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+const (
+	testhost               = "TEST_Host"
+	testport               = "TEST_Port"
+	testinstance           = "TEST_Instance"
+	testusername           = "TEST_Username"
+	testpassword           = "TEST_Password"
+	testentryPoint         = "TEST_EntrypointPort"
+	testexternalHost       = "TEST_ExternalHostname"
+	testprivateKeyPath     = "TEST_PrivateKeyPath"
+	testcertificatePath    = "TEST_CertificatePath"
+	testlevel              = "TEST_Level"
+	testlocation           = "TEST_Location"
+	testrotationMaxSizeMB  = "TEST_MaxSizeMB"
+	testrotationCount      = "TEST_Count"
+	testinstallationFolder = "AST_TEST_INSTALLATION_FOLDER"
+	testrole               = "AST_TEST_ROLE"
+	expected               = "AST_INSTALLATION_PATH=%s," +
+		"AST_ROLE=%s," +
+		"DATABASE_HOST=%s," +
+		"DATABASE_PORT=%s," +
+		"DATABASE_USER=%s," +
+		"DATABASE_PASSWORD=%s," +
+		"DATABASE_INSTANCE=%s," +
+		"ENTRYPOINT_PORT=%s," +
+		"TLS_PRIVATE_KEY_PATH=%s," +
+		"TLS_CERTIFICATE_PATH=%s," +
+		"LOG_LEVEL=%s," +
+		"LOG_LOCATION=%s," +
+		"LOG_ROTATION_COUNT=%s," +
+		"LOG_ROTATION_MAX_SIZE_MB=%s," +
+		"EXTERNAL_HOSTNAME=%s\n"
+)
+
 func TestRunBashCommand(t *testing.T) {
 	fmt.Println("**************************Testing running bash command*************")
+
 	testConfig := config.SingleNodeConfiguration{
 		Database: config.Database{
-			Host:     "TEST_Host",
-			Port:     "TEST_Port",
-			Instance: "TEST_Instance",
-			Username: "TEST_Username",
-			Password: "TEST_Password",
+			Host:     testhost,
+			Port:     testport,
+			Instance: testinstance,
+			Username: testusername,
+			Password: testpassword,
 		},
 		Network: config.Network{
-			EntrypointPort:   "TEST_EntrypointPort",
-			ExternalHostname: "TEST_ExternalHostname",
+			EntrypointPort:   testentryPoint,
+			ExternalHostname: testexternalHost,
 			TLS: config.TLS{
-				PrivateKeyPath:  "TEST_PrivateKeyPath",
-				CertificatePath: "TEST_CertificatePath",
+				PrivateKeyPath:  testprivateKeyPath,
+				CertificatePath: testcertificatePath,
 			},
 		},
 		Log: config.Log{
-			Level:    "TEST_Level",
-			Location: "TEST_Location",
+			Level:    testlevel,
+			Location: testlocation,
 			Rotation: config.LogRotation{
-				MaxSizeMB: "TEST_MaxSizeMB",
-				Count:     "TEST_Count",
+				MaxSizeMB: testrotationMaxSizeMB,
+				Count:     testrotationCount,
 			},
 		},
 	}
@@ -114,46 +148,104 @@ func TestRunBashCommand(t *testing.T) {
 
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 
-	installationFolder := "AST_TEST_INSTALLATION_FOLDER"
-	role := "AST_TEST_ROLE"
-	envs := createEnvVarsForCommand(&testConfig, installationFolder, role)
+	envs := createEnvVarsForCommand(&testConfig, testinstallationFolder, testrole)
 
 	actualOut, _, err = runBashCommand(upScriptPath, envs)
 	assert.NilError(t, err, "up script should succeed")
 
 	expected := fmt.Sprintf(
-		"AST_INSTALLATION_PATH=%s,"+
-			"AST_ROLE=%s,"+
-			"DATABASE_HOST=%s,"+
-			"DATABASE_PORT=%s,"+
-			"DATABASE_USER=%s,"+
-			"DATABASE_PASSWORD=%s,"+
-			"DATABASE_INSTANCE=%s,"+
-			"ENTRYPOINT_PORT=%s,"+
-			"TLS_PRIVATE_KEY_PATH=%s,"+
-			"TLS_CERTIFICATE_PATH=%s,"+
-			"LOG_LEVEL=%s,"+
-			"LOG_LOCATION=%s,"+
-			"LOG_ROTATION_COUNT=%s,"+
-			"LOG_ROTATION_MAX_SIZE_MB=%s,"+
-			"EXTERNAL_HOSTNAME=%s\n",
-		installationFolder,
-		role,
-		testConfig.Database.Host,
-		testConfig.Database.Port,
-		testConfig.Database.Username,
-		testConfig.Database.Password,
-		testConfig.Database.Instance,
+		expected,
+		testinstallationFolder,
+		testrole,
+		testhost,
+		testport,
+		testusername,
+		testpassword,
+		testinstance,
+		testentryPoint,
+		testprivateKeyPath,
+		testcertificatePath,
+		testlevel,
+		testlocation,
+		testrotationCount,
+		testrotationMaxSizeMB,
+		testexternalHost)
+	fmt.Println()
+	fmt.Println("EXPECTED from UP script:")
+	fmt.Println(expected)
+	fmt.Println()
+	fmt.Println("ACTUAL from UP script:")
+	fmt.Println(actualOut.String())
+	assert.Assert(t, expected == actualOut.String())
 
-		testConfig.Network.EntrypointPort,
-		testConfig.Network.TLS.PrivateKeyPath,
-		testConfig.Network.TLS.CertificatePath,
+	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
-		testConfig.Log.Level,
-		testConfig.Log.Location,
-		testConfig.Log.Rotation.Count,
-		testConfig.Log.Rotation.MaxSizeMB,
-		testConfig.Network.ExternalHostname)
+	actualOut, _, err = runBashCommand(downScriptPath, envs)
+	assert.NilError(t, err, "down script should succeed")
+	fmt.Println()
+	fmt.Println("EXPECTED from DOWN script:")
+	fmt.Println(expected)
+	fmt.Println()
+	fmt.Println("ACTUAL from DOWN script:")
+	fmt.Println(actualOut.String())
+	assert.Assert(t, expected == actualOut.String())
+}
+func TestRunBashCommandDefaultLogLocation(t *testing.T) {
+	fmt.Println("**************************Testing running bash command with default log location*************")
+	testConfig := config.SingleNodeConfiguration{
+		Database: config.Database{
+			Host:     testhost,
+			Port:     testport,
+			Instance: testinstance,
+			Username: testusername,
+			Password: testpassword,
+		},
+		Network: config.Network{
+			EntrypointPort:   testentryPoint,
+			ExternalHostname: testexternalHost,
+			TLS: config.TLS{
+				PrivateKeyPath:  testprivateKeyPath,
+				CertificatePath: testcertificatePath,
+			},
+		},
+		Log: config.Log{
+			Level:    testlevel,
+			Location: "",
+			Rotation: config.LogRotation{
+				MaxSizeMB: testrotationMaxSizeMB,
+				Count:     testrotationCount,
+			},
+		},
+	}
+	cmd := createASTTestCommand()
+
+	var actualOut *bytes.Buffer
+	var err error
+
+	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
+
+	envs := createEnvVarsForCommand(&testConfig, testinstallationFolder, testrole)
+
+	actualOut, _, err = runBashCommand(upScriptPath, envs)
+	assert.NilError(t, err, "up script should succeed")
+
+	expected := fmt.Sprintf(
+		expected,
+		testinstallationFolder,
+		testrole,
+		testhost,
+		testport,
+		testusername,
+		testpassword,
+		testinstance,
+		testentryPoint,
+		testprivateKeyPath,
+		testcertificatePath,
+		testlevel,
+		defaultLogLocation,
+		testrotationCount,
+		testrotationMaxSizeMB,
+		testexternalHost)
 	fmt.Println()
 	fmt.Println("EXPECTED from UP script:")
 	fmt.Println(expected)
