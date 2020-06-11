@@ -1,10 +1,13 @@
 package wrappers
 
-import "fmt"
+import (
+	"fmt"
+
+	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
+)
 
 type HealthStatus struct {
-	Success bool
-	Message string
+	*healthcheckApi.HealthcheckModel
 }
 
 func (h *HealthStatus) String() string {

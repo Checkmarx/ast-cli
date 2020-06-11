@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
+
 	errors "github.com/pkg/errors"
 )
 
@@ -45,19 +47,26 @@ func (h *HealthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		return &HealthStatus{
-			Success: false,
-			Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
-				h.webAppURL, resp.StatusCode, func() string {
-					if body != nil {
-						return string(body)
-					}
+			&healthcheckApi.HealthcheckModel{
+				Success: false,
+				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
+					h.webAppURL, resp.StatusCode, func() string {
+						if body != nil {
+							return string(body)
+						}
 
-					return ""
-				}()),
+						return ""
+					}()),
+			},
 		}, nil
 	}
 
-	return &HealthStatus{Success: true, Message: ""}, nil
+	return &HealthStatus{
+		&healthcheckApi.HealthcheckModel{
+			Success: true,
+			Message: "",
+		},
+	}, nil
 }
 
 func (h *HealthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
