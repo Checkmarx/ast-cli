@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"sync"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/spf13/viper"
+
+	"github.com/pkg/errors"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +45,7 @@ func runChecksConcurrently(checks map[string]wrappers.HealthChecker) {
 
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
+		role := viper.GetString(commonParams.AstRoleKey)
 		runChecksConcurrently(map[string]wrappers.HealthChecker{
 			"Web App": healthCheckWrapper.RunWebAppCheck,
 			"DB":      healthCheckWrapper.RunDBCheck,
