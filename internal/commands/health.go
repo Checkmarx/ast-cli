@@ -28,7 +28,7 @@ func runHealthCheck(serviceName string, checker wrappers.HealthChecker) {
 func runChecksConcurrently(checks map[string]wrappers.HealthChecker) {
 	var wg sync.WaitGroup
 	for serviceName, checker := range checks {
-		wg.Add(1) //nolint:mnd: Magic number
+		wg.Add(1) //nolint:mnd
 		go func(n string, c wrappers.HealthChecker) {
 			defer wg.Done()
 			runHealthCheck(n, c)
