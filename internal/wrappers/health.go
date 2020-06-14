@@ -23,4 +23,5 @@ type HealthChecker func() (*HealthStatus, error)
 type HealthCheckWrapper interface {
 	RunWebAppCheck() (*HealthStatus, error)
 	RunDBCheck() (*HealthStatus, error)
+	NewHealthChecksByRole(role string)
 }

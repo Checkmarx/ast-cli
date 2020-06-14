@@ -22,3 +22,7 @@ func (h *HealthCheckMockWrapper) RunDBCheck() (*HealthStatus, error) {
 		},
 	}, nil
 }
+
+func (h *MockSastHealthCheckWrapper) RunWebAppCheck() (*HealthStatus, error) {
+	return &HealthStatus{Success: true, Message: ""}, nil
+}
