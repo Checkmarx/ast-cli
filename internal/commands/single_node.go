@@ -70,6 +70,9 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	_ = viper.BindPFlag(commonParams.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
+	downSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
+
+	updateSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
 	singleNodeCmd.AddCommand(
@@ -123,9 +126,29 @@ func runUpdateSingleNodeCommand() func(cmd *cobra.Command, args []string) error 
 }
 
 func runUpScript(cmd *cobra.Command) error {
-	var err error
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	role := viper.GetString(commonParams.AstRoleKey)
+
+	err := runWithConfig(cmd, upScriptPath, role)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to run up script")
+	}
+	return nil
+}
+
+func runDownScript(cmd *cobra.Command) error {
+	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
+	role := viper.GetString(commonParams.AstRoleKey)
+
+	err := runWithConfig(cmd, downScriptPath, role)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to run down script")
+	}
+	return nil
+}
+
+func runWithConfig(cmd *cobra.Command, scriptPath, role string) error {
+	var err error
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
 	configuration := config.SingleNodeConfiguration{}
 
@@ -147,28 +170,8 @@ func runUpScript(cmd *cobra.Command) error {
 	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
 	envVars := createEnvVarsForCommand(&configuration, installationFolder, role)
 
-	_, _, err = runBashCommand(upScriptPath, envVars)
-
-	if err != nil {
-		return errors.Wrapf(err, "Failed to run up script")
-	}
-	return nil
-}
-
-func runDownScript(cmd *cobra.Command) error {
-	var err error
-	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
-
-	installationDir, _ := cmd.Flags().GetString(astInstallationDir)
-	envs := []string{
-		envKeyAndValue(astInstallationPathEnv, installationDir),
-	}
-
-	_, _, err = runBashCommand(downScriptPath, envs)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to run down script")
-	}
-	return nil
+	_, _, err = runBashCommand(scriptPath, envVars)
+	return err
 }
 
 func writeToStandardOutput(msg string) {

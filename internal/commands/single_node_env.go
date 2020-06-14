@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	defaultLogLocation     = "/etc/conf/ast"
 	astInstallationPathEnv = "AST_INSTALLATION_PATH"
 
 	// Configurable database environment variables
@@ -28,16 +27,12 @@ const (
 	// Configurable logging environment variables
 	logLevel             = "LOG_LEVEL"
 	logLocation          = "LOG_LOCATION"
+	logFormat            = "LOG_FORMAT"
 	logRotationMaxSizeMB = "LOG_ROTATION_MAX_SIZE_MB"
 	logRotationCount     = "LOG_ROTATION_COUNT"
 )
 
 func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath, astRole string) []string {
-	// If log location is empty, set it to defaultLogLocation
-	if configuration.Log.Location == "" {
-		configuration.Log.Location = defaultLogLocation
-	}
-
 	return []string{
 		envKeyAndValue(astInstallationPathEnv, astInstallationPath),
 		envKeyAndValue(params.AstRoleEnv, astRole),
@@ -54,6 +49,7 @@ func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astI
 		envKeyAndValue(externalHostname, configuration.Network.ExternalHostname),
 
 		envKeyAndValue(logLevel, configuration.Log.Level),
+		envKeyAndValue(logFormat, configuration.Log.Format),
 		envKeyAndValue(logLocation, configuration.Log.Location),
 		envKeyAndValue(logRotationCount, configuration.Log.Rotation.Count),
 		envKeyAndValue(logRotationMaxSizeMB, configuration.Log.Rotation.MaxSizeMB),
