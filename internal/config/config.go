@@ -21,6 +21,7 @@ type Network struct {
 type Log struct {
 	Level    string      `yaml:"level"`
 	Location string      `yaml:"location"`
+	Format   string      `yaml:"format"`
 	Rotation LogRotation `yaml:"rotation"`
 }
 
