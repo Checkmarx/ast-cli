@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	defaultLogLocation     = "/etc/conf/ast"
 	astInstallationPathEnv = "AST_INSTALLATION_PATH"
 
 	// Configurable database environment variables
@@ -33,11 +32,6 @@ const (
 )
 
 func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath, astRole string) []string {
-	// If log location is empty, set it to defaultLogLocation
-	if configuration.Log.Location == "" {
-		configuration.Log.Location = defaultLogLocation
-	}
-
 	return []string{
 		envKeyAndValue(astInstallationPathEnv, astInstallationPath),
 		envKeyAndValue(params.AstRoleEnv, astRole),
