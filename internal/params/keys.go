@@ -16,6 +16,6 @@ var (
 	TokenExpirySecondsKey         = strings.ToLower(TokenExpirySecondsEnv)
 	AstRoleKey                    = strings.ToLower(AstRoleEnv)
 	AstWebAppHealthCheckPathKey   = strings.ToLower(AstWebAppHealthCheckPathEnv)
-	AstHealthcheckURIKey          = strings.ToLower(AstHealthcheckURIEnv)
-	AstHealthcheckDBPathKey       = strings.ToLower(AstHealthcheckDBPathEnv)
+	HealthcheckPathKey            = strings.ToLower(HealthcheckPathEnv)
+	HealthcheckDBPathKey          = strings.ToLower(HealthcheckDBPathEnv)
 )
