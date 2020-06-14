@@ -65,12 +65,11 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
-	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, commonParams.ScaAgent, astRoleFlagUsage)
+	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, "", astRoleFlagUsage)
 	// Binding the AST_ROLE env var to the --role flag
 	_ = viper.BindPFlag(commonParams.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
-	downSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
 	updateSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
@@ -137,10 +136,15 @@ func runUpScript(cmd *cobra.Command) error {
 }
 
 func runDownScript(cmd *cobra.Command) error {
+	var err error
 	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
-	role := viper.GetString(commonParams.AstRoleKey)
 
-	err := runWithConfig(cmd, downScriptPath, role)
+	installationDir, _ := cmd.Flags().GetString(astInstallationDir)
+	envs := []string{
+		envKeyAndValue(astInstallationPathEnv, installationDir),
+	}
+
+	_, _, err = runBashCommand(downScriptPath, envs)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
