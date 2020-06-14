@@ -71,6 +71,8 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 
 	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 	downSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
+
+	updateSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
 	singleNodeCmd.AddCommand(
