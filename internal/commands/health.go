@@ -7,8 +7,6 @@ import (
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
-	"github.com/pkg/errors"
-
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -21,23 +19,23 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 	}
 }
 
-func runHealthCheck(serviceName string, checker wrappers.HealthChecker) {
-	status, err := checker()
+func runHealthCheck(c *wrappers.HealthChecker) {
+	status, err := c.Checker()
 	if err != nil {
-		fmt.Printf("%v error %v\n", serviceName, err)
+		fmt.Printf("%v error %v\n", c.Name, err)
 	} else {
-		fmt.Printf("%v status: %v\n", serviceName, status)
+		fmt.Printf("%v status: %v\n", c.Name, status)
 	}
 }
 
-func runChecksConcurrently(checks map[string]wrappers.HealthChecker) {
+func runChecksConcurrently(checks []*wrappers.HealthChecker) {
 	var wg sync.WaitGroup
-	for serviceName, checker := range checks {
+	for _, healthChecker := range checks {
 		wg.Add(1) //nolint:mnd
-		go func(n string, c wrappers.HealthChecker) {
+		go func(c *wrappers.HealthChecker) {
 			defer wg.Done()
-			runHealthCheck(n, c)
-		}(serviceName, checker)
+			runHealthCheck(c)
+		}(healthChecker)
 	}
 
 	wg.Wait()
@@ -45,10 +43,7 @@ func runChecksConcurrently(checks map[string]wrappers.HealthChecker) {
 
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		role := viper.GetString(commonParams.AstRoleKey)
-		runChecksConcurrently(map[string]wrappers.HealthChecker{
-			"Web App": healthCheckWrapper.RunWebAppCheck,
-			"DB":      healthCheckWrapper.RunDBCheck,
-		})
+		hlthChks := wrappers.NewHealthChecksByRole(healthCheckWrapper, viper.GetString(commonParams.AstRoleKey))
+		runChecksConcurrently(hlthChks)
 	}
 }

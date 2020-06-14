@@ -3,6 +3,8 @@ package wrappers
 import (
 	"fmt"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+
 	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
 )
 
@@ -18,10 +20,27 @@ func (h *HealthStatus) String() string {
 	return fmt.Sprintf("Failure, due to %v", h.Message)
 }
 
-type HealthChecker func() (*HealthStatus, error)
+type HealthChecker struct {
+	Name    string
+	Checker func() (*HealthStatus, error)
+}
 
 type HealthCheckWrapper interface {
 	RunWebAppCheck() (*HealthStatus, error)
 	RunDBCheck() (*HealthStatus, error)
-	NewHealthChecksByRole(role string)
+	RunSomeCheck() (*HealthStatus, error)
+}
+
+func NewHealthChecksByRole(h HealthCheckWrapper, role string) []*HealthChecker {
+	healthChecks := []*HealthChecker{
+		{"DB", h.RunDBCheck},
+		{"Web App", h.RunWebAppCheck},
+		{"Some Check", h.RunSomeCheck},
+	}
+
+	if role == commonParams.ScaAgent {
+		return healthChecks[2:]
+	}
+
+	return healthChecks
 }

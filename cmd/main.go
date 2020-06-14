@@ -92,7 +92,7 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
-	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL, healthcheckDBURL)
+	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(webAppHlthChkURL, healthcheckDBURL)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
