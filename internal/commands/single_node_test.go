@@ -62,6 +62,20 @@ func TestRunSingleNodeUpCommandWithFileWithFolder(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunSingleNodeUpdateCommandWithNoFileNoFolder(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "update",
+		toFlag(astInstallationDir), "./non_existing_folder")
+	assert.Assert(t, err != nil)
+}
+
+func TestRunSingleNodeUpdateCommandWithFileWithFolder(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "update",
+		toFlag(astInstallationDir), "./")
+	assert.NilError(t, err)
+}
+
 func TestRunSingleNodeDownCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "down", "./payloads/nonsense.json")
