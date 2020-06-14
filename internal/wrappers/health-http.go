@@ -11,7 +11,7 @@ import (
 	errors "github.com/pkg/errors"
 )
 
-type HealthCheckHTTPWrapper struct {
+type healthCheckHTTPWrapper struct {
 	webAppURL string
 	DBURL     string
 }
@@ -32,11 +32,11 @@ func runHealthCheck(healthcheckURL string) (*HealthStatus, error) {
 	return status, nil
 }
 
-func NewHTTPHealthCheckWrapper(astWebAppURL, healthDBUrl string) HealthCheckWrapper {
-	return &HealthCheckHTTPWrapper{webAppURL: astWebAppURL, DBURL: healthDBUrl}
+func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBUrl string) HealthCheckWrapper {
+	return &healthCheckHTTPWrapper{webAppURL: astWebAppURL, DBURL: healthDBUrl}
 }
 
-func (h *HealthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
+func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, h.webAppURL, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Http request %v failed", h.webAppURL)
@@ -69,6 +69,10 @@ func (h *HealthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 	}, nil
 }
 
-func (h *HealthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
+func (h *healthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
 	return runHealthCheck(h.DBURL)
+}
+
+func (h *healthCheckHTTPWrapper) RunSomeCheck() (*HealthStatus, error) {
+	return (&HealthCheckMockWrapper{}).RunSomeCheck()
 }
