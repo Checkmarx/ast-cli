@@ -80,8 +80,9 @@ func TestRunSingleNodeUpdateCommandWithFileWithFolder(t *testing.T) {
 
 func TestRunSingleNodeDownCommandWithFileNotFound(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "single-node", "down", "./payloads/nonsense.json")
-	assert.NilError(t, err)
+	err := executeTestCommand(cmd, "-v", "single-node", "down", toFlag(configFileFlag), "./payloads/nonsense.json")
+	assert.Assert(t, err != nil)
+	assert.Assert(t, err.Error() == "unknown flag: --config")
 }
 
 func TestRunSingleNodeDownCommandWithFile(t *testing.T) {
