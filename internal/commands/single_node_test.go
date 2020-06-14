@@ -256,7 +256,6 @@ func TestRunBashCommandDefaultRole(t *testing.T) {
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 
 	envs := createEnvVarsForCommand(&testConfig, testinstallationFolder, params.ScaAgent)
-
 	actualOut, _, err = runBashCommand(upScriptPath, envs)
 	assert.NilError(t, err, "up script should succeed")
 
