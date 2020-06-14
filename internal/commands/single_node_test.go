@@ -101,6 +101,7 @@ const (
 	testlevel              = "TEST_Level"
 	testlocation           = "TEST_Location"
 	testrotationMaxSizeMB  = "TEST_MaxSizeMB"
+	testformat             = "TEST_Format"
 	testrotationCount      = "TEST_Count"
 	testinstallationFolder = "AST_TEST_INSTALLATION_FOLDER"
 	testrole               = "AST_TEST_ROLE"
@@ -118,6 +119,7 @@ const (
 		"LOG_LOCATION=%s," +
 		"LOG_ROTATION_COUNT=%s," +
 		"LOG_ROTATION_MAX_SIZE_MB=%s," +
+		"LOG_FORMAT=%s," +
 		"EXTERNAL_HOSTNAME=%s\n"
 )
 
@@ -143,6 +145,7 @@ func TestRunBashCommand(t *testing.T) {
 		Log: config.Log{
 			Level:    testlevel,
 			Location: testlocation,
+			Format:   testformat,
 			Rotation: config.LogRotation{
 				MaxSizeMB: testrotationMaxSizeMB,
 				Count:     testrotationCount,
@@ -177,6 +180,7 @@ func TestRunBashCommand(t *testing.T) {
 		testlocation,
 		testrotationCount,
 		testrotationMaxSizeMB,
+		testformat,
 		testexternalHost)
 	fmt.Println()
 	fmt.Println("EXPECTED from UP script:")
