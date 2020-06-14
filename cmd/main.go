@@ -51,13 +51,13 @@ func main() {
 	exitIfError(err)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AstHealthcheckURIKey, params.AstHealthcheckURIEnv, "http://localhost:1234")
+	err = bindKeyToEnvAndDefault(params.HealthcheckPathKey, params.HealthcheckPathEnv, "api/healthcheck")
 	exitIfError(err)
-	healthcheck := viper.GetString(params.AstHealthcheckURIKey)
+	healthcheck := viper.GetString(params.HealthcheckPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AstHealthcheckDBPathKey, params.AstHealthcheckDBPathEnv, "database")
+	err = bindKeyToEnvAndDefault(params.HealthcheckDBPathKey, params.HealthcheckDBPathEnv, "database")
 	exitIfError(err)
-	healthcheckDBPath := viper.GetString(params.AstHealthcheckDBPathKey)
+	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -84,7 +84,8 @@ func main() {
 	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
-	healthcheckDBURL := fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath)
+	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
+	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
