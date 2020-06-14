@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/checkmarxDev/ast-cli/internal/params"
+
 	"github.com/checkmarxDev/ast-cli/internal/config"
 
 	"gotest.tools/assert"
@@ -182,6 +184,86 @@ func TestRunBashCommand(t *testing.T) {
 		expected,
 		testinstallationFolder,
 		testrole,
+		testhost,
+		testport,
+		testusername,
+		testpassword,
+		testinstance,
+		testentryPoint,
+		testprivateKeyPath,
+		testcertificatePath,
+		testlevel,
+		testlocation,
+		testrotationCount,
+		testrotationMaxSizeMB,
+		testformat,
+		testexternalHost)
+	fmt.Println()
+	fmt.Println("EXPECTED from UP script:")
+	fmt.Println(expected)
+	fmt.Println()
+	fmt.Println("ACTUAL from UP script:")
+	fmt.Println(actualOut.String())
+	assert.Assert(t, expected == actualOut.String())
+
+	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
+
+	actualOut, _, err = runBashCommand(downScriptPath, envs)
+	assert.NilError(t, err, "down script should succeed")
+	fmt.Println()
+	fmt.Println("EXPECTED from DOWN script:")
+	fmt.Println(expected)
+	fmt.Println()
+	fmt.Println("ACTUAL from DOWN script:")
+	fmt.Println(actualOut.String())
+	assert.Assert(t, expected == actualOut.String())
+}
+
+func TestRunBashCommandDefaultRole(t *testing.T) {
+	fmt.Println("**************************Testing running bash command*************")
+
+	testConfig := config.SingleNodeConfiguration{
+		Database: config.Database{
+			Host:     testhost,
+			Port:     testport,
+			Instance: testinstance,
+			Username: testusername,
+			Password: testpassword,
+		},
+		Network: config.Network{
+			EntrypointPort:   testentryPoint,
+			ExternalHostname: testexternalHost,
+			TLS: config.TLS{
+				PrivateKeyPath:  testprivateKeyPath,
+				CertificatePath: testcertificatePath,
+			},
+		},
+		Log: config.Log{
+			Level:    testlevel,
+			Location: testlocation,
+			Format:   testformat,
+			Rotation: config.LogRotation{
+				MaxSizeMB: testrotationMaxSizeMB,
+				Count:     testrotationCount,
+			},
+		},
+	}
+	cmd := createASTTestCommand()
+
+	var actualOut *bytes.Buffer
+	var err error
+
+	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
+
+	envs := createEnvVarsForCommand(&testConfig, testinstallationFolder, params.ScaAgent)
+
+	actualOut, _, err = runBashCommand(upScriptPath, envs)
+	assert.NilError(t, err, "up script should succeed")
+
+	expected := fmt.Sprintf(
+		expected,
+		testinstallationFolder,
+		params.ScaAgent,
 		testhost,
 		testport,
 		testusername,
