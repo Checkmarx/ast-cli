@@ -1,0 +1,32 @@
+log:
+  # Log level. Available options: DEBUG, INFO, ERROR, TRACE. Deafult: INFO
+  level:
+  location:
+  format:
+  rotation:
+    # Maximum log file size in MB. Default is 50
+    # Once maxSizeMB is reached, the file will be automatically moved to another directory and renamed
+    maxSizeMB:
+    count:
+# The following section enables the use of an existing database (PostgreSQL).
+# If left empty, a default database will be started
+database:
+  host:
+  port:
+  instance: instance
+  username:
+  password:
+network:
+  # The entrypoint port to use for AST for HTTP. Default: 80
+  entrypointPort:
+  # The entrypoint TLS port to use for AST for  HTTPS. Default: 443
+  entrypointTLSPort:
+  # The external IPv4 used to access the AST. Default: 127.0.0.1
+  # Example: 10.10.10.10 
+  externalHostname:
+  # For TLS , you must provide private key and certificate
+  tls:
+    # The absolute path to your private key in the host. Example: /home/myuser/mykey.pem. Default: None
+    privateKeyPath: /mnt/c/Users/ronenl/OneDrive - Checkmarx/Documents/CxKronos/script-test/test.txt
+    # The absolute path to your certificate in the host. Example: /home/myuser/mycert.crt. Default: None
+    certificatePath: /mnt/c/Users/ronenl/OneDrive - Checkmarx/Documents/CxKronos/script-test/test.txt
