@@ -15,6 +15,9 @@ const (
 	AccessKeySecretEnv          = "AST_ACCESS_KEY_SECRET"
 	AstRoleEnv                  = "AST_ROLE"
 	AstWebAppHealthCheckPathEnv = "AST_WEB_APP_HEALTH_CHECK_PATH"
-	HealthcheckPathEnv          = "AST_HEALTHCHECK_URI"
-	HealthcheckDBPathEnv        = "AST_HEALTHCHECK_DB_PATH"
+	HealthcheckPathEnv          = "HEALTHCHECK_PATH"
+	HealthcheckDBPathEnv        = "HEALTHCHECK_DB_PATH"
+	HealthcheckNatsPathEnv      = "HEALTHCHECK_NATS_PATH"
+	HealthcheckMinioPathEnv     = "HEALTHCHECK_MINIO_PATH"
+	HealthcheckRedisPathEnv     = "HEALTHCHECK_REDIS_PATH"
 )

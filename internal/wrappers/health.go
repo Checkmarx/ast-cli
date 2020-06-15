@@ -3,8 +3,6 @@ package wrappers
 import (
 	"fmt"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-
 	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
 )
 
@@ -23,24 +21,26 @@ func (h *HealthStatus) String() string {
 type HealthChecker struct {
 	Name    string
 	Checker func() (*HealthStatus, error)
+	roles   map[string]bool
+}
+
+func (h *HealthChecker) AllowRoles(roles ...string) *HealthChecker {
+	h.roles = make(map[string]bool, len(roles))
+	for _, r := range roles {
+		h.roles[r] = true
+	}
+
+	return h
+}
+
+func (h *HealthChecker) HasRole(role string) bool {
+	return h.roles[role]
 }
 
 type HealthCheckWrapper interface {
+	RunNatsCheck() (*HealthStatus, error)
 	RunWebAppCheck() (*HealthStatus, error)
 	RunDBCheck() (*HealthStatus, error)
-	RunSomeCheck() (*HealthStatus, error)
-}
-
-func NewHealthChecksByRole(h HealthCheckWrapper, role string) []*HealthChecker {
-	healthChecks := []*HealthChecker{
-		{"DB", h.RunDBCheck},
-		{"Web App", h.RunWebAppCheck},
-		{"Some Check", h.RunSomeCheck},
-	}
-
-	if role == commonParams.ScaAgent {
-		return healthChecks[2:]
-	}
-
-	return healthChecks
+	RunMinioCheck() (*HealthStatus, error)
+	RunRedisCheck() (*HealthStatus, error)
 }

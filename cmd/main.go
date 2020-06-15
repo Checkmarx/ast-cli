@@ -47,7 +47,7 @@ func main() {
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "health-check")
+	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "#/projects")
 	exitIfError(err)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
 
@@ -58,6 +58,18 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.HealthcheckDBPathKey, params.HealthcheckDBPathEnv, "database")
 	exitIfError(err)
 	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckNatsPathKey, params.HealthcheckNatsPathEnv, "nats")
+	exitIfError(err)
+	healthcheckNatsPath := viper.GetString(params.HealthcheckNatsPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckMinioPathKey, params.HealthcheckMinioPathEnv, "minio")
+	exitIfError(err)
+	healthcheckMinioPath := viper.GetString(params.HealthcheckMinioPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckRedisPathKey, params.HealthcheckRedisPathEnv, "minio")
+	exitIfError(err)
+	healthcheckRedisPath := viper.GetString(params.HealthcheckRedisPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -86,6 +98,9 @@ func main() {
 	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
 	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
 	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
+	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckNatsPath)
+	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMinioPath)
+	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckRedisPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
@@ -93,7 +108,13 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
-	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(webAppHlthChkURL, healthcheckDBURL)
+	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
+		webAppHlthChkURL,
+		healthcheckDBURL,
+		healthcheckNatsURL,
+		healthcheckMinioURL,
+		healthcheckRedisURL,
+	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(

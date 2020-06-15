@@ -13,7 +13,10 @@ import (
 
 type healthCheckHTTPWrapper struct {
 	webAppURL string
-	DBURL     string
+	dBURL     string
+	natsURL   string
+	minioURL  string
+	redisURL  string
 }
 
 func runHealthCheck(healthcheckURL string) (*HealthStatus, error) {
@@ -32,8 +35,15 @@ func runHealthCheck(healthcheckURL string) (*HealthStatus, error) {
 	return status, nil
 }
 
-func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBUrl string) HealthCheckWrapper {
-	return &healthCheckHTTPWrapper{webAppURL: astWebAppURL, DBURL: healthDBUrl}
+func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBURL, healthcheckNatsURL,
+	healthcheckMinioURL, healthCheckRedisURL string) HealthCheckWrapper {
+	return &healthCheckHTTPWrapper{
+		astWebAppURL,
+		healthDBURL,
+		healthcheckNatsURL,
+		healthcheckMinioURL,
+		healthCheckRedisURL,
+	}
 }
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
@@ -70,9 +80,17 @@ func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 }
 
 func (h *healthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
-	return runHealthCheck(h.DBURL)
+	return runHealthCheck(h.dBURL)
 }
 
-func (h *healthCheckHTTPWrapper) RunSomeCheck() (*HealthStatus, error) {
-	return (&HealthCheckMockWrapper{}).RunSomeCheck()
+func (h *healthCheckHTTPWrapper) RunNatsCheck() (*HealthStatus, error) {
+	return runHealthCheck(h.natsURL)
+}
+
+func (h *healthCheckHTTPWrapper) RunMinioCheck() (*HealthStatus, error) {
+	return runHealthCheck(h.minioURL)
+}
+
+func (h *healthCheckHTTPWrapper) RunRedisCheck() (*HealthStatus, error) {
+	return runHealthCheck(h.redisURL)
 }
