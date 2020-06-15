@@ -57,6 +57,13 @@ func TestRunSingleNodeUpCommandWithNoFileNoFolder(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
+func TestRunSingleNodeUpCommandWithDefaultConfiguration(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "up",
+		toFlag(astInstallationDir), "./")
+	assert.NilError(t, err)
+}
+
 func TestRunSingleNodeUpCommandWithFileWithFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
