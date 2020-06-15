@@ -43,7 +43,7 @@ var (
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
-		Short: "Manage AST scans",
+		Short: "Manage scans",
 	}
 
 	createScanCmd := &cobra.Command{

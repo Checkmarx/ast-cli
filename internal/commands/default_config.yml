@@ -13,7 +13,7 @@ log:
 database:
   host:
   port:
-  instance: instance
+  instance: instance_from_default
   username:
   password:
 network:

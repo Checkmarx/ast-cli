@@ -12,7 +12,7 @@ import (
 func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
 	return &cobra.Command{
 		Use:   "health-check",
-		Short: "Run AST health check",
+		Short: "Run health check",
 		RunE:  runAllHealthChecks(healthCheckWrapper),
 	}
 }
