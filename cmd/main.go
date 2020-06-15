@@ -84,6 +84,7 @@ func main() {
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
 	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL)
+	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -93,6 +94,7 @@ func main() {
 		bflWrapper,
 		rmWrapper,
 		healthCheckWrapper,
+		defaultConfigFileLocation,
 	)
 
 	err = astCli.Execute()
