@@ -34,7 +34,7 @@ var (
 			commonParams.SastEngine}, ","))
 )
 
-func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
+func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaultConfigFileLocation string) *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
 		Short: "Single Node AST",
@@ -43,7 +43,7 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	upSingleNodeCmd := &cobra.Command{
 		Use:   "up",
 		Short: "Start AST",
-		RunE:  runUpSingleNodeCommand(),
+		RunE:  runUpSingleNodeCommand(defaultConfigFileLocation),
 	}
 	downSingleNodeCmd := &cobra.Command{
 		Use:   "down",
@@ -54,7 +54,7 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	updateSingleNodeCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update AST",
-		RunE:  runUpdateSingleNodeCommand(),
+		RunE:  runUpdateSingleNodeCommand(defaultConfigFileLocation),
 	}
 
 	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper)
@@ -82,10 +82,10 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra
 	return singleNodeCmd
 }
 
-func runUpSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+func runUpSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Trying to start AST...")
-		err := runUpScript(cmd)
+		err := runUpScript(cmd, defaultConfigFileLocation)
 		if err != nil {
 			msg := "Failed to start AST"
 			return errors.Wrapf(err, msg)
@@ -109,13 +109,13 @@ func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func runUpdateSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := runDownSingleNodeCommand()(cmd, args)
 		if err != nil {
 			return err
 		}
-		err = runUpSingleNodeCommand()(cmd, args)
+		err = runUpSingleNodeCommand(defaultConfigFileLocation)(cmd, args)
 		if err != nil {
 			return err
 		}
@@ -124,11 +124,11 @@ func runUpdateSingleNodeCommand() func(cmd *cobra.Command, args []string) error 
 	}
 }
 
-func runUpScript(cmd *cobra.Command) error {
+func runUpScript(cmd *cobra.Command, defaultConfigFileLocation string) error {
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	role := viper.GetString(commonParams.AstRoleKey)
 
-	err := runWithConfig(cmd, upScriptPath, role)
+	err := runWithConfig(cmd, upScriptPath, role, defaultConfigFileLocation)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
@@ -151,31 +151,54 @@ func runDownScript(cmd *cobra.Command) error {
 	return nil
 }
 
-func runWithConfig(cmd *cobra.Command, scriptPath, role string) error {
+func runWithConfig(cmd *cobra.Command, scriptPath, role, defaultConfigFileLocation string) error {
 	var err error
+	configuration := &config.SingleNodeConfiguration{}
+
 	configFile, _ := cmd.Flags().GetString(configFileFlag)
-	configuration := config.SingleNodeConfiguration{}
 
+	// Give precedence to the the config flag
+	// We have been provided with a config file
 	if configFile != "" {
-		var configInput []byte
-		// Reading configuration from config file
-		PrintIfVerbose(fmt.Sprintf("Reading configuration from file %s", configFile))
-		configInput, err = ioutil.ReadFile(configFile)
+		configuration, err = tryLoadConfiguration(configFile)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to open config file")
+			return err
 		}
-
-		err = yaml.Unmarshal(configInput, &configuration)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to parse configuration file")
+	} else {
+		// Try to run with the default config file
+		if _, err = os.Stat(defaultConfigFileLocation); err == nil {
+			PrintIfVerbose(fmt.Sprintf("Reading configuration from default location at %s", defaultConfigFileLocation))
+			configuration, err = tryLoadConfiguration(defaultConfigFileLocation)
+			if err != nil {
+				return err
+			}
+		} else if os.IsNotExist(err) {
+			PrintIfVerbose(fmt.Sprintf("No configuration file provided via flag and no configutaion file was found at %s. "+
+				"Proceeding with default configuration.", defaultConfigFileLocation))
 		}
 	}
 
 	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
-	envVars := createEnvVarsForCommand(&configuration, installationFolder, role)
+	envVars := createEnvVarsForCommand(configuration, installationFolder, role)
 
 	_, _, err = runBashCommand(scriptPath, envVars)
 	return err
+}
+
+func tryLoadConfiguration(configFile string) (*config.SingleNodeConfiguration, error) {
+	configuration := config.SingleNodeConfiguration{}
+
+	PrintIfVerbose(fmt.Sprintf("Trying to load configuration from file %s", configFile))
+	configInput, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to load config file")
+	}
+
+	err = yaml.Unmarshal(configInput, &configuration)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to parse configuration file")
+	}
+	return &configuration, nil
 }
 
 func writeToStandardOutput(msg string) {
