@@ -36,7 +36,7 @@ var (
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
-		Short: "Manage AST projects",
+		Short: "Manage projects",
 	}
 
 	createProjCmd := &cobra.Command{

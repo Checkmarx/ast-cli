@@ -10,25 +10,25 @@ import (
 
 const (
 	deployScriptPath   = "./installation-scripts/ast-install.sh"
-	failedDeployingApp = "Failed deploying AST app"
-	failedShowingApp   = "Failed showing AST app"
+	failedDeployingApp = "Failed deploying app"
+	failedShowingApp   = "Failed showing app"
 )
 
 func NewAppCommand() *cobra.Command {
 	appCmd := &cobra.Command{
 		Use:   "app",
-		Short: "Manage AST resources",
+		Short: "Manage resources",
 	}
 
 	deployAppCmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Deploy AST into existing cluster",
+		Short: "Deploy into existing cluster",
 		RunE:  runDeployAppCommand(),
 	}
 
 	showAppCmd := &cobra.Command{
 		Use:   "show",
-		Short: "Show AST resources condition",
+		Short: "Show resources state",
 		RunE:  runShowAppCommand(),
 	}
 	appCmd.AddCommand(deployAppCmd, showAppCmd)

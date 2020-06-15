@@ -38,7 +38,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	sastrmCmd := &cobra.Command{
 		Use:     "sast-resources",
 		Aliases: []string{"sr"},
-		Short:   "AST sast queue status (short form: 'sr')",
+		Short:   "SAST queue status (short form: 'sr')",
 	}
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
 	return sastrmCmd

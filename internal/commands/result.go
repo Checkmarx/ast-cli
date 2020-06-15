@@ -34,7 +34,7 @@ var (
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "result",
-		Short: "Retrieve AST results",
+		Short: "Retrieve results",
 	}
 
 	listResultsCmd := &cobra.Command{

@@ -20,7 +20,7 @@ const (
 func NewClusterCommand() *cobra.Command {
 	clusterCmd := &cobra.Command{
 		Use:   "cluster",
-		Short: "Manage AST cluster",
+		Short: "Manage cluster",
 	}
 
 	installClusterCmd := &cobra.Command{
@@ -35,7 +35,7 @@ func NewClusterCommand() *cobra.Command {
 
 	showClusterCmd := &cobra.Command{
 		Use:   "show",
-		Short: "Show AST resources",
+		Short: "Show resources",
 		RunE:  runShowClusterCommand(),
 	}
 	clusterCmd.AddCommand(installClusterCmd, showClusterCmd)
