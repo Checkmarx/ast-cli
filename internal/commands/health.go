@@ -41,9 +41,29 @@ func runChecksConcurrently(checks []*wrappers.HealthChecker) {
 	wg.Wait()
 }
 
+func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthChecker) {
+	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
+	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
+	healthChecks := []*wrappers.HealthChecker{
+		(&wrappers.HealthChecker{Name: "DB", Checker: h.RunDBCheck}).AllowRoles(sastRoles[:]...),
+		(&wrappers.HealthChecker{Name: "Web App", Checker: h.RunWebAppCheck}).AllowRoles(sastRoles[:]...),
+		(&wrappers.HealthChecker{Name: "Redis", Checker: h.RunRedisCheck}).AllowRoles(sastRoles[:]...),
+		(&wrappers.HealthChecker{Name: "Minio", Checker: h.RunMinioCheck}).AllowRoles(sastAndScaRoles...),
+		(&wrappers.HealthChecker{Name: "Nats", Checker: h.RunNatsCheck}).AllowRoles(sastAndScaRoles...),
+	}
+
+	for _, hc := range healthChecks {
+		if hc.HasRole(role) {
+			checksByRole = append(checksByRole, hc)
+		}
+	}
+
+	return checksByRole
+}
+
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		hlthChks := wrappers.NewHealthChecksByRole(healthCheckWrapper, viper.GetString(commonParams.AstRoleKey))
+		hlthChks := newHealthChecksByRole(healthCheckWrapper, viper.GetString(commonParams.AstRoleKey))
 		runChecksConcurrently(hlthChks)
 	}
 }

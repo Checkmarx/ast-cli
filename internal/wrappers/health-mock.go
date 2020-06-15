@@ -2,7 +2,7 @@ package wrappers
 
 import healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
 
-func run() (*HealthStatus, error) {
+func mockRun() (*HealthStatus, error) {
 	return &HealthStatus{
 		&healthcheckApi.HealthcheckModel{
 			Success: true,
@@ -15,13 +15,21 @@ type HealthCheckMockWrapper struct {
 }
 
 func (h *HealthCheckMockWrapper) RunWebAppCheck() (*HealthStatus, error) {
-	return run()
+	return mockRun()
 }
 
 func (h *HealthCheckMockWrapper) RunDBCheck() (*HealthStatus, error) {
-	return run()
+	return mockRun()
 }
 
-func (h *HealthCheckMockWrapper) RunSomeCheck() (*HealthStatus, error) {
-	return run()
+func (h *HealthCheckMockWrapper) RunNatsCheck() (*HealthStatus, error) {
+	return mockRun()
+}
+
+func (h *HealthCheckMockWrapper) RunMinioCheck() (*HealthStatus, error) {
+	return mockRun()
+}
+
+func (h *HealthCheckMockWrapper) RunRedisCheck() (*HealthStatus, error) {
+	return mockRun()
 }

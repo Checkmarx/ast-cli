@@ -18,4 +18,7 @@ var (
 	AstWebAppHealthCheckPathKey   = strings.ToLower(AstWebAppHealthCheckPathEnv)
 	HealthcheckPathKey            = strings.ToLower(HealthcheckPathEnv)
 	HealthcheckDBPathKey          = strings.ToLower(HealthcheckDBPathEnv)
+	HealthcheckNatsPathKey        = strings.ToLower(HealthcheckNatsPathEnv)
+	HealthcheckMinioPathKey       = strings.ToLower(HealthcheckMinioPathEnv)
+	HealthcheckRedisPathKey       = strings.ToLower(HealthcheckRedisPathEnv)
 )
