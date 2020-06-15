@@ -30,11 +30,11 @@ const (
 	scanTagsFlag                  = "tag"
 	scanTagsFlagSh                = "t"
 	accessKeyIDFlag               = "key"
-	accessKeyIDFlagUsage          = "The access key ID for AST"
+	accessKeyIDFlagUsage          = "The access key ID"
 	accessKeySecretFlag           = "secret"
-	accessKeySecretFlagUsage      = "The access key secret for AST"
+	accessKeySecretFlagUsage      = "The access key secret"
 	astAuthenticationURIFlag      = "auth-uri"
-	astAuthenticationURIFlagUsage = "The authentication URI for AST"
+	astAuthenticationURIFlagUsage = "The authentication URI"
 	insecureFlag                  = "insecure"
 	insecureFlagUsage             = "Ignore TLS certificate validations"
 	formatFlag                    = "format"
@@ -57,8 +57,7 @@ func NewAstCLI(
 	defaultConfigFileLocation string,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "ast",
-		Short: "A CLI wrapping Checkmarx AST APIs",
+		Use: "ast",
 	}
 
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)

@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	astRoleFlagUsage = fmt.Sprintf("The AST runtime role. Available roles are: %s",
+	astRoleFlagUsage = fmt.Sprintf("The runtime role. Available roles are: %s",
 		strings.Join([]string{
 			commonParams.ScaAgent,
 			commonParams.SastALlInOne,
@@ -37,30 +37,30 @@ var (
 func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaultConfigFileLocation string) *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
-		Short: "Single Node AST",
+		Short: "Single Node",
 	}
 
 	upSingleNodeCmd := &cobra.Command{
 		Use:   "up",
-		Short: "Start AST",
+		Short: "Start the system",
 		RunE:  runUpSingleNodeCommand(defaultConfigFileLocation),
 	}
 	downSingleNodeCmd := &cobra.Command{
 		Use:   "down",
-		Short: "Stop AST",
+		Short: "Stop the system",
 		RunE:  runDownSingleNodeCommand(),
 	}
 
 	updateSingleNodeCmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update AST",
+		Short: "Update the system",
 		RunE:  runUpdateSingleNodeCommand(defaultConfigFileLocation),
 	}
 
 	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper)
 
-	installationConfigFileUsage := "Configuration file path for AST (optional)"
-	installationFolderUsage := "AST installation folder path"
+	installationConfigFileUsage := "Configuration file path (optional)"
+	installationFolderUsage := "Installation folder path"
 	installationFolderDefault := "./"
 
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
@@ -84,27 +84,27 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaul
 
 func runUpSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to start AST...")
+		writeToStandardOutput("Trying to start...")
 		err := runUpScript(cmd, defaultConfigFileLocation)
 		if err != nil {
-			msg := "Failed to start AST"
+			msg := "Failed to start"
 			return errors.Wrapf(err, msg)
 		}
-		writeToStandardOutput("AST is up!")
+		writeToStandardOutput("System is up!")
 		return nil
 	}
 }
 
 func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to stop AST...")
+		writeToStandardOutput("Trying to stop...")
 		err := runDownScript(cmd)
 
 		if err != nil {
-			msg := "Failed to stop AST"
+			msg := "Failed to stop"
 			return errors.Wrapf(err, msg)
 		}
-		writeToStandardOutput("AST is down!")
+		writeToStandardOutput("System is down!")
 		return nil
 	}
 }
@@ -119,7 +119,7 @@ func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobr
 		if err != nil {
 			return err
 		}
-		writeToStandardOutput("AST updated successfully!")
+		writeToStandardOutput("System updated successfully!")
 		return nil
 	}
 }
