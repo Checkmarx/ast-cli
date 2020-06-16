@@ -18,6 +18,7 @@ type healthCheckHTTPWrapper struct {
 	MessageQueueHealthcheckURL string
 	ObjectStoreHealthcheckURL  string
 	InMemoryDBHealthcheckURL   string
+	LoggingHealthcheckURL      string
 }
 
 func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
@@ -58,13 +59,14 @@ func runHealthCheckRequest(url string,
 }
 
 func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBURL, healthcheckNatsURL,
-	healthcheckMinioURL, healthCheckRedisURL string) HealthCheckWrapper {
+	healthcheckMinioURL, healthCheckRedisURL, healthcheckLoggingURL string) HealthCheckWrapper {
 	return &healthCheckHTTPWrapper{
 		astWebAppURL,
 		healthDBURL,
 		healthcheckNatsURL,
 		healthcheckMinioURL,
 		healthCheckRedisURL,
+		healthcheckLoggingURL,
 	}
 }
 
@@ -93,4 +95,8 @@ func (h *healthCheckHTTPWrapper) RunObjectStoreCheck() (*HealthStatus, error) {
 
 func (h *healthCheckHTTPWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.InMemoryDBHealthcheckURL, parseHealthcheckResponse)
+}
+
+func (h *healthCheckHTTPWrapper) RunLoggingCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.LoggingHealthcheckURL, parseHealthcheckResponse)
 }

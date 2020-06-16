@@ -74,6 +74,11 @@ func main() {
 	exitIfError(err)
 	healthcheckInMemoryDBPath := viper.GetString(params.HealthcheckInMemoryDBPathKey)
 
+	err = bindKeyToEnvAndDefault(params.HealthcheckLoggingPathKey,
+		params.HealthcheckLoggingPathEnv, "logging")
+	exitIfError(err)
+	healthcheckLoggingPath := viper.GetString(params.HealthcheckLoggingPathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -104,6 +109,7 @@ func main() {
 	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMessageQueuePath)
 	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckObjectStorePath)
 	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckInMemoryDBPath)
+	healthcheckLoggingURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckLoggingPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
@@ -117,6 +123,7 @@ func main() {
 		healthcheckNatsURL,
 		healthcheckMinioURL,
 		healthcheckRedisURL,
+		healthcheckLoggingURL,
 	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 

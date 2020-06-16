@@ -33,3 +33,7 @@ func (h *HealthCheckMockWrapper) RunObjectStoreCheck() (*HealthStatus, error) {
 func (h *HealthCheckMockWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
 	return mockRun()
 }
+
+func (h *HealthCheckMockWrapper) RunLoggingCheck() (*HealthStatus, error) {
+	return mockRun()
+}
