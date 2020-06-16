@@ -22,14 +22,14 @@ func (h *HealthCheckMockWrapper) RunDBCheck() (*HealthStatus, error) {
 	return mockRun()
 }
 
-func (h *HealthCheckMockWrapper) RunNatsCheck() (*HealthStatus, error) {
+func (h *HealthCheckMockWrapper) RunMessageQueueCheck() (*HealthStatus, error) {
 	return mockRun()
 }
 
-func (h *HealthCheckMockWrapper) RunMinioCheck() (*HealthStatus, error) {
+func (h *HealthCheckMockWrapper) RunObjectStoreCheck() (*HealthStatus, error) {
 	return mockRun()
 }
 
-func (h *HealthCheckMockWrapper) RunRedisCheck() (*HealthStatus, error) {
+func (h *HealthCheckMockWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
 	return mockRun()
 }

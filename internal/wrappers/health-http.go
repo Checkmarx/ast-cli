@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -11,29 +12,49 @@ import (
 	errors "github.com/pkg/errors"
 )
 
-// TODO add healthcheck between XXhealthcheckURL
 type healthCheckHTTPWrapper struct {
-	webAppURL string
-	dBURL     string
-	natsURL   string
-	minioURL  string
-	redisURL  string
+	WebAppHealthcheckURL       string
+	DBHealthcheckURL           string
+	MessageQueueHealthcheckURL string
+	ObjectStoreHealthcheckURL  string
+	InMemoryDBHealthcheckURL   string
 }
 
-func runHealthCheck(healthcheckURL string) (*HealthStatus, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, healthcheckURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Http request %v failed", healthcheckURL)
-	}
-
-	defer resp.Body.Close()
+func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 	status := &HealthStatus{}
-	err = json.NewDecoder(resp.Body).Decode(status)
-	if err != nil {
+	if err := json.NewDecoder(body).Decode(status); err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse healthcheck response")
 	}
 
 	return status, nil
+}
+
+func runHealthCheckRequest(url string,
+	parser func(body io.ReadCloser) (*HealthStatus, error)) (*HealthStatus, error) {
+	resp, err := SendHTTPRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Http request %v failed", url)
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return &HealthStatus{
+			&healthcheckApi.HealthcheckModel{
+				Success: false,
+				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
+					url, resp.StatusCode, func() string {
+						if body != nil {
+							return string(body)
+						}
+
+						return ""
+					}()),
+			},
+		}, nil
+	}
+
+	return parser(resp.Body)
 }
 
 func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBURL, healthcheckNatsURL,
@@ -48,50 +69,28 @@ func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBURL, healthcheckNatsURL,
 }
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, h.webAppURL, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Http request %v failed", h.webAppURL)
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+	return runHealthCheckRequest(h.WebAppHealthcheckURL, func(body io.ReadCloser) (*HealthStatus, error) {
 		return &HealthStatus{
 			&healthcheckApi.HealthcheckModel{
-				Success: false,
-				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
-					h.webAppURL, resp.StatusCode, func() string {
-						if body != nil {
-							return string(body)
-						}
-
-						return ""
-					}()),
+				Success: true,
+				Message: "",
 			},
 		}, nil
-	}
-
-	return &HealthStatus{
-		&healthcheckApi.HealthcheckModel{
-			Success: true,
-			Message: "",
-		},
-	}, nil
+	})
 }
 
 func (h *healthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
-	return runHealthCheck(h.dBURL)
+	return runHealthCheckRequest(h.DBHealthcheckURL, parseHealthcheckResponse)
 }
 
-func (h *healthCheckHTTPWrapper) RunNatsCheck() (*HealthStatus, error) {
-	return runHealthCheck(h.natsURL)
+func (h *healthCheckHTTPWrapper) RunMessageQueueCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.MessageQueueHealthcheckURL, parseHealthcheckResponse)
 }
 
-func (h *healthCheckHTTPWrapper) RunMinioCheck() (*HealthStatus, error) {
-	return runHealthCheck(h.minioURL)
+func (h *healthCheckHTTPWrapper) RunObjectStoreCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.ObjectStoreHealthcheckURL, parseHealthcheckResponse)
 }
 
-func (h *healthCheckHTTPWrapper) RunRedisCheck() (*HealthStatus, error) {
-	return runHealthCheck(h.redisURL)
+func (h *healthCheckHTTPWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.InMemoryDBHealthcheckURL, parseHealthcheckResponse)
 }

@@ -59,21 +59,20 @@ func main() {
 	exitIfError(err)
 	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
 
-	// TODO change nats to message-queue
-	// TODO change minio to object-store
-
-	err = bindKeyToEnvAndDefault(params.HealthcheckNatsPathKey, params.HealthcheckNatsPathEnv, "nats")
+	err = bindKeyToEnvAndDefault(params.HealthcheckMessageQueuePathKey,
+		params.HealthcheckMessageQueuePathEnv, "message-queue")
 	exitIfError(err)
-	healthcheckNatsPath := viper.GetString(params.HealthcheckNatsPathKey)
+	healthcheckMessageQueuePath := viper.GetString(params.HealthcheckMessageQueuePathKey)
 
-	err = bindKeyToEnvAndDefault(params.HealthcheckMinioPathKey, params.HealthcheckMinioPathEnv, "minio")
+	err = bindKeyToEnvAndDefault(params.HealthcheckObjectStorePathKey,
+		params.HealthcheckObjectStorePathEnv, "object-store")
 	exitIfError(err)
-	healthcheckMinioPath := viper.GetString(params.HealthcheckMinioPathKey)
+	healthcheckObjectStorePath := viper.GetString(params.HealthcheckObjectStorePathKey)
 
-	// Change redis to TBD
-	err = bindKeyToEnvAndDefault(params.HealthcheckRedisPathKey, params.HealthcheckRedisPathEnv, "redis")
+	err = bindKeyToEnvAndDefault(params.HealthcheckInMemoryDBPathKey,
+		params.HealthcheckInMemoryDBPathEnv, "in-memory-db")
 	exitIfError(err)
-	healthcheckRedisPath := viper.GetString(params.HealthcheckRedisPathKey)
+	healthcheckInMemoryDBPath := viper.GetString(params.HealthcheckInMemoryDBPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -102,9 +101,9 @@ func main() {
 	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
 	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
 	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
-	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckNatsPath)
-	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMinioPath)
-	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckRedisPath)
+	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMessageQueuePath)
+	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckObjectStorePath)
+	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckInMemoryDBPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
