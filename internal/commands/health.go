@@ -47,8 +47,11 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 	healthChecks := []*wrappers.HealthChecker{
 		(&wrappers.HealthChecker{Name: "DB", Checker: h.RunDBCheck}).AllowRoles(sastRoles[:]...),
 		(&wrappers.HealthChecker{Name: "Web App", Checker: h.RunWebAppCheck}).AllowRoles(sastRoles[:]...),
+		// TODO replace Redis with TBD
 		(&wrappers.HealthChecker{Name: "Redis", Checker: h.RunRedisCheck}).AllowRoles(sastRoles[:]...),
+		// TODO replace MinIO with Object Store
 		(&wrappers.HealthChecker{Name: "Minio", Checker: h.RunMinioCheck}).AllowRoles(sastAndScaRoles...),
+		// TODO replace Nats with Message Queue
 		(&wrappers.HealthChecker{Name: "Nats", Checker: h.RunNatsCheck}).AllowRoles(sastAndScaRoles...),
 	}
 
