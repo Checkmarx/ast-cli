@@ -59,6 +59,9 @@ func main() {
 	exitIfError(err)
 	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
 
+	// TODO change nats to message-queue
+	// TODO change minio to object-store
+
 	err = bindKeyToEnvAndDefault(params.HealthcheckNatsPathKey, params.HealthcheckNatsPathEnv, "nats")
 	exitIfError(err)
 	healthcheckNatsPath := viper.GetString(params.HealthcheckNatsPathKey)
@@ -67,7 +70,8 @@ func main() {
 	exitIfError(err)
 	healthcheckMinioPath := viper.GetString(params.HealthcheckMinioPathKey)
 
-	err = bindKeyToEnvAndDefault(params.HealthcheckRedisPathKey, params.HealthcheckRedisPathEnv, "minio")
+	// Change redis to TBD
+	err = bindKeyToEnvAndDefault(params.HealthcheckRedisPathKey, params.HealthcheckRedisPathEnv, "redis")
 	exitIfError(err)
 	healthcheckRedisPath := viper.GetString(params.HealthcheckRedisPathKey)
 

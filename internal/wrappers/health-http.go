@@ -11,6 +11,7 @@ import (
 	errors "github.com/pkg/errors"
 )
 
+// TODO add healthcheck between XXhealthcheckURL
 type healthCheckHTTPWrapper struct {
 	webAppURL string
 	dBURL     string
@@ -29,7 +30,7 @@ func runHealthCheck(healthcheckURL string) (*HealthStatus, error) {
 	status := &HealthStatus{}
 	err = json.NewDecoder(resp.Body).Decode(status)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse helthcheck response")
+		return nil, errors.Wrapf(err, "Failed to parse healthcheck response")
 	}
 
 	return status, nil

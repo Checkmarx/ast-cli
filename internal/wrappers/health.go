@@ -6,6 +6,14 @@ import (
 	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
 )
 
+type HealthCheckWrapper interface {
+	RunNatsCheck() (*HealthStatus, error)
+	RunWebAppCheck() (*HealthStatus, error)
+	RunDBCheck() (*HealthStatus, error)
+	RunMinioCheck() (*HealthStatus, error)
+	RunRedisCheck() (*HealthStatus, error)
+}
+
 type HealthStatus struct {
 	*healthcheckApi.HealthcheckModel
 }
@@ -18,12 +26,15 @@ func (h *HealthStatus) String() string {
 	return fmt.Sprintf("Failure, due to %v", h.Message)
 }
 
+// TODO Rename to HealthCheck
+// TODO rename Checker to Handler
 type HealthChecker struct {
 	Name    string
 	Checker func() (*HealthStatus, error)
 	roles   map[string]bool
 }
 
+// TODO convert to New and provide roles and do all the logic there
 func (h *HealthChecker) AllowRoles(roles ...string) *HealthChecker {
 	h.roles = make(map[string]bool, len(roles))
 	for _, r := range roles {
@@ -35,12 +46,4 @@ func (h *HealthChecker) AllowRoles(roles ...string) *HealthChecker {
 
 func (h *HealthChecker) HasRole(role string) bool {
 	return h.roles[role]
-}
-
-type HealthCheckWrapper interface {
-	RunNatsCheck() (*HealthStatus, error)
-	RunWebAppCheck() (*HealthStatus, error)
-	RunDBCheck() (*HealthStatus, error)
-	RunMinioCheck() (*HealthStatus, error)
-	RunRedisCheck() (*HealthStatus, error)
 }
