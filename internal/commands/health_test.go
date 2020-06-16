@@ -1,3 +1,5 @@
+// +build !integration
+
 package commands
 
 import (
@@ -6,8 +8,14 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestWebAppHealthCheck(t *testing.T) {
+func TestSastWebAppHealthCheck(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "single-node", "health-check")
+	err := executeTestCommand(cmd, "single-node", "health-check", "--role", "SAST_ALL_IN_ONE")
+	assert.NilError(t, err)
+}
+
+func TestScaHealthCheck(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "single-node", "health-check", "--role", "SCA_AGENT")
 	assert.NilError(t, err)
 }

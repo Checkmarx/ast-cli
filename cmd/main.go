@@ -47,9 +47,32 @@ func main() {
 	exitIfError(err)
 	sastrm := viper.GetString(sastRmPathKey)
 
-	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "/health-check")
+	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "#/projects")
 	exitIfError(err)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckPathKey, params.HealthcheckPathEnv, "api/healthcheck")
+	exitIfError(err)
+	healthcheck := viper.GetString(params.HealthcheckPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckDBPathKey, params.HealthcheckDBPathEnv, "database")
+	exitIfError(err)
+	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckMessageQueuePathKey,
+		params.HealthcheckMessageQueuePathEnv, "message-queue")
+	exitIfError(err)
+	healthcheckMessageQueuePath := viper.GetString(params.HealthcheckMessageQueuePathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckObjectStorePathKey,
+		params.HealthcheckObjectStorePathEnv, "object-store")
+	exitIfError(err)
+	healthcheckObjectStorePath := viper.GetString(params.HealthcheckObjectStorePathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckInMemoryDBPathKey,
+		params.HealthcheckInMemoryDBPathEnv, "in-memory-db")
+	exitIfError(err)
+	healthcheckInMemoryDBPath := viper.GetString(params.HealthcheckInMemoryDBPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
@@ -76,6 +99,11 @@ func main() {
 	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
 	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
 	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
+	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
+	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
+	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMessageQueuePath)
+	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckObjectStorePath)
+	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckInMemoryDBPath)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
@@ -83,7 +111,13 @@ func main() {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
-	healthCheckWrapper := wrappers.NewHTTPHealthCheckWrapper(webAppHlthChkURL)
+	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
+		webAppHlthChkURL,
+		healthcheckDBURL,
+		healthcheckNatsURL,
+		healthcheckMinioURL,
+		healthcheckRedisURL,
+	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(

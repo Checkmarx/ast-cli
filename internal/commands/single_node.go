@@ -74,6 +74,9 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaul
 	updateSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
 	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
+	healthSingleNodeCmd.PersistentFlags().String(astRoleFlag, commonParams.ScaAgent, astRoleFlagUsage)
+	_ = viper.BindPFlag(commonParams.AstRoleKey, healthSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
+
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
 		downSingleNodeCmd,
