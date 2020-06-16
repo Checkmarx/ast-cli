@@ -19,8 +19,8 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 	}
 }
 
-func runHealthCheck(c *wrappers.HealthChecker) {
-	status, err := c.Checker()
+func runHealthCheck(c *wrappers.HealthCheck) {
+	status, err := c.Handler()
 	if err != nil {
 		fmt.Printf("%v error %v\n", c.Name, err)
 	} else {
@@ -28,11 +28,11 @@ func runHealthCheck(c *wrappers.HealthChecker) {
 	}
 }
 
-func runChecksConcurrently(checks []*wrappers.HealthChecker) {
+func runChecksConcurrently(checks []*wrappers.HealthCheck) {
 	var wg sync.WaitGroup
 	for _, healthChecker := range checks {
 		wg.Add(1) //nolint:mnd
-		go func(c *wrappers.HealthChecker) {
+		go func(c *wrappers.HealthCheck) {
 			defer wg.Done()
 			runHealthCheck(c)
 		}(healthChecker)
@@ -41,18 +41,15 @@ func runChecksConcurrently(checks []*wrappers.HealthChecker) {
 	wg.Wait()
 }
 
-func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthChecker) {
+func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
 	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
 	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
-	healthChecks := []*wrappers.HealthChecker{
-		(&wrappers.HealthChecker{Name: "DB", Checker: h.RunDBCheck}).AllowRoles(sastRoles[:]...),
-		(&wrappers.HealthChecker{Name: "Web App", Checker: h.RunWebAppCheck}).AllowRoles(sastRoles[:]...),
-		// TODO replace Redis with TBD
-		(&wrappers.HealthChecker{Name: "Redis", Checker: h.RunRedisCheck}).AllowRoles(sastRoles[:]...),
-		// TODO replace MinIO with Object Store
-		(&wrappers.HealthChecker{Name: "Minio", Checker: h.RunMinioCheck}).AllowRoles(sastAndScaRoles...),
-		// TODO replace Nats with Message Queue
-		(&wrappers.HealthChecker{Name: "Nats", Checker: h.RunNatsCheck}).AllowRoles(sastAndScaRoles...),
+	healthChecks := []*wrappers.HealthCheck{
+		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
 	}
 
 	for _, hc := range healthChecks {
