@@ -37,7 +37,7 @@ func TestRunSingleNodeUpCommandWithFile(t *testing.T) {
 func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationDir), "./non_existing_folder",
+		toFlag(installationDirFlag), "./non_existing_folder",
 		toFlag(configFileFlag), "./config_test.yml")
 	assert.Assert(t, err != nil)
 }
@@ -45,7 +45,7 @@ func TestRunSingleNodeUpCommandWithFileNoFolder(t *testing.T) {
 func TestRunSingleNodeDownCommandWithFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "down",
-		toFlag(astInstallationDir), "./non_existing_folder",
+		toFlag(installationDirFlag), "./non_existing_folder",
 		toFlag(configFileFlag), "./config_test.yml")
 	assert.Assert(t, err != nil)
 }
@@ -53,36 +53,44 @@ func TestRunSingleNodeDownCommandWithFileNoFolder(t *testing.T) {
 func TestRunSingleNodeUpCommandWithNoFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationDir), "./non_existing_folder")
+		toFlag(installationDirFlag), "./non_existing_folder")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunSingleNodeUpCommandWithDefaultConfiguration(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationDir), "./")
+		toFlag(installationDirFlag), "./")
 	assert.NilError(t, err)
 }
 
 func TestRunSingleNodeUpCommandWithFileWithFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "up",
-		toFlag(astInstallationDir), "./")
+		toFlag(installationDirFlag), "./")
 	assert.NilError(t, err)
 }
 
 func TestRunSingleNodeUpdateCommandWithNoFileNoFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "update",
-		toFlag(astInstallationDir), "./non_existing_folder")
+		toFlag(installationDirFlag), "./non_existing_folder")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunSingleNodeUpdateCommandWithFileWithFolder(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "single-node", "update",
-		toFlag(astInstallationDir), "./")
+		toFlag(updateDirFlag), "./")
 	assert.NilError(t, err)
+}
+
+func TestRunSingleNodeUpdateCommandWithFileWithFolderWithOldFlag(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "single-node", "update",
+		toFlag(installationDirFlag), "./")
+	assert.Assert(t, err != nil)
+	assert.Assert(t, err.Error() == "unknown flag: --installation-dir")
 }
 
 func TestRunSingleNodeDownCommandWithFileNotFound(t *testing.T) {
