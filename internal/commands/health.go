@@ -31,7 +31,7 @@ func runHealthCheck(c *wrappers.HealthCheck) {
 func runChecksConcurrently(checks []*wrappers.HealthCheck) {
 	var wg sync.WaitGroup
 	for _, healthChecker := range checks {
-		wg.Add(1) //nolint:mnd
+		wg.Add(1) //nolint:gomnd
 		go func(c *wrappers.HealthCheck) {
 			defer wg.Done()
 			runHealthCheck(c)
