@@ -137,6 +137,9 @@ const (
 	testrotationCount      = "TEST_Count"
 	testinstallationFolder = "AST_TEST_INSTALLATION_FOLDER"
 	testrole               = "AST_TEST_ROLE"
+	testelasticHost        = "ELASTIC_HOST_TEST"
+	testelasticPort        = "ELASTIC_PORT_TEST"
+	testelasticIndex       = "ELASTIC_INDEX_TEST"
 	expected               = "AST_INSTALLATION_PATH=%s," +
 		"AST_ROLE=%s," +
 		"DATABASE_HOST=%s," +
@@ -152,7 +155,10 @@ const (
 		"LOG_ROTATION_COUNT=%s," +
 		"LOG_ROTATION_MAX_SIZE_MB=%s," +
 		"LOG_FORMAT=%s," +
-		"EXTERNAL_HOSTNAME=%s\n"
+		"EXTERNAL_HOSTNAME=%s," +
+		"ELASTIC_HOST=%s," +
+		"ELASTIC_PORT=%s," +
+		"ELASTIC_INDEX=%s\n"
 )
 
 func TestRunBashCommand(t *testing.T) {
@@ -181,6 +187,11 @@ func TestRunBashCommand(t *testing.T) {
 			Rotation: config.LogRotation{
 				MaxSizeMB: testrotationMaxSizeMB,
 				Count:     testrotationCount,
+			},
+			Elastic: config.Elastic{
+				Host:  testelasticHost,
+				Port:  testelasticPort,
+				Index: testelasticIndex,
 			},
 		},
 	}
@@ -213,7 +224,10 @@ func TestRunBashCommand(t *testing.T) {
 		testrotationCount,
 		testrotationMaxSizeMB,
 		testformat,
-		testexternalHost)
+		testexternalHost,
+		testelasticHost,
+		testelasticPort,
+		testelasticIndex)
 	fmt.Println()
 	fmt.Println("EXPECTED from UP script:")
 	fmt.Println(expected)
@@ -236,7 +250,7 @@ func TestRunBashCommand(t *testing.T) {
 }
 
 func TestRunBashCommandDefaultRole(t *testing.T) {
-	fmt.Println("**************************Testing running bash command*************")
+	fmt.Println("**************************Testing running bash command default role*************")
 
 	testConfig := config.SingleNodeConfiguration{
 		Database: config.Database{
@@ -261,6 +275,11 @@ func TestRunBashCommandDefaultRole(t *testing.T) {
 			Rotation: config.LogRotation{
 				MaxSizeMB: testrotationMaxSizeMB,
 				Count:     testrotationCount,
+			},
+			Elastic: config.Elastic{
+				Host:  testelasticHost,
+				Port:  testelasticPort,
+				Index: testelasticIndex,
 			},
 		},
 	}
@@ -292,7 +311,10 @@ func TestRunBashCommandDefaultRole(t *testing.T) {
 		testrotationCount,
 		testrotationMaxSizeMB,
 		testformat,
-		testexternalHost)
+		testexternalHost,
+		testelasticHost,
+		testelasticPort,
+		testelasticIndex)
 	fmt.Println()
 	fmt.Println("EXPECTED from UP script:")
 	fmt.Println(expected)

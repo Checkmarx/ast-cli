@@ -8,6 +8,10 @@ log:
     # Once maxSizeMB is reached, the file will be automatically moved to another directory and renamed
     maxSizeMB:
     count:
+  elastic:
+    host:
+    port:
+    index:
 # The following section enables the use of an existing database (PostgreSQL).
 # If left empty, a default database will be started
 database:
