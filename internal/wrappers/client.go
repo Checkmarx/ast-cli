@@ -45,16 +45,20 @@ func getClient() *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-func SendHTTPRequest(method, url string, body io.Reader) (*http.Response, error) {
+func SendHTTPRequest(method, url string, body io.Reader, auth bool) (*http.Response, error) {
 	client := getClient()
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
-	req, err = enrichWithCredentials(req)
-	if err != nil {
-		return nil, err
+
+	if auth {
+		req, err = enrichWithCredentials(req)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
