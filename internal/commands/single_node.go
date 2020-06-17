@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	configFileFlag     = "config"
-	astInstallationDir = "installation-dir"
-	astRoleFlag        = "role"
+	configFileFlag      = "config"
+	installationDirFlag = "installation-dir"
+	updateDirFlag       = "update-dir"
+	roleFlag            = "role"
 )
 
 var (
@@ -59,23 +60,24 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaul
 
 	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper)
 
+	defaultDir := "./"
 	installationConfigFileUsage := "Configuration file path (optional)"
-	installationFolderUsage := "Installation folder path"
-	installationFolderDefault := "./"
+	installationDirUsage := "Installation dir path"
+	updateDirUsage := "Update dir path. The dir where the updated artifacts reside"
 
 	upSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
-	upSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
-	upSingleNodeCmd.PersistentFlags().String(astRoleFlag, "", astRoleFlagUsage)
+	upSingleNodeCmd.PersistentFlags().String(installationDirFlag, defaultDir, installationDirUsage)
+	upSingleNodeCmd.PersistentFlags().String(roleFlag, "", astRoleFlagUsage)
 	// Binding the AST_ROLE env var to the --role flag
-	_ = viper.BindPFlag(commonParams.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
+	_ = viper.BindPFlag(commonParams.AstRoleKey, upSingleNodeCmd.PersistentFlags().Lookup(roleFlag))
 
-	downSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
+	downSingleNodeCmd.PersistentFlags().String(installationDirFlag, defaultDir, installationDirUsage)
 
-	updateSingleNodeCmd.PersistentFlags().String(astInstallationDir, installationFolderDefault, installationFolderUsage)
+	updateSingleNodeCmd.PersistentFlags().String(updateDirFlag, defaultDir, updateDirUsage)
 	updateSingleNodeCmd.PersistentFlags().String(configFileFlag, "", installationConfigFileUsage)
 
-	healthSingleNodeCmd.PersistentFlags().String(astRoleFlag, commonParams.ScaAgent, astRoleFlagUsage)
-	_ = viper.BindPFlag(commonParams.AstRoleKey, healthSingleNodeCmd.PersistentFlags().Lookup(astRoleFlag))
+	healthSingleNodeCmd.PersistentFlags().String(roleFlag, commonParams.ScaAgent, astRoleFlagUsage)
+	_ = viper.BindPFlag(commonParams.AstRoleKey, healthSingleNodeCmd.PersistentFlags().Lookup(roleFlag))
 
 	singleNodeCmd.AddCommand(
 		upSingleNodeCmd,
@@ -87,15 +89,20 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaul
 
 func runUpSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to start...")
-		err := runUpScript(cmd, defaultConfigFileLocation)
-		if err != nil {
-			msg := "Failed to start"
-			return errors.Wrapf(err, msg)
-		}
-		writeToStandardOutput("System is up!")
-		return nil
+		installationDir, _ := cmd.Flags().GetString(installationDirFlag)
+		return runUp(cmd, defaultConfigFileLocation, installationDir)
 	}
+}
+
+func runUp(cmd *cobra.Command, defaultConfigFileLocation, scriptsRootFolder string) error {
+	writeToStandardOutput("Trying to start...")
+	err := runUpScript(cmd, defaultConfigFileLocation, scriptsRootFolder)
+	if err != nil {
+		msg := "Failed to start"
+		return errors.Wrapf(err, msg)
+	}
+	writeToStandardOutput("System is up!")
+	return nil
 }
 
 func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
@@ -118,7 +125,8 @@ func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobr
 		if err != nil {
 			return err
 		}
-		err = runUpSingleNodeCommand(defaultConfigFileLocation)(cmd, args)
+		updateDir, _ := cmd.Flags().GetString(updateDirFlag)
+		err = runUp(cmd, defaultConfigFileLocation, updateDir)
 		if err != nil {
 			return err
 		}
@@ -127,11 +135,11 @@ func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobr
 	}
 }
 
-func runUpScript(cmd *cobra.Command, defaultConfigFileLocation string) error {
+func runUpScript(cmd *cobra.Command, defaultConfigFileLocation, scriptsRootFolder string) error {
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	role := viper.GetString(commonParams.AstRoleKey)
 
-	err := runWithConfig(cmd, upScriptPath, role, defaultConfigFileLocation)
+	err := runWithConfig(cmd, upScriptPath, role, defaultConfigFileLocation, scriptsRootFolder)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run up script")
 	}
@@ -142,7 +150,7 @@ func runDownScript(cmd *cobra.Command) error {
 	var err error
 	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
-	installationDir, _ := cmd.Flags().GetString(astInstallationDir)
+	installationDir, _ := cmd.Flags().GetString(installationDirFlag)
 	envs := []string{
 		envKeyAndValue(astInstallationPathEnv, installationDir),
 	}
@@ -154,7 +162,7 @@ func runDownScript(cmd *cobra.Command) error {
 	return nil
 }
 
-func runWithConfig(cmd *cobra.Command, scriptPath, role, defaultConfigFileLocation string) error {
+func runWithConfig(cmd *cobra.Command, scriptPath, role, defaultConfigFileLocation, scriptsRootFolder string) error {
 	var err error
 	configuration := &config.SingleNodeConfiguration{}
 
@@ -181,8 +189,7 @@ func runWithConfig(cmd *cobra.Command, scriptPath, role, defaultConfigFileLocati
 		}
 	}
 
-	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
-	envVars := createEnvVarsForCommand(configuration, installationFolder, role)
+	envVars := createEnvVarsForCommand(configuration, scriptsRootFolder, role)
 
 	_, _, err = runBashCommand(scriptPath, envVars)
 	return err
@@ -209,8 +216,8 @@ func writeToStandardOutput(msg string) {
 }
 
 func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
-	installationFolder, _ := cmd.Flags().GetString(astInstallationDir)
-	return path.Join(installationFolder, filePath)
+	installationDir, _ := cmd.Flags().GetString(installationDirFlag)
+	return path.Join(installationDir, filePath)
 }
 
 func getScriptPathRelativeToInstallation(scriptFile string, cmd *cobra.Command) string {
