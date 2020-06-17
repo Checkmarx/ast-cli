@@ -3,9 +3,11 @@ package commands
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
@@ -33,6 +35,7 @@ var (
 			commonParams.SastALlInOne,
 			commonParams.SastManager,
 			commonParams.SastEngine}, ","))
+	singleNodeLogger *log.Logger = log.New(deploymentLogWriter{}, "", 0)
 )
 
 func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, defaultConfigFileLocation string) *cobra.Command {
@@ -211,10 +214,6 @@ func tryLoadConfiguration(configFile string) (*config.SingleNodeConfiguration, e
 	return &configuration, nil
 }
 
-func writeToStandardOutput(msg string) {
-	fmt.Fprintln(os.Stdout, msg)
-}
-
 func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
 	installationDir, _ := cmd.Flags().GetString(installationDirFlag)
 	return path.Join(installationDir, filePath)
@@ -223,4 +222,15 @@ func getPathRelativeToInstallation(filePath string, cmd *cobra.Command) string {
 func getScriptPathRelativeToInstallation(scriptFile string, cmd *cobra.Command) string {
 	scriptsDir := ".scripts"
 	return getPathRelativeToInstallation(path.Join(scriptsDir, scriptFile), cmd)
+}
+
+type deploymentLogWriter struct {
+}
+
+func (writer deploymentLogWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().Format(time.RFC3339) + " " + string(bytes))
+}
+
+func writeToStandardOutput(msg string) {
+	singleNodeLogger.Println(msg)
 }
