@@ -21,4 +21,5 @@ var (
 	HealthcheckMessageQueuePathKey = strings.ToLower(HealthcheckMessageQueuePathEnv)
 	HealthcheckObjectStorePathKey  = strings.ToLower(HealthcheckObjectStorePathEnv)
 	HealthcheckInMemoryDBPathKey   = strings.ToLower(HealthcheckInMemoryDBPathEnv)
+	HealthcheckLoggingPathKey      = strings.ToLower(HealthcheckDBPathEnv)
 )

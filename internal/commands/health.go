@@ -50,6 +50,7 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Logging", h.RunLoggingCheck, sastAndScaRoles),
 	}
 
 	for _, hc := range healthChecks {
