@@ -32,7 +32,7 @@ func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 
 func runHealthCheckRequest(url string,
 	parser func(body io.ReadCloser) (*HealthStatus, error)) (*HealthStatus, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, url, nil)
+	resp, err := SendHTTPRequest(http.MethodGet, url, nil, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Http request %v failed", url)
 	}

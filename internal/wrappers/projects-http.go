@@ -28,7 +28,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, p.url, bytes.NewBuffer(jsonBytes))
+	resp, err := SendHTTPRequest(http.MethodPost, p.url, bytes.NewBuffer(jsonBytes), true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +70,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/"+projectID, nil)
+	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/"+projectID, nil, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +78,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 }
 
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodDelete, p.url+"/"+projectID, nil)
+	resp, err := SendHTTPRequest(http.MethodDelete, p.url+"/"+projectID, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/tags", nil)
+	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/tags", nil, true)
 	if err != nil {
 		return nil, nil, err
 	}
