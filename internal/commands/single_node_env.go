@@ -30,6 +30,9 @@ const (
 	logFormat            = "LOG_FORMAT"
 	logRotationMaxSizeMB = "LOG_ROTATION_MAX_SIZE_MB"
 	logRotationCount     = "LOG_ROTATION_COUNT"
+	logElasticHost       = "ELASTIC_HOST"
+	logElasticPort       = "ELASTIC_PORT"
+	logElasticIndex      = "ELASTIC_INDEX"
 )
 
 func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astInstallationPath, astRole string) []string {
@@ -53,6 +56,9 @@ func createEnvVarsForCommand(configuration *config.SingleNodeConfiguration, astI
 		envKeyAndValue(logLocation, configuration.Log.Location),
 		envKeyAndValue(logRotationCount, configuration.Log.Rotation.Count),
 		envKeyAndValue(logRotationMaxSizeMB, configuration.Log.Rotation.MaxSizeMB),
+		envKeyAndValue(logElasticHost, configuration.Log.Elastic.Host),
+		envKeyAndValue(logElasticPort, configuration.Log.Elastic.Port),
+		envKeyAndValue(logElasticIndex, configuration.Log.Elastic.Index),
 	}
 }
 

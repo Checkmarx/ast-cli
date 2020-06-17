@@ -23,6 +23,13 @@ type Log struct {
 	Location string      `yaml:"location"`
 	Format   string      `yaml:"format"`
 	Rotation LogRotation `yaml:"rotation"`
+	Elastic  Elastic     `yaml:"elastic"`
+}
+
+type Elastic struct {
+	Host  string `yaml:"host"`
+	Port  string `yaml:"port"`
+	Index string `yaml:"index"`
 }
 
 type LogRotation struct {
