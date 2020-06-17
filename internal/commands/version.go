@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	astVersion = "v1.0.0"
+	version = "v1.0.0_RC1"
 )
 
 func NewVersionCommand() *cobra.Command {
@@ -15,7 +15,7 @@ func NewVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Prints the version number",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(astVersion)
+			fmt.Println(version)
 		},
 	}
 }
