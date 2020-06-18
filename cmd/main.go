@@ -18,7 +18,7 @@ const (
 )
 
 func main() {
-	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
+	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://127.0.0.1:80")
 	exitIfError(err)
 	ast := viper.GetString(params.AstURIKey)
 
