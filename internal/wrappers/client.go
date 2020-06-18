@@ -42,7 +42,7 @@ func getClient() *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 	}
-	return &http.Client{Transport: tr}
+	return &http.Client{Transport: tr, Timeout: 5 * time.Second}
 }
 
 func SendHTTPRequest(method, url string, body io.Reader, auth bool) (*http.Response, error) {
