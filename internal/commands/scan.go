@@ -68,13 +68,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <scan id>",
 		Short: "Show information about a scan",
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
 
 	deleteScanCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <scan id>",
 		Short: "Stops a scan from running",
 		RunE:  runDeleteScanCommand(scansWrapper),
 	}

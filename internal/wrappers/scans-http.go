@@ -83,7 +83,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	return handleScanResponseWithNoBody(resp, err, http.StatusOK)
+	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
