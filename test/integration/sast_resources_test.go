@@ -5,10 +5,12 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	"github.com/spf13/viper"
 	"io/ioutil"
 	"testing"
-
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	"time"
 
 	"gotest.tools/assert/cmp"
 
@@ -28,23 +30,24 @@ type scans struct {
 
 func TestSastResourceE2E(t *testing.T) {
 	e := Engines(t)
-	assert.Assert(t, cmp.Equal(e.Waiting, 1))
+	assert.Assert(t, cmp.Equal(e.Waiting, 3))
 	assert.Assert(t, cmp.Equal(e.Running, 0))
 	s := Scans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
 	assert.Assert(t, cmp.Equal(s.Running, 0))
 
-	scanID := createScanSourcesFile(t)
-	waitTimeSec := 10
-	scanCompletedCh := make(chan bool, 1)
-	pollScanUntilStatus(t, scanID, scanCompletedCh, scansRESTApi.ScanPending, waitTimeSec, 5)
-	assert.Assert(t, <-scanCompletedCh, "Scan should be queued")
+	scanID, projectID := createScanSourcesFile(t)
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
 
-	pollScanUntilStatus(t, scanID, scanCompletedCh, scansRESTApi.ScanRunning, waitTimeSec, 5)
-	assert.Assert(t, <-scanCompletedCh, "Scan should be running")
+	waitTimeSec := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
+	scanStatusAsWanted := pollScanUntilStatus(t, scanID, scansRESTApi.ScanRunning, waitTimeSec, 5)
+	assert.Assert(t, scanStatusAsWanted, "Scan should be running")
 
+	// Let the sr to update
+	time.Sleep(5 * time.Second)
 	e = Engines(t)
-	assert.Assert(t, cmp.Equal(e.Waiting, 0))
+	assert.Assert(t, cmp.Equal(e.Waiting, 2))
 	assert.Assert(t, cmp.Equal(e.Running, 1))
 	s = Scans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
@@ -52,10 +55,10 @@ func TestSastResourceE2E(t *testing.T) {
 }
 
 func Scans(t *testing.T) scans {
-	scanCollection := rm.ScansCollection{}
-	invokeCommand(t, &scanCollection, "sr", "scans")
+	var scanCollection []rm.Scan
+	invokeCommand(t, &scanCollection, "--format", "json", "sr", "scans")
 	result := scans{}
-	for _, s := range scanCollection.Scans {
+	for _, s := range scanCollection {
 		if s.State == rm.AllocatedScanState || s.State == rm.RunningScanState {
 			result.Running++
 		} else if s.State == rm.QueuedScanState {
@@ -66,10 +69,10 @@ func Scans(t *testing.T) scans {
 }
 
 func Engines(t *testing.T) engines {
-	enginesCollection := rm.EnginesCollection{}
+	var enginesCollection []rm.Engine
 	invokeCommand(t, &enginesCollection, "--format", "json", "sr", "engines")
 	result := engines{}
-	for _, engine := range enginesCollection.Engines {
+	for _, engine := range enginesCollection {
 		if engine.Status == rm.AllocatedEngineStatus || engine.Status == rm.BusyEngineStatus {
 			result.Running++
 		} else if engine.Status == rm.ReadyEngineStatus {
@@ -88,6 +91,7 @@ func invokeCommand(t *testing.T, result interface{}, params ...string) {
 	// Read response from buffer
 	var getScanJSON []byte
 	getScanJSON, err = ioutil.ReadAll(getBuffer)
+	fmt.Println("JSON:", string(getScanJSON))
 	assert.NilError(t, err, "Reading scan response JSON should pass")
 	err = json.Unmarshal(getScanJSON, result)
 	assert.NilError(t, err, "Parsing scan response JSON should pass")
