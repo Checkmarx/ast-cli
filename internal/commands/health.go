@@ -33,17 +33,14 @@ func runHealthCheck(c *wrappers.HealthCheck) *healthView {
 
 func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 	var wg sync.WaitGroup
-	m := sync.Mutex{}
-	healthViews := make([]*healthView, 0, len(checks))
-	for _, healthChecker := range checks {
+	healthViews := make([]*healthView, len(checks))
+	for i, healthChecker := range checks {
 		wg.Add(1) //nolint:gomnd
-		go func(c *wrappers.HealthCheck) {
+		go func(idx int, c *wrappers.HealthCheck) {
 			defer wg.Done()
 			h := runHealthCheck(c)
-			m.Lock()
-			healthViews = append(healthViews, h)
-			m.Unlock()
-		}(healthChecker)
+			healthViews[idx] = h // To avoid race
+		}(i, healthChecker)
 	}
 
 	wg.Wait()
