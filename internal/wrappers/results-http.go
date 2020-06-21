@@ -12,17 +12,17 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	url string
+	path string
 }
 
-func NewHTTPResultsWrapper(url string) ResultsWrapper {
+func NewHTTPResultsWrapper(path string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		url: url,
+		path: path,
 	}
 }
 
 func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*ResultsResponseModel, *ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.url, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}

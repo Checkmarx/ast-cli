@@ -3,7 +3,7 @@ package params
 import "strings"
 
 var (
-	AstURIKey                      = strings.ToLower(AstURIEnv)
+	BaseURIKey                     = strings.ToLower(BaseURIEnv)
 	ScansPathKey                   = strings.ToLower(ScansPathEnv)
 	ProjectsPathKey                = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                 = strings.ToLower(ResultsPathEnv)
