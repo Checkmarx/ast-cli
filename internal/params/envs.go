@@ -1,7 +1,7 @@
 package params
 
 const (
-	AstURIEnv                      = "AST_URI"
+	BaseURIEnv                     = "BASE_URI"
 	ScansPathEnv                   = "SCANS_PATH"
 	ProjectsPathEnv                = "PROJECTS_PATH"
 	ResultsPathEnv                 = "RESULTS_PATH"

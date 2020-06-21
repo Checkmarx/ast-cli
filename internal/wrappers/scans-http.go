@@ -15,13 +15,13 @@ const (
 )
 
 type ScansHTTPWrapper struct {
-	url         string
+	path        string
 	contentType string
 }
 
-func NewHTTPScansWrapper(url string) ScansWrapper {
+func NewHTTPScansWrapper(path string) ScansWrapper {
 	return &ScansHTTPWrapper{
-		url:         url,
+		path:        path,
 		contentType: "application/json",
 	}
 }
@@ -31,7 +31,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	if err != nil {
 		return nil, nil, err
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, s.url, bytes.NewBuffer(jsonBytes), true)
+	resp, err := SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -42,7 +42,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 }
 
 func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollectionResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.url, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,7 +71,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollect
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/"+scanID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,7 +79,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodDelete, s.url+"/"+scanID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 }
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, s.url+"/tags", nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true)
 	if err != nil {
 		return nil, nil, err
 	}

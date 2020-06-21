@@ -51,9 +51,8 @@ func TestMain(m *testing.M) {
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
-	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
+	err := bindKeyToEnvAndDefault(params.BaseURIKey, params.BaseURIEnv, "http://localhost:80")
 	assert.NilError(t, err)
-	ast := viper.GetString(params.AstURIKey)
 
 	err = bindKeyToEnvAndDefault(params.ScansPathKey, params.ScansPathEnv, "api/scans")
 	assert.NilError(t, err)
@@ -131,33 +130,19 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", 400)
 	viper.SetDefault("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS", 60)
 
-	scansURL := fmt.Sprintf("%s/%s", ast, scans)
-	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
-	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
-	resultsURL := fmt.Sprintf("%s/%s", ast, results)
-	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
-	rmURL := fmt.Sprintf("%s/%s", ast, sastrm)
-	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
-	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
-	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
-	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMessageQueuePath)
-	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckObjectStorePath)
-	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckInMemoryDBPath)
-	healthcheckLoggingURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckLoggingPath)
-
-	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
-	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
-	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
-	rmWrapper := wrappers.NewSastRmHTTPWrapper(rmURL)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
-		webAppHlthChkURL,
-		healthcheckDBURL,
-		healthcheckNatsURL,
-		healthcheckMinioURL,
-		healthcheckRedisURL,
-		healthcheckLoggingURL,
+		webAppHlthChk,
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckMessageQueuePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckObjectStorePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
 	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 

@@ -19,7 +19,7 @@ const (
 )
 
 type UploadsHTTPWrapper struct {
-	url string
+	path string
 }
 
 func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
@@ -70,7 +70,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 }
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
-	resp, err := SendHTTPRequest(http.MethodPost, u.url, nil, true)
+	resp, err := SendHTTPRequest(http.MethodPost, u.path, nil, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
@@ -100,8 +100,8 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 	}
 }
 
-func NewUploadsHTTPWrapper(url string) UploadsWrapper {
+func NewUploadsHTTPWrapper(path string) UploadsWrapper {
 	return &UploadsHTTPWrapper{
-		url: url,
+		path: path,
 	}
 }
