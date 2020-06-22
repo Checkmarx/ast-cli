@@ -11,12 +11,12 @@ import (
 )
 
 type sastrmHTTPWrapper struct {
-	url         string
+	path        string
 	contentType string
 }
 
 func (s *sastrmHTTPWrapper) GetStats(r StatResolution) ([]*rm.Metric, error) {
-	data, err := readData(s.url+"/stats", map[string]string{
+	data, err := readData(s.path+"/stats", map[string]string{
 		"resolution": string(r),
 	})
 	if err != nil {
@@ -31,7 +31,7 @@ func (s *sastrmHTTPWrapper) GetStats(r StatResolution) ([]*rm.Metric, error) {
 }
 
 func (s *sastrmHTTPWrapper) GetScans() ([]*rm.Scan, error) {
-	data, err := readData(s.url+"/scans", nil)
+	data, err := readData(s.path+"/scans", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed get scans")
 	}
@@ -60,7 +60,7 @@ func readData(url string, params map[string]string) ([]byte, error) {
 }
 
 func (s *sastrmHTTPWrapper) GetEngines() ([]*rm.Engine, error) {
-	data, err := readData(s.url+"/engines", nil)
+	data, err := readData(s.path+"/engines", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed get engines")
 	}
@@ -72,9 +72,9 @@ func (s *sastrmHTTPWrapper) GetEngines() ([]*rm.Engine, error) {
 	return wp.Engines, err
 }
 
-func NewSastRmHTTPWrapper(url string) SastRmWrapper {
+func NewSastRmHTTPWrapper(path string) SastRmWrapper {
 	return &sastrmHTTPWrapper{
-		url:         url,
+		path:        path,
 		contentType: "application/json",
 	}
 }

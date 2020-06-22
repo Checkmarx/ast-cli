@@ -13,12 +13,12 @@ import (
 )
 
 type healthCheckHTTPWrapper struct {
-	WebAppHealthcheckURL       string
-	DBHealthcheckURL           string
-	MessageQueueHealthcheckURL string
-	ObjectStoreHealthcheckURL  string
-	InMemoryDBHealthcheckURL   string
-	LoggingHealthcheckURL      string
+	WebAppHealthcheckPath       string
+	DBHealthcheckPath           string
+	MessageQueueHealthcheckPath string
+	ObjectStoreHealthcheckPath  string
+	InMemoryDBHealthcheckPath   string
+	LoggingHealthcheckPath      string
 }
 
 func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
@@ -30,11 +30,11 @@ func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 	return status, nil
 }
 
-func runHealthCheckRequest(url string,
+func runHealthCheckRequest(path string,
 	parser func(body io.ReadCloser) (*HealthStatus, error)) (*HealthStatus, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, url, nil, false)
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, false)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Http request %v failed", url)
+		return nil, errors.Wrapf(err, "Http request %v failed", GetURL(path))
 	}
 
 	defer resp.Body.Close()
@@ -44,7 +44,7 @@ func runHealthCheckRequest(url string,
 			&healthcheckApi.HealthcheckModel{
 				Success: false,
 				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
-					url, resp.StatusCode, func() string {
+					resp.Request.URL, resp.StatusCode, func() string {
 						if body != nil {
 							return string(body)
 						}
@@ -58,20 +58,20 @@ func runHealthCheckRequest(url string,
 	return parser(resp.Body)
 }
 
-func NewHealthCheckHTTPWrapper(astWebAppURL, healthDBURL, healthcheckNatsURL,
-	healthcheckMinioURL, healthCheckRedisURL, healthcheckLoggingURL string) HealthCheckWrapper {
+func NewHealthCheckHTTPWrapper(astWebAppPath, healthDBPath, healthcheckNatsPath,
+	healthcheckMinioPath, healthCheckRedisPath, healthcheckLoggingPath string) HealthCheckWrapper {
 	return &healthCheckHTTPWrapper{
-		astWebAppURL,
-		healthDBURL,
-		healthcheckNatsURL,
-		healthcheckMinioURL,
-		healthCheckRedisURL,
-		healthcheckLoggingURL,
+		astWebAppPath,
+		healthDBPath,
+		healthcheckNatsPath,
+		healthcheckMinioPath,
+		healthCheckRedisPath,
+		healthcheckLoggingPath,
 	}
 }
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.WebAppHealthcheckURL, func(body io.ReadCloser) (*HealthStatus, error) {
+	return runHealthCheckRequest(h.WebAppHealthcheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
 		return &HealthStatus{
 			&healthcheckApi.HealthcheckModel{
 				Success: true,
@@ -82,21 +82,21 @@ func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 }
 
 func (h *healthCheckHTTPWrapper) RunDBCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.DBHealthcheckURL, parseHealthcheckResponse)
+	return runHealthCheckRequest(h.DBHealthcheckPath, parseHealthcheckResponse)
 }
 
 func (h *healthCheckHTTPWrapper) RunMessageQueueCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.MessageQueueHealthcheckURL, parseHealthcheckResponse)
+	return runHealthCheckRequest(h.MessageQueueHealthcheckPath, parseHealthcheckResponse)
 }
 
 func (h *healthCheckHTTPWrapper) RunObjectStoreCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.ObjectStoreHealthcheckURL, parseHealthcheckResponse)
+	return runHealthCheckRequest(h.ObjectStoreHealthcheckPath, parseHealthcheckResponse)
 }
 
 func (h *healthCheckHTTPWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.InMemoryDBHealthcheckURL, parseHealthcheckResponse)
+	return runHealthCheckRequest(h.InMemoryDBHealthcheckPath, parseHealthcheckResponse)
 }
 
 func (h *healthCheckHTTPWrapper) RunLoggingCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.LoggingHealthcheckURL, parseHealthcheckResponse)
+	return runHealthCheckRequest(h.LoggingHealthcheckPath, parseHealthcheckResponse)
 }

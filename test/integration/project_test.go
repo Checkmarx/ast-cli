@@ -17,20 +17,24 @@ import (
 
 func TestProjectsE2E(t *testing.T) {
 	projectFromFile := createProjectFromInputFile(t)
-	tags := map[string]string{}
-	projectID := createProjectFromInput(t, RandomizeString(5), tags)
-	deleteProject(t, projectID)
 	getAllProjects(t, projectFromFile)
 	getAllProjectsList(t, projectFromFile)
-	getProjectByID(t, projectFromFile)
-	getProjectByIDList(t, projectFromFile)
+	deleteProject(t, projectFromFile)
+
+	tags := map[string]string{}
+	projectID := createProjectFromInput(t, RandomizeString(5), tags)
+	getProjectByID(t, projectID)
+	getProjectByIDList(t, projectID)
 	tags = map[string]string{
 		"A_KEY": "A_VAL",
 		"B_KEY": "B_VAL",
 		"C_KEY": "C_VAL",
 	}
-	_ = createProjectFromInput(t, RandomizeString(5), tags)
+	deleteProject(t, projectID)
+
+	projectID = createProjectFromInput(t, RandomizeString(5), tags)
 	getProjectTags(t)
+	deleteProject(t, projectID)
 }
 
 func createProjectFromInputFile(t *testing.T) string {
@@ -115,8 +119,8 @@ func getAllProjects(t *testing.T, projectID string) {
 	allProjects := []projectsRESTApi.ProjectResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allProjects)
 	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Assert(t, len(allProjects) == 1, "Total should be 1")
-	assert.Assert(t, allProjects[0].ID == projectID)
+	assert.Equal(t, len(allProjects), 1, "Total projects should be 1")
+	assert.Equal(t, allProjects[0].ID, projectID)
 }
 
 func deleteProject(t *testing.T, projectID string) {

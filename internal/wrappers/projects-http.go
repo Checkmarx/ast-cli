@@ -11,12 +11,12 @@ import (
 )
 
 type ProjectsHTTPWrapper struct {
-	url string
+	path string
 }
 
-func NewHTTPProjectsWrapper(url string) ProjectsWrapper {
+func NewHTTPProjectsWrapper(path string) ProjectsWrapper {
 	return &ProjectsHTTPWrapper{
-		url: url,
+		path: path,
 	}
 }
 
@@ -28,7 +28,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, p.url, bytes.NewBuffer(jsonBytes), true)
+	resp, err := SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +38,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.url, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +70,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/"+projectID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, nil, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +78,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 }
 
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodDelete, p.url+"/"+projectID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.url+"/tags", nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", nil, true)
 	if err != nil {
 		return nil, nil, err
 	}

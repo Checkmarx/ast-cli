@@ -45,8 +45,9 @@ func getClient() *http.Client {
 	return &http.Client{Transport: tr, Timeout: 5 * time.Second}
 }
 
-func SendHTTPRequest(method, url string, body io.Reader, auth bool) (*http.Response, error) {
+func SendHTTPRequest(method, path string, body io.Reader, auth bool) (*http.Response, error) {
 	client := getClient()
+	url := GetURL(path)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -67,9 +68,14 @@ func SendHTTPRequest(method, url string, body io.Reader, auth bool) (*http.Respo
 	return resp, nil
 }
 
-func SendHTTPRequestWithQueryParams(method, url string, params map[string]string,
+func GetURL(path string) string {
+	return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseURIKey), path)
+}
+
+func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader) (*http.Response, error) {
 	client := getClient()
+	url := GetURL(path)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
