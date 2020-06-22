@@ -43,6 +43,8 @@ const (
 	formatList                    = "list"
 	formatTable                   = "table"
 	filterFlag                    = "filter"
+	baseURIFlag                   = "base-uri"
+	baseURIFlagUsage              = "The base system URI"
 )
 
 // Return an AST CLI root command to execute
@@ -67,6 +69,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	// Default value is table. Should we? or JSON?
 	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
+	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -74,6 +77,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(params.AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
+	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))

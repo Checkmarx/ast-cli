@@ -51,9 +51,8 @@ func TestMain(m *testing.M) {
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
-	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://localhost:80")
+	err := bindKeyToEnvAndDefault(params.BaseURIKey, params.BaseURIEnv, "http://localhost:80")
 	assert.NilError(t, err)
-	ast := viper.GetString(params.AstURIKey)
 
 	err = bindKeyToEnvAndDefault(params.ScansPathKey, params.ScansPathEnv, "api/scans")
 	assert.NilError(t, err)
@@ -80,6 +79,38 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	sastrm := viper.GetString(sastRmPathKey)
 
+	err = bindKeyToEnvAndDefault(params.AstWebAppHealthCheckPathKey, params.AstWebAppHealthCheckPathEnv, "#/projects")
+	assert.NilError(t, err)
+	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckPathKey, params.HealthcheckPathEnv, "api/healthcheck")
+	assert.NilError(t, err)
+	healthcheck := viper.GetString(params.HealthcheckPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckDBPathKey, params.HealthcheckDBPathEnv, "database")
+	assert.NilError(t, err)
+	healthcheckDBPath := viper.GetString(params.HealthcheckDBPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckMessageQueuePathKey,
+		params.HealthcheckMessageQueuePathEnv, "message-queue")
+	assert.NilError(t, err)
+	healthcheckMessageQueuePath := viper.GetString(params.HealthcheckMessageQueuePathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckObjectStorePathKey,
+		params.HealthcheckObjectStorePathEnv, "object-store")
+	assert.NilError(t, err)
+	healthcheckObjectStorePath := viper.GetString(params.HealthcheckObjectStorePathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckInMemoryDBPathKey,
+		params.HealthcheckInMemoryDBPathEnv, "in-memory-db")
+	assert.NilError(t, err)
+	healthcheckInMemoryDBPath := viper.GetString(params.HealthcheckInMemoryDBPathKey)
+
+	err = bindKeyToEnvAndDefault(params.HealthcheckLoggingPathKey,
+		params.HealthcheckLoggingPathEnv, "logging")
+	assert.NilError(t, err)
+	healthcheckLoggingPath := viper.GetString(params.HealthcheckLoggingPathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
@@ -95,21 +126,36 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	assert.NilError(t, err)
 
-	scansURL := fmt.Sprintf("%s/%s", ast, scans)
-	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
-	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
-	resultsURL := fmt.Sprintf("%s/%s", ast, results)
-	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
-	rmURL := fmt.Sprintf("%s/%s", ast, sastrm)
+	// Tests variables
+	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", 400)
+	viper.SetDefault("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS", 60)
 
-	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
-	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
-	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
-	rmWrapper := wrappers.NewSastRmHTTPWrapper(rmURL)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
+	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
+		webAppHlthChk,
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckMessageQueuePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckObjectStorePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
+	)
+	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
-	astCli := commands.NewAstCLI(scansWrapper, uploadsWrapper, projectsWrapper, resultsWrapper, bflWrapper, rmWrapper)
+	astCli := commands.NewAstCLI(
+		scansWrapper,
+		uploadsWrapper,
+		projectsWrapper,
+		resultsWrapper,
+		bflWrapper,
+		rmWrapper,
+		healthCheckWrapper,
+		defaultConfigFileLocation,
+	)
 	return astCli
 }
 

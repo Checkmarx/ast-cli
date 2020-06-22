@@ -18,9 +18,8 @@ const (
 )
 
 func main() {
-	err := bindKeyToEnvAndDefault(params.AstURIKey, params.AstURIEnv, "http://127.0.0.1:80")
+	err := bindKeyToEnvAndDefault(params.BaseURIKey, params.BaseURIEnv, "http://127.0.0.1:80")
 	exitIfError(err)
-	ast := viper.GetString(params.AstURIKey)
 
 	err = bindKeyToEnvAndDefault(params.ScansPathKey, params.ScansPathEnv, "api/scans")
 	exitIfError(err)
@@ -97,33 +96,19 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
-	scansURL := fmt.Sprintf("%s/%s", ast, scans)
-	uploadsURL := fmt.Sprintf("%s/%s", ast, uploads)
-	projectsURL := fmt.Sprintf("%s/%s", ast, projects)
-	resultsURL := fmt.Sprintf("%s/%s", ast, results)
-	sastrmURL := fmt.Sprintf("%s/%s", ast, sastrm)
-	bflURL := fmt.Sprintf("%s/%s", ast, bfl)
-	webAppHlthChkURL := fmt.Sprintf("%s/%s", ast, webAppHlthChk)
-	hlthChekURL := fmt.Sprintf("%s/%s", ast, healthcheck)
-	healthcheckDBURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckDBPath)
-	healthcheckNatsURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckMessageQueuePath)
-	healthcheckMinioURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckObjectStorePath)
-	healthcheckRedisURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckInMemoryDBPath)
-	healthcheckLoggingURL := fmt.Sprintf("%s/%s", hlthChekURL, healthcheckLoggingPath)
-
-	scansWrapper := wrappers.NewHTTPScansWrapper(scansURL)
-	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploadsURL)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projectsURL)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(resultsURL)
-	bflWrapper := wrappers.NewHTTPBFLWrapper(bflURL)
-	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrmURL)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
+	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
-		webAppHlthChkURL,
-		healthcheckDBURL,
-		healthcheckNatsURL,
-		healthcheckMinioURL,
-		healthcheckRedisURL,
-		healthcheckLoggingURL,
+		webAppHlthChk,
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckMessageQueuePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckObjectStorePath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
 	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 

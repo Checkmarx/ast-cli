@@ -15,30 +15,36 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 	return &cobra.Command{
 		Use:   "health-check",
 		Short: "Run AST health check",
-		Run:   runAllHealthChecks(healthCheckWrapper),
+		RunE:  runAllHealthChecks(healthCheckWrapper),
 	}
 }
 
-func runHealthCheck(c *wrappers.HealthCheck) {
+func runHealthCheck(c *wrappers.HealthCheck) *healthView {
 	status, err := c.Handler()
+	v := &healthView{Name: c.Name}
 	if err != nil {
-		fmt.Printf("%v error %v\n", c.Name, err)
+		v.Status = fmt.Sprintf("Error %s", err)
 	} else {
-		fmt.Printf("%v status: %v\n", c.Name, status)
+		v.Status = status.String()
 	}
+
+	return v
 }
 
-func runChecksConcurrently(checks []*wrappers.HealthCheck) {
+func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 	var wg sync.WaitGroup
-	for _, healthChecker := range checks {
+	healthViews := make([]*healthView, len(checks))
+	for i, healthChecker := range checks {
 		wg.Add(1) //nolint:gomnd
-		go func(c *wrappers.HealthCheck) {
+		go func(idx int, c *wrappers.HealthCheck) {
 			defer wg.Done()
-			runHealthCheck(c)
-		}(healthChecker)
+			h := runHealthCheck(c)
+			healthViews[idx] = h // To avoid race
+		}(i, healthChecker)
 	}
 
 	wg.Wait()
+	return healthViews
 }
 
 func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
@@ -62,9 +68,16 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 	return checksByRole
 }
 
-func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
+func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
 		hlthChks := newHealthChecksByRole(healthCheckWrapper, viper.GetString(commonParams.AstRoleKey))
-		runChecksConcurrently(hlthChks)
+		views := runChecksConcurrently(hlthChks)
+		err := Print(cmd.OutOrStdout(), views)
+		return err
 	}
+}
+
+type healthView struct {
+	Name   string
+	Status string
 }

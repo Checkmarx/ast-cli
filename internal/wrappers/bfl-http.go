@@ -12,17 +12,17 @@ const (
 )
 
 type BFLHTTPWrapper struct {
-	url string
+	path string
 }
 
-func NewHTTPBFLWrapper(url string) BFLWrapper {
+func NewHTTPBFLWrapper(path string) BFLWrapper {
 	return &BFLHTTPWrapper{
-		url: url,
+		path: path,
 	}
 }
 
 func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.url, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
