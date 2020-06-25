@@ -13,12 +13,14 @@ import (
 )
 
 type healthCheckHTTPWrapper struct {
-	WebAppHealthcheckPath       string
+	WebAppHealthCheckPath       string
+	KeycloakHealthCheckPath     string
 	DBHealthcheckPath           string
 	MessageQueueHealthcheckPath string
 	ObjectStoreHealthcheckPath  string
 	InMemoryDBHealthcheckPath   string
 	LoggingHealthcheckPath      string
+	GetAstRolePath              string
 }
 
 func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
@@ -45,11 +47,11 @@ func runHealthCheckRequest(path string,
 				Success: false,
 				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
 					resp.Request.URL, resp.StatusCode, func() string {
-						if body != nil {
-							return string(body)
+						if err != nil {
+							return ""
 						}
 
-						return ""
+						return string(body)
 					}()),
 			},
 		}, nil
@@ -58,20 +60,33 @@ func runHealthCheckRequest(path string,
 	return parser(resp.Body)
 }
 
-func NewHealthCheckHTTPWrapper(astWebAppPath, healthDBPath, healthcheckNatsPath,
-	healthcheckMinioPath, healthCheckRedisPath, healthcheckLoggingPath string) HealthCheckWrapper {
+func NewHealthCheckHTTPWrapper(astWebAppPath, astKeycloakWebAppPath, healthDBPath, healthcheckNatsPath,
+	healthcheckMinioPath, healthCheckRedisPath, healthcheckLoggingPath, getAstRolePath string) HealthCheckWrapper {
 	return &healthCheckHTTPWrapper{
 		astWebAppPath,
+		astKeycloakWebAppPath,
 		healthDBPath,
 		healthcheckNatsPath,
 		healthcheckMinioPath,
 		healthCheckRedisPath,
 		healthcheckLoggingPath,
+		getAstRolePath,
 	}
 }
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
-	return runHealthCheckRequest(h.WebAppHealthcheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
+	return runHealthCheckRequest(h.WebAppHealthCheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
+		return &HealthStatus{
+			&healthcheckApi.HealthcheckModel{
+				Success: true,
+				Message: "",
+			},
+		}, nil
+	})
+}
+
+func (h *healthCheckHTTPWrapper) RunKeycloakWebAppCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.KeycloakHealthCheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
 		return &HealthStatus{
 			&healthcheckApi.HealthcheckModel{
 				Success: true,
@@ -99,4 +114,30 @@ func (h *healthCheckHTTPWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
 
 func (h *healthCheckHTTPWrapper) RunLoggingCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.LoggingHealthcheckPath, parseHealthcheckResponse)
+}
+
+func (h *healthCheckHTTPWrapper) GetAstRole() (string, error) {
+	resp, err := SendHTTPRequest(http.MethodGet, h.GetAstRolePath, nil, false)
+	if err != nil {
+		return "", errors.Wrapf(err, "Http request %v failed", GetURL(h.GetAstRolePath))
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("Http request %v responded with status code %v and body %v",
+			resp.Request.URL, resp.StatusCode, func() string {
+				if err != nil {
+					return ""
+				}
+
+				return string(body)
+			}())
+	}
+
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot read response body")
+	}
+
+	return string(body), nil
 }
