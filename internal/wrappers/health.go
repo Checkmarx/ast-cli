@@ -9,10 +9,12 @@ import (
 type HealthCheckWrapper interface {
 	RunMessageQueueCheck() (*HealthStatus, error)
 	RunWebAppCheck() (*HealthStatus, error)
+	RunKeycloakWebAppCheck() (*HealthStatus, error)
 	RunDBCheck() (*HealthStatus, error)
 	RunObjectStoreCheck() (*HealthStatus, error)
 	RunInMemoryDBCheck() (*HealthStatus, error)
 	RunLoggingCheck() (*HealthStatus, error)
+	GetAstRole() (string, error)
 }
 
 type HealthStatus struct {

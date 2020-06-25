@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
@@ -53,6 +55,7 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Keycloak Web App", h.RunKeycloakWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
@@ -70,7 +73,17 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		hlthChks := newHealthChecksByRole(healthCheckWrapper, viper.GetString(commonParams.AstRoleKey))
+		role := viper.GetString(commonParams.AstRoleKey)
+		if role == "" {
+			var err error
+			role, err = healthCheckWrapper.GetAstRole()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to get ast role from the ast environment. "+
+					"you can set it manually with either the command flags or the cli environment variables")
+			}
+		}
+
+		hlthChks := newHealthChecksByRole(healthCheckWrapper, role)
 		views := runChecksConcurrently(hlthChks)
 		err := Print(cmd.OutOrStdout(), views)
 		return err
