@@ -108,36 +108,6 @@ func runUp(cmd *cobra.Command, defaultConfigFileLocation, scriptsRootFolder stri
 	return nil
 }
 
-func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		writeToStandardOutput("Trying to stop...")
-		err := runDownScript(cmd)
-
-		if err != nil {
-			msg := "Failed to stop"
-			return errors.Wrapf(err, msg)
-		}
-		writeToStandardOutput("System is down!")
-		return nil
-	}
-}
-
-func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		err := runDownSingleNodeCommand()(cmd, args)
-		if err != nil {
-			return err
-		}
-		updateDir, _ := cmd.Flags().GetString(updateDirFlag)
-		err = runUp(cmd, defaultConfigFileLocation, updateDir)
-		if err != nil {
-			return err
-		}
-		writeToStandardOutput("System updated successfully!")
-		return nil
-	}
-}
-
 func runUpScript(cmd *cobra.Command, defaultConfigFileLocation, scriptsRootFolder string) error {
 	upScriptPath := getScriptPathRelativeToInstallation("up.sh", cmd)
 	role := viper.GetString(commonParams.AstRoleKey)
@@ -149,20 +119,53 @@ func runUpScript(cmd *cobra.Command, defaultConfigFileLocation, scriptsRootFolde
 	return nil
 }
 
-func runDownScript(cmd *cobra.Command) error {
-	var err error
+func runDownSingleNodeCommand() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		installationDir, _ := cmd.Flags().GetString(installationDirFlag)
+		return runDown(cmd, installationDir)
+	}
+}
+
+func runDown(cmd *cobra.Command, scriptsRootFolder string) error {
+	writeToStandardOutput("Trying to stop...")
+	err := runDownScript(cmd, scriptsRootFolder)
+
+	if err != nil {
+		msg := "Failed to stop"
+		return errors.Wrapf(err, msg)
+	}
+	writeToStandardOutput("System is down!")
+	return nil
+}
+
+func runDownScript(cmd *cobra.Command, scriptsRootFolder string) error {
 	downScriptPath := getScriptPathRelativeToInstallation("down.sh", cmd)
 
-	installationDir, _ := cmd.Flags().GetString(installationDirFlag)
 	envs := []string{
-		envKeyAndValue(astInstallationPathEnv, installationDir),
+		envKeyAndValue(astInstallationPathEnv, scriptsRootFolder),
 	}
 
-	_, _, err = runBashCommand(downScriptPath, envs)
+	_, _, err := runBashCommand(downScriptPath, envs)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to run down script")
 	}
 	return nil
+}
+
+func runUpdateSingleNodeCommand(defaultConfigFileLocation string) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		updateDir, _ := cmd.Flags().GetString(updateDirFlag)
+		err := runDown(cmd, updateDir)
+		if err != nil {
+			return err
+		}
+		err = runUp(cmd, defaultConfigFileLocation, updateDir)
+		if err != nil {
+			return err
+		}
+		writeToStandardOutput("System updated successfully!")
+		return nil
+	}
 }
 
 func runWithConfig(cmd *cobra.Command, scriptPath, role, defaultConfigFileLocation, scriptsRootFolder string) error {
