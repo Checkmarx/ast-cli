@@ -83,6 +83,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
 
+	err = bindKeyToEnvAndDefault(params.AstKeycloakWebAppHealthCheckPathKey, params.AstKeycloakWebAppHealthCheckPathEnv,
+		"auth/admin/organization/console/#/realms/organization/users")
+	assert.NilError(t, err)
+	keyCloakWebAppHlthChk := viper.GetString(params.AstKeycloakWebAppHealthCheckPathKey)
+
 	err = bindKeyToEnvAndDefault(params.HealthcheckPathKey, params.HealthcheckPathEnv, "api/healthcheck")
 	assert.NilError(t, err)
 	healthcheck := viper.GetString(params.HealthcheckPathKey)
@@ -111,6 +116,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	healthcheckLoggingPath := viper.GetString(params.HealthcheckLoggingPathKey)
 
+	err = bindKeyToEnvAndDefault(params.HealthcheckGetAstRolePathKey, params.HealthcheckGetAstRolePathEnv,
+		"ast-role")
+	assert.NilError(t, err)
+	getRolePath := viper.GetString(params.HealthcheckGetAstRolePathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
@@ -138,11 +148,13 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
 		webAppHlthChk,
+		keyCloakWebAppHlthChk,
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckDBPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckMessageQueuePath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckObjectStorePath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
+		fmt.Sprintf("%s/%s", healthcheck, getRolePath),
 	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 

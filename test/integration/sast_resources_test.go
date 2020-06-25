@@ -45,7 +45,7 @@ func TestSastResourceE2E(t *testing.T) {
 	assert.Assert(t, scanStatusAsWanted, "Scan should be running")
 
 	// Let the sr to update
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	e = Engines(t)
 	assert.Assert(t, cmp.Equal(e.Waiting, 2))
 	assert.Assert(t, cmp.Equal(e.Running, 1))
