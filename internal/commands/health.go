@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"sync"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -76,7 +77,8 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd
 			var err error
 			role, err = healthCheckWrapper.GetAstRole()
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to get ast role from the ast environment. "+
+					"you can set it manually with either the command flags or the cli environment variables")
 			}
 		}
 
