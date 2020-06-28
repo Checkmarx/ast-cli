@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -116,7 +115,7 @@ func scanHealthCheck(
 	scanHealthCheckTimeoutSecs uint,
 ) func() (*wrappers.HealthStatus, error) {
 	return func() (status *wrappers.HealthStatus, err error) {
-		status = &wrappers.HealthStatus{}
+		status = wrappers.NewHealthStatus(false)
 		preSignedURL, err := uploadsWrapper.UploadFile(sourcePath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to upload source file")
@@ -266,7 +265,6 @@ func runAllHealthChecks(
 			role,
 		)
 		views := runChecksConcurrently(hlthChks)
-		fmt.Println("Finished checks", views)
 		err := Print(cmd.OutOrStdout(), views)
 		return err
 	}
