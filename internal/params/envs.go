@@ -23,4 +23,5 @@ const (
 	HealthcheckInMemoryDBPathEnv        = "HEALTHCHECK_IN_MEMORY_DB_PATH"
 	HealthcheckLoggingPathEnv           = "HEALTHCHECK_LOGGING_PATH"
 	HealthcheckGetAstRolePathEnv        = "HEALTHCHECK_GET_AST_ROLE_PATH"
+	ScanHealthCheckSourcePathEnv        = "SCAN_HEALTHCHECK_SOURCE_PATH"
 )

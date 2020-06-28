@@ -19,7 +19,7 @@ func TestSastHealthCheck(t *testing.T) {
 	out, err := ioutil.ReadAll(b)
 	assert.NilError(t, err, "Should read the command output")
 	s := string(out)
-	assert.Assert(t, !(strings.Contains(s, "Failure") || strings.Contains(s, "Error")),
+	assert.Assert(t, !(strings.Contains(s, "Failure") || strings.Contains(s, "Error ")),
 		"Command output should be success and not %v", s)
 }
 
@@ -32,6 +32,6 @@ func TestScaHealthCheck(t *testing.T) {
 	out, err := ioutil.ReadAll(b)
 	assert.NilError(t, err, "Should read the command output")
 	s := string(out)
-	assert.Assert(t, !(strings.Contains(s, "Failure") || strings.Contains(s, "Error")),
+	assert.Assert(t, !(strings.Contains(s, "Failure") || strings.Contains(s, "Error ")),
 		"Command output should be success and not %v", s)
 }

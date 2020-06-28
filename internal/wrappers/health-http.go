@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
-
 	errors "github.com/pkg/errors"
 )
 
@@ -42,19 +40,17 @@ func runHealthCheckRequest(path string,
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return &HealthStatus{
-			&healthcheckApi.HealthcheckModel{
-				Success: false,
-				Message: fmt.Sprintf("Http request %v responded with status code %v and body %v",
-					resp.Request.URL, resp.StatusCode, func() string {
-						if err != nil {
-							return ""
-						}
+		return NewHealthStatus(
+			false,
+			fmt.Sprintf("Http request %v responded with status code %v and body %v",
+				resp.Request.URL, resp.StatusCode, func() string {
+					if err != nil {
+						return ""
+					}
 
-						return string(body)
-					}()),
-			},
-		}, nil
+					return string(body)
+				}()),
+		), nil
 	}
 
 	return parser(resp.Body)
@@ -76,23 +72,13 @@ func NewHealthCheckHTTPWrapper(astWebAppPath, astKeycloakWebAppPath, healthDBPat
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.WebAppHealthCheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
-		return &HealthStatus{
-			&healthcheckApi.HealthcheckModel{
-				Success: true,
-				Message: "",
-			},
-		}, nil
+		return NewHealthStatus(true), nil
 	})
 }
 
 func (h *healthCheckHTTPWrapper) RunKeycloakWebAppCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.KeycloakHealthCheckPath, func(body io.ReadCloser) (*HealthStatus, error) {
-		return &HealthStatus{
-			&healthcheckApi.HealthcheckModel{
-				Success: true,
-				Message: "",
-			},
-		}, nil
+		return NewHealthStatus(true), nil
 	})
 }
 

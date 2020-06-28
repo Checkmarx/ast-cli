@@ -121,6 +121,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	getRolePath := viper.GetString(params.HealthcheckGetAstRolePathKey)
 
+	err = bindKeyToEnvAndDefault(params.ScanHealthCheckSourcePathKey, params.ScanHealthCheckSourcePathEnv,
+		"test/integration/health_source.zip")
+	assert.NilError(t, err)
+	scanHealthCheckSource := viper.GetString(params.ScanHealthCheckSourcePathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
@@ -167,6 +172,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		rmWrapper,
 		healthCheckWrapper,
 		defaultConfigFileLocation,
+		scanHealthCheckSource,
 	)
 	return astCli
 }

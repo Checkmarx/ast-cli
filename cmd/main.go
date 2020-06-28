@@ -88,6 +88,11 @@ func main() {
 	exitIfError(err)
 	getRolePath := viper.GetString(params.HealthcheckGetAstRolePathKey)
 
+	err = bindKeyToEnvAndDefault(params.ScanHealthCheckSourcePathKey, params.ScanHealthCheckSourcePathEnv,
+		"test/integration/health_source.zip")
+	exitIfError(err)
+	scanHealthCheckSource := viper.GetString(params.ScanHealthCheckSourcePathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -133,6 +138,7 @@ func main() {
 		rmWrapper,
 		healthCheckWrapper,
 		defaultConfigFileLocation,
+		scanHealthCheckSource,
 	)
 
 	err = astCli.Execute()
