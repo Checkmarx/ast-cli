@@ -1,8 +1,8 @@
 package wrappers
 
-// import (
-//	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
-// )
+import (
+	healthcheckApi "github.com/checkmarxDev/healthcheck/pkg/api/rest/v1"
+)
 
 type HealthCheckWrapper interface {
 	RunMessageQueueCheck() (*HealthStatus, error)
@@ -16,15 +16,15 @@ type HealthCheckWrapper interface {
 }
 
 type HealthStatus struct {
-	// *healthcheckApi.HealthcheckModel
-	Success bool     `json:"success"`
-	Errors  []string `json:"errors"`
+	*healthcheckApi.HealthcheckModel
 }
 
 func NewHealthStatus(success bool, errs ...string) *HealthStatus {
 	return &HealthStatus{
-		success,
-		errs,
+		&healthcheckApi.HealthcheckModel{
+			Success: success,
+			Errors:  errs,
+		},
 	}
 }
 

@@ -19,17 +19,28 @@ import (
 )
 
 const (
-	scanCompletedTimeoutSecs = 60
-	scanProjectID            = "health"
+	scanProjectID = "health"
 )
 
-func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
-	scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper,
-	projectsWrapper wrappers.ProjectsWrapper, scanHealthCheckSourcePath string) *cobra.Command {
+func NewHealthCheckCommand(
+	healthCheckWrapper wrappers.HealthCheckWrapper,
+	scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	scanHealthCheckSourcePath string,
+	scanHealthCheckTimeoutSecs uint,
+) *cobra.Command {
 	return &cobra.Command{
 		Use:   "health-check",
 		Short: "Run AST health check",
-		RunE:  runAllHealthChecks(healthCheckWrapper, scansWrapper, uploadsWrapper, projectsWrapper, scanHealthCheckSourcePath),
+		RunE: runAllHealthChecks(
+			healthCheckWrapper,
+			scansWrapper,
+			uploadsWrapper,
+			projectsWrapper,
+			scanHealthCheckSourcePath,
+			scanHealthCheckTimeoutSecs,
+		),
 	}
 }
 
@@ -65,8 +76,8 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 	return healthViews
 }
 
-func checkScanCompleted(scansWrapper wrappers.ScansWrapper, scanID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(scanCompletedTimeoutSecs)*time.Second)
+func checkScanCompleted(scansWrapper wrappers.ScansWrapper, scanID string, timeout uint) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	for {
@@ -97,9 +108,13 @@ func checkScanCompleted(scansWrapper wrappers.ScansWrapper, scanID string) error
 	}
 }
 
-func scanHealthCheck(scansWrapper wrappers.ScansWrapper,
+func scanHealthCheck(
+	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
-	projectsWrapper wrappers.ProjectsWrapper, sourcePath string) func() (*wrappers.HealthStatus, error) {
+	projectsWrapper wrappers.ProjectsWrapper,
+	sourcePath string,
+	scanHealthCheckTimeoutSecs uint,
+) func() (*wrappers.HealthStatus, error) {
 	return func() (status *wrappers.HealthStatus, err error) {
 		status = &wrappers.HealthStatus{}
 		preSignedURL, err := uploadsWrapper.UploadFile(sourcePath)
@@ -173,7 +188,7 @@ func scanHealthCheck(scansWrapper wrappers.ScansWrapper,
 			}
 		}()
 
-		err = checkScanCompleted(scansWrapper, scanResponse.ID)
+		err = checkScanCompleted(scansWrapper, scanResponse.ID, scanHealthCheckTimeoutSecs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Scan was not completed")
 		}
@@ -183,21 +198,33 @@ func scanHealthCheck(scansWrapper wrappers.ScansWrapper,
 	}
 }
 
-func newHealthChecksByRole(h wrappers.HealthCheckWrapper, scansWrapper wrappers.ScansWrapper,
-	uploadesWrapper wrappers.UploadsWrapper, projectsWrapper wrappers.ProjectsWrapper, scanHealthCheckSourcePath,
-	role string) (checksByRole []*wrappers.HealthCheck) {
+func newHealthChecksByRole(
+	healthCheckWrapper wrappers.HealthCheckWrapper,
+	scansWrapper wrappers.ScansWrapper,
+	uploadesWrapper wrappers.UploadsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	scanHealthCheckSourcePath string,
+	scanHealthCheckTimeoutSecs uint,
+	role string,
+) (checksByRole []*wrappers.HealthCheck) {
 	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager, "SAST"}
 	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent, "SCA")
 	healthChecks := []*wrappers.HealthCheck{
-		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
-		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
-		wrappers.NewHealthCheck("Keycloak Web App", h.RunKeycloakWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("DB", healthCheckWrapper.RunDBCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Web App", healthCheckWrapper.RunWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Keycloak Web App", healthCheckWrapper.RunKeycloakWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Scan Flow",
-			scanHealthCheck(scansWrapper, uploadesWrapper, projectsWrapper, scanHealthCheckSourcePath), sastRoles[:]),
-		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Logging", h.RunLoggingCheck, sastAndScaRoles),
+			scanHealthCheck(
+				scansWrapper,
+				uploadesWrapper,
+				projectsWrapper,
+				scanHealthCheckSourcePath,
+				scanHealthCheckTimeoutSecs,
+			), sastRoles[:]),
+		wrappers.NewHealthCheck("In-memory DB", healthCheckWrapper.RunInMemoryDBCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Object Store", healthCheckWrapper.RunObjectStoreCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Message Queue", healthCheckWrapper.RunMessageQueueCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Logging", healthCheckWrapper.RunLoggingCheck, sastAndScaRoles),
 	}
 
 	for _, hc := range healthChecks {
@@ -209,10 +236,14 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, scansWrapper wrappers.
 	return checksByRole
 }
 
-func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper,
-	scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper,
+func runAllHealthChecks(
+	healthCheckWrapper wrappers.HealthCheckWrapper,
+	scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
-	scanHealthCheckSourcePath string) func(cmd *cobra.Command, args []string) error {
+	scanHealthCheckSourcePath string,
+	scanHealthCheckTimeoutSecs uint,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Performing health checks...")
 		role := viper.GetString(commonParams.AstRoleKey)
@@ -225,8 +256,15 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper,
 			}
 		}
 
-		hlthChks := newHealthChecksByRole(healthCheckWrapper, scansWrapper, uploadsWrapper, projectsWrapper,
-			scanHealthCheckSourcePath, role)
+		hlthChks := newHealthChecksByRole(
+			healthCheckWrapper,
+			scansWrapper,
+			uploadsWrapper,
+			projectsWrapper,
+			scanHealthCheckSourcePath,
+			scanHealthCheckTimeoutSecs,
+			role,
+		)
 		views := runChecksConcurrently(hlthChks)
 		fmt.Println("Finished checks", views)
 		err := Print(cmd.OutOrStdout(), views)

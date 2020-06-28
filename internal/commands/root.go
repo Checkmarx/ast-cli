@@ -58,6 +58,7 @@ func NewAstCLI(
 	healthCheckWrapper wrappers.HealthCheckWrapper,
 	defaultConfigFileLocation,
 	scanHealthCheckSourcePath string,
+	scanHealthCheckTimeoutSecs uint,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "ast",
@@ -91,8 +92,15 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	clusterCmd := NewClusterCommand()
 	appCmd := NewAppCommand()
-	singleNodeCommand := NewSingleNodeCommand(healthCheckWrapper, scansWrapper, uploadsWrapper,
-		projectsWrapper, defaultConfigFileLocation, scanHealthCheckSourcePath)
+	singleNodeCommand := NewSingleNodeCommand(
+		healthCheckWrapper,
+		scansWrapper,
+		uploadsWrapper,
+		projectsWrapper,
+		defaultConfigFileLocation,
+		scanHealthCheckSourcePath,
+		scanHealthCheckTimeoutSecs,
+	)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 
 	rootCmd.AddCommand(scanCmd,

@@ -93,6 +93,11 @@ func main() {
 	exitIfError(err)
 	scanHealthCheckSource := viper.GetString(params.ScanHealthCheckSourcePathKey)
 
+	err = bindKeyToEnvAndDefault(params.ScanHealthCheckTimeoutSecsKey, params.ScanHealthCheckTimeoutSecsEnv,
+		"60")
+	exitIfError(err)
+	scanHealthCheckTimeoutSecs := viper.GetUint(params.ScanHealthCheckTimeoutSecsKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -139,6 +144,7 @@ func main() {
 		healthCheckWrapper,
 		defaultConfigFileLocation,
 		scanHealthCheckSource,
+		scanHealthCheckTimeoutSecs,
 	)
 
 	err = astCli.Execute()

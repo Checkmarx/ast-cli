@@ -126,6 +126,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	scanHealthCheckSource := viper.GetString(params.ScanHealthCheckSourcePathKey)
 
+	err = bindKeyToEnvAndDefault(params.ScanHealthCheckTimeoutSecsKey, params.ScanHealthCheckTimeoutSecsEnv,
+		"60")
+	assert.NilError(t, err)
+	scanHealthCheckTimeoutSecs := viper.GetUint(params.ScanHealthCheckTimeoutSecsKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
@@ -173,6 +178,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		healthCheckWrapper,
 		defaultConfigFileLocation,
 		scanHealthCheckSource,
+		scanHealthCheckTimeoutSecs,
 	)
 	return astCli
 }

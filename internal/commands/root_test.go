@@ -35,7 +35,11 @@ func createASTTestCommand() *cobra.Command {
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
 	healthMockWrapper := &wrappers.HealthCheckMockWrapper{}
 	defaultConfigFileLocation := "./default_config.yml"
-	return NewAstCLI(scansMockWrapper,
+	scanHealthCheckSourcePath := "test/integration/health_source.zip"
+	scanHealthCheckTimeoutSecs := 0
+
+	return NewAstCLI(
+		scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
 		resultsMockWrapper,
@@ -43,6 +47,8 @@ func createASTTestCommand() *cobra.Command {
 		rmMockWrapper,
 		healthMockWrapper,
 		defaultConfigFileLocation,
+		scanHealthCheckSourcePath,
+		uint(scanHealthCheckTimeoutSecs),
 	)
 }
 

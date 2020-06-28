@@ -38,9 +38,15 @@ var (
 	singleNodeLogger *log.Logger = log.New(deploymentLogWriter{}, "", 0)
 )
 
-func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, scanWrapper wrappers.ScansWrapper,
-	uploadsWrapper wrappers.UploadsWrapper, projectsWrapper wrappers.ProjectsWrapper,
-	defaultConfigFileLocation, scanHealthCheckSourcePath string) *cobra.Command {
+func NewSingleNodeCommand(
+	healthCheckWrapper wrappers.HealthCheckWrapper,
+	scanWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	defaultConfigFileLocation,
+	scanHealthCheckSourcePath string,
+	scanHealthCheckTimeoutSecs uint,
+) *cobra.Command {
 	singleNodeCmd := &cobra.Command{
 		Use:   "single-node",
 		Short: "Single Node",
@@ -63,8 +69,14 @@ func NewSingleNodeCommand(healthCheckWrapper wrappers.HealthCheckWrapper, scanWr
 		RunE:  runUpdateSingleNodeCommand(defaultConfigFileLocation),
 	}
 
-	healthSingleNodeCmd := NewHealthCheckCommand(healthCheckWrapper, scanWrapper, uploadsWrapper, projectsWrapper,
-		scanHealthCheckSourcePath)
+	healthSingleNodeCmd := NewHealthCheckCommand(
+		healthCheckWrapper,
+		scanWrapper,
+		uploadsWrapper,
+		projectsWrapper,
+		scanHealthCheckSourcePath,
+		scanHealthCheckTimeoutSecs,
+	)
 
 	defaultDir := "./"
 	installationConfigFileUsage := "Configuration file path (optional)"
