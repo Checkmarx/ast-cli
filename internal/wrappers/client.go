@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	expiryGraceSeconds = 10
+	expiryGraceSeconds    = 10
+	DefaultTimeoutSeconds = 5
 )
 
 type ClientCredentialsInfo struct {
@@ -37,16 +38,16 @@ type ClientCredentialsError struct {
 	Description string `json:"error_description"`
 }
 
-func getClient() *http.Client {
+func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 	}
-	return &http.Client{Transport: tr, Timeout: 5 * time.Second}
+	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
 
-func SendHTTPRequest(method, path string, body io.Reader, auth bool) (*http.Response, error) {
-	client := getClient()
+func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+	client := getClient(timeout)
 	url := GetURL(path)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -74,7 +75,7 @@ func GetURL(path string) string {
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader) (*http.Response, error) {
-	client := getClient()
+	client := getClient(DefaultTimeoutSeconds)
 	url := GetURL(path)
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {

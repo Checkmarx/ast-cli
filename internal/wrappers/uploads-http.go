@@ -70,7 +70,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 }
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
-	resp, err := SendHTTPRequest(http.MethodPost, u.path, nil, true)
+	resp, err := SendHTTPRequest(http.MethodPost, u.path, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}

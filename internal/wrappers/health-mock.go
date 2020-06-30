@@ -39,6 +39,10 @@ func (h *HealthCheckMockWrapper) RunLoggingCheck() (*HealthStatus, error) {
 	return mockRun()
 }
 
+func (h *HealthCheckMockWrapper) RunScanFlowCheck() (*HealthStatus, error) {
+	return mockRun()
+}
+
 func (h *HealthCheckMockWrapper) GetAstRole() (string, error) {
 	return params.ScaAgent, nil
 }

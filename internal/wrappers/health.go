@@ -12,6 +12,7 @@ type HealthCheckWrapper interface {
 	RunObjectStoreCheck() (*HealthStatus, error)
 	RunInMemoryDBCheck() (*HealthStatus, error)
 	RunLoggingCheck() (*HealthStatus, error)
+	RunScanFlowCheck() (*HealthStatus, error)
 	GetAstRole() (string, error)
 }
 
