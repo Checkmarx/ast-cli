@@ -53,8 +53,8 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 }
 
 func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
-	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
-	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
+	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager, "SAST"}
+	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent, "SCA")
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
