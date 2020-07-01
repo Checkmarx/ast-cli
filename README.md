@@ -29,3 +29,4 @@ In order to authenticate with AST there are 3 environment variables that needs t
 You can use [SETX](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx) (windows), [SETENV](https://www.computerhope.com/unix/usetenv.htm)  (linux) for permanent save     
 
 Both access key ID and access key secret can be overridden by the flags **--key** and **--secret** respectively
+
