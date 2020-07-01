@@ -83,6 +83,11 @@ func main() {
 	exitIfError(err)
 	healthcheckLoggingPath := viper.GetString(params.HealthcheckLoggingPathKey)
 
+	err = bindKeyToEnvAndDefault(params.HealthcheckScanFlowPathKey, params.HealthcheckScanFlowPathEnv,
+		"scan-flow")
+	exitIfError(err)
+	healthcheckScanFlowPath := viper.GetString(params.HealthcheckScanFlowPathKey)
+
 	err = bindKeyToEnvAndDefault(params.HealthcheckGetAstRolePathKey, params.HealthcheckGetAstRolePathEnv,
 		"ast-role")
 	exitIfError(err)
@@ -120,6 +125,7 @@ func main() {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckObjectStorePath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckScanFlowPath),
 		fmt.Sprintf("%s/%s", healthcheck, getRolePath),
 	)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"

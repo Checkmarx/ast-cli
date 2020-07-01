@@ -31,7 +31,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	if err != nil {
 		return nil, nil, err
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true)
+	resp, err := SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -71,7 +71,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollect
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,7 +79,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true)
+	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 }
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}

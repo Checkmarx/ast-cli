@@ -2,16 +2,10 @@ package wrappers
 
 import (
 	"github.com/checkmarxDev/ast-cli/internal/params"
-	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
 )
 
 func mockRun() (*HealthStatus, error) {
-	return &HealthStatus{
-		&healthcheckApi.HealthcheckModel{
-			Success: true,
-			Message: "",
-		},
-	}, nil
+	return NewHealthStatus(true), nil
 }
 
 type HealthCheckMockWrapper struct {
@@ -42,6 +36,10 @@ func (h *HealthCheckMockWrapper) RunInMemoryDBCheck() (*HealthStatus, error) {
 }
 
 func (h *HealthCheckMockWrapper) RunLoggingCheck() (*HealthStatus, error) {
+	return mockRun()
+}
+
+func (h *HealthCheckMockWrapper) RunScanFlowCheck() (*HealthStatus, error) {
 	return mockRun()
 }
 
