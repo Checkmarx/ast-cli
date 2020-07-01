@@ -1,9 +1,7 @@
 package wrappers
 
 import (
-	"fmt"
-
-	healthcheckApi "github.com/checkmarxDev/healthcheck/api/rest/v1"
+	healthcheckApi "github.com/checkmarxDev/healthcheck/pkg/api/rest/v1"
 )
 
 type HealthCheckWrapper interface {
@@ -14,6 +12,7 @@ type HealthCheckWrapper interface {
 	RunObjectStoreCheck() (*HealthStatus, error)
 	RunInMemoryDBCheck() (*HealthStatus, error)
 	RunLoggingCheck() (*HealthStatus, error)
+	RunScanFlowCheck() (*HealthStatus, error)
 	GetAstRole() (string, error)
 }
 
@@ -21,12 +20,13 @@ type HealthStatus struct {
 	*healthcheckApi.HealthcheckModel
 }
 
-func (h *HealthStatus) String() string {
-	if h.Success {
-		return "Success"
+func NewHealthStatus(success bool, errs ...string) *HealthStatus {
+	return &HealthStatus{
+		&healthcheckApi.HealthcheckModel{
+			Success: success,
+			Errors:  errs,
+		},
 	}
-
-	return fmt.Sprintf("Failure, due to %v", h.Message)
 }
 
 type HealthCheck struct {

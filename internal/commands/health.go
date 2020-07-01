@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -25,9 +24,13 @@ func runHealthCheck(c *wrappers.HealthCheck) *healthView {
 	status, err := c.Handler()
 	v := &healthView{Name: c.Name}
 	if err != nil {
-		v.Status = fmt.Sprintf("Error %s", err)
+		v.Status = "Error"
+		v.Errors = []string{err.Error()}
+	} else if !status.Success {
+		v.Status = "Failure"
+		v.Errors = status.Errors
 	} else {
-		v.Status = status.String()
+		v.Status = "Success"
 	}
 
 	return v
@@ -50,12 +53,13 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 }
 
 func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
-	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
-	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
+	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager, "SAST"}
+	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent, "SCA")
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Keycloak Web App", h.RunKeycloakWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Scan-Flow", h.RunScanFlowCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
@@ -73,6 +77,7 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		writeToStandardOutput("Performing health checks...")
 		role := viper.GetString(commonParams.AstRoleKey)
 		if role == "" {
 			var err error
@@ -93,4 +98,5 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd
 type healthView struct {
 	Name   string
 	Status string
+	Errors []string
 }
