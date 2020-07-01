@@ -51,7 +51,7 @@ func main() {
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
 
 	err = bindKeyToEnvAndDefault(params.AstKeycloakWebAppHealthCheckPathKey, params.AstKeycloakWebAppHealthCheckPathEnv,
-		"auth/admin/organization/console/#/realms/organization/users")
+		"auth")
 	exitIfError(err)
 	keyCloakWebAppHlthChk := viper.GetString(params.AstKeycloakWebAppHealthCheckPathKey)
 
