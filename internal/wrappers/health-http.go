@@ -22,7 +22,7 @@ type healthCheckHTTPWrapper struct {
 	GetAstRolePath              string
 }
 
-const scanFlowTimeoutSecs uint = 60
+const scanFlowTimeoutSecs uint = 80
 
 func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 	status := &HealthStatus{}
