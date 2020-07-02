@@ -6,8 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/spf13/viper"
-
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -78,7 +76,7 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Performing health checks...")
-		role := viper.GetString(commonParams.AstRoleKey)
+		role, _ := cmd.Flags().GetString(roleFlag)
 		if role == "" {
 			var err error
 			role, err = healthCheckWrapper.GetAstRole()
