@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 )
 
 type ScansMockWrapper struct {

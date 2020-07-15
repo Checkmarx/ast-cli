@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -8,6 +10,14 @@ import (
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
+)
+
+const (
+	errorColor          = "\033[1;31m%s\033[0m"
+	successColor        = "\033[1;32m%s\033[0m"
+	reportBlankPadWidth = 2
+	checkMarkCode       = "\u2714\ufe0f"
+	crossMarkCode       = "\u274c"
 )
 
 func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
@@ -18,20 +28,50 @@ func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobr
 	}
 }
 
-func runHealthCheck(c *wrappers.HealthCheck) *healthView {
-	status, err := c.Handler()
-	v := &healthView{Name: c.Name}
-	if err != nil {
-		v.Status = "Error"
-		v.Errors = []string{err.Error()}
-	} else if !status.Success {
-		v.Status = "Failure"
-		v.Errors = status.Errors
-	} else {
-		v.Status = "Success"
+func getLongestWidth(checkViews []*healthView) int {
+	width := 0
+	for _, v := range checkViews {
+		if v.Error != nil {
+			continue
+		}
+
+		for _, s := range v.SubChecks {
+			if len(s.Name) > width {
+				width = len(s.Name)
+			}
+		}
 	}
 
-	return v
+	return width
+}
+
+func printHealthChecks(checkViews []*healthView) {
+	longestWidth := getLongestWidth(checkViews)
+	for _, checkView := range checkViews {
+		fmt.Println(checkView.Name)
+		fmt.Println(strings.Repeat("-", len(checkView.Name)))
+		if checkView.Error != nil {
+			fmt.Printf(errorColor, checkView.Error)
+			fmt.Println()
+		} else {
+			for _, subCheck := range checkView.SubChecks {
+				fmt.Print(subCheck.Name, pad(longestWidth-len(subCheck.Name)+reportBlankPadWidth, ""))
+				if subCheck.Success {
+					fmt.Printf(successColor, checkMarkCode)
+					fmt.Println()
+				} else {
+					fmt.Printf(errorColor, crossMarkCode)
+					fmt.Println()
+					for _, e := range subCheck.Errors {
+						fmt.Printf(errorColor, e)
+						fmt.Println()
+					}
+				}
+			}
+		}
+
+		fmt.Print("\n\n")
+	}
 }
 
 func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
@@ -41,7 +81,12 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 		wg.Add(1) //nolint:gomnd
 		go func(idx int, c *wrappers.HealthCheck) {
 			defer wg.Done()
-			h := runHealthCheck(c)
+			status, err := c.Handler()
+			h := &healthView{
+				c.Name,
+				err,
+				status,
+			}
 			healthViews[idx] = h // To avoid race
 		}(i, healthChecker)
 	}
@@ -88,13 +133,13 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd
 
 		hlthChks := newHealthChecksByRole(healthCheckWrapper, role)
 		views := runChecksConcurrently(hlthChks)
-		err := Print(cmd.OutOrStdout(), views)
-		return err
+		printHealthChecks(views)
+		return nil
 	}
 }
 
 type healthView struct {
-	Name   string
-	Status string
-	Errors []string
+	Name  string
+	Error error
+	*wrappers.HealthStatus
 }
