@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
@@ -76,6 +77,43 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 		return nil, nil, err
 	}
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
+}
+
+func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansApi.ErrorModel, error) {
+	path := fmt.Sprintf("%s/%s/workflow", s.path, scanID)
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, DefaultTimeoutSeconds)
+	if err != nil {
+		return nil, nil, err
+	}
+	return handleWorkflowResponseWithBody(resp, err)
+}
+
+func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTaskResponseModel, *scansApi.ErrorModel, error) {
+	if err != nil {
+		return nil, nil, err
+	}
+	decoder := json.NewDecoder(resp.Body)
+
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := scansApi.ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Failed to parse workflow response")
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := []*ScanTaskResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Failed to parse workflow response")
+		}
+		return model, nil, nil
+
+	default:
+		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+	}
 }
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
