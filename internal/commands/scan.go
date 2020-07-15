@@ -73,6 +73,12 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
 
+	workflowScanCmd := &cobra.Command{
+		Use:   "workflow <scan id>",
+		Short: "Show information about a scan workflow",
+		RunE:  runScanWorkflowByIDCommand(scansWrapper),
+	}
+
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete <scan id>",
 		Short: "Stops a scan from running",
@@ -85,7 +91,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, showScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -242,6 +248,32 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			err = Print(cmd.OutOrStdout(), toScanView(scanResponseModel))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		var taskResponseModel []*wrappers.ScanTaskResponseModel
+		var errorModel *scansRESTApi.ErrorModel
+		var err error
+		if len(args) == 0 {
+			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
+		}
+		scanID := args[0]
+		taskResponseModel, errorModel, err = scansWrapper.GetWorkflowByID(scanID)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGetting)
+		}
+		// Checking the response
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
+		} else if taskResponseModel != nil {
+			err = Print(cmd.OutOrStdout(), taskResponseModel)
 			if err != nil {
 				return err
 			}
