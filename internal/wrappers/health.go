@@ -20,11 +20,16 @@ type HealthStatus struct {
 	*healthcheckApi.HealthcheckModel
 }
 
-func NewHealthStatus(success bool, errs ...string) *HealthStatus {
+func NewHealthStatus(name string, success bool, errs ...string) *HealthStatus {
 	return &HealthStatus{
-		&healthcheckApi.HealthcheckModel{
-			Success: success,
-			Errors:  errs,
+		HealthcheckModel: &healthcheckApi.HealthcheckModel{
+			SubChecks: []*healthcheckApi.HealthcheckSubCheck{
+				{
+					Name:    name,
+					Success: success,
+					Errors:  errs,
+				},
+			},
 		},
 	}
 }

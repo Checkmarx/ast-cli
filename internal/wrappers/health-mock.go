@@ -5,7 +5,7 @@ import (
 )
 
 func mockRun() (*HealthStatus, error) {
-	return NewHealthStatus(true), nil
+	return NewHealthStatus("mock", true), nil
 }
 
 type HealthCheckMockWrapper struct {

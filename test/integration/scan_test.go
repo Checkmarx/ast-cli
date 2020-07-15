@@ -15,7 +15,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"gotest.tools/assert/cmp"
 
 	"gotest.tools/assert"
