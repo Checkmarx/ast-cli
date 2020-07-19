@@ -14,7 +14,7 @@ import (
 
 	"gotest.tools/assert/cmp"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"gotest.tools/assert"
 )
 

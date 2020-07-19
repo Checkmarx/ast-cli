@@ -14,7 +14,7 @@ import (
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
 	"github.com/spf13/cobra"
 )

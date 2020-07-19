@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/pkg/errors"
 )
 
