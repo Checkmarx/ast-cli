@@ -67,35 +67,38 @@ func outputBFL(cmd *cobra.Command, model *wrappers.BFLResponseModel) error {
 			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingBfl)
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(bflJSON))
-	} else if IsListFormat() {
-		fmt.Println("************ Best Fix Location ************")
-		fmt.Println("BFL ID:", model.ID)
+		return nil
+	}
+
+	// Not supporting table view because it gets ugly
+	fmt.Println("************ Best Fix Location ************")
+	fmt.Println("BFL ID:", model.ID)
+	fmt.Println()
+	for i := 0; i < len(model.Trees); i++ {
+		fmt.Println("************ Tree ************")
+		fmt.Println("ID:", model.Trees[i].ID)
 		fmt.Println()
-		for i := 0; i < len(model.Trees); i++ {
-			fmt.Println("************ Tree ************")
-			fmt.Println("ID:", model.Trees[i].ID)
-			fmt.Println()
-			fmt.Println("************ BFL Node ************")
-			bfl := model.Trees[i].BFL
-			outputSingleResultNodePretty(&wrappers.ResultNode{
-				Column:       bfl.Column,
-				FileName:     bfl.FileName,
-				FullName:     bfl.FullName,
-				Length:       bfl.Length,
-				Line:         bfl.Line,
-				MethodLine:   bfl.MethodLine,
-				Name:         bfl.Name,
-				NodeID:       bfl.NodeID,
-				DomType:      bfl.DomType,
-				NodeSystemID: bfl.NodeSystemID,
-			})
-			fmt.Println()
-			err := outputResultsPretty(model.Trees[i].Results)
-			if err != nil {
-				return err
-			}
+		fmt.Println("************ BFL Node ************")
+		bfl := model.Trees[i].BFL
+		outputSingleResultNodePretty(&wrappers.ResultNode{
+			Column:       bfl.Column,
+			FileName:     bfl.FileName,
+			FullName:     bfl.FullName,
+			Length:       bfl.Length,
+			Line:         bfl.Line,
+			MethodLine:   bfl.MethodLine,
+			Name:         bfl.Name,
+			NodeID:       bfl.NodeID,
+			DomType:      bfl.DomType,
+			NodeSystemID: bfl.NodeSystemID,
+		})
+		fmt.Println()
+		err := outputResultsPretty(model.Trees[i].Results)
+		if err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
