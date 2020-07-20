@@ -78,14 +78,15 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 				if err != nil {
 					return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 				}
+
 				fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
-			} else if IsListFormat() {
-				err = outputResultsPretty(resultResponseModel.Results)
-				if err != nil {
-					return err
-				}
+				return nil
 			}
+
+			// Not supporting table view because it gets ugly
+			return outputResultsPretty(resultResponseModel.Results)
 		}
+
 		return nil
 	}
 }
