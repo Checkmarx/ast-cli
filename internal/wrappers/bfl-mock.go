@@ -1,15 +1,22 @@
 package wrappers
 
+import (
+	"github.com/checkmarxDev/sast-results/pkg/bfl"
+	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsBfl "github.com/checkmarxDev/sast-results/pkg/web/path/bfl"
+)
+
 type BFLMockWrapper struct{}
 
-func (b *BFLMockWrapper) GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error) {
+func (b *BFLMockWrapper) GetByScanID(_ map[string]string) (*resultsBfl.Forest, *resultsHelpers.WebError, error) {
 	const mock = "MOCK"
-	return &BFLResponseModel{
+	return &resultsBfl.Forest{
 		ID: mock,
-		Trees: []BFLTreeModel{
+		Trees: []*bfl.BFL{
 			{
 				ID: mock,
-				BFL: ResultNode{
+				BflNode: &resultsReader.ResultNode{
 					Column:       0,
 					FileName:     mock,
 					FullName:     mock,

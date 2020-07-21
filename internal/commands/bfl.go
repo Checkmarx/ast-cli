@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsBfl "github.com/checkmarxDev/sast-results/pkg/web/path/bfl"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -28,8 +31,8 @@ func NewBFLCommand(bflWrapper wrappers.BFLWrapper) *cobra.Command {
 
 func runGetBFLByScanIDCommand(bflWrapper wrappers.BFLWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var bflResponseModel *wrappers.BFLResponseModel
-		var errorModel *wrappers.ErrorModel
+		var bflResponseModel *resultsBfl.Forest
+		var errorModel *resultsHelpers.WebError
 
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedGettingBfl)
@@ -59,7 +62,7 @@ func runGetBFLByScanIDCommand(bflWrapper wrappers.BFLWrapper) func(cmd *cobra.Co
 	}
 }
 
-func outputBFL(cmd *cobra.Command, model *wrappers.BFLResponseModel) error {
+func outputBFL(cmd *cobra.Command, model *resultsBfl.Forest) error {
 	if IsJSONFormat() {
 		var bflJSON []byte
 		bflJSON, err := json.Marshal(model)
@@ -79,8 +82,8 @@ func outputBFL(cmd *cobra.Command, model *wrappers.BFLResponseModel) error {
 		fmt.Println("ID:", model.Trees[i].ID)
 		fmt.Println()
 		fmt.Println("************ BFL Node ************")
-		bfl := model.Trees[i].BFL
-		outputSingleResultNodePretty(&wrappers.ResultNode{
+		bfl := model.Trees[i].BflNode
+		outputSingleResultNodePretty(&resultsReader.ResultNode{
 			Column:       bfl.Column,
 			FileName:     bfl.FileName,
 			FullName:     bfl.FullName,
@@ -102,7 +105,7 @@ func outputBFL(cmd *cobra.Command, model *wrappers.BFLResponseModel) error {
 	return nil
 }
 
-func outputSingleResultNodePretty(model *wrappers.ResultNode) {
+func outputSingleResultNodePretty(model *resultsReader.ResultNode) {
 	fmt.Println("Name:", model.Name)
 	fmt.Println("File Name:", model.FileName)
 	fmt.Println("Full Name:", model.FullName)
