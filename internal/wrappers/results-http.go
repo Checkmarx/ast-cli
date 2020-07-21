@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsRaw "github.com/checkmarxDev/sast-results/pkg/web/path/raw"
+
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +24,7 @@ func NewHTTPResultsWrapper(path string) ResultsWrapper {
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*ResultsResponseModel, *ErrorModel, error) {
+func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil)
 	if err != nil {
 		return nil, nil, err
@@ -32,14 +35,14 @@ func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*ResultsResp
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
+		errorModel := resultsHelpers.WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := ResultsResponseModel{}
+		model := resultsRaw.ResultsCollection{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)

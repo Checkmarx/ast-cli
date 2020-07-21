@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsRaw "github.com/checkmarxDev/sast-results/pkg/web/path/raw"
+
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -50,8 +54,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var resultResponseModel *wrappers.ResultsResponseModel
-		var errorModel *wrappers.ErrorModel
+		var resultResponseModel *resultsRaw.ResultsCollection
+		var errorModel *resultsHelpers.WebError
 		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
@@ -91,14 +95,16 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func outputResultsPretty(results []wrappers.ResultResponseModel) error {
+func outputResultsPretty(results []*resultsReader.Result) error {
 	fmt.Println("************ Results ************")
 	for i := 0; i < len(results); i++ {
-		outputSingleResult(&wrappers.ResultResponseModel{
-			QueryID:                         results[i].QueryID,
-			QueryName:                       results[i].QueryName,
-			Severity:                        results[i].Severity,
-			CweID:                           results[i].CweID,
+		outputSingleResult(&resultsReader.Result{
+			ResultQuery: resultsReader.ResultQuery{
+				QueryID:   results[i].QueryID,
+				QueryName: results[i].QueryName,
+				Severity:  results[i].Severity,
+				CweID:     results[i].CweID,
+			},
 			SimilarityID:                    results[i].SimilarityID,
 			UniqueID:                        results[i].UniqueID,
 			FirstScanID:                     results[i].FirstScanID,
@@ -114,7 +120,7 @@ func outputResultsPretty(results []wrappers.ResultResponseModel) error {
 	return nil
 }
 
-func outputSingleResult(model *wrappers.ResultResponseModel) {
+func outputSingleResult(model *resultsReader.Result) {
 	fmt.Println("Result Unique ID:", model.UniqueID)
 	fmt.Println("Query ID:", model.QueryID)
 	fmt.Println("Query Name:", model.QueryName)

@@ -14,7 +14,7 @@ import (
 
 	"gotest.tools/assert/cmp"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	"gotest.tools/assert"
 )
 
@@ -29,10 +29,10 @@ type scans struct {
 }
 
 func TestSastResourceE2E(t *testing.T) {
-	e := Engines(t)
+	e := srEngines(t)
 	assert.Assert(t, cmp.Equal(e.Waiting, 3))
 	assert.Assert(t, cmp.Equal(e.Running, 0))
-	s := Scans(t)
+	s := srScans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
 	assert.Assert(t, cmp.Equal(s.Running, 0))
 
@@ -41,20 +41,20 @@ func TestSastResourceE2E(t *testing.T) {
 	defer deleteScan(t, scanID)
 
 	waitTimeSec := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
-	scanStatusAsWanted := pollScanUntilStatus(t, scanID, scansRESTApi.ScanRunning, waitTimeSec, 5)
+	scanStatusAsWanted := pollScanUntilStatus(t, scanID, scansApi.ScanRunning, waitTimeSec, 5)
 	assert.Assert(t, scanStatusAsWanted, "Scan should be running")
 
 	// Let the sr to update
 	time.Sleep(10 * time.Second)
-	e = Engines(t)
+	e = srEngines(t)
 	assert.Assert(t, cmp.Equal(e.Waiting, 2))
 	assert.Assert(t, cmp.Equal(e.Running, 1))
-	s = Scans(t)
+	s = srScans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
 	assert.Assert(t, cmp.Equal(s.Running, 1))
 }
 
-func Scans(t *testing.T) scans {
+func srScans(t *testing.T) scans {
 	var scanCollection []rm.Scan
 	invokeCommand(t, &scanCollection, "--format", "json", "sr", "scans")
 	result := scans{}
@@ -68,7 +68,7 @@ func Scans(t *testing.T) scans {
 	return result
 }
 
-func Engines(t *testing.T) engines {
+func srEngines(t *testing.T) engines {
 	var enginesCollection []rm.Engine
 	invokeCommand(t, &enginesCollection, "--format", "json", "sr", "engines")
 	result := engines{}
