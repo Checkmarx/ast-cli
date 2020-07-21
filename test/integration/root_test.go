@@ -22,9 +22,7 @@ import (
 )
 
 const (
-	letterBytes        = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	successfulExitCode = 0
-	failureExitCode    = 1
+	letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
 func bindKeyToEnvAndDefault(key, env, defaultVal string) error {
