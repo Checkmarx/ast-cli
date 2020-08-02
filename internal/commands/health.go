@@ -9,6 +9,7 @@ import (
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -75,12 +76,14 @@ func printHealthChecks(checkViews []*healthView) {
 }
 
 func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
+	bar := pb.StartNew(len(checks))
 	var wg sync.WaitGroup
 	healthViews := make([]*healthView, len(checks))
 	for i, healthChecker := range checks {
 		wg.Add(1) //nolint:gomnd
 		go func(idx int, c *wrappers.HealthCheck) {
 			defer wg.Done()
+			defer bar.Increment()
 			status, err := c.Handler()
 			h := &healthView{
 				c.Name,
@@ -92,6 +95,7 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 	}
 
 	wg.Wait()
+	bar.Finish()
 	return healthViews
 }
 
