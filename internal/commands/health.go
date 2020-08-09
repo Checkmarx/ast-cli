@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/spf13/viper"
+
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -125,12 +127,12 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		writeToStandardOutput("Performing health checks...")
-		role, _ := cmd.Flags().GetString(roleFlag)
+		role := viper.GetString(commonParams.AstRoleKey)
 		if role == "" {
 			var err error
 			role, err = healthCheckWrapper.GetAstRole()
 			if err != nil {
-				return errors.Wrapf(err, "Failed to get ast role from the ast environment. "+
+				return errors.Wrapf(err, "Failed to get ast role. "+
 					"you can set it manually with either the command flags or the cli environment variables")
 			}
 		}
