@@ -18,7 +18,7 @@ import (
 func TestProjectsE2E(t *testing.T) {
 	projectFromFile := createProjectFromInputFile(t)
 	getAllProjects(t, projectFromFile)
-	getAllProjectsList(t, projectFromFile)
+	getAllProjectsList(t)
 	deleteProject(t, projectFromFile)
 
 	tags := map[string]string{}
@@ -92,7 +92,7 @@ func getProjectByID(t *testing.T, projectID string) {
 	assert.Assert(t, projectID == project.ID)
 }
 
-func getAllProjectsList(t *testing.T, projectID string) {
+func getAllProjectsList(t *testing.T) {
 	getAllCommand := createASTIntegrationTestCommand(t)
 	var limit uint64 = 40
 	var offset uint64 = 0

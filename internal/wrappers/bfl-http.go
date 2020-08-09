@@ -2,7 +2,11 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsBfl "github.com/checkmarxDev/sast-results/pkg/web/path/bfl"
 
 	"github.com/pkg/errors"
 )
@@ -21,25 +25,27 @@ func NewHTTPBFLWrapper(path string) BFLWrapper {
 	}
 }
 
-func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error) {
+func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*resultsBfl.Forest, *resultsHelpers.WebError, error) {
+	fmt.Println("REQ", b.path, params)
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	fmt.Println("Head", resp.Request.Header.Get("Authorization"))
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
+		errorModel := resultsHelpers.WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseBFL)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := BFLResponseModel{}
+		model := resultsBfl.Forest{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseBFL)

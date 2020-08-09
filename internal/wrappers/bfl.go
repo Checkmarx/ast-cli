@@ -1,16 +1,10 @@
 package wrappers
 
-type BFLWrapper interface {
-	GetByScanID(params map[string]string) (*BFLResponseModel, *ErrorModel, error)
-}
+import (
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	resultsBfl "github.com/checkmarxDev/sast-results/pkg/web/path/bfl"
+)
 
-type BFLResponseModel struct {
-	ID         string
-	Trees      []BFLTreeModel
-	TotalCount int
-}
-type BFLTreeModel struct {
-	ID      string
-	BFL     ResultNode
-	Results []ResultResponseModel
+type BFLWrapper interface {
+	GetByScanID(params map[string]string) (*resultsBfl.Forest, *resultsHelpers.WebError, error)
 }

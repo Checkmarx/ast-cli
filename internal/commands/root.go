@@ -27,8 +27,6 @@ const (
 	inputFlagSh                   = "i"
 	inputFileFlag                 = "input-file"
 	inputFileFlagSh               = "f"
-	scanTagsFlag                  = "tag"
-	scanTagsFlagSh                = "t"
 	accessKeyIDFlag               = "key"
 	accessKeyIDFlagUsage          = "The access key ID"
 	accessKeySecretFlag           = "secret"

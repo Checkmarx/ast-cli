@@ -3,10 +3,12 @@ module github.com/checkmarxDev/ast-cli
 go 1.13
 
 require (
-	github.com/checkmarxDev/healthcheck v1.2.0
+	github.com/checkmarxDev/healthcheck v1.4.0
+	github.com/checkmarxDev/sast-results v1.0.2
 	github.com/checkmarxDev/sast-rm v1.1.1
-	github.com/checkmarxDev/scans v1.3.0
+	github.com/checkmarxDev/scans v1.3.3
 	github.com/checkmarxDev/uploads v1.0.1
+	github.com/cheggaaa/pb/v3 v3.0.4
 	github.com/google/uuid v1.1.1
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.6

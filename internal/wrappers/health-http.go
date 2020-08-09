@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -43,17 +42,14 @@ func runHealthCheckRequest(path string, timeout uint, parser func(body io.ReadCl
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return NewHealthStatus(
-			false,
-			fmt.Sprintf("Http request %v responded with status code %v and body %v",
-				resp.Request.URL, resp.StatusCode, func() string {
-					if err != nil {
-						return ""
-					}
+		return nil, errors.Errorf("Http request %v responded with status code %v and body %v",
+			resp.Request.URL, resp.StatusCode, func() string {
+				if err != nil {
+					return ""
+				}
 
-					return string(body)
-				}()),
-		), nil
+				return string(body)
+			}())
 	}
 
 	return parser(resp.Body)
@@ -85,13 +81,13 @@ func NewHealthCheckHTTPWrapper(
 
 func (h *healthCheckHTTPWrapper) RunWebAppCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.WebAppHealthcheckPath, DefaultTimeoutSeconds, func(body io.ReadCloser) (*HealthStatus, error) {
-		return NewHealthStatus(true), nil
+		return NewHealthStatus("Got OK", true), nil
 	})
 }
 
 func (h *healthCheckHTTPWrapper) RunKeycloakWebAppCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.KeycloakHealthcheckPath, DefaultTimeoutSeconds, func(body io.ReadCloser) (*HealthStatus, error) {
-		return NewHealthStatus(true), nil
+		return NewHealthStatus("Got OK", true), nil
 	})
 }
 

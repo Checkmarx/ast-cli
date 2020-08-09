@@ -5,13 +5,16 @@ executors:
       - image: circleci/golang:1.13.7
   go-lint:
     docker:
-      - image: golangci/golangci-lint:v1.23.6-alpine
+      - image: golangci/golangci-lint:v1.28.1-alpine
     resource_class: small
   circle-machine:
     machine:
       image: ubuntu-1604:202004-01
       #docker_layer_caching: true
 
+orbs:
+  checkmarx: checkmarx/circleci-kpi-shipper@0.11.0
+  
 jobs:
   unit-tests:
     executor: 
@@ -117,6 +120,9 @@ jobs:
             - "/go/pkg/mod"
             
 workflows:
+  Visibility-workflow:
+    jobs:
+      - checkmarx/circleci-kpi-shipper
   Test-workflow:
     jobs:
       - unit-tests:
