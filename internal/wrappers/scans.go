@@ -3,7 +3,7 @@ package wrappers
 import (
 	"time"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 )
 
 type ScanTaskResponseModel struct {

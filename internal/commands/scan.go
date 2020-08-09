@@ -14,7 +14,7 @@ import (
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
 	"github.com/spf13/cobra"
 )
@@ -57,8 +57,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-	createScanCmd.PersistentFlags().StringSliceP(scanTagsFlag, scanTagsFlagSh, []string{},
-		"Scan tags")
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -108,12 +106,10 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanInput, _ = cmd.Flags().GetString(inputFlag)
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
-		scanTagsRaw, _ := cmd.Flags().GetStringSlice(scanTagsFlag)
 
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, scanInput))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
 		PrintIfVerbose(fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
-		PrintIfVerbose(fmt.Sprintf("%s: %v", scanTagsFlag, scanTagsRaw))
 
 		if scanInputFile != "" {
 			// Reading from input file
@@ -163,13 +159,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			scanModel.Project.Handler = projectHandlerModelSerialized
 		}
 
-		if len(scanTagsFlag) > 0 {
-			tags, perr := parseTags(scanTagsRaw)
-			if perr != nil {
-				return errors.Wrapf(err, "%s: Tags in bad format", failedCreating)
-			}
-			scanModel.Tags = tags
-		}
 		var payload []byte
 		payload, _ = json.Marshal(scanModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
@@ -190,18 +179,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		return nil
 	}
-}
-
-func parseTags(flags []string) (map[string]string, error) {
-	tags := make(map[string]string)
-	for _, flag := range flags {
-		data := strings.Split(flag, "=")
-		if len(data) != 2 { //nolint:gomnd
-			return nil, errors.Errorf("Invalid tags. Tags should be in a KEY=VALUE format")
-		}
-		tags[data[0]] = data[1]
-	}
-	return tags, nil
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {

@@ -15,7 +15,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/v1/rest"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
+	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"gotest.tools/assert/cmp"
 
 	"gotest.tools/assert"
@@ -32,7 +33,7 @@ func TestScansE2E(t *testing.T) {
 
 	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
 	incScanWaitTime := viper.GetInt("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS")
-	scanCompleted := pollScanUntilStatus(t, scanID, scansRESTApi.ScanCompleted, fullScanWaitTime, 5)
+	scanCompleted := pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, fullScanWaitTime, 5)
 	assert.Assert(t, scanCompleted, "Full scan should be completed")
 
 	scanResults := getResultsNumberForScan(t, scanID)
@@ -41,7 +42,7 @@ func TestScansE2E(t *testing.T) {
 	deleteScan(t, scanID)
 
 	incScanID, _ := createIncScan(t)
-	incScanCompleted := pollScanUntilStatus(t, incScanID, scansRESTApi.ScanCompleted, incScanWaitTime, 5)
+	incScanCompleted := pollScanUntilStatus(t, incScanID, scansApi.ScanCompleted, incScanWaitTime, 5)
 	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
 
 	incScanResults := getResultsNumberForScan(t, incScanID)
@@ -67,7 +68,7 @@ func createScanSourcesFile(t *testing.T) (string, string) {
 	createdScan := scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(createdScanJSON, &createdScan)
 	assert.NilError(t, err, "Parsing scan response JSON should pass")
-	assert.Assert(t, createdScan.Status == scansRESTApi.ScanCreated)
+	assert.Assert(t, createdScan.Status == scansApi.ScanCreated)
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 	return createdScan.ID, createdScan.ProjectID
 }
@@ -97,16 +98,6 @@ func listScans(t *testing.T) {
 	allScans := []scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(getAllJSON, &allScans)
 	assert.NilError(t, err, "Parsing all scans response JSON should pass")
-}
-
-func listScansList(t *testing.T) {
-	getAllCommand := createASTIntegrationTestCommand(t)
-	var limit uint64 = 40
-	var offset uint64 = 0
-	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
-	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
-	err := execute(getAllCommand, "-v", "--format", "list", "scan", "list", "--filter", lim, "--filter", off)
-	assert.NilError(t, err, "Getting all scans should pass")
 }
 
 func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
@@ -160,11 +151,11 @@ func createIncScan(t *testing.T) (string, string) {
 	createdIncScan := scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(createdIncScanJSON, &createdIncScan)
 	assert.NilError(t, err, "Parsing incremental scan response JSON should pass")
-	assert.Assert(t, createdIncScan.Status == scansRESTApi.ScanCreated)
+	assert.Assert(t, createdIncScan.Status == scansApi.ScanCreated)
 	return createdIncScan.ID, createdIncScan.ProjectID
 }
 
-func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansRESTApi.ScanStatus, timeout, sleep int) bool {
+func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.ScanStatus, timeout, sleep int) bool {
 	log.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
 	// Wait for the scan to finish. See it's completed successfully
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
@@ -180,8 +171,8 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansRESTAp
 			getScanByIDList(t, scanID)
 			if s := string(scan.Status); s == string(requiredStatus) {
 				return true
-			} else if s == scansRESTApi.ScanFailed || s == scansRESTApi.ScanCanceled ||
-				s == scansRESTApi.ScanCompleted {
+			} else if s == scansApi.ScanFailed || s == scansApi.ScanCanceled ||
+				s == scansApi.ScanCompleted {
 				return false
 			} else {
 				time.Sleep(time.Duration(sleep) * time.Second)
