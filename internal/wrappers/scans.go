@@ -1,18 +1,13 @@
 package wrappers
 
 import (
-	"time"
-
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 )
 
 type ScanTaskResponseModel struct {
-	Id          string     `json:"id"`
-	State       string     `json:"state"`
-	TaskType    string     `json:"taskType"`
-	StartedTime *time.Time `json:"startedTime"`
-	EndTime     *time.Time `json:"endTime"`
-	Info        string     `json:"info"`
+	Source    string `json:"source"`
+	Timestamp string `json:"timestamp"`
+	Info      string `json:"info"`
 }
 
 type ScansWrapper interface {
