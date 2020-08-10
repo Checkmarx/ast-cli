@@ -1,9 +1,5 @@
 package wrappers
 
-import (
-	"github.com/checkmarxDev/ast-cli/internal/params"
-)
-
 func mockRun() (*HealthStatus, error) {
 	return NewHealthStatus("mock", true), nil
 }
@@ -41,8 +37,4 @@ func (h *HealthCheckMockWrapper) RunLoggingCheck() (*HealthStatus, error) {
 
 func (h *HealthCheckMockWrapper) RunScanFlowCheck() (*HealthStatus, error) {
 	return mockRun()
-}
-
-func (h *HealthCheckMockWrapper) GetAstRole() (string, error) {
-	return params.ScaAgent, nil
 }

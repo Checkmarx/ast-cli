@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
 	"github.com/spf13/cobra"
@@ -138,19 +138,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}
 			PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-
-			// We are in upload mode - populate fields accordingly
-			projectHandlerModel := scansRESTApi.UploadProjectHandler{
-				URL: *preSignedURL,
-			}
-			var projectHandlerModelSerialized []byte
-			projectHandlerModelSerialized, err = json.Marshal(projectHandlerModel)
-			if err != nil {
-				return errors.Wrapf(err, "%s: Failed to upload sources file: Failed to serialize project handler",
-					failedCreating)
-			}
-			scanModel.Project.Type = scansRESTApi.UploadProject
-			scanModel.Project.Handler = projectHandlerModelSerialized
+			scanModel.UploadURL = *preSignedURL
 		}
 
 		var payload []byte
