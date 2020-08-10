@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	unknownFlag        = "unknown flag: --chibutero"
-	subcommandRequired = "subcommand is required"
+	unknownFlag = "unknown flag: --chibutero"
 )
 
 func TestScanHelp(t *testing.T) {
