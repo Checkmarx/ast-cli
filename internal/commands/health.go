@@ -102,8 +102,8 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 }
 
 func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
-	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager, "SAST"}
-	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent, "SCA")
+	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
+	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
@@ -129,12 +129,8 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd
 		writeToStandardOutput("Performing health checks...")
 		role := viper.GetString(commonParams.AstRoleKey)
 		if role == "" {
-			var err error
-			role, err = healthCheckWrapper.GetAstRole()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to get ast role. "+
-					"you can set it manually with either the command flags or the cli environment variables")
-			}
+			return errors.New("Failed to get ast role. " +
+				"you can set it manually with either the command flags or the cli environment variables")
 		}
 
 		hlthChks := newHealthChecksByRole(healthCheckWrapper, role)

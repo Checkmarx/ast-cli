@@ -68,7 +68,7 @@ func createScanSourcesFile(t *testing.T) (string, string) {
 	createdScan := scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(createdScanJSON, &createdScan)
 	assert.NilError(t, err, "Parsing scan response JSON should pass")
-	assert.Assert(t, createdScan.Status == scansApi.ScanCreated)
+	assert.Assert(t, createdScan.Status == scansApi.ScanQueued)
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 	return createdScan.ID, createdScan.ProjectID
 }
@@ -151,7 +151,7 @@ func createIncScan(t *testing.T) (string, string) {
 	createdIncScan := scansRESTApi.ScanResponseModel{}
 	err = json.Unmarshal(createdIncScanJSON, &createdIncScan)
 	assert.NilError(t, err, "Parsing incremental scan response JSON should pass")
-	assert.Assert(t, createdIncScan.Status == scansApi.ScanCreated)
+	assert.Assert(t, createdIncScan.Status == scansApi.ScanQueued)
 	return createdIncScan.ID, createdIncScan.ProjectID
 }
 
