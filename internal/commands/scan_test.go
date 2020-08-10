@@ -22,8 +22,7 @@ func TestScanHelp(t *testing.T) {
 func TestScanNoSub(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "scan")
-	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == subcommandRequired)
+	assert.Assert(t, err == nil)
 }
 
 func TestRunCreateScanCommandWithFile(t *testing.T) {
