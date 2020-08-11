@@ -22,14 +22,10 @@ import (
 	"gotest.tools/assert"
 )
 
-const (
-	scanResultsNum    = 379
-	incScanResultsNum = 22
-)
-
 func TestScansE2E(t *testing.T) {
 	scanID, projectID := createScanSourcesFile(t)
 	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
 
 	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
 	incScanWaitTime := viper.GetInt("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS")
@@ -38,8 +34,7 @@ func TestScansE2E(t *testing.T) {
 
 	scanResults := getResultsNumberForScan(t, scanID)
 	log.Println("Full scan results number is", scanResults)
-	assert.Equal(t, scanResults, scanResultsNum, "Wrong number of scan results")
-	deleteScan(t, scanID)
+	assert.Check(t, scanResults > 0, "Wrong number of scan results of 0")
 
 	incScanID, _ := createIncScan(t)
 	incScanCompleted := pollScanUntilStatus(t, incScanID, scansApi.ScanCompleted, incScanWaitTime, 5)
@@ -47,7 +42,8 @@ func TestScansE2E(t *testing.T) {
 
 	incScanResults := getResultsNumberForScan(t, incScanID)
 	log.Println("Incremental scan results number is", incScanResults)
-	assert.Equal(t, incScanResults, incScanResultsNum, "Wrong number of inc scan results")
+	assert.Check(t, incScanResults > 0, "Wrong number of inc scan results of 0")
+	assert.Check(t, incScanResults < scanResults, "Wrong number of inc scan results - same as the full scan results")
 
 	listScans(t)
 	getScansTags(t)
