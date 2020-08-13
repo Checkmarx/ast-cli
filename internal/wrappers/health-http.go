@@ -18,7 +18,6 @@ type healthCheckHTTPWrapper struct {
 	InMemoryDBHealthcheckPath   string
 	LoggingHealthcheckPath      string
 	ScanFlowHealthcheckPath     string
-	GetAstRolePath              string
 }
 
 const scanFlowTimeoutSecs uint = 80
@@ -63,8 +62,7 @@ func NewHealthCheckHTTPWrapper(
 	healthcheckMinioPath,
 	healthCheckRedisPath,
 	healthcheckLoggingPath,
-	healthcheckScanFlowPath,
-	getAstRolePath string,
+	healthcheckScanFlowPath string,
 ) HealthCheckWrapper {
 	return &healthCheckHTTPWrapper{
 		astWebAppPath,
@@ -75,7 +73,6 @@ func NewHealthCheckHTTPWrapper(
 		healthCheckRedisPath,
 		healthcheckLoggingPath,
 		healthcheckScanFlowPath,
-		getAstRolePath,
 	}
 }
 
@@ -113,30 +110,4 @@ func (h *healthCheckHTTPWrapper) RunLoggingCheck() (*HealthStatus, error) {
 
 func (h *healthCheckHTTPWrapper) RunScanFlowCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.ScanFlowHealthcheckPath, scanFlowTimeoutSecs, parseHealthcheckResponse)
-}
-
-func (h *healthCheckHTTPWrapper) GetAstRole() (string, error) {
-	resp, err := SendHTTPRequest(http.MethodGet, h.GetAstRolePath, nil, false, DefaultTimeoutSeconds)
-	if err != nil {
-		return "", errors.Wrapf(err, "Http request %v failed", GetURL(h.GetAstRolePath))
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.Errorf("Http request %v responded with status code %v and body %v",
-			resp.Request.URL, resp.StatusCode, func() string {
-				if err != nil {
-					return ""
-				}
-
-				return string(body)
-			}())
-	}
-
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot read response body")
-	}
-
-	return string(body), nil
 }

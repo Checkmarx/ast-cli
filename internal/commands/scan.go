@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
 	"github.com/spf13/cobra"
@@ -144,7 +144,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 			}
 			PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-
 			scanModel.UploadURL = *preSignedURL
 		}
 
