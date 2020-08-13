@@ -30,7 +30,7 @@ type scans struct {
 
 func TestSastResourceE2E(t *testing.T) {
 	e := srEngines(t)
-	assert.Assert(t, cmp.Equal(e.Waiting, 3))
+	assert.Assert(t, cmp.Equal(e.Waiting, 1))
 	assert.Assert(t, cmp.Equal(e.Running, 0))
 	s := srScans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))
@@ -47,7 +47,7 @@ func TestSastResourceE2E(t *testing.T) {
 	// Let the sr to update
 	time.Sleep(10 * time.Second)
 	e = srEngines(t)
-	assert.Assert(t, cmp.Equal(e.Waiting, 2))
+	assert.Assert(t, cmp.Equal(e.Waiting, 0))
 	assert.Assert(t, cmp.Equal(e.Running, 1))
 	s = srScans(t)
 	assert.Assert(t, cmp.Equal(s.Waiting, 0))

@@ -3,8 +3,6 @@
     {
       "type": "sast",
       "value": {
-        "engineConfiguration": "<TODO> url to the engine configuration file",
-        "extensions": "<TODO> url to the extensions file",
         "incremental": "true",
         "presetName": "Default"
       }
@@ -12,8 +10,6 @@
   ],
   "tags": {"test1": "test3"},
   "project": {
-    "id": "inc_scan",
-    "type": "upload"
-  },
-  "scanID": ""
+    "id": "inc_scan"
+  }
 }

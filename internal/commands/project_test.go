@@ -17,8 +17,7 @@ func TestProjectHelp(t *testing.T) {
 func TestProjectNoSub(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "project")
-	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == subcommandRequired)
+	assert.Assert(t, err == nil)
 }
 
 func TestRunCreateProjectCommandWithFile(t *testing.T) {

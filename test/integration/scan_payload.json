@@ -3,16 +3,13 @@
     {
       "type": "sast",
       "value": {
-        "engineConfiguration": "<TODO> url to the engine configuration file",
-        "extensions": "<TODO> url to the extensions file",
         "incremental": "false",
-        "presetName": "Checkmarx Default"
+        "presetName": "Default"
       }
     }
   ],
   "tags": {"test1": "test3"},
   "project": {
-    "id": "inc_scan",
-    "type": "upload"
+    "id": "inc_scan"
   }
 }
