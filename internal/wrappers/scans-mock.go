@@ -11,6 +11,10 @@ import (
 type ScansMockWrapper struct {
 }
 
+func (m *ScansMockWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansRESTApi.ErrorModel, error) {
+	return nil, nil, nil
+}
+
 func (m *ScansMockWrapper) Create(model *scansRESTApi.Scan) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Create in ScansMockWrapper")
 	return &scansRESTApi.ScanResponseModel{
