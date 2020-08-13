@@ -93,8 +93,8 @@ github.com/checkmarxDev/scans v1.3.0/go.mod h1:l8YnijQz4kZr8CQShsIl3WPM4aDeOtTAj
 github.com/checkmarxDev/scans v1.3.2/go.mod h1:Iuv6QmWLuevfO7pOYjo4+zrQRZchOQaUUjlhsaO4A7A=
 github.com/checkmarxDev/scans v1.3.3 h1:MAUYsK8NrTtKUTcMZ0xf809SqmBFH6YXTPBHCbIkBQo=
 github.com/checkmarxDev/scans v1.3.3/go.mod h1:Iuv6QmWLuevfO7pOYjo4+zrQRZchOQaUUjlhsaO4A7A=
-github.com/checkmarxDev/scans v1.4.9 h1:gr50PB55i+dIvNtvSe6ieJSDOX0P6k/Q7M1Fbhv7Iy8=
-github.com/checkmarxDev/scans v1.4.9/go.mod h1:n6nBd7MoO20uT2CRF+dBaYiQmYgmDsxdmnxRcGP0JI8=
+github.com/checkmarxDev/scans v1.5.1 h1:NKbmSqBjk+XBvgsQHjYSFigm2HsNXQF8p0Rf1/8zcik=
+github.com/checkmarxDev/scans v1.5.1/go.mod h1:n6nBd7MoO20uT2CRF+dBaYiQmYgmDsxdmnxRcGP0JI8=
 github.com/checkmarxDev/uploads v1.0.1 h1:+UPjE5okSHFgRgCR7NouEYLFPKDToyWyFmhS2lrrSMY=
 github.com/checkmarxDev/uploads v1.0.1/go.mod h1:7WMSc96f012/4O3+3rYV2vhKI9GTEBGNVkp56b8F0ok=
 github.com/cheggaaa/pb v1.0.28 h1:kWGpdAcSp3MxMU9CCHOwz/8V0kCHN4+9yQm2MzWuI98=
