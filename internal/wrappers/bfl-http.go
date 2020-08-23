@@ -51,8 +51,9 @@ func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*resultsBfl.Fore
 			return nil, nil, errors.Wrapf(err, failedToParseBFL)
 		}
 		return &model, nil, nil
-
+	case http.StatusNotFound:
+		return nil, nil, errors.Errorf("scan not found")
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
