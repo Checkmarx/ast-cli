@@ -65,7 +65,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	case http.StatusOK:
 		return preSignedURL, nil
 	default:
-		return nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
@@ -96,7 +96,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		return &model.URL, nil
 
 	default:
-		return nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 

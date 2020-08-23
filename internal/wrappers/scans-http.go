@@ -65,9 +65,10 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollect
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return &model, nil, nil
-
+	case http.StatusNotFound:
+		return nil, nil, errors.Errorf("scan not found")
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
@@ -112,7 +113,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 		return model, nil, nil
 
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
@@ -149,6 +150,6 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, er
 		return tags, nil, nil
 
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
