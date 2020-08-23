@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -107,19 +105,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
 
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, scanInput))
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, scanInputFile))
-		PrintIfVerbose(fmt.Sprintf("%s: %s", sourcesFlag, sourcesFile))
-
 		if scanInputFile != "" {
 			// Reading from input file
-			PrintIfVerbose(fmt.Sprintf("Reading input from file %s", scanInputFile))
 			input, err = ioutil.ReadFile(scanInputFile)
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to open input file", failedCreating)
 			}
-			wd, _ := os.Getwd()
-			PrintIfVerbose(fmt.Sprintf("Input file full path is  %s", filepath.Join(wd, scanInputFile)))
 		} else if scanInput != "" {
 			// Reading from standard input
 			PrintIfVerbose("Reading input from console")

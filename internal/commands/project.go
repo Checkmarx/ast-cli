@@ -88,9 +88,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		projInput, _ = cmd.Flags().GetString(inputFlag)
 		projInputFile, _ = cmd.Flags().GetString(inputFileFlag)
 
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, projInput))
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
-
 		if projInputFile != "" {
 			// Reading project from input file
 			PrintIfVerbose(fmt.Sprintf("Reading project input from file %s", projInputFile))
