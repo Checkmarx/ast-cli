@@ -43,6 +43,10 @@ const (
 	filterFlag                    = "filter"
 	baseURIFlag                   = "base-uri"
 	baseURIFlagUsage              = "The base system URI"
+	queriesRepoFileFlag           = "repo"
+	queriesRepoFileFlagSh         = "r"
+	queriesRepoNameFlag           = "name"
+	queriesRepoNameSh             = "n"
 )
 
 // Return an AST CLI root command to execute
@@ -54,6 +58,7 @@ func NewAstCLI(
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
 	healthCheckWrapper wrappers.HealthCheckWrapper,
+	queriesWrapper wrappers.QueriesWrapper,
 	defaultConfigFileLocation string,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -90,6 +95,7 @@ func NewAstCLI(
 	appCmd := NewAppCommand()
 	singleNodeCommand := NewSingleNodeCommand(healthCheckWrapper, defaultConfigFileLocation)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
+	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -100,6 +106,7 @@ func NewAstCLI(
 		singleNodeCommand,
 		bflCmd,
 		rmCmd,
+		queriesCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
