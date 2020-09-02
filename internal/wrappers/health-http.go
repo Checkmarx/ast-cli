@@ -18,6 +18,7 @@ type healthCheckHTTPWrapper struct {
 	InMemoryDBHealthcheckPath   string
 	LoggingHealthcheckPath      string
 	ScanFlowHealthcheckPath     string
+	SastEnginesHealthcheckPath  string
 }
 
 const scanFlowTimeoutSecs uint = 80
@@ -62,7 +63,8 @@ func NewHealthCheckHTTPWrapper(
 	healthcheckMinioPath,
 	healthCheckRedisPath,
 	healthcheckLoggingPath,
-	healthcheckScanFlowPath string,
+	healthcheckScanFlowPath,
+	healthcheckSastEnginesPath string,
 ) HealthCheckWrapper {
 	return &healthCheckHTTPWrapper{
 		astWebAppPath,
@@ -73,6 +75,7 @@ func NewHealthCheckHTTPWrapper(
 		healthCheckRedisPath,
 		healthcheckLoggingPath,
 		healthcheckScanFlowPath,
+		healthcheckSastEnginesPath,
 	}
 }
 
@@ -110,4 +113,8 @@ func (h *healthCheckHTTPWrapper) RunLoggingCheck() (*HealthStatus, error) {
 
 func (h *healthCheckHTTPWrapper) RunScanFlowCheck() (*HealthStatus, error) {
 	return runHealthCheckRequest(h.ScanFlowHealthcheckPath, scanFlowTimeoutSecs, parseHealthcheckResponse)
+}
+
+func (h *healthCheckHTTPWrapper) RunSastEnginesCheck() (*HealthStatus, error) {
+	return runHealthCheckRequest(h.SastEnginesHealthcheckPath, DefaultTimeoutSeconds, parseHealthcheckResponse)
 }
