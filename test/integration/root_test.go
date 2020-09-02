@@ -119,6 +119,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	healthcheckScanFlowPath := viper.GetString(params.HealthcheckScanFlowPathKey)
 
+	err = bindKeyToEnvAndDefault(params.HealthcheckSastEnginesPathKey, params.HealthcheckSastEnginesPathEnv,
+		"sast-engines")
+	assert.NilError(t, err)
+	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathKey)
+
 	err = bindKeyToEnvAndDefault(params.QueriesPathKey, params.QueriesPathEnv, "api/queries")
 	assert.NilError(t, err)
 	queries := viper.GetString(params.QueriesPathKey)
@@ -161,6 +166,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckScanFlowPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"

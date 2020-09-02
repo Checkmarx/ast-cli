@@ -23,6 +23,7 @@ const (
 	HealthcheckInMemoryDBPathEnv        = "HEALTHCHECK_IN_MEMORY_DB_PATH"
 	HealthcheckLoggingPathEnv           = "HEALTHCHECK_LOGGING_PATH"
 	HealthcheckScanFlowPathEnv          = "HEALTHCHECK_SCAN_FLOW_PATH"
+	HealthcheckSastEnginesPathEnv       = "HEALTHCHECK_SAST_ENGINES_PATH"
 	QueriesPathEnv                      = "QUERIES_PATH"
 	QueriesCLonePathEnv                 = "QUERIES_CLONE_PATH"
 )

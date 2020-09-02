@@ -88,6 +88,11 @@ func main() {
 	exitIfError(err)
 	healthcheckScanFlowPath := viper.GetString(params.HealthcheckScanFlowPathKey)
 
+	err = bindKeyToEnvAndDefault(params.HealthcheckSastEnginesPathKey, params.HealthcheckSastEnginesPathEnv,
+		"sast-engines")
+	exitIfError(err)
+	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathEnv)
+
 	err = bindKeyToEnvAndDefault(params.QueriesPathKey, params.QueriesPathEnv, "api/queries")
 	exitIfError(err)
 	queries := viper.GetString(params.QueriesPathKey)
@@ -129,6 +134,7 @@ func main() {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckInMemoryDBPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckLoggingPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckScanFlowPath),
+		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
 	queriesCloneURIPath := fmt.Sprintf("%s/%s", queries, queriesClonePath)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
