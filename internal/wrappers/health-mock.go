@@ -38,3 +38,7 @@ func (h *HealthCheckMockWrapper) RunLoggingCheck() (*HealthStatus, error) {
 func (h *HealthCheckMockWrapper) RunScanFlowCheck() (*HealthStatus, error) {
 	return mockRun()
 }
+
+func (h *HealthCheckMockWrapper) RunSastEnginesCheck() (*HealthStatus, error) {
+	return mockRun()
+}

@@ -13,6 +13,7 @@ type HealthCheckWrapper interface {
 	RunInMemoryDBCheck() (*HealthStatus, error)
 	RunLoggingCheck() (*HealthStatus, error)
 	RunScanFlowCheck() (*HealthStatus, error)
+	RunSastEnginesCheck() (*HealthStatus, error)
 }
 
 type HealthStatus struct {
