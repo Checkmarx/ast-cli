@@ -43,8 +43,8 @@ const (
 	filterFlag                    = "filter"
 	baseURIFlag                   = "base-uri"
 	baseURIFlagUsage              = "The base system URI"
-	queriesRepoFileFlag           = "repo"
-	queriesRepoFileFlagSh         = "r"
+	queriesRepoFileFlag           = "tarball"
+	queriesRepoFileFlagSh         = "t"
 	queriesRepoNameFlag           = "name"
 	queriesRepoNameSh             = "n"
 )
