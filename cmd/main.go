@@ -93,6 +93,14 @@ func main() {
 	exitIfError(err)
 	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathEnv)
 
+	err = bindKeyToEnvAndDefault(params.QueriesPathKey, params.QueriesPathEnv, "api/queries")
+	exitIfError(err)
+	queries := viper.GetString(params.QueriesPathKey)
+
+	err = bindKeyToEnvAndDefault(params.QueriesClonePathKey, params.QueriesCLonePathEnv, "clone")
+	exitIfError(err)
+	queriesClonePath := viper.GetString(params.QueriesClonePathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -128,6 +136,8 @@ func main() {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckScanFlowPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
+	queriesCloneURIPath := fmt.Sprintf("%s/%s", queries, queriesClonePath)
+	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
@@ -138,6 +148,7 @@ func main() {
 		bflWrapper,
 		rmWrapper,
 		healthCheckWrapper,
+		queriesWrapper,
 		defaultConfigFileLocation,
 	)
 
