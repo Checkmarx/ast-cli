@@ -106,13 +106,13 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
-		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Web-App", h.RunWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Identity and Access Management Web App", h.RunKeycloakWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Scan-Flow", h.RunScanFlowCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Sast-Engines", h.RunSastEnginesCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Object-Store", h.RunObjectStoreCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Message-Queue", h.RunMessageQueueCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Logging", h.RunLoggingCheck, sastAndScaRoles),
 	}
 
