@@ -38,12 +38,12 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 	}
 	cloneCmd := &cobra.Command{
 		Use:   "clone [name]",
-		Short: "Clone queries repo tarball into current directory (blank name for the active queries repo)",
+		Short: "Copy remote queries repo to local tarball (blank name for the active queries repo)",
 		RunE:  runClone(queryWrapper),
 	}
 	importCmd := &cobra.Command{
 		Use:   "import",
-		Short: "Import your custom queries repo into ast",
+		Short: "Import your custom queries repo tarball into ast",
 		RunE:  runImport(queryWrapper, uploadsWrapper),
 	}
 	importCmd.PersistentFlags().StringP(queriesRepoFileFlag, queriesRepoFileFlagSh, "",
