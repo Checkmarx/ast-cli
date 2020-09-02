@@ -38,31 +38,31 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 	}
 	cloneCmd := &cobra.Command{
 		Use:   "clone [name]",
-		Short: "clone queries repo (blank for the active queries repo)",
+		Short: "Clone queries repo tarball into current directory (blank name for the active queries repo)",
 		RunE:  runClone(queryWrapper),
 	}
 	importCmd := &cobra.Command{
 		Use:   "import",
-		Short: "import queries repo (upload)",
+		Short: "Import your custom queries repo into ast",
 		RunE:  runImport(queryWrapper, uploadsWrapper),
 	}
 	importCmd.PersistentFlags().StringP(queriesRepoFileFlag, queriesRepoFileFlagSh, "",
-		"A queries repo compressed file path")
+		"File path to custom queries repo tarball")
 	importCmd.PersistentFlags().StringP(queriesRepoNameFlag, queriesRepoNameSh, "",
-		"A queries repo override name (default is the repo file name)")
+		"A override name for your custom queries repo (default is the repo file name)")
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "list queries repos",
+		Short: "List all the exists queries repos",
 		RunE:  runList(queryWrapper),
 	}
 	activateCmd := &cobra.Command{
 		Use:   "activate <name>",
-		Short: "activate queries repo",
+		Short: "Activate exists queries repo for the engine usage",
 		RunE:  runActivate(queryWrapper),
 	}
 	deleteCmd := &cobra.Command{
 		Use:   "delete <name>",
-		Short: "delete queries repo",
+		Short: "Delete exists queries repo",
 		RunE:  runDelete(queryWrapper),
 	}
 	queryCmd.AddCommand(cloneCmd, importCmd, listCmd, activateCmd, deleteCmd)
@@ -88,16 +88,17 @@ func runClone(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, arg
 		defer repo.Close()
 		pwdDir, err := os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "%s: failed get pwd", failedCloningRepo)
+			return errors.Wrapf(err, "%s: failed get current directory path", failedCloningRepo)
 		}
 
 		distFile := filepath.Join(pwdDir, queriesRepoDistFileName)
 		distWriter, err := os.Create(distFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s failed creating write file", failedCloningRepo)
+			return errors.Wrapf(err, "%s failed creating file to clone into", failedCloningRepo)
 		}
 
-		cmd.OutOrStdout().Write([]byte("Cloning into " + distFile + "\n")) //nolint:errcheck
+		defer distWriter.Close()
+		_, _ = cmd.OutOrStdout().Write([]byte("Cloning into " + distFile + "\n"))
 		_, err = io.Copy(distWriter, repo)
 		if err != nil {
 			return errors.Wrap(err, failedCloningRepo)
@@ -113,7 +114,7 @@ func runImport(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 		nameOverride, _ := cmd.Flags().GetString(queriesRepoNameFlag)
 
 		if repoFile == "" {
-			return errors.Errorf("%s: Please provide a compressed repo file path", failedImportingRepo)
+			return errors.Errorf("%s: Please provide a tarball repo file path", failedImportingRepo)
 		}
 
 		preSignedURL, err := uploadsWrapper.UploadFile(repoFile)
@@ -126,7 +127,7 @@ func runImport(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 		if nameOverride == "" {
 			baseFileName := filepath.Base(repoFile)
 			// strip the file extension
-			nameOverride = baseFileName[:strings.LastIndex(baseFileName, filepath.Ext(baseFileName))]
+			nameOverride = strings.TrimSuffix(baseFileName, filepath.Ext(baseFileName))
 		}
 
 		errorModel, err := queryWrapper.Import(*preSignedURL, nameOverride)
