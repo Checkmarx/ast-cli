@@ -25,9 +25,9 @@ func TestQueryNoSub(t *testing.T) {
 
 func TestRunImportCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "import", "--repo", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "query", "import", "--tarball", "./payloads/nonsense.json")
 	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "query", "import", "--repo", "./payloads/uploads.json", "--name", "mock")
+	err = executeTestCommand(cmd, "-v", "query", "import", "-t", "./payloads/uploads.json", "--name", "mock")
 	assert.NilError(t, err)
 }
 
