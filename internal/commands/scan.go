@@ -76,8 +76,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 
 	deleteScanCmd := &cobra.Command{
-		Use:   "delete <scan id>",
-		Short: "Stops a scan from running",
+		Use:   "delete [scan id...]",
+		Short: "Stops one or more scans from running",
 		RunE:  runDeleteScanCommand(scansWrapper),
 	}
 
@@ -240,20 +240,34 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 
 func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var errorModel *scansRESTApi.ErrorModel
-		var err error
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide a scan ID", failedDeleting)
 		}
-		scanID := args[0]
-		errorModel, err = scansWrapper.Delete(scanID)
-		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedDeleting)
+
+		errChan := make(chan error)
+		for _, argScanID := range args {
+			go func(scanID string) {
+				errorModel, err := scansWrapper.Delete(scanID)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "%s\n", failedDeleting)
+				}
+
+				// Checking the response
+				if errorModel != nil {
+					errChan <- errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
+				}
+
+				errChan <- nil
+			}(argScanID)
 		}
-		// Checking the response
-		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
+
+		for range args {
+			err := <-errChan
+			if err != nil {
+				return err
+			}
 		}
+
 		return nil
 	}
 }

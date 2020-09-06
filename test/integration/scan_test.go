@@ -112,6 +112,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
 	return &getScan
 }
+
 func getScanByIDList(t *testing.T, scanID string) {
 	getCommand := createASTIntegrationTestCommand(t)
 	err := execute(getCommand, "-v", "--format", "list", "scan", "show", scanID)
