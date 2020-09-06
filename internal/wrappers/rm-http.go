@@ -7,12 +7,48 @@ import (
 
 	"github.com/pkg/errors"
 
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	rm "github.com/checkmarxDev/sast-rm/pkg/api/rest"
 )
 
 type sastrmHTTPWrapper struct {
 	path        string
 	contentType string
+}
+
+func (s *sastrmHTTPWrapper) GetPools() ([]*rm.Pool, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) GetPoolEngines(id string) ([]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) GetPoolProjects(id string) ([]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) GetPoolEngineTags(id string) (map[string]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) GetPoolProjectTags(id string) (map[string]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) SetPoolEngines(id string, value []string) ([]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) SetPoolProjects(id string, value []string) ([]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) SetPoolEngineTags(id string, value map[string]string) (map[string]string, error) {
+	panic("implement me")
+}
+
+func (s *sastrmHTTPWrapper) SetPoolProjectTags(id string, value map[string]string) (map[string]string, error) {
+	panic("implement me")
 }
 
 func (s *sastrmHTTPWrapper) GetStats(r StatResolution) ([]*rm.Metric, error) {

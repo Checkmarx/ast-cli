@@ -1,5 +1,6 @@
 # IDE logic
 .vscode
+.idea
 
 # Binaries for programs and plugins
 *.exe
