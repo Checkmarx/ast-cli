@@ -23,7 +23,7 @@ const (
 	failedImportingRepo  = "failed importing queries repo"
 )
 
-const queriesRepoDestFileName = "queries-repo.tar.gz"
+const QueriesRepoDestFileName = "queries-repo.tar.gz"
 
 type queryRepoView struct {
 	Name         string
@@ -91,7 +91,7 @@ func runClone(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, arg
 			return errors.Wrapf(err, "%s: failed get current directory path", failedCloningRepo)
 		}
 
-		destFile := filepath.Join(pwdDir, queriesRepoDestFileName)
+		destFile := filepath.Join(pwdDir, QueriesRepoDestFileName)
 		destWriter, err := os.Create(destFile)
 		if err != nil {
 			return errors.Wrapf(err, "%s failed creating file to clone into", failedCloningRepo)

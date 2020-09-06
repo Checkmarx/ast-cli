@@ -4,7 +4,7 @@
       "type": "sast",
       "value": {
         "incremental": "true",
-        "presetName": "Default"
+        "presetName": "Checkmarx Default"
       }
     }
   ],
