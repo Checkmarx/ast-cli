@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	rm "github.com/checkmarxDev/sast-rm/pkg/api/rest"
 )
 
 type sastrmHTTPWrapper struct {
