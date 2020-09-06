@@ -8,7 +8,7 @@ import (
 )
 
 type QueriesWrapper interface {
-	Clone(name string) (io.ReadCloser, *queriesHelpers.WebError, error)
+	Download(name string) (io.ReadCloser, *queriesHelpers.WebError, error)
 	Import(uploadURL string, name string) (*queriesHelpers.WebError, error)
 	List() ([]*queries.QueriesRepo, error)
 	Activate(name string) (*queriesHelpers.WebError, error)

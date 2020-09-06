@@ -23,23 +23,23 @@ func TestQueryNoSub(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunImportCommandWithFile(t *testing.T) {
+func TestRunUploadCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "import", "--tarball", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "query", "upload", "./payloads/nonsense.json")
 	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "query", "import", "-t", "./payloads/uploads.json", "--name", "mock")
+	err = executeTestCommand(cmd, "-v", "query", "upload", "./payloads/uploads.json", "--name", "mock")
 	assert.NilError(t, err)
 }
 
-func TestRunImportCommandWithNoRepo(t *testing.T) {
+func TestRunUploadCommandWithNoRepo(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "import")
+	err := executeTestCommand(cmd, "-v", "query", "upload")
 	assert.Assert(t, err != nil)
 }
 
-func TestRunCLoneCommand(t *testing.T) {
+func TestRunDownloadCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "clone", "mock")
+	err := executeTestCommand(cmd, "-v", "query", "download", "mock")
 	assert.NilError(t, err)
 	wd, _ := os.Getwd()
 	mockFilePath := filepath.Join(wd, QueriesRepoDestFileName)

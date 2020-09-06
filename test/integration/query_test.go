@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/sast-queries/pkg/v1/queriesobjects"
 	"gotest.tools/assert"
 	"io/ioutil"
 	"os"
@@ -22,14 +21,14 @@ func TestQueriesE2E(t *testing.T) {
 	err := execute(cmd, "-v", "--format", "json", "query", "list")
 	listJSON, err := ioutil.ReadAll(outBuff)
 	assert.NilError(t, err, "Reading list response JSON should pass")
-	var listModel []*queriesobjects.QueriesRepo
+	var listModel []*commands.QueryRepoView
 	err = json.Unmarshal(listJSON, &listModel)
 	assert.NilError(t, err, "Parsing list response JSON should pass")
 	assert.Assert(t, len(listModel) > 0)
 	var activeFound bool
 	var activeRepoName string
 	for _, r := range listModel {
-		if r.IsActive {
+		if r.IsActive == "active" {
 			assert.Assert(t, !activeFound, "There should'nt be more than one active queries repo")
 			activeFound = true
 			activeRepoName = r.Name
@@ -38,19 +37,19 @@ func TestQueriesE2E(t *testing.T) {
 
 	assert.Assert(t, activeFound, "Should be one active queries repo")
 
-	// CLone
-	err = execute(cmd, "-v", "query", "clone")
+	// Download
+	err = execute(cmd, "-v", "query", "download")
 	assert.NilError(t, err)
 	pwd, _ := os.Getwd()
-	clonedRepoPth := filepath.Join(pwd, commands.QueriesRepoDestFileName)
-	defer os.Remove(clonedRepoPth)
-	stat, err := os.Stat(clonedRepoPth)
-	assert.NilError(t, err, "Stat cloned repo tarball should pass")
+	downloadedRepoPth := filepath.Join(pwd, commands.QueriesRepoDestFileName)
+	defer os.Remove(downloadedRepoPth)
+	stat, err := os.Stat(downloadedRepoPth)
+	assert.NilError(t, err, "Stat downloaded repo tarball should pass")
 	assert.Assert(t, stat.Size() > 1000) // > 1KB
 
-	// Import
+	// Upload
 	repoName := "cli_test"
-	err = execute(cmd, "-v", "query", "import", "--tarball", clonedRepoPth, "--name", repoName)
+	err = execute(cmd, "-v", "query", "upload", downloadedRepoPth, "--name", repoName)
 	assert.NilError(t, err)
 	outBuff.Reset()
 	err = execute(cmd, "-v", "--format", "json", "query", "list")
@@ -62,8 +61,8 @@ func TestQueriesE2E(t *testing.T) {
 	var newRepoFound bool
 	for _, r := range listModel {
 		if r.Name == repoName {
-			if r.IsActive {
-				t.Error("Imported repo should not be active")
+			if r.IsActive == "active" {
+				t.Error("Uploaded repo should not be active")
 			}
 			newRepoFound = true
 			break
@@ -84,8 +83,8 @@ func TestQueriesE2E(t *testing.T) {
 	assert.NilError(t, err, "Parsing list response JSON should pass")
 	for _, r := range listModel {
 		if r.Name == repoName {
-			if !r.IsActive {
-				t.Error("Imported repo should be active")
+			if r.IsActive == "inactive" {
+				t.Error("Uploaded repo should be active")
 			}
 			break
 		}
@@ -106,7 +105,7 @@ func TestQueriesE2E(t *testing.T) {
 	assert.NilError(t, err, "Parsing list response JSON should pass")
 	for _, r := range listModel {
 		if r.Name == repoName {
-			t.Error("Imported repo should be deleted")
+			t.Error("Uploaded repo should be deleted")
 			break
 		}
 	}
