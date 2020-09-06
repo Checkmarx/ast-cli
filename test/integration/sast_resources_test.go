@@ -6,11 +6,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"testing"
 	"time"
+
+	rm "github.com/checkmarxDev/sast-rm/pkg/api/rest"
+	"github.com/spf13/viper"
 
 	"gotest.tools/assert/cmp"
 
@@ -56,7 +57,7 @@ func TestSastResourceE2E(t *testing.T) {
 
 func srScans(t *testing.T) scans {
 	var scanCollection []rm.Scan
-	invokeCommand(t, &scanCollection, "--format", "json", "sr", "scans")
+	invokeCommand(t, &scanCollection, "--format", "json", "sast-rm", "scans")
 	result := scans{}
 	for _, s := range scanCollection {
 		if s.State == rm.AllocatedScanState || s.State == rm.RunningScanState {
@@ -70,7 +71,7 @@ func srScans(t *testing.T) scans {
 
 func srEngines(t *testing.T) engines {
 	var enginesCollection []rm.Engine
-	invokeCommand(t, &enginesCollection, "--format", "json", "sr", "engines")
+	invokeCommand(t, &enginesCollection, "--format", "json", "sast-rm", "engines")
 	result := engines{}
 	for _, engine := range enginesCollection {
 		if engine.Status == rm.AllocatedEngineStatus || engine.Status == rm.BusyEngineStatus {
