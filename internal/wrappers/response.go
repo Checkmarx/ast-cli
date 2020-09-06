@@ -22,7 +22,7 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 
 	defer resp.Body.Close()
 	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
+	case http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotFound:
 		errorModel := scansApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
