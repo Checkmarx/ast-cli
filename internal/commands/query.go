@@ -16,18 +16,18 @@ import (
 )
 
 const (
-	failedListingRepos   = "failed listing queries repos"
-	failedDeletingRepo   = "failed deleting queries repo"
-	failedActivatingRepo = "failed activating queries repo"
-	failedCloningRepo    = "failed cloning queries repo"
-	failedImportingRepo  = "failed importing queries repo"
+	failedListingRepos   = "failed listing queries repositories"
+	failedDeletingRepo   = "failed deleting queries repository"
+	failedActivatingRepo = "failed activating queries repository"
+	failedCloningRepo    = "failed downloading queries repository"
+	failedUploadingRepo  = "failed importing queries repository"
 )
 
-const QueriesRepoDestFileName = "queries-repo.tar.gz"
+const QueriesRepoDestFileName = "queries-repository.tar.gz"
 
-type queryRepoView struct {
+type QueryRepoView struct {
 	Name         string
-	IsActive     bool      `format:"name:Is active"`
+	IsActive     string    `format:"name:Is active"`
 	LastModified time.Time `format:"name:Last modified;time:06-01-02 15:04:05"`
 }
 
@@ -37,46 +37,44 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Short: "Manage queries",
 	}
 	cloneCmd := &cobra.Command{
-		Use:   "clone [name]",
-		Short: "Copy remote queries repo to local tarball (blank name for the active queries repo)",
-		RunE:  runClone(queryWrapper),
+		Use:   "download [name] (default is the active repository)",
+		Short: "Download a remote query repository to a local archive file",
+		RunE:  runDownload(queryWrapper),
 	}
 	importCmd := &cobra.Command{
-		Use:   "import",
-		Short: "Import your custom queries repo tarball into ast",
-		RunE:  runImport(queryWrapper, uploadsWrapper),
+		Use:   "upload <repository>",
+		Short: "Upload local query repository archive file (tarball format) to AST",
+		RunE:  runUpload(queryWrapper, uploadsWrapper),
 	}
-	importCmd.PersistentFlags().StringP(queriesRepoFileFlag, queriesRepoFileFlagSh, "",
-		"File path to custom queries repo tarball")
 	importCmd.PersistentFlags().StringP(queriesRepoNameFlag, queriesRepoNameSh, "",
-		"A override name for your custom queries repo (default is the repo file name)")
+		"A override name for your custom queries repository (default is the repository file name)")
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all the exists queries repos",
+		Short: "List query repositories",
 		RunE:  runList(queryWrapper),
 	}
 	activateCmd := &cobra.Command{
 		Use:   "activate <name>",
-		Short: "Activate exists queries repo for the engine usage",
+		Short: "Activate a queries repository for the engine usage",
 		RunE:  runActivate(queryWrapper),
 	}
 	deleteCmd := &cobra.Command{
 		Use:   "delete <name>",
-		Short: "Delete exists queries repo",
+		Short: "Delete a query repository",
 		RunE:  runDelete(queryWrapper),
 	}
 	queryCmd.AddCommand(cloneCmd, importCmd, listCmd, activateCmd, deleteCmd)
 	return queryCmd
 }
 
-func runClone(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args []string) error {
+func runDownload(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var name string
 		if len(args) > 0 {
 			name = args[0]
 		}
 
-		repo, errorModel, err := queryWrapper.Clone(name)
+		repo, errorModel, err := queryWrapper.Download(name)
 		if err != nil {
 			return errors.Wrap(err, failedCloningRepo)
 		}
@@ -94,7 +92,7 @@ func runClone(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, arg
 		destFile := filepath.Join(pwdDir, QueriesRepoDestFileName)
 		destWriter, err := os.Create(destFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s failed creating file to clone into", failedCloningRepo)
+			return errors.Wrapf(err, "%s failed creating file to download into it", failedCloningRepo)
 		}
 
 		defer destWriter.Close()
@@ -108,18 +106,17 @@ func runClone(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, arg
 	}
 }
 
-func runImport(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+func runUpload(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		repoFile, _ := cmd.Flags().GetString(queriesRepoFileFlag)
-		nameOverride, _ := cmd.Flags().GetString(queriesRepoNameFlag)
-
-		if repoFile == "" {
-			return errors.Errorf("%s: Please provide a tarball repo file path", failedImportingRepo)
+		if len(args) == 0 {
+			return errors.Errorf("%s: Please provide a path to queries repository", failedUploadingRepo)
 		}
 
+		repoFile := args[0]
+		nameOverride, _ := cmd.Flags().GetString(queriesRepoNameFlag)
 		preSignedURL, err := uploadsWrapper.UploadFile(repoFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s: failed to upload repo file", failedImportingRepo)
+			return errors.Wrapf(err, "%s: failed to upload repository file", failedUploadingRepo)
 		}
 
 		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
@@ -132,7 +129,7 @@ func runImport(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 
 		errorModel, err := queryWrapper.Import(*preSignedURL, nameOverride)
 		if err != nil {
-			return errors.Wrap(err, failedImportingRepo)
+			return errors.Wrap(err, failedUploadingRepo)
 		}
 
 		if errorModel != nil {
@@ -162,7 +159,7 @@ func runList(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args
 func runActivate(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a queries repo name", failedActivatingRepo)
+			return errors.Errorf("%s: Please provide a queries repository name", failedActivatingRepo)
 		}
 
 		name := args[0]
@@ -182,7 +179,7 @@ func runActivate(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, 
 func runDelete(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a queries repo name", failedDeletingRepo)
+			return errors.Errorf("%s: Please provide a queries repository name", failedDeletingRepo)
 		}
 
 		name := args[0]
@@ -199,8 +196,8 @@ func runDelete(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, ar
 	}
 }
 
-func toQueryRepoViews(models []*queriesobjects.QueriesRepo) []*queryRepoView {
-	result := make([]*queryRepoView, len(models))
+func toQueryRepoViews(models []*queriesobjects.QueriesRepo) []*QueryRepoView {
+	result := make([]*QueryRepoView, len(models))
 	for i, model := range models {
 		result[i] = toQueryRepoView(model)
 	}
@@ -208,10 +205,16 @@ func toQueryRepoViews(models []*queriesobjects.QueriesRepo) []*queryRepoView {
 	return result
 }
 
-func toQueryRepoView(model *queriesobjects.QueriesRepo) *queryRepoView {
-	return &queryRepoView{
+func toQueryRepoView(model *queriesobjects.QueriesRepo) *QueryRepoView {
+	return &QueryRepoView{
 		Name:         model.Name,
 		LastModified: model.LastModified,
-		IsActive:     model.IsActive,
+		IsActive: func() string {
+			if model.IsActive {
+				return "active"
+			}
+
+			return "inactive"
+		}(),
 	}
 }
