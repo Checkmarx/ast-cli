@@ -11,44 +11,44 @@ import (
 )
 
 func TestSastResourcesScansCommand(t *testing.T) {
-	err := executeASTTestCommand("sast-resources", "scans", "--format", "list")
+	err := executeASTTestCommand("sast-rm", "scans", "--format", "list")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "scans")
+	err = executeASTTestCommand("sast-rm", "scans")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "scans", "--format", "table")
+	err = executeASTTestCommand("sast-rm", "scans", "--format", "table")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sast-resources", "scans", "-h")
+	err = executeASTTestCommand("sast-rm", "scans", "-h")
 	assert.NilError(t, err)
 }
 
 func TestSastResourcesEnginesCommand(t *testing.T) {
-	err := executeASTTestCommand("sast-resources", "engines", "--format", "table")
+	err := executeASTTestCommand("sast-rm", "engines", "--format", "table")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "engines")
+	err = executeASTTestCommand("sast-rm", "engines")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "engines", "--format", "list")
+	err = executeASTTestCommand("sast-rm", "engines", "--format", "list")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "engines", "-h")
+	err = executeASTTestCommand("sast-rm", "engines", "-h")
 	assert.NilError(t, err)
 }
 
 func TestSastResourcesStatsCommand(t *testing.T) {
-	err := executeASTTestCommand("sr", "stats", "-v", "-r", "hour")
+	err := executeASTTestCommand("sast-rm", "stats", "-v", "-r", "hour")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "stats", "-v", "--resolution", "hour")
+	err = executeASTTestCommand("sast-rm", "stats", "-v", "--resolution", "hour")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "stats", "-v", "-r", "day")
+	err = executeASTTestCommand("sast-rm", "stats", "-v", "-r", "day")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "stats", "-v", "--resolution", "minute")
+	err = executeASTTestCommand("sast-rm", "stats", "-v", "--resolution", "minute")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sast-resources", "-v", "stats", "--format", "json")
+	err = executeASTTestCommand("sast-rm", "-v", "stats", "--format", "json")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "stats", "-v", "--format", "list")
+	err = executeASTTestCommand("sast-rm", "stats", "-v", "--format", "list")
 	assert.NilError(t, err)
-	err = executeASTTestCommand("sr", "stats", "-h")
+	err = executeASTTestCommand("sast-rm", "stats", "-h")
 	assert.NilError(t, err)
 
-	err = executeASTTestCommand("sr", "stats", "-r", "sdfsd")
+	err = executeASTTestCommand("sast-rm", "stats", "-r", "sdfsd")
 	assert.Assert(t, cmp.Equal(err.Error(), "unknown resolution sdfsd"))
 }
 
