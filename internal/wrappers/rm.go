@@ -1,6 +1,6 @@
 package wrappers
 
-import rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+import rm "github.com/checkmarxDev/sast-rm/pkg/api/rest"
 
 var StatResolutions = map[string]StatResolution{
 	"moment": StatResolutionMoment,

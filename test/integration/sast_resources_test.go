@@ -6,11 +6,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	rm "github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"testing"
 	"time"
+
+	rm "github.com/checkmarxDev/sast-rm/pkg/api/rest"
+	"github.com/spf13/viper"
 
 	"gotest.tools/assert/cmp"
 

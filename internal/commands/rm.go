@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/checkmarxDev/sast-rm/pkg/api/v1/rest"
+	"github.com/checkmarxDev/sast-rm/pkg/api/rest"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -36,9 +36,8 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		"Resolution, one of: minute, hour, day, week, moment")
 
 	sastrmCmd := &cobra.Command{
-		Use:     "sast-resources",
-		Aliases: []string{"sr"},
-		Short:   "SAST queue status (short form: 'sr')",
+		Use:   "sast-rm",
+		Short: "SAST resource management",
 	}
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
 	return sastrmCmd
@@ -54,8 +53,7 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	Print(cmd.OutOrStdout(), scanViews(scans))
-	return nil
+	return Print(cmd.OutOrStdout(), scanViews(scans))
 }
 
 func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
@@ -64,8 +62,7 @@ func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed get engines")
 	}
-	Print(cmd.OutOrStdout(), engineViews(engines))
-	return nil
+	return Print(cmd.OutOrStdout(), engineViews(engines))
 }
 
 func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
@@ -80,8 +77,7 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	Print(cmd.OutOrStdout(), stats)
-	return nil
+	return Print(cmd.OutOrStdout(), stats)
 }
 
 func scanViews(scans []*rest.Scan) []*rmScanView {
@@ -90,11 +86,10 @@ func scanViews(scans []*rest.Scan) []*rmScanView {
 		result = append(result, &rmScanView{
 			ID:         s.ID,
 			State:      string(s.State),
-			Priority:   s.Priority,
 			QueuedAt:   s.QueuedAt,
 			RunningAt:  s.RunningAt,
 			Engine:     s.Engine,
-			Constrains: s.Constrains,
+			Properties: s.Properties,
 		})
 	}
 	return result
@@ -116,19 +111,18 @@ func engineViews(engines []*rest.Engine) []*rmEngineView {
 }
 
 type rmScanView struct {
-	ID         string            `format:"maxlen:8" json:"id"`
+	ID         string            `json:"id"`
 	State      string            `json:"state"`
-	Priority   float32           `json:"priority"`
 	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.000;name:Queued at" json:"queued-at"`
 	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.000;name:Running at" json:"running-at"`
-	Engine     string            `format:"maxlen:13" json:"worker"`
-	Constrains map[string]string `json:"constrains"`
+	Engine     string            `json:"engine"`
+	Properties map[string]string `json:"properties"`
 }
 
 type rmEngineView struct {
-	ID           string            `format:"maxlen:13" json:"id"`
+	ID           string            `json:"id"`
 	Status       string            `json:"status"`
-	ScanID       string            `format:"maxlen:8" json:"scan"`
+	ScanID       string            `json:"scan"`
 	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.000;name:Discovered at" json:"registered-at"`
 	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.000;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
