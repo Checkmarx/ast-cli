@@ -42,7 +42,7 @@ func TestRunCLoneCommand(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "query", "clone", "mock")
 	assert.NilError(t, err)
 	wd, _ := os.Getwd()
-	mockFilePath := filepath.Join(wd, queriesRepoDestFileName)
+	mockFilePath := filepath.Join(wd, QueriesRepoDestFileName)
 	mockRepoFile, err := os.Open(mockFilePath)
 	assert.NilError(t, err, "failed to open repo mock file")
 	defer os.Remove(mockFilePath)
