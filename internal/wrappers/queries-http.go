@@ -33,7 +33,7 @@ func NewQueriesHTTPWrapper(queryPath, queriesClonePath string) QueriesWrapper {
 	}
 }
 
-func (q *queriesHTTPWrapper) Clone(name string) (io.ReadCloser, *queriesHelpers.WebError, error) {
+func (q *queriesHTTPWrapper) Download(name string) (io.ReadCloser, *queriesHelpers.WebError, error) {
 	params := make(map[string]string)
 	if name != "" {
 		params[cloneNameParamsFieldName] = name

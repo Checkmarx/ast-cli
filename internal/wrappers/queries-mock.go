@@ -12,7 +12,7 @@ import (
 
 type QueriesMockWrapper struct{}
 
-func (QueriesMockWrapper) Clone(string) (io.ReadCloser, *queriesHelpers.WebError, error) {
+func (QueriesMockWrapper) Download(string) (io.ReadCloser, *queriesHelpers.WebError, error) {
 	return ioutil.NopCloser(strings.NewReader("mock")), nil, nil
 }
 
