@@ -45,6 +45,8 @@ const (
 	baseURIFlagUsage              = "The base system URI"
 	queriesRepoNameFlag           = "name"
 	queriesRepoNameSh             = "n"
+	queriesRepoActivateFlag       = "activate"
+	queriesRepoActivateSh         = "a"
 )
 
 // Return an AST CLI root command to execute
