@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	httpClientTimeout = 5
+	httpClientTimeout = 20
 )
 
 type UploadsHTTPWrapper struct {
