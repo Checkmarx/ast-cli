@@ -21,7 +21,7 @@ const (
 	failedActivatingRepo           = "failed activating queries repository"
 	failedActivatingAfterUploading = "failed activating queries repository after uploading it"
 	failedCloningRepo              = "failed downloading queries repository"
-	failedUploadingRepo            = "failed importing queries repository"
+	failedUploadingRepo            = "failed uploading queries repository"
 )
 
 const QueriesRepoDestFileName = "queries-repository.tar.gz"
