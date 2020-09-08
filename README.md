@@ -30,3 +30,6 @@ You can use [SETX](https://docs.microsoft.com/en-us/windows-server/administratio
 
 Both access key ID and access key secret can be overridden by the flags **--key** and **--secret** respectively
 
+## Running on remote machine
+./ast --base-uri http://{REMOTE_IP} --auth-uri http://{REMOTE_IP}/auth/realms/organization/protocol/openid-connect/token [commands]
+
