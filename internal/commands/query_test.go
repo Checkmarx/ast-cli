@@ -40,7 +40,7 @@ func TestRunUploadCommandWithNoRepo(t *testing.T) {
 func TestRunUploadCommandWithActivateFlag(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "query", "upload", "-a")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunDownloadCommand(t *testing.T) {
