@@ -16,11 +16,12 @@ import (
 )
 
 const (
-	failedListingRepos   = "failed listing queries repositories"
-	failedDeletingRepo   = "failed deleting queries repository"
-	failedActivatingRepo = "failed activating queries repository"
-	failedCloningRepo    = "failed downloading queries repository"
-	failedUploadingRepo  = "failed importing queries repository"
+	failedListingRepos             = "failed listing queries repositories"
+	failedDeletingRepo             = "failed deleting queries repository"
+	failedActivatingRepo           = "failed activating queries repository"
+	failedActivatingAfterUploading = "failed activating queries repository after uploading it"
+	failedCloningRepo              = "failed downloading queries repository"
+	failedUploadingRepo            = "failed uploading queries repository"
 )
 
 const QueriesRepoDestFileName = "queries-repository.tar.gz"
@@ -36,18 +37,20 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Use:   "query",
 		Short: "Manage queries",
 	}
-	cloneCmd := &cobra.Command{
+	downloadCmd := &cobra.Command{
 		Use:   "download [name] (default is the active repository)",
 		Short: "Download a remote query repository to a local archive file",
 		RunE:  runDownload(queryWrapper),
 	}
-	importCmd := &cobra.Command{
+	uploadCmd := &cobra.Command{
 		Use:   "upload <repository>",
 		Short: "Upload local query repository archive file (tarball format) to AST",
 		RunE:  runUpload(queryWrapper, uploadsWrapper),
 	}
-	importCmd.PersistentFlags().StringP(queriesRepoNameFlag, queriesRepoNameSh, "",
+	uploadCmd.PersistentFlags().StringP(queriesRepoNameFlag, queriesRepoNameSh, "",
 		"A override name for your custom queries repository (default is the repository file name)")
+	uploadCmd.PersistentFlags().BoolP(queriesRepoActivateFlag, queriesRepoActivateSh, false,
+		"Whether to activate repository after uploading")
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List query repositories",
@@ -63,7 +66,7 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Short: "Delete a query repository",
 		RunE:  runDelete(queryWrapper),
 	}
-	queryCmd.AddCommand(cloneCmd, importCmd, listCmd, activateCmd, deleteCmd)
+	queryCmd.AddCommand(downloadCmd, uploadCmd, listCmd, activateCmd, deleteCmd)
 	return queryCmd
 }
 
@@ -114,6 +117,7 @@ func runUpload(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 
 		repoFile := args[0]
 		nameOverride, _ := cmd.Flags().GetString(queriesRepoNameFlag)
+		toActivate, _ := cmd.Flags().GetBool(queriesRepoActivateFlag)
 		preSignedURL, err := uploadsWrapper.UploadFile(repoFile)
 		if err != nil {
 			return errors.Wrapf(err, "%s: failed to upload repository file", failedUploadingRepo)
@@ -133,7 +137,19 @@ func runUpload(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 		}
 
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedActivatingRepo, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", failedUploadingRepo, errorModel.Code, errorModel.Message)
+		}
+
+		if toActivate {
+			errorModel, err = queryWrapper.Activate(nameOverride)
+			if err != nil {
+				return errors.Wrap(err, failedActivatingAfterUploading)
+			}
+
+			if errorModel != nil {
+				return errors.Errorf("%s: CODE: %d, %s", failedActivatingAfterUploading,
+					errorModel.Code, errorModel.Message)
+			}
 		}
 
 		return nil
