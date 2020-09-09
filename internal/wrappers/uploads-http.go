@@ -6,14 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
 	"github.com/pkg/errors"
-)
-
-const (
-	httpClientTimeout = 5
 )
 
 type UploadsHTTPWrapper struct {
@@ -46,9 +41,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
 	}
 
-	var client = &http.Client{
-		Timeout: time.Second * time.Duration(httpClientTimeout),
-	}
+	var client = &http.Client{}
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
