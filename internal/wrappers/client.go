@@ -112,6 +112,9 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	}
 
+	baseURI := viper.GetString(commonParams.BaseURIKey)
+	authURI = strings.ReplaceAll(authURI, fmt.Sprintf("${%s}", commonParams.BaseURIKey), baseURI)
+
 	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
 	if err != nil {
 		return nil, err
