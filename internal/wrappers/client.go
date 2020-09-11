@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -112,8 +113,14 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	}
 
-	baseURI := viper.GetString(commonParams.BaseURIKey)
-	authURI = strings.ReplaceAll(authURI, fmt.Sprintf("${%s}", commonParams.BaseURIKey), baseURI)
+	authURL, err := url.Parse(authURI)
+	if err != nil {
+		return nil, errors.Wrap(err, "authentication URI is not in a correct format")
+	}
+	if authURL.Scheme == "" && authURL.Host == "" {
+		baseURI := viper.GetString(commonParams.BaseURIKey)
+		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
+	}
 
 	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
 	if err != nil {
