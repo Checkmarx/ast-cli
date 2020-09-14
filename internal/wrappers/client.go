@@ -49,8 +49,8 @@ func getClient(timeout uint) *http.Client {
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	client := getClient(timeout)
-	url := GetURL(path)
-	req, err := http.NewRequest(method, url, body)
+	u := GetURL(path)
+	req, err := http.NewRequest(method, u, body)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +77,8 @@ func GetURL(path string) string {
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader) (*http.Response, error) {
 	client := getClient(DefaultTimeoutSeconds)
-	url := GetURL(path)
-	req, err := http.NewRequest(method, url, body)
+	u := GetURL(path)
+	req, err := http.NewRequest(method, u, body)
 	if err != nil {
 		return nil, err
 	}
