@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -48,8 +49,8 @@ func getClient(timeout uint) *http.Client {
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	client := getClient(timeout)
-	url := GetURL(path)
-	req, err := http.NewRequest(method, url, body)
+	u := GetURL(path)
+	req, err := http.NewRequest(method, u, body)
 	if err != nil {
 		return nil, err
 	}
@@ -76,8 +77,8 @@ func GetURL(path string) string {
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader) (*http.Response, error) {
 	client := getClient(DefaultTimeoutSeconds)
-	url := GetURL(path)
-	req, err := http.NewRequest(method, url, body)
+	u := GetURL(path)
+	req, err := http.NewRequest(method, u, body)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +111,15 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
 	} else if accessKeySecret == "" {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+	}
+
+	authURL, err := url.Parse(authURI)
+	if err != nil {
+		return nil, errors.Wrap(err, "authentication URI is not in a correct format")
+	}
+	if authURL.Scheme == "" && authURL.Host == "" {
+		baseURI := viper.GetString(commonParams.BaseURIKey)
+		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
 	}
 
 	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
