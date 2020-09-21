@@ -27,10 +27,13 @@ const (
 var (
 	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Available filters are: %s",
 		strings.Join([]string{
-			commonParams.IDQueryParam,
 			commonParams.LimitQueryParam,
 			commonParams.OffsetQueryParam,
-			commonParams.TagsQueryParam}, ","))
+			commonParams.IDQueryParam,
+			commonParams.IDsQueryParam,
+			commonParams.IDRegexQueryParam,
+			commonParams.TagsKeyQueryParam,
+			commonParams.TagsValueQueryParam}, ","))
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {

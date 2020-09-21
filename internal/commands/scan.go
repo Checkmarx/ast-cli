@@ -28,14 +28,15 @@ const (
 var (
 	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans. Available filters are: %s",
 		strings.Join([]string{
-			commonParams.ScanIDsQueryParam,
 			commonParams.LimitQueryParam,
 			commonParams.OffsetQueryParam,
+			commonParams.ScanIDsQueryParam,
+			commonParams.TagsKeyQueryParam,
+			commonParams.TagsValueQueryParam,
+			commonParams.StatusesQueryParam,
+			commonParams.ProjectIDQueryParam,
 			commonParams.FromDateQueryParam,
-			commonParams.ToDateQueryParam,
-			commonParams.StatusQueryParam,
-			commonParams.TagsQueryParam,
-			commonParams.ProjectIDQueryParam}, ","))
+			commonParams.ToDateQueryParam}, ","))
 )
 
 func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
