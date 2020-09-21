@@ -110,6 +110,12 @@ func TestRunDeleteScanByIdCommand(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunCancelScanByIdCommand(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "cancel", "MOCK")
+	assert.NilError(t, err)
+}
+
 func TestRunGetAllCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list")

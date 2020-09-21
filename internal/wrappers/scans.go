@@ -16,5 +16,6 @@ type ScansWrapper interface {
 	GetByID(scanID string) (*scansRESTApi.ScanResponseModel, *scansRESTApi.ErrorModel, error)
 	GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansRESTApi.ErrorModel, error)
 	Delete(scanID string) (*scansRESTApi.ErrorModel, error)
+	Cancel(scanID string) (*scansRESTApi.ErrorModel, error)
 	Tags() (map[string][]string, *scansRESTApi.ErrorModel, error)
 }

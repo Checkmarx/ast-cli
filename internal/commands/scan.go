@@ -22,6 +22,7 @@ const (
 	failedGetting     = "Failed showing a scan"
 	failedGettingTags = "Failed getting tags"
 	failedDeleting    = "Failed deleting a scan"
+	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
 )
 
@@ -77,8 +78,14 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete [scan id...]",
-		Short: "Stops one or more scans from running",
+		Short: "Deletes one or more scans",
 		RunE:  runDeleteScanCommand(scansWrapper),
+	}
+
+	cacnelScanCmd := &cobra.Command{
+		Use:   "cancel [scan id...]",
+		Short: "Cancel one or more scans from running",
+		RunE:  runCancelScanCommand(scansWrapper),
 	}
 
 	tagsCmd := &cobra.Command{
@@ -87,7 +94,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cacnelScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -241,7 +248,7 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a scan ID", failedDeleting)
+			return errors.Errorf("%s: Please provide at least one scan ID", failedDeleting)
 		}
 
 		errChan := make(chan error)
@@ -255,6 +262,40 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 				// Checking the response
 				if errorModel != nil {
 					errChan <- errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
+				}
+
+				errChan <- nil
+			}(argScanID)
+		}
+
+		for range args {
+			err := <-errChan
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return errors.Errorf("%s: Please provide at least one scan ID", failedCanceling)
+		}
+
+		errChan := make(chan error)
+		for _, argScanID := range args {
+			go func(scanID string) {
+				errorModel, err := scansWrapper.Cancel(scanID)
+				if err != nil {
+					errChan <- errors.Wrapf(err, "%s\n", failedCanceling)
+				}
+
+				// Checking the response
+				if errorModel != nil {
+					errChan <- errors.Errorf("%s: CODE: %d, %s\n", failedCanceling, errorModel.Code, errorModel.Message)
 				}
 
 				errChan <- nil
