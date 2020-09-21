@@ -127,9 +127,16 @@ func TestRunGetAllCommandLimitList(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
+
 func TestRunGetAllCommandOffsetList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "offset=0")
+	assert.NilError(t, err)
+}
+
+func TestRunGetAllCommandStatusesList(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
 	assert.NilError(t, err)
 }
 

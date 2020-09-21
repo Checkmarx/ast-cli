@@ -129,7 +129,10 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		if len(filterKeyVal) != keyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
-		allFilters[filterKeyVal[0]] = filterKeyVal[1]
+
+		allFilters[filterKeyVal[0]] = strings.Replace(
+			filterKeyVal[1], ";", ",",
+			strings.Count(filterKeyVal[1], ";"))
 	}
 	return allFilters, nil
 }
