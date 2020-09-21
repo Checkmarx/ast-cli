@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -38,6 +39,8 @@ type ClientCredentialsError struct {
 	Error       string `json:"error"`
 	Description string `json:"error_description"`
 }
+
+type credentialsCache map[uint64]*string
 
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
@@ -122,19 +125,39 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
 	}
 
-	accessToken, err := getClientCredentials(authURI, accessKeyID, accessKeySecret)
-	if err != nil {
-		return nil, err
+	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
+	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+	var accessToken *string
+	hash, errHash := hash(accessKeyID + accessKeySecret + authURI)
+	if errHash != nil {
+		fmt.Printf("failed to create hash of credentials %s\n", err)
+	} else {
+		accessToken, err = getClientCredentialsFromCache(credentialsFilePath, tokenExpirySeconds, hash)
+		if err != nil {
+			fmt.Printf("failed to get credentials from file %s %s\n", credentialsFilePath, err)
+		}
 	}
+
+	if accessToken == nil {
+		accessToken, err = getNewToken(accessKeyID, accessKeySecret, authURI)
+		if err != nil {
+			return nil, err
+		}
+
+		if errHash == nil {
+			err = writeCredentialsToCache(credentialsFilePath, hash, accessToken)
+			if err != nil {
+				fmt.Printf("failed to write credentials to file %s %s\n", credentialsFilePath, err)
+			}
+		}
+	}
+
 	request.Header.Add("Authorization", *accessToken)
 	return request, nil
 }
 
-func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*string, error) {
-	// Try to load access token from file, if not expired
-	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
-	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
-
+// Try to load access token from file, if not expired
+func getClientCredentialsFromCache(credentialsFilePath string, tokenExpirySeconds int, credentialsHash uint64) (*string, error) {
 	if info, err := os.Stat(credentialsFilePath); err == nil {
 		// Credentials file exists. Check for access token validity
 		modifiedAt := info.ModTime()
@@ -144,20 +167,33 @@ func getClientCredentials(authServerURI, accessKeyID, accessKeySecret string) (*
 			if err != nil {
 				return nil, err
 			}
-			accessToken := string(b)
-			if accessToken == "" {
-				return getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath)
+
+			var credentials credentialsCache
+			err = json.Unmarshal(b, &credentials)
+			if err != nil {
+				return nil, err
 			}
-			return &accessToken, nil
+
+			return credentials[credentialsHash], nil
 		}
 	}
 
-	// Here the file can either not exist, exist and failed opening or the token has expired.
-	// We don't care. Create a new token.
-	return getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath)
+	return nil, nil
 }
 
-func getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePath string) (*string, error) {
+func writeCredentialsToCache(credentialsFilePath string, credentialsHash uint64, accessToken *string) error {
+	cred := credentialsCache{
+		credentialsHash: accessToken,
+	}
+	accessTokenData, err := json.Marshal(cred)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(credentialsFilePath, accessTokenData, 0644)
+}
+
+func getNewToken(accessKeyID, accessKeySecret, authServerURI string) (*string, error) {
 	payload := strings.NewReader(getCredentialsPayload(accessKeyID, accessKeySecret))
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	if err != nil {
@@ -186,14 +222,15 @@ func getNewToken(accessKeyID, accessKeySecret, authServerURI, credentialsFilePat
 		return nil, err
 	}
 
-	// We have a new access token. Save it to file
-	accessToken := credentialsInfo.AccessToken
-	accessTokenData := []byte(accessToken)
-	_ = ioutil.WriteFile(credentialsFilePath, accessTokenData, 0644)
-
-	return &accessToken, nil
+	return &credentialsInfo.AccessToken, nil
 }
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
+}
+
+func hash(s string) (uint64, error) {
+	h := fnv.New64()
+	_, err := h.Write([]byte(s))
+	return h.Sum64(), err
 }

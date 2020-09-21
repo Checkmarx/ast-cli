@@ -113,7 +113,7 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.AstRoleKey, params.AstRoleEnv, params.ScaAgent)
 	exitIfError(err)
 
-	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
+	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.json")
 	exitIfError(err)
 
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
