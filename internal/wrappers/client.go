@@ -141,7 +141,7 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 	if accessToken == nil {
 		accessToken, err = getNewToken(accessKeyID, accessKeySecret, authURI)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get access token from auth server")
 		}
 
 		if errHash == nil {
