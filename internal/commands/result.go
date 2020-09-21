@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Available filters are: %s",
+	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.ScanIDQueryParam,
 			commonParams.LimitQueryParam,
