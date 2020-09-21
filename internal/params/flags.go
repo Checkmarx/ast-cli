@@ -2,11 +2,15 @@ package params
 
 const (
 	IDQueryParam           = "id"
+	IDsQueryParam          = "ids"
+	IDRegexQueryParam      = "id-regex"
 	LimitQueryParam        = "limit"
 	OffsetQueryParam       = "offset"
 	ScanIDQueryParam       = "scan-id"
 	ScanIDsQueryParam      = "scan-ids"
-	TagsQueryParam         = "tags"
+	TagsKeyQueryParam      = "tags-keys"
+	TagsValueQueryParam    = "tags-values"
+	StatusesQueryParam     = "statuses"
 	StatusQueryParam       = "status"
 	ProjectIDQueryParam    = "project-id"
 	FromDateQueryParam     = "from-date"
