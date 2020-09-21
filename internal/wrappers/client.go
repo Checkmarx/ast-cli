@@ -125,9 +125,20 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
 	}
 
+	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, authURI)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to authenticate")
+	}
+
+	request.Header.Add("Authorization", *accessToken)
+	return request, nil
+}
+
+func getClientCredentials(accessKeyID, accessKeySecret, authURI string) (*string, error) {
 	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	var accessToken *string
+	var err error
 	hash, errHash := hash(accessKeyID + accessKeySecret + authURI)
 	if errHash != nil {
 		fmt.Printf("failed to create hash of credentials %s\n", err)
@@ -152,8 +163,7 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 		}
 	}
 
-	request.Header.Add("Authorization", *accessToken)
-	return request, nil
+	return accessToken, nil
 }
 
 // Try to load access token from file, if not expired
