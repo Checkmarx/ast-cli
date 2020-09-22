@@ -125,6 +125,15 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
+func (s *ScansHTTPWrapper) Cancel(scanID string) (*scansApi.ErrorModel, error) {
+	resp, err := SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, nil, true, DefaultTimeoutSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
+}
+
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, DefaultTimeoutSeconds)
 	if err != nil {

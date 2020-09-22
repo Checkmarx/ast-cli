@@ -48,6 +48,11 @@ func (m *ScansMockWrapper) Delete(scanID string) (*scansRESTApi.ErrorModel, erro
 	return nil, nil
 }
 
+func (m *ScansMockWrapper) Cancel(string) (*scansRESTApi.ErrorModel, error) {
+	fmt.Println("Called Cancel in ScansMockWrapper")
+	return nil, nil
+}
+
 func (m *ScansMockWrapper) Tags() (map[string][]string, *scansRESTApi.ErrorModel, error) {
 	fmt.Println("Called Tags in ScansMockWrapper")
 	return map[string][]string{"t1": {"v1"}}, nil, nil
