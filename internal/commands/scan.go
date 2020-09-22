@@ -251,27 +251,15 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return errors.Errorf("%s: Please provide at least one scan ID", failedDeleting)
 		}
 
-		errChan := make(chan error)
-		for _, argScanID := range args {
-			go func(scanID string) {
-				errorModel, err := scansWrapper.Delete(scanID)
-				if err != nil {
-					errChan <- errors.Wrapf(err, "%s\n", failedDeleting)
-				}
-
-				// Checking the response
-				if errorModel != nil {
-					errChan <- errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
-				}
-
-				errChan <- nil
-			}(argScanID)
-		}
-
-		for range args {
-			err := <-errChan
+		for _, scanID := range args {
+			errorModel, err := scansWrapper.Delete(scanID)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "%s\n", failedDeleting)
+			}
+
+			// Checking the response
+			if errorModel != nil {
+				return errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -285,27 +273,15 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return errors.Errorf("%s: Please provide at least one scan ID", failedCanceling)
 		}
 
-		errChan := make(chan error)
-		for _, argScanID := range args {
-			go func(scanID string) {
-				errorModel, err := scansWrapper.Cancel(scanID)
-				if err != nil {
-					errChan <- errors.Wrapf(err, "%s\n", failedCanceling)
-				}
-
-				// Checking the response
-				if errorModel != nil {
-					errChan <- errors.Errorf("%s: CODE: %d, %s\n", failedCanceling, errorModel.Code, errorModel.Message)
-				}
-
-				errChan <- nil
-			}(argScanID)
-		}
-
-		for range args {
-			err := <-errChan
+		for _, scanID := range args {
+			errorModel, err := scansWrapper.Cancel(scanID)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "%s\n", failedCanceling)
+			}
+
+			// Checking the response
+			if errorModel != nil {
+				return errors.Errorf("%s: CODE: %d, %s\n", failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 
