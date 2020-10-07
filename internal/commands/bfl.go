@@ -20,7 +20,7 @@ const (
 
 func NewBFLCommand(bflWrapper wrappers.BFLWrapper) *cobra.Command {
 	bflCmd := &cobra.Command{
-		Use:   "bfl",
+		Use:   "bfl <scan-id>",
 		Short: "Retrieve Best Fix Location for a given scan ID",
 		RunE:  runGetBFLByScanIDCommand(bflWrapper),
 	}
