@@ -42,7 +42,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 
 	listResultsCmd := &cobra.Command{
-		Use:   "list",
+		Use:   "list <scan-id>",
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
