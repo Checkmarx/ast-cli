@@ -60,13 +60,13 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project-id>",
 		Short: "Show information about a project",
 		RunE:  runGetProjectByIDCommand(projectsWrapper),
 	}
 
 	deleteProjCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <project-id>",
 		Short: "Delete a project",
 		RunE:  runDeleteProjectCommand(projectsWrapper),
 	}
