@@ -42,6 +42,8 @@ type ClientCredentialsError struct {
 
 type credentialsCache map[uint64]*string
 
+const failedToAuth = "Failed to authenticate - please provide an %s"
+
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
@@ -59,10 +61,33 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 	}
 
 	if auth {
-		req, err = enrichWithCredentials(req)
+		req, err = enrichWithOath2Credentials(req)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	var resp *http.Response
+	resp, err = client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
+	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
+	client := getClient(timeout)
+	u := GetURL(path)
+	req, err := http.NewRequest(method, u, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("content-type", "application/json")
+	req, err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
+	if err != nil {
+		return nil, err
 	}
 
 	var resp *http.Response
@@ -90,7 +115,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	req, err = enrichWithCredentials(req)
+	req, err = enrichWithOath2Credentials(req)
 	if err != nil {
 		return nil, err
 	}
@@ -102,27 +127,38 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	return resp, nil
 }
 
-func enrichWithCredentials(request *http.Request) (*http.Request, error) {
+func getAuthURI() (string, error) {
 	authURI := viper.GetString(commonParams.AstAuthenticationURIConfigKey)
-	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	failedToAuth := "Failed to authenticate - please provide an %s"
-
 	if authURI == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "authentication URI"))
-	} else if accessKeyID == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
-	} else if accessKeySecret == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication URI"))
 	}
 
 	authURL, err := url.Parse(authURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "authentication URI is not in a correct format")
+		return "", errors.Wrap(err, "authentication URI is not in a correct format")
 	}
+
 	if authURL.Scheme == "" && authURL.Host == "" {
 		baseURI := viper.GetString(commonParams.BaseURIKey)
 		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
+	}
+
+	return authURI, nil
+}
+
+func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
+	authURI, err := getAuthURI()
+	if err != nil {
+		return nil, err
+	}
+
+	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+
+	if accessKeyID == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+	} else if accessKeySecret == "" {
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	}
 
 	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, authURI)
@@ -131,6 +167,23 @@ func enrichWithCredentials(request *http.Request) (*http.Request, error) {
 	}
 
 	request.Header.Add("Authorization", *accessToken)
+	return request, nil
+}
+
+func enrichWithPasswordCredentials(request *http.Request, username, password,
+	adminClientID, adminClientSecret string) (*http.Request, error) {
+	authURI, err := getAuthURI()
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := getNewToken(getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret), authURI)
+	if err != nil {
+		return nil, errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
+			"failed to authenticate")
+	}
+
+	request.Header.Add("Authorization", "Bearer "+*accessToken)
 	return request, nil
 }
 
@@ -150,7 +203,7 @@ func getClientCredentials(accessKeyID, accessKeySecret, authURI string) (*string
 	}
 
 	if accessToken == nil {
-		accessToken, err = getNewToken(accessKeyID, accessKeySecret, authURI)
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get access token from auth server")
 		}
@@ -203,8 +256,8 @@ func writeCredentialsToCache(credentialsFilePath string, credentialsHash uint64,
 	return ioutil.WriteFile(credentialsFilePath, accessTokenData, 0644)
 }
 
-func getNewToken(accessKeyID, accessKeySecret, authServerURI string) (*string, error) {
-	payload := strings.NewReader(getCredentialsPayload(accessKeyID, accessKeySecret))
+func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
+	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	if err != nil {
 		return nil, err
@@ -237,6 +290,11 @@ func getNewToken(accessKeyID, accessKeySecret, authServerURI string) (*string, e
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
+}
+
+func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
+	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
+		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
 }
 
 func hash(s string) (uint64, error) {

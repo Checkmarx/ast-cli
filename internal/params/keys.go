@@ -27,4 +27,5 @@ var (
 	HealthcheckSastEnginesPathKey       = strings.ToLower(HealthcheckSastEnginesPathEnv)
 	QueriesPathKey                      = strings.ToLower(QueriesPathEnv)
 	QueriesClonePathKey                 = strings.ToLower(QueriesCLonePathEnv)
+	CreateOath2ClientPathKey            = strings.ToLower(CreateOath2ClientPathEnv)
 )
