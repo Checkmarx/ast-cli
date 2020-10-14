@@ -85,7 +85,7 @@ func (q *queriesHTTPWrapper) Import(uploadURL, name string) (*queriesHelpers.Web
 		errorModel := queriesHelpers.WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, errors.Wrapf(err, failedToParseImportResult)
+			return nil, errors.Wrap(err, failedToParseImportResult)
 		}
 
 		return &errorModel, nil
