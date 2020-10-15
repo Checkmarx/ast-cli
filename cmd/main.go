@@ -101,6 +101,10 @@ func main() {
 	exitIfError(err)
 	queriesClonePath := viper.GetString(params.QueriesClonePathKey)
 
+	err = bindKeyToEnvAndDefault(params.CreateOath2ClientPathKey, params.CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients")
+	exitIfError(err)
+	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	exitIfError(err)
 
@@ -138,6 +142,7 @@ func main() {
 	)
 	queriesCloneURIPath := fmt.Sprintf("%s/%s", queries, queriesClonePath)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
+	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
@@ -149,6 +154,7 @@ func main() {
 		rmWrapper,
 		healthCheckWrapper,
 		queriesWrapper,
+		authWrapper,
 		defaultConfigFileLocation,
 	)
 

@@ -132,6 +132,10 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	assert.NilError(t, err)
 	queriesClone := viper.GetString(params.QueriesClonePathKey)
 
+	err = bindKeyToEnvAndDefault(params.CreateOath2ClientPathKey, params.CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients")
+	assert.NilError(t, err)
+	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
+
 	err = bindKeyToEnvAndDefault(params.AccessKeyIDConfigKey, params.AccessKeyIDEnv, "")
 	assert.NilError(t, err)
 
@@ -169,6 +173,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
+	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
 	defaultConfigFileLocation := "/etc/conf/cx/config.yml"
 
 	astCli := commands.NewAstCLI(
@@ -180,6 +185,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		rmWrapper,
 		healthCheckWrapper,
 		queriesWrapper,
+		authWrapper,
 		defaultConfigFileLocation,
 	)
 	return astCli

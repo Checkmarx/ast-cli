@@ -41,7 +41,7 @@ func runHealthCheckRequest(path string, timeout uint, parser func(body io.ReadCl
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, err := ioutil.ReadAll(resp.Body)
 		return nil, errors.Errorf("Http request %v responded with status code %v and body %v",
 			resp.Request.URL, resp.StatusCode, func() string {
 				if err != nil {

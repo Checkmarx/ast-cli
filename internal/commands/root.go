@@ -47,6 +47,18 @@ const (
 	queriesRepoNameSh             = "n"
 	queriesRepoActivateFlag       = "activate"
 	queriesRepoActivateSh         = "a"
+	clientRolesFlag               = "roles"
+	clientRolesSh                 = "r"
+	clientDescriptionFlag         = "description"
+	clientDescriptionSh           = "d"
+	usernameFlag                  = "username"
+	usernameSh                    = "u"
+	passwordFlag                  = "password"
+	passwordSh                    = "p"
+	adminClientIDFlag             = "admin-client-id"
+	adminClientIDSh               = "i"
+	adminClientSecretFlag         = "admin-client-secret"
+	adminClientSecretSh           = "s"
 )
 
 // Return an AST CLI root command to execute
@@ -59,6 +71,7 @@ func NewAstCLI(
 	rmWrapper wrappers.SastRmWrapper,
 	healthCheckWrapper wrappers.HealthCheckWrapper,
 	queriesWrapper wrappers.QueriesWrapper,
+	authWrapper wrappers.AuthWrapper,
 	defaultConfigFileLocation string,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -96,6 +109,7 @@ func NewAstCLI(
 	singleNodeCommand := NewSingleNodeCommand(healthCheckWrapper, defaultConfigFileLocation)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
+	authCmd := NewAuthCommand(authWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -107,6 +121,7 @@ func NewAstCLI(
 		bflCmd,
 		rmCmd,
 		queriesCmd,
+		authCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
