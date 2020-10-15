@@ -1,10 +1,6 @@
 package commands
 
 import (
-	"bytes"
-	"io"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -104,9 +100,7 @@ func NewAstCLI(
 	resultCmd := NewResultCommand(resultsWrapper)
 	bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
-	clusterCmd := NewClusterCommand()
-	appCmd := NewAppCommand()
-	singleNodeCommand := NewSingleNodeCommand(healthCheckWrapper, defaultConfigFileLocation)
+	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	authCmd := NewAuthCommand(authWrapper)
@@ -115,9 +109,7 @@ func NewAstCLI(
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		clusterCmd,
-		appCmd,
-		singleNodeCommand,
+		healthCheckCmd,
 		bflCmd,
 		rmCmd,
 		queriesCmd,
@@ -150,17 +142,4 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 			strings.Count(filterKeyVal[1], ";"))
 	}
 	return allFilters, nil
-}
-
-func runBashCommand(name string, envs []string, arg ...string) (*bytes.Buffer, *bytes.Buffer, error) { // nolint
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd := exec.Command(name, arg...)
-	cmd.Env = envs
-	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
-	err := cmd.Run()
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error running command %s", name)
-	}
-	return &stdoutBuf, &stderrBuf, nil
 }

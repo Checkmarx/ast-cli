@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -20,10 +19,6 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 	log.Println("Commands tests done")
 	os.Exit(exitVal)
-}
-
-func toFlag(flag string) string {
-	return fmt.Sprintf("--%s", flag)
 }
 
 func createASTTestCommand() *cobra.Command {
