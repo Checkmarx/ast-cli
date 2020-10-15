@@ -55,10 +55,6 @@ const (
 	usernameSh                    = "u"
 	passwordFlag                  = "password"
 	passwordSh                    = "p"
-	adminClientIDFlag             = "admin-client-id"
-	adminClientIDSh               = "i"
-	adminClientSecretFlag         = "admin-client-secret"
-	adminClientSecretSh           = "s"
 )
 
 // Return an AST CLI root command to execute
