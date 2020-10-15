@@ -26,4 +26,5 @@ const (
 	HealthcheckSastEnginesPathEnv       = "HEALTHCHECK_SAST_ENGINES_PATH"
 	QueriesPathEnv                      = "QUERIES_PATH"
 	QueriesCLonePathEnv                 = "QUERIES_CLONE_PATH"
+	CreateOath2ClientPathEnv            = "CREATE_OATH2_CLIENT_PATH"
 )
