@@ -11,7 +11,7 @@ var (
 	UploadsPathKey                      = strings.ToLower(UploadsPathEnv)
 	AccessKeyIDConfigKey                = strings.ToLower(AccessKeyIDEnv)
 	AccessKeySecretConfigKey            = strings.ToLower(AccessKeySecretEnv)
-	AstAuthenticationURIConfigKey       = strings.ToLower(AstAuthenticationURIEnv)
+	AstAuthenticationPathConfigKey      = strings.ToLower(AstAuthenticationPathEnv)
 	CredentialsFilePathKey              = strings.ToLower(CredentialsFilePathEnv)
 	TokenExpirySecondsKey               = strings.ToLower(TokenExpirySecondsEnv)
 	AstRoleKey                          = strings.ToLower(AstRoleEnv)

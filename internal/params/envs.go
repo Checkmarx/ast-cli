@@ -11,7 +11,7 @@ const (
 	CredentialsFilePathEnv              = "CREDENTIALS_FILE_PATH"
 	TokenExpirySecondsEnv               = "TOKEN_EXPIRY_SECONDS"
 	AccessKeyIDEnv                      = "AST_ACCESS_KEY_ID"
-	AstAuthenticationURIEnv             = "AST_AUTHENTICATION_URI"
+	AstAuthenticationPathEnv            = "AST_AUTHENTICATION_PATH"
 	AccessKeySecretEnv                  = "AST_ACCESS_KEY_SECRET"
 	AstRoleEnv                          = "AST_ROLE"
 	AstWebAppHealthCheckPathEnv         = "AST_WEB_APP_HEALTH_CHECK_PATH"
