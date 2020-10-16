@@ -30,16 +30,17 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	createClientCmd := &cobra.Command{
 		Use:   "register",
 		Short: "Register new oath2 client for ast",
-		Long: "Register new oath2 client and outputs its credentials in the format <key>=<value>.\n" +
+		Long: "Register new oath2 client and outputs its generated credentials in the format <key>=<value>.\n" +
 			"If you wish to use this client with the cli set those credentials as environment variables.\n" +
 			"On Linux just wrap this command with eval e.g: \"eval $(ast auth register -u <username> -p <password>)\".\n" +
 			"On Windows use the SET command with the outputs credentials",
 		RunE: runRegister(authWrapper),
 	}
 	createClientCmd.PersistentFlags().StringP(clientDescriptionFlag, clientDescriptionSh, "", "A client description")
-	createClientCmd.PersistentFlags().StringP(usernameFlag, usernameSh, "", "Username for a user that privilege to "+
-		"create client")
-	createClientCmd.PersistentFlags().StringP(passwordFlag, passwordSh, "", "Password for the user")
+	createClientCmd.PersistentFlags().StringP(usernameFlag, usernameSh, "", "Username for Ast user that privileges to "+
+		"create clients")
+	createClientCmd.PersistentFlags().StringP(passwordFlag, passwordSh, "", "Password for Ast user that privileges to "+
+		"create clients")
 	createClientCmd.PersistentFlags().StringSliceP(clientRolesFlag, clientRolesSh, []string{"ast-admin"},
 		"A list of roles of the client")
 	authCmd.AddCommand(createClientCmd)
