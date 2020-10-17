@@ -13,44 +13,44 @@ import (
 )
 
 const (
-	keyValuePairSize              = 2
-	verboseFlag                   = "verbose"
-	verboseFlagSh                 = "v"
-	verboseUsage                  = "Verbose mode"
-	sourcesFlag                   = "sources"
-	sourcesFlagSh                 = "s"
-	inputFlag                     = "input"
-	inputFlagSh                   = "i"
-	inputFileFlag                 = "input-file"
-	inputFileFlagSh               = "f"
-	accessKeyIDFlag               = "key"
-	accessKeyIDFlagUsage          = "The access key ID"
-	accessKeySecretFlag           = "secret"
-	accessKeySecretFlagUsage      = "The access key secret"
-	astAuthenticationURIFlag      = "auth-uri"
-	astAuthenticationURIFlagUsage = "The authentication URI"
-	insecureFlag                  = "insecure"
-	insecureFlagUsage             = "Ignore TLS certificate validations"
-	formatFlag                    = "format"
-	formatFlagUsage               = "Format for the output. One of [json, list, table]"
-	formatJSON                    = "json"
-	formatList                    = "list"
-	formatTable                   = "table"
-	filterFlag                    = "filter"
-	baseURIFlag                   = "base-uri"
-	baseURIFlagUsage              = "The base system URI"
-	queriesRepoNameFlag           = "name"
-	queriesRepoNameSh             = "n"
-	queriesRepoActivateFlag       = "activate"
-	queriesRepoActivateSh         = "a"
-	clientRolesFlag               = "roles"
-	clientRolesSh                 = "r"
-	clientDescriptionFlag         = "description"
-	clientDescriptionSh           = "d"
-	usernameFlag                  = "username"
-	usernameSh                    = "u"
-	passwordFlag                  = "password"
-	passwordSh                    = "p"
+	keyValuePairSize               = 2
+	verboseFlag                    = "verbose"
+	verboseFlagSh                  = "v"
+	verboseUsage                   = "Verbose mode"
+	sourcesFlag                    = "sources"
+	sourcesFlagSh                  = "s"
+	inputFlag                      = "input"
+	inputFlagSh                    = "i"
+	inputFileFlag                  = "input-file"
+	inputFileFlagSh                = "f"
+	accessKeyIDFlag                = "key"
+	accessKeyIDFlagUsage           = "The access key ID"
+	accessKeySecretFlag            = "secret"
+	accessKeySecretFlagUsage       = "The access key secret"
+	astAuthenticationPathFlag      = "auth-path"
+	astAuthenticationPathFlagUsage = "The authentication path"
+	insecureFlag                   = "insecure"
+	insecureFlagUsage              = "Ignore TLS certificate validations"
+	formatFlag                     = "format"
+	formatFlagUsage                = "Format for the output. One of [json, list, table]"
+	formatJSON                     = "json"
+	formatList                     = "list"
+	formatTable                    = "table"
+	filterFlag                     = "filter"
+	baseURIFlag                    = "base-uri"
+	baseURIFlagUsage               = "The base system URI"
+	queriesRepoNameFlag            = "name"
+	queriesRepoNameSh              = "n"
+	queriesRepoActivateFlag        = "activate"
+	queriesRepoActivateSh          = "a"
+	clientRolesFlag                = "roles"
+	clientRolesSh                  = "r"
+	clientDescriptionFlag          = "description"
+	clientDescriptionSh            = "d"
+	usernameFlag                   = "username"
+	usernameSh                     = "u"
+	passwordFlag                   = "password"
+	passwordSh                     = "p"
 )
 
 // Return an AST CLI root command to execute
@@ -73,7 +73,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)
 	rootCmd.PersistentFlags().String(accessKeyIDFlag, "", accessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
-	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
+	rootCmd.PersistentFlags().String(astAuthenticationPathFlag, "", astAuthenticationPathFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	// Default value is table. Should we? or JSON?
 	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
@@ -84,7 +84,7 @@ func NewAstCLI(
 	// and can be overridden by command flag --key
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
-	_ = viper.BindPFlag(params.AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
+	_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
