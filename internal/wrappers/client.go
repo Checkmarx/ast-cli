@@ -128,11 +128,12 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 }
 
 func getAuthURI() (string, error) {
-	authURI := viper.GetString(commonParams.AstAuthenticationURIConfigKey)
-	if authURI == "" {
-		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication URI"))
+	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
+	if authPath == "" {
+		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
 
+	authURI := GetURL(authPath)
 	authURL, err := url.Parse(authURI)
 	if err != nil {
 		return "", errors.Wrap(err, "authentication URI is not in a correct format")

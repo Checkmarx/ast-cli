@@ -101,7 +101,8 @@ func main() {
 	exitIfError(err)
 	queriesClonePath := viper.GetString(params.QueriesClonePathKey)
 
-	err = bindKeyToEnvAndDefault(params.CreateOath2ClientPathKey, params.CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients")
+	err = bindKeyToEnvAndDefault(params.CreateOath2ClientPathKey, params.CreateOath2ClientPathEnv,
+		"auth/realms/organization/pip/clients")
 	exitIfError(err)
 	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
 
@@ -111,7 +112,8 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
 	exitIfError(err)
 
-	err = bindKeyToEnvAndDefault(params.AstAuthenticationURIConfigKey, params.AstAuthenticationURIEnv, "")
+	err = bindKeyToEnvAndDefault(params.AstAuthenticationPathConfigKey, params.AstAuthenticationPathEnv,
+		"auth/realms/organization/protocol/openid-connect/token")
 	exitIfError(err)
 
 	err = bindKeyToEnvAndDefault(params.AstRoleKey, params.AstRoleEnv, params.ScaAgent)
