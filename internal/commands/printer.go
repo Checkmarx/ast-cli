@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var regexpSplitTimeFormat = regexp.MustCompile("-| ")
+var regexpSplitTimeFormat = regexp.MustCompile("[- ]")
 
 func Print(w io.Writer, view interface{}) error {
 	if IsJSONFormat() {
