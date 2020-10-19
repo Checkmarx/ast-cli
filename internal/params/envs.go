@@ -2,6 +2,7 @@ package params
 
 const (
 	BaseURIEnv                          = "BASE_URI"
+	HttpProxyEnv                        = "HTTP_PROXY"
 	ScansPathEnv                        = "SCANS_PATH"
 	ProjectsPathEnv                     = "PROJECTS_PATH"
 	ResultsPathEnv                      = "RESULTS_PATH"
