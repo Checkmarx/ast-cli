@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/spf13/viper"
 )
+
+var regexpSplitTimeFormat = regexp.MustCompile("[- ]")
 
 func Print(w io.Writer, view interface{}) error {
 	if IsJSONFormat() {
@@ -212,6 +215,9 @@ func parseMaxlen(name string) func(*property, interface{}) {
 
 func parseTime(name string) func(*property, interface{}) {
 	timeFmt := name[len("time:"):]
+	splits := regexpSplitTimeFormat.Split(timeFmt, -1)
+	splits[0], splits[1], splits[2] = splits[1], splits[2], splits[0]
+	timeFmt = strings.Join(splits[:3], "-") + " " + splits[3]
 	return func(p *property, raw interface{}) {
 		t, ok := raw.(time.Time)
 		if !ok {
@@ -225,6 +231,12 @@ func parseTime(name string) func(*property, interface{}) {
 			}
 			t = *tp
 		}
+
+		localTime, err := time.LoadLocation("Local")
+		if err == nil {
+			t = t.In(localTime)
+		}
+
 		p.Value = t.Format(timeFmt)
 	}
 }
