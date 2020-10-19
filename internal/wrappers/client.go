@@ -46,10 +46,24 @@ const failedToAuth = "Failed to authenticate - please provide an %s"
 
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+		Proxy: getProxy(),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
+}
+
+func getProxy() func(*http.Request) (*url.URL, error) {
+	p:= viper.GetString(commonParams.HttpProxyKey)
+	if p != "" {
+		proxyUrl, err := url.Parse(p)
+		if err != nil {
+			return nil
+		}
+		return http.ProxyURL(proxyUrl)
+	}
+	return nil
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
