@@ -57,11 +57,11 @@ func getClient(timeout uint) *http.Client {
 func getProxy() func(*http.Request) (*url.URL, error) {
 	p := viper.GetString(commonParams.HTTPProxyKey)
 	if p != "" {
-		proxyUrl, err := url.Parse(p)
+		proxyURL, err := url.Parse(p)
 		if err != nil {
 			return nil
 		}
-		return http.ProxyURL(proxyUrl)
+		return http.ProxyURL(proxyURL)
 	}
 	return nil
 }
