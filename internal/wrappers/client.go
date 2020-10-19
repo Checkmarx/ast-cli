@@ -49,13 +49,13 @@ func getClient(timeout uint) *http.Client {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy: getProxy(),
+		Proxy:           getProxy(),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
 
 func getProxy() func(*http.Request) (*url.URL, error) {
-	p:= viper.GetString(commonParams.HttpProxyKey)
+	p := viper.GetString(commonParams.HTTPProxyKey)
 	if p != "" {
 		proxyUrl, err := url.Parse(p)
 		if err != nil {

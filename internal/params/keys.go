@@ -4,7 +4,7 @@ import "strings"
 
 var (
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
-	HttpProxyKey                        = strings.ToLower(HttpProxyEnv)
+	HTTPProxyKey                        = strings.ToLower(HTTPProxyEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)

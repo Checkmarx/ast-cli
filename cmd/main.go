@@ -125,7 +125,7 @@ func main() {
 	err = bindKeyToEnvAndDefault(params.TokenExpirySecondsKey, params.TokenExpirySecondsEnv, "300")
 	exitIfError(err)
 
-	err = bindKeyToEnvAndDefault(params.HttpProxyKey, params.HttpProxyEnv, "")
+	err = bindKeyToEnvAndDefault(params.HTTPProxyKey, params.HTTPProxyEnv, "")
 	exitIfError(err)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
