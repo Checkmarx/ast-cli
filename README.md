@@ -33,3 +33,8 @@ Both access key ID and access key secret can be overridden by the flags **--key*
 ## Running on remote machine
 ./ast --base-uri http://{REMOTE_IP} --auth-uri http://{REMOTE_IP}/auth/realms/organization/protocol/openid-connect/token [commands]
 
+## HTTP Proxy Support
+Use the environment variables _HTTP_PROXY_, _HTTPS_PROXY_ and _NO_PROXY_ (or the lowercase versions). 
+HTTPS_PROXY takes precedence over HTTP_PROXY for https requests.
+The environment values may be either a complete URL or a "host[:port]", in which case the "http" scheme is assumed. 
+An error is returned if the value is a different form.
