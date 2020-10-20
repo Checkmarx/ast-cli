@@ -48,6 +48,7 @@ func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+		Proxy:           http.ProxyFromEnvironment,
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
