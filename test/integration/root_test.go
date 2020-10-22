@@ -142,7 +142,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	err = bindKeyToEnvAndDefault(params.AccessKeySecretConfigKey, params.AccessKeySecretEnv, "")
 	assert.NilError(t, err)
 
-	err = bindKeyToEnvAndDefault(params.AstAuthenticationPathConfigKey, params.AstAuthenticationPathEnv, "")
+	err = bindKeyToEnvAndDefault(params.AstAuthenticationPathConfigKey, params.AstAuthenticationPathEnv,
+		"auth/realms/organization/protocol/openid-connect/token")
 	assert.NilError(t, err)
 
 	err = bindKeyToEnvAndDefault(params.CredentialsFilePathKey, params.CredentialsFilePathEnv, "credentials.ast")
