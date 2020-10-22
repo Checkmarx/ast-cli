@@ -35,19 +35,10 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
 	}
 
-	var req *http.Request
-	req, err = http.NewRequest(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes))
+	resp, err := SendHTTPRequest(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, DefaultTimeoutSeconds)
 	if err != nil {
-		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
+		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
-
-	var client = &http.Client{}
-	var resp *http.Response
-	resp, err = client.Do(req)
-	if err != nil {
-		return nil, errors.Errorf("Invoking HTTP request failed - %s", err.Error())
-	}
-	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
