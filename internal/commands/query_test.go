@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+
 	"gotest.tools/assert"
 )
 
@@ -55,7 +57,7 @@ func TestRunDownloadCommand(t *testing.T) {
 	defer mockRepoFile.Close()
 	bytes, err := ioutil.ReadAll(mockRepoFile)
 	assert.NilError(t, err, "failed to read repo mock file")
-	assert.Assert(t, string(bytes) == "mock")
+	assert.Assert(t, string(bytes) == wrappers.MockContent)
 }
 
 func TestRunListCommand(t *testing.T) {

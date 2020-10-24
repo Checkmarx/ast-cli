@@ -20,7 +20,7 @@ const (
 	failedDeletingRepo             = "failed deleting queries repository"
 	failedActivatingRepo           = "failed activating queries repository"
 	failedActivatingAfterUploading = "failed activating queries repository after uploading it"
-	failedCloningRepo              = "failed downloading queries repository"
+	failedDownloadingRepo          = "failed downloading queries repository"
 	failedUploadingRepo            = "failed uploading queries repository"
 )
 
@@ -79,30 +79,30 @@ func runDownload(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, 
 
 		repo, errorModel, err := queryWrapper.Download(name)
 		if err != nil {
-			return errors.Wrap(err, failedCloningRepo)
+			return errors.Wrap(err, failedDownloadingRepo)
 		}
 
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedCloningRepo, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", failedDownloadingRepo, errorModel.Code, errorModel.Message)
 		}
 
 		defer repo.Close()
 		pwdDir, err := os.Getwd()
 		if err != nil {
-			return errors.Wrapf(err, "%s: failed get current directory path", failedCloningRepo)
+			return errors.Wrapf(err, "%s: failed get current directory path", failedDownloadingRepo)
 		}
 
 		destFile := filepath.Join(pwdDir, QueriesRepoDestFileName)
 		destWriter, err := os.Create(destFile)
 		if err != nil {
-			return errors.Wrapf(err, "%s failed creating file to download into it", failedCloningRepo)
+			return errors.Wrapf(err, "%s failed creating file to download into it", failedDownloadingRepo)
 		}
 
 		defer destWriter.Close()
-		_, _ = cmd.OutOrStdout().Write([]byte("Cloning into " + destFile + "\n"))
+		_, _ = cmd.OutOrStdout().Write([]byte("Downloading into " + destFile + "\n"))
 		_, err = io.Copy(destWriter, repo)
 		if err != nil {
-			return errors.Wrap(err, failedCloningRepo)
+			return errors.Wrap(err, failedDownloadingRepo)
 		}
 
 		return nil

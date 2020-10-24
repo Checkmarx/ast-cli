@@ -31,7 +31,7 @@ func createASTTestCommand() *cobra.Command {
 	healthMockWrapper := &wrappers.HealthCheckMockWrapper{}
 	queriesMockWrapper := &wrappers.QueriesMockWrapper{}
 	authWrapper := &wrappers.AuthMockWrapper{}
-	defaultConfigFileLocation := "./default_config.yml"
+	ssiWrapper := &wrappers.SSIMockWrapper{}
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
@@ -41,7 +41,7 @@ func createASTTestCommand() *cobra.Command {
 		healthMockWrapper,
 		queriesMockWrapper,
 		authWrapper,
-		defaultConfigFileLocation,
+		ssiWrapper,
 	)
 }
 

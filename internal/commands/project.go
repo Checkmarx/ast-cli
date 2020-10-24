@@ -242,7 +242,7 @@ func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView
 	return result
 }
 
-func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView {
+func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView { //nolint:gocritic
 	return projectView{
 		ID:        model.ID,
 		CreatedAt: model.CreatedAt,
