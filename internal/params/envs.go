@@ -27,4 +27,6 @@ const (
 	QueriesPathEnv                      = "QUERIES_PATH"
 	QueriesCLonePathEnv                 = "QUERIES_CLONE_PATH"
 	CreateOath2ClientPathEnv            = "CREATE_OATH2_CLIENT_PATH"
+	SastScanIncPathEnv                  = "SAST_SCAN_INC_PATH"
+	SastScanIncDownloadEngineLogPathEnv = "SAST_SCAN_INC_DOWNLOAD_ENGINE_LOG_PATH"
 )

@@ -13,7 +13,7 @@ import (
 type QueriesMockWrapper struct{}
 
 func (QueriesMockWrapper) Download(string) (io.ReadCloser, *queriesHelpers.WebError, error) {
-	return ioutil.NopCloser(strings.NewReader("mock")), nil, nil
+	return ioutil.NopCloser(strings.NewReader(MockContent)), nil, nil
 }
 
 func (QueriesMockWrapper) Import(string, string) (*queriesHelpers.WebError, error) {
