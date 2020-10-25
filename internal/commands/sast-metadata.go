@@ -17,8 +17,19 @@ const (
 type ScanInfoView struct {
 	ScanID    string `format:"name:Scan id"`
 	ProjectID string `format:"name:Project id"`
-	BaseID    string `format:"name:Base id"`
+	FileCount int32  `format:"name:File count"`
+	Loc       int32
 	Type      string
+}
+
+type IncScanInfoView struct {
+	*ScanInfoView
+	BaseID            string  `format:"name:Base id"`
+	CanceledReason    string  `format:"name:Canceled reason;omitempty"`
+	AddedFilesCount   int32   `format:"name:Added files count"`
+	ChangedFilesCount int32   `format:"name:Changed files count"`
+	DeletedFilesCount int32   `format:"name:Deleted files count"`
+	ChangePercentage  float32 `format:"name:Change percentage"`
 }
 
 func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
@@ -92,17 +103,33 @@ func runScanInfo(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.C
 	}
 }
 
-func toScanInfoView(info *rest.ScanInfo) *ScanInfoView {
-	return &ScanInfoView{
+func toScanInfoView(info *rest.ScanInfo) interface{} {
+	s := &ScanInfoView{
 		ScanID:    info.ScanID,
 		ProjectID: info.ProjectID,
-		BaseID:    info.BaseID,
-		Type: func() string {
-			if info.IsIncremental {
-				return "incremental scan"
-			}
-
-			return "full scan"
-		}(),
+		Loc:       info.Loc,
+		FileCount: info.FileCount,
 	}
+
+	if info.IsIncremental {
+		s.Type = "incremental scan"
+		return &IncScanInfoView{
+			ScanInfoView: s,
+			BaseID:       info.BaseID,
+			CanceledReason: func() string {
+				if info.IsIncrementalCanceled {
+					return info.IncrementalCancelReason
+				}
+
+				return ""
+			}(),
+			AddedFilesCount:   info.AddedFilesCount,
+			ChangedFilesCount: info.ChangedFilesCount,
+			DeletedFilesCount: info.DeletedFilesCount,
+			ChangePercentage:  info.ChangePercentage,
+		}
+	}
+
+	s.Type = "full scan"
+	return s
 }
