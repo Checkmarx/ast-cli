@@ -17,12 +17,12 @@ const (
 
 func NewSSICommand(ssiWrapper wrappers.SSIWrapper) *cobra.Command {
 	ssiCmd := &cobra.Command{
-		Use:   "ssi",
-		Short: "Manage sast scan incremental data",
+		Use:   "sast-metadata",
+		Short: "Manage sast metadata on scans",
 	}
 	downloadEngineLogCmd := &cobra.Command{
-		Use:   "download-engine-log <scan id>",
-		Short: "Download the engine log for given scan id",
+		Use:   "engine-log <scan id>",
+		Short: "Downloads the engine log for given scan id",
 		RunE:  runDownloadEngineLog(ssiWrapper),
 	}
 	ssiCmd.AddCommand(downloadEngineLogCmd)

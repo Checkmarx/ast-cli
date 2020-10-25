@@ -13,19 +13,19 @@ import (
 
 func TestSSIHelp(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "help", "ssi")
+	err := executeTestCommand(cmd, "help", "sast-metadata")
 	assert.NilError(t, err)
 }
 
 func TestSSINoSub(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "ssi")
+	err := executeTestCommand(cmd, "sast-metadata")
 	assert.NilError(t, err)
 }
 
 func TestRunDownloadEngineLog(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "ssi", "download-engine-log", "1")
+	err := executeTestCommand(cmd, "-v", "sast-metadata", "engine-log", "1")
 	assert.NilError(t, err)
 	wd, _ := os.Getwd()
 	mockFilePath := filepath.Join(wd, EngineLogDestFile)
@@ -40,6 +40,6 @@ func TestRunDownloadEngineLog(t *testing.T) {
 
 func TestRunDownloadEngineLogNoParam(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "ssi", "download-engine-log")
+	err := executeTestCommand(cmd, "sast-metadata", "engine-log")
 	assert.Assert(t, err != nil)
 }
