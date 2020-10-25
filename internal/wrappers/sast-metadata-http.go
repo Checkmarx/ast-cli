@@ -53,7 +53,7 @@ func (s *SastMetadataHTTPWrapper) DownloadEngineLog(scanID string) (io.ReadClose
 
 func (s *SastMetadataHTTPWrapper) GetScanInfo(scanID string) (*rest.ScanInfo, *rest.Error, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, fmt.Sprintf("%s/%s", s.basePath, scanID),
-		nil, false, DefaultTimeoutSeconds)
+		nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
