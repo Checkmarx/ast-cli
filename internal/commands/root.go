@@ -65,7 +65,7 @@ func NewAstCLI(
 	healthCheckWrapper wrappers.HealthCheckWrapper,
 	queriesWrapper wrappers.QueriesWrapper,
 	authWrapper wrappers.AuthWrapper,
-	defaultConfigFileLocation string,
+	ssiWrapper wrappers.SastMetadataWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "ast",
@@ -98,6 +98,7 @@ func NewAstCLI(
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	authCmd := NewAuthCommand(authWrapper)
+	ssiCmd := NewSastMetadataCommand(ssiWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -108,6 +109,7 @@ func NewAstCLI(
 		rmCmd,
 		queriesCmd,
 		authCmd,
+		ssiCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
