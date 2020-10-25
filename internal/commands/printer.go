@@ -164,6 +164,14 @@ func newProperty(s reflect.Value, i int) (property, bool) {
 
 	if format != "" {
 		for _, f := range strings.Split(format, ";") {
+			if f == "omitempty" {
+				if valueField.Interface() == "" {
+					return property{}, false
+				}
+
+				continue
+			}
+
 			format := getFormatter(f)
 			format(&p, valueField.Interface())
 		}
