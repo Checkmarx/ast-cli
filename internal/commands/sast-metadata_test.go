@@ -38,3 +38,15 @@ func TestRunDownloadEngineLogNoParam(t *testing.T) {
 	err := executeTestCommand(cmd, "sast-metadata", "engine-log")
 	assert.Assert(t, err != nil)
 }
+
+func TestRunScanInfo(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "sast-metadata", "scan-info", "1")
+	assert.NilError(t, err)
+}
+
+func TestRunScanInfoNoParam(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "sast-metadata", "scan-info")
+	assert.Assert(t, err != nil)
+}

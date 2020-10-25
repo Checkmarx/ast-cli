@@ -319,8 +319,8 @@ type scanView struct {
 	ID        string `format:"name:Scan ID"`
 	ProjectID string `format:"name:Project ID"`
 	Status    string
-	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
-	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
+	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
 	Tags      map[string]string
 }
 
