@@ -39,6 +39,9 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Use:   "sast-rm",
 		Short: "SAST resource management",
 	}
+
+	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd},
+		formatTable, formatJSON, formatList)
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
 	return sastrmCmd
 }
@@ -53,7 +56,7 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return Print(cmd.OutOrStdout(), scanViews(scans))
+	return printByFormat(cmd, scanViews(scans))
 }
 
 func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
@@ -62,7 +65,7 @@ func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed get engines")
 	}
-	return Print(cmd.OutOrStdout(), engineViews(engines))
+	return printByFormat(cmd, engineViews(engines))
 }
 
 func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
@@ -77,7 +80,7 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return Print(cmd.OutOrStdout(), stats)
+	return printByFormat(cmd, stats)
 }
 
 func scanViews(scans []*rest.Scan) []*rmScanView {
