@@ -25,7 +25,7 @@ func NewBFLCommand(bflWrapper wrappers.BFLWrapper) *cobra.Command {
 		RunE:  runGetBFLByScanIDCommand(bflWrapper),
 	}
 	bflCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
-
+	addFormatFlag(bflCmd, formatList, formatJSON)
 	return bflCmd
 }
 
@@ -63,7 +63,8 @@ func runGetBFLByScanIDCommand(bflWrapper wrappers.BFLWrapper) func(cmd *cobra.Co
 }
 
 func outputBFL(cmd *cobra.Command, model *resultsBfl.Forest) error {
-	if IsJSONFormat() {
+	f, _ := cmd.Flags().GetString(formatFlag)
+	if IsFormat(f, formatJSON) {
 		var bflJSON []byte
 		bflJSON, err := json.Marshal(model)
 		if err != nil {

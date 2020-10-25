@@ -66,6 +66,7 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Short: "Delete a query repository",
 		RunE:  runDelete(queryWrapper),
 	}
+	addFormatFlag(listCmd, formatTable, formatList, formatJSON)
 	queryCmd.AddCommand(downloadCmd, uploadCmd, listCmd, activateCmd, deleteCmd)
 	return queryCmd
 }
@@ -163,7 +164,7 @@ func runList(queryWrapper wrappers.QueriesWrapper) func(cmd *cobra.Command, args
 			return errors.Wrap(err, failedListingRepos)
 		}
 
-		err = Print(cmd.OutOrStdout(), toQueryRepoViews(queriesRepos))
+		err = printByFormat(cmd, toQueryRepoViews(queriesRepos))
 		if err != nil {
 			return errors.Wrap(err, failedListingRepos)
 		}

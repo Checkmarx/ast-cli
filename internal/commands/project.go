@@ -77,6 +77,8 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runGetProjectsTagsCommand(projectsWrapper),
 	}
 
+	addFormatFlagToMultipleCommands([]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd}, formatTable,
+		formatJSON, formatList)
 	projCmd.AddCommand(createProjCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
@@ -128,7 +130,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectView(*projResponseModel))
+			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
@@ -155,7 +157,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			err = Print(cmd.OutOrStdout(), toProjectViews(allProjectsModel.Projects))
+			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
 				return err
 			}
@@ -181,7 +183,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectView(*projectResponseModel))
+			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
 			}
