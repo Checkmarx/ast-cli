@@ -1,10 +1,11 @@
 package commands
 
 import (
+	"io"
+
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 const (
