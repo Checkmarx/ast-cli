@@ -30,5 +30,5 @@ var (
 	QueriesClonePathKey                 = strings.ToLower(QueriesCLonePathEnv)
 	CreateOath2ClientPathKey            = strings.ToLower(CreateOath2ClientPathEnv)
 	SastScanIncPathKey                  = strings.ToLower(SastScanIncPathEnv)
-	SastScanIncDownloadEngineLogPathKey = strings.ToLower(SastScanIncDownloadEngineLogPathEnv)
+	SastScanIncEngineLogPathKey         = strings.ToLower(SastScanIncEngineLogPathEnv)
 )

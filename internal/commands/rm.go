@@ -116,8 +116,8 @@ func engineViews(engines []*rest.Engine) []*rmEngineView {
 type rmScanView struct {
 	ID         string            `json:"id"`
 	State      string            `json:"state"`
-	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.000;name:Queued at" json:"queued-at"`
-	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.000;name:Running at" json:"running-at"`
+	QueuedAt   time.Time         `format:"time:01-02-06 15:04:05.000;name:Queued at" json:"queued-at"`
+	RunningAt  *time.Time        `format:"time:01-02-06 15:04:05.000;name:Running at" json:"running-at"`
 	Engine     string            `json:"engine"`
 	Properties map[string]string `json:"properties"`
 }
@@ -126,7 +126,7 @@ type rmEngineView struct {
 	ID           string            `json:"id"`
 	Status       string            `json:"status"`
 	ScanID       string            `json:"scan"`
-	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.000;name:Discovered at" json:"registered-at"`
-	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.000;name:Heartbeat at" json:"updated-at"`
+	RegisteredAt time.Time         `format:"time:01-02-06 15:04:05.000;name:Discovered at" json:"registered-at"`
+	UpdatedAt    time.Time         `format:"time:01-02-06 15:04:05.000;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
 }
