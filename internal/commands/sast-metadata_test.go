@@ -1,9 +1,8 @@
 package commands
 
 import (
+	"bytes"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -25,17 +24,13 @@ func TestSSINoSub(t *testing.T) {
 
 func TestRunDownloadEngineLog(t *testing.T) {
 	cmd := createASTTestCommand()
+	outBuff := bytes.NewBufferString("")
+	cmd.SetOut(outBuff)
 	err := executeTestCommand(cmd, "-v", "sast-metadata", "engine-log", "1")
 	assert.NilError(t, err)
-	wd, _ := os.Getwd()
-	mockFilePath := filepath.Join(wd, EngineLogDestFile)
-	mockLogFile, err := os.Open(mockFilePath)
-	assert.NilError(t, err, "failed to open log mock file")
-	defer os.Remove(mockFilePath)
-	defer mockLogFile.Close()
-	bytes, err := ioutil.ReadAll(mockLogFile)
-	assert.NilError(t, err, "failed to read log mock file")
-	assert.Assert(t, string(bytes) == wrappers.MockContent)
+	b, err := ioutil.ReadAll(outBuff)
+	assert.NilError(t, err)
+	assert.Assert(t, string(b) == wrappers.MockContent)
 }
 
 func TestRunDownloadEngineLogNoParam(t *testing.T) {
