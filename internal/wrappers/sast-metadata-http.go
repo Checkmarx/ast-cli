@@ -10,19 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SSIHTTPWrapper struct {
+type SastMetadataHTTPWrapper struct {
 	pathFormat string
 }
 
 const failedToParseDownloadResult = "failed to parse download engine log result"
 
-func NewSSIHTTPWrapper(pathFormat string) SSIWrapper {
-	return &SSIHTTPWrapper{
+func NewSastMetadataHTTPWrapper(pathFormat string) SastMetadataWrapper {
+	return &SastMetadataHTTPWrapper{
 		pathFormat: pathFormat,
 	}
 }
 
-func (s *SSIHTTPWrapper) DownloadEngineLog(scanID string) (io.ReadCloser, *rest.Error, error) {
+func (s *SastMetadataHTTPWrapper) DownloadEngineLog(scanID string) (io.ReadCloser, *rest.Error, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, fmt.Sprintf(s.pathFormat, scanID), nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err

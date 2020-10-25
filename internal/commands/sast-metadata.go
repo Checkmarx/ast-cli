@@ -15,28 +15,28 @@ const (
 	failedDownloadingEngineLog = "failed downloading engine log"
 )
 
-func NewSSICommand(ssiWrapper wrappers.SSIWrapper) *cobra.Command {
-	ssiCmd := &cobra.Command{
+func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
+	sastMetadataCmd := &cobra.Command{
 		Use:   "sast-metadata",
 		Short: "Manage sast metadata on scans",
 	}
 	downloadEngineLogCmd := &cobra.Command{
 		Use:   "engine-log <scan id>",
 		Short: "Downloads the engine log for given scan id",
-		RunE:  runDownloadEngineLog(ssiWrapper),
+		RunE:  runDownloadEngineLog(sastMetadataWrapper),
 	}
-	ssiCmd.AddCommand(downloadEngineLogCmd)
-	return ssiCmd
+	sastMetadataCmd.AddCommand(downloadEngineLogCmd)
+	return sastMetadataCmd
 }
 
-func runDownloadEngineLog(ssiWrapper wrappers.SSIWrapper) func(*cobra.Command, []string) error {
+func runDownloadEngineLog(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return errors.Errorf("%s: Please provide scan id", failedDownloadingEngineLog)
 		}
 
 		scanID := args[0]
-		logReader, errorModel, err := ssiWrapper.DownloadEngineLog(scanID)
+		logReader, errorModel, err := sastMetadataWrapper.DownloadEngineLog(scanID)
 		if err != nil {
 			return errors.Wrap(err, failedDownloadingEngineLog)
 		}

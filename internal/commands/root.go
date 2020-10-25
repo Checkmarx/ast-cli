@@ -64,7 +64,7 @@ func NewAstCLI(
 	healthCheckWrapper wrappers.HealthCheckWrapper,
 	queriesWrapper wrappers.QueriesWrapper,
 	authWrapper wrappers.AuthWrapper,
-	ssiWrapper wrappers.SSIWrapper,
+	ssiWrapper wrappers.SastMetadataWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "ast",
@@ -100,7 +100,7 @@ func NewAstCLI(
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	authCmd := NewAuthCommand(authWrapper)
-	ssiCmd := NewSSICommand(ssiWrapper)
+	ssiCmd := NewSastMetadataCommand(ssiWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,

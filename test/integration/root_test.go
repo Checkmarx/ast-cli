@@ -95,7 +95,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
 	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
-	ssiWrapper := wrappers.NewSSIHTTPWrapper(fmt.Sprintf("%s/%s", sastScanInc, sastScanIncDownloadEngineLogPath))
+	ssiWrapper := wrappers.NewSastMetadataHTTPWrapper(fmt.Sprintf("%s/%s", sastScanInc, sastScanIncDownloadEngineLogPath))
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,

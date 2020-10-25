@@ -61,7 +61,7 @@ func main() {
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
 	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
 	ssiDownloadEngineLogURIPath := fmt.Sprintf("%s/%s", sastScanInc, sastScanIncDownloadEngineLogPath)
-	sstWrapper := wrappers.NewSSIHTTPWrapper(ssiDownloadEngineLogURIPath)
+	sstWrapper := wrappers.NewSastMetadataHTTPWrapper(ssiDownloadEngineLogURIPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
