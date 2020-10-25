@@ -23,6 +23,7 @@ import (
 const (
 	expiryGraceSeconds    = 10
 	DefaultTimeoutSeconds = 5
+	NoTimeout             = 0
 )
 
 type ClientCredentialsInfo struct {
