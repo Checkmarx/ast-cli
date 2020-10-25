@@ -26,7 +26,7 @@ var EnvVarsBinds = []struct {
 	{QueriesClonePathKey, QueriesCLonePathEnv, "clone"},
 	{CreateOath2ClientPathKey, CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients"},
 	{SastScanIncPathKey, SastScanIncPathEnv, "api/sast-scan-inc"},
-	{SastScanIncDownloadEngineLogPathKey, SastScanIncDownloadEngineLogPathEnv, "%s/engine-log"},
+	{SastScanIncEngineLogPathKey, SastScanIncEngineLogPathEnv, "%s/engine-log"},
 	{AccessKeyIDConfigKey, AccessKeyIDEnv, ""},
 	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
 	{AstAuthenticationPathConfigKey, AstAuthenticationPathEnv, "auth/realms/organization/protocol/openid-connect/token"},

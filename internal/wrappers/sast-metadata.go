@@ -8,4 +8,5 @@ import (
 
 type SastMetadataWrapper interface {
 	DownloadEngineLog(scanID string) (io.ReadCloser, *rest.Error, error)
+	GetScanInfo(scanID string) (*rest.ScanInfo, *rest.Error, error)
 }

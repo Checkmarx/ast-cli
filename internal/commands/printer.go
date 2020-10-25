@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 )
-
-var regexpSplitTimeFormat = regexp.MustCompile("[- ]")
 
 func Print(w io.Writer, view interface{}, format string) error {
 	if IsFormat(format, formatJSON) {
@@ -205,9 +202,6 @@ func parseMaxlen(name string) func(*property, interface{}) {
 
 func parseTime(name string) func(*property, interface{}) {
 	timeFmt := name[len("time:"):]
-	splits := regexpSplitTimeFormat.Split(timeFmt, -1)
-	splits[0], splits[1], splits[2] = splits[1], splits[2], splits[0]
-	timeFmt = strings.Join(splits[:3], "-") + " " + splits[3]
 	return func(p *property, raw interface{}) {
 		t, ok := raw.(time.Time)
 		if !ok {

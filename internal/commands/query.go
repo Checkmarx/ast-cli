@@ -29,7 +29,7 @@ const QueriesRepoDestFileName = "queries-repository.tar.gz"
 type QueryRepoView struct {
 	Name         string
 	IsActive     string    `format:"name:Is active"`
-	LastModified time.Time `format:"name:Last modified;time:06-01-02 15:04:05"`
+	LastModified time.Time `format:"name:Last modified;time:01-02-06 15:04:05"`
 }
 
 func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
