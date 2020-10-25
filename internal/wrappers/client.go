@@ -23,6 +23,7 @@ import (
 const (
 	expiryGraceSeconds    = 10
 	DefaultTimeoutSeconds = 5
+	NoTimeout             = 0
 )
 
 type ClientCredentialsInfo struct {
@@ -54,9 +55,13 @@ func getClient(timeout uint) *http.Client {
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetURL(path)
-	req, err := http.NewRequest(method, u, body)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout)
+}
+
+func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+	client := getClient(timeout)
+	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
 		return nil, err
 	}

@@ -57,7 +57,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in the system",
@@ -95,6 +94,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
+	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd, listScansCmd, showScanCmd, workflowScanCmd},
+		formatTable, formatList, formatJSON)
 	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cacnelScanCmd, tagsCmd)
 	return scanCmd
 }
@@ -159,7 +160,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toScanView(scanResponseModel))
+			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
@@ -185,7 +186,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = Print(cmd.OutOrStdout(), toScanViews(allScansModel.Scans))
+			err = printByFormat(cmd, toScanViews(allScansModel.Scans))
 			if err != nil {
 				return err
 			}
@@ -211,7 +212,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toScanView(scanResponseModel))
+			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -237,7 +238,7 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if taskResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), taskResponseModel)
+			err = printByFormat(cmd, taskResponseModel)
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -32,7 +33,7 @@ const (
 	insecureFlag                   = "insecure"
 	insecureFlagUsage              = "Ignore TLS certificate validations"
 	formatFlag                     = "format"
-	formatFlagUsage                = "Format for the output. One of [json, list, table]"
+	formatFlagUsageFormat          = "Format for the output. One of %s"
 	formatJSON                     = "json"
 	formatList                     = "list"
 	formatTable                    = "table"
@@ -75,8 +76,6 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().String(astAuthenticationPathFlag, "", astAuthenticationPathFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
-	// Default value is table. Should we? or JSON?
-	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
@@ -89,7 +88,6 @@ func NewAstCLI(
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
-	_ = viper.BindPFlag(formatFlag, rootCmd.PersistentFlags().Lookup(formatFlag))
 
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
@@ -140,4 +138,20 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 			strings.Count(filterKeyVal[1], ";"))
 	}
 	return allFilters, nil
+}
+
+func addFormatFlagToMultipleCommands(cmds []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	for _, c := range cmds {
+		addFormatFlag(c, defaultFormat, otherAvailableFormats...)
+	}
+}
+
+func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(formatFlag, defaultFormat,
+		fmt.Sprintf(formatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
+func printByFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(formatFlag)
+	return Print(cmd.OutOrStdout(), view, f)
 }

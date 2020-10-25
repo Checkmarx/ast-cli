@@ -11,41 +11,31 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"github.com/spf13/viper"
 )
 
 var regexpSplitTimeFormat = regexp.MustCompile("[- ]")
 
-func Print(w io.Writer, view interface{}) error {
-	if IsJSONFormat() {
+func Print(w io.Writer, view interface{}, format string) error {
+	if IsFormat(format, formatJSON) {
 		viewJSON, err := json.Marshal(view)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(w, string(viewJSON))
-	} else if IsListFormat() {
+	} else if IsFormat(format, formatList) {
 		entities := toEntities(view)
 		printList(w, entities)
-	} else if IsTableFormat() {
+	} else if IsFormat(format, formatTable) {
 		entities := toEntities(view)
 		printTable(w, entities)
 	} else {
-		return errors.Errorf("Invalid format %s", viper.GetString(formatFlag))
+		return errors.Errorf("Invalid format %s", format)
 	}
 	return nil
 }
 
-func IsJSONFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatJSON)
-}
-
-func IsListFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatList)
-}
-
-func IsTableFormat() bool {
-	return strings.EqualFold(viper.GetString(formatFlag), formatTable)
+func IsFormat(val, format string) bool {
+	return strings.EqualFold(val, format)
 }
 
 type entity struct {
