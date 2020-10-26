@@ -3,19 +3,12 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"time"
 
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
 	"github.com/pkg/errors"
-)
-
-const (
-	httpClientTimeout = 5
 )
 
 type UploadsHTTPWrapper struct {
@@ -37,27 +30,14 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 
 	// read all of the contents of our uploaded file into a
 	// byte array
-	wd, _ := os.Getwd()
-	fmt.Printf("Input file full path is  %s\n", filepath.Join(wd, sourcesFile))
-
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
 	}
 
-	var req *http.Request
-	req, err = http.NewRequest(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes))
+	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout)
 	if err != nil {
-		return nil, errors.Errorf("Requesting error model failed - %s", err.Error())
-	}
-
-	var client = &http.Client{
-		Timeout: time.Second * time.Duration(httpClientTimeout),
-	}
-	var resp *http.Response
-	resp, err = client.Do(req)
-	if err != nil {
-		return nil, errors.Errorf("Invoking HTTP request failed - %s", err.Error())
+		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
 	defer resp.Body.Close()
 
@@ -65,14 +45,14 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	case http.StatusOK:
 		return preSignedURL, nil
 	default:
-		return nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 	resp, err := SendHTTPRequest(http.MethodPost, u.path, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
-		return nil, errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
+		return nil, errors.Errorf("invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -96,7 +76,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		return &model.URL, nil
 
 	default:
-		return nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 

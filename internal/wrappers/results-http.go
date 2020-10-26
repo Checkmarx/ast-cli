@@ -50,6 +50,6 @@ func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*resultsRaw.
 		return &model, nil, nil
 
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }

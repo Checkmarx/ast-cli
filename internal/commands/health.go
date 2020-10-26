@@ -2,8 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -21,14 +23,28 @@ const (
 	reportBlankPadWidth = 2
 	checkMarkCode       = "\u2714\ufe0f"
 	crossMarkCode       = "\u274c"
+	roleFlag            = "role"
+)
+
+var (
+	astRoleFlagUsage = fmt.Sprintf("The runtime role. Available roles are: %s",
+		strings.Join([]string{
+			commonParams.ScaAgent,
+			commonParams.SastALlInOne,
+			commonParams.SastManager,
+			commonParams.SastEngine}, ","))
+	singleNodeLogger = log.New(deploymentLogWriter{}, "", 0)
 )
 
 func NewHealthCheckCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "health-check",
 		Short: "Run AST health check",
 		RunE:  runAllHealthChecks(healthCheckWrapper),
 	}
+	cmd.PersistentFlags().String(roleFlag, commonParams.ScaAgent, astRoleFlagUsage)
+	_ = viper.BindPFlag(commonParams.AstRoleKey, cmd.PersistentFlags().Lookup(roleFlag))
+	return cmd
 }
 
 func getLongestWidth(checkViews []*healthView) int {
@@ -106,12 +122,13 @@ func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksBy
 	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
-		wrappers.NewHealthCheck("Web App", h.RunWebAppCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Web-App", h.RunWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Identity and Access Management Web App", h.RunKeycloakWebAppCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("Scan-Flow", h.RunScanFlowCheck, sastRoles[:]),
+		wrappers.NewHealthCheck("Sast-Engines", h.RunSastEnginesCheck, sastRoles[:]),
 		wrappers.NewHealthCheck("In-memory DB", h.RunInMemoryDBCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Object Store", h.RunObjectStoreCheck, sastAndScaRoles),
-		wrappers.NewHealthCheck("Message Queue", h.RunMessageQueueCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Object-Store", h.RunObjectStoreCheck, sastAndScaRoles),
+		wrappers.NewHealthCheck("Message-Queue", h.RunMessageQueueCheck, sastAndScaRoles),
 		wrappers.NewHealthCheck("Logging", h.RunLoggingCheck, sastAndScaRoles),
 	}
 
@@ -144,4 +161,15 @@ type healthView struct {
 	Name  string
 	Error error
 	*wrappers.HealthStatus
+}
+
+type deploymentLogWriter struct {
+}
+
+func (writer deploymentLogWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().Format(time.RFC3339) + " " + string(bytes))
+}
+
+func writeToStandardOutput(msg string) {
+	singleNodeLogger.Println(msg)
 }

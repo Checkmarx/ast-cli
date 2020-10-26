@@ -1,10 +1,7 @@
 package commands
 
 import (
-	"bytes"
-	"io"
-	"os"
-	"os/exec"
+	"fmt"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -17,32 +14,44 @@ import (
 )
 
 const (
-	keyValuePairSize              = 2
-	verboseFlag                   = "verbose"
-	verboseFlagSh                 = "v"
-	verboseUsage                  = "Verbose mode"
-	sourcesFlag                   = "sources"
-	sourcesFlagSh                 = "s"
-	inputFlag                     = "input"
-	inputFlagSh                   = "i"
-	inputFileFlag                 = "input-file"
-	inputFileFlagSh               = "f"
-	accessKeyIDFlag               = "key"
-	accessKeyIDFlagUsage          = "The access key ID"
-	accessKeySecretFlag           = "secret"
-	accessKeySecretFlagUsage      = "The access key secret"
-	astAuthenticationURIFlag      = "auth-uri"
-	astAuthenticationURIFlagUsage = "The authentication URI"
-	insecureFlag                  = "insecure"
-	insecureFlagUsage             = "Ignore TLS certificate validations"
-	formatFlag                    = "format"
-	formatFlagUsage               = "Format for the output. One of [json, list, table]"
-	formatJSON                    = "json"
-	formatList                    = "list"
-	formatTable                   = "table"
-	filterFlag                    = "filter"
-	baseURIFlag                   = "base-uri"
-	baseURIFlagUsage              = "The base system URI"
+	keyValuePairSize               = 2
+	verboseFlag                    = "verbose"
+	verboseFlagSh                  = "v"
+	verboseUsage                   = "Verbose mode"
+	sourcesFlag                    = "sources"
+	sourcesFlagSh                  = "s"
+	inputFlag                      = "input"
+	inputFlagSh                    = "i"
+	inputFileFlag                  = "input-file"
+	inputFileFlagSh                = "f"
+	accessKeyIDFlag                = "key"
+	accessKeyIDFlagUsage           = "The access key ID"
+	accessKeySecretFlag            = "secret"
+	accessKeySecretFlagUsage       = "The access key secret"
+	astAuthenticationPathFlag      = "auth-path"
+	astAuthenticationPathFlagUsage = "The authentication path"
+	insecureFlag                   = "insecure"
+	insecureFlagUsage              = "Ignore TLS certificate validations"
+	formatFlag                     = "format"
+	formatFlagUsageFormat          = "Format for the output. One of %s"
+	formatJSON                     = "json"
+	formatList                     = "list"
+	formatTable                    = "table"
+	filterFlag                     = "filter"
+	baseURIFlag                    = "base-uri"
+	baseURIFlagUsage               = "The base system URI"
+	queriesRepoNameFlag            = "name"
+	queriesRepoNameSh              = "n"
+	queriesRepoActivateFlag        = "activate"
+	queriesRepoActivateSh          = "a"
+	clientRolesFlag                = "roles"
+	clientRolesSh                  = "r"
+	clientDescriptionFlag          = "description"
+	clientDescriptionSh            = "d"
+	usernameFlag                   = "username"
+	usernameSh                     = "u"
+	passwordFlag                   = "password"
+	passwordSh                     = "p"
 )
 
 // Return an AST CLI root command to execute
@@ -54,7 +63,9 @@ func NewAstCLI(
 	bflWrapper wrappers.BFLWrapper,
 	rmWrapper wrappers.SastRmWrapper,
 	healthCheckWrapper wrappers.HealthCheckWrapper,
-	defaultConfigFileLocation string,
+	queriesWrapper wrappers.QueriesWrapper,
+	authWrapper wrappers.AuthWrapper,
+	ssiWrapper wrappers.SastMetadataWrapper,
 ) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "ast",
@@ -63,10 +74,8 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)
 	rootCmd.PersistentFlags().String(accessKeyIDFlag, "", accessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
-	rootCmd.PersistentFlags().String(astAuthenticationURIFlag, "", astAuthenticationURIFlagUsage)
+	rootCmd.PersistentFlags().String(astAuthenticationPathFlag, "", astAuthenticationPathFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
-	// Default value is table. Should we? or JSON?
-	rootCmd.PersistentFlags().String(formatFlag, formatTable, formatFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
@@ -74,32 +83,33 @@ func NewAstCLI(
 	// and can be overridden by command flag --key
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
-	_ = viper.BindPFlag(params.AstAuthenticationURIConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationURIFlag))
+	_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
-	_ = viper.BindPFlag(formatFlag, rootCmd.PersistentFlags().Lookup(formatFlag))
 
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
 	bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
-	clusterCmd := NewClusterCommand()
-	appCmd := NewAppCommand()
-	singleNodeCommand := NewSingleNodeCommand(healthCheckWrapper, defaultConfigFileLocation)
+	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	rmCmd := NewSastResourcesCommand(rmWrapper)
+	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
+	authCmd := NewAuthCommand(authWrapper)
+	ssiCmd := NewSastMetadataCommand(ssiWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		clusterCmd,
-		appCmd,
-		singleNodeCommand,
+		healthCheckCmd,
 		bflCmd,
 		rmCmd,
+		queriesCmd,
+		authCmd,
+		ssiCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd
@@ -122,20 +132,26 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		if len(filterKeyVal) != keyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
-		allFilters[filterKeyVal[0]] = filterKeyVal[1]
+
+		allFilters[filterKeyVal[0]] = strings.Replace(
+			filterKeyVal[1], ";", ",",
+			strings.Count(filterKeyVal[1], ";"))
 	}
 	return allFilters, nil
 }
 
-func runBashCommand(name string, envs []string, arg ...string) (*bytes.Buffer, *bytes.Buffer, error) { // nolint
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd := exec.Command(name, arg...)
-	cmd.Env = envs
-	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
-	err := cmd.Run()
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error running command %s", name)
+func addFormatFlagToMultipleCommands(cmds []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	for _, c := range cmds {
+		addFormatFlag(c, defaultFormat, otherAvailableFormats...)
 	}
-	return &stdoutBuf, &stderrBuf, nil
+}
+
+func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(formatFlag, defaultFormat,
+		fmt.Sprintf(formatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
+func printByFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(formatFlag)
+	return Print(cmd.OutOrStdout(), view, f)
 }

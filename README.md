@@ -20,13 +20,27 @@ Inside the command prompt run:
 ./ast [commands]
 
 ## Authentication
-In order to authenticate with AST there are 3 environment variables that needs to be set:
-    
-**AST_AUTHENTICATION_URI**: The authentication URI used by AST  
-**AST_ACCESS_KEY_ID**: The access key ID  
-**AST_ACCESS_KEY_SECRET**: The access key secret
+
+The easiest way is to register you client using:
+
+./ast auth register -u {ADMIN_USER_NAME} -p {ADMIN_USER_PASSWORD} --base-uri http://<REMOTE_IP> 
+
+It wiil Register new oath2 client and outputs its generated credentials:  
+**AST_ACCESS_KEY_ID**={The access key ID}  
+**AST_ACCESS_KEY_SECRET**={The access key secret}
+
+On Linux just wrap this command with eval e.g: "eval $(ast auth register -u <username> -p <password>)".
+On Windows use the SET command with the outputs credentials
 
 You can use [SETX](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx) (windows), [SETENV](https://www.computerhope.com/unix/usetenv.htm)  (linux) for permanent save     
 
 Both access key ID and access key secret can be overridden by the flags **--key** and **--secret** respectively
 
+## Running on remote machine
+./ast --base-uri http://{REMOTE_IP} [commands]
+
+## HTTP Proxy Support
+Use the environment variables _HTTP_PROXY_, _HTTPS_PROXY_ and _NO_PROXY_ (or the lowercase versions). 
+HTTPS_PROXY takes precedence over HTTP_PROXY for https requests.
+The environment values may be either a complete URL or a "host[:port]", in which case the "http" scheme is assumed. 
+An error is returned if the value is a different form.

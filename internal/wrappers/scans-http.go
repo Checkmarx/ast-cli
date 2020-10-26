@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
+
+	scansRestApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +29,7 @@ func NewHTTPScansWrapper(path string) ScansWrapper {
 	}
 }
 
-func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Create(model *scansRestApi.Scan) (*scansRestApi.ScanResponseModel, *scansRestApi.ErrorModel, error) {
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
 		return nil, nil, err
@@ -42,7 +44,7 @@ func (s *ScansHTTPWrapper) Create(model *scansApi.Scan) (*scansApi.ScanResponseM
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollectionResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCollectionResponseModel, *scansRestApi.ErrorModel, error) {
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil)
 	if err != nil {
 		return nil, nil, err
@@ -52,26 +54,27 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansApi.ScansCollect
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansApi.ErrorModel{}
+		errorModel := scansRestApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := scansApi.ScansCollectionResponseModel{}
+		model := scansRestApi.ScansCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return &model, nil, nil
-
+	case http.StatusNotFound:
+		return nil, nil, errors.Errorf("scan not found")
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansRestApi.ScanResponseModel, *scansRestApi.ErrorModel, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
@@ -79,7 +82,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansApi.ScanResponseModel, 
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansRestApi.ErrorModel, error) {
 	path := fmt.Sprintf("%s/%s/workflow", s.path, scanID)
 	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
@@ -88,7 +91,7 @@ func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseMo
 	return handleWorkflowResponseWithBody(resp, err)
 }
 
-func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTaskResponseModel, *scansApi.ErrorModel, error) {
+func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTaskResponseModel, *scansRestApi.ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,7 +100,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansApi.ErrorModel{}
+		errorModel := scansRestApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to parse workflow response")
@@ -112,11 +115,11 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 		return model, nil, nil
 
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Delete(scanID string) (*scansRestApi.ErrorModel, error) {
 	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, err
@@ -124,7 +127,23 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansApi.ErrorModel, error) {
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
-func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Cancel(scanID string) (*scansRestApi.ErrorModel, error) {
+	b, err := json.Marshal(&scansRestApi.CancelScanModel{
+		Status: scansApi.ScanCanceled,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, DefaultTimeoutSeconds)
+	if err != nil {
+		return nil, err
+	}
+
+	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
+}
+
+func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel, error) {
 	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
@@ -134,7 +153,7 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, er
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansApi.ErrorModel{}
+		errorModel := scansRestApi.ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)
@@ -149,6 +168,6 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansApi.ErrorModel, er
 		return tags, nil, nil
 
 	default:
-		return nil, nil, errors.Errorf("Unknown response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }

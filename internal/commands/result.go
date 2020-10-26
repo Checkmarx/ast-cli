@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Available filters are: %s",
+	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.ScanIDQueryParam,
 			commonParams.LimitQueryParam,
@@ -42,12 +42,12 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 
 	listResultsCmd := &cobra.Command{
-		Use:   "list",
+		Use:   "list <scan-id>",
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
 	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
-
+	addFormatFlag(listResultsCmd, formatList, formatJSON)
 	resultCmd.AddCommand(listResultsCmd)
 	return resultCmd
 }
@@ -76,7 +76,8 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		} else if resultResponseModel != nil {
-			if IsJSONFormat() {
+			f, _ := cmd.Flags().GetString(formatFlag)
+			if IsFormat(f, formatJSON) {
 				var resultsJSON []byte
 				resultsJSON, err = json.Marshal(resultResponseModel)
 				if err != nil {

@@ -25,12 +25,15 @@ const (
 )
 
 var (
-	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Available filters are: %s",
+	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
-			commonParams.IDQueryParam,
 			commonParams.LimitQueryParam,
 			commonParams.OffsetQueryParam,
-			commonParams.TagsQueryParam}, ","))
+			commonParams.IDQueryParam,
+			commonParams.IDsQueryParam,
+			commonParams.IDRegexQueryParam,
+			commonParams.TagsKeyQueryParam,
+			commonParams.TagsValueQueryParam}, ","))
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
@@ -57,13 +60,13 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project-id>",
 		Short: "Show information about a project",
 		RunE:  runGetProjectByIDCommand(projectsWrapper),
 	}
 
 	deleteProjCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <project-id>",
 		Short: "Delete a project",
 		RunE:  runDeleteProjectCommand(projectsWrapper),
 	}
@@ -74,6 +77,8 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runGetProjectsTagsCommand(projectsWrapper),
 	}
 
+	addFormatFlagToMultipleCommands([]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd}, formatTable,
+		formatJSON, formatList)
 	projCmd.AddCommand(createProjCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
@@ -87,9 +92,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		var projInput string
 		projInput, _ = cmd.Flags().GetString(inputFlag)
 		projInputFile, _ = cmd.Flags().GetString(inputFileFlag)
-
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFlag, projInput))
-		PrintIfVerbose(fmt.Sprintf("%s: %s", inputFileFlag, projInputFile))
 
 		if projInputFile != "" {
 			// Reading project from input file
@@ -128,7 +130,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectView(*projResponseModel))
+			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
@@ -155,7 +157,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			err = Print(cmd.OutOrStdout(), toProjectViews(allProjectsModel.Projects))
+			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
 				return err
 			}
@@ -181,7 +183,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			err = Print(cmd.OutOrStdout(), toProjectView(*projectResponseModel))
+			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
 			}
@@ -242,7 +244,7 @@ func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView
 	return result
 }
 
-func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView {
+func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView { //nolint:gocritic
 	return projectView{
 		ID:        model.ID,
 		CreatedAt: model.CreatedAt,
@@ -253,7 +255,7 @@ func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView {
 
 type projectView struct {
 	ID        string    `format:"name:Project ID"`
-	CreatedAt time.Time `format:"name:Created at;time:06-01-02 15:04:05"`
-	UpdatedAt time.Time `format:"name:Updated at;time:06-01-02 15:04:05"`
+	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
 	Tags      map[string]string
 }

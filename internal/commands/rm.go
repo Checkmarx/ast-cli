@@ -71,6 +71,10 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "SAST resource management",
 	}
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
+
+	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd},
+		formatTable, formatJSON, formatList)
+	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
 	return sastrmCmd
 }
 
@@ -84,8 +88,7 @@ func (c rmCommands) RunScansCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	Print(cmd.OutOrStdout(), scanViews(scans))
-	return nil
+	return printByFormat(cmd, scanViews(scans))
 }
 
 func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
@@ -94,8 +97,7 @@ func (c rmCommands) RunEnginesCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed get engines")
 	}
-	Print(cmd.OutOrStdout(), engineViews(engines))
-	return nil
+	return printByFormat(cmd, engineViews(engines))
 }
 
 func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
@@ -110,8 +112,7 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	Print(cmd.OutOrStdout(), stats)
-	return nil
+	return printByFormat(cmd, stats)
 }
 
 func (c rmCommands) RunAddPoolCommand(cmd *cobra.Command, args []string) error {
@@ -177,20 +178,20 @@ func engineViews(engines []*rest.Engine) []*rmEngineView {
 }
 
 type rmScanView struct {
-	ID         string            `format:"maxlen:8" json:"id"`
+	ID         string            `json:"id"`
 	State      string            `json:"state"`
-	QueuedAt   time.Time         `format:"time:06-01-02 15:04:05.000;name:Queued at" json:"queued-at"`
-	RunningAt  *time.Time        `format:"time:06-01-02 15:04:05.000;name:Running at" json:"running-at"`
-	Engine     string            `format:"maxlen:13" json:"worker"`
+	QueuedAt   time.Time         `format:"time:01-02-06 15:04:05.000;name:Queued at" json:"queued-at"`
+	RunningAt  *time.Time        `format:"time:01-02-06 15:04:05.000;name:Running at" json:"running-at"`
+	Engine     string            `format:"engine"`
 	Properties map[string]string `json:"properties"`
 }
 
 type rmEngineView struct {
-	ID           string            `format:"maxlen:13" json:"id"`
+	ID           string            `json:"id"`
 	Status       string            `json:"status"`
-	ScanID       string            `format:"maxlen:8" json:"scan"`
-	RegisteredAt time.Time         `format:"time:06-01-02 15:04:05.000;name:Discovered at" json:"registered-at"`
-	UpdatedAt    time.Time         `format:"time:06-01-02 15:04:05.000;name:Heartbeat at" json:"updated-at"`
+	ScanID       string            `json:"scan"`
+	RegisteredAt time.Time         `format:"time:01-02-06 15:04:05.000;name:Discovered at" json:"registered-at"`
+	UpdatedAt    time.Time         `format:"time:01-02-06 15:04:05.000;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
 	Tags         map[string]string `json:"tags"`
 }

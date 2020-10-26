@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -22,10 +21,6 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
-func toFlag(flag string) string {
-	return fmt.Sprintf("--%s", flag)
-}
-
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &wrappers.ScansMockWrapper{}
 	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
@@ -34,7 +29,9 @@ func createASTTestCommand() *cobra.Command {
 	bflMockWrapper := &wrappers.BFLMockWrapper{}
 	rmMockWrapper := &wrappers.SastRmMockWrapper{}
 	healthMockWrapper := &wrappers.HealthCheckMockWrapper{}
-	defaultConfigFileLocation := "./default_config.yml"
+	queriesMockWrapper := &wrappers.QueriesMockWrapper{}
+	authWrapper := &wrappers.AuthMockWrapper{}
+	ssiWrapper := &wrappers.SastMetadataMockWrapper{}
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
@@ -42,7 +39,9 @@ func createASTTestCommand() *cobra.Command {
 		bflMockWrapper,
 		rmMockWrapper,
 		healthMockWrapper,
-		defaultConfigFileLocation,
+		queriesMockWrapper,
+		authWrapper,
+		ssiWrapper,
 	)
 }
 
