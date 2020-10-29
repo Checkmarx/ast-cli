@@ -85,7 +85,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	poolProjectTagsGetCmd := &cobra.Command{
 		Use:   "get",
-		Short: "List sast engine pool projects",
+		Short: "List sast engine pool project tags",
 		RunE:  rm.RunGetPoolProjectTagsCommand,
 	}
 	poolProjectTagsGetCmd.PersistentFlags().StringP("id", "", "",
@@ -93,7 +93,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	poolProjectTagsSetCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Assigns projects to sast engine pool",
+		Short: "Assigns projects tags to sast engine pool",
 		RunE:  rm.RunSetProjectTagsToPoolCommand,
 	}
 	poolProjectTagsSetCmd.PersistentFlags().StringP("id", "", "",
@@ -102,12 +102,12 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	poolProjectTagsCmd.AddCommand(poolProjectTagsGetCmd, poolProjectTagsSetCmd)
 
 	poolEnginesCmd := &cobra.Command{
-		Use: "Engines",
+		Use: "engines",
 	}
 
 	poolEngineGetCmd := &cobra.Command{
 		Use:   "get",
-		Short: "List sast engine pool Engines",
+		Short: "List sast engine pool engines",
 		RunE:  rm.RunGetPoolEnginesCommand,
 	}
 	poolEngineGetCmd.PersistentFlags().StringP("id", "", "",
@@ -115,7 +115,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	poolEnginesSetCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Assigns Engines to sast engine pool",
+		Short: "Assigns engines to sast engine pool",
 		RunE:  rm.RunSetEnginesToPoolCommand,
 	}
 
@@ -125,12 +125,12 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	poolEnginesCmd.AddCommand(poolEngineGetCmd, poolEnginesSetCmd)
 
 	poolEngineTagsCmd := &cobra.Command{
-		Use: "Engine-tags",
+		Use: "engine-tags",
 	}
 
 	poolEngineTagsGetCmd := &cobra.Command{
 		Use:   "get",
-		Short: "List sast engine pool Engines",
+		Short: "List sast engine pool engine tags",
 		RunE:  rm.RunGetPoolEngineTagsCommand,
 	}
 	poolEngineTagsGetCmd.PersistentFlags().StringP("id", "", "",
@@ -138,7 +138,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	poolEngineTagsSetCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Assigns Engines to sast engine pool",
+		Short: "Assigns engines tags to sast engine pool",
 		RunE:  rm.RunSetEngineTagsToPoolCommand,
 	}
 	poolEngineTagsSetCmd.PersistentFlags().StringP("id", "", "",
