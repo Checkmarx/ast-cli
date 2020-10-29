@@ -60,13 +60,13 @@ func (s *sastrmHTTPWrapper) GetPoolProjects(id string) (projects []string, err e
 	return projects, errors.Wrap(err, "failed get pool projects")
 }
 
-func (s *sastrmHTTPWrapper) GetPoolEngineTags(id string) (tags map[string]string, err error) {
+func (s *sastrmHTTPWrapper) GetPoolEngineTags(id string) (tags []Tag, err error) {
 	url := fmt.Sprintf("%s/pools/{%s}/engine-tags", s.path, id)
 	err = read(url, tags)
 	return tags, errors.Wrap(err, "failed get engine tags")
 }
 
-func (s *sastrmHTTPWrapper) GetPoolProjectTags(id string) (tags map[string]string, err error) {
+func (s *sastrmHTTPWrapper) GetPoolProjectTags(id string) (tags []Tag, err error) {
 	url := fmt.Sprintf("%s/pools/{%s}/project-tags", s.path, id)
 	err = read(url, tags)
 	return tags, errors.Wrap(err, "failed get project tags")
@@ -84,25 +84,15 @@ func (s *sastrmHTTPWrapper) SetPoolProjects(id string, value []string) error {
 	return errors.Wrap(err, "failed to set pool projects")
 }
 
-func (s *sastrmHTTPWrapper) SetPoolEngineTags(id string, tags map[string]string) error {
+func (s *sastrmHTTPWrapper) SetPoolEngineTags(id string, tags []Tag) error {
 	url := fmt.Sprintf("%s/pools/{%s}/engine-tags", s.path, id)
-	err := putData(url, toKeyValue(tags), nil)
+	err := putData(url, tags, nil)
 	return errors.Wrap(err, "failed to set pool engine tags")
 }
 
-func toKeyValue(value map[string]string) (kvps []struct{ Key, Value string }) {
-	for k, v := range value {
-		kvps = append(kvps, struct{ Key, Value string }{
-			Key:   k,
-			Value: v,
-		})
-	}
-	return
-}
-
-func (s *sastrmHTTPWrapper) SetPoolProjectTags(id string, tags map[string]string) error {
+func (s *sastrmHTTPWrapper) SetPoolProjectTags(id string, tags []Tag) error {
 	url := fmt.Sprintf("%s/pools/{%s}/project-tags", s.path, id)
-	err := putData(url, toKeyValue(tags), nil)
+	err := putData(url, tags, nil)
 	return errors.Wrap(err, "failed to set pool project tags")
 }
 

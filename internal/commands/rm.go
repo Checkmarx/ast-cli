@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/checkmarxDev/sast-rm/pkg/api/rest"
@@ -56,7 +57,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		"Pool id")
 
 	poolProjectsCmd := &cobra.Command{
-		Use:   "projects",
+		Use: "projects",
 	}
 
 	poolProjectGetCmd := &cobra.Command{
@@ -73,9 +74,79 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunSetPoolProjectsCommand,
 	}
 
+	poolProjectsSetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
 	poolProjectsCmd.AddCommand(poolProjectGetCmd, poolProjectsSetCmd)
 
-	poolsCmd.AddCommand(poolsListCmd, poolCreateCmd, poolDeleteCmd, poolProjectsCmd)
+	poolProjectTagsCmd := &cobra.Command{
+		Use: "project-tags",
+	}
+
+	poolProjectTagsGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "List sast engine pool projects",
+		RunE:  rm.RunGetPoolProjectTagsCommand,
+	}
+	poolProjectTagsGetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolProjectTagsSetCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Assigns projects to sast engine pool",
+		RunE:  rm.RunSetProjectTagsToPoolCommand,
+	}
+	poolProjectTagsSetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolProjectTagsCmd.AddCommand(poolProjectTagsGetCmd, poolProjectTagsSetCmd)
+
+	poolEnginesCmd := &cobra.Command{
+		Use: "Engines",
+	}
+
+	poolEngineGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "List sast engine pool Engines",
+		RunE:  rm.RunGetPoolEnginesCommand,
+	}
+	poolEngineGetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolEnginesSetCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Assigns Engines to sast engine pool",
+		RunE:  rm.RunSetEnginesToPoolCommand,
+	}
+
+	poolEnginesSetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolEnginesCmd.AddCommand(poolEngineGetCmd, poolEnginesSetCmd)
+
+	poolEngineTagsCmd := &cobra.Command{
+		Use: "Engine-tags",
+	}
+
+	poolEngineTagsGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "List sast engine pool Engines",
+		RunE:  rm.RunGetPoolEngineTagsCommand,
+	}
+	poolEngineTagsGetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolEngineTagsSetCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Assigns Engines to sast engine pool",
+		RunE:  rm.RunSetEngineTagsToPoolCommand,
+	}
+	poolEngineTagsSetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolEngineTagsCmd.AddCommand(poolEngineTagsGetCmd, poolEngineTagsSetCmd)
+
+	poolsCmd.AddCommand(poolsListCmd, poolCreateCmd, poolDeleteCmd, poolProjectsCmd, poolProjectTagsCmd, poolEnginesCmd, poolEngineTagsCmd)
 
 	statsCmd := &cobra.Command{
 		Use:   "stats",
@@ -165,10 +236,6 @@ func (c rmCommands) RunListPoolsCommand(cmd *cobra.Command, args []string) error
 	return printByFormat(cmd, pools)
 }
 
-func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
-	return nil
-}
-
 func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool engines poolID:%s", id))
@@ -177,6 +244,16 @@ func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) 
 		return err
 	}
 	return printByFormat(cmd, pools)
+}
+
+func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Getting pool engine tags poolID:%s", id))
+	tags, err := c.rmWrapper.GetPoolEngineTags(id)
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, tags)
 }
 
 func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
@@ -189,32 +266,56 @@ func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string)
 	return printByFormat(cmd, projects)
 }
 
-func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
+func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("id").Value.String()
-	projects, err := c.rmWrapper.SetPoolProjects(id, args)
+	PrintIfVerbose(fmt.Sprintf("Getting pool project tags poolID:%s", id))
+	tags, err := c.rmWrapper.GetPoolProjectTags(id)
 	if err != nil {
 		return err
 	}
-	return printByFormat(cmd, projects)
+	return printByFormat(cmd, tags)
+}
+
+func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	return c.rmWrapper.SetPoolEngines(id, args)
+}
+func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	return c.rmWrapper.SetPoolProjects(id, args)
 }
 
 func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []string) error {
-	return nil
+	id := cmd.Flag("id").Value.String()
+	tags, err := parseTags(args)
+	if err != nil {
+		return err
+	}
+	return c.rmWrapper.SetPoolEngineTags(id, tags)
 }
 
 func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []string) error {
-	return nil
+	id := cmd.Flag("id").Value.String()
+	tags, err := parseTags(args)
+	if err != nil {
+		return err
+	}
+	return c.rmWrapper.SetPoolProjectTags(id, tags)
 }
 
-func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
-	return nil
+func parseTags(args []string) (tags []wrappers.Tag, err error) {
+	for _, arg := range args {
+		parts := strings.Split(arg, "=")
+		if len(parts) != 2 {
+			return nil, errors.New("provide tags in key=value format")
+		}
+		tags = append(tags, wrappers.Tag{
+			Key:   parts[0],
+			Value: parts[1],
+		})
+	}
+	return
 }
-
-func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
-	return nil
-}
-
-
 
 func scanViews(scans []*rest.Scan) []*rmScanView {
 	result := make([]*rmScanView, 0, len(scans))
