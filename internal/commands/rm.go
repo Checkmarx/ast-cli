@@ -52,10 +52,30 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunDeletePoolCommand,
 	}
 
-	poolDeleteCmd.PersistentFlags().StringP("id", "id", "",
+	poolDeleteCmd.PersistentFlags().StringP("id", "", "",
 		"Pool id")
 
-	poolsCmd.AddCommand(poolsListCmd, poolCreateCmd, poolDeleteCmd)
+	poolProjectsCmd := &cobra.Command{
+		Use:   "projects",
+	}
+
+	poolProjectGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "List sast engine pool projects",
+		RunE:  rm.RunGetPoolProjectsCommand,
+	}
+	poolProjectGetCmd.PersistentFlags().StringP("id", "", "",
+		"Pool id")
+
+	poolProjectsSetCmd := &cobra.Command{
+		Use:   "set",
+		Short: "Assigns projects to sast engine pool",
+		RunE:  rm.RunSetPoolProjectsCommand,
+	}
+
+	poolProjectsCmd.AddCommand(poolProjectGetCmd, poolProjectsSetCmd)
+
+	poolsCmd.AddCommand(poolsListCmd, poolCreateCmd, poolDeleteCmd, poolProjectsCmd)
 
 	statsCmd := &cobra.Command{
 		Use:   "stats",
@@ -70,11 +90,10 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Use:   "sast-rm",
 		Short: "SAST resource management",
 	}
-	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
 
-	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd},
+	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd, poolsCmd},
 		formatTable, formatJSON, formatList)
-	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd)
+	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
 	return sastrmCmd
 }
 
@@ -116,36 +135,86 @@ func (c rmCommands) RunStatsCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunAddPoolCommand(cmd *cobra.Command, args []string) error {
-	return nil
+	description := cmd.Flag("description").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Creating pool description:%s", description))
+	pool, err := c.rmWrapper.AddPool(description)
+	PrintIfVerbose("Pool created")
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, pool)
 }
 
 func (c rmCommands) RunDeletePoolCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Deleting pool id:%s", id))
+	err := c.rmWrapper.DeletePool(id)
+	if err != nil {
+		return err
+	}
+	PrintIfVerbose("Pool deleted")
 	return nil
 }
 
 func (c rmCommands) RunListPoolsCommand(cmd *cobra.Command, args []string) error {
+	PrintIfVerbose("Getting pools")
+	pools, err := c.rmWrapper.GetPools()
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, pools)
+}
+
+func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c rmCommands) RunShowPoolCommand(cmd *cobra.Command, args []string) error {
+func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Getting pool engines poolID:%s", id))
+	pools, err := c.rmWrapper.GetPools()
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, pools)
+}
+
+func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Getting pool projects poolID:%s", id))
+	projects, err := c.rmWrapper.GetPoolProjects(id)
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, projects)
+}
+
+func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("id").Value.String()
+	projects, err := c.rmWrapper.SetPoolProjects(id, args)
+	if err != nil {
+		return err
+	}
+	return printByFormat(cmd, projects)
+}
+
+func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c rmCommands) RunAssignEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
+func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c rmCommands) RunAssignEngineTagsToPoolCommand(cmd *cobra.Command, args []string) error {
+func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c rmCommands) RunAssignProjectsToPoolCommand(cmd *cobra.Command, args []string) error {
+func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c rmCommands) RunAssignProjectTagsToPoolCommand(cmd *cobra.Command, args []string) error {
-	return nil
-}
+
 
 func scanViews(scans []*rest.Scan) []*rmScanView {
 	result := make([]*rmScanView, 0, len(scans))
