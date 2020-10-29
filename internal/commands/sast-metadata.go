@@ -15,21 +15,17 @@ const (
 )
 
 type ScanInfoView struct {
-	ScanID    string `format:"name:Scan id"`
-	ProjectID string `format:"name:Project id"`
-	FileCount int32  `format:"name:File count"`
-	Loc       int32
-	Type      string
-}
-
-type IncScanInfoView struct {
-	*ScanInfoView
-	BaseID            string  `format:"name:Base id"`
-	CanceledReason    string  `format:"name:Canceled reason;omitempty"`
-	AddedFilesCount   int32   `format:"name:Added files count"`
-	ChangedFilesCount int32   `format:"name:Changed files count"`
-	DeletedFilesCount int32   `format:"name:Deleted files count"`
-	ChangePercentage  float32 `format:"name:Change percentage"`
+	ScanID            string `format:"name:Scan id"`
+	ProjectID         string `format:"name:Project id"`
+	FileCount         int32  `format:"name:File count"`
+	Loc               int32
+	Type              string
+	BaseID            string      `format:"name:Base id;omitempty"`
+	CanceledReason    string      `format:"name:Canceled reason;omitempty"`
+	AddedFilesCount   interface{} `format:"name:Added files count;omitempty"`
+	ChangedFilesCount interface{} `format:"name:Changed files count;omitempty"`
+	DeletedFilesCount interface{} `format:"name:Deleted files count;omitempty"`
+	ChangePercentage  interface{} `format:"name:Change percentage;omitempty"`
 }
 
 func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
@@ -103,33 +99,37 @@ func runScanInfo(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.C
 	}
 }
 
-func toScanInfoView(info *rest.ScanInfo) interface{} {
-	s := &ScanInfoView{
+func valueOrNil(val interface{}, condition bool) interface{} {
+	if condition {
+		return val
+	}
+
+	return nil
+}
+
+func toScanInfoView(info *rest.ScanInfo) *ScanInfoView {
+	hasIncrementalFields := info.IsIncremental || info.IsIncrementalCanceled
+	return &ScanInfoView{
 		ScanID:    info.ScanID,
 		ProjectID: info.ProjectID,
 		Loc:       info.Loc,
 		FileCount: info.FileCount,
+		Type: func() string {
+			if info.IsIncremental {
+				return "incremental scan"
+			}
+
+			if info.IsIncrementalCanceled {
+				return "full scan - incremental canceled"
+			}
+
+			return "full scan"
+		}(),
+		BaseID:            info.BaseID,
+		CanceledReason:    info.IncrementalCancelReason,
+		AddedFilesCount:   valueOrNil(info.AddedFilesCount, hasIncrementalFields),
+		ChangedFilesCount: valueOrNil(info.ChangedFilesCount, hasIncrementalFields),
+		DeletedFilesCount: valueOrNil(info.DeletedFilesCount, hasIncrementalFields),
+		ChangePercentage:  valueOrNil(info.ChangePercentage, hasIncrementalFields),
 	}
-
-	if info.IsIncremental {
-		s.Type = "incremental scan"
-		return &IncScanInfoView{
-			ScanInfoView: s,
-			BaseID:       info.BaseID,
-			CanceledReason: func() string {
-				if info.IsIncrementalCanceled {
-					return info.IncrementalCancelReason
-				}
-
-				return ""
-			}(),
-			AddedFilesCount:   info.AddedFilesCount,
-			ChangedFilesCount: info.ChangedFilesCount,
-			DeletedFilesCount: info.DeletedFilesCount,
-			ChangePercentage:  info.ChangePercentage,
-		}
-	}
-
-	s.Type = "full scan"
-	return s
 }
