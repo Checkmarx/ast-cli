@@ -11,6 +11,53 @@ import (
 type SastRmMockWrapper struct {
 }
 
+func (s *SastRmMockWrapper) AddPool(description string) (*rest.Pool, error) {
+	return &rest.Pool{
+		ID:          uuid.New().String(),
+		Description: description,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}, nil
+}
+
+func (s *SastRmMockWrapper) DeletePool(id string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) GetPoolEngineTags(id string) ([]Tag, error) {
+	return []Tag{
+		{
+			Key:   uuid.New().String(),
+			Value: uuid.New().String(),
+		},
+	}, nil
+}
+
+func (s *SastRmMockWrapper) GetPoolProjectTags(id string) ([]Tag, error) {
+	return []Tag{
+		{
+			Key:   uuid.New().String(),
+			Value: uuid.New().String(),
+		},
+	}, nil
+}
+
+func (s *SastRmMockWrapper) SetPoolEngines(id string, value []string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolProjects(id string, value []string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolEngineTags(id string, tags []Tag) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolProjectTags(id string, tags []Tag) error {
+	return nil
+}
+
 func (s *SastRmMockWrapper) GetPools() ([]*rest.Pool, error) {
 	return []*rest.Pool{
 		{ID: "id", Description: "Description", CreatedAt: time.Now(), UpdatedAt: time.Now()},
@@ -29,34 +76,6 @@ func (s *SastRmMockWrapper) GetPoolProjects(id string) ([]string, error) {
 		uuid.New().String(),
 		uuid.New().String(),
 	}, nil
-}
-
-func (s *SastRmMockWrapper) GetPoolEngineTags(id string) (map[string]string, error) {
-	return map[string]string{
-		uuid.New().String(): uuid.New().String(),
-	}, nil
-}
-
-func (s *SastRmMockWrapper) GetPoolProjectTags(id string) (map[string]string, error) {
-	return map[string]string{
-		uuid.New().String(): uuid.New().String(),
-	}, nil
-}
-
-func (s *SastRmMockWrapper) SetPoolEngines(id string, value []string) ([]string, error) {
-	return value, nil
-}
-
-func (s *SastRmMockWrapper) SetPoolProjects(id string, value []string) ([]string, error) {
-	return value, nil
-}
-
-func (s *SastRmMockWrapper) SetPoolEngineTags(id string, value map[string]string) (map[string]string, error) {
-	return value, nil
-}
-
-func (s *SastRmMockWrapper) SetPoolProjectTags(id string, value map[string]string) (map[string]string, error) {
-	return value, nil
 }
 
 func (s *SastRmMockWrapper) GetStats(_ StatResolution) ([]*rest.Metric, error) {

@@ -49,12 +49,9 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	poolDeleteCmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Delete sast engine pool",
+		Short: "Delete sast engine pools",
 		RunE:  rm.RunDeletePoolCommand,
 	}
-
-	poolDeleteCmd.PersistentFlags().StringP("id", "", "",
-		"Pool id")
 
 	poolProjectsCmd := &cobra.Command{
 		Use: "projects",
@@ -65,7 +62,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "List sast engine pool projects",
 		RunE:  rm.RunGetPoolProjectsCommand,
 	}
-	poolProjectGetCmd.PersistentFlags().StringP("id", "", "",
+	poolProjectGetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolProjectsSetCmd := &cobra.Command{
@@ -74,7 +71,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunSetPoolProjectsCommand,
 	}
 
-	poolProjectsSetCmd.PersistentFlags().StringP("id", "", "",
+	poolProjectsSetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolProjectsCmd.AddCommand(poolProjectGetCmd, poolProjectsSetCmd)
@@ -88,7 +85,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "List sast engine pool project tags",
 		RunE:  rm.RunGetPoolProjectTagsCommand,
 	}
-	poolProjectTagsGetCmd.PersistentFlags().StringP("id", "", "",
+	poolProjectTagsGetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolProjectTagsSetCmd := &cobra.Command{
@@ -96,7 +93,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "Assigns projects tags to sast engine pool",
 		RunE:  rm.RunSetProjectTagsToPoolCommand,
 	}
-	poolProjectTagsSetCmd.PersistentFlags().StringP("id", "", "",
+	poolProjectTagsSetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolProjectTagsCmd.AddCommand(poolProjectTagsGetCmd, poolProjectTagsSetCmd)
@@ -110,7 +107,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "List sast engine pool engines",
 		RunE:  rm.RunGetPoolEnginesCommand,
 	}
-	poolEngineGetCmd.PersistentFlags().StringP("id", "", "",
+	poolEngineGetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolEnginesSetCmd := &cobra.Command{
@@ -119,7 +116,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		RunE:  rm.RunSetEnginesToPoolCommand,
 	}
 
-	poolEnginesSetCmd.PersistentFlags().StringP("id", "", "",
+	poolEnginesSetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolEnginesCmd.AddCommand(poolEngineGetCmd, poolEnginesSetCmd)
@@ -133,7 +130,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "List sast engine pool engine tags",
 		RunE:  rm.RunGetPoolEngineTagsCommand,
 	}
-	poolEngineTagsGetCmd.PersistentFlags().StringP("id", "", "",
+	poolEngineTagsGetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolEngineTagsSetCmd := &cobra.Command{
@@ -141,7 +138,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 		Short: "Assigns engines tags to sast engine pool",
 		RunE:  rm.RunSetEngineTagsToPoolCommand,
 	}
-	poolEngineTagsSetCmd.PersistentFlags().StringP("id", "", "",
+	poolEngineTagsSetCmd.PersistentFlags().StringP("pool-id", "i", "",
 		"Pool id")
 
 	poolEngineTagsCmd.AddCommand(poolEngineTagsGetCmd, poolEngineTagsSetCmd)
@@ -217,13 +214,17 @@ func (c rmCommands) RunAddPoolCommand(cmd *cobra.Command, args []string) error {
 }
 
 func (c rmCommands) RunDeletePoolCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
-	PrintIfVerbose(fmt.Sprintf("Deleting pool id:%s", id))
-	err := c.rmWrapper.DeletePool(id)
-	if err != nil {
-		return err
+	if len(args) == 0 {
+		return errors.New("No pool ids provided")
 	}
-	PrintIfVerbose("Pool deleted")
+	PrintIfVerbose(fmt.Sprintf("Deleting pool ids:%s", strings.Join(args, ", ")))
+	for _, id := range args {
+		err := c.rmWrapper.DeletePool(id)
+		if err != nil {
+			return err
+		}
+		PrintIfVerbose("Deleted pool id=" + id)
+	}
 	return nil
 }
 
@@ -237,7 +238,7 @@ func (c rmCommands) RunListPoolsCommand(cmd *cobra.Command, args []string) error
 }
 
 func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool engines poolID:%s", id))
 	pools, err := c.rmWrapper.GetPools()
 	if err != nil {
@@ -247,7 +248,7 @@ func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) 
 }
 
 func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool engine tags poolID:%s", id))
 	tags, err := c.rmWrapper.GetPoolEngineTags(id)
 	if err != nil {
@@ -257,7 +258,7 @@ func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []strin
 }
 
 func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool projects poolID:%s", id))
 	projects, err := c.rmWrapper.GetPoolProjects(id)
 	if err != nil {
@@ -267,7 +268,7 @@ func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string)
 }
 
 func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool project tags poolID:%s", id))
 	tags, err := c.rmWrapper.GetPoolProjectTags(id)
 	if err != nil {
@@ -277,16 +278,16 @@ func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []stri
 }
 
 func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	return c.rmWrapper.SetPoolEngines(id, args)
 }
 func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	return c.rmWrapper.SetPoolProjects(id, args)
 }
 
 func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	tags, err := parseTags(args)
 	if err != nil {
 		return err
@@ -295,7 +296,7 @@ func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []str
 }
 
 func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []string) error {
-	id := cmd.Flag("id").Value.String()
+	id := cmd.Flag("pool-id").Value.String()
 	tags, err := parseTags(args)
 	if err != nil {
 		return err
@@ -352,7 +353,7 @@ type rmScanView struct {
 	State      string            `json:"state"`
 	QueuedAt   time.Time         `format:"time:01-02-06 15:04:05.000;name:Queued at" json:"queued-at"`
 	RunningAt  *time.Time        `format:"time:01-02-06 15:04:05.000;name:Running at" json:"running-at"`
-	Engine     string            `format:"engine"`
+	Engine     string            `json:"engine"`
 	Properties map[string]string `json:"properties"`
 }
 
