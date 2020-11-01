@@ -18,7 +18,8 @@ type ScanInfoView struct {
 	ScanID            string `format:"name:Scan id"`
 	ProjectID         string `format:"name:Project id"`
 	FileCount         int32  `format:"name:File count"`
-	Loc               int32
+	Loc               int32  `format:"name:Lines of code"`
+	QueryPreset       string `format:"name:Query Preset"`
 	Type              string
 	BaseID            string      `format:"name:Base id;omitempty"`
 	CanceledReason    string      `format:"name:Canceled reason;omitempty"`
@@ -43,7 +44,7 @@ func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *c
 		Short: "Gets information for given scan id",
 		RunE:  runScanInfo(sastMetadataWrapper),
 	}
-	addFormatFlag(scanInfoCmd, formatTable, formatJSON, formatList)
+	addFormatFlag(scanInfoCmd, formatList, formatJSON, formatTable)
 	sastMetadataCmd.AddCommand(engineLogCmd, scanInfoCmd)
 	return sastMetadataCmd
 }
@@ -110,10 +111,11 @@ func valueOrNil(val interface{}, condition bool) interface{} {
 func toScanInfoView(info *rest.ScanInfo) *ScanInfoView {
 	hasIncrementalFields := info.IsIncremental || info.IsIncrementalCanceled
 	return &ScanInfoView{
-		ScanID:    info.ScanID,
-		ProjectID: info.ProjectID,
-		Loc:       info.Loc,
-		FileCount: info.FileCount,
+		ScanID:      info.ScanID,
+		ProjectID:   info.ProjectID,
+		Loc:         info.Loc,
+		FileCount:   info.FileCount,
+		QueryPreset: info.QueryPreset,
 		Type: func() string {
 			if info.IsIncremental {
 				return "incremental scan"
