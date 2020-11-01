@@ -215,7 +215,7 @@ func (c rmCommands) RunAddPoolCommand(cmd *cobra.Command, args []string) error {
 
 func (c rmCommands) RunDeletePoolCommand(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
-		return errors.New("No pool ids provided")
+		return errors.New("no pool ids provided")
 	}
 	PrintIfVerbose(fmt.Sprintf("Deleting pool ids:%s", strings.Join(args, ", ")))
 	for _, id := range args {
@@ -240,11 +240,11 @@ func (c rmCommands) RunListPoolsCommand(cmd *cobra.Command, args []string) error
 func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
 	PrintIfVerbose(fmt.Sprintf("Getting pool engines poolID:%s", id))
-	pools, err := c.rmWrapper.GetPools()
+	engines, err := c.rmWrapper.GetPoolEngines(id)
 	if err != nil {
 		return err
 	}
-	return printByFormat(cmd, pools)
+	return printByFormat(cmd, elementViews(engines))
 }
 
 func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
@@ -254,7 +254,7 @@ func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []strin
 	if err != nil {
 		return err
 	}
-	return printByFormat(cmd, tags)
+	return printByFormat(cmd, tagViews(tags))
 }
 
 func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
@@ -264,7 +264,7 @@ func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string)
 	if err != nil {
 		return err
 	}
-	return printByFormat(cmd, projects)
+	return printByFormat(cmd, elementViews(projects))
 }
 
 func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
@@ -274,7 +274,7 @@ func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []stri
 	if err != nil {
 		return err
 	}
-	return printByFormat(cmd, tags)
+	return printByFormat(cmd, tagViews(tags))
 }
 
 func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
@@ -304,18 +304,16 @@ func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []st
 	return c.rmWrapper.SetPoolProjectTags(id, tags)
 }
 
-func parseTags(args []string) (tags []wrappers.Tag, err error) {
+func parseTags(args []string) (map[string]string, error) {
+	tags := map[string]string{}
 	for _, arg := range args {
 		parts := strings.Split(arg, "=")
-		if len(parts) != 2 {
+		if len(parts) != 2 { //nolint:gomnd
 			return nil, errors.New("provide tags in key=value format")
 		}
-		tags = append(tags, wrappers.Tag{
-			Key:   parts[0],
-			Value: parts[1],
-		})
+		tags[parts[0]] = parts[1]
 	}
-	return
+	return tags, nil
 }
 
 func scanViews(scans []*rest.Scan) []*rmScanView {
@@ -365,4 +363,28 @@ type rmEngineView struct {
 	UpdatedAt    time.Time         `format:"time:01-02-06 15:04:05.000;name:Heartbeat at" json:"updated-at"`
 	Properties   map[string]string `json:"properties"`
 	Tags         map[string]string `json:"tags"`
+}
+
+func tagViews(tags map[string]string) []*tagView {
+	result := make([]*tagView, 0, len(tags))
+	for k, v := range tags {
+		result = append(result, &tagView{Tag: k, Value: v})
+	}
+	return result
+}
+
+type tagView struct {
+	Tag, Value string
+}
+
+func elementViews(data []string) []*elementView {
+	result := make([]*elementView, 0, len(data))
+	for i, v := range data {
+		result = append(result, &elementView{ID: fmt.Sprintf("[%d]", i), Value: v})
+	}
+	return result
+}
+
+type elementView struct {
+	ID, Value string
 }

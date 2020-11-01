@@ -85,7 +85,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
-	// Key here is the actual flag since it doesn't use an environment variable
+	// Tag here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
 

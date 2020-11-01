@@ -62,7 +62,8 @@ func TestSastRMPoolCommand(t *testing.T) {
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engines", "get", "--pool-id", "some-pool-id"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engine-tags", "get", "--pool-id", "some-pool-id"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "projects", "set", "--pool-id", "some-pool-id", "project1"))
-	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "project-tags", "set", "--pool-id", "some-pool-id", "tag1=value1", "tag2=value2"))
+	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "project-tags", "set", "--pool-id", "some-pool-id",
+		"tag1=value1", "tag2=value2"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engines", "set", "--pool-id", "some-pool-id", "engine1", "engine2"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engine-tags", "set", "--pool-id", "some-pool-id", "tag1=value1"))
 }

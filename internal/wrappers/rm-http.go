@@ -19,7 +19,7 @@ type sastrmHTTPWrapper struct {
 
 func (s *sastrmHTTPWrapper) AddPool(description string) (pool *rm.Pool, err error) {
 	pool = &rm.Pool{
-		Description: "description",
+		Description: description,
 	}
 	err = postData(s.path+"/pools", pool, nil)
 	return pool, errors.Wrap(err, "failed to create pool")
@@ -49,50 +49,50 @@ func (s *sastrmHTTPWrapper) GetPools() ([]*rm.Pool, error) {
 }
 
 func (s *sastrmHTTPWrapper) GetPoolEngines(id string) (engines []string, err error) {
-	url := fmt.Sprintf("%s/pools/{%s}/engines", s.path, id)
-	err = read(url, engines)
+	url := fmt.Sprintf("%s/pools/%s/engines", s.path, id)
+	err = read(url, &engines)
 	return engines, errors.Wrap(err, "failed get pool engines")
 }
 
 func (s *sastrmHTTPWrapper) GetPoolProjects(id string) (projects []string, err error) {
-	url := fmt.Sprintf("%s/pools/{%s}/projects", s.path, id)
-	err = read(url, projects)
+	url := fmt.Sprintf("%s/pools/%s/projects", s.path, id)
+	err = read(url, &projects)
 	return projects, errors.Wrap(err, "failed get pool projects")
 }
 
-func (s *sastrmHTTPWrapper) GetPoolEngineTags(id string) (tags []Tag, err error) {
-	url := fmt.Sprintf("%s/pools/{%s}/engine-tags", s.path, id)
-	err = read(url, tags)
+func (s *sastrmHTTPWrapper) GetPoolEngineTags(id string) (tags map[string]string, err error) {
+	url := fmt.Sprintf("%s/pools/%s/engine-tags", s.path, id)
+	err = read(url, &tags)
 	return tags, errors.Wrap(err, "failed get engine tags")
 }
 
-func (s *sastrmHTTPWrapper) GetPoolProjectTags(id string) (tags []Tag, err error) {
-	url := fmt.Sprintf("%s/pools/{%s}/project-tags", s.path, id)
-	err = read(url, tags)
+func (s *sastrmHTTPWrapper) GetPoolProjectTags(id string) (tags map[string]string, err error) {
+	url := fmt.Sprintf("%s/pools/%s/project-tags", s.path, id)
+	err = read(url, &tags)
 	return tags, errors.Wrap(err, "failed get project tags")
 }
 
 func (s *sastrmHTTPWrapper) SetPoolEngines(id string, value []string) error {
-	url := fmt.Sprintf("%s/pools/{%s}/engines", s.path, id)
-	err := putData(url, value, nil)
+	url := fmt.Sprintf("%s/pools/%s/engines", s.path, id)
+	err := putData(url, value)
 	return errors.Wrap(err, "failed to set pool engines")
 }
 
 func (s *sastrmHTTPWrapper) SetPoolProjects(id string, value []string) error {
-	url := fmt.Sprintf("%s/pools/{%s}/projects", s.path, id)
-	err := putData(url, value, nil)
+	url := fmt.Sprintf("%s/pools/%s/projects", s.path, id)
+	err := putData(url, value)
 	return errors.Wrap(err, "failed to set pool projects")
 }
 
-func (s *sastrmHTTPWrapper) SetPoolEngineTags(id string, tags []Tag) error {
-	url := fmt.Sprintf("%s/pools/{%s}/engine-tags", s.path, id)
-	err := putData(url, tags, nil)
+func (s *sastrmHTTPWrapper) SetPoolEngineTags(id string, tags map[string]string) error {
+	url := fmt.Sprintf("%s/pools/%s/engine-tags", s.path, id)
+	err := putData(url, tags)
 	return errors.Wrap(err, "failed to set pool engine tags")
 }
 
-func (s *sastrmHTTPWrapper) SetPoolProjectTags(id string, tags []Tag) error {
-	url := fmt.Sprintf("%s/pools/{%s}/project-tags", s.path, id)
-	err := putData(url, tags, nil)
+func (s *sastrmHTTPWrapper) SetPoolProjectTags(id string, tags map[string]string) error {
+	url := fmt.Sprintf("%s/pools/%s/project-tags", s.path, id)
+	err := putData(url, tags)
 	return errors.Wrap(err, "failed to set pool project tags")
 }
 
@@ -186,13 +186,13 @@ func postData(url string, data interface{}, params map[string]string) error {
 	return resp.Body.Close()
 }
 
-func putData(url string, data interface{}, params map[string]string) error {
+func putData(url string, data interface{}) error {
 	requestData, err := json.Marshal(data)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal data")
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodPut, url, params, bytes.NewReader(requestData))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodPut, url, nil, bytes.NewReader(requestData))
 	if err != nil {
 		return err
 	}

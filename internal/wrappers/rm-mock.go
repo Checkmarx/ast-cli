@@ -24,21 +24,15 @@ func (s *SastRmMockWrapper) DeletePool(id string) error {
 	return nil
 }
 
-func (s *SastRmMockWrapper) GetPoolEngineTags(id string) ([]Tag, error) {
-	return []Tag{
-		{
-			Key:   uuid.New().String(),
-			Value: uuid.New().String(),
-		},
+func (s *SastRmMockWrapper) GetPoolEngineTags(id string) (map[string]string, error) {
+	return map[string]string{
+		uuid.New().String(): uuid.New().String(),
 	}, nil
 }
 
-func (s *SastRmMockWrapper) GetPoolProjectTags(id string) ([]Tag, error) {
-	return []Tag{
-		{
-			Key:   uuid.New().String(),
-			Value: uuid.New().String(),
-		},
+func (s *SastRmMockWrapper) GetPoolProjectTags(id string) (map[string]string, error) {
+	return map[string]string{
+		uuid.New().String(): uuid.New().String(),
 	}, nil
 }
 
@@ -50,11 +44,11 @@ func (s *SastRmMockWrapper) SetPoolProjects(id string, value []string) error {
 	return nil
 }
 
-func (s *SastRmMockWrapper) SetPoolEngineTags(id string, tags []Tag) error {
+func (s *SastRmMockWrapper) SetPoolEngineTags(id string, tags map[string]string) error {
 	return nil
 }
 
-func (s *SastRmMockWrapper) SetPoolProjectTags(id string, tags []Tag) error {
+func (s *SastRmMockWrapper) SetPoolProjectTags(id string, tags map[string]string) error {
 	return nil
 }
 
