@@ -3,10 +3,73 @@ package wrappers
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/checkmarxDev/sast-rm/pkg/api/rest"
 )
 
 type SastRmMockWrapper struct {
+}
+
+func (s *SastRmMockWrapper) AddPool(description string) (*rest.Pool, error) {
+	return &rest.Pool{
+		ID:          uuid.New().String(),
+		Description: description,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}, nil
+}
+
+func (s *SastRmMockWrapper) DeletePool(id string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) GetPoolEngineTags(id string) (map[string]string, error) {
+	return map[string]string{
+		uuid.New().String(): uuid.New().String(),
+	}, nil
+}
+
+func (s *SastRmMockWrapper) GetPoolProjectTags(id string) (map[string]string, error) {
+	return map[string]string{
+		uuid.New().String(): uuid.New().String(),
+	}, nil
+}
+
+func (s *SastRmMockWrapper) SetPoolEngines(id string, value []string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolProjects(id string, value []string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolEngineTags(id string, tags map[string]string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) SetPoolProjectTags(id string, tags map[string]string) error {
+	return nil
+}
+
+func (s *SastRmMockWrapper) GetPools() ([]*rest.Pool, error) {
+	return []*rest.Pool{
+		{ID: "id", Description: "Description", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+	}, nil
+}
+
+func (s *SastRmMockWrapper) GetPoolEngines(id string) ([]string, error) {
+	return []string{
+		uuid.New().String(),
+		uuid.New().String(),
+	}, nil
+}
+
+func (s *SastRmMockWrapper) GetPoolProjects(id string) ([]string, error) {
+	return []string{
+		uuid.New().String(),
+		uuid.New().String(),
+	}, nil
 }
 
 func (s *SastRmMockWrapper) GetStats(_ StatResolution) ([]*rest.Metric, error) {

@@ -136,12 +136,20 @@ func toEntities(view interface{}) []*entity {
 func newEntity(v reflect.Value) *entity {
 	s := reflect.Indirect(v)
 	e := entity{}
-	for i := 0; i < s.NumField(); i++ {
-		p, ok := newProperty(s, i)
-		if ok {
-			e.Properties = append(e.Properties, p)
+	if s.Kind() == reflect.Struct {
+		for i := 0; i < s.NumField(); i++ {
+			p, ok := newProperty(s, i)
+			if ok {
+				e.Properties = append(e.Properties, p)
+			}
 		}
+	} else {
+		e.Properties = append(e.Properties, property{
+			Key:   "---",
+			Value: fmt.Sprint(v.String()),
+		})
 	}
+
 	return &e
 }
 
