@@ -349,6 +349,7 @@ func engineViews(engines []*rest.Engine) []*rmEngineView {
 			RegisteredAt: w.RegisteredAt,
 			UpdatedAt:    w.UpdatedAt,
 			Properties:   w.Properties,
+			Tags:         w.Tags,
 		})
 	}
 	return result
