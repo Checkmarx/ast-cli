@@ -173,7 +173,7 @@ func newProperty(s reflect.Value, i int) (property, bool) {
 	if format != "" {
 		for _, f := range strings.Split(format, ";") {
 			if f == "omitempty" {
-				if valueField.Interface() == "" {
+				if valueField.IsZero() {
 					return property{}, false
 				}
 
