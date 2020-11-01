@@ -34,7 +34,9 @@ func (s *SastMetadataHTTPWrapper) DownloadEngineLog(scanID string) (io.ReadClose
 	}
 
 	switch resp.StatusCode {
-	case http.StatusNotFound, http.StatusInternalServerError:
+	case http.StatusInternalServerError:
+		return nil, nil, errors.New("internal server error")
+	case http.StatusNotFound:
 		defer resp.Body.Close()
 		decoder := json.NewDecoder(resp.Body)
 		errorModel := &rest.Error{}
@@ -62,7 +64,9 @@ func (s *SastMetadataHTTPWrapper) GetScanInfo(scanID string) (*rest.ScanInfo, *r
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
-	case http.StatusNotFound, http.StatusBadRequest, http.StatusInternalServerError:
+	case http.StatusInternalServerError:
+		return nil, nil, errors.New("internal server error")
+	case http.StatusNotFound, http.StatusBadRequest:
 		errorModel := &rest.Error{}
 		err = decoder.Decode(errorModel)
 		if err != nil {
