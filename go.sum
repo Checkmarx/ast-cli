@@ -95,8 +95,8 @@ github.com/checkmarxDev/sast-rm v1.2.3 h1:lQ/SBE1xwzUFuWAr0yGkXcdM0kfD5KTEW9RrYN
 github.com/checkmarxDev/sast-rm v1.2.3/go.mod h1:5Xem4UdqHXm0VOt5TBGyrMgzoTSu4RAo/mxQHBI1wZw=
 github.com/checkmarxDev/sast-scan-inc v1.2.0 h1:231KyUOiJLPw/CbFQZICeykjFIvu4RzHyn8qa4Oz3bc=
 github.com/checkmarxDev/sast-scan-inc v1.2.0/go.mod h1:e1EPiCelqlmJNMqcfMsjYvXj31R5wskdmyXVK4ErGXk=
-github.com/checkmarxDev/sast-scan-inc v1.2.3 h1:jvkJvDCPjDpmYTbCPlkV/gfQEeSVJAGJUBIWOZXsGfk=
-github.com/checkmarxDev/sast-scan-inc v1.2.3/go.mod h1:EwhArcRuXdxI1tlQyDJ01fBji20UCwR3QVt4/K3hgoY=
+github.com/checkmarxDev/sast-scan-inc v1.2.5 h1:mH2awqKFRdLYXRW2XpFwEVWtbhGafM0xuLe40kooDzA=
+github.com/checkmarxDev/sast-scan-inc v1.2.5/go.mod h1:EwhArcRuXdxI1tlQyDJ01fBji20UCwR3QVt4/K3hgoY=
 github.com/checkmarxDev/scans v1.1.6/go.mod h1:jZCQKGH9kv6SlL1iwZAcdchw42qjOmYeDXH+DhkNGJs=
 github.com/checkmarxDev/scans v1.1.7/go.mod h1:34qtXiMW/0Ll4BnTt3mEcUK+jv4qD5TYpkshpuG+1GM=
 github.com/checkmarxDev/scans v1.2.2/go.mod h1:76lXRiVKa8XL7ST9qEQZUSnma4vUQ0GomTCSRfV4TsY=
