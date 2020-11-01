@@ -145,7 +145,7 @@ func newEntity(v reflect.Value) *entity {
 		}
 	} else {
 		e.Properties = append(e.Properties, property{
-			Key:   "",
+			Key:   "---",
 			Value: fmt.Sprint(v.String()),
 		})
 	}

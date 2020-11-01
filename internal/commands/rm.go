@@ -217,7 +217,7 @@ func (c rmCommands) RunDeletePoolCommand(cmd *cobra.Command, args []string) erro
 	if len(args) == 0 {
 		return errors.New("no pool ids provided")
 	}
-	PrintIfVerbose(fmt.Sprintf("Deleting pool ids:%s", strings.Join(args, ", ")))
+	PrintIfVerbose(fmt.Sprintf("Deleting pools ids:%s", strings.Join(args, ", ")))
 	for _, id := range args {
 		err := c.rmWrapper.DeletePool(id)
 		if err != nil {
@@ -279,10 +279,14 @@ func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []stri
 
 func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Setting pool engines, poolID:%s engines:%s",
+		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolEngines(id, args)
 }
 func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	PrintIfVerbose(fmt.Sprintf("Setting pool projects, poolID:%s projects:%s",
+		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolProjects(id, args)
 }
 
@@ -292,6 +296,8 @@ func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []str
 	if err != nil {
 		return err
 	}
+	PrintIfVerbose(fmt.Sprintf("Setting pool engine tags, poolID:%s tags:%s",
+		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolEngineTags(id, tags)
 }
 
@@ -301,6 +307,8 @@ func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []st
 	if err != nil {
 		return err
 	}
+	PrintIfVerbose(fmt.Sprintf("Setting pool project tags, poolID:%s tags:%s",
+		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolProjectTags(id, tags)
 }
 
