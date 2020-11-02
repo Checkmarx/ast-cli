@@ -21,7 +21,7 @@ type healthCheckHTTPWrapper struct {
 	SastEnginesHealthcheckPath  string
 }
 
-const scanFlowTimeoutSecs uint = 80
+const scanFlowTimeoutSecs uint = 110
 
 func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 	status := &HealthStatus{}
