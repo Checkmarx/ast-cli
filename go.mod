@@ -7,7 +7,7 @@ require (
 	github.com/checkmarxDev/sast-queries v1.3.12
 	github.com/checkmarxDev/sast-results v1.0.2
 	github.com/checkmarxDev/sast-rm v1.2.3
-	github.com/checkmarxDev/sast-scan-inc v1.2.5
+	github.com/checkmarxDev/sast-scan-inc v1.2.6
 	github.com/checkmarxDev/scans v1.5.4
 	github.com/checkmarxDev/uploads v1.0.1
 	github.com/cheggaaa/pb/v3 v3.0.4

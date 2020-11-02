@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -12,6 +14,7 @@ import (
 const (
 	failedDownloadingEngineLog = "failed downloading engine log"
 	failedGettingScanInfo      = "failed getting scan info"
+	failedGettingMetrics       = "failed getting metrics"
 )
 
 type ScanInfoView struct {
@@ -44,8 +47,15 @@ func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *c
 		Short: "Gets information for given scan id",
 		RunE:  runScanInfo(sastMetadataWrapper),
 	}
+	metricsCmd := &cobra.Command{
+		Use:   "metrics",
+		Short: "Gets engine metrics for given scan id",
+		RunE:  runMetrics(sastMetadataWrapper),
+	}
+
 	addFormatFlag(scanInfoCmd, formatList, formatJSON, formatTable)
-	sastMetadataCmd.AddCommand(engineLogCmd, scanInfoCmd)
+	addFormatFlag(metricsCmd, formatList, formatJSON)
+	sastMetadataCmd.AddCommand(engineLogCmd, scanInfoCmd, metricsCmd)
 	return sastMetadataCmd
 }
 
@@ -100,6 +110,39 @@ func runScanInfo(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.C
 	}
 }
 
+func runMetrics(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return errors.Errorf("%s: please provide scan id", failedGettingMetrics)
+		}
+
+		scanID := args[0]
+		metrics, errorModel, err := sastMetadataWrapper.GetMetrics(scanID)
+		if err != nil {
+			return errors.Wrap(err, failedGettingMetrics)
+		}
+
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingMetrics, errorModel.Code, errorModel.Message)
+		}
+
+		f, _ := cmd.Flags().GetString(formatFlag)
+		if IsFormat(f, formatJSON) {
+			var resultsJSON []byte
+			resultsJSON, err = json.Marshal(metrics)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize metrics response", failedGettingMetrics)
+			}
+
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+			return nil
+		}
+
+		outputMetrics(metrics)
+		return nil
+	}
+}
+
 func valueOrNil(val interface{}, condition bool) interface{} {
 	if condition {
 		return val
@@ -133,5 +176,34 @@ func toScanInfoView(info *rest.ScanInfo) *ScanInfoView {
 		ChangedFilesCount: valueOrNil(info.ChangedFilesCount, hasIncrementalFields),
 		DeletedFilesCount: valueOrNil(info.DeletedFilesCount, hasIncrementalFields),
 		ChangePercentage:  valueOrNil(info.ChangePercentage, hasIncrementalFields),
+	}
+}
+
+func outputMetrics(metrics *rest.Metrics) {
+	fmt.Println("************ Metrics ************")
+	fmt.Println("Scan id:", metrics.ScanID)
+	fmt.Println("Memory peak:", metrics.MemoryPeak)
+	fmt.Println("Virtual memory peak:", metrics.VirtualMemoryPeak)
+	fmt.Println("Total scanned files count:", metrics.TotalScannedFilesCount)
+	fmt.Println("Total scanned lines of code:", metrics.TotalScannedLOC)
+	fmt.Println("Dom objects per language:")
+	outputLanguagesMap(metrics.DomObjectsPerLanguage)
+	fmt.Println("Successful lines of code per language:")
+	outputLanguagesMap(metrics.SuccessfullLOCPerLanguage)
+	fmt.Println("Failed lines of code per language:")
+	outputLanguagesMap(metrics.FailedLOCPerLanguage)
+	fmt.Println("File count of detected but not scanned languages")
+	outputLanguagesMap(metrics.FileCountOfDetectedButNotScannedLanguages)
+
+	fmt.Println("Scanned files per language:")
+	for l, f := range metrics.ScannedFilesPerLanguage {
+		fmt.Printf("language: %s, good files: %d, partially good files: %d, bad files: %d", l,
+			f.GoodFiles, f.PartiallyGoodFiles, f.BadFiles)
+	}
+}
+
+func outputLanguagesMap(m map[string]uint32) {
+	for l, c := range m {
+		fmt.Printf("language: %s, count: %d\n", l, c)
 	}
 }
