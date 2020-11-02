@@ -197,13 +197,13 @@ func outputMetrics(metrics *rest.Metrics) {
 
 	fmt.Println("Scanned files per language:")
 	for l, f := range metrics.ScannedFilesPerLanguage {
-		fmt.Printf("language: %s, good files: %d, partially good files: %d, bad files: %d", l,
+		fmt.Printf("%s - good files: %d, partially good files: %d, bad files: %d\n", l,
 			f.GoodFiles, f.PartiallyGoodFiles, f.BadFiles)
 	}
 }
 
 func outputLanguagesMap(m map[string]uint32) {
 	for l, c := range m {
-		fmt.Printf("language: %s, count: %d\n", l, c)
+		fmt.Printf("%s - %d\n", l, c)
 	}
 }
