@@ -72,6 +72,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
 	sastScanInc := viper.GetString(params.SastScanIncPathKey)
 	sastScanIncEngineLogPath := viper.GetString(params.SastScanIncEngineLogPathKey)
+	sastScanIncMetricsPath := viper.GetString(params.SastScanIncMetricsPathKey)
 
 	// Tests variables
 	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", 400)
@@ -96,8 +97,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
 	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
-	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastScanInc,
-		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncEngineLogPath))
+	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(
+		sastScanInc,
+		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncEngineLogPath),
+		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncMetricsPath),
+	)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,

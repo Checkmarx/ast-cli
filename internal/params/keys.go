@@ -31,4 +31,5 @@ var (
 	CreateOath2ClientPathKey            = strings.ToLower(CreateOath2ClientPathEnv)
 	SastScanIncPathKey                  = strings.ToLower(SastScanIncPathEnv)
 	SastScanIncEngineLogPathKey         = strings.ToLower(SastScanIncEngineLogPathEnv)
+	SastScanIncMetricsPathKey           = strings.ToLower(SastScanIncMetricsPathEnv)
 )

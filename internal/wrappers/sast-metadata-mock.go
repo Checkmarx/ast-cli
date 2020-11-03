@@ -22,3 +22,10 @@ func (SastMetadataMockWrapper) GetScanInfo(string) (*rest.ScanInfo, *rest.Error,
 		IsIncremental: false,
 	}, nil, nil
 }
+
+func (SastMetadataMockWrapper) GetMetrics(scanID string) (*rest.Metrics, *rest.Error, error) {
+	return &rest.Metrics{
+		ScanID:     scanID,
+		MemoryPeak: 123,
+	}, nil, nil
+}

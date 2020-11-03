@@ -27,6 +27,7 @@ var EnvVarsBinds = []struct {
 	{CreateOath2ClientPathKey, CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients"},
 	{SastScanIncPathKey, SastScanIncPathEnv, "api/sast-scan-inc"},
 	{SastScanIncEngineLogPathKey, SastScanIncEngineLogPathEnv, "%s/engine-log"},
+	{SastScanIncMetricsPathKey, SastScanIncMetricsPathEnv, "%s/metrics"},
 	{AccessKeyIDConfigKey, AccessKeyIDEnv, ""},
 	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
 	{AstAuthenticationPathConfigKey, AstAuthenticationPathEnv, "auth/realms/organization/protocol/openid-connect/token"},
