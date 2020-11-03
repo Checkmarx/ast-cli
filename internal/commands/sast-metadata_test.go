@@ -50,3 +50,15 @@ func TestRunScanInfoNoParam(t *testing.T) {
 	err := executeTestCommand(cmd, "sast-metadata", "scan-info")
 	assert.Assert(t, err != nil)
 }
+
+func TestRunMetrics(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "sast-metadata", "metrics", "1")
+	assert.NilError(t, err)
+}
+
+func TestRunScanMetricsNoParam(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "sast-metadata", "metrics")
+	assert.Assert(t, err != nil)
+}

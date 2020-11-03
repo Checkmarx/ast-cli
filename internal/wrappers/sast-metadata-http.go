@@ -13,17 +13,20 @@ import (
 type SastMetadataHTTPWrapper struct {
 	engineLogPathFormat string
 	basePath            string
+	metricsPathFormat   string
 }
 
 const (
 	failedToParseDownloadResult = "failed to parse download engine log result"
 	failedToParseScanInfoResult = "failed to parse scan info result"
+	failedToParseMetricsResult  = "failed ot parse metrics result"
 )
 
-func NewSastMetadataHTTPWrapper(basePath, engineLogPathFormat string) SastMetadataWrapper {
+func NewSastMetadataHTTPWrapper(basePath, engineLogPathFormat, metricsPathFormat string) SastMetadataWrapper {
 	return &SastMetadataHTTPWrapper{
 		engineLogPathFormat: engineLogPathFormat,
 		basePath:            basePath,
+		metricsPathFormat:   metricsPathFormat,
 	}
 }
 
@@ -36,7 +39,7 @@ func (s *SastMetadataHTTPWrapper) DownloadEngineLog(scanID string) (io.ReadClose
 	switch resp.StatusCode {
 	case http.StatusInternalServerError:
 		return nil, nil, errors.New("internal server error")
-	case http.StatusNotFound:
+	case http.StatusNotFound, http.StatusBadRequest:
 		defer resp.Body.Close()
 		decoder := json.NewDecoder(resp.Body)
 		errorModel := &rest.Error{}
@@ -79,6 +82,39 @@ func (s *SastMetadataHTTPWrapper) GetScanInfo(scanID string) (*rest.ScanInfo, *r
 		err := decoder.Decode(model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseScanInfoResult)
+		}
+
+		return model, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func (s *SastMetadataHTTPWrapper) GetMetrics(scanID string) (*rest.Metrics, *rest.Error, error) {
+	resp, err := SendHTTPRequest(http.MethodGet, fmt.Sprintf(s.metricsPathFormat, scanID), nil, true, DefaultTimeoutSeconds)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusInternalServerError:
+		return nil, nil, errors.New("internal server error")
+	case http.StatusNotFound, http.StatusBadRequest:
+		errorModel := &rest.Error{}
+		err = decoder.Decode(errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseMetricsResult)
+		}
+
+		return nil, errorModel, nil
+	case http.StatusOK:
+		model := &rest.Metrics{}
+		err := decoder.Decode(model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseMetricsResult)
 		}
 
 		return model, nil, nil
