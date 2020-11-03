@@ -14,6 +14,7 @@ import (
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
+	"github.com/mssola/user_agent"
 	"github.com/spf13/cobra"
 )
 
@@ -322,6 +323,8 @@ type scanView struct {
 	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
 	Tags      map[string]string
+	Initiator string
+	Origin    string
 }
 
 func toScanViews(scans []scansRESTApi.ScanResponseModel) []*scanView {
@@ -333,6 +336,13 @@ func toScanViews(scans []scansRESTApi.ScanResponseModel) []*scanView {
 }
 
 func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
+	var origin string
+	if scan.UserAgent != "" {
+		ua := user_agent.New(scan.UserAgent)
+		name, version := ua.Browser()
+		origin = name + " " + version[:strings.Index(version, ".")] // Takes the major
+	}
+
 	return &scanView{
 		ID:        scan.ID,
 		Status:    string(scan.Status),
@@ -340,5 +350,7 @@ func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
 		UpdatedAt: scan.UpdatedAt,
 		ProjectID: scan.ProjectID,
 		Tags:      scan.Tags,
+		Initiator: scan.Initiator,
+		Origin:    origin,
 	}
 }
