@@ -30,6 +30,8 @@ func TestSastResourcesEnginesCommand(t *testing.T) {
 	assert.NilError(t, err)
 	err = executeASTTestCommand("sast-rm", "engines", "-h")
 	assert.NilError(t, err)
+	err = executeASTTestCommand("sast-rm", "engines", "set-tags", "-i", "12234", "kuku=riku")
+	assert.NilError(t, err)
 }
 
 func TestSastResourcesStatsCommand(t *testing.T) {

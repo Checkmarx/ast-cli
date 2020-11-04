@@ -11,6 +11,10 @@ import (
 type SastRmMockWrapper struct {
 }
 
+func (s *SastRmMockWrapper) SetEngineTags(engineID string, tags map[string]string) error {
+	return nil
+}
+
 func (s *SastRmMockWrapper) AddPool(description string) (*rest.Pool, error) {
 	return &rest.Pool{
 		ID:          uuid.New().String(),

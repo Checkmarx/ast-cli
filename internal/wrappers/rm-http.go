@@ -17,6 +17,12 @@ type sastrmHTTPWrapper struct {
 	contentType string
 }
 
+func (s *sastrmHTTPWrapper) SetEngineTags(engineID string, tags map[string]string) error {
+	url := fmt.Sprintf("%s/engines/%s/tags", s.path, engineID)
+	err := putData(url, tags)
+	return errors.Wrap(err, "failed to set engine tags")
+}
+
 func (s *sastrmHTTPWrapper) AddPool(description string) (pool *rm.Pool, err error) {
 	pool = &rm.Pool{
 		Description: description,
@@ -26,7 +32,7 @@ func (s *sastrmHTTPWrapper) AddPool(description string) (pool *rm.Pool, err erro
 }
 
 func (s *sastrmHTTPWrapper) DeletePool(id string) error {
-	path := fmt.Sprintf("%s/pools/{%s}", s.path, id)
+	path := fmt.Sprintf("%s/pools/%s", s.path, id)
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodDelete, path, nil, nil)
 	if err != nil {
 		return err

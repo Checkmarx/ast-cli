@@ -15,18 +15,55 @@ import (
 func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	rm := rmCommands{rmWrapper}
 
+	scansCmd := newScansCommand(rm)
+
+	enginesCmd := newEnginesCommand(rm)
+
+	poolsCmd := newPoolsCommand(rm)
+
+	statsCmd := newStatsCommand(rm)
+
+	sastrmCmd := &cobra.Command{
+		Use:   "sast-rm",
+		Short: "SAST resource management",
+	}
+
+	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd, poolsCmd},
+		formatTable, formatJSON, formatList)
+	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
+	return sastrmCmd
+}
+
+func newScansCommand(rm rmCommands) *cobra.Command {
 	scansCmd := &cobra.Command{
 		Use:   "scans",
 		Short: "Display scans in sast queue",
 		RunE:  rm.RunScansCommand,
 	}
+	return scansCmd
+}
 
+func newEnginesCommand(rm rmCommands) *cobra.Command {
 	enginesCmd := &cobra.Command{
 		Use:   "engines",
 		Short: "Display sast engines",
 		RunE:  rm.RunEnginesCommand,
 	}
 
+	engineTagsCmd := &cobra.Command{
+		Use:   "set-tags",
+		Short: "Set engine tags",
+		RunE:  rm.RunSetEngineTagsCommand,
+	}
+
+	engineTagsCmd.PersistentFlags().StringP("engine-id", "i", "",
+		"Engine id")
+
+	enginesCmd.AddCommand(engineTagsCmd)
+	return enginesCmd
+}
+
+func newPoolsCommand(rm rmCommands) *cobra.Command {
 	poolsCmd := &cobra.Command{
 		Use:   "pools",
 		Short: "Manage sast pools",
@@ -144,7 +181,10 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	poolEngineTagsCmd.AddCommand(poolEngineTagsGetCmd, poolEngineTagsSetCmd)
 
 	poolsCmd.AddCommand(poolsListCmd, poolCreateCmd, poolDeleteCmd, poolProjectsCmd, poolProjectTagsCmd, poolEnginesCmd, poolEngineTagsCmd)
+	return poolsCmd
+}
 
+func newStatsCommand(rm rmCommands) *cobra.Command {
 	statsCmd := &cobra.Command{
 		Use:   "stats",
 		Short: "Display sast queue statistics",
@@ -153,16 +193,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 
 	statsCmd.PersistentFlags().StringP("resolution", "r", "moment",
 		"Resolution, one of: minute, hour, day, week, moment")
-
-	sastrmCmd := &cobra.Command{
-		Use:   "sast-rm",
-		Short: "SAST resource management",
-	}
-
-	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd, poolsCmd},
-		formatTable, formatJSON, formatList)
-	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
-	return sastrmCmd
+	return statsCmd
 }
 
 type rmCommands struct {
@@ -310,6 +341,17 @@ func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []st
 	PrintIfVerbose(fmt.Sprintf("Setting pool project tags, poolID:%s tags:%s",
 		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolProjectTags(id, tags)
+}
+
+func (c rmCommands) RunSetEngineTagsCommand(cmd *cobra.Command, args []string) error {
+	id := cmd.Flag("engine-id").Value.String()
+	tags, err := parseTags(args)
+	if err != nil {
+		return err
+	}
+	PrintIfVerbose(fmt.Sprintf("Setting engine tags, engineID:%s tags:%s",
+		id, strings.Join(args, ", ")))
+	return c.rmWrapper.SetEngineTags(id, tags)
 }
 
 func parseTags(args []string) (map[string]string, error) {

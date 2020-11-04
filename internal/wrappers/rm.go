@@ -23,6 +23,7 @@ const (
 type SastRmWrapper interface {
 	GetScans() ([]*rm.Scan, error)
 	GetEngines() ([]*rm.Engine, error)
+	SetEngineTags(engineID string, tags map[string]string) error
 	GetPools() ([]*rm.Pool, error)
 	AddPool(description string) (*rm.Pool, error)
 	DeletePool(id string) error
