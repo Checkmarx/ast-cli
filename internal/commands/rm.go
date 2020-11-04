@@ -12,6 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	MissingPoolIDFlagError   = "please provide pool-id"
+	MissingEngineIDFlagError = "please provide engine-id"
+)
+
 func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	rm := rmCommands{rmWrapper}
 
@@ -270,6 +275,9 @@ func (c rmCommands) RunListPoolsCommand(cmd *cobra.Command, args []string) error
 
 func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	PrintIfVerbose(fmt.Sprintf("Getting pool engines poolID:%s", id))
 	engines, err := c.rmWrapper.GetPoolEngines(id)
 	if err != nil {
@@ -280,6 +288,9 @@ func (c rmCommands) RunGetPoolEnginesCommand(cmd *cobra.Command, args []string) 
 
 func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	PrintIfVerbose(fmt.Sprintf("Getting pool engine tags poolID:%s", id))
 	tags, err := c.rmWrapper.GetPoolEngineTags(id)
 	if err != nil {
@@ -290,6 +301,9 @@ func (c rmCommands) RunGetPoolEngineTagsCommand(cmd *cobra.Command, args []strin
 
 func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	PrintIfVerbose(fmt.Sprintf("Getting pool projects poolID:%s", id))
 	projects, err := c.rmWrapper.GetPoolProjects(id)
 	if err != nil {
@@ -300,6 +314,9 @@ func (c rmCommands) RunGetPoolProjectsCommand(cmd *cobra.Command, args []string)
 
 func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	PrintIfVerbose(fmt.Sprintf("Getting pool project tags poolID:%s", id))
 	tags, err := c.rmWrapper.GetPoolProjectTags(id)
 	if err != nil {
@@ -310,12 +327,19 @@ func (c rmCommands) RunGetPoolProjectTagsCommand(cmd *cobra.Command, args []stri
 
 func (c rmCommands) RunSetEnginesToPoolCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	PrintIfVerbose(fmt.Sprintf("Setting pool engines, poolID:%s engines:%s",
 		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolEngines(id, args)
 }
 func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
+
 	PrintIfVerbose(fmt.Sprintf("Setting pool projects, poolID:%s projects:%s",
 		id, strings.Join(args, ", ")))
 	return c.rmWrapper.SetPoolProjects(id, args)
@@ -323,6 +347,9 @@ func (c rmCommands) RunSetPoolProjectsCommand(cmd *cobra.Command, args []string)
 
 func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	tags, err := parseTags(args)
 	if err != nil {
 		return err
@@ -334,6 +361,9 @@ func (c rmCommands) RunSetEngineTagsToPoolCommand(cmd *cobra.Command, args []str
 
 func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("pool-id").Value.String()
+	if id == "" {
+		return errors.New(MissingPoolIDFlagError)
+	}
 	tags, err := parseTags(args)
 	if err != nil {
 		return err
@@ -345,6 +375,9 @@ func (c rmCommands) RunSetProjectTagsToPoolCommand(cmd *cobra.Command, args []st
 
 func (c rmCommands) RunSetEngineTagsCommand(cmd *cobra.Command, args []string) error {
 	id := cmd.Flag("engine-id").Value.String()
+	if id == "" {
+		return errors.New(MissingEngineIDFlagError)
+	}
 	tags, err := parseTags(args)
 	if err != nil {
 		return err

@@ -32,6 +32,9 @@ func TestSastResourcesEnginesCommand(t *testing.T) {
 	assert.NilError(t, err)
 	err = executeASTTestCommand("sast-rm", "engines", "set-tags", "-i", "12234", "kuku=riku")
 	assert.NilError(t, err)
+
+	err = executeASTTestCommand("sast-rm", "engines", "set-tags", "kuku=riku")
+	assert.Error(t, err, MissingEngineIDFlagError)
 }
 
 func TestSastResourcesStatsCommand(t *testing.T) {
@@ -68,6 +71,11 @@ func TestSastRMPoolCommand(t *testing.T) {
 		"tag1=value1", "tag2=value2"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engines", "set", "--pool-id", "some-pool-id", "engine1", "engine2"))
 	assert.NilError(t, executeASTTestCommand("sast-rm", "pools", "engine-tags", "set", "--pool-id", "some-pool-id", "tag1=value1"))
+
+	assert.Error(t, executeASTTestCommand("sast-rm", "pools", "projects", "get"), MissingPoolIDFlagError)
+	assert.Error(t, executeASTTestCommand("sast-rm", "pools", "project-tags", "get"), MissingPoolIDFlagError)
+	assert.Error(t, executeASTTestCommand("sast-rm", "pools", "engines", "set"), MissingPoolIDFlagError)
+	assert.Error(t, executeASTTestCommand("sast-rm", "pools", "engine-tags", "set"), MissingPoolIDFlagError)
 }
 
 func executeASTTestCommand(args ...string) error {
