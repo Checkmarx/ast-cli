@@ -30,4 +30,5 @@ const (
 	SastScanIncPathEnv                  = "SAST_SCAN_INC_PATH"
 	SastScanIncEngineLogPathEnv         = "SAST_SCAN_INC_ENGINE_LOG_PATH"
 	SastScanIncMetricsPathEnv           = "SAST_SCAN_INC_METRICS_PATH"
+	LogsPathEnv                         = "LOGS_PATH"
 )

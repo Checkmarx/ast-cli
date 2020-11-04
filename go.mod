@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/checkmarxDev/healthcheck v1.4.0
+	github.com/checkmarxDev/logs v1.0.2
 	github.com/checkmarxDev/sast-queries v1.3.12
 	github.com/checkmarxDev/sast-results v1.0.2
 	github.com/checkmarxDev/sast-rm v1.2.3

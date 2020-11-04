@@ -32,4 +32,5 @@ var (
 	SastScanIncPathKey                  = strings.ToLower(SastScanIncPathEnv)
 	SastScanIncEngineLogPathKey         = strings.ToLower(SastScanIncEngineLogPathEnv)
 	SastScanIncMetricsPathKey           = strings.ToLower(SastScanIncMetricsPathEnv)
+	LogsPathKey                         = strings.ToLower(LogsPathEnv)
 )
