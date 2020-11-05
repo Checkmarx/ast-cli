@@ -40,6 +40,7 @@ func main() {
 	sastScanInc := viper.GetString(params.SastScanIncPathKey)
 	sastScanIncEngineLogPath := viper.GetString(params.SastScanIncEngineLogPathKey)
 	sastScanIncMetricsPath := viper.GetString(params.SastScanIncMetricsPathKey)
+	logs := viper.GetString(params.LogsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -66,6 +67,7 @@ func main() {
 		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncEngineLogPath),
 		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncMetricsPath),
 	)
+	logsWrapper := wrappers.NewLogsWrapper(logs)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -78,6 +80,7 @@ func main() {
 		queriesWrapper,
 		authWrapper,
 		sastMetadataWrapper,
+		logsWrapper,
 	)
 
 	err := astCli.Execute()

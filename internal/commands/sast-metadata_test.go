@@ -1,3 +1,5 @@
+// +build !integration
+
 package commands
 
 import (
@@ -10,13 +12,13 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestSSIHelp(t *testing.T) {
+func TestSastMetadataHelp(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "help", "sast-metadata")
 	assert.NilError(t, err)
 }
 
-func TestSSINoSub(t *testing.T) {
+func TestSastMetadataNoSub(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "sast-metadata")
 	assert.NilError(t, err)
