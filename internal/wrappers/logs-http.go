@@ -55,7 +55,7 @@ func (l *LogsHTTPWrapper) GetURL() (io.ReadCloser, *helpers.WebError, error) {
 		}
 
 		if downloadResp.StatusCode != http.StatusOK {
-			defer resp.Body.Close()
+			defer downloadResp.Body.Close()
 			return nil, nil, errors.Errorf("response status code %d", downloadResp.StatusCode)
 		}
 
