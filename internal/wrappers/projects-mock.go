@@ -39,6 +39,14 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &projectsRESTApi.ProjectResponseModel{
 		ID: projectID,
+		Tags: map[string]string{
+			"a": "b",
+			"c": "d",
+		},
+		Groups: []string{
+			"a",
+			"b",
+		},
 	}, nil, nil
 }
 
