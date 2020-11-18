@@ -250,6 +250,7 @@ func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView { //n
 		CreatedAt: model.CreatedAt,
 		UpdatedAt: model.UpdatedAt,
 		Tags:      model.Tags,
+		Groups:    model.Groups,
 	}
 }
 
@@ -258,4 +259,5 @@ type projectView struct {
 	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
 	Tags      map[string]string
+	Groups    []string
 }
