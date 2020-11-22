@@ -49,14 +49,15 @@ func (l *LogsHTTPWrapper) GetURL() (io.ReadCloser, *helpers.WebError, error) {
 		}
 
 		downloadResp, err := SendHTTPRequestByFullURL(http.MethodGet, model.URL, nil,
-			false, DefaultTimeoutSeconds)
+			true, DownloadLogsTimeoutSeconds)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		if downloadResp.StatusCode != http.StatusOK {
 			defer downloadResp.Body.Close()
-			return nil, nil, errors.Errorf("response status code %d", downloadResp.StatusCode)
+			return nil, nil, errors.Errorf("downloading logs after retrieving url got response status code %d",
+				downloadResp.StatusCode)
 		}
 
 		return downloadResp.Body, nil, nil
