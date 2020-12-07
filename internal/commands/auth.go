@@ -29,12 +29,12 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	}
 	createClientCmd := &cobra.Command{
 		Use:   "register",
-		Short: "Register new oath2 client for ast",
+		Short: "Register new oauth2 client for ast",
 		Long: "Register new oath2 client and outputs its generated credentials in the format <key>=<value>.\n" +
 			"If you wish to use this client with the cli set those credentials as environment variables.\n" +
-			"On Linux just wrap this command with eval e.g:\n" +
+			"On Linux just wrap this command with export e.g:\n" +
 			"\n" +
-			"  eval $(ast auth register -u <user> -p <pass>) \n" +
+			"  export $(ast auth register -u <user> -p <pass>) \n" +
 			"\n" +
 			"On Windows you can use PowerShell e.g.:\n" +
 			"\n" +
