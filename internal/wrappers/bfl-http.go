@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
@@ -26,13 +25,11 @@ func NewHTTPBFLWrapper(path string) BFLWrapper {
 }
 
 func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*resultsBfl.Forest, *resultsHelpers.WebError, error) {
-	fmt.Println("REQ", b.path, params)
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.path, params, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	fmt.Println("Head", resp.Request.Header.Get("Authorization"))
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
