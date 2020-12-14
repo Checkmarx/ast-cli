@@ -25,7 +25,7 @@ func NewHTTPBFLWrapper(path string) BFLWrapper {
 }
 
 func (b *BFLHTTPWrapper) GetByScanID(params map[string]string) (*resultsBfl.Forest, *resultsHelpers.WebError, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.path, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, b.path, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}

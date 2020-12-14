@@ -45,7 +45,7 @@ func (s *ScansHTTPWrapper) Create(model *scansRestApi.Scan) (*scansRestApi.ScanR
 }
 
 func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCollectionResponseModel, *scansRestApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}

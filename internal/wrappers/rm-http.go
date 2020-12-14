@@ -33,7 +33,7 @@ func (s *sastrmHTTPWrapper) AddPool(description string) (pool *rm.Pool, err erro
 
 func (s *sastrmHTTPWrapper) DeletePool(id string) error {
 	path := fmt.Sprintf("%s/pools/%s", s.path, id)
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodDelete, path, nil, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodDelete, path, nil, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func read(url string, result interface{}) error {
 }
 
 func readData(url string, params map[string]string) ([]byte, error) {
-	resp, err := SendHTTPRequestWithQueryParams("GET", url, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams("GET", url, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func postData(url string, data interface{}, params map[string]string) error {
 		return errors.Wrap(err, "failed to marshal data")
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodPost, url, params, bytes.NewReader(requestData))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodPost, url, params, bytes.NewReader(requestData), DefaultTimeoutSeconds)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func putData(url string, data interface{}) error {
 		return errors.Wrap(err, "failed to marshal data")
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodPut, url, nil, bytes.NewReader(requestData))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodPut, url, nil, bytes.NewReader(requestData), DefaultTimeoutSeconds)
 	if err != nil {
 		return err
 	}
