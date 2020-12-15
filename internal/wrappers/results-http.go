@@ -25,7 +25,7 @@ func NewHTTPResultsWrapper(path string) ResultsWrapper {
 }
 
 func (r *ResultsHTTPWrapper) GetByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
