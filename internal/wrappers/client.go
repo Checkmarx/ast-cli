@@ -109,8 +109,8 @@ func GetURL(path string) string {
 }
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
-	body io.Reader) (*http.Response, error) {
-	client := getClient(DefaultTimeoutSeconds)
+	body io.Reader, timeout uint) (*http.Response, error) {
+	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
 	if err != nil {

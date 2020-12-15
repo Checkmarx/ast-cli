@@ -38,7 +38,7 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}

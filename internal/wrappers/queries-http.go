@@ -19,7 +19,10 @@ const (
 	failedToParseActivateResult = "failed to parse activate result"
 )
 
-const cloneNameParamsFieldName = "name"
+const (
+	cloneNameParamsFieldName            = "name"
+	UploadDownloadQueriesTimeoutSeconds = 60
+)
 
 type queriesHTTPWrapper struct {
 	path      string
@@ -39,7 +42,7 @@ func (q *queriesHTTPWrapper) Download(name string) (io.ReadCloser, *queriesHelpe
 		params[cloneNameParamsFieldName] = name
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, q.clonePath, params, nil)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, q.clonePath, params, nil, UploadDownloadQueriesTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -73,7 +76,7 @@ func (q *queriesHTTPWrapper) Import(uploadURL, name string) (*queriesHelpers.Web
 		return nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, q.path, bytes.NewBuffer(jsonBytes), true, DefaultTimeoutSeconds)
+	resp, err := SendHTTPRequest(http.MethodPost, q.path, bytes.NewBuffer(jsonBytes), true, UploadDownloadQueriesTimeoutSeconds)
 	if err != nil {
 		return nil, err
 	}
