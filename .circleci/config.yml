@@ -36,6 +36,7 @@ jobs:
           command: |
             sudo chmod +x ./internal/commands/.scripts/up.sh \
             ./internal/commands/.scripts/down.sh
+            sudo echo "Test message"
             sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
