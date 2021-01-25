@@ -35,7 +35,8 @@ func NewConfigCommand() *cobra.Command {
 
 func runSetValue() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
+		const minArgCnt = 2
+		if len(args) < minArgCnt {
 			return errors.Errorf("%s: Please provide a property to set and a value", failedDeleting)
 		}
 		if args[0] == "token" {

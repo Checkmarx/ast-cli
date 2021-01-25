@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultProfileName = "default"
+
 func SetConfigProperty(propName string, propValue string) {
 	fmt.Println("Setting property [", propName, "] to value [", propValue, "]")
 	viper.Set(propName, propValue)
@@ -26,17 +28,17 @@ func LoadConfiguration() {
 	profile := findProfile()
 	viper.AddConfigPath("$HOME")
 	configFile := ".checkmarxcli"
-	if profile != "default" {
+	if profile != defaultProfileName {
 		configFile += "_"
 		configFile += profile
 	}
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
-	viper.ReadInConfig()
+	_ = viper.ReadInConfig()
 }
 
 func findProfile() string {
-	profileName := "default"
+	profileName := defaultProfileName
 	for idx, b := range os.Args {
 		if b == "--profile" {
 			profileIdx := idx + 1
