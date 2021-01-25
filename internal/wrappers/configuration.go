@@ -18,7 +18,7 @@ func SetConfigProperty(propName string, propValue string) {
 	/// this code will successfully update files.
 	//
 	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
-		viper.WriteConfig()
+		_ = viper.WriteConfig()
 	}
 }
 
