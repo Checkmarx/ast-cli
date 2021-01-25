@@ -13,10 +13,10 @@ const defaultProfileName = "default"
 func SetConfigProperty(propName, propValue string) {
 	fmt.Println("Setting property [", propName, "] to value [", propValue, "]")
 	viper.Set(propName, propValue)
-	/// You should be able to  call WriteConfig() but it will fail if the
-	/// config file doesn't already exist, this is a known viper bug.
-	/// SafeWriteConfig() will not update files but it will create them, combined
-	/// this code will successfully update files.
+	// You should be able to  call WriteConfig() but it will fail if the
+	// config file doesn't already exist, this is a known viper bug.
+	// SafeWriteConfig() will not update files but it will create them, combined
+	// this code will successfully update files.
 	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
 		_ = viper.WriteConfig()
 	}
