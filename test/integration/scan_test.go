@@ -23,11 +23,6 @@ import (
 )
 
 func TestScansE2E(t *testing.T) {
-	// TODO: fix this
-	fmt.Println("TODO: Disabled TestScansE2E because can't auth.")
-}
-
-func testScansE2E(t *testing.T) {
 	fmt.Println("Trying to run TestScansE2E")
 	scanID, projectID := createScanSourcesFile(t)
 	defer deleteProject(t, projectID)
@@ -57,6 +52,7 @@ func testScansE2E(t *testing.T) {
 }
 
 func createScanSourcesFile(t *testing.T) (string, string) {
+	fmt.Println("Trying to create source file")
 	// Create a full scan
 	b := bytes.NewBufferString("")
 	createCommand := createASTIntegrationTestCommand(t)
@@ -129,7 +125,7 @@ func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
 	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "--format", "json", "scan", "tags")
+	err := execute(tagsCommand, "-v", "scan", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
 	// Read response from buffer
 	var tagsJSON []byte

@@ -129,7 +129,7 @@ func getAllProjects(t *testing.T, projectID string) {
 
 func deleteProject(t *testing.T, projectID string) {
 	deleteProjCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteProjCommand, "-v", "--format", "json", "project", "delete", projectID)
+	err := execute(deleteProjCommand, "-v", "project", "delete", projectID)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
 

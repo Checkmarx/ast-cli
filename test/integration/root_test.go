@@ -43,9 +43,7 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
-
 	fmt.Println("Starting a test!")
-
 	// Run all tests
 	exitVal := m.Run()
 	log.Println("CLI integration tests done")
