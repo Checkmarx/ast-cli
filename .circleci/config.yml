@@ -36,7 +36,6 @@ jobs:
           command: |
             sudo chmod +x ./internal/commands/.scripts/up.sh \
             ./internal/commands/.scripts/down.sh
-            sudo pwd
             sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
           no_output_timeout: 2m
       - run:
@@ -55,6 +54,33 @@ jobs:
               
               exit 0
             fi
+      - save_cache: # Store cache in the /go/pkg directory
+          key: go-mod-v2-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+
+  integration-tests: 
+    executor: 
+      circle-machine
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: 
+          name: Config GOPRIVATE environment variable
+          command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
+      - run:
+          name: Config Git credentials
+          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+      - restore_cache:
+          keys:
+            - go-mod-v2-{{ checksum "go.sum" }}
+      - run: 
+          name: go integration test
+          command: |
+            sudo chmod +x ./internal/commands/.scripts/up.sh \
+            ./internal/commands/.scripts/down.sh
+            sudo -E env "PATH=$PATH" echo "Kick off integration tests (FIX)!"
+          no_output_timeout: 2m
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v2-{{ checksum "go.sum" }}
           paths:
