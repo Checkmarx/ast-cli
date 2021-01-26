@@ -82,8 +82,11 @@ jobs:
             sudo -E env "PATH=$PATH" go test ./test/integration/scan_test.go \
             ./test/integration/root_test.go \
             ./test/integration/project_test.go \
+            ./test/integration/query_test.go \
             ./test/integration/health_check_test.go \
-            ./test/integration/result_test.go
+            ./test/integration/result_test.go \
+            ./test/integration/sast_resources_test.go \
+            ./test/integration/scan_test.go
           no_output_timeout: 2m
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v2-{{ checksum "go.sum" }}
