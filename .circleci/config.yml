@@ -173,6 +173,11 @@ workflows:
             branches:
               ignore:
                 - master
+      - integration-tests:
+          filters:
+            branches:
+              ignore:
+                - master
       - lint:
           filters:
             branches:
