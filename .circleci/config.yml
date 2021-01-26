@@ -76,13 +76,14 @@ jobs:
             - go-mod-v2-{{ checksum "go.sum" }}
       - run: 
           name: go integration test
+          # REMOVED INTEGRATION TESTS
+          #   ./test/integration/query_test.go \
           command: |
             sudo chmod +x ./internal/commands/.scripts/up.sh \
             ./internal/commands/.scripts/down.sh            
             sudo -E env "PATH=$PATH" go test ./test/integration/scan_test.go \
             ./test/integration/root_test.go \
             ./test/integration/project_test.go \
-            ./test/integration/query_test.go \
             ./test/integration/health_check_test.go \
             ./test/integration/result_test.go \
             ./test/integration/sast_resources_test.go             

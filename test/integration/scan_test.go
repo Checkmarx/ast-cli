@@ -23,6 +23,7 @@ import (
 )
 
 func TestScansE2E(t *testing.T) {
+	fmt.Println("Trying to run TestScansE2E")
 	scanID, projectID := createScanSourcesFile(t)
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)

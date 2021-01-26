@@ -5,12 +5,13 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"gotest.tools/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"gotest.tools/assert"
 )
 
 func TestQueriesE2E(t *testing.T) {
