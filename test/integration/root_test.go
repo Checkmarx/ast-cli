@@ -5,6 +5,7 @@ package integration
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -44,7 +45,8 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
-	// TODO: remove this after token support is available.
+	// TODO: remove this after token support is available and turn this into an
+	// TODO: integration test.
 	authASTServer()
 	fmt.Println("Starting a test!")
 	// Run all tests
@@ -149,6 +151,9 @@ var accessKeySecret = ""
 
 func authASTServer() {
 	fmt.Println("Authenticating to AST Server")
+	// TODO: this is hack because we have a testing.T instance and can't rely on
+	// TODO: bindKeysToEnvAndDefault() which needs it. Remove this after this becomes
+	// TODO: an integration test.
 	for _, b := range params.EnvVarsBinds {
 		viper.BindEnv(b.Key, b.Env)
 		viper.SetDefault(b.Key, b.Default)
@@ -156,32 +161,28 @@ func authASTServer() {
 	b := bytes.NewBufferString("")
 	cmd := createASTIntegrationTestCommand(nil)
 	cmd.SetOut(b)
-	var args = []string{"auth", "register", "-u", "org_admin", "-p", "Cx123456"}
+	//username := viper.GetString(params.AstUserName)
+	//password := viper.GetString(params.AstPassword)
+	username := "org_admin"
+	password := "Cx123456"
+	var args = []string{"auth", "register", "-u", username, "-p", password}
 	cmd.SetArgs(args)
-	accessKeyID = "ast-plugins-ad880520-10eb-4973-ba50-0f6f31f153a6"
-	accessKeySecret = "384ae472-e660-4335-94df-2c3a1c674cca"
-	/*
-		if err := cmd.Execute(); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		fmt.Println(b)
-		loginStr := string(b.String())
-		fmt.Println(loginStr)
-		fmt.Println("Logged into AST instance3")
-	*/
-	//fmt.Println(buf.String())
-	/*
-		var loginBytes []byte
-		loginBytes, _ = ioutil.ReadAll(b)
-		fmt.Println(loginBytes)
-		loginStr := string(loginBytes)
-		fmt.Println("Logged into AST instance2")
-		fmt.Println(loginStr)
-		authInfo := strings.Split(loginStr, "\n")
-		for i, s := range authInfo {
-			fmt.Println("Line")
-			fmt.Println(i, s)
-		}
-	*/
+	if err := cmd.Execute(); err != nil {
+		// TODO: can assert here right now because this isn't triggered as test, so fake it
+		// TODO: After token auth is added this will become an integration test and the
+		// TODO: process won't depend on it.
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	var loginBytes []byte
+	loginBytes, _ = ioutil.ReadAll(b)
+	loginStr := string(loginBytes)
+	fmt.Println(loginStr)
+	//authInfo := strings.Split(loginStr, "\n")
+	//accessKeyID = authInfo[0][len("AST_ACCESS_KEY_ID="):]
+	//accessKeySecret = authInfo[1][len("AST_ACCESS_KEY_SECRET="):]
+	/* Force a test login session */
+	fmt.Println("Forcing login info")
+	accessKeyID = "ast-plugins-62a0ab2c-96f9-4b3b-ae42-33ddc8197c5a"
+	accessKeySecret = "d707b3e8-d7fa-4724-b3ca-8a5238ac9add"
 }
