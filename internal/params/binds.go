@@ -5,7 +5,7 @@ var EnvVarsBinds = []struct {
 	Env     string
 	Default string
 }{
-	{BaseURIKey, BaseURIEnv, "http://ast.cxflow-ci.com"},
+	{BaseURIKey, BaseURIEnv, "http://127.0.0.1:80"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
@@ -29,8 +29,8 @@ var EnvVarsBinds = []struct {
 	{SastScanIncEngineLogPathKey, SastScanIncEngineLogPathEnv, "%s/engine-log"},
 	{SastScanIncMetricsPathKey, SastScanIncMetricsPathEnv, "%s/metrics"},
 	{LogsPathKey, LogsPathEnv, "api/logs"},
-	{AccessKeyIDConfigKey, AccessKeyIDEnv, "ast-plugins-3d1b8499-b3cf-43cf-8425-0bb212ca44d3"},
-	{AccessKeySecretConfigKey, AccessKeySecretEnv, "c710a92f-d103-4bc5-89ce-6d138f976b9e"},
+	{AccessKeyIDConfigKey, AccessKeyIDEnv, ""},
+	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
 	{AstAuthenticationPathConfigKey, AstAuthenticationPathEnv, "auth/realms/organization/protocol/openid-connect/token"},
 	{AstRoleKey, AstRoleEnv, ScaAgent},
 	{CredentialsFilePathKey, CredentialsFilePathEnv, "credentials.json"},
