@@ -5,4 +5,10 @@ export AST_ACCESS_KEY_SECRET="c710a92f-d103-4bc5-89ce-6d138f976b9e"
 echo $AST_ACCESS_KEY_ID
 echo $BASE_URI
 echo $AST_ACCESS_KEY_SECRET
-echo "Done setting keys"
+echo "Done setting keys, trigginer process
+go test ./test/integration/scan_test.go \
+            ./test/integration/root_test.go \
+            ./test/integration/project_test.go \
+            ./test/integration/health_check_test.go \
+            ./test/integration/result_test.go \
+            ./test/integration/sast_resources_test.go -v
