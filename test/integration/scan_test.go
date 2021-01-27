@@ -13,10 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/viper"
-
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	"github.com/spf13/viper"
 	"gotest.tools/assert/cmp"
 
 	"gotest.tools/assert"
