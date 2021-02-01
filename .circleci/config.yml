@@ -79,6 +79,8 @@ jobs:
           command: |
             sudo chmod +x ./internal/commands/.scripts/integration_up.sh
             sudo echo "CX BASEURI: $CX_BASE_URI"
+            sudo echo ${CX_BASE_URI}
+            echo ${CX_BASE_URI}
             echo "export CX_AST_USERNAME=$CX_AST_USERNAME" >> $BASH_ENV
             echo "export CX_AST_PASSWORD=$CX_AST_PASSWORD" >> $BASH_ENV
             echo "export CX_BASE_URI=$CX_BASE_URI" >> $BASH_ENV
