@@ -146,6 +146,7 @@ func authASTServer() {
 	username := viper.GetString(params.AstUsernameKey)
 	password := viper.GetString(params.AstPasswordKey)
 	fmt.Println("Username: ", username)
+	fmt.Println("Password: ", password)
 	var args = []string{"auth", "register", "-u", username, "-p", password}
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
