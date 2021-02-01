@@ -43,7 +43,6 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 		if err != nil {
 			return nil, errors.Wrap(err, failedToParseCreateClientResult)
 		}
-
 		return &errorMsg, nil
 	case http.StatusOK:
 		return nil, nil
@@ -53,7 +52,6 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 			if err != nil {
 				return ""
 			}
-
 			return string(b)
 		}())
 	}

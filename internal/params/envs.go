@@ -2,6 +2,9 @@ package params
 
 const (
 	BaseURIEnv                          = "BASE_URI"
+	AstUsernameEnv                      = "CX_AST_USERNAME"
+	AstPasswordEnv                      = "CX_AST_PASSWORD"
+	AstTokenEnv                         = "CX_AST_TOKEN"
 	ScansPathEnv                        = "SCANS_PATH"
 	ProjectsPathEnv                     = "PROJECTS_PATH"
 	ResultsPathEnv                      = "RESULTS_PATH"

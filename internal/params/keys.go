@@ -4,6 +4,9 @@ import "strings"
 
 var (
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
+	AstUsernameKey                      = strings.ToLower(AstUsernameEnv)
+	AstPasswordKey                      = strings.ToLower(AstPasswordEnv)
+	AstTokenKey                         = strings.ToLower(AstTokenEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)

@@ -40,6 +40,8 @@ const (
 	filterFlag                     = "filter"
 	baseURIFlag                    = "base-uri"
 	baseURIFlagUsage               = "The base system URI"
+	astTokenFlag                   = "ast-token"
+	astTokenUsage                  = "The token to login to AST with"
 	queriesRepoNameFlag            = "name"
 	queriesRepoNameSh              = "n"
 	queriesRepoActivateFlag        = "activate"
@@ -83,6 +85,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
+	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenFlag)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -91,6 +94,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
+	_ = viper.BindPFlag(params.AstTokenKey, rootCmd.PersistentFlags().Lookup(astTokenFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))

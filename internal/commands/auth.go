@@ -84,8 +84,16 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 			return errors.Errorf("%s: CODE: %d, %s", failedCreatingClient, errorMsg.Code, errorMsg.Message)
 		}
 
+		AuthGeneratedClientID = generatedClientID
+		AuthGeneratedClientSecret = generatedClientSecret
 		fmt.Printf("%s=%s\n", params.AccessKeyIDEnv, generatedClientID)
 		fmt.Printf("%s=%s\n", params.AccessKeySecretEnv, generatedClientSecret)
 		return nil
 	}
 }
+
+// These capture the GeneratedClientID and key values so they are available to
+// other parts of the CLI code. The primary usage for these is the integration
+// tests.
+var AuthGeneratedClientID = ""
+var AuthGeneratedClientSecret = ""
