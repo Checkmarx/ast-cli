@@ -76,7 +76,8 @@ jobs:
             - go-mod-v2-{{ checksum "go.sum" }}
       - run: 
           name: go integration test          
-          command:            
+          command:
+            sudo chmod +x ./internal/commands/.scripts/integration_up.sh            
             sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh            
           no_output_timeout: 2m
       - save_cache: # Store cache in the /go/pkg directory
