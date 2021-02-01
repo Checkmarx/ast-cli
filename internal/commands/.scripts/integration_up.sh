@@ -11,9 +11,11 @@ echo "Authenticating to AST test server."
 #source $BASH_ENV
 echo "From Script"
 echo $CX_AST_USERNAME
-echo "More from script"
+echo "More from within script"
 echo ${CIRCLE_BRANCH}
 echo ${CX_AST_USERNAME}
+echo ${CX_AST_PASSWORD}
+echo ${CX_BASE_URI}
 
 echo "Kicking off integration tests."
 go test ./test/integration/scan_test.go \
