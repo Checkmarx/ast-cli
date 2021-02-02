@@ -175,12 +175,10 @@ workflows:
           filters:
             branches:
               ignore:
-                - master
       - lint:
           filters:
             branches:
               ignore:
-                - master
           context: AWS
 
   release-publish-workflow:
