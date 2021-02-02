@@ -35,21 +35,21 @@ type ScanInfoView struct {
 func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	sastMetadataCmd := &cobra.Command{
 		Use:   "sast-metadata",
-		Short: "Manage sast metadata on scans",
+		Short: "Enables the ability to manage sast scans metadata in AST",
 	}
 	engineLogCmd := &cobra.Command{
 		Use:   "engine-log <scan id>",
-		Short: "Downloads the engine log for given scan id",
+		Short: "Print the engine log for a given scan id",
 		RunE:  runEngineLog(sastMetadataWrapper),
 	}
 	scanInfoCmd := &cobra.Command{
-		Use:   "scan-info",
-		Short: "Gets information for given scan id",
+		Use:   "scan-info <scan id>",
+		Short: "Retrieve information about a given scan id",
 		RunE:  runScanInfo(sastMetadataWrapper),
 	}
 	metricsCmd := &cobra.Command{
 		Use:   "metrics",
-		Short: "Gets engine metrics for given scan id",
+		Short: "Retrieve engine metrics for a given scan id",
 		RunE:  runMetrics(sastMetadataWrapper),
 	}
 
