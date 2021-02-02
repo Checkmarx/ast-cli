@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/viper"
-
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	"github.com/spf13/viper"
 	"gotest.tools/assert/cmp"
 
 	"gotest.tools/assert"
 )
 
 func TestScansE2E(t *testing.T) {
+	fmt.Println("Trying to run TestScansE2E")
 	scanID, projectID := createScanSourcesFile(t)
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
@@ -51,6 +51,7 @@ func TestScansE2E(t *testing.T) {
 }
 
 func createScanSourcesFile(t *testing.T) (string, string) {
+	fmt.Println("Trying to create source file")
 	// Create a full scan
 	b := bytes.NewBufferString("")
 	createCommand := createASTIntegrationTestCommand(t)
@@ -123,7 +124,7 @@ func getScansTags(t *testing.T) {
 	b := bytes.NewBufferString("")
 	tagsCommand := createASTIntegrationTestCommand(t)
 	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "--format", "json", "scan", "tags")
+	err := execute(tagsCommand, "-v", "scan", "tags")
 	assert.NilError(t, err, "Getting tags should pass")
 	// Read response from buffer
 	var tagsJSON []byte
