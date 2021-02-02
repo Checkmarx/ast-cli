@@ -171,7 +171,6 @@ workflows:
           filters:
             branches:
               ignore:
-                - master
       - integration-tests:
           filters:
             branches:
