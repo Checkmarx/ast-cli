@@ -84,8 +84,13 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 			return errors.Errorf("%s: CODE: %d, %s", failedCreatingClient, errorMsg.Code, errorMsg.Message)
 		}
 
+		AuthGeneratedClientID = generatedClientID
+		AuthGeneratedClientSecret = generatedClientSecret
 		fmt.Printf("%s=%s\n", params.AccessKeyIDEnv, generatedClientID)
 		fmt.Printf("%s=%s\n", params.AccessKeySecretEnv, generatedClientSecret)
 		return nil
 	}
 }
+
+var AuthGeneratedClientID = ""
+var AuthGeneratedClientSecret = ""

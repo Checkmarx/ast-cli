@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
 	params "github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
 )
 
@@ -17,6 +16,7 @@ const (
 )
 
 func main() {
+	wrappers.LoadConfiguration()
 	bindKeysToEnvAndDefault()
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
