@@ -92,6 +92,5 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 	}
 }
 
-// These capture the key/secret pairs so they are available to integration tests.
 var AuthGeneratedClientID = ""
 var AuthGeneratedClientSecret = ""
