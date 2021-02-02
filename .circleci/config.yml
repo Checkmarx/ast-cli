@@ -77,10 +77,7 @@ jobs:
       - run: 
           name: go integration test          
           command: |
-            sudo chmod +x ./internal/commands/.scripts/integration_up.sh
-            echo ${CX_AST_USERNAME}
-            echo ${CX_AST_PASSWORD}
-            echo ${CX_BASE_URI}
+            sudo chmod +x ./internal/commands/.scripts/integration_up.sh            
             sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh            
           no_output_timeout: 2m
       - save_cache: # Store cache in the /go/pkg directory

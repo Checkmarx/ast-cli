@@ -145,12 +145,6 @@ func authASTServer() {
 	cmd := createASTIntegrationTestCommand(nil)
 	username := viper.GetString(params.AstUsernameKey)
 	password := viper.GetString(params.AstPasswordKey)
-
-	baseuri := viper.GetString(params.BaseURIKey)
-	fmt.Println("BaseURI: ", baseuri)
-
-	fmt.Println("Username: ", username)
-	fmt.Println("Password: ", password)
 	var args = []string{"auth", "register", "-u", username, "-p", password}
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
