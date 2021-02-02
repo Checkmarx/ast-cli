@@ -92,8 +92,6 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 	}
 }
 
-// These capture the GeneratedClientID and key values so they are available to
-// other parts of the CLI code. The primary usage for these is the integration
-// tests.
+// These capture the key/secret pairs so they are available to integration tests.
 var AuthGeneratedClientID = ""
 var AuthGeneratedClientSecret = ""

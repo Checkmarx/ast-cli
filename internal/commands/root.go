@@ -85,7 +85,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
-	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenFlag)
+	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
