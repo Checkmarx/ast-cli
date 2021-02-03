@@ -171,6 +171,25 @@ workflows:
           filters:
             branches:
               ignore:
+                - master
+      - integration-tests:
+          filters:
+            branches:
+              ignore:
+                - master
+      - lint:
+          filters:
+            branches:
+              ignore:
+                -master
+          context: AWS
+
+  release-publish-workflow:
+    jobs:    
+      - unit-tests:
+          filters:
+            branches:
+              ignore:
       - integration-tests:
           filters:
             branches:
@@ -180,9 +199,6 @@ workflows:
             branches:
               ignore:
           context: AWS
-
-  release-publish-workflow:
-    jobs:    
       - publish-github-release:
           filters:
             branches:
