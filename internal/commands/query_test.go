@@ -21,33 +21,33 @@ func TestQueryHelp(t *testing.T) {
 
 func TestQueryNoSub(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "query")
+	err := executeTestCommand(cmd, "utils", "query")
 	assert.NilError(t, err)
 }
 
 func TestRunUploadCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "upload", "./payloads/nonsense.json")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "upload", "./payloads/nonsense.json")
 	assert.NilError(t, err)
-	err = executeTestCommand(cmd, "-v", "query", "upload", "./payloads/uploads.json", "--name", "mock")
+	err = executeTestCommand(cmd, "-v", "utils", "query", "upload", "./payloads/uploads.json", "--name", "mock")
 	assert.NilError(t, err)
 }
 
 func TestRunUploadCommandWithNoRepo(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "upload")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "upload")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunUploadCommandWithActivateFlag(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "upload", "./payloads/uploads.json", "-a")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "upload", "./payloads/uploads.json", "-a")
 	assert.NilError(t, err)
 }
 
 func TestRunDownloadCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "download", "mock")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "download", "mock")
 	assert.NilError(t, err)
 	wd, _ := os.Getwd()
 	mockFilePath := filepath.Join(wd, QueriesRepoDestFileName)
@@ -62,30 +62,30 @@ func TestRunDownloadCommand(t *testing.T) {
 
 func TestRunListCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "list")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunActivateCommandBlank(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "activate")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "activate")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunActivateCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "activate", "mock")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "activate", "mock")
 	assert.NilError(t, err)
 }
 
 func TestRunDeleteCommandBlank(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "delete")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "delete")
 	assert.Assert(t, err != nil)
 }
 
 func TestRunDeleteCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "query", "delete", "mock")
+	err := executeTestCommand(cmd, "-v", "utils", "query", "delete", "mock")
 	assert.NilError(t, err)
 }
