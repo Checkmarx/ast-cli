@@ -171,17 +171,14 @@ workflows:
           filters:
             branches:
               ignore:
-                
       - integration-tests:
           filters:
             branches:
               ignore:
-
       - lint:
           filters:
             branches:
-              ignore:
-                
+              ignore:   
           context: AWS
 
   release-publish-workflow:
