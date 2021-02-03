@@ -176,7 +176,6 @@ workflows:
           filters:
             branches:
               ignore:
-                - master
       - lint:
           filters:
             branches:
