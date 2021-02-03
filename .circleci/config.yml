@@ -155,7 +155,7 @@ jobs:
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
       - run:
           name: Upload release to S3
-          command: aws s3 cp ./bin/cx s3://cx-cli-bin
+          command: aws s3 cp ./bin/cx s3://ast-cli-bin
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
@@ -175,12 +175,10 @@ workflows:
           filters:
             branches:
               ignore:
-                - master
       - lint:
           filters:
             branches:
               ignore:
-                - master
           context: AWS
 
   release-publish-workflow:
