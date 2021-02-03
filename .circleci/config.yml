@@ -179,7 +179,7 @@ workflows:
           context: AWS
 
   release-publish-workflow:
-    jobs:    
+    jobs:
       - publish-github-release:
           filters:
             branches:
