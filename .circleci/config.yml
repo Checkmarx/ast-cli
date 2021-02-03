@@ -189,15 +189,18 @@ workflows:
       - unit-tests:
           filters:
             branches:
-              ignore:
+              only: 
+                - master
       - integration-tests:
           filters:
             branches:
-              ignore:
+              only:
+                - master
       - lint:
           filters:
             branches:
-              ignore:
+              only:
+                - master
           context: AWS
       - publish-github-release:
           filters:
