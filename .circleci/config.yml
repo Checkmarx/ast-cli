@@ -147,6 +147,9 @@ jobs:
       - run:
           name: Build sca-agent Linux binary
           command: GOOS=linux GOARCH=amd64 go build -o bin/cx cmd/main.go
+      - run:
+          name: Build MacOS binary
+          command: GOOS=darwin GOARCH=amd64 go build -o bin/cx-mac cmd/main.go
       - run: go get github.com/tcnksm/ghr
       - run:
           name: Publish GitHub release
