@@ -174,7 +174,10 @@ workflows:
       - integration-tests:
           filters:
             branches:
-              ignore:
+              only:
+                - master
+                - develop
+                - /pr-.*/
       - lint:
           filters:
             branches:
