@@ -178,6 +178,7 @@ workflows:
                 - master
                 - develop
                 - /pr-.*/
+                - /pr .*/
       - lint:
           filters:
             branches:
