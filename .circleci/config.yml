@@ -180,9 +180,6 @@ workflows:
                 - /pr-.*/
                 - /pr .*/
       - lint:
-          filters:
-            branches:
-              ignore:
           context: AWS
 
   release-publish-workflow:
