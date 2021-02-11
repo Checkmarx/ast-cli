@@ -58,6 +58,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
+	createScanCmd.PersistentFlags().StringP(quickModeFlag, quickModeFlagSh, "no",
+		"Quick mode lets you skip the scan object and specify the parameters directly")
+	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
+	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
+	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
+	createScanCmd.PersistentFlags().String(projectSourceType, "", "Type of project source: upload")
+	createScanCmd.PersistentFlags().String(projectType, "", "Type of project: sast")
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in the system",
@@ -101,20 +108,61 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	return scanCmd
 }
 
+func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
+	var info map[string]interface{}
+	newProjectName, _ := cmd.Flags().GetString(projectName)
+	newProjectSourcType, _ := cmd.Flags().GetString(projectSourceType)
+	newProjectType, _ := cmd.Flags().GetString(projectType)
+	newIncremental, _ := cmd.Flags().GetString(incremental)
+	newPresetName, _ := cmd.Flags().GetString(presetName)
+	fmt.Println("PROJECT NAME", newProjectName)
+	json.Unmarshal([]byte(*input), &info)
+	// Handle the project settings
+	if info["project"] == nil {
+		var projectMap map[string]interface{}
+		json.Unmarshal([]byte("{}"), &projectMap)
+		info["project"] = projectMap
+	}
+	if newProjectName != "" {
+		info["project"].(map[string]interface{})["id"] = newProjectName
+	}
+	if newProjectSourcType != "" {
+		info["project"].(map[string]interface{})["type"] = newProjectSourcType
+	}
+	// Handle the scan configuration
+	if info["config"] == nil {
+		var configArr []interface{}
+		json.Unmarshal([]byte("[{}]"), &configArr)
+		info["config"] = configArr
+	}
+	if newProjectType != "" {
+		info["config"].([]interface{})[0].(map[string]interface{})["type"] = newProjectType
+	}
+	if info["config"].([]interface{})[0].(map[string]interface{})["value"] == nil {
+		var valueMap map[string]interface{}
+		json.Unmarshal([]byte("{}"), &valueMap)
+		info["config"].([]interface{})[0].(map[string]interface{})["value"] = valueMap
+	}
+	if newIncremental != "" {
+		info["config"].([]interface{})[0].(map[string]interface{})["value"].(map[string]interface{})["incremental"] = newIncremental
+	}
+	if newPresetName != "" {
+		info["config"].([]interface{})[0].(map[string]interface{})["value"].(map[string]interface{})["presetName"] = newPresetName
+	}
+	*input, _ = json.Marshal(info)
+	fmt.Println("The input results")
+}
+
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+	fmt.Println("Trying to create the scan")
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte
 		var err error
-
-		var scanInputFile string
-		var scanInput string
-		var sourcesFile string
-
-		scanInput, _ = cmd.Flags().GetString(inputFlag)
-		scanInputFile, _ = cmd.Flags().GetString(inputFileFlag)
-		sourcesFile, _ = cmd.Flags().GetString(sourcesFlag)
-
+		scanInputFile, _ := cmd.Flags().GetString(inputFileFlag)
+		scanInput, _ := cmd.Flags().GetString(inputFlag)
+		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
+		quickMode, _ := cmd.Flags().GetString(quickModeFlag)
 		if scanInputFile != "" {
 			// Reading from input file
 			input, err = ioutil.ReadFile(scanInputFile)
@@ -125,10 +173,15 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			// Reading from standard input
 			PrintIfVerbose("Reading input from console")
 			input = bytes.NewBufferString(scanInput).Bytes()
-		} else {
+		} else if quickMode != "yes" {
 			// No input was given
 			return errors.Errorf("%s: no input was given\n", failedCreating)
+		} else {
+			input = []byte("{}")
 		}
+		updateScanRequestValues(&input, cmd)
+		testStr := string(input)
+		fmt.Println(testStr)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
