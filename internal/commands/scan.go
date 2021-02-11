@@ -116,11 +116,11 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	newIncremental, _ := cmd.Flags().GetString(incremental)
 	newPresetName, _ := cmd.Flags().GetString(presetName)
 	fmt.Println("PROJECT NAME", newProjectName)
-	json.Unmarshal([]byte(*input), &info)
+	_ = json.Unmarshal([]byte(*input), &info)
 	// Handle the project settings
 	if info["project"] == nil {
 		var projectMap map[string]interface{}
-		json.Unmarshal([]byte("{}"), &projectMap)
+		_ = json.Unmarshal([]byte("{}"), &projectMap)
 		info["project"] = projectMap
 	}
 	if newProjectName != "" {
@@ -132,7 +132,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	// Handle the scan configuration
 	if info["config"] == nil {
 		var configArr []interface{}
-		json.Unmarshal([]byte("[{}]"), &configArr)
+		_ = json.Unmarshal([]byte("[{}]"), &configArr)
 		info["config"] = configArr
 	}
 	if newProjectType != "" {
@@ -150,7 +150,6 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 		info["config"].([]interface{})[0].(map[string]interface{})["value"].(map[string]interface{})["presetName"] = newPresetName
 	}
 	*input, _ = json.Marshal(info)
-	fmt.Println("The input results")
 }
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
@@ -179,9 +178,10 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		} else {
 			input = []byte("{}")
 		}
-		updateScanRequestValues(&input, cmd)
-		testStr := string(input)
-		fmt.Println(testStr)
+		if quickMode == "yes" {
+			updateScanRequestValues(&input, cmd)
+		}
+		fmt.Println(string(input))
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
