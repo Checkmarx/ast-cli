@@ -79,7 +79,7 @@ func NewAstCLI(
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
-		Use: "ast",
+		Use: "cx",
 	}
 
 	// Load default flags
@@ -110,26 +110,16 @@ func NewAstCLI(
 	resultCmd := NewResultCommand(resultsWrapper)
 	bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
-	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
-	rmCmd := NewSastResourcesCommand(rmWrapper)
-	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	authCmd := NewAuthCommand(authWrapper)
-	ssiCmd := NewSastMetadataCommand(ssiWrapper)
-	logsCmd := NewLogsCommand(logsWrapper)
-	configCmd := NewConfigCommand()
+	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		healthCheckCmd,
 		bflCmd,
-		rmCmd,
-		queriesCmd,
 		authCmd,
-		ssiCmd,
-		logsCmd,
-		configCmd,
+		utilsCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd

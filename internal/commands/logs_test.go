@@ -20,13 +20,13 @@ func TestLogsHelp(t *testing.T) {
 
 func TestLogsNoSub(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "logs")
+	err := executeTestCommand(cmd, "utils", "logs")
 	assert.NilError(t, err)
 }
 
 func TestRunDownloadLogs(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "logs", "download")
+	err := executeTestCommand(cmd, "-v", "utils", "logs", "download")
 	assert.NilError(t, err)
 	wd, _ := os.Getwd()
 	mockFilePath := filepath.Join(wd, LogsDestFileName)
