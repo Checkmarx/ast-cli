@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -54,12 +53,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
 		"A path to the sources file to scan")
-	createScanCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested scan, in JSON format")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
-	createScanCmd.PersistentFlags().StringP(quickModeFlag, quickModeFlagSh, "no",
-		"Quick mode lets you skip the scan object and specify the parameters directly")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
@@ -140,7 +135,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	}
 	if info["config"].([]interface{})[0].(map[string]interface{})["value"] == nil {
 		var valueMap map[string]interface{}
-		json.Unmarshal([]byte("{}"), &valueMap)
+		_ = json.Unmarshal([]byte("{}"), &valueMap)
 		info["config"].([]interface{})[0].(map[string]interface{})["value"] = valueMap
 	}
 	if newIncremental != "" {
@@ -159,28 +154,17 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		var input []byte
 		var err error
 		scanInputFile, _ := cmd.Flags().GetString(inputFileFlag)
-		scanInput, _ := cmd.Flags().GetString(inputFlag)
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
-		quickMode, _ := cmd.Flags().GetString(quickModeFlag)
 		if scanInputFile != "" {
 			// Reading from input file
 			input, err = ioutil.ReadFile(scanInputFile)
 			if err != nil {
 				return errors.Wrapf(err, "%s: Failed to open input file", failedCreating)
 			}
-		} else if scanInput != "" {
-			// Reading from standard input
-			PrintIfVerbose("Reading input from console")
-			input = bytes.NewBufferString(scanInput).Bytes()
-		} else if quickMode != "yes" {
-			// No input was given
-			return errors.Errorf("%s: no input was given\n", failedCreating)
 		} else {
 			input = []byte("{}")
 		}
-		if quickMode == "yes" {
-			updateScanRequestValues(&input, cmd)
-		}
+		updateScanRequestValues(&input, cmd)
 		fmt.Println(string(input))
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel

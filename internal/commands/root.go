@@ -24,8 +24,6 @@ const (
 	inputFlagSh                    = "i"
 	inputFileFlag                  = "input-file"
 	inputFileFlagSh                = "f"
-	quickModeFlag                  = "quick-mode"
-	quickModeFlagSh                = "q"
 	projectName                    = "project-name"
 	projectSourceType              = "project-source-type"
 	projectType                    = "project-type"
