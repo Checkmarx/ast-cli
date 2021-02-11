@@ -110,8 +110,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	newProjectType, _ := cmd.Flags().GetString(projectType)
 	newIncremental, _ := cmd.Flags().GetString(incremental)
 	newPresetName, _ := cmd.Flags().GetString(presetName)
-	fmt.Println("PROJECT NAME", newProjectName)
-	_ = json.Unmarshal([]byte(*input), &info)
+	_ = json.Unmarshal(*input, &info)
 	// Handle the project settings
 	if info["project"] == nil {
 		var projectMap map[string]interface{}
