@@ -108,6 +108,14 @@ func GetURL(path string) string {
 	return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseURIKey), path)
 }
 
+func GetAuthURL(path string) string {
+	if viper.GetString(commonParams.BaseIAMURIKey) != "" {
+		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseIAMURIKey), path)
+	} else {
+		return ""
+	}
+}
+
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader, timeout uint) (*http.Response, error) {
 	client := getClient(timeout)
@@ -138,8 +146,10 @@ func getAuthURI() (string, error) {
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
-
-	authURI := GetURL(authPath)
+	authURI := GetAuthURL(authPath)
+	if authURI == "" {
+		authURI = GetURL(authPath)
+	}
 	authURL, err := url.Parse(authURI)
 	if err != nil {
 		return "", errors.Wrap(err, "authentication URI is not in a correct format")

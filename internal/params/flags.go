@@ -31,5 +31,6 @@ const (
 	SastALlInOne = "SAST_ALL_IN_ONE"
 	Profile      = "default"
 	BaseURI      = "127.0.0.1:80"
+	BaseIAMURI   = ""
 	AstToken     = ""
 )
