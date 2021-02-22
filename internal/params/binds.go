@@ -6,6 +6,7 @@ var EnvVarsBinds = []struct {
 	Default string
 }{
 	{BaseURIKey, BaseURIEnv, "http://127.0.0.1:80"},
+	{BaseIAMURIKey, BaseIAMURIEnv, ""},
 	{AstUsernameKey, AstUsernameEnv, ""},
 	{AstPasswordKey, AstPasswordEnv, ""},
 	{AstTokenKey, AstTokenEnv, ""},
