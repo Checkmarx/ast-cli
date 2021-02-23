@@ -184,14 +184,32 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 	return outputFile.Name(), nil
 }
 
-func filterMatched(filters []string, fileName string) bool {
+func filterMatched(filters []string, fileName string) (bool, bool) {
+	var matched = true
+	var firstMatch = true
+	var excluded = false
 	for _, filter := range filters {
-		matched, _ := path.Match(filter, fileName)
-		if matched {
-			return true
+		if filter[0] == '!' {
+			// it just needs to match one exclusion to be excluded
+			if !excluded {
+				excluded, _ = path.Match(filter[1:], fileName)
+			}
+		} else {
+			// 1. If there are no inclusions everythng is considered included
+			// 2. If there is at least one included and nothing matches the its
+			// not included
+			// it just needs to match one thing to be matched
+			if firstMatch {
+				// Need to reset the match flag because now we need to find one.
+				matched = false
+				firstMatch = false
+			}
+			if !matched {
+				matched, _ = path.Match(filter, fileName)
+			}
 		}
 	}
-	return false
+	return matched, excluded
 }
 
 func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []string, exclusions []string) {
@@ -205,11 +223,12 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 			var matched = true
 			var excluded = false
 			if filters != nil {
-				matched = filterMatched(filters, file.Name())
+				matched, excluded = filterMatched(filters, file.Name())
 			}
-			if exclusions != nil {
-				excluded = filterMatched(exclusions, file.Name())
-			}
+			// Exclusions have been moved to filters list
+			//if exclusions != nil {
+			//	excluded = filterMatched(exclusions, file.Name())
+			//}
 			if matched && !excluded {
 				fmt.Println("Included: ", fileName)
 				dat, err := ioutil.ReadFile(parentDir + file.Name())
