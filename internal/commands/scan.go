@@ -190,7 +190,7 @@ func filterMatched(filters []string, fileName string) (bool, bool) {
 	var excluded = false
 	for _, filter := range filters {
 		if filter[0] == '!' {
-			// it just needs to match one exclusion to be excluded
+			// it just needs to match one exclusion to be excluded.
 			if !excluded {
 				excluded, _ = path.Match(filter[1:], fileName)
 			}
