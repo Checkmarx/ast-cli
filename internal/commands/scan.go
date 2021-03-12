@@ -201,7 +201,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func compressFolder(sourceDir string, filter string, sourceExclusionFilter string) (string, error) {
+func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, error) {
 	var err error
 	var filters []string = nil
 	var exclusions []string = nil
@@ -228,7 +228,7 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 	return outputFile.Name(), nil
 }
 
-func filterMatched(filters []string, fileName string) (bool, bool) {
+func filterMatched(filters []string, fileName string) (foundMatch bool, foundExclusion bool) {
 	var matched = true
 	var firstMatch = true
 	var excluded = false
@@ -256,7 +256,7 @@ func filterMatched(filters []string, fileName string) (bool, bool) {
 	return matched, excluded
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir string, parentDir string, filters []string, exclusions []string) {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, exclusions []string) {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		fmt.Println(err)
