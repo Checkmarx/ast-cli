@@ -127,9 +127,9 @@ func findProject(projectName string) string {
 		os.Exit(0)
 	}
 	if resp.FilteredTotalCount > 0 {
-		for _, project := range resp.Projects {
-			if project.Name == projectName {
-				projectID = resp.Projects[0].ID
+		for i := 0; i < len(resp.Projects); i++ {
+			if resp.Projects[i].Name == projectName {
+				projectID = resp.Projects[i].ID
 			}
 		}
 	} else {
@@ -228,7 +228,7 @@ func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, er
 	return outputFile.Name(), nil
 }
 
-func filterMatched(filters []string, fileName string) (foundMatch bool, foundExclusion bool) {
+func filterMatched(filters []string, fileName string) (foundMatch, foundExclusion bool) {
 	var matched = true
 	var firstMatch = true
 	var excluded = false
