@@ -217,14 +217,14 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	// defer os.Remove(outputFile.Name())
-	zip := zip.NewWriter(outputFile)
+	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
-	addDirFiles(zip, "/", sourceDir, filters, exclusions)
+	addDirFiles(zipWriter, "/", sourceDir, filters, exclusions)
 	fmt.Println("Zipped File:", outputFile.Name())
 	fmt.Println("source DIR: ", sourceDir)
 	fmt.Println("GLOB pattr", filter)
 	// Close the file
-	if err := zip.Close(); err != nil {
+	if err := zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
 	return outputFile.Name(), nil
