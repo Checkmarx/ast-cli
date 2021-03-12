@@ -122,6 +122,7 @@ func NewAstCLI(
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
+	configCmd := NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -130,6 +131,7 @@ func NewAstCLI(
 		bflCmd,
 		authCmd,
 		utilsCmd,
+		configCmd,
 	)
 	rootCmd.SilenceUsage = true
 	return rootCmd

@@ -16,8 +16,8 @@ const (
 )
 
 func main() {
-	wrappers.LoadConfiguration()
 	bindKeysToEnvAndDefault()
+	wrappers.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
