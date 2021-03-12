@@ -115,7 +115,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	return scanCmd
 }
 
-// jwt.io
 func findProject(projectName string) string {
 	projectID := ""
 	params := make(map[string]string)
@@ -124,7 +123,7 @@ func findProject(projectName string) string {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
-		errors.Wrapf(err, "%s\n", failedGettingAll)
+		_ = errors.Wrapf(err, "%s\n", failedGettingAll)
 		os.Exit(0)
 	}
 	if resp.FilteredTotalCount > 0 {
@@ -137,7 +136,7 @@ func findProject(projectName string) string {
 		fmt.Println("Trying to create project")
 		projectID, err = createProject(projectName)
 		if err != nil {
-			errors.Wrapf(err, "%s", failedCreatingProj)
+			_ = errors.Wrapf(err, "%s", failedCreatingProj)
 			os.Exit(0)
 		}
 	}
