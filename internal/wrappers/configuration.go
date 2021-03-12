@@ -34,7 +34,7 @@ func LoadConfiguration() {
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 	}
 }
 
