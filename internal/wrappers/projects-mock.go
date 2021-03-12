@@ -14,7 +14,7 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
 	return &projectsRESTApi.ProjectResponseModel{
-		ID: model.ID,
+		Name: model.Name,
 	}, nil, nil
 }
 

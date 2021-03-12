@@ -15,10 +15,12 @@ import (
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 
 	"github.com/mssola/user_agent"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -113,6 +115,45 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	return scanCmd
 }
 
+func findProject(projectName string) string {
+	projectID := ""
+	params := make(map[string]string)
+	params["name"] = projectName
+	projects := viper.GetString(commonParams.ProjectsPathKey)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	resp, _, err := projectsWrapper.Get(params)
+	if err != nil {
+		errors.Wrapf(err, "%s\n", failedGettingAll)
+		os.Exit(0)
+	}
+	if resp.FilteredTotalCount > 0 {
+		for _, project := range resp.Projects {
+			if project.Name == projectName {
+				projectID = resp.Projects[0].ID
+			}
+		}
+	} else {
+		fmt.Println("Trying to create project")
+		projectID, err = createProject(projectName)
+		if err != nil {
+			errors.Wrapf(err, "%s", failedCreatingProj)
+			os.Exit(0)
+		}
+	}
+	return projectID
+}
+
+func createProject(projectName string) (string, error) {
+	var projModel = projectsRESTApi.Project{}
+	projModel.Name = projectName
+	projModel.Groups = []string{}
+	projModel.Tags = make(map[string]string)
+	projects := viper.GetString(commonParams.ProjectsPathKey)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	resp, _, err := projectsWrapper.Create(&projModel)
+	return resp.ID, err
+}
+
 func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(projectName)
@@ -121,8 +162,12 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	newIncremental, _ := cmd.Flags().GetString(incremental)
 	newPresetName, _ := cmd.Flags().GetString(presetName)
 	_ = json.Unmarshal(*input, &info)
+	// Handle the scan type upload/git
+	if newProjectSourcType != "" {
+		info["type"] = newProjectSourcType
+	}
 	// Handle the project settings
-	if info["project"] == nil {
+	if _, ok := info["project"]; !ok {
 		var projectMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &projectMap)
 		info["project"] = projectMap
@@ -130,11 +175,11 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	if newProjectName != "" {
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	}
-	if newProjectSourcType != "" {
-		info["project"].(map[string]interface{})["type"] = newProjectSourcType
-	}
+	// We need to convert the project name into an ID
+	projectID := findProject(info["project"].(map[string]interface{})["id"].(string))
+	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
-	if info["config"] == nil {
+	if _, ok := info["config"]; !ok {
 		var configArr []interface{}
 		_ = json.Unmarshal([]byte("[{}]"), &configArr)
 		info["config"] = configArr
@@ -267,7 +312,6 @@ func determineSourceType(
 	if sourceDir != "" {
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, sourceExclusionFilter)
 	}
-	fmt.Println("Moving forward with this source file: ", sourcesFile)
 	if sourcesFile != "" {
 		// Send a request to uploads service
 		var preSignedURL *string
@@ -300,9 +344,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		} else {
 			input = []byte("{}")
 		}
-
 		updateScanRequestValues(&input, cmd)
-		fmt.Println(string(input))
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
@@ -311,19 +353,21 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if err != nil {
 			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
-		scanModel.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, sourceExclusionFilter)
+		// Setup the project handler (either git or upload)
+		pHandler := scansRESTApi.UploadProjectHandler{}
+		pHandler.Branch = "master"
+		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, sourceExclusionFilter)
+		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
 			return err
 		}
 		var payload []byte
 		payload, _ = json.Marshal(scanModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
-
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
 		}
-
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
