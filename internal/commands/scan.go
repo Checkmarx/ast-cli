@@ -201,7 +201,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, error) {
+func compressFolder(sourceDir string, filter string) (string, error) {
 	var err error
 	var filters []string = nil
 	if len(filter) > 0 {
@@ -218,7 +218,7 @@ func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, er
 	fmt.Println("source DIR: ", sourceDir)
 	fmt.Println("GLOB pattr", filter)
 	// Close the file
-	if err := zipWriter.Close(); err != nil {
+	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
 	return outputFile.Name(), err
@@ -295,12 +295,11 @@ func determineSourceType(
 	uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile string,
 	sourceDir string,
-	sourceDirFilter string,
-	sourceExclusionFilter string) (string, error) {
+	sourceDirFilter string) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, sourceExclusionFilter)
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -324,7 +323,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		sourceExclusionFilter, _ := cmd.Flags().GetString(sourceExclusionFilterFlag)
 		if scanInputFile != "" {
 			// Reading from input file
 			input, err = ioutil.ReadFile(scanInputFile)
@@ -346,7 +344,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = "master"
-		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, sourceExclusionFilter)
+		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
 			return err
