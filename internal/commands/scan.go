@@ -215,7 +215,6 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
 	}
-	defer os.Remove(outputFile.Name())
 	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
 	addDirFiles(zipWriter, "/", sourceDir, filters, exclusions)
@@ -257,7 +256,7 @@ func filterMatched(filters []string, fileName string) (bool, bool) {
 	return matched, excluded
 }
 
-func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []string, exclusions []string) {
+func addDirFiles(zipWriter *zip.Writer, baseDir string, parentDir string, filters []string, exclusions []string) {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		fmt.Println(err)
@@ -276,7 +275,7 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 				if err != nil {
 					fmt.Println(err)
 				}
-				f, err := zip.Create(baseDir + file.Name())
+				f, err := zipWriter.Create(baseDir + file.Name())
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -291,7 +290,7 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 			fmt.Println("Directory: ", fileName)
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			addDirFiles(zip, newBase, newParent, filters, exclusions)
+			addDirFiles(zipWriter, newBase, newParent, filters, exclusions)
 		}
 	}
 }
