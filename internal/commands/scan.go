@@ -115,6 +115,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	return scanCmd
 }
 
+// jwt.io
 func findProject(projectName string) string {
 	projectID := ""
 	params := make(map[string]string)
@@ -215,7 +216,7 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
 	}
-	//defer os.Remove(outputFile.Name())
+	// defer os.Remove(outputFile.Name())
 	zip := zip.NewWriter(outputFile)
 	sourceDir += "/"
 	addDirFiles(zip, "/", sourceDir, filters, exclusions)
@@ -270,10 +271,6 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 			if filters != nil {
 				matched, excluded = filterMatched(filters, file.Name())
 			}
-			// Exclusions have been moved to filters list
-			//if exclusions != nil {
-			//	excluded = filterMatched(exclusions, file.Name())
-			//}
 			if matched && !excluded {
 				fmt.Println("Included: ", fileName)
 				dat, err := ioutil.ReadFile(parentDir + file.Name())
