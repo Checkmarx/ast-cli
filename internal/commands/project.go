@@ -238,8 +238,9 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 }
 func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView {
 	result := make([]projectView, len(models))
-	for i, model := range models {
-		result[i] = toProjectView(model)
+	for _, model := range models {
+		fmt.Println(model)
+		//result[i] = toProjectView(model)
 	}
 	return result
 }
