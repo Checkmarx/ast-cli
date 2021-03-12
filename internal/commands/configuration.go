@@ -41,7 +41,7 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 		}
 		if args[0] == "token" {
 			wrappers.SetConfigProperty(args[0], args[1])
-		} else if args[0] == "base_uri" {
+		} else if args[0] == "cx_base_uri" {
 			wrappers.SetConfigProperty(args[0], args[1])
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)

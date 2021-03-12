@@ -24,7 +24,7 @@ func SetConfigProperty(propName, propValue string) {
 
 func LoadConfiguration() {
 	profile := findProfile()
-	viper.AddConfigPath("$HOME")
+	viper.AddConfigPath("$HOME/.checkmarx")
 	configFile := ".checkmarxcli"
 	if profile != defaultProfileName {
 		configFile += "_"
@@ -32,7 +32,10 @@ func LoadConfiguration() {
 	}
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
-	_ = viper.ReadInConfig()
+	err := viper.ReadInConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func findProfile() string {
