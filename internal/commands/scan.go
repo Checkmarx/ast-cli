@@ -215,7 +215,7 @@ func compressFolder(sourceDir string, filter string, sourceExclusionFilter strin
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
 	}
-	// defer os.Remove(outputFile.Name())
+	defer os.Remove(outputFile.Name())
 	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
 	addDirFiles(zipWriter, "/", sourceDir, filters, exclusions)
@@ -304,7 +304,6 @@ func determineSourceType(
 	sourceExclusionFilter string) (string, error) {
 	var err error
 	var preSignedURL string
-	var error error = nil
 	if sourceDir != "" {
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, sourceExclusionFilter)
 	}
@@ -316,9 +315,9 @@ func determineSourceType(
 			return "", errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 		}
 		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, error
+		return *preSignedURL, err
 	}
-	return preSignedURL, error
+	return preSignedURL, err
 }
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
