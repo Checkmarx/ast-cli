@@ -204,12 +204,8 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, error) {
 	var err error
 	var filters []string = nil
-	var exclusions []string = nil
 	if len(filter) > 0 {
 		filters = strings.Split(filter, ",")
-	}
-	if len(sourceExclusionFilter) > 0 {
-		exclusions = strings.Split(sourceExclusionFilter, ",")
 	}
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -217,7 +213,7 @@ func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, er
 	}
 	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
-	addDirFiles(zipWriter, "/", sourceDir, filters, exclusions)
+	addDirFiles(zipWriter, "/", sourceDir, filters)
 	fmt.Println("Zipped File:", outputFile.Name())
 	fmt.Println("source DIR: ", sourceDir)
 	fmt.Println("GLOB pattr", filter)
@@ -225,7 +221,7 @@ func compressFolder(sourceDir, filter, sourceExclusionFilter string) (string, er
 	if err := zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
-	return outputFile.Name(), nil
+	return outputFile.Name(), err
 }
 
 func filterMatched(filters []string, fileName string) (foundMatch, foundExclusion bool) {
@@ -256,7 +252,7 @@ func filterMatched(filters []string, fileName string) (foundMatch, foundExclusio
 	return matched, excluded
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, exclusions []string) {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters []string) {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		fmt.Println(err)
@@ -290,7 +286,7 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, excl
 			fmt.Println("Directory: ", fileName)
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			addDirFiles(zipWriter, newBase, newParent, filters, exclusions)
+			addDirFiles(zipWriter, newBase, newParent, filters)
 		}
 	}
 }
