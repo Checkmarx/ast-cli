@@ -32,10 +32,7 @@ func LoadConfiguration() {
 	}
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
-	if err != nil {
-		fmt.Println(err)
-	}
+	_ = viper.ReadInConfig()
 }
 
 func findProfile() string {
