@@ -265,10 +265,6 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters []str
 			if filters != nil {
 				matched, excluded = filterMatched(filters, file.Name())
 			}
-			// Exclusions have been moved to filters list
-			//if exclusions != nil {
-			//	excluded = filterMatched(exclusions, file.Name())
-			//}
 			if matched && !excluded {
 				fmt.Println("Included: ", fileName)
 				dat, err := ioutil.ReadFile(parentDir + file.Name())
