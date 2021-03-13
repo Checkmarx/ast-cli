@@ -123,20 +123,20 @@ func findProject(projectName string) string {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
-		errors.Wrapf(err, "%s\n", failedGettingAll)
+		_ = errors.Wrapf(err, "%s\n", failedGettingAll)
 		os.Exit(0)
 	}
 	if resp.FilteredTotalCount > 0 {
-		for _, project := range resp.Projects {
-			if project.Name == projectName {
-				projectID = resp.Projects[0].ID
+		for i := 0; i < len(resp.Projects); i++ {
+			if resp.Projects[i].Name == projectName {
+				projectID = resp.Projects[i].ID
 			}
 		}
 	} else {
 		fmt.Println("Trying to create project")
 		projectID, err = createProject(projectName)
 		if err != nil {
-			errors.Wrapf(err, "%s", failedCreatingProj)
+			_ = errors.Wrapf(err, "%s", failedCreatingProj)
 			os.Exit(0)
 		}
 	}
@@ -201,35 +201,30 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func compressFolder(sourceDir string, filter string, sourceExclusionFilter string) (string, error) {
+func compressFolder(sourceDir, filter string) (string, error) {
 	var err error
 	var filters []string = nil
-	var exclusions []string = nil
 	if len(filter) > 0 {
 		filters = strings.Split(filter, ",")
-	}
-	if len(sourceExclusionFilter) > 0 {
-		exclusions = strings.Split(sourceExclusionFilter, ",")
 	}
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
 	}
-	//defer os.Remove(outputFile.Name())
-	zip := zip.NewWriter(outputFile)
+	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
-	addDirFiles(zip, "/", sourceDir, filters, exclusions)
+	addDirFiles(zipWriter, "/", sourceDir, filters)
 	fmt.Println("Zipped File:", outputFile.Name())
 	fmt.Println("source DIR: ", sourceDir)
 	fmt.Println("GLOB pattr", filter)
 	// Close the file
-	if err := zip.Close(); err != nil {
+	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
-	return outputFile.Name(), nil
+	return outputFile.Name(), err
 }
 
-func filterMatched(filters []string, fileName string) (bool, bool) {
+func filterMatched(filters []string, fileName string) (foundMatch, foundExclusion bool) {
 	var matched = true
 	var firstMatch = true
 	var excluded = false
@@ -257,7 +252,7 @@ func filterMatched(filters []string, fileName string) (bool, bool) {
 	return matched, excluded
 }
 
-func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []string, exclusions []string) {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters []string) {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		fmt.Println(err)
@@ -270,17 +265,13 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 			if filters != nil {
 				matched, excluded = filterMatched(filters, file.Name())
 			}
-			// Exclusions have been moved to filters list
-			//if exclusions != nil {
-			//	excluded = filterMatched(exclusions, file.Name())
-			//}
 			if matched && !excluded {
 				fmt.Println("Included: ", fileName)
 				dat, err := ioutil.ReadFile(parentDir + file.Name())
 				if err != nil {
 					fmt.Println(err)
 				}
-				f, err := zip.Create(baseDir + file.Name())
+				f, err := zipWriter.Create(baseDir + file.Name())
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -295,22 +286,20 @@ func addDirFiles(zip *zip.Writer, baseDir string, parentDir string, filters []st
 			fmt.Println("Directory: ", fileName)
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			addDirFiles(zip, newBase, newParent, filters, exclusions)
+			addDirFiles(zipWriter, newBase, newParent, filters)
 		}
 	}
 }
 
 func determineSourceType(
 	uploadsWrapper wrappers.UploadsWrapper,
-	sourcesFile string,
-	sourceDir string,
-	sourceDirFilter string,
-	sourceExclusionFilter string) (string, error) {
+	sourcesFile,
+	sourceDir,
+	sourceDirFilter string) (string, error) {
 	var err error
 	var preSignedURL string
-	var error error = nil
 	if sourceDir != "" {
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, sourceExclusionFilter)
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -320,9 +309,9 @@ func determineSourceType(
 			return "", errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
 		}
 		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, error
+		return *preSignedURL, err
 	}
-	return preSignedURL, error
+	return preSignedURL, err
 }
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
@@ -334,7 +323,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		sourceExclusionFilter, _ := cmd.Flags().GetString(sourceExclusionFilterFlag)
 		if scanInputFile != "" {
 			// Reading from input file
 			input, err = ioutil.ReadFile(scanInputFile)
@@ -356,7 +344,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = "master"
-		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, sourceExclusionFilter)
+		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
 			return err
