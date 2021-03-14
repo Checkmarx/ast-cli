@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/checkmarxDev/sast-scan-inc/pkg/api/v1/rest"
+	"github.com/checkmarxDev/sast-metadata/pkg/api/v1/rest"
 	"github.com/pkg/errors"
 )
 

@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-	"github.com/checkmarxDev/sast-scan-inc/pkg/api/v1/rest"
+	"github.com/checkmarxDev/sast-metadata/pkg/api/v1/rest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

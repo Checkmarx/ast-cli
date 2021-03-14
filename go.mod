@@ -5,12 +5,11 @@ go 1.13
 require (
 	github.com/checkmarxDev/healthcheck v1.10.2
 	github.com/checkmarxDev/logs v1.0.2
-	github.com/checkmarxDev/readiness v1.0.1 // indirect
+	github.com/checkmarxDev/sast-metadata v1.10.2
 	github.com/checkmarxDev/sast-queries v1.3.12
 	github.com/checkmarxDev/sast-results v1.0.2
 	github.com/checkmarxDev/sast-results-handler v1.5.0 // indirect
 	github.com/checkmarxDev/sast-rm v1.2.3
-	github.com/checkmarxDev/sast-scan-inc v1.2.6
 	github.com/checkmarxDev/scans v1.10.8
 	github.com/checkmarxDev/uploads v1.0.1
 	github.com/cheggaaa/pb/v3 v3.0.6
