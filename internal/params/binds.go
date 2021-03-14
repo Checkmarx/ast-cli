@@ -29,7 +29,7 @@ var EnvVarsBinds = []struct {
 	{QueriesPathKey, QueriesPathEnv, "api/queries"},
 	{QueriesClonePathKey, QueriesCLonePathEnv, "clone"},
 	{CreateOath2ClientPathKey, CreateOath2ClientPathEnv, "auth/realms/organization/pip/clients"},
-	{SastScanIncPathKey, SastScanIncPathEnv, "api/sast-scan-inc"},
+	{SastScanIncPathKey, SastScanIncPathEnv, "api/sast-metadata"},
 	{SastScanIncEngineLogPathKey, SastScanIncEngineLogPathEnv, "%s/engine-log"},
 	{SastScanIncMetricsPathKey, SastScanIncMetricsPathEnv, "%s/metrics"},
 	{LogsPathKey, LogsPathEnv, "api/logs"},
