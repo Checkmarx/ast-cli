@@ -539,7 +539,11 @@ func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
 	if scan.UserAgent != "" {
 		ua := user_agent.New(scan.UserAgent)
 		name, version := ua.Browser()
-		origin = name + " " + version[:strings.Index(version, ".")] // Takes the major
+		if strings.Index(version, ".") != -1 {
+			origin = name + " " + version[:strings.Index(version, ".")] // Takes the major
+		} else {
+			origin = name + " " + version
+		}
 	}
 
 	return &scanView{
