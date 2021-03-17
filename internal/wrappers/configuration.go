@@ -7,42 +7,42 @@ import (
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
 const defaultProfileName = "default"
+const obfuscateLimit = 4
 
 func PromptConfiguration() {
 	reader := bufio.NewReader(os.Stdin)
-	baseURI := viper.GetString(commonParams.BaseURIKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	accessKey := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	fmt.Print(fmt.Sprintf("AST Base URI [%s]: ", baseURI))
+	baseURI := viper.GetString(params.BaseURIKey)
+	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
+	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
+	fmt.Printf(fmt.Sprintf("AST Base URI [%s]: ", baseURI))
 	baseURI, _ = reader.ReadString('\n')
 	if len(baseURI) > 1 {
 		baseURI = strings.Replace(baseURI, "\n", "", -1)
 		baseURI = strings.Replace(baseURI, "\r\n", "", -1)
-		setConfigPropertyQuiet(commonParams.BaseURIKey, baseURI)
+		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
-	fmt.Print(fmt.Sprintf("AST Access Key [%s]: ", obfuscateString(accessKey)))
+	fmt.Printf(fmt.Sprintf("AST Access Key [%s]: ", obfuscateString(accessKey)))
 	accessKey, _ = reader.ReadString('\n')
 	if len(accessKey) > 1 {
 		accessKey = strings.Replace(accessKey, "\n", "", -1)
 		accessKey = strings.Replace(accessKey, "\r\n", "", -1)
-		setConfigPropertyQuiet(commonParams.AccessKeyIDConfigKey, accessKey)
+		setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
 	}
-	fmt.Print(fmt.Sprintf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret)))
+	fmt.Printf(fmt.Sprintf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret)))
 	accessKeySecret, _ = reader.ReadString('\n')
 	if len(accessKeySecret) > 1 {
 		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
 		accessKeySecret = strings.Replace(accessKeySecret, "\r\n", "", -1)
-		setConfigPropertyQuiet(commonParams.AccessKeySecretConfigKey, accessKeySecret)
+		setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
 	}
 }
 
 func obfuscateString(str string) string {
-	if len(str) > 4 {
+	if len(str) > obfuscateLimit {
 		return "******" + str[len(str)-4:]
 	} else if len(str) > 1 {
 		return "******"
