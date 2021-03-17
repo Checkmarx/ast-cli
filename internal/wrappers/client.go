@@ -49,9 +49,21 @@ func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           http.ProxyFromEnvironment,
+		Proxy:           createCxProxy(),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
+}
+
+func createCxProxy() func(*http.Request) (*url.URL, error) {
+	proxyStr := viper.GetString(commonParams.ProxyKey)
+	baseURIStr := viper.GetString(commonParams.BaseURIKey)
+	var proxy *url.URL
+	if len(proxyStr) > 0 {
+		proxy, _ = url.Parse(proxyStr)
+	} else {
+		proxy, _ = url.Parse(baseURIStr)
+	}
+	return http.ProxyURL(proxy)
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
@@ -72,7 +84,6 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 			return nil, err
 		}
 	}
-
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
@@ -89,7 +100,6 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	if err != nil {
 		return nil, err
 	}
-
 	req.Header.Add("content-type", "application/json")
 	req, err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
 	if err != nil {
