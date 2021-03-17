@@ -45,6 +45,8 @@ type credentialsCache map[uint64]*string
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
+var usingProxyMsgDisplayed = false
+
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
@@ -59,6 +61,10 @@ func createCxProxy() func(*http.Request) (*url.URL, error) {
 	baseURIStr := viper.GetString(commonParams.BaseURIKey)
 	var proxy *url.URL
 	if len(proxyStr) > 0 {
+		if !usingProxyMsgDisplayed {
+			fmt.Printf("Using Proxy [%s]", proxyStr)
+			usingProxyMsgDisplayed = true
+		}
 		proxy, _ = url.Parse(proxyStr)
 	} else {
 		proxy, _ = url.Parse(baseURIStr)

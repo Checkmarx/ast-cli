@@ -18,26 +18,34 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
+	proxyKey := viper.GetString(params.ProxyKey)
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
-	if len(baseURI) > 1 {
-		baseURI = strings.Replace(baseURI, "\n", "", -1)
-		baseURI = strings.Replace(baseURI, "\r\n", "", -1)
+	baseURI = strings.Replace(baseURI, "\r\n", "", -1)
+	baseURI = strings.Replace(baseURI, "\n", "", -1)
+	if len(baseURI) > 0 {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
 	fmt.Printf("AST Access Key [%s]: ", obfuscateString(accessKey))
 	accessKey, _ = reader.ReadString('\n')
-	if len(accessKey) > 1 {
-		accessKey = strings.Replace(accessKey, "\n", "", -1)
-		accessKey = strings.Replace(accessKey, "\r\n", "", -1)
+	accessKey = strings.Replace(accessKey, "\r\n", "", -1)
+	accessKey = strings.Replace(accessKey, "\n", "", -1)
+	if len(accessKey) > 0 {
 		setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
 	}
 	fmt.Printf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret))
 	accessKeySecret, _ = reader.ReadString('\n')
-	if len(accessKeySecret) > 1 {
-		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
-		accessKeySecret = strings.Replace(accessKeySecret, "\r\n", "", -1)
+	accessKeySecret = strings.Replace(accessKeySecret, "\r\n", "", -1)
+	accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
+	if len(accessKeySecret) > 0 {
 		setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+	}
+	fmt.Printf("Proxy server [%s]: ", proxyKey)
+	proxyKey, _ = reader.ReadString('\n')
+	proxyKey = strings.Replace(proxyKey, "\r\n", "", -1)
+	proxyKey = strings.Replace(proxyKey, "\n", "", -1)
+	if len(proxyKey) > 0 {
+		setConfigPropertyQuiet(params.ProxyKey, proxyKey)
 	}
 }
 
