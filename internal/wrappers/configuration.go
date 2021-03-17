@@ -18,6 +18,7 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
+	proxyKey := viper.GetString(params.ProxyKey)
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
 	baseURI = strings.Replace(baseURI, "\r\n", "", -1)
@@ -38,6 +39,13 @@ func PromptConfiguration() {
 	accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
 	if len(accessKeySecret) > 0 {
 		setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+	}
+	fmt.Printf("Proxy server [%s]: ", proxyKey)
+	proxyKey, _ = reader.ReadString('\n')
+	proxyKey = strings.Replace(proxyKey, "\r\n", "", -1)
+	proxyKey = strings.Replace(proxyKey, "\n", "", -1)
+	if len(proxyKey) > 0 {
+		setConfigPropertyQuiet(params.ProxyKey, proxyKey)
 	}
 }
 
