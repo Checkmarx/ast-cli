@@ -18,21 +18,21 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
-	fmt.Printf(fmt.Sprintf("AST Base URI [%s]: ", baseURI))
+	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
 	if len(baseURI) > 1 {
 		baseURI = strings.Replace(baseURI, "\n", "", -1)
 		baseURI = strings.Replace(baseURI, "\r\n", "", -1)
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
-	fmt.Printf(fmt.Sprintf("AST Access Key [%s]: ", obfuscateString(accessKey)))
+	fmt.Printf("AST Access Key [%s]: ", obfuscateString(accessKey))
 	accessKey, _ = reader.ReadString('\n')
 	if len(accessKey) > 1 {
 		accessKey = strings.Replace(accessKey, "\n", "", -1)
 		accessKey = strings.Replace(accessKey, "\r\n", "", -1)
 		setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
 	}
-	fmt.Printf(fmt.Sprintf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret)))
+	fmt.Printf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret))
 	accessKeySecret, _ = reader.ReadString('\n')
 	if len(accessKeySecret) > 1 {
 		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
