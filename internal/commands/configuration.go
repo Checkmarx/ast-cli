@@ -14,6 +14,9 @@ func NewConfigCommand() *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "configure",
 		Short: "Manage scan configurations",
+		Run: func(cmd *cobra.Command, args []string) {
+			wrappers.PromptConfiguration()
+		},
 	}
 
 	storValCmd := &cobra.Command{
