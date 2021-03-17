@@ -23,7 +23,6 @@ func PromptConfiguration() {
 	baseURI, _ = reader.ReadString('\n')
 	baseURI = strings.Replace(baseURI, "\r\n", "", -1)
 	baseURI = strings.Replace(baseURI, "\n", "", -1)
-	fmt.Println("Len of val", len(baseURI))
 	if len(baseURI) > 0 {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
