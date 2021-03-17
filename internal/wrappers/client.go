@@ -45,13 +45,25 @@ type credentialsCache map[uint64]*string
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
-func getClient(timeout uint) *http.Client {
+func getClient(timeout uint, req *http.Request) *http.Client {
 	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           http.ProxyFromEnvironment,
+		Proxy:           createCxProxy(req),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
+}
+
+func createCxProxy(req *http.Request) func(*http.Request) (*url.URL, error) {
+	proxyStr := viper.GetString(commonParams.ProxyKey)
+	baseURIStr := viper.GetString(commonParams.BaseURIKey)
+	var proxy *url.URL
+	if len(proxyStr) > 0 {
+		proxy, _ = url.Parse(proxyStr)
+	} else {
+		proxy, _ = url.Parse(baseURIStr)
+	}
+	return http.ProxyURL(proxy)
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
@@ -60,7 +72,6 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 }
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
 		return nil, err
@@ -72,7 +83,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 			return nil, err
 		}
 	}
-
+	client := getClient(timeout, req)
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
@@ -83,13 +94,12 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
 	if err != nil {
 		return nil, err
 	}
-
+	client := getClient(timeout, req)
 	req.Header.Add("content-type", "application/json")
 	req, err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
 	if err != nil {
@@ -117,7 +127,7 @@ func GetAuthURL(path string) string {
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
+
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
 	if err != nil {
@@ -127,6 +137,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	for k, v := range params {
 		q.Add(k, v)
 	}
+	client := getClient(timeout, req)
 	req.URL.RawQuery = q.Encode()
 	req, err = enrichWithOath2Credentials(req)
 	if err != nil {
