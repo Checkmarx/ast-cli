@@ -128,7 +128,7 @@ func findProject(projectName string) string {
 	}
 	if resp.FilteredTotalCount > 0 {
 		for i := 0; i < len(resp.Projects); i++ {
-			if strings.ToLower(resp.Projects[i].Name) == strings.ToLower(projectName) {
+			if strings.EqualFold(resp.Projects[i].Name, projectName) {
 				projectID = resp.Projects[i].ID
 			}
 		}
