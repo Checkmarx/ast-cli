@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ func NewConfigCommand() *cobra.Command {
 
 	setCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Sets one of the configuration properties (token, base-uri, username, password)",
+		Short: "Sets one of the configuration properties (cx_token, cx_base_uri, cx_ast_access_key_id, cx_ast_access_key_secret, cx_http_proxy)",
 		RunE:  runSetValue(),
 	}
 	scanCmd.AddCommand(storValCmd, setCmd)
@@ -44,7 +45,13 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 		}
 		if args[0] == "token" {
 			wrappers.SetConfigProperty(args[0], args[1])
-		} else if args[0] == "cx_base_uri" {
+		} else if args[0] == params.BaseURIKey {
+			wrappers.SetConfigProperty(args[0], args[1])
+		} else if args[0] == params.ProxyKey {
+			wrappers.SetConfigProperty(args[0], args[1])
+		} else if args[0] == params.AccessKeySecretConfigKey {
+			wrappers.SetConfigProperty(args[0], args[1])
+		} else if args[0] == params.AccessKeyIDConfigKey {
 			wrappers.SetConfigProperty(args[0], args[1])
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)
