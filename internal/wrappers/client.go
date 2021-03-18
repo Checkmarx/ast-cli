@@ -45,25 +45,23 @@ type credentialsCache map[uint64]*string
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
+var usingProxyMsgDisplayed = false
+
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
+	proxyStr := viper.GetString(commonParams.ProxyKey)
+	if len(proxyStr) > 0 {
+		if !usingProxyMsgDisplayed {
+			fmt.Printf("Using Proxy [%s]", proxyStr)
+			usingProxyMsgDisplayed = true
+		}
+		os.Setenv("HTTP_PROXY", proxyStr)
+	}
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           createCxProxy(),
+		Proxy:           http.ProxyFromEnvironment,
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
-}
-
-func createCxProxy() func(*http.Request) (*url.URL, error) {
-	proxyStr := viper.GetString(commonParams.ProxyKey)
-	baseURIStr := viper.GetString(commonParams.BaseURIKey)
-	var proxy *url.URL
-	if len(proxyStr) > 0 {
-		proxy, _ = url.Parse(proxyStr)
-	} else {
-		proxy, _ = url.Parse(baseURIStr)
-	}
-	return http.ProxyURL(proxy)
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
