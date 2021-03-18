@@ -3,13 +3,16 @@ package wrappers
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"os/user"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
+const configDirName = "/.checkmarx"
 const defaultProfileName = "default"
 const obfuscateLimit = 4
 
@@ -21,22 +24,22 @@ func PromptConfiguration() {
 	proxyKey := viper.GetString(params.ProxyKey)
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
-	baseURI = strings.Replace(baseURI, "\r\n", "", -1)
 	baseURI = strings.Replace(baseURI, "\n", "", -1)
+	baseURI = strings.Replace(baseURI, "\r", "", -1)
 	if len(baseURI) > 0 {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
 	fmt.Printf("AST Access Key [%s]: ", obfuscateString(accessKey))
 	accessKey, _ = reader.ReadString('\n')
-	accessKey = strings.Replace(accessKey, "\r\n", "", -1)
 	accessKey = strings.Replace(accessKey, "\n", "", -1)
+	accessKey = strings.Replace(accessKey, "\r", "", -1)
 	if len(accessKey) > 0 {
 		setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
 	}
 	fmt.Printf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret))
 	accessKeySecret, _ = reader.ReadString('\n')
-	accessKeySecret = strings.Replace(accessKeySecret, "\r\n", "", -1)
 	accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
+	accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
 	if len(accessKeySecret) > 0 {
 		setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
 	}
@@ -77,8 +80,14 @@ func SetConfigProperty(propName, propValue string) {
 
 func LoadConfiguration() {
 	profile := findProfile()
-	viper.AddConfigPath("$HOME/.checkmarx")
-	configFile := ".checkmarxcli"
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal("Cannot file home directory.", err)
+	}
+	fullPath := usr.HomeDir + configDirName
+	verifyConfigDir(fullPath)
+	viper.AddConfigPath(fullPath)
+	configFile := "checkmarxcli"
 	if profile != defaultProfileName {
 		configFile += "_"
 		configFile += profile
@@ -86,6 +95,17 @@ func LoadConfiguration() {
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
+}
+
+func verifyConfigDir(fullPath string) {
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		fmt.Println("Creating directory")
+		err = os.Mkdir(fullPath, 0755)
+		if err != nil {
+			log.Fatal("Cannot file home directory.", err)
+			panic(err)
+		}
+	}
 }
 
 func findProfile() string {
