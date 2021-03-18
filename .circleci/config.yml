@@ -155,7 +155,7 @@ jobs:
           name: Publish GitHub release
           command: |
             VERSION=$(./bin/cx version)
-            echo ${VERSION}
+            echo $VERSION
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v1-{{ checksum "go.sum" }}
