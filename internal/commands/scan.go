@@ -62,9 +62,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(sourceDirFlag, sourceDirFlagSh, "",
 		"A path to directory with sources to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
-		"Source file GLOB filtering pattern")
-	createScanCmd.PersistentFlags().StringP(sourceExclusionFilterFlag, sourceExclusionFilterFlagSh, "",
-		"Source file exclusion pattern")
+		"Source file filtering pattern")
 	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
 		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
