@@ -153,7 +153,7 @@ jobs:
       - run: go get github.com/tcnksm/ghr
       - run:
           name: Publish GitHub release
-          command:
+          command: |
             VERSION=$(./bin/cx version)
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
       - save_cache: # Store cache in the /go/pkg directory
