@@ -1,10 +1,9 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -47,10 +46,9 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "Creates a new project",
 		RunE:  runCreateProjectCommand(projectsWrapper),
 	}
-	createProjCmd.PersistentFlags().StringP(inputFlag, inputFlagSh, "",
-		"The object representing the requested project, in JSON format")
-	createProjCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested project object in JSON format. Takes precedence over --input")
+	createProjCmd.PersistentFlags().StringP(projectName, "", "", "Name of project")
+	createProjCmd.PersistentFlags().StringP(repoURLFlag, "", "", "RepoURL of project")
+	createProjCmd.PersistentFlags().StringP(mainBranchFlag, "", "", "Main branch")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -83,31 +81,33 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	return projCmd
 }
 
+func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
+	var info map[string]interface{}
+	projectName, _ := cmd.Flags().GetString(projectName)
+	mainBranch, _ := cmd.Flags().GetString(mainBranchFlag)
+	repoURL, _ := cmd.Flags().GetString(repoURLFlag)
+	_ = json.Unmarshal(*input, &info)
+	if projectName != "" {
+		info["name"] = projectName
+	} else {
+		fmt.Println("Project name is required")
+		os.Exit(1)
+	}
+	if mainBranch != "" {
+		info["mainBranch"] = mainBranch
+	}
+	if repoURL != "" {
+		info["repoUrl"] = repoURL
+	}
+	*input, _ = json.Marshal(info)
+}
+
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input []byte
+		var input []byte = []byte("{}")
 		var err error
-
-		var projInputFile string
-		var projInput string
-		projInput, _ = cmd.Flags().GetString(inputFlag)
-		projInputFile, _ = cmd.Flags().GetString(inputFileFlag)
-
-		if projInputFile != "" {
-			// Reading project from input file
-			PrintIfVerbose(fmt.Sprintf("Reading project input from file %s", projInputFile))
-			input, err = ioutil.ReadFile(projInputFile)
-			if err != nil {
-				return errors.Wrapf(err, "%s: Failed to open input file", failedCreatingProj)
-			}
-		} else if projInput != "" {
-			// Reading from standard input
-			PrintIfVerbose("Reading project input from console")
-			input = bytes.NewBufferString(projInput).Bytes()
-		} else {
-			// No input was given
-			return errors.Errorf("%s: no input was given\n", failedCreatingProj)
-		}
+		input = []byte("{}")
+		updateProjectRequestValues(&input, cmd)
 		var projModel = projectsRESTApi.Project{}
 		var projResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel

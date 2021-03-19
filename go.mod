@@ -19,6 +19,7 @@ require (
 	github.com/mssola/user_agent v0.5.2
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rs/zerolog v1.19.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/sys v0.0.0-20210301091718-77cc2087c03b // indirect
