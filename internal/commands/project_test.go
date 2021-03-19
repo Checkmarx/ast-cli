@@ -24,7 +24,7 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--config-file", "./payloads/nonsense.json")
 	assert.Assert(t, err != nil)
-	err = executeTestCommand(cmd, "-v", "project", "create", "--config-file", "./payloads/projects.json")
+	err = executeTestCommand(cmd, "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
 
