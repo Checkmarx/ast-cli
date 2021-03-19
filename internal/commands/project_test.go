@@ -30,7 +30,7 @@ func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "Project name is required\n")
+	assert.Assert(t, err.Error() == "Project name is required")
 }
 
 /* Test functionality removed from CLI
