@@ -47,7 +47,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runCreateProjectCommand(projectsWrapper),
 	}
 	createProjCmd.PersistentFlags().StringP(projectName, "", "", "Name of project")
-	createProjCmd.PersistentFlags().StringP(repoUrlFlag, "", "", "RepoURL of project")
+	createProjCmd.PersistentFlags().StringP(repoURLFlag, "", "", "RepoURL of project")
 	createProjCmd.PersistentFlags().StringP(mainBranchFlag, "", "", "Main branch")
 
 	listProjectsCmd := &cobra.Command{
@@ -85,7 +85,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 	var info map[string]interface{}
 	projectName, _ := cmd.Flags().GetString(projectName)
 	mainBranch, _ := cmd.Flags().GetString(mainBranchFlag)
-	repoUrl, _ := cmd.Flags().GetString(repoUrlFlag)
+	repoURL, _ := cmd.Flags().GetString(repoURLFlag)
 	_ = json.Unmarshal(*input, &info)
 	if projectName != "" {
 		info["name"] = projectName
@@ -96,8 +96,8 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
 	}
-	if repoUrl != "" {
-		info["repoUrl"] = repoUrl
+	if repoURL != "" {
+		info["repoUrl"] = repoURL
 	}
 	*input, _ = json.Marshal(info)
 }

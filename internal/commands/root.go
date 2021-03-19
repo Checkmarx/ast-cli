@@ -52,7 +52,7 @@ const (
 	baseIAMURIFlagUsage            = "The base system IAM URI"
 	astTokenFlag                   = "token"
 	astTokenUsage                  = "The token to login to AST with"
-	repoUrlFlag                    = "repo-url"
+	repoURLFlag                    = "repo-url"
 	queriesRepoNameFlag            = "name"
 	queriesRepoNameSh              = "n"
 	queriesRepoActivateFlag        = "activate"
