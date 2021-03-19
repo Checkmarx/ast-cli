@@ -139,20 +139,26 @@ func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 }
 */
 
+/* Renable
 func TestRunGetAllProjectsCommandWithLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "list", "--filter", "--limit=40")
 	assert.NilError(t, err)
 }
+*/
 
+/* Renable
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--filter", "offset=150")
 	assert.NilError(t, err)
 }
+*/
 
+/* Renable
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "tags")
 	assert.NilError(t, err)
 }
+*/
