@@ -63,8 +63,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"A path to directory with sources to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
 		"Source file filtering pattern")
-	createScanCmd.PersistentFlags().StringP(inputFileFlag, inputFileFlagSh, "",
-		"A file holding the requested scan object in JSON format. Takes precedence over --input")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
@@ -315,21 +313,11 @@ func determineSourceType(
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input []byte
+		var input []byte = []byte("{}")
 		var err error
-		scanInputFile, _ := cmd.Flags().GetString(inputFileFlag)
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		if scanInputFile != "" {
-			// Reading from input file
-			input, err = ioutil.ReadFile(scanInputFile)
-			if err != nil {
-				return errors.Wrapf(err, "%s: Failed to open input file", failedCreating)
-			}
-		} else {
-			input = []byte("{}")
-		}
 		updateScanRequestValues(&input, cmd)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
