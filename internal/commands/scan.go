@@ -61,6 +61,8 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		"A path to the sources file to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFlag, sourceDirFlagSh, "",
 		"A path to directory with sources to scan")
+	createScanCmd.PersistentFlags().StringP(scanRepoFlag, scanRepoFlagSh, "",
+		"Repository URL to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
 		"Source file filtering pattern")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
@@ -317,6 +319,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		var err error
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
+		scanRepoURL, _ := cmd.Flags().GetString(scanRepoFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
 		updateScanRequestValues(&input, cmd)
 		var scanModel = scansRESTApi.Scan{}
@@ -331,6 +334,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = "master"
 		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
+		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
 			return err
