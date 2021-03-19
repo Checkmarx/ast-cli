@@ -33,29 +33,25 @@ func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed creating a project: no input was given\n")
 }
 
+/* Test functionality removed from CLI
 func TestRunCreateProjectCommandWithInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
 	assert.NilError(t, err)
 }
+*/
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
+	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--project-name", "test_project")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
 
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
+	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
-}
-
-func TestRunCreateProjectCommandWithInputBadFormat(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "[]")
-	assert.Assert(t, err != nil)
 }
 
 func TestRunGetProjectByIdCommandNoScanID(t *testing.T) {
