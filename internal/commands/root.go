@@ -22,6 +22,8 @@ const (
 	sourcesFlagSh                  = "s"
 	sourceDirFlag                  = "directory"
 	sourceDirFlagSh                = "d"
+	scanRepoFlag                   = "repo-url"
+	scanRepoFlagSh                 = "r"
 	sourceDirFilterFlag            = "filter"
 	sourceDirFilterFlagSh          = "f"
 	mainBranchFlag                 = "branch"
