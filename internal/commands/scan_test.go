@@ -96,14 +96,12 @@ func TestRunGetScanByIdCommandNoScanID(t *testing.T) {
 }
 */
 
-/* Renable
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "show", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
 /* Renable
 func TestRunGetScanByIdCommand(t *testing.T) {
