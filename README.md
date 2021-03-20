@@ -1,25 +1,40 @@
 [![CircleCI](https://circleci.com/gh/CheckmarxDev/ast-cli/tree/master.svg?style=svg&circle-token=32eeef7505db60c11294e63db64e70882bde83b0)](https://circleci.com/gh/CheckmarxDev/ast-cli/tree/master)
-# ast-cli
-A CLI project wrapping the AST APIs  
-
 ## Building from source code
 ### Windows 
 When building an executable for Windows and providing a name,  be sure to explicitly specify the .exe suffix when setting the executable’s name.  
-Inside the command prompt run:
-**env GOOS=windows GOARCH=amd64 go build -o ./bin/ast.exe ./cmd** 
+
+
+``` powershell
+env GOOS=windows GOARCH=am
+d64 go build -o ./bin/ast.exe ./cmd
+```
 
 ### Linux
-**sudo env GOARCH=amd64 go build -o ./ast ./cmd** 
 
-## Running the CLI
+``` bash
+sudo env GOARCH=amd64
+go build -o ./ast ./cmd
+```
+
+### Macintosh
+
+
+
+** **
+
+## Basic CLI Operation
 
 ### Windows
-"bin/cx.exe" [commands]
+``` powershell
+cx.exe [commands]
+```
 
 ### Linux/Mac
+``` bash
 ./cx [commands]
+```
 
-The parameters accepted by the CLI vary based on the command issued but the following parameters effect all actions:
+The parameters accepted by the CLI vary based on the commands issued and they will be described thoroughly in this document.  The following global parameters affect all actions:
 
 - (--base-uri), the URL of the AST server.
 
@@ -33,13 +48,17 @@ The parameters accepted by the CLI vary based on the command issued but the foll
 
 - (--proxy), optional proxy server to use (see Proxy Support documentation).
 
-- (--insecure)
+- (--insecure), indicates CLI should ignore TLS certificate validations.
 
-- (--profile)
+- (--profile), specifies the CLI profile to store options in (see Environment and Configuration documentation).
 
   
 
 
+
+## Environment and Configuration
+
+todo...
 
 
 
