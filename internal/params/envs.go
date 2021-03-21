@@ -6,7 +6,7 @@ const (
 	BaseIAMURIEnv                       = "CX_BASE_IAM_URI"
 	AstUsernameEnv                      = "CX_AST_USERNAME"
 	AstPasswordEnv                      = "CX_AST_PASSWORD"
-	AstTokenEnv                         = "CX_AST_TOKEN"
+	AstTokenEnv                         = "CX_TOKEN"
 	AccessKeyIDEnv                      = "CX_AST_ACCESS_KEY_ID"
 	AccessKeySecretEnv                  = "CX_AST_ACCESS_KEY_SECRET"
 	ScansPathEnv                        = "CX_SCANS_PATH"
