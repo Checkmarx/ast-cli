@@ -26,12 +26,14 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+/*
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Project name is required")
 }
+*/
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
@@ -40,13 +42,11 @@ func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
 
-/* Renable
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
-*/
 
 /* Renable
 func TestRunGetProjectByIdCommandNoScanID(t *testing.T) {
