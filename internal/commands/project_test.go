@@ -73,12 +73,14 @@ func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed deleting a project: Please provide a project ID")
 }
 
+/*
 func TestRunDeleteProjectByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "project", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
+*/
 
 func TestRunDeleteProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
@@ -117,10 +119,8 @@ func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-/*
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "tags")
 	assert.NilError(t, err)
 }
-*/
