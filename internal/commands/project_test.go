@@ -117,8 +117,10 @@ func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+/*
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "tags")
 	assert.NilError(t, err)
 }
+*/
