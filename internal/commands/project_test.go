@@ -26,31 +26,25 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-/* Renable
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Project name is required")
 }
-*/
 
-/* Test functionality removed from CLI
 func TestRunCreateProjectCommandWithInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--project-name", "test_project")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
-*/
 
 /* Renable
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
