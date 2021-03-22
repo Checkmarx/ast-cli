@@ -161,35 +161,27 @@ func TestRunGetAllCommandLimitList(t *testing.T) {
 }
 */
 
-/* Renable
 func TestRunGetAllCommandOffsetList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "offset=0")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllCommandStatusesList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
-/* Renable
 func TestRunTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "tags")
 	assert.NilError(t, err)
 }
-*/
