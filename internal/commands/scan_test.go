@@ -129,37 +129,29 @@ func TestRunDeleteScanByIdCommand(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-/* Renable
 func TestRunCancelScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "cancel", "MOCK")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllCommandList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllCommandLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
-*/
 
 func TestRunGetAllCommandOffsetList(t *testing.T) {
 	cmd := createASTTestCommand()
