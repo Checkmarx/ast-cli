@@ -57,7 +57,7 @@ func TestRunGetProjectByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "get", "--chibutero")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == unknownFlag)
+	assert.Assert(t, err.Error() == "Error: unknown flag: --chibutero")
 }
 
 func TestRunGetProjectByIdCommand(t *testing.T) {
@@ -73,14 +73,12 @@ func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed deleting a project: Please provide a project ID")
 }
 
-/*
 func TestRunDeleteProjectByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "project", "--chibutero")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == unknownFlag)
+	assert.Assert(t, err.Error() == "Error: unknown flag: --chibutero")
 }
-*/
 
 func TestRunDeleteProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
@@ -98,7 +96,7 @@ func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--chibutero")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == unknownFlag)
+	assert.Assert(t, err.Error() == "Error: unknown flag: --chibutero")
 }
 
 func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
