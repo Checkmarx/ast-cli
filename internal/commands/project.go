@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -90,6 +91,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 		info["name"] = projectName
 	} else {
 		fmt.Println("Project name is required")
+		os.Exit(0)
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
