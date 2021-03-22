@@ -116,22 +116,18 @@ func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed deleting a scan: Please provide at least one scan ID")
 }
 
-/* Renable
 func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "delete", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
-/* Renable
 func TestRunDeleteScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "delete", "MOCK")
 	assert.NilError(t, err)
 }
-*/
 
 /* Renable
 func TestRunCancelScanByIdCommand(t *testing.T) {
