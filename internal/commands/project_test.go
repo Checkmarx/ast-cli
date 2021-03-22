@@ -20,13 +20,11 @@ func TestProjectNoSub(t *testing.T) {
 	assert.Assert(t, err == nil)
 }
 
-/*
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
-*/
 
 /*
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
