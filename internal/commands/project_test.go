@@ -26,14 +26,12 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-/*
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
 	assert.Assert(t, err != nil)
-	assert.Assert(t, err.Error() == "Project name is required")
+	// assert.Assert(t, err.Error() == "Project name is required")
 }
-*/
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
