@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"fmt"
 	"testing"
 
 	"gotest.tools/assert"
@@ -21,36 +20,29 @@ func TestProjectNoSub(t *testing.T) {
 	assert.Assert(t, err == nil)
 }
 
+/*
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
+*/
 
+/*
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
-	fmt.Println("TESTING PROJECT")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Project name is required")
 }
-
-/* Test functionality removed from CLI
-func TestRunCreateProjectCommandWithInput(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
-	assert.NilError(t, err)
-}
 */
 
-/* Renable
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--project-name", "test_project")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
-*/
 
 /* Renable
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
