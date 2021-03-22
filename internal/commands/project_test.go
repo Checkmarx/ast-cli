@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/assert"
@@ -29,6 +30,7 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
+	fmt.Println("TESTING PROJECT")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Project name is required")
 }
