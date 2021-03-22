@@ -27,17 +27,54 @@ go build -o ./bin/cx-mac ./cmd
 
 ## Basic CLI Operation
 
+This document provides many examples of using the AST CLI but it's impossible to cover every possible action. You can  you can always fall back to the (--help or -h) option, ex:
+
 ### Windows
+
 ``` powershell
-cx.exe [commands]
+cx.exe --help
 ```
 
 ### Linux/Mac
 ``` bash
-./cx [commands]
+./cx -h
 ```
 
-The parameters accepted by the CLI vary based on the commands issued and they will be described thoroughly throughout this document. The following global parameters affect all actions:
+You will notice help shows a list of available commands and a summary of global parameters. The (--help) command also lets you dig into commands for more context specific help, ex:
+
+``` bash
+# Show help for the scan command
+./cx scan -h
+Manage scans
+
+Usage:
+  cx scan [command]
+
+Available Commands:
+  cancel      Cancel one or more scans from running
+  create      Create and run a new scan
+  delete      Deletes one or more scans
+  list        List all scans in the system
+  show        Show information about a scan
+  tags        Get a list of all available tags to filter by
+  workflow    Show information about a scan workflow
+  
+# At this point you can dig into the "create" command
+./cx scan create -h
+Create and run a new scan
+
+Usage:
+  cx scan create [flags]
+
+Flags:
+  -d, --directory string             A path to directory with sources to scan
+  -f, --filter string                Source file filtering pattern
+      --preset-name string           The name of the Checkmarx preset to use.
+      --project-name string       
+      ....
+```
+
+You may have noticed the parameters accepted by the CLI vary based on the commands issued but the following parameters are available throughout the CLI command hierarchy:
 
 - (--base-uri), the URL of the AST server.
 - (--base-auth-uri), optionally provides alternative KeyCloak endpoint to (--base-uri).
@@ -76,6 +113,17 @@ The (--profile) option provides a powerful tool to quickly switch through differ
 # This uses the default profile (if it exists)
 ./cx scan list
 ```
+
+The configure command supports an interactive mode that prompt you for the following common options: base-uri, client ID and secret, ex:
+
+``` bash
+./cx configure
+AST Base URI [http://<your-domain]: <your-updated-domain>
+AST Access Key [******f23d]: <your-updated-key>
+AST Key Secret [******8913]: <your-updated-secret>
+```
+
+If the CLI has previously stored values they will show up like you see in the previous example, you can just press enter if you want to keep the existing value.
 
 These values can be stored in CLI configurations:
 
@@ -196,6 +244,46 @@ Repos can be scanned like this:
 When you're scanning repos AST will fetch the code directly from the repository.
 
 ## Managing Projects
+
+You can create, delete, list or show details about AST projects using the CLI. You specifically create projects before trigging scans though, the (scan create) will automatically create projects that don't exist for you. The commands just provide a help way to work with projects.
+
+You can create projects like this:
+
+``` bash
+./cx project create --branch "test" --project-name "createTest" --repo-url "https://github.com/tsunez/checkmarxTest.git"
+
+Project ID       Name       Created at          Updated at          Tags Groups 
+----------       ----       ----------          ----------          ---- ------ 
+56939423....    createTest  03-22-21 08:27:34   03-22-21 08:27:34   []   [] 
+```
+
+The only required parameter is (--project-name). If the (--repo-url) or (--branch) don't make sense for your purposes then just skip them.
+
+You can list existing projects like this:
+
+``` bash
+./cx project list
+
+Project ID       Name       Created at          Updated at          Tags Groups 
+----------       ----       ----------          ----------          ---- ------ 
+56939423....    createTest  03-22-21 08:27:34   03-22-21 08:27:34   []   [] 
+```
+
+You can show the details about a specific project like this:
+
+``` bash
+./cx project list <your-project-id>
+
+Project ID       Name       Created at          Updated at          Tags Groups 
+----------       ----       ----------          ----------          ---- ------ 
+56939423....    createTest  03-22-21 08:27:34   03-22-21 08:27:34   []   [] 
+```
+
+Finally you can delete a project like this:
+
+``` bash
+./cx project delete <your-project-id>
+```
 
 
 
