@@ -20,73 +20,57 @@ func TestProjectNoSub(t *testing.T) {
 	assert.Assert(t, err == nil)
 }
 
-/* Renable
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Project name is required")
 }
-*/
 
-/* Test functionality removed from CLI
 func TestRunCreateProjectCommandWithInput(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "create", "--input", "{\"id\": \"test_project\"}")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "--format", "non-sense", "-v", "project", "create", "--project-name", "test_project")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
-*/
 
-/* Renable
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--project-name", "test_project")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetProjectByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "show")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed getting a project: Please provide a project ID")
 }
-*/
 
-/* Renable
 func TestRunGetProjectByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "get", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
-/* Renable
 func TestRunGetProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "show", "MOCK")
 	assert.NilError(t, err)
 }
-*/
 
 /*
 func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {
