@@ -75,68 +75,52 @@ func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed deleting a project: Please provide a project ID")
 }
 
-/*
 func TestRunDeleteProjectByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "scan", "project", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
-/* Renable
 func TestRunDeleteProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "delete", "MOCK")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllProjectsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
-*/
 
-/* Renable
 func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllProjectsCommandWithLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--format", "list", "--filter", "--limit=40")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "list", "--filter", "offset=150")
 	assert.NilError(t, err)
 }
-*/
 
-/* Renable
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "project", "tags")
 	assert.NilError(t, err)
 }
-*/
