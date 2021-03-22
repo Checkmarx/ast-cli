@@ -145,29 +145,55 @@ export CX_AST_ACCESS_KEY_SECRET=<your-secret>
 
 ## Triggering Scans
 
-You have many options when it comes to creating scans, the most important think you need to figure out is where you're going to create the scan from. You have the following 3 possible scan sources:
+You need to specify a project using the (--project-name) parameter when you create a scan. If the project doesn't exist then it will be created automatically; however, if the the project exists it will be reused. The following examples will all use the same project name for simplicity.
+
+You can optionally specify the name of the preset to use when scanning projects using the (--preset-name) parameter. If you don't specify the preset name then "Checkmarx Default" will be used. 
+
+You can indicate if an incremental or full scan should be performed with the (--incremental) parameter. If you don't provide the incremental flag then a full scan will be triggered.
+
+The (--project-type) parameter is used to indicate which types of scan should be performed by AST. You can provide a comma separated list of scan types if you want multiple scans to be performed. If you ommit this paramteter only a  SAST scan will be performed.
+
+You have three options when it comes to creating scans, the most important thing you need to decide is where the scan is going to come from:
 
 1. A zip file with your source code.
 2. A directory with your source code.
 3. A host git repo.
 
-**NOTE**: for simplicity the following examples assume you have stored your authentication and base-uri information in either environment variables or CLI configuration parameters.
+**NOTE**: for simplicity the following examples assume you have stored your authentication and base-uri information in either environment variables or CLI configuration parameters. These values are required but will not appear in the commands.
+
+**NOTE**: to show different real world situations optional parameters will sometimes but not always be used.
+
+Scanning zip code archives can be achieved like this:
+
+``` bash
+./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --project-source-type "upload" --incremental "false" --project-type "sast" -f <your-source>.zip
+```
 
 If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server. The filters are based on an inclusion and exclusion model. The following example shows how to scan a folder:
 
 ``` bash
-./cx scan create -d <path-to-your-folder> -f "s*.go"
+./cx scan create -d <path-to-your-folder> -f "s*.go" --project-name "testproj" --incremental "false" --project-type "sast" 
 ```
 
-Todo. more examples
-
-You can create a scan like this:
+The filter in this case will include any go files that start with an 's'. You can include more then one set of files and directories by separating the inclusion patterns with a comma, example:
 
 ``` bash
-./cx
+./cx scan create -d <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false"
 ```
 
+In this previous example any files that start with 's' will be included, as well as any files that end with '.txt'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'zip':
 
+``` bash
+./cx scan create -d <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --project-source-type "upload" --incremental "false" --project-type "sast" 
+```
+
+Repos can be scanned like this:
+
+``` bash
+./cx scan create -r <your-repo-url> --project-name "testproj" 
+```
+
+When you're scanning repos AST will fetch the code directly from the repository.
 
 ## Managing Projects
 
