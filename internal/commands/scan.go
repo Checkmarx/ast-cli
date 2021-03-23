@@ -57,6 +57,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "Create and run a new scan",
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
+
+	createScanCmd.PersistentFlags().StringP(waitFlag, waitFlagSh, "",
+		"Wait for scan completion")
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
 		"A path to the sources file to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFlag, sourceDirFlagSh, "",
@@ -316,6 +319,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		scanRepoURL, _ := cmd.Flags().GetString(scanRepoFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
+		waitFlag, _ := cmd.Flags().GetString(waitFlag)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
@@ -346,6 +350,9 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
+		}
+		if waitFlag == "true" {
+			fmt.Println("waint for scan to complete")
 		}
 		// Checking the response
 		if errorModel != nil {

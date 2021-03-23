@@ -20,6 +20,8 @@ const (
 	verboseUsage                   = "Verbose mode"
 	sourcesFlag                    = "sources"
 	sourcesFlagSh                  = "s"
+	waitFlag                       = "wait"
+	waitFlagSh                     = "w"
 	sourceDirFlag                  = "directory"
 	sourceDirFlagSh                = "d"
 	scanRepoFlag                   = "repo-url"
