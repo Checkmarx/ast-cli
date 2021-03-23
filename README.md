@@ -214,7 +214,7 @@ You have three options when it comes to creating scans, the most important thing
 Scanning zip code archives can be achieved like this:
 
 ``` bash
-./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --project-source-type "upload" --incremental "false" --project-type "sast" -f <your-source>.zip
+./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" -f <your-source>.zip
 ```
 
 If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server. The filters are based on an inclusion and exclusion model. The following example shows how to scan a folder:
@@ -232,7 +232,7 @@ The filter in this case will include any go files that start with an 's'. You ca
 In this previous example any files that start with 's' will be included, as well as any files that end with '.txt'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'zip':
 
 ``` bash
-./cx scan create -d <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --project-source-type "upload" --incremental "false" --project-type "sast" 
+./cx scan create -d <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" 
 ```
 
 Repos can be scanned like this:
