@@ -68,7 +68,6 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(projectSourceType, "", "Type of project source: upload")
 	createScanCmd.PersistentFlags().String(projectType, "", "Type of project: sast")
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -152,18 +151,14 @@ func createProject(projectName string) (string, error) {
 	return resp.ID, err
 }
 
-func updateScanRequestValues(input *[]byte, cmd *cobra.Command) {
+func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(projectName)
-	newProjectSourcType, _ := cmd.Flags().GetString(projectSourceType)
 	newProjectType, _ := cmd.Flags().GetString(projectType)
 	newIncremental, _ := cmd.Flags().GetString(incremental)
 	newPresetName, _ := cmd.Flags().GetString(presetName)
 	_ = json.Unmarshal(*input, &info)
-	// Handle the scan type upload/git
-	if newProjectSourcType != "" {
-		info["type"] = newProjectSourcType
-	}
+	info["type"] = sourceType
 	// Handle the project settings
 	if _, ok := info["project"]; !ok {
 		var projectMap map[string]interface{}
@@ -321,7 +316,13 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		scanRepoURL, _ := cmd.Flags().GetString(scanRepoFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		updateScanRequestValues(&input, cmd)
+		var uploadType string
+		if sourceDir != "" || sourcesFile != "" {
+			uploadType = "upload"
+		} else {
+			uploadType = "git"
+		}
+		updateScanRequestValues(&input, cmd, uploadType)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
