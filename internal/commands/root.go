@@ -28,7 +28,6 @@ const (
 	sourceDirFilterFlagSh          = "f"
 	mainBranchFlag                 = "branch"
 	projectName                    = "project-name"
-	projectSourceType              = "project-source-type"
 	projectType                    = "project-type"
 	incremental                    = "incremental"
 	presetName                     = "preset-name"
