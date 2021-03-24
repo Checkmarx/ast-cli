@@ -106,15 +106,14 @@ func outputResultsPretty(results []*resultsReader.Result) error {
 				Severity:  results[i].Severity,
 				CweID:     results[i].CweID,
 			},
-			SimilarityID:                    results[i].SimilarityID,
-			UniqueID:                        results[i].UniqueID,
-			FirstScanID:                     results[i].FirstScanID,
-			FirstFoundAt:                    results[i].FirstFoundAt,
-			FoundAt:                         results[i].FoundAt,
-			Status:                          results[i].Status,
-			PathSystemID:                    results[i].PathSystemID,
-			PathSystemIDBySimiAndFilesPaths: results[i].PathSystemIDBySimiAndFilesPaths,
-			Nodes:                           results[i].Nodes,
+			SimilarityID: results[i].SimilarityID,
+			UniqueID:     results[i].UniqueID,
+			FirstScanID:  results[i].FirstScanID,
+			FirstFoundAt: results[i].FirstFoundAt,
+			FoundAt:      results[i].FoundAt,
+			Status:       results[i].Status,
+			PathSystemID: results[i].PathSystemID,
+			Nodes:        results[i].Nodes,
 		})
 		fmt.Println()
 	}
@@ -133,7 +132,6 @@ func outputSingleResult(model *resultsReader.Result) {
 	fmt.Println("First Found At:", model.FirstFoundAt)
 	fmt.Println("Status:", model.Status)
 	fmt.Println("Path System ID:", model.PathSystemID)
-	fmt.Println("Path System ID (by similarity and file paths):", model.PathSystemIDBySimiAndFilesPaths)
 	fmt.Println()
 	fmt.Println("************ Nodes ************")
 	for i := 0; i < len(model.Nodes); i++ {
