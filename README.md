@@ -7,6 +7,7 @@ setx GOARCH=am
 go build -o ./bin/cx.exe ./cmd
 ```
 
+
 ### Linux
 
 ``` bash
