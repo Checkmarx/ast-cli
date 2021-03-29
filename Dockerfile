@@ -1,13 +1,12 @@
 FROM golang:1.15.10-alpine3.13 as build-env
-ARG git_user
-ARG git_key
+ARG GIT_USER
+ARG GIT_TOKEN
 
 ENV GOPRIVATE="github.com/checkmarxDev/*"
 
 # Copy the source from the current directory to the Working Directory inside the container
 WORKDIR /app
 
-#ENV GOPRIVATE=github.com/checkmarxDev/*
 RUN apk add --no-cache git \
   && git config \
   --global \
