@@ -7,10 +7,11 @@ executors:
     docker:
       - image: golangci/golangci-lint:v1.28.1-alpine
     resource_class: small
-  circle-machine:
-    machine:
-      image: ubuntu-1604:202004-01
-      #docker_layer_caching: true
+  docker-publisher:
+    environment:
+      IMAGE_NAME: ast-cli-test
+    docker:
+      - image: circleci/buildpack-deps:stretch
 
 orbs:
   checkmarx: checkmarx/circleci-kpi-shipper@0.11.0
@@ -110,8 +111,8 @@ jobs:
             - "/go/pkg/mod"
   docker-build:
     # -remove-
-    # executor: docker-publisher
-    executor: circle-machine
+     executor: docker-publisher
+    #executor: circle-machine
     steps:
       - checkout
       # -remove-
