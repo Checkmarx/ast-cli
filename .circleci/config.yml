@@ -110,7 +110,6 @@ jobs:
             - "/go/pkg/mod"
   docker-build:
     executor: circle-machine
-    working_directory: ~/repo
     steps:
       - checkout
       - run:
