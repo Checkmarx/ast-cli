@@ -112,7 +112,6 @@ jobs:
   docker-build:
     # -remove-
      executor: docker-publisher
-    #executor: circle-machine
     steps:
       - checkout
       # -remove-
