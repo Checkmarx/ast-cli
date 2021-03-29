@@ -12,7 +12,7 @@ executors:
       image: ubuntu-1604:202004-01
   docker-publisher:
     environment:
-      IMAGE_NAME: ast-cli-test
+      IMAGE_NAME: ast-cli-test/latest
     docker:
       - image: circleci/buildpack-deps:stretch
       #docker_layer_caching: true
