@@ -3,7 +3,6 @@ module github.com/checkmarxDev/ast-cli
 go 1.13
 
 require (
-	github.com/CheckmarxDev/sast-results-handler v1.2.1 // indirect
 	github.com/checkmarxDev/healthcheck v1.10.2
 	github.com/checkmarxDev/logs v1.10.0
 	github.com/checkmarxDev/sast-metadata v1.10.2
