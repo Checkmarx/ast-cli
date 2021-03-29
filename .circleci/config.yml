@@ -109,7 +109,6 @@ jobs:
           paths:
             - "/go/pkg/mod"
   docker-build:
-    executor: docker-publisher
     steps:
       - checkout
       - setup_remote_docker
@@ -121,11 +120,7 @@ jobs:
             -t ast-cli-test:latest .
       - run:
           name: Archive Docker image
-          command: docker save -o image.tar ast-cli-test
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image.tar
+          command: docker save -o image.tar ast-cli-test      
 
 
   publish-github-release:
