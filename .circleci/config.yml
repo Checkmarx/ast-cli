@@ -10,11 +10,6 @@ executors:
   circle-machine:
     machine:
       image: ubuntu-1604:202004-01
-  docker-publisher:
-    environment:
-      IMAGE_NAME: ast-cli-test
-    docker:
-      - image: circleci/buildpack-deps:stretch
       #docker_layer_caching: true
 
 orbs:
@@ -123,10 +118,10 @@ jobs:
           command: |
             docker build --build-arg GIT_USER=${GITHUB_USER} \
             --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
-            -t $IMAGE_NAME:latest .
+            -t ast-cli-test:latest .
       - run:
           name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
+          command: docker save -o image.tar ast-cli-test
       - persist_to_workspace:
           root: .
           paths:
