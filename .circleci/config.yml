@@ -116,7 +116,9 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            docker build --build-arg GIT_USER=${GITHUB_USER} --build-arg GIT_TOKEN=${GITHUB_TOKEN} -t ast-cli-test:latest .
+            docker build --build-arg GIT_USER=${GITHUB_USER} \
+            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
+            -t ast-cli-test:latest .
       - run:
           name: Archive Docker image
           command: docker save -o image.tar ast-cli-test
@@ -200,9 +202,8 @@ workflows:
           context: AWS
       - docker-build:
           filters:
-            branches: publish-dockerhub-repo
+            branches:
               ignore:
-          context: AWS
 
   release-publish-workflow:
     jobs:
