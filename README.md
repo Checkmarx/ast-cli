@@ -211,7 +211,9 @@ You have three options when it comes to creating scans, the most important thing
 
 **NOTE**: to show different real world situations optional parameters will sometimes but not always be used.
 
-Scanning zip code archives can be achieved like this:
+After you create a scan the CLI will wait until it is completed or an error has been encountered. The default polling interval is 5 seconds but you can overide that with the (--wait-delay) option. You can also turn off the wait mode with (--nowait true).
+
+Scanning zipped code archives can be achieved like this:
 
 ``` bash
 ./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" -f <your-source>.zip
@@ -243,12 +245,11 @@ Git repositories can be scanned like this:
 
 When you're scanning repos AST will fetch the code directly from the repository.
 
-The normal (scan create) behavior is to start the scan and then exit with the status. You can tell the CLI to wait for a job completion or failure though with the (--wait) parameter. This helpful in environments where you would prefer synchronous behavior. When using wait mode you can be sure results will be ready when the CLI exits, example:
+You can disable polling mode like this:
 
 ``` bash
-./cx scan create -r <your-repo-url> --project-name "testproj" --wait true
+./cx scan create -r <your-repo-url> --project-name "testproj" --nowait true
 ```
-
 
 
 ## Managing Projects
