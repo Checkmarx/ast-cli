@@ -235,13 +235,21 @@ In this previous example any files that start with 's' will be included, as well
 ./cx scan create -d <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" 
 ```
 
-Repos can be scanned like this:
+Git repositories can be scanned like this:
 
 ``` bash
 ./cx scan create -r <your-repo-url> --project-name "testproj" 
 ```
 
 When you're scanning repos AST will fetch the code directly from the repository.
+
+The normal (scan create) behavior is to start the scan and then exit with the status. You can tell the CLI to wait for a job completion or failure though with the (--wait) parameter. This helpful in environments where you would prefer synchronous behavior. When using wait mode you can be sure results will be ready when the CLI exits, example:
+
+``` bash
+./cx scan create -r <your-repo-url> --project-name "testproj" --wait true
+```
+
+
 
 ## Managing Projects
 
