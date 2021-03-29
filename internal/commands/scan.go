@@ -58,8 +58,10 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().StringP(waitFlag, waitFlagSh, "",
-		"Wait for scan completion")
+	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false,
+		"Wait for scan completiot (default true)")
+	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5,
+		"Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
 		"A path to the sources file to scan")
 	createScanCmd.PersistentFlags().StringP(sourceDirFlag, sourceDirFlagSh, "",
@@ -319,7 +321,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
 		scanRepoURL, _ := cmd.Flags().GetString(scanRepoFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		waitFlag, _ := cmd.Flags().GetString(waitFlag)
+		noWaitFlag, _ := cmd.Flags().GetBool(waitFlag)
+		waitDelay, _ := cmd.Flags().GetInt(waitDelayFlag)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
@@ -351,9 +354,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
 		}
-		if waitFlag == "true" {
-			fmt.Println("waint for scan to complete")
-		}
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
@@ -363,8 +363,39 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
 		}
+		// Wait until the scan is done: Queued, Running
+		if !noWaitFlag {
+			fmt.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
+			time.Sleep(time.Duration(waitDelay) * time.Second)
+			for {
+				if !isScanRunning(scansWrapper, scanResponseModel.ID) {
+					break
+				}
+				time.Sleep(time.Duration(waitDelay) * time.Second)
+			}
+		}
 		return nil
 	}
+}
+
+func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
+	var scanResponseModel *scansRESTApi.ScanResponseModel
+	var errorModel *scansRESTApi.ErrorModel
+	var err error
+	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
+	if err != nil {
+		log.Fatal("Cannot source code temp file.", err)
+	}
+	if errorModel != nil {
+		log.Fatal(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+	} else if scanResponseModel != nil {
+		if scanResponseModel.Status == "Running" || scanResponseModel.Status == "Queued" {
+			fmt.Println("Scan status: ", scanResponseModel.Status)
+			return true
+		}
+	}
+	fmt.Println("Scan finished, final status: ", scanResponseModel.Status)
+	return false
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
