@@ -129,7 +129,7 @@ jobs:
             -t $IMAGE_NAME:latest .
       - run:
           name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
+          command: docker save -o /tmp/workspace/image.tar $IMAGE_NAME
   docker-publish-latest:
     executor: docker-publisher
     steps:
