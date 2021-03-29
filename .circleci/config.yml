@@ -109,19 +109,18 @@ jobs:
           paths:
             - "/go/pkg/mod"
   docker-build:
+    executor: circle-machine
+    working_directory: ~/repo
     steps:
       - checkout
-      - setup_remote_docker
       - run:
           name: Build Docker image
           command: |
+            echo "export SHORT_GIT_SHA=${CIRCLE_SHA1::7}" >> "$BASH_ENV"
+            source "$BASH_ENV"
             docker build --build-arg GIT_USER=${GITHUB_USER} \
-            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
-            -t ast-cli-test:latest .
-      - run:
-          name: Archive Docker image
-          command: docker save -o image.tar ast-cli-test      
-
+            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \            
+            -t ast-cli-test:latest . 
 
   publish-github-release:
     executor:
