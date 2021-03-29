@@ -111,7 +111,7 @@ jobs:
             - "/go/pkg/mod"
   docker-build:
     # -remove-
-     executor: docker-publisher
+    executor: docker-publisher
     steps:
       - checkout
       # -remove-
