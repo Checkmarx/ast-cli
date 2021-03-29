@@ -10,7 +10,7 @@ executors:
   circle-machine:
     machine:
       image: ubuntu-1604:202004-01
-      #docker_layer_caching: true
+      docker_layer_caching: true
 
 orbs:
   checkmarx: checkmarx/circleci-kpi-shipper@0.11.0
