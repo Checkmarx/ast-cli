@@ -113,7 +113,7 @@ jobs:
     executor: circle-machine
     steps:
       - checkout
-      - setup_remote_docker
+      # - setup_remote_docker
       - run:
           name: Build Docker image
           command: |
