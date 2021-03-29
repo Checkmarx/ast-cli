@@ -129,7 +129,7 @@ jobs:
             -t $IMAGE_NAME:latest .
       - run:
           name: Archive Docker image
-          command: docker save -o /tmp/workspace/image.tar $IMAGE_NAME
+          command: docker save -o image.tar $IMAGE_NAME
   docker-publish-latest:
     executor: docker-publisher
     steps:
@@ -138,7 +138,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Load archived Docker image
-          command: docker load -i /tmp/workspace/image.tar
+          command: docker load -i image.tar
       - run:
           name: Publish Docker Image to Docker Hub
           command: |
