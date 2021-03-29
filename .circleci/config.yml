@@ -114,10 +114,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Build Docker image
-          command: |
-            echo "export SHORT_GIT_SHA=${CIRCLE_SHA1::7}" >> "$BASH_ENV"
-            source "$BASH_ENV"
+          name: Build Docker image 
+          command: |            
             docker build --build-arg GIT_USER=${GITHUB_USER} \
             --build-arg GIT_TOKEN=${GITHUB_TOKEN} \            
             -t ast-cli-test:latest . 
