@@ -211,6 +211,8 @@ You have three options when it comes to creating scans, the most important thing
 
 **NOTE**: to show different real world situations optional parameters will sometimes but not always be used.
 
+After you create a scan the CLI will wait until it is completed or an error has been encountered. The default polling interval is 5 seconds but you can overide that with the (--wait-delay) option. You can also turn off the wait mode with (--nowait true).
+
 Scanning zip code archives can be achieved like this:
 
 ``` bash
@@ -242,6 +244,14 @@ Repos can be scanned like this:
 ```
 
 When you're scanning repos AST will fetch the code directly from the repository.
+
+You can skip polling mode like this:
+
+``` bash
+./cx scan create -r <your-repo-url> --project-name "testproj" --nowait true
+```
+
+
 
 ## Managing Projects
 
