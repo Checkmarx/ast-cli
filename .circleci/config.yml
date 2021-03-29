@@ -109,7 +109,8 @@ jobs:
           paths:
             - "/go/pkg/mod"
   docker-build:
-    executor: docker-publisher
+    # executor: docker-publisher
+    executor: circle-machine
     steps:
       - checkout
       - setup_remote_docker
