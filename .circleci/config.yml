@@ -221,9 +221,9 @@ workflows:
           filters:
             branches:
               ignore:
-      - publish-latest:
+      - docker-publish-latest:
           requires:
-            - build
+            - docker-build
           filters:
             branches:
               only: publish-dockerhub-repo
