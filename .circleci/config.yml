@@ -198,6 +198,11 @@ workflows:
             branches:
               ignore:
           context: AWS
+      - docker-build:
+          filters:
+            branches: publish-dockerhub-repo
+              ignore:
+          context: AWS
 
   release-publish-workflow:
     jobs:
