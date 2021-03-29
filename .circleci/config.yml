@@ -10,7 +10,7 @@ executors:
   circle-machine:
     machine:
       image: ubuntu-1604:202004-01
-      docker_layer_caching: true
+      #docker_layer_caching: true
 
 orbs:
   checkmarx: checkmarx/circleci-kpi-shipper@0.11.0
@@ -109,15 +109,19 @@ jobs:
           paths:
             - "/go/pkg/mod"
   docker-build:
-    executor: circle-machine
+    executor: docker-publisher
     steps:
       - checkout
+      - setup_remote_docker
       - run:
-          name: Build Docker image 
-          command: |            
+          name: Build Docker image
+          command: |
             docker build --build-arg GIT_USER=${GITHUB_USER} \
-            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \            
-            -t ast-cli-test:latest . 
+            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
+            -t ast-cli-test:latest .
+      - run:
+          name: Archive Docker image
+          command: docker save -o image.tar ast-cli-test
 
   publish-github-release:
     executor:
@@ -187,11 +191,6 @@ workflows:
             branches:
               ignore:
       - lint:
-          filters:
-            branches:
-              ignore:
-          context: AWS
-      - docker-build:
           filters:
             branches:
               ignore:
