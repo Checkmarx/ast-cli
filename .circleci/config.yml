@@ -196,6 +196,7 @@ workflows:
           filters:
             branches:
               ignore:
+          context: AWS
 
   release-publish-workflow:
     jobs:
