@@ -13,7 +13,7 @@ executors:
       #docker_layer_caching: true
   docker-publisher:
     environment:
-      IMAGE_NAME: ${DOCKER_USER}/ast-cli-test
+      IMAGE_NAME: ast-cli-test
     docker:
       - image: circleci/buildpack-deps:stretch
 
@@ -147,7 +147,8 @@ jobs:
       - run:
           name: Publish Docker Image to Docker Hub
           command: |
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin \
+            docker tag $IMAGE_NAME $DOCKER_USER/$IMAGE_NAME \
             docker push $IMAGE_NAME:latest
 
   publish-github-release:
