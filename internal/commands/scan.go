@@ -111,8 +111,10 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runGetTagsCommand(scansWrapper),
 	}
 
-	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd, listScansCmd, showScanCmd, workflowScanCmd},
+	addFormatFlagToMultipleCommands([]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		formatTable, formatList, formatJSON)
+	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd},
+		formatList, formatTable, formatJSON)
 	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cacnelScanCmd, tagsCmd)
 	return scanCmd
 }
