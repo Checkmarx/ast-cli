@@ -47,6 +47,11 @@ const failedToAuth = "Failed to authenticate - please provide an %s"
 
 var usingProxyMsgDisplayed = false
 
+func setAgentName(req *http.Request) {
+	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+	req.Header.Set("User-Agent", agentStr)
+}
+
 func getClient(timeout uint) *http.Client {
 	insecure := viper.GetBool("insecure")
 	proxyStr := viper.GetString(commonParams.ProxyKey)
@@ -72,10 +77,10 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	client := getClient(timeout)
 	req, err := http.NewRequest(method, fullURL, body)
+	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
-
 	if auth {
 		req, err = enrichWithOath2Credentials(req)
 		if err != nil {
@@ -95,6 +100,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
+	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +109,6 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	if err != nil {
 		return nil, err
 	}
-
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
@@ -128,6 +133,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
+	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +289,7 @@ func writeCredentialsToCache(credentialsFilePath string, credentialsHash uint64,
 func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
+	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}

@@ -3,11 +3,8 @@ package commands
 import (
 	"fmt"
 
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/spf13/cobra"
-)
-
-const (
-	version = "v2.0.0_RC2"
 )
 
 func NewVersionCommand() *cobra.Command {
@@ -15,7 +12,7 @@ func NewVersionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Prints the version number",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(version)
+			fmt.Println(params.Version)
 		},
 	}
 }

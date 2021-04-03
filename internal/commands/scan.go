@@ -74,6 +74,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(projectType, "", "Type of project: sast")
+
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in the system",
@@ -571,9 +572,12 @@ func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
 		ua := user_agent.New(scan.UserAgent)
 		name, version := ua.Browser()
 		if strings.Contains(version, ".") {
-			origin = name + " " + version[:strings.Index(version, ".")] // Takes the major
+			//origin = name + " " + version[:strings.Index(version, ".")] // Takes the major
+			origin = name + " " + version
+			//origin = "OR here"
 		} else {
 			origin = name + " " + version
+			//origin = "here"
 		}
 	}
 

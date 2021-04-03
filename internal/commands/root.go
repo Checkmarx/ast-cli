@@ -20,6 +20,7 @@ const (
 	verboseUsage                   = "Verbose mode"
 	sourcesFlag                    = "sources"
 	sourcesFlagSh                  = "s"
+	agentFlag                      = "agent"
 	waitFlag                       = "nowait"
 	waitFlagSh                     = "w"
 	waitDelayFlag                  = "wait-delay"
@@ -103,6 +104,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(baseIAMURIFlag, params.BaseIAMURI, baseIAMURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
 	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenUsage)
+	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, "hello")
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -117,6 +119,7 @@ func NewAstCLI(
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
+	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(agentFlag))
 
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
