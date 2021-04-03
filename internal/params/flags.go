@@ -37,5 +37,5 @@ const (
 )
 
 const (
-	Version = "v2.0.0_RC4"
+	Version = "2.0.0_RC4"
 )
