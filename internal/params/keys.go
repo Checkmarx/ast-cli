@@ -10,6 +10,7 @@ var (
 	AstPasswordKey                      = strings.ToLower(AstPasswordEnv)
 	AstTokenKey                         = strings.ToLower(AstTokenEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
+	AgentNameKey                        = strings.ToLower(AgentNameEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	BflPathKey                          = strings.ToLower(BflPathEnv)

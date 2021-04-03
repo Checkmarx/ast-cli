@@ -11,6 +11,7 @@ var EnvVarsBinds = []struct {
 	{AstUsernameKey, AstUsernameEnv, ""},
 	{AstPasswordKey, AstPasswordEnv, ""},
 	{AstTokenKey, AstTokenEnv, ""},
+	{AgentNameKey, AgentNameEnv, "ASTCLI"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
