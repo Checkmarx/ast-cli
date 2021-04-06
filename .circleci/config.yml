@@ -232,7 +232,7 @@ workflows:
             - docker-build
           filters:
             branches:
-              only: publish-dockerhub-repo
+              only: master
 
   release-publish-workflow:
     jobs:
