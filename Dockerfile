@@ -13,7 +13,6 @@ RUN apk add --no-cache git \
   url."https://${GIT_USER}:${GIT_TOKEN}@github.com".insteadOf \
   "https://github.com"
 
-
 #Copy go mod and sum files
 COPY go.mod .
 COPY go.sum .
