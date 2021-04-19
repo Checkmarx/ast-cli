@@ -32,7 +32,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
@@ -75,7 +75,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
@@ -101,7 +101,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
@@ -124,8 +124,7 @@ jobs:
       - run:
           name: Build Docker image
           command: |
-            docker build --build-arg GIT_USER=${GITHUB_USER} \
-            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
+            docker build --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
             -t $IMAGE_NAME:latest .
       - run:
           name: Archive Docker image
@@ -175,7 +174,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
