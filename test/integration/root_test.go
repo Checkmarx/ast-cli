@@ -72,9 +72,9 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	queries := viper.GetString(params.QueriesPathKey)
 	queriesClone := viper.GetString(params.QueriesClonePathKey)
 	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
-	sastScanInc := viper.GetString(params.SastScanIncPathKey)
+	sastScanInc := viper.GetString(params.SastMetadataPathKey)
 	sastScanIncEngineLogPath := viper.GetString(params.SastScanIncEngineLogPathKey)
-	sastScanIncMetricsPath := viper.GetString(params.SastScanIncMetricsPathKey)
+	sastScanIncMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	// Tests variables
 	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", 400)
