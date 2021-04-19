@@ -115,12 +115,10 @@ jobs:
             - "/go/pkg/mod"
   docker-build:
     # -remove-
-    executor: docker-publisher
-    #executor: circle-machine
+    #executor: docker-publisher
+    executor: circle-machine
     steps:
       - checkout
-      # -remove-
-      - setup_remote_docker
       - run:
           name: Build Docker image
           command: |
