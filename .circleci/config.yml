@@ -117,8 +117,8 @@ jobs:
             - "/go/pkg/mod"
   docker-build:
     # -remove-
-    executor: docker-publisher
-    #executor: circle-machine
+    #executor: docker-publisher
+    executor: circle-machine
     steps:
       - checkout
       - run:
