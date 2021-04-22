@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,16 +12,20 @@ import (
 )
 
 type LogsHTTPWrapper struct {
-	basePath string
+	basePath             string
+	engineLogsPathFormat string
 }
 
 const (
 	DownloadLogsTimeoutSeconds      = 60
 	failedToParseDownloadLogsResult = "failed to get url"
+	failedToParseDownloadResult     = "failed to parse download engine log result"
 )
 
-func NewLogsWrapper(basePath string) LogsWrapper {
-	return &LogsHTTPWrapper{basePath: basePath}
+func NewLogsWrapper(basePath, logPathFormat string) LogsWrapper {
+	return &LogsHTTPWrapper{basePath: basePath,
+		engineLogsPathFormat: logPathFormat,
+	}
 }
 
 func (l *LogsHTTPWrapper) GetURL() (io.ReadCloser, *helpers.WebError, error) {
@@ -61,6 +66,33 @@ func (l *LogsHTTPWrapper) GetURL() (io.ReadCloser, *helpers.WebError, error) {
 		}
 
 		return downloadResp.Body, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func (l *LogsHTTPWrapper) DownloadEngineLog(scanID, engine string) (io.ReadCloser, *helpers.WebError, error) {
+	path := fmt.Sprintf(l.engineLogsPathFormat, scanID, engine)
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, DefaultTimeoutSeconds)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch resp.StatusCode {
+	case http.StatusInternalServerError:
+		return nil, nil, errors.New("internal server error")
+	case http.StatusNotFound, http.StatusBadRequest:
+		defer resp.Body.Close()
+		decoder := json.NewDecoder(resp.Body)
+		errorModel := &helpers.WebError{}
+		err = decoder.Decode(errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseDownloadResult)
+		}
+
+		return nil, errorModel, nil
+	case http.StatusOK:
+		return resp.Body, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}

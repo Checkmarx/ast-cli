@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/checkmarxDev/sast-metadata/pkg/api/v1/rest"
@@ -37,11 +36,6 @@ func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *c
 		Use:   "sast-metadata",
 		Short: "Enables the ability to manage sast scans metadata in AST",
 	}
-	engineLogCmd := &cobra.Command{
-		Use:   "engine-log <scan id>",
-		Short: "Print the engine log for a given scan id",
-		RunE:  runEngineLog(sastMetadataWrapper),
-	}
 	scanInfoCmd := &cobra.Command{
 		Use:   "scan-info <scan id>",
 		Short: "Retrieve information about a given scan id",
@@ -55,34 +49,8 @@ func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *c
 
 	addFormatFlag(scanInfoCmd, formatList, formatJSON, formatTable)
 	addFormatFlag(metricsCmd, formatList, formatJSON)
-	sastMetadataCmd.AddCommand(engineLogCmd, scanInfoCmd, metricsCmd)
+	sastMetadataCmd.AddCommand(scanInfoCmd, metricsCmd)
 	return sastMetadataCmd
-}
-
-func runEngineLog(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide scan id", failedDownloadingEngineLog)
-		}
-
-		scanID := args[0]
-		logReader, errorModel, err := sastMetadataWrapper.DownloadEngineLog(scanID)
-		if err != nil {
-			return errors.Wrap(err, failedDownloadingEngineLog)
-		}
-
-		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedDownloadingEngineLog, errorModel.Code, errorModel.Message)
-		}
-
-		defer logReader.Close()
-		_, err = io.Copy(cmd.OutOrStdout(), logReader)
-		if err != nil {
-			return errors.Wrap(err, failedDownloadingEngineLog)
-		}
-
-		return nil
-	}
 }
 
 func runScanInfo(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.Command, []string) error {

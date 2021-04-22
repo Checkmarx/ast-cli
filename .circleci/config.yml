@@ -8,6 +8,8 @@ executors:
       - image: golangci/golangci-lint:v1.28.1-alpine
     resource_class: small
   circle-machine:
+    environment:
+      IMAGE_NAME: ast-cli
     machine:
       image: ubuntu-1604:202004-01
       #docker_layer_caching: true
@@ -32,7 +34,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
@@ -75,7 +77,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
@@ -101,7 +103,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
@@ -113,43 +115,6 @@ jobs:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
-  docker-build:
-    # -remove-
-    executor: docker-publisher
-    #executor: circle-machine
-    steps:
-      - checkout
-      # -remove-
-      - setup_remote_docker
-      - run:
-          name: Build Docker image
-          command: |
-            docker build --build-arg GIT_USER=${GITHUB_USER} \
-            --build-arg GIT_TOKEN=${GITHUB_TOKEN} \
-            -t $IMAGE_NAME:latest .
-      - run:
-          name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./image.tar
-  docker-publish-latest:
-    executor: docker-publisher
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - setup_remote_docker
-      - run:
-          name: Load archived Docker image
-          #command: ls
-          command: docker load -i /tmp/workspace/image.tar
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
-            docker tag $IMAGE_NAME:latest $DOCKER_USER/$IMAGE_NAME:latest
-            docker push $DOCKER_USER/$IMAGE_NAME:latest
 
   publish-github-release:
     executor:
@@ -175,7 +140,7 @@ jobs:
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
           name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          command: git config --global url."https://api:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
@@ -223,16 +188,6 @@ workflows:
             branches:
               ignore:
           context: AWS
-      - docker-build:
-          filters:
-            branches:
-              ignore:
-      - docker-publish-latest:
-          requires:
-            - docker-build
-          filters:
-            branches:
-              only: master
 
   release-publish-workflow:
     jobs:
