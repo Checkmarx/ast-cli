@@ -1,7 +1,7 @@
 FROM golang:1.15.10-alpine3.13 as build-env
 ARG GIT_TOKEN
 
-ENV GOPRIVATE=github.com/checkmarxDev/*,github.com/CheckmarxDev/*
+ENV GOPRIVATE="github.com/checkmarxDev/healthcheck,github.com/checkmarxDev/logs,github.com/checkmarxDev/sast-queries,github.com/checkmarxDev/sast-results,github.com/checkmarxDev/sast-rm,github.com/checkmarxDev/sast-scan-inc,github.com/checkmarxDev/scans,github.com/checkmarxDev/uploads,github.com/checkmarxDev/ast-authorization,github.com/checkmarxDev/readiness,github.com/checkmarxDev/repostore,github.com/checkmarxDev/sast-results-handler,github.com/checkmarxDev/clservice"
 
 # Copy the source from the current directory to the Working Directory inside the container
 WORKDIR /app
@@ -22,7 +22,8 @@ RUN go mod download
 # COPY the source code as the last step
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o bin/cx cmd/main.go
+# RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o bin/cx cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPRIVATE="github.com/checkmarxDev/healthcheck,github.com/checkmarxDev/logs,github.com/checkmarxDev/sast-queries,github.com/checkmarxDev/sast-results,github.com/checkmarxDev/sast-rm,github.com/checkmarxDev/sast-scan-inc,github.com/checkmarxDev/scans,github.com/checkmarxDev/uploads,github.com/checkmarxDev/ast-authorization,github.com/checkmarxDev/readiness,github.com/checkmarxDev/repostore,github.com/checkmarxDev/sast-results-handler,github.com/checkmarxDev/clservice" go build -a -installsuffix cgo -o bin/cx cmd/main.go
 
 #runtime image
 FROM golang:1.15.10-alpine3.13
