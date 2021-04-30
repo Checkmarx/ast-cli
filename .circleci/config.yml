@@ -19,15 +19,15 @@ executors:
 
 orbs:
   checkmarx: checkmarx/circleci-kpi-shipper@0.11.0
-  
+
 jobs:
   unit-tests:
-    executor: 
+    executor:
       circle-machine
     working_directory: ~/repo
     steps:
       - checkout
-      - run: 
+      - run:
           name: Config GOPRIVATE environment variable
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
@@ -36,7 +36,7 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-      - run: 
+      - run:
           name: go test with coverage
           command: |
             sudo chmod +x ./internal/commands/.scripts/up.sh \
@@ -46,17 +46,17 @@ jobs:
       - run:
           name: Check if total coverage is greater then 0
           command: |
-          
+
             CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
             EXPECTED_CODE_COV=0
-            var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')   
+            var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
             if [ "$var" -eq 1 ];then
               echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
-   
+
               exit 1
             else
               echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
-              
+
               exit 0
             fi
       - save_cache: # Store cache in the /go/pkg directory
@@ -64,13 +64,13 @@ jobs:
           paths:
             - "/go/pkg/mod"
 
-  integration-tests: 
-    executor: 
+  integration-tests:
+    executor:
       circle-machine
     working_directory: ~/repo
     steps:
       - checkout
-      - run: 
+      - run:
           name: Config GOPRIVATE environment variable
           command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - run:
@@ -79,11 +79,11 @@ jobs:
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
-      - run: 
-          name: go integration test          
+      - run:
+          name: go integration test
           command: |
-            sudo chmod +x ./internal/commands/.scripts/integration_up.sh            
-            sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh            
+            sudo chmod +x ./internal/commands/.scripts/integration_up.sh
+            sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh
           no_output_timeout: 2m
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v2-{{ checksum "go.sum" }}
@@ -180,8 +180,8 @@ jobs:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
       - run: go mod download
-      - run: 
-          name: Build CX CIRCLE_PROJECT_REPONAME Linux_amd64 binary 
+      - run:
+          name: Build CX CIRCLE_PROJECT_REPONAME Linux_amd64 binary
           command: GOOS=linux GOARCH=amd64 go build -o bin/cx cmd/main.go
       - run:
           name: Build CX CLI Windows binary
@@ -203,7 +203,7 @@ jobs:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - "/go/pkg/mod"
-            
+
 workflows:
   Visibility-workflow:
     jobs:
@@ -227,12 +227,14 @@ workflows:
           filters:
             branches:
               ignore:
+          context: AWS
       - docker-publish-latest:
           requires:
             - docker-build
           filters:
             branches:
               only: master
+          context: AWS
 
   release-publish-workflow:
     jobs:

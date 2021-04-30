@@ -25,7 +25,13 @@ func NewLogsCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 		Short: "download zip file containing system logs",
 		RunE:  runDownloadLogs(logsWrapper),
 	}
-	logsCmd.AddCommand(downloadCmd)
+	sastEngineLogCmd := &cobra.Command{
+		Use:   "sast <scan id>",
+		Short: "Print the sast engine log for a given scan id",
+		RunE:  runEngineLog(logsWrapper, "sast"),
+	}
+
+	logsCmd.AddCommand(downloadCmd, sastEngineLogCmd)
 	return logsCmd
 }
 
@@ -57,6 +63,32 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 		_, err = io.Copy(destWriter, reader)
 		if err != nil {
 			return errors.Wrap(err, failedDownloadingLogs)
+		}
+
+		return nil
+	}
+}
+
+func runEngineLog(sastMetadataWrapper wrappers.LogsWrapper, engine string) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return errors.Errorf("%s: Please provide scan id", failedDownloadingEngineLog)
+		}
+
+		scanID := args[0]
+		logReader, errorModel, err := sastMetadataWrapper.DownloadEngineLog(scanID, engine)
+		if err != nil {
+			return errors.Wrap(err, failedDownloadingEngineLog)
+		}
+
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedDownloadingEngineLog, errorModel.Code, errorModel.Message)
+		}
+
+		defer logReader.Close()
+		_, err = io.Copy(cmd.OutOrStdout(), logReader)
+		if err != nil {
+			return errors.Wrap(err, failedDownloadingEngineLog)
 		}
 
 		return nil

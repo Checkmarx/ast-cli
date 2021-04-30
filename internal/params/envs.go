@@ -34,7 +34,7 @@ const (
 	QueriesCLonePathEnv                 = "CX_QUERIES_CLONE_PATH"
 	CreateOath2ClientPathEnv            = "CX_CREATE_OATH2_CLIENT_PATH"
 	SastScanIncPathEnv                  = "CX_SAST_SCAN_INC_PATH"
-	SastScanIncEngineLogPathEnv         = "CX_SAST_SCAN_INC_ENGINE_LOG_PATH"
 	SastScanIncMetricsPathEnv           = "CX_SAST_SCAN_INC_METRICS_PATH"
 	LogsPathEnv                         = "CX_LOGS_PATH"
+	LogsEngineLogPathEnv                = "CX_LOGS_ENGINE_LOG_PATH"
 )
