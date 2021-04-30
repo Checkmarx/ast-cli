@@ -35,7 +35,7 @@ func PromptConfiguration() {
 	authType = strings.Replace(authType, "\n", "", -1)
 	authType = strings.Replace(authType, "\r", "", -1)
 	fmt.Println("authType: ", authType)
-	if strings.ToUpper(authType) == "Y" {
+	if strings.EqualFold(authType, "Y") {
 		fmt.Printf("AST token [%s]: ", obfuscateString(accessToken))
 		accessToken, _ = reader.ReadString('\n')
 		accessToken = strings.Replace(accessToken, "\n", "", -1)
