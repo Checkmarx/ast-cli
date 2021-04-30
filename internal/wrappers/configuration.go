@@ -21,6 +21,7 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
+	accessToken := viper.GetString(params.AstTokenKey)
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
 	baseURI = strings.Replace(baseURI, "\n", "", -1)
@@ -28,19 +29,39 @@ func PromptConfiguration() {
 	if len(baseURI) > 0 {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
-	fmt.Printf("AST Access Key [%s]: ", obfuscateString(accessKey))
-	accessKey, _ = reader.ReadString('\n')
-	accessKey = strings.Replace(accessKey, "\n", "", -1)
-	accessKey = strings.Replace(accessKey, "\r", "", -1)
-	if len(accessKey) > 0 {
-		setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
-	}
-	fmt.Printf("AST Key Secret [%s]: ", obfuscateString(accessKeySecret))
-	accessKeySecret, _ = reader.ReadString('\n')
-	accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
-	accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
-	if len(accessKeySecret) > 0 {
-		setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+
+	fmt.Printf("Do you want token based authentication? (Y/N): ")
+	authType, _ := reader.ReadString('\n')
+	authType = strings.Replace(authType, "\n", "", -1)
+	authType = strings.Replace(authType, "\r", "", -1)
+	fmt.Println("authType: ", authType)
+	if strings.EqualFold(authType, "Y") {
+		fmt.Printf("AST token [%s]: ", obfuscateString(accessToken))
+		accessToken, _ = reader.ReadString('\n')
+		accessToken = strings.Replace(accessToken, "\n", "", -1)
+		accessToken = strings.Replace(accessToken, "\r", "", -1)
+		if len(accessToken) > 0 {
+			setConfigPropertyQuiet(params.AstTokenKey, accessToken)
+			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
+			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
+		}
+	} else {
+		fmt.Printf("AST Client ID [%s]: ", obfuscateString(accessKey))
+		accessKey, _ = reader.ReadString('\n')
+		accessKey = strings.Replace(accessKey, "\n", "", -1)
+		accessKey = strings.Replace(accessKey, "\r", "", -1)
+		if len(accessKey) > 0 {
+			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
+			setConfigPropertyQuiet(params.AstTokenKey, "")
+		}
+		fmt.Printf("Client Secret [%s]: ", obfuscateString(accessKeySecret))
+		accessKeySecret, _ = reader.ReadString('\n')
+		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
+		accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
+		if len(accessKeySecret) > 0 {
+			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+			setConfigPropertyQuiet(params.AstTokenKey, "")
+		}
 	}
 }
 
