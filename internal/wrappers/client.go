@@ -184,14 +184,18 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	astToken := viper.GetString(commonParams.AstTokenKey)
 
-	if accessKeyID == "" {
+	if accessKeyID == "" && astToken == "" {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
-	} else if accessKeySecret == "" {
+	} else if accessKeySecret == "" && astToken == "" {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+	} else if astToken == "" && accessKeyID == "" && accessKeySecret == "" {
+		fmt.Println("Token not found!")
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access token"))
 	}
 
-	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, authURI)
+	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astToken, authURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to authenticate")
 	}
@@ -217,7 +221,7 @@ func enrichWithPasswordCredentials(request *http.Request, username, password,
 	return request, nil
 }
 
-func getClientCredentials(accessKeyID, accessKeySecret, authURI string) (*string, error) {
+func getClientCredentials(accessKeyID, accessKeySecret, astToken, authURI string) (*string, error) {
 	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	var accessToken *string
@@ -233,7 +237,13 @@ func getClientCredentials(accessKeyID, accessKeySecret, authURI string) (*string
 	}
 
 	if accessToken == nil {
-		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+		// If the token is present the default to that.
+		if astToken != "" {
+			accessToken, err = getNewToken(getTokenPayload(astToken), authURI)
+		} else {
+			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+		}
+
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get access token from auth server")
 		}
@@ -321,6 +331,10 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
+}
+
+func getTokenPayload(astToken string) string {
+	return fmt.Sprintf("grant_type=refresh_token&client_id=ast-app&refresh_token=%s", astToken)
 }
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
