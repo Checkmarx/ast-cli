@@ -71,7 +71,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
 		"Source file filtering pattern")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
-	createScanCmd.PersistentFlags().String(incremental, "", "Indicates if incremental scan should be performed, defaults to false.")
+	createScanCmd.PersistentFlags().String(incrementalSast, "", "Incremental SAST scan should be performed, defaults to false.")
+	createScanCmd.PersistentFlags().String(incrementalKics, "", "Incremental KICS scan should be performed, defaults to false.")
+	createScanCmd.PersistentFlags().String(incrementalSca, "", "Incremental SCA scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(projectType, "", "Type of project: sast")
 
@@ -212,7 +214,7 @@ func addSastScan(cmd *cobra.Command, info map[string]interface{}) map[string]int
 	if scanTypeEnabled(cmd, "sast") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incremental)
+		newIncremental, _ := cmd.Flags().GetString(incrementalSast)
 		newPresetName, _ := cmd.Flags().GetString(presetName)
 		objArr["type"] = "sast"
 		var valueMap map[string]interface{}
@@ -238,7 +240,7 @@ func addKicsScan(cmd *cobra.Command, info map[string]interface{}) map[string]int
 	if scanTypeEnabled(cmd, "kics") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incremental)
+		newIncremental, _ := cmd.Flags().GetString(incrementalKics)
 		objArr["type"] = "kics"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
@@ -259,7 +261,7 @@ func addScaScan(cmd *cobra.Command, info map[string]interface{}) map[string]inte
 	if scanTypeEnabled(cmd, "sca") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incremental)
+		newIncremental, _ := cmd.Flags().GetString(incrementalSca)
 		objArr["type"] = "sca"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
