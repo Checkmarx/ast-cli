@@ -162,9 +162,6 @@ func createProject(projectName string) (string, error) {
 func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(projectName)
-	newProjectType, _ := cmd.Flags().GetString(projectType)
-	newIncremental, _ := cmd.Flags().GetString(incremental)
-	newPresetName, _ := cmd.Flags().GetString(presetName)
 	_ = json.Unmarshal(*input, &info)
 	info["type"] = sourceType
 	// Handle the project settings
@@ -180,26 +177,103 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	projectID := findProject(info["project"].(map[string]interface{})["id"].(string))
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
+	var configArr []interface{}
 	if _, ok := info["config"]; !ok {
-		var configArr []interface{}
-		_ = json.Unmarshal([]byte("[{}]"), &configArr)
-		info["config"] = configArr
+		_ = json.Unmarshal([]byte("[]"), &configArr)
 	}
-	if newProjectType != "" {
-		info["config"].([]interface{})[0].(map[string]interface{})["type"] = newProjectType
+	var sastConfig map[string]interface{} = addSastScan(cmd, info)
+	if sastConfig != nil {
+		configArr = append(configArr, sastConfig)
 	}
-	if info["config"].([]interface{})[0].(map[string]interface{})["value"] == nil {
+	var kicsConfig map[string]interface{} = addKicsScan(cmd, info)
+	if kicsConfig != nil {
+		configArr = append(configArr, kicsConfig)
+	}
+	var scaConfig map[string]interface{} = addScaScan(cmd, info)
+	if scaConfig != nil {
+		configArr = append(configArr, scaConfig)
+	}
+	info["config"] = configArr
+	*input, _ = json.Marshal(info)
+}
+
+func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
+	newProjectType, _ := cmd.Flags().GetString(projectType)
+	scanTypes := strings.Split(newProjectType, ",")
+	for _, a := range scanTypes {
+		if strings.EqualFold(a, scanType) {
+			return true
+		}
+	}
+	return false
+}
+
+func addSastScan(cmd *cobra.Command, info map[string]interface{}) map[string]interface{} {
+	if scanTypeEnabled(cmd, "sast") {
+		var objArr map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &objArr)
+		newIncremental, _ := cmd.Flags().GetString(incremental)
+		newPresetName, _ := cmd.Flags().GetString(presetName)
+		objArr["type"] = "sast"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		info["config"].([]interface{})[0].(map[string]interface{})["value"] = valueMap
+		foundValue := false
+		if newIncremental != "" {
+			foundValue = true
+			valueMap["incremental"] = newIncremental
+		}
+		if newPresetName != "" {
+			foundValue = true
+			valueMap["presetName"] = newPresetName
+		}
+		if foundValue {
+			objArr["value"] = valueMap
+		}
+		return objArr
 	}
-	if newIncremental != "" {
-		info["config"].([]interface{})[0].(map[string]interface{})["value"].(map[string]interface{})["incremental"] = newIncremental
+	return nil
+}
+
+func addKicsScan(cmd *cobra.Command, info map[string]interface{}) map[string]interface{} {
+	if scanTypeEnabled(cmd, "kics") {
+		var objArr map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &objArr)
+		newIncremental, _ := cmd.Flags().GetString(incremental)
+		objArr["type"] = "kics"
+		var valueMap map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &valueMap)
+		foundValue := false
+		if newIncremental != "" {
+			foundValue = true
+			valueMap["incremental"] = newIncremental
+		}
+		if foundValue {
+			objArr["value"] = valueMap
+		}
+		return objArr
 	}
-	if newPresetName != "" {
-		info["config"].([]interface{})[0].(map[string]interface{})["value"].(map[string]interface{})["presetName"] = newPresetName
+	return nil
+}
+
+func addScaScan(cmd *cobra.Command, info map[string]interface{}) map[string]interface{} {
+	if scanTypeEnabled(cmd, "sca") {
+		var objArr map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &objArr)
+		newIncremental, _ := cmd.Flags().GetString(incremental)
+		objArr["type"] = "sca"
+		var valueMap map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &valueMap)
+		foundValue := false
+		if newIncremental != "" {
+			foundValue = true
+			valueMap["incremental"] = newIncremental
+		}
+		if foundValue {
+			objArr["value"] = valueMap
+		}
+		return objArr
 	}
-	*input, _ = json.Marshal(info)
+	return nil
 }
 
 func compressFolder(sourceDir, filter string) (string, error) {
