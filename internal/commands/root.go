@@ -55,8 +55,8 @@ const (
 	proxyFlag                      = "proxy"
 	proxyFlagUsage                 = "Proxy server to send communication through"
 	baseURIFlagUsage               = "The base system URI"
-	baseIAMURIFlag                 = "base-auth-uri"
-	baseIAMURIFlagUsage            = "The base system IAM URI"
+	baseAuthURIFlag                = "base-auth-uri"
+	baseAuthURIFlagUsage           = "The base system IAM URI"
 	astTokenFlag                   = "token"
 	astTokenUsage                  = "The token to login to AST with"
 	repoURLFlag                    = "repo-url"
@@ -103,7 +103,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	rootCmd.PersistentFlags().String(proxyFlag, "", proxyFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
-	rootCmd.PersistentFlags().String(baseIAMURIFlag, params.BaseIAMURI, baseIAMURIFlagUsage)
+	rootCmd.PersistentFlags().String(baseAuthURIFlag, params.BaseIAMURI, baseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
 	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenUsage)
 	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, "hello")
@@ -116,7 +116,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
-	_ = viper.BindPFlag(params.BaseIAMURIKey, rootCmd.PersistentFlags().Lookup(baseIAMURIFlag))
+	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstTokenKey, rootCmd.PersistentFlags().Lookup(astTokenFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))

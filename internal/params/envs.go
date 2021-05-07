@@ -3,7 +3,7 @@ package params
 const (
 	BaseURIEnv                          = "CX_BASE_URI"
 	ProxyEnv                            = "CX_HTTP_PROXY"
-	BaseIAMURIEnv                       = "CX_BASE_IAM_URI"
+	BaseAuthURIEnv                      = "CX_BASE_AUTH_URI"
 	AstUsernameEnv                      = "CX_AST_USERNAME"
 	AstPasswordEnv                      = "CX_AST_PASSWORD"
 	AstTokenEnv                         = "CX_TOKEN"
