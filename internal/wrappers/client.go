@@ -122,8 +122,8 @@ func GetURL(path string) string {
 }
 
 func GetAuthURL(path string) string {
-	if viper.GetString(commonParams.BaseIAMURIKey) != "" {
-		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseIAMURIKey), path)
+	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
+		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseAuthURIKey), path)
 	}
 	return GetURL(path)
 }
