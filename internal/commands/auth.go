@@ -75,6 +75,7 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 			Description: description,
 			Secret:      generatedClientSecret,
 		}
+
 		errorMsg, err := authWrapper.CreateOauth2Client(client, username, password, adminClientID, adminClientSecret)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreatingClient)
