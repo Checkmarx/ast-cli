@@ -32,7 +32,7 @@ const (
 	sourceDirFilterFlagSh          = "f"
 	mainBranchFlag                 = "branch"
 	projectName                    = "project-name"
-	projectType                    = "project-type"
+	scanTypes                      = "scan-types"
 	incrementalSast                = "incremental-sast"
 	incrementalKics                = "incremental-kics"
 	incrementalSca                 = "incremental-sca"
