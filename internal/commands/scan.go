@@ -75,7 +75,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalKics, "", "Incremental KICS scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(incrementalSca, "", "Incremental SCA scan should be performed, defaults to false.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(projectType, "", "Type of project: sast")
+	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -200,7 +200,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 }
 
 func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
-	newProjectType, _ := cmd.Flags().GetString(projectType)
+	newProjectType, _ := cmd.Flags().GetString(scanTypes)
 	scanTypes := strings.Split(newProjectType, ",")
 	for _, a := range scanTypes {
 		if strings.EqualFold(a, scanType) {
