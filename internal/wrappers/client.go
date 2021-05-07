@@ -98,7 +98,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
 	client := getClient(timeout)
-	u := GetURL(path)
+	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
 	setAgentName(req)
 	if err != nil {
@@ -122,10 +122,10 @@ func GetURL(path string) string {
 }
 
 func GetAuthURL(path string) string {
-	if viper.GetString(commonParams.BaseIAMURIKey) != "" {
-		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseIAMURIKey), path)
+	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
+		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseAuthURIKey), path)
 	}
-	return ""
+	return GetURL(path)
 }
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
@@ -160,9 +160,6 @@ func getAuthURI() (string, error) {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
 	authURI := GetAuthURL(authPath)
-	if authURI == "" {
-		authURI = GetURL(authPath)
-	}
 	authURL, err := url.Parse(authURI)
 	if err != nil {
 		return "", errors.Wrap(err, "authentication URI is not in a correct format")
