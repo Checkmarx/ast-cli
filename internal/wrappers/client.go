@@ -46,6 +46,8 @@ type credentialsCache map[uint64]*string
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
 var usingProxyMsgDisplayed = false
+var cachedAccessToken string
+var cachedAccessTime time.Time
 
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
@@ -118,12 +120,14 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 }
 
 func GetURL(path string) string {
-	return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseURIKey), path)
+	cleanURL := strings.Trim(viper.GetString(commonParams.BaseURIKey), "/")
+	return fmt.Sprintf("%s/%s", cleanURL, path)
 }
 
 func GetAuthURL(path string) string {
 	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
-		return fmt.Sprintf("%s/%s", viper.GetString(commonParams.BaseAuthURIKey), path)
+		cleanURL := strings.Trim(viper.GetString(commonParams.BaseAuthURIKey), "/")
+		return fmt.Sprintf("%s/%s", cleanURL, path)
 	}
 	return GetURL(path)
 }
@@ -181,18 +185,18 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astToken := viper.GetString(commonParams.AstTokenKey)
+	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 
-	if accessKeyID == "" && astToken == "" {
+	if accessKeyID == "" && astAPIKey == "" {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
-	} else if accessKeySecret == "" && astToken == "" {
+	} else if accessKeySecret == "" && astAPIKey == "" {
 		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
-	} else if astToken == "" && accessKeyID == "" && accessKeySecret == "" {
-		fmt.Println("Token not found!")
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access token"))
+	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
+		fmt.Println("API Key not found!")
+		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
 	}
 
-	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astToken, authURI)
+	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to authenticate")
 	}
@@ -218,25 +222,16 @@ func enrichWithPasswordCredentials(request *http.Request, username, password,
 	return request, nil
 }
 
-func getClientCredentials(accessKeyID, accessKeySecret, astToken, authURI string) (*string, error) {
-	credentialsFilePath := viper.GetString(commonParams.CredentialsFilePathKey)
+func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (*string, error) {
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	var accessToken *string
 	var err error
-	hash, errHash := hash(accessKeyID + accessKeySecret + authURI)
-	if errHash != nil {
-		fmt.Printf("failed to create hash of credentials %s\n", err)
-	} else {
-		accessToken, err = getClientCredentialsFromCache(credentialsFilePath, tokenExpirySeconds, hash)
-		if err != nil {
-			fmt.Printf("failed to get credentials from file %s %s\n", credentialsFilePath, err)
-		}
-	}
+	accessToken = getClientCredentialsFromCache(tokenExpirySeconds)
 
 	if accessToken == nil {
 		// If the token is present the default to that.
-		if astToken != "" {
-			accessToken, err = getNewToken(getTokenPayload(astToken), authURI)
+		if astAPKey != "" {
+			accessToken, err = getNewToken(getAPIKeyPayload(astAPKey), authURI)
 		} else {
 			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 		}
@@ -245,52 +240,23 @@ func getClientCredentials(accessKeyID, accessKeySecret, astToken, authURI string
 			return nil, errors.Wrap(err, "failed to get access token from auth server")
 		}
 
-		if errHash == nil {
-			err = writeCredentialsToCache(credentialsFilePath, hash, accessToken)
-			if err != nil {
-				fmt.Printf("failed to write credentials to file %s %s\n", credentialsFilePath, err)
-			}
-		}
+		writeCredentialsToCache(accessToken)
 	}
 
 	return accessToken, nil
 }
 
-// Try to load access token from file, if not expired
-func getClientCredentialsFromCache(credentialsFilePath string, tokenExpirySeconds int, credentialsHash uint64) (*string, error) {
-	if info, err := os.Stat(credentialsFilePath); err == nil {
-		// Credentials file exists. Check for access token validity
-		modifiedAt := info.ModTime()
-		expired := time.Since(modifiedAt) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
-		if !expired {
-			b, err := ioutil.ReadFile(credentialsFilePath)
-			if err != nil {
-				return nil, err
-			}
-
-			var credentials credentialsCache
-			err = json.Unmarshal(b, &credentials)
-			if err != nil {
-				return nil, err
-			}
-
-			return credentials[credentialsHash], nil
-		}
+func getClientCredentialsFromCache(tokenExpirySeconds int) *string {
+	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+	if !expired {
+		return &cachedAccessToken
 	}
-
-	return nil, nil
+	return nil
 }
 
-func writeCredentialsToCache(credentialsFilePath string, credentialsHash uint64, accessToken *string) error {
-	cred := credentialsCache{
-		credentialsHash: accessToken,
-	}
-	accessTokenData, err := json.Marshal(cred)
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(credentialsFilePath, accessTokenData, 0644)
+func writeCredentialsToCache(accessToken *string) {
+	cachedAccessToken = *accessToken
+	cachedAccessTime = time.Now()
 }
 
 func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
@@ -330,7 +296,7 @@ func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
 }
 
-func getTokenPayload(astToken string) string {
+func getAPIKeyPayload(astToken string) string {
 	return fmt.Sprintf("grant_type=refresh_token&client_id=ast-app&refresh_token=%s", astToken)
 }
 

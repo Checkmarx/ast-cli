@@ -71,9 +71,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
 		"Source file filtering pattern")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
-	createScanCmd.PersistentFlags().String(incrementalSast, "", "Incremental SAST scan should be performed, defaults to false.")
-	createScanCmd.PersistentFlags().String(incrementalKics, "", "Incremental KICS scan should be performed, defaults to false.")
-	createScanCmd.PersistentFlags().String(incrementalSca, "", "Incremental SCA scan should be performed, defaults to false.")
+	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
 
@@ -130,6 +128,7 @@ func findProject(projectName string) string {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
+		fmt.Println(err)
 		_ = errors.Wrapf(err, "%s\n", failedGettingAll)
 		os.Exit(0)
 	}
@@ -203,7 +202,7 @@ func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
 	newProjectType, _ := cmd.Flags().GetString(scanTypes)
 	scanTypes := strings.Split(newProjectType, ",")
 	for _, a := range scanTypes {
-		if strings.EqualFold(a, scanType) {
+		if strings.EqualFold(strings.TrimSpace(a), scanType) {
 			return true
 		}
 	}
@@ -240,15 +239,10 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled(cmd, "kics") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incrementalKics)
 		objArr["type"] = "kics"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
 		foundValue := false
-		if newIncremental != "" {
-			foundValue = true
-			valueMap["incremental"] = newIncremental
-		}
 		if foundValue {
 			objArr["value"] = valueMap
 		}
@@ -261,15 +255,10 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled(cmd, "sca") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incrementalSca)
 		objArr["type"] = "sca"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
 		foundValue := false
-		if newIncremental != "" {
-			foundValue = true
-			valueMap["incremental"] = newIncremental
-		}
 		if foundValue {
 			objArr["value"] = valueMap
 		}
@@ -431,6 +420,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		PrintIfVerbose(fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
+			fmt.Println("ERROR SENDING THE SCAN")
 			return errors.Wrapf(err, "%s", failedCreating)
 		}
 		// Checking the response

@@ -10,7 +10,7 @@ var EnvVarsBinds = []struct {
 	{BaseAuthURIKey, BaseAuthURIEnv, ""},
 	{AstUsernameKey, AstUsernameEnv, ""},
 	{AstPasswordKey, AstPasswordEnv, ""},
-	{AstTokenKey, AstTokenEnv, ""},
+	{AstAPIKey, AstAPIKeyEnv, ""},
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
@@ -39,6 +39,5 @@ var EnvVarsBinds = []struct {
 	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
 	{AstAuthenticationPathConfigKey, AstAuthenticationPathEnv, "auth/realms/organization/protocol/openid-connect/token"},
 	{AstRoleKey, AstRoleEnv, ScaAgent},
-	{CredentialsFilePathKey, CredentialsFilePathEnv, "credentials.json"},
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 }
