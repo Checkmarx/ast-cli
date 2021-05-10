@@ -33,13 +33,11 @@ const (
 	mainBranchFlag                 = "branch"
 	projectName                    = "project-name"
 	scanTypes                      = "scan-types"
-	incrementalSast                = "incremental-sast"
-	incrementalKics                = "incremental-kics"
-	incrementalSca                 = "incremental-sca"
+	incrementalSast                = "sast-incremental"
 	presetName                     = "preset-name"
 	accessKeyIDFlag                = "client-id"
+	accessKeySecretFlag            = "client-secret"
 	accessKeyIDFlagUsage           = "The access key ID"
-	accessKeySecretFlag            = "secret"
 	accessKeySecretFlagUsage       = "The access key secret"
 	astAuthenticationPathFlag      = "auth-path"
 	astAuthenticationPathFlagUsage = "The authentication path"
@@ -57,8 +55,8 @@ const (
 	baseURIFlagUsage               = "The base system URI"
 	baseAuthURIFlag                = "base-auth-uri"
 	baseAuthURIFlagUsage           = "The base system IAM URI"
-	astTokenFlag                   = "token"
-	astTokenUsage                  = "The token to login to AST with"
+	astAPIKeyFlag                  = "apikey"
+	astAPIKeyUsage                 = "The API Key to login to AST with"
 	repoURLFlag                    = "repo-url"
 	queriesRepoNameFlag            = "name"
 	queriesRepoNameSh              = "n"
@@ -105,7 +103,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 	rootCmd.PersistentFlags().String(baseAuthURIFlag, params.BaseIAMURI, baseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
-	rootCmd.PersistentFlags().String(astTokenFlag, params.BaseURI, astTokenUsage)
+	rootCmd.PersistentFlags().String(astAPIKeyFlag, params.BaseURI, astAPIKeyUsage)
 	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, "hello")
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
@@ -117,7 +115,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
-	_ = viper.BindPFlag(params.AstTokenKey, rootCmd.PersistentFlags().Lookup(astTokenFlag))
+	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(astAPIKeyFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
@@ -127,7 +125,8 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
-	bflCmd := NewBFLCommand(bflWrapper)
+	// Disable BFL until results are ready in AST.
+	//bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
@@ -137,7 +136,7 @@ func NewAstCLI(
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		bflCmd,
+		//bflCmd,
 		authCmd,
 		utilsCmd,
 		configCmd,

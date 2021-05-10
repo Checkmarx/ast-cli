@@ -79,8 +79,8 @@ You may have noticed the parameters accepted by the CLI vary based on the comman
 - (--base-uri), the URL of the AST server.
 - (--base-auth-uri), optionally provides alternative KeyCloak endpoint to (--base-uri).
 - (--client-id), the client ID used for authentication (see Authentication documentation).
-- (--secret), the secret that corrosponds to the client-id  (see Authentication documentation).
-- (--token), the token to authenticate with (see Authentication documentation).
+- (--client-secret), the secret that corrosponds to the client-id  (see Authentication documentation).
+- (--apikey), the token to authenticate with (see Authentication documentation).
 - (--proxy), optional proxy server to use (see Proxy Support documentation).
 - (--insecure), indicates CLI should ignore TLS certificate validations.
 - (--profile), specifies the CLI profile to store options in (see Environment and Configuration documentation).
@@ -100,7 +100,7 @@ The CLI allows you to permanently store some CLI options in configuration files.
 ./cx configure set cx_ast_access_key_id <your-key>
 ./cx configure set cx_ast_access_key_secret <your-secret>
 ./cx configure set cx_http_proxy <your-proxy>
-./cx configure set cx_token <your-token>
+./cx configure set cx_apikey <your-apikey>
 ```
 
 The (--profile) option provides a powerful tool to quickly switch through differnent sets of configurations. You can add a profile name to any CLI command and it utilize the corsponding profile settings. The following example setups up altnerative profile named "test" and calls a CLI command utilizing it.
@@ -127,7 +127,7 @@ If the CLI has previously stored values they will show up like you see in the pr
 
 These values can be stored in CLI configurations:
 
-- cx_token: the token to authenticate with (see Authentication documentation).
+- cx_apikey: the apikey to authenticate with (see Authentication documentation).
 - cx_base-uri: the URL of the AST server.
 - cx_http_proxy: optional proxy server to use (see Proxy Support documentation). 
 - cx_ast_access_key_id: the client ID used for authentication (see Authentication documentation).
@@ -135,12 +135,12 @@ These values can be stored in CLI configurations:
 
 ## Authentication
 
-The CLI supports token and key/secret based authentication.
+The CLI supports apikey and key/secret based authentication.
 
-Token based authentication is the easiest method to use in CI/CD environments. Tokens are generated through KeyCloak and can be created with a predictable lifetime. Once you have a token you can use it from the CLI like this:
+API Key based authentication is the easiest method to use in CI/CD environments. Tokens are generated through KeyCloak and can be created with a predictable lifetime. Once you have a token you can use it from the CLI like this:
 
 ``` bash
-./cx --token <your-token> scan list 
+./cx --apikey <your-token> scan list 
 ```
 
 You can optionally configure the token into your stored CLI configuration values like this:
@@ -316,13 +316,13 @@ The following example demonstraights the use of a proxy server:
 
 ## Environment Variables
 
-| Environment Variable         | Description                                                  |
-| ---------------------------- | ------------------------------------------------------------ |
-| **CX_AST_ACCESS_KEY_ID**     | Key portion of key/secret authentication pair.               |
-| **CX_AST_ACCESS_KEY_SECRET** | Secret portion of key/secret authentication pair.            |
-| **CX_TOKEN**                 | Token for token based authentication.                        |
-| **CX_BASE_URI**              | The URI of the AST server.                                   |
-| **CX_BASE_IAM_URI**          | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
-| **CX_HTTP_PROXY**            | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
+| Environment Variable | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| **CX_CLIENT_ID**     | Key portion of key/secret authentication pair.               |
+| **CX_CLIENT_SECRET** | Secret portion of key/secret authentication pair.            |
+| **CX_APIKEY**        | API Key for token based authentication.                      |
+| **CX_BASE_URI**      | The URI of the AST server.                                   |
+| **CX_BASE_IAM_URI**  | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
+| **CX_HTTP_PROXY**    | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
 
 

@@ -21,7 +21,7 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
-	accessToken := viper.GetString(params.AstTokenKey)
+	accessAPIKey := viper.GetString(params.AstAPIKey)
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
 	baseURI = strings.Replace(baseURI, "\n", "", -1)
@@ -30,18 +30,18 @@ func PromptConfiguration() {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
 
-	fmt.Printf("Do you want token based authentication? (Y/N): ")
+	fmt.Printf("Do you want to use API Key authentication? (Y/N): ")
 	authType, _ := reader.ReadString('\n')
 	authType = strings.Replace(authType, "\n", "", -1)
 	authType = strings.Replace(authType, "\r", "", -1)
 	fmt.Println("authType: ", authType)
 	if strings.EqualFold(authType, "Y") {
-		fmt.Printf("AST token [%s]: ", obfuscateString(accessToken))
-		accessToken, _ = reader.ReadString('\n')
-		accessToken = strings.Replace(accessToken, "\n", "", -1)
-		accessToken = strings.Replace(accessToken, "\r", "", -1)
-		if len(accessToken) > 0 {
-			setConfigPropertyQuiet(params.AstTokenKey, accessToken)
+		fmt.Printf("AST token [%s]: ", obfuscateString(accessAPIKey))
+		accessAPIKey, _ = reader.ReadString('\n')
+		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
+		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
+		if len(accessAPIKey) > 0 {
+			setConfigPropertyQuiet(params.AstAPIKey, accessAPIKey)
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
 			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
 		}
@@ -52,7 +52,7 @@ func PromptConfiguration() {
 		accessKey = strings.Replace(accessKey, "\r", "", -1)
 		if len(accessKey) > 0 {
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
-			setConfigPropertyQuiet(params.AstTokenKey, "")
+			setConfigPropertyQuiet(params.AstAPIKey, "")
 		}
 		fmt.Printf("Client Secret [%s]: ", obfuscateString(accessKeySecret))
 		accessKeySecret, _ = reader.ReadString('\n')
@@ -60,7 +60,7 @@ func PromptConfiguration() {
 		accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
 		if len(accessKeySecret) > 0 {
 			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
-			setConfigPropertyQuiet(params.AstTokenKey, "")
+			setConfigPropertyQuiet(params.AstAPIKey, "")
 		}
 	}
 }
@@ -137,6 +137,21 @@ func findProfile() string {
 
 func ShowConfiguration() {
 	fmt.Println("Current Effective Configuration")
-	baseURI := viper.GetString(params.BaseURIKey)
-	fmt.Println("\tBaseURI: ", baseURI)
+
+	fmt.Printf("%30v", "BaseURI: ")
+	fmt.Println(viper.GetString(params.BaseURIKey))
+	fmt.Printf("%30v", "BaseAuthURIKey: ")
+	fmt.Println(viper.GetString(params.BaseAuthURIKey))
+	fmt.Printf("%30v", "Client ID: ")
+	fmt.Println(viper.GetString(params.AccessKeyIDConfigKey))
+	fmt.Printf("%30v", "Client Secret: ")
+	fmt.Println(obfuscateString(viper.GetString(params.AccessKeySecretConfigKey)))
+	fmt.Printf("%30v", "APIKey: ")
+	fmt.Println(obfuscateString(viper.GetString(params.AstAPIKey)))
+	fmt.Printf("%30v", "Proxy: ")
+	fmt.Println(viper.GetString(params.ProxyKey))
+
+	/*
+		CX_AGENT_NAME
+	*/
 }
