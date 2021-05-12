@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -22,6 +21,7 @@ const (
 	sourcesFlag                    = "sources"
 	sourcesFlagSh                  = "s"
 	agentFlag                      = "agent"
+	agentFlagUsage                 = "Scan origin name"
 	waitFlag                       = "nowait"
 	waitFlagSh                     = "w"
 	waitDelayFlag                  = "wait-delay"
@@ -35,11 +35,11 @@ const (
 	projectName                    = "project-name"
 	scanTypes                      = "scan-types"
 	incrementalSast                = "sast-incremental"
-	presetName                     = "preset-name"
+	presetName                     = "sast-preset-name"
 	accessKeyIDFlag                = "client-id"
 	accessKeySecretFlag            = "client-secret"
-	accessKeyIDFlagUsage           = "The access key ID"
-	accessKeySecretFlagUsage       = "The access key secret"
+	accessKeyIDFlagUsage           = "The oAuth2 client ID"
+	accessKeySecretFlagUsage       = "The oAuth2 client secret"
 	astAuthenticationPathFlag      = "auth-path"
 	astAuthenticationPathFlagUsage = "The authentication path"
 	insecureFlag                   = "insecure"
@@ -98,14 +98,15 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)
 	rootCmd.PersistentFlags().String(accessKeyIDFlag, "", accessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
-	rootCmd.PersistentFlags().String(astAuthenticationPathFlag, "", astAuthenticationPathFlagUsage)
+	// This may need to be enabled again
+	// rootCmd.PersistentFlags().String(astAuthenticationPathFlag, "", astAuthenticationPathFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	rootCmd.PersistentFlags().String(proxyFlag, "", proxyFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 	rootCmd.PersistentFlags().String(baseAuthURIFlag, params.BaseIAMURI, baseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
 	rootCmd.PersistentFlags().String(astAPIKeyFlag, params.BaseURI, astAPIKeyUsage)
-	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, "hello")
+	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, agentFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -133,74 +134,11 @@ func NewAstCLI(
 	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
 	configCmd := NewConfigCommand()
 
-	//
-	/// Complete command
-	//
-	var completionCmd = &cobra.Command{
-		Use:   "completion [bash|zsh|fish|powershell]",
-		Short: "Generate completion script",
-		Long: `To load completions:
-	
-	Bash:
-	
-		$ source <(cx completion bash)
-	
-		# To load completions for each session, execute once:
-		# Linux:
-		$ cx completion bash > /etc/bash_completion.d/cx
-		# macOS:
-		$ cx completion bash > /usr/local/etc/bash_completion.d/cx
-	
-	Zsh:
-	
-		# If shell completion is not already enabled in your environment,
-		# you will need to enable it.  You can execute the following once:
-	
-		$ echo "autoload -U compinit; compinit" >> ~/.zshrc
-	
-		# To load completions for each session, execute once:
-		$ cx completion zsh > "${fpath[1]}/_cx"
-	
-		# You will need to start a new shell for this setup to take effect.
-	
-	fish:
-	
-		$ cx completion fish | source
-	
-		# To load completions for each session, execute once:
-		$ cx completion fish > ~/.config/fish/completions/cx.fish
-	
-	PowerShell:
-	
-		PS> cx completion powershell | Out-String | Invoke-Expression
-	
-		# To load completions for every new session, run:
-		PS> cx completion powershell > cx.ps1
-		# and source this file from your PowerShell profile.
-	`,
-		DisableFlagsInUseLine: true,
-		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-		Args:                  cobra.ExactValidArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			switch args[0] {
-			case "bash":
-				cmd.Root().GenBashCompletion(os.Stdout)
-			case "zsh":
-				cmd.Root().GenZshCompletion(os.Stdout)
-			case "fish":
-				cmd.Root().GenFishCompletion(os.Stdout, true)
-			case "powershell":
-				cmd.Root().GenPowerShellCompletion(os.Stdout)
-			}
-		},
-	}
-
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
 		versionCmd,
 		//bflCmd,
-		completionCmd,
 		authCmd,
 		utilsCmd,
 		configCmd,
