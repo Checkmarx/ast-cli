@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/user"
-	"sort"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -133,37 +132,6 @@ func findProfile() string {
 				profileName = os.Args[profileIdx]
 				fmt.Println("Using custom profile: ", profileName)
 			}
-		}
-	}
-	return profileName
-}
-
-func findProfileGOOD() string {
-	profileName := defaultProfileName
-	for idx, b := range os.Args {
-		if b == "--profile" {
-			profileIdx := idx + 1
-			if len(os.Args) > profileIdx {
-				profileName = os.Args[profileIdx]
-				fmt.Println("Using custom profile: ", profileName)
-			}
-		}
-	}
-	return profileName
-}
-
-func findProfileTest() string {
-	profileName := defaultProfileName
-
-	idx := sort.SearchStrings(os.Args, "--profile")
-	fmt.Println("Idx: ", idx)
-	fmt.Println(os.Args)
-	b := os.Args[idx]
-	if b == "--profile" {
-		profileIdx := idx + 1
-		if len(os.Args) > profileIdx {
-			profileName = os.Args[profileIdx]
-			fmt.Println("Using custom profile: ", profileName)
 		}
 	}
 	return profileName

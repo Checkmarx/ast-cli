@@ -160,7 +160,6 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 
 func getAuthURI() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
-	// authPath := "CX_AST_AUTHENTICATION_PATH"
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
@@ -202,7 +201,7 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Wrap(err, "failed to authenticate")
 	}
 
-	request.Header.Add("Authorization2", "*accessToken")
+	request.Header.Add("Authorization", *accessToken)
 	return request, nil
 }
 
