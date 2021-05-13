@@ -123,7 +123,8 @@ func verifyConfigDir(fullPath string) {
 
 func findProfile() string {
 	profileName := defaultProfileName
-	for idx, b := range os.Args {
+	for idx := 0; idx < len(os.Args); idx++ {
+		b := os.Args[idx]
 		if b == "--profile" {
 			profileIdx := idx + 1
 			if len(os.Args) > profileIdx {
