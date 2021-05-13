@@ -221,7 +221,7 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		if newIncremental != "" {
 			valueMap["incremental"] = newIncremental
 		}
-		if newPresetName != "" {
+		if newPresetName == "" {
 			newPresetName = "Checkmarx Default"
 		}
 		valueMap["presetName"] = newPresetName
