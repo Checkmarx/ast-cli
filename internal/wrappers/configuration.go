@@ -126,12 +126,7 @@ const argLimit = 50
 
 func findProfile() string {
 	profileName := defaultProfileName
-	limit := 0
 	for idx, b := range os.Args {
-		if limit > argLimit {
-			break
-		}
-		limit++
 		if b == "--profile" {
 			profileIdx := idx + 1
 			if len(os.Args) > profileIdx {
