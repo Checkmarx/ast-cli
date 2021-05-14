@@ -123,16 +123,16 @@ func verifyConfigDir(fullPath string) {
 }
 
 func findProfile() string {
+	fmt.Println("Testing errors")
+
 	profileName := defaultProfileName
 	profileIdx := sort.SearchStrings(os.Args, "--sast-preset-name")
 	fmt.Println(profileIdx)
-	/*
-		if profileIdx >= 0 {
-			profileIdx += 1
-			profileName = os.Args[profileIdx]
-			fmt.Println("Using custom profile: ", profileName)
-		}
-	*/
+	if profileIdx >= 0 {
+		profileIdx += 1
+		profileName = os.Args[profileIdx]
+		fmt.Println("Using custom profile: ", profileName)
+	}
 	return profileName
 }
 
