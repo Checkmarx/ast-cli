@@ -125,6 +125,7 @@ func findProfile() string {
 	fmt.Println("Testing errors")
 
 	profileName := defaultProfileName
+	fmt.Println(os.Args)
 	// profileIdx := sort.SearchStrings(os.Args, "--sast-preset-name")
 	profileIdx := 2
 	fmt.Println(profileIdx)
