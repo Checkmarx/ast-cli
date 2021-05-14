@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"sort"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -122,13 +123,8 @@ func verifyConfigDir(fullPath string) {
 }
 
 func findProfile() string {
-	fmt.Println("Testing errors")
-
 	profileName := defaultProfileName
-	fmt.Println(os.Args)
-	// profileIdx := sort.SearchStrings(os.Args, "--sast-preset-name")
-	profileIdx := 2
-	fmt.Println(profileIdx)
+	profileIdx := sort.SearchStrings(os.Args, "--sast-preset-name")
 	if profileIdx >= 0 {
 		profileIdx += 1
 		profileName = os.Args[profileIdx]
