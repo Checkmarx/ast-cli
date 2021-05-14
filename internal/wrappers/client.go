@@ -84,7 +84,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 		return nil, err
 	}
 	if auth {
-		req, err = enrichWithOath2Credentials(req)
+		err = enrichWithOath2Credentials(req)
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +146,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	req, err = enrichWithOath2Credentials(req)
+	err = enrichWithOath2Credentials(req)
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +177,10 @@ func getAuthURI() (string, error) {
 	return authURI, nil
 }
 
-func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
+func enrichWithOath2Credentials(request *http.Request) error {
 	authURI, err := getAuthURI()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
@@ -188,23 +188,21 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 
 	if accessKeyID == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
 		fmt.Println("API Key not found!")
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
 	}
 
 	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to authenticate")
+		return errors.Wrap(err, "failed to authenticate")
 	}
 
-	//header("Content-Type: image/png");
-	request.Header.Add("content-type", "application/json")
 	request.Header.Add("Authorization", *accessToken)
-	return request, nil
+	return nil
 }
 
 func enrichWithPasswordCredentials(request *http.Request, username, password,
