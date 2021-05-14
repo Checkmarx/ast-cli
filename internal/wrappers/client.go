@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -203,6 +204,17 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 
 	request.Header.Add("Authorization", *accessToken)
 	return request, nil
+}
+
+func findPreset() string {
+	profileName := defaultProfileName
+	profileIdx := sort.SearchStrings(os.Args, "--sast-preset-name")
+	if profileIdx >= 0 {
+		profileIdx += 1
+		profileName = os.Args[profileIdx]
+		fmt.Println("Using custom profile: ", profileName)
+	}
+	return profileName
 }
 
 func enrichWithPasswordCredentials(request *http.Request, username, password,
