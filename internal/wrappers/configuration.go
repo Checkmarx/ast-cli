@@ -93,7 +93,8 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	profile := findProfile(os.Args)
+	test := os.Args[0:10]
+	profile := findProfile(test)
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
