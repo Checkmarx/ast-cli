@@ -201,7 +201,7 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Wrap(err, "failed to authenticate")
 	}
 
-	request.Header.Add("Authorization", *accessToken)
+	request.Header.Add("Authorization", "junk")
 	return request, nil
 }
 
