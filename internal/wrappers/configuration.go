@@ -2,11 +2,11 @@ package wrappers
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/user"
-	"sort"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -93,8 +93,9 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	test := os.Args[0:10]
-	profile := findProfile(test)
+	var profile string = defaultProfileName
+	flag.StringVar(&profile, "profile", "profile", "Profile to lload")
+	flag.Parse()
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
@@ -121,17 +122,6 @@ func verifyConfigDir(fullPath string) {
 			panic(err)
 		}
 	}
-}
-
-func findProfile(args []string) string {
-	profileName := defaultProfileName
-	profileIdx := sort.SearchStrings(args, "--sast-preset-name")
-	if profileIdx >= 0 {
-		profileIdx += 1
-		profileName = args[profileIdx]
-		fmt.Println("Using custom profile: ", profileName)
-	}
-	return profileName
 }
 
 func ShowConfiguration() {
