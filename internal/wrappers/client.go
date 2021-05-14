@@ -218,7 +218,7 @@ func enrichWithPasswordCredentials(request *http.Request, username, password,
 			"failed to authenticate")
 	}
 
-	//request.Header.Add("Authorization", "Bearer "+*accessToken)
+	request.Header.Add("Authorization", "Bearer "+*accessToken)
 	return request, nil
 }
 
