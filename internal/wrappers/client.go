@@ -201,7 +201,9 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 		return nil, errors.Wrap(err, "failed to authenticate")
 	}
 
-	request.Header.Add("Authorization", "junk")
+	//header("Content-Type: image/png");
+	request.Header.Add("content-type", "application/json")
+	request.Header.Add("Authorization", *accessToken)
 	return request, nil
 }
 
