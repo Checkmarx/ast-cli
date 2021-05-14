@@ -107,7 +107,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 		return nil, err
 	}
 	req.Header.Add("content-type", "application/json")
-	req, err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
+	err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -206,20 +206,20 @@ func enrichWithOath2Credentials(request *http.Request) error {
 }
 
 func enrichWithPasswordCredentials(request *http.Request, username, password,
-	adminClientID, adminClientSecret string) (*http.Request, error) {
+	adminClientID, adminClientSecret string) error {
 	authURI, err := getAuthURI()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	accessToken, err := getNewToken(getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret), authURI)
 	if err != nil {
-		return nil, errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
+		return errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
 			"failed to authenticate")
 	}
 
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
-	return request, nil
+	return nil
 }
 
 func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (*string, error) {
