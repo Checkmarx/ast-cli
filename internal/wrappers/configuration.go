@@ -93,7 +93,7 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	profile := findProfile()
+	profile := findProfile(os.Args)
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
@@ -122,13 +122,12 @@ func verifyConfigDir(fullPath string) {
 	}
 }
 
-func findProfile() string {
+func findProfile(args []string) string {
 	profileName := defaultProfileName
-	strs := []string{"Hello", "by"}
-	profileIdx := sort.SearchStrings(strs, "--sast-preset-name")
+	profileIdx := sort.SearchStrings(args, "--sast-preset-name")
 	if profileIdx >= 0 {
 		profileIdx += 1
-		//profileName = os.Args[profileIdx]
+		profileName = args[profileIdx]
 		fmt.Println("Using custom profile: ", profileName)
 	}
 	return profileName
