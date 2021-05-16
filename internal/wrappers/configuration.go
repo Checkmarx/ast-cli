@@ -93,8 +93,7 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	var profile string = defaultProfileName
-	flag.StringVar(&profile, "profile", "profile", "Profile to lload")
+	profile := flag.String("profile", defaultProfileName, "Profile to load")
 	flag.Parse()
 	usr, err := user.Current()
 	if err != nil {
@@ -104,10 +103,11 @@ func LoadConfiguration() {
 	verifyConfigDir(fullPath)
 	viper.AddConfigPath(fullPath)
 	configFile := "checkmarxcli"
-	if profile != defaultProfileName {
+	if *profile != defaultProfileName {
 		configFile += "_"
-		configFile += profile
+		configFile += *profile
 	}
+	fmt.Println("using config file: ", configFile)
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
