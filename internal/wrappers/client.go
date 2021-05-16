@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -40,8 +39,6 @@ type ClientCredentialsError struct {
 	Error       string `json:"error"`
 	Description string `json:"error_description"`
 }
-
-type credentialsCache map[uint64]*string
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
@@ -303,10 +300,4 @@ func getAPIKeyPayload(astToken string) string {
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
 		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
-}
-
-func hash(s string) (uint64, error) {
-	h := fnv.New64()
-	_, err := h.Write([]byte(s))
-	return h.Sum64(), err
 }

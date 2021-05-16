@@ -127,7 +127,7 @@ func NewAstCLI(
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
 	// Disable BFL until results are ready in AST.
-	//bflCmd := NewBFLCommand(bflWrapper)
+	// bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
