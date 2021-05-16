@@ -126,7 +126,7 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
-	// Disable BFL until results are ready in AST.
+	// Disable BFL until ready in AST.
 	// bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
