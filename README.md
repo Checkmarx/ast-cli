@@ -67,9 +67,9 @@ Usage:
   cx scan create [flags]
 
 Flags:
-  -d, --directory string             A path to directory with sources to scan
-  -f, --filter string                Source file filtering pattern
-      --preset-name string           The name of the Checkmarx preset to use.
+  -s, --sources string             A path to directory with sources to scan
+  -f, --filter string              Source file filtering pattern
+      --preset-name string         The name of the Checkmarx preset to use.
       --project-name string       
       ....
 ```

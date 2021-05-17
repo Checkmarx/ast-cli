@@ -13,7 +13,6 @@ import (
 )
 
 const configDirName = "/.checkmarx"
-const defaultProfileName = "default"
 const obfuscateLimit = 4
 
 func PromptConfiguration() {
@@ -92,10 +91,6 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	/*
-		profile := flag.String("profile", defaultProfileName, "")
-		flag.Parse()
-	*/
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
@@ -104,12 +99,6 @@ func LoadConfiguration() {
 	verifyConfigDir(fullPath)
 	viper.AddConfigPath(fullPath)
 	configFile := "checkmarxcli"
-	/*
-		if *profile != defaultProfileName {
-			configFile += "_"
-			configFile += *profile
-		}
-	*/
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
