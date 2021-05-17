@@ -365,7 +365,7 @@ func determineSourceFile(
 	return preSignedURL, err
 }
 
-func determineSourceType(sourcesFile string) (zipFile string, sourceDir string, scanRepoURL string, err error) {
+func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL string, err error) {
 	if strings.HasPrefix(sourcesFile, "https://") ||
 		strings.HasPrefix(sourcesFile, "http://") {
 		scanRepoURL = sourcesFile
