@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"log"
 	"os"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -23,9 +24,7 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 	rmCmd := NewSastResourcesCommand(rmWrapper)
 	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	logsCmd := NewLogsCommand(logsWrapper)
-	//
-	/// Complete command
-	//
+
 	var completionCmd = &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate completion script",
@@ -72,15 +71,19 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 		Args:                  cobra.ExactValidArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
 			switch args[0] {
 			case "bash":
-				cmd.Root().GenBashCompletion(os.Stdout)
+				err = cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
-				cmd.Root().GenZshCompletion(os.Stdout)
+				err = cmd.Root().GenZshCompletion(os.Stdout)
 			case "fish":
-				cmd.Root().GenFishCompletion(os.Stdout, true)
+				err = cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
-				cmd.Root().GenPowerShellCompletion(os.Stdout)
+				err = cmd.Root().GenPowerShellCompletion(os.Stdout)
+			}
+			if err != nil {
+				log.Fatal(err)
 			}
 		},
 	}
