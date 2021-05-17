@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -58,18 +59,10 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false,
-		"Wait for scan completiot (default true)")
-	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5,
-		"Polling wait time in seconds")
-	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "",
-		"A path to the sources file to scan")
-	createScanCmd.PersistentFlags().StringP(sourceDirFlag, sourceDirFlagSh, "",
-		"A path to directory with sources to scan")
-	createScanCmd.PersistentFlags().StringP(scanRepoFlag, scanRepoFlagSh, "",
-		"Repository URL to scan")
-	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "",
-		"Source file filtering pattern")
+	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completiot (default true)")
+	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
+	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "A path to scan")
+	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
@@ -139,7 +132,6 @@ func findProject(projectName string) string {
 			}
 		}
 	} else {
-		fmt.Println("Trying to create project")
 		projectID, err = createProject(projectName)
 		if err != nil {
 			_ = errors.Wrapf(err, "%s", failedCreatingProj)
@@ -276,9 +268,6 @@ func compressFolder(sourceDir, filter string) (string, error) {
 	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
 	addDirFiles(zipWriter, "/", sourceDir, filters)
-	fmt.Println("Zipped File:", outputFile.Name())
-	fmt.Println("source DIR: ", sourceDir)
-	fmt.Println("GLOB pattr", filter)
 	// Close the file
 	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
@@ -353,7 +342,7 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters []str
 	}
 }
 
-func determineSourceType(
+func determineSourceFile(
 	uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
 	sourceDir,
@@ -376,15 +365,45 @@ func determineSourceType(
 	return preSignedURL, err
 }
 
+func determineSourceType(sourcesFile string) (string, string, string, error) {
+	var err error = nil
+	zipFile := ""
+	sourceDir := ""
+	scanRepoURL := ""
+	if strings.HasPrefix(sourcesFile, "https://") ||
+		strings.HasPrefix(sourcesFile, "http://") {
+		scanRepoURL = sourcesFile
+		sourcesFile = ""
+	} else {
+		info, statErr := os.Stat(sourcesFile)
+		if !os.IsNotExist(statErr) {
+			if filepath.Ext(sourcesFile) == ".zip" {
+				zipFile = sourcesFile
+			} else if info.IsDir() {
+				sourceDir = sourcesFile
+			} else {
+				msg := fmt.Sprintf("Sources input has bad format: %v", sourcesFile)
+				err = errors.New(msg)
+			}
+		} else {
+			msg := fmt.Sprintf("Sources input has bad format: %v", sourcesFile)
+			err = errors.New(msg)
+		}
+	}
+	return zipFile, sourceDir, scanRepoURL, err
+}
+
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
-		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
-		sourceDir, _ := cmd.Flags().GetString(sourceDirFlag)
-		scanRepoURL, _ := cmd.Flags().GetString(scanRepoFlag)
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
+		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
+		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
+		if err != nil {
+			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		}
 		noWaitFlag, _ := cmd.Flags().GetBool(waitFlag)
 		waitDelay, _ := cmd.Flags().GetInt(waitDelayFlag)
 		var uploadType string
@@ -405,7 +424,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = "master"
-		pHandler.UploadURL, err = determineSourceType(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
+		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
@@ -416,7 +435,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		PrintIfVerbose(fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
 		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
 		if err != nil {
-			fmt.Println("ERROR SENDING THE SCAN")
 			return errors.Wrapf(err, "%s", failedCreating)
 		}
 		// Checking the response
