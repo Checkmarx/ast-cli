@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -93,8 +92,10 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	profile := flag.String("profile", defaultProfileName, "Profile to load")
-	flag.Parse()
+	/*
+		profile := flag.String("profile", defaultProfileName, "")
+		flag.Parse()
+	*/
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
@@ -103,11 +104,12 @@ func LoadConfiguration() {
 	verifyConfigDir(fullPath)
 	viper.AddConfigPath(fullPath)
 	configFile := "checkmarxcli"
-	if *profile != defaultProfileName {
-		configFile += "_"
-		configFile += *profile
-	}
-	fmt.Println("using config file: ", configFile)
+	/*
+		if *profile != defaultProfileName {
+			configFile += "_"
+			configFile += *profile
+		}
+	*/
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
