@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -40,8 +39,6 @@ type ClientCredentialsError struct {
 	Error       string `json:"error"`
 	Description string `json:"error_description"`
 }
-
-type credentialsCache map[uint64]*string
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
@@ -84,7 +81,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 		return nil, err
 	}
 	if auth {
-		req, err = enrichWithOath2Credentials(req)
+		err = enrichWithOath2Credentials(req)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +104,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 		return nil, err
 	}
 	req.Header.Add("content-type", "application/json")
-	req, err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
+	err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +143,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	req, err = enrichWithOath2Credentials(req)
+	err = enrichWithOath2Credentials(req)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +157,6 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 
 func getAuthURI() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
-	// authPath := "CX_AST_AUTHENTICATION_PATH"
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
@@ -178,10 +174,10 @@ func getAuthURI() (string, error) {
 	return authURI, nil
 }
 
-func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
+func enrichWithOath2Credentials(request *http.Request) error {
 	authURI, err := getAuthURI()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
@@ -189,38 +185,38 @@ func enrichWithOath2Credentials(request *http.Request) (*http.Request, error) {
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 
 	if accessKeyID == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
 		fmt.Println("API Key not found!")
-		return nil, errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
+		return errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
 	}
 
 	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to authenticate")
+		return errors.Wrap(err, "failed to authenticate")
 	}
 
 	request.Header.Add("Authorization", *accessToken)
-	return request, nil
+	return nil
 }
 
 func enrichWithPasswordCredentials(request *http.Request, username, password,
-	adminClientID, adminClientSecret string) (*http.Request, error) {
+	adminClientID, adminClientSecret string) error {
 	authURI, err := getAuthURI()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	accessToken, err := getNewToken(getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret), authURI)
 	if err != nil {
-		return nil, errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
+		return errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
 			"failed to authenticate")
 	}
 
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
-	return request, nil
+	return nil
 }
 
 func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (*string, error) {
@@ -304,10 +300,4 @@ func getAPIKeyPayload(astToken string) string {
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
 		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
-}
-
-func hash(s string) (uint64, error) {
-	h := fnv.New64()
-	_, err := h.Write([]byte(s))
-	return h.Sum64(), err
 }
