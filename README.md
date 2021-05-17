@@ -67,9 +67,9 @@ Usage:
   cx scan create [flags]
 
 Flags:
-  -s, --sources string             A path to directory with sources to scan
+  -s, --sources string             Path to scan
   -f, --filter string              Source file filtering pattern
-      --preset-name string         The name of the Checkmarx preset to use.
+      --preset-name string         The name of the Checkmarx preset to use
       --project-name string       
       ....
 ```
@@ -97,8 +97,9 @@ The CLI allows you to permanently store some CLI options in configuration files.
 
 ``` bash
 ./cx configure set cx_base_uri "http://<your-server>[:<port>]"
-./cx configure set cx_ast_access_key_id <your-key>
-./cx configure set cx_ast_access_key_secret <your-secret>
+./cx configure set cx_base_auth_uri "http://<your-server>[:<port>]"
+./cx configure set cx_ast_client_id <your-key>
+./cx configure set cx_ast_client_secret <your-secret>
 ./cx configure set cx_http_proxy <your-proxy>
 ./cx configure set cx_apikey <your-apikey>
 ```
@@ -119,8 +120,10 @@ The configure command supports an interactive mode that prompt you for the follo
 ``` bash
 ./cx configure
 AST Base URI [http://<your-domain]: <your-updated-domain>
-AST Access Key [******f23d]: <your-updated-key>
-AST Key Secret [******8913]: <your-updated-secret>
+AST Base Auth URI [<your-updated-domain>]: <your-updated-auth-domain>
+Do you want to use API Key authentication? (Y/N): n
+AST Client ID  [******f23d]: <your-updated-client-idy>
+AST Client Secret [******8913]: <your-updated-client-secret>
 ```
 
 If the CLI has previously stored values they will show up like you see in the previous example, you can just press enter if you want to keep the existing value.
@@ -128,10 +131,11 @@ If the CLI has previously stored values they will show up like you see in the pr
 These values can be stored in CLI configurations:
 
 - cx_apikey: the apikey to authenticate with (see Authentication documentation).
-- cx_base-uri: the URL of the AST server.
+- cx_base_uri: the URL of the AST server.
+- cx_base_auth_uri: the URL of the AST server.
 - cx_http_proxy: optional proxy server to use (see Proxy Support documentation). 
-- cx_ast_access_key_id: the client ID used for authentication (see Authentication documentation).
-- cx_ast_access_key_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
+- cx_ast_client_id: the client ID used for authentication (see Authentication documentation).
+- cx_ast_client_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
 
 ## Authentication
 
@@ -140,21 +144,21 @@ The CLI supports apikey and key/secret based authentication.
 API Key based authentication is the easiest method to use in CI/CD environments. Tokens are generated through KeyCloak and can be created with a predictable lifetime. Once you have a token you can use it from the CLI like this:
 
 ``` bash
-./cx --apikey <your-token> scan list 
+./cx --apikey <your-apikey> scan list 
 ```
 
 You can optionally configure the token into your stored CLI configuration values like this:
 
 ``` bash
-./cx configure set cx_token <your-token>
-# The following command will automatically use the stored token
+./cx configure set cx_apikey <your-apikey>
+# The following command will automatically use the stored apikey
 ./cx scan list
 ```
 
-You can also store the token in the environment like this:
+You can also store the apikey in the environment like this:
 
 ``` bash
-export CX_TOKEN=<your-token>
+export CX_APIKEY=<your-apikey>
 ./cx scan list
 ```
 
@@ -162,21 +166,21 @@ Key/secret authentication requires you to first use an AST username and password
 
 ``` bash
 ./cx auth register -u <username> -p <password>
-CX_AST_ACCESS_KEY_ID=<generated-key>
-CX_AST_ACCESS_KEY_SECRET=<generated-secret>
+CX_AST_CLIENT_ID=<generated-client-id>
+CX_AST_CLIENT_SECRET=<generated-client-secret>
 ```
 
 Once you generated your key and secret they can be used like this:
 
 ``` bash
-./cx --client-id <your-key> --secret <your-secret> scan list 
+./cx --client-id <your-client-id> --secret <your-client-secret> scan list 
 ```
 
 You can optionally configure the key/secret into your stored CLI configuration values like this:
 
 ``` bash
-./cx configure set cx_ast_access_key_id <your-key>
-./cx configure set cx_ast_access_key_secret <your-secret>
+./cx configure set cx_ast_client_id <your-client-id>
+./cx configure set cx_ast_client_secret <your-client-secret>
 # The following command will automatically use the stored key/secret
 ./cx scan list
 ```
@@ -184,12 +188,24 @@ You can optionally configure the key/secret into your stored CLI configuration v
 You can also store the key/secret in the environment like this:
 
 ``` bash
-export CX_AST_ACCESS_KEY_ID=<your-key>
-export CX_AST_ACCESS_KEY_SECRET=<your-secret>
+export CX_AST_CLIENT_ID=<your-client-id>
+export CX_AST_CLIENT_SECRET=<your-client-secret>
 ./cx scan list
 ```
 
 
+
+## Command Completion
+
+In most console environments the CLI supports command completion. In order for command completion to work you need configure your console correctly. You can skip the following setup if you have installed the CLI from a prepacked source like Home Brew, Apt, Chocolately, etc. 
+
+Bash command completion setup:
+
+``` bash
+
+```
+
+Zsh
 
 ## Triggering Scans
 
@@ -199,13 +215,17 @@ You can optionally specify the name of the preset to use when scanning projects 
 
 You can indicate if an incremental or full scan should be performed with the (--incremental) parameter. If you don't provide the incremental flag then a full scan will be triggered.
 
-The (--project-type) parameter is used to indicate which types of scan should be performed by AST. You can provide a comma separated list of scan types if you want multiple scans to be performed. If you ommit this paramteter only a  SAST scan will be performed.
+The (--scans-type) parameter is used to indicate which types of scan should be performed by AST. You can provide a comma separated list of scan types if you want multiple scans to be performed, but you specify at least one scan type. The following scan types are available:
 
-You have three options when it comes to creating scans, the most important thing you need to decide is where the scan is going to come from:
+- SAST
+- SCA
+- KICS
 
-1. A zip file with your source code.
-2. A directory with your source code.
-3. A host git repo.
+The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--sources) option will be examined and the type of scan being used will automatically be determined, you have the following options: 
+
+1. A zip file with your source code. The CLI will assume any source that ends with (.zip) is contains zipped source files.
+3. A host git repo. The CLI will assume that any source that starts with (http://) or (https://) points to a GIT repository.
+3. A directory with your source code. If this option is specified the (--filter) option can be specified to control what is sent to AST.
 
 **NOTE**: for simplicity the following examples assume you have stored your authentication and base-uri information in either environment variables or CLI configuration parameters. These values are required but will not appear in the commands.
 
@@ -216,31 +236,31 @@ After you create a scan the CLI will wait until it is completed or an error has 
 Scanning zipped code archives can be achieved like this:
 
 ``` bash
-./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" -f <your-source>.zip
+./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast"
 ```
 
 If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server. The filters are based on an inclusion and exclusion model. The following example shows how to scan a folder:
 
 ``` bash
-./cx scan create -d <path-to-your-folder> -f "s*.go" --project-name "testproj" --incremental "false" --project-type "sast" 
+./cx scan create -s <path-to-your-folder> -f "s*.go" --project-name "testproj" --incremental "false" --project-type "sast" --scans-type "sast,sca,kics"
 ```
 
 The filter in this case will include any go files that start with an 's'. You can include more then one set of files and directories by separating the inclusion patterns with a comma, example:
 
 ``` bash
-./cx scan create -d <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false"
+./cx scan create -s <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast,kics"
 ```
 
 In this previous example any files that start with 's' will be included, as well as any files that end with '.txt'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'zip':
 
 ``` bash
-./cx scan create -d <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --project-type "sast" 
+./cx scan create -s <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast" 
 ```
 
 Git repositories can be scanned like this:
 
 ``` bash
-./cx scan create -r <your-repo-url> --project-name "testproj" 
+./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" 
 ```
 
 When you're scanning repos AST will fetch the code directly from the repository.
@@ -248,7 +268,7 @@ When you're scanning repos AST will fetch the code directly from the repository.
 You can disable polling mode like this:
 
 ``` bash
-./cx scan create -r <your-repo-url> --project-name "testproj" --nowait true
+./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" --nowait true
 ```
 
 
@@ -322,7 +342,7 @@ The following example demonstraights the use of a proxy server:
 | **CX_CLIENT_SECRET** | Secret portion of key/secret authentication pair.            |
 | **CX_APIKEY**        | API Key for token based authentication.                      |
 | **CX_BASE_URI**      | The URI of the AST server.                                   |
-| **CX_BASE_IAM_URI**  | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
+| **CX_BASE_AUTH_URI** | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
 | **CX_HTTP_PROXY**    | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
 
 
