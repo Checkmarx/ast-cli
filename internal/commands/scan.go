@@ -365,15 +365,10 @@ func determineSourceFile(
 	return preSignedURL, err
 }
 
-func determineSourceType(sourcesFile string) (string, string, string, error) {
-	var err error = nil
-	zipFile := ""
-	sourceDir := ""
-	scanRepoURL := ""
+func determineSourceType(sourcesFile string) (zipFile string, sourceDir string, scanRepoURL string, err error) {
 	if strings.HasPrefix(sourcesFile, "https://") ||
 		strings.HasPrefix(sourcesFile, "http://") {
 		scanRepoURL = sourcesFile
-		sourcesFile = ""
 	} else {
 		info, statErr := os.Stat(sourcesFile)
 		if !os.IsNotExist(statErr) {
