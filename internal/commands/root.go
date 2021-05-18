@@ -109,7 +109,6 @@ func NewAstCLI(
 	// and can be overridden by command flag --key
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
-	//_ = viper.BindPFlag(params.AstAuthenticationPathConfigKey, rootCmd.PersistentFlags().Lookup(astAuthenticationPathFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
