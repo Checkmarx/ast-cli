@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,12 +13,13 @@ import (
 )
 
 const configDirName = "/.checkmarx"
-const defaultProfileName = "default"
 const obfuscateLimit = 4
 
 func PromptConfiguration() {
 	reader := bufio.NewReader(os.Stdin)
 	baseURI := viper.GetString(params.BaseURIKey)
+	baseURISrc := viper.GetString(params.BaseURIKey)
+	baseAuthURI := viper.GetString(params.BaseAuthURIKey)
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
 	accessAPIKey := viper.GetString(params.AstAPIKey)
@@ -30,14 +30,24 @@ func PromptConfiguration() {
 	if len(baseURI) > 0 {
 		setConfigPropertyQuiet(params.BaseURIKey, baseURI)
 	}
-
+	// Prompt for Base Auth URI
+	if len(baseAuthURI) < 1 {
+		baseAuthURI = baseURISrc
+	}
+	fmt.Printf("AST Base Auth URI [%s]: ", baseAuthURI)
+	baseAuthURI, _ = reader.ReadString('\n')
+	baseAuthURI = strings.Replace(baseAuthURI, "\n", "", -1)
+	baseAuthURI = strings.Replace(baseAuthURI, "\r", "", -1)
+	if len(baseAuthURI) > 0 {
+		setConfigPropertyQuiet(params.BaseAuthURIKey, baseAuthURI)
+	}
+	// Prompt for access credentials type
 	fmt.Printf("Do you want to use API Key authentication? (Y/N): ")
 	authType, _ := reader.ReadString('\n')
 	authType = strings.Replace(authType, "\n", "", -1)
 	authType = strings.Replace(authType, "\r", "", -1)
-	fmt.Println("authType: ", authType)
 	if strings.EqualFold(authType, "Y") {
-		fmt.Printf("AST token [%s]: ", obfuscateString(accessAPIKey))
+		fmt.Printf("AST API Key [%s]: ", obfuscateString(accessAPIKey))
 		accessAPIKey, _ = reader.ReadString('\n')
 		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
 		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
@@ -93,8 +103,6 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	profile := flag.String("profile", defaultProfileName, "Profile to load")
-	flag.Parse()
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal("Cannot file home directory.", err)
@@ -103,11 +111,6 @@ func LoadConfiguration() {
 	verifyConfigDir(fullPath)
 	viper.AddConfigPath(fullPath)
 	configFile := "checkmarxcli"
-	if *profile != defaultProfileName {
-		configFile += "_"
-		configFile += *profile
-	}
-	fmt.Println("using config file: ", configFile)
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
