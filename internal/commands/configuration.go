@@ -30,7 +30,7 @@ func NewConfigCommand() *cobra.Command {
 
 	setCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set configuration property (cx_apikey, cx_base_uri, cx_base_auth_uri cx_ast_client_id, cx_ast_client_secret, cx_http_proxy)",
+		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_client_id, cx_client_secret, cx_http_proxy)",
 		RunE:  runSetValue(),
 	}
 	scanCmd.AddCommand(storValCmd, setCmd)
@@ -43,9 +43,11 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 		if len(args) < minArgCnt {
 			return errors.Errorf("%s: Please provide a property to set and a value", failedDeleting)
 		}
-		if args[0] == "token" {
+		if args[0] == params.AstAPIKey {
 			wrappers.SetConfigProperty(args[0], args[1])
 		} else if args[0] == params.BaseURIKey {
+			wrappers.SetConfigProperty(args[0], args[1])
+		} else if args[0] == params.BaseAuthURIKey {
 			wrappers.SetConfigProperty(args[0], args[1])
 		} else if args[0] == params.ProxyKey {
 			wrappers.SetConfigProperty(args[0], args[1])

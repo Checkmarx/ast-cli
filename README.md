@@ -98,8 +98,8 @@ The CLI allows you to permanently store some CLI options in configuration files.
 ``` bash
 ./cx configure set cx_base_uri "http://<your-server>[:<port>]"
 ./cx configure set cx_base_auth_uri "http://<your-server>[:<port>]"
-./cx configure set cx_ast_client_id <your-key>
-./cx configure set cx_ast_client_secret <your-secret>
+./cx configure set cx_client_id <your-key>
+./cx configure set cx_client_secret <your-secret>
 ./cx configure set cx_http_proxy <your-proxy>
 ./cx configure set cx_apikey <your-apikey>
 ```
@@ -134,8 +134,8 @@ These values can be stored in CLI configurations:
 - cx_base_uri: the URL of the AST server.
 - cx_base_auth_uri: the URL of the AST server.
 - cx_http_proxy: optional proxy server to use (see Proxy Support documentation). 
-- cx_ast_client_id: the client ID used for authentication (see Authentication documentation).
-- cx_ast_client_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
+- cx_client_id: the client ID used for authentication (see Authentication documentation).
+- cx_client_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
 
 ## Authentication
 
@@ -166,8 +166,8 @@ Key/secret authentication requires you to first use an AST username and password
 
 ``` bash
 ./cx auth register -u <username> -p <password>
-CX_AST_CLIENT_ID=<generated-client-id>
-CX_AST_CLIENT_SECRET=<generated-client-secret>
+CX_CLIENT_ID=<generated-client-id>
+CX_CLIENT_SECRET=<generated-client-secret>
 ```
 
 Once you generated your key and secret they can be used like this:
@@ -202,10 +202,51 @@ In most console environments the CLI supports command completion. In order for c
 Bash command completion setup:
 
 ``` bash
-
+$ source < (cx completion bash)
+# To load completions for each session, execute once:
+# Linux:
+$ cx completion bash > /etc/bash_completion.d/cx
+# macOS:
+$ cx completion bash > /usr/local/etc/bash_completion.d/cx
 ```
 
-Zsh
+Zsh command completion setup:
+
+``` bash
+# If shell completion is not already enabled in your environment,
+# you will need to enable it.  You can execute the following once:	
+$ echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+# To load completions for each session, execute once:
+$ cx completion zsh > "${fpath[1]}/_cx"	
+# You will need to start a new shell for this setup to take effect.
+```
+
+PowerShell command completion setup:
+
+``` powershell
+PS> cx completion powershell | Out-String | Invoke-Expression
+	
+# To load completions for every new session, run:
+PS> cx completion powershell > cx.ps1
+# and source this file from your PowerShell profile.
+```
+
+Once command completion has been setup you simply press [tab] [tab] to get a list of supported commands and arguments. The result you see will depend on the context when you press [tab] [tab]. The following example shows the results when using the (project list) command:
+
+``` bash
+./cx proje [tab]
+# completes to
+./cx project [tab]
+# shows the following options
+create  -- Creates a new project
+delete  -- Delete a project
+list    -- List all projects in the system
+show    -- Show information about a project
+tags    -- Get a list of all available tags
+```
+
+
 
 ## Triggering Scans
 
