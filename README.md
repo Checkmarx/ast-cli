@@ -179,8 +179,8 @@ Once you generated your key and secret they can be used like this:
 You can optionally configure the key/secret into your stored CLI configuration values like this:
 
 ``` bash
-./cx configure set cx_ast_client_id <your-client-id>
-./cx configure set cx_ast_client_secret <your-client-secret>
+./cx configure set cx_client_id <your-client-id>
+./cx configure set cx_client_secret <your-client-secret>
 # The following command will automatically use the stored key/secret
 ./cx scan list
 ```
