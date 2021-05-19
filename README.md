@@ -188,8 +188,8 @@ You can optionally configure the key/secret into your stored CLI configuration v
 You can also store the key/secret in the environment like this:
 
 ``` bash
-export CX_AST_CLIENT_ID=<your-client-id>
-export CX_AST_CLIENT_SECRET=<your-client-secret>
+export CX_CLIENT_ID=<your-client-id>
+export CX_CLIENT_SECRET=<your-client-secret>
 ./cx scan list
 ```
 
