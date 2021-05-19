@@ -31,15 +31,8 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Use:   "register",
 		Short: "Register new oauth2 client for ast",
 		Long: "Register new oath2 client and outputs its generated credentials in the format <key>=<value>.\n" +
-			"If you wish to use this client with the cli set those credentials as environment variables.\n" +
-			"On Linux just wrap this command with export e.g:\n" +
 			"\n" +
-			"  export $(cx auth register -u <user> -p <pass>) \n" +
-			"\n" +
-			"On Windows you can use PowerShell e.g.:\n" +
-			"\n" +
-			"  ./cx auth register -u <user> -p <pass> | % {set-content -Path $('Env:'+$_.Split(\"=\")[0]) -Value $_.Split(\"=\")[1]}" +
-			"\n",
+			"  cx auth register -u <user> -p <pass> \n",
 		RunE: runRegister(authWrapper),
 	}
 	createClientCmd.PersistentFlags().StringP(clientDescriptionFlag, clientDescriptionSh, "", "A client description")
