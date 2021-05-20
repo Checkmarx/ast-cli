@@ -61,7 +61,6 @@ func (p *ProjectsMockWrapper) Tags() (
 	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	fmt.Println("Called Tags in ProjectsMockWrapper")
 	return map[string][]string{
 		"t1": {
 			"v1",
