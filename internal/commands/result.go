@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
@@ -18,7 +19,56 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
+	targetFlag           = "target"
 )
+
+type ScanResults struct {
+	Version string       `json:"version"`
+	Results []ScanResult `json:"results"`
+}
+
+type ScanResult struct {
+	ID             string         `json:"id"`
+	SimilarityID   string         `json:"similarityId"`
+	Severity       string         `json:"severity"`
+	Type           string         `json:"type"`
+	Status         string         `json:"status"`
+	State          string         `json:"state"`
+	ScanResultData ScanResultData `json:"data"`
+}
+
+type ScanResultData struct {
+	Comments  string               `json:"comments"`
+	QueryName string               `json:"queryName"`
+	Nodes     []ScanResultDataNode `json:"nodes"`
+}
+
+type ScanResultDataNode struct {
+	Column     string `json:"column"`
+	FileName   string `json:"fileName"`
+	FullName   string `json:"fullName"`
+	Name       string `json:"name"`
+	Line       string `json:"line"`
+	MethodLine string `json:"methodLine"`
+}
+
+type SimpleScanResult struct {
+	ID             string `json:"id"`
+	SimilarityID   string `json:"similarityId"`
+	Type           string `json:"type"`
+	Status         string `json:"status"`
+	State          string `json:"state"`
+	ScanResultData string `json:"data"`
+	Severity       string `json:"severity"`
+	Column         string `json:"column"`
+	FileName       string `json:"fileName"`
+	FullName       string `json:"fullName"`
+	Name           string `json:"name"`
+	Line           string `json:"line"`
+	MethodLine     string `json:"methodLine"`
+	Comments       string `json:"comments"`
+	QueryName      string `json:"queryName"`
+}
 
 var (
 	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
@@ -48,8 +98,61 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
 	addFormatFlag(listResultsCmd, formatList, formatJSON)
-	resultCmd.AddCommand(listResultsCmd)
+
+	listSimpleResultsCmd := &cobra.Command{
+		Use:   "list-simple <scan-id>",
+		Short: "List 'simple' results for a given scan",
+		RunE:  runGetSimpleResultByScanIDCommand(resultsWrapper),
+	}
+	listSimpleResultsCmd.PersistentFlags().String(targetFlag, "./simple-results.json", "Output file")
+
+	resultCmd.AddCommand(listResultsCmd, listSimpleResultsCmd)
 	return resultCmd
+}
+
+func runGetSimpleResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		// TODO: Get the JSON report from AST, not mock file .....
+		fmt.Println("Creating simple report (CURRENTLY MOCKED!)")
+		targetFile, _ := cmd.Flags().GetString(targetFlag)
+		fmt.Println("Target File: ", targetFile)
+		results, _ := os.ReadFile("mock-results.json")
+		var scanResults = ScanResults{}
+		_ = json.Unmarshal(results, &scanResults)
+		createSimpleResults(scanResults, targetFile)
+		return nil
+	}
+}
+
+func createSimpleResults(results ScanResults, targetFile string) {
+	var simpleResults []SimpleScanResult
+	for idx := range results.Results {
+		result := results.Results[idx]
+		simpleResult := SimpleScanResult{}
+		simpleResult.ID = result.ID
+		simpleResult.SimilarityID = result.SimilarityID
+		simpleResult.Type = result.Type
+		simpleResult.Severity = result.Severity
+		simpleResult.Status = result.Status
+		simpleResult.State = result.State
+		simpleResult.Comments = result.ScanResultData.Comments
+		simpleResult.QueryName = result.ScanResultData.QueryName
+		if len(result.ScanResultData.Nodes) > 0 {
+			simpleResult.Column = result.ScanResultData.Nodes[0].Column
+			simpleResult.FileName = result.ScanResultData.Nodes[0].FileName
+			simpleResult.FullName = result.ScanResultData.Nodes[0].FullName
+			simpleResult.Name = result.ScanResultData.Nodes[0].Name
+			simpleResult.Line = result.ScanResultData.Nodes[0].Line
+			simpleResult.MethodLine = result.ScanResultData.Nodes[0].MethodLine
+		}
+		simpleResults = append(simpleResults, simpleResult)
+	}
+	// Write results to JSON file
+	simpleResultsJSON, _ := json.Marshal(simpleResults)
+	err := os.WriteFile(targetFile, simpleResultsJSON, 0666)
+	if err != nil {
+		fmt.Println("Error writing to output file.")
+	}
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
