@@ -20,7 +20,6 @@ import (
 const (
 	failedListingResults = "Failed listing results"
 	targetFlag           = "target"
-	targetFlagSh         = "t"
 )
 
 type ScanResults struct {
@@ -29,8 +28,8 @@ type ScanResults struct {
 }
 
 type ScanResult struct {
-	Id             string         `json:"id"`
-	SimilarityId   string         `json:"similarityId"`
+	ID             string         `json:"id"`
+	SimilarityID   string         `json:"similarityId"`
 	Severity       string         `json:"severity"`
 	Type           string         `json:"type"`
 	Status         string         `json:"status"`
@@ -54,8 +53,8 @@ type ScanResultDataNode struct {
 }
 
 type SimpleScanResult struct {
-	Id             string `json:"id"`
-	SimilarityId   string `json:"similarityId"`
+	ID             string `json:"id"`
+	SimilarityID   string `json:"similarityId"`
 	Type           string `json:"type"`
 	Status         string `json:"status"`
 	State          string `json:"state"`
@@ -129,8 +128,8 @@ func createSimpleResults(results ScanResults, targetFile string) {
 	var simpleResults []SimpleScanResult
 	for _, result := range results.Results {
 		simpleResult := SimpleScanResult{}
-		simpleResult.Id = result.Id
-		simpleResult.SimilarityId = result.SimilarityId
+		simpleResult.ID = result.ID
+		simpleResult.SimilarityID = result.SimilarityID
 		simpleResult.Type = result.Type
 		simpleResult.Severity = result.Severity
 		simpleResult.Status = result.Status
@@ -148,8 +147,8 @@ func createSimpleResults(results ScanResults, targetFile string) {
 		simpleResults = append(simpleResults, simpleResult)
 	}
 	// Write results to JSON file
-	simpleResultsJson, _ := json.Marshal(simpleResults)
-	os.WriteFile(targetFile, simpleResultsJson, 0666)
+	simpleResultsJSON, _ := json.Marshal(simpleResults)
+	os.WriteFile(targetFile, simpleResultsJSON, 0666)
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
