@@ -106,7 +106,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
-		input = []byte("{}")
 		updateProjectRequestValues(&input, cmd)
 		var projModel = projectsRESTApi.Project{}
 		var projResponseModel *projectsRESTApi.ProjectResponseModel

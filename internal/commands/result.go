@@ -126,7 +126,8 @@ func runGetSimpleResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) f
 
 func createSimpleResults(results ScanResults, targetFile string) {
 	var simpleResults []SimpleScanResult
-	for _, result := range results.Results {
+	for idx := range results.Results {
+		result := results.Results[idx]
 		simpleResult := SimpleScanResult{}
 		simpleResult.ID = result.ID
 		simpleResult.SimilarityID = result.SimilarityID
@@ -148,7 +149,10 @@ func createSimpleResults(results ScanResults, targetFile string) {
 	}
 	// Write results to JSON file
 	simpleResultsJSON, _ := json.Marshal(simpleResults)
-	os.WriteFile(targetFile, simpleResultsJSON, 0666)
+	err := os.WriteFile(targetFile, simpleResultsJSON, 0666)
+	if err != nil {
+		fmt.Println("Error writing to output file.")
+	}
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
