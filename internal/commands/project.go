@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -91,7 +90,6 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 		info["name"] = projectName
 	} else {
 		fmt.Println("Project name is required")
-		os.Exit(0)
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
@@ -115,7 +113,6 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if err != nil {
 			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
 		}
-
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
