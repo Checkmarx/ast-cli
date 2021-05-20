@@ -80,7 +80,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	return projCmd
 }
 
-func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
+func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	var info map[string]interface{}
 	projectName, _ := cmd.Flags().GetString(projectName)
 	mainBranch, _ := cmd.Flags().GetString(mainBranchFlag)
@@ -89,7 +89,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 	if projectName != "" {
 		info["name"] = projectName
 	} else {
-		fmt.Println("Project name is required")
+		return errors.Errorf("Project name is required")
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
@@ -98,13 +98,17 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) {
 		info["repoUrl"] = repoURL
 	}
 	*input, _ = json.Marshal(info)
+	return nil
 }
 
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
-		updateProjectRequestValues(&input, cmd)
+		err = updateProjectRequestValues(&input, cmd)
+		if err != nil {
+			return err
+		}
 		var projModel = projectsRESTApi.Project{}
 		var projResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
