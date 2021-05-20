@@ -19,6 +19,8 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
+	targetFlag           = "target"
+	targetFlagSh         = "t"
 )
 
 type ScanResults struct {
@@ -103,21 +105,27 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List 'simple' results for a given scan",
 		RunE:  runGetSimpleResultByScanIDCommand(resultsWrapper),
 	}
+	listSimpleResultsCmd.PersistentFlags().String(targetFlag, "./simple-results.json", "Output file")
 
 	resultCmd.AddCommand(listResultsCmd, listSimpleResultsCmd)
 	return resultCmd
 }
 
 func runGetSimpleResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
-	// TODO: Get the JSON report from AST, not mock file .....
-	results, _ := os.ReadFile("mock-results.json")
-	var scanResults = ScanResults{}
-	_ = json.Unmarshal(results, &scanResults)
-	createSimpleResults(scanResults)
-	return nil
+	return func(cmd *cobra.Command, args []string) error {
+		// TODO: Get the JSON report from AST, not mock file .....
+		fmt.Println("Creating simple report (CURRENTLY MOCKED!)")
+		targetFile, _ := cmd.Flags().GetString(targetFlag)
+		fmt.Println("Target File: ", targetFile)
+		results, _ := os.ReadFile("mock-results.json")
+		var scanResults = ScanResults{}
+		_ = json.Unmarshal(results, &scanResults)
+		createSimpleResults(scanResults, targetFile)
+		return nil
+	}
 }
 
-func createSimpleResults(results ScanResults) {
+func createSimpleResults(results ScanResults, targetFile string) {
 	var simpleResults []SimpleScanResult
 	for _, result := range results.Results {
 		simpleResult := SimpleScanResult{}
@@ -141,7 +149,7 @@ func createSimpleResults(results ScanResults) {
 	}
 	// Write results to JSON file
 	simpleResultsJson, _ := json.Marshal(simpleResults)
-	os.WriteFile("simple-results.json", simpleResultsJson, 0666)
+	os.WriteFile(targetFile, simpleResultsJson, 0666)
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
