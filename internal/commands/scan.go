@@ -61,7 +61,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 
 	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completiot (default true)")
 	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
-	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "A path to scan")
+	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
 	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
