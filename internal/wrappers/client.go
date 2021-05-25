@@ -194,7 +194,6 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	} else if accessKeySecret == "" && astAPIKey == "" {
 		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
-
 		return errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
 	}
 
