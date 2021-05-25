@@ -158,10 +158,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 func getAuthURI() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
 	tenant := viper.GetString(commonParams.TenantKey)
-	fmt.Println("Tenant: ", tenant)
 	authPath = strings.Replace(authPath, "organization", tenant, 1)
-	fmt.Println(authPath)
-
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
