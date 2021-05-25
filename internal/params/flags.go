@@ -34,8 +34,9 @@ const (
 	AgentFlag    = "ASTCLI"
 	BaseIAMURI   = ""
 	AstToken     = ""
+	Tenant       = ""
 )
 
 const (
-	Version = "2.0.0_RC10"
+	Version = "2.0.0_RC11"
 )

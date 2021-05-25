@@ -38,6 +38,7 @@ var EnvVarsBinds = []struct {
 	{AccessKeyIDConfigKey, AccessKeyIDEnv, ""},
 	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
 	{AstAuthenticationPathConfigKey, AstAuthenticationPathEnv, "auth/realms/organization/protocol/openid-connect/token"},
+	{TenantKey, TenantEnv, "organization"},
 	{AstRoleKey, AstRoleEnv, ScaAgent},
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 }

@@ -23,6 +23,8 @@ func PromptConfiguration() {
 	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
 	accessAPIKey := viper.GetString(params.AstAPIKey)
+	tenant := viper.GetString(params.TenantKey)
+	// Prompt for Base URI
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
 	baseURI = strings.Replace(baseURI, "\n", "", -1)
@@ -40,6 +42,14 @@ func PromptConfiguration() {
 	baseAuthURI = strings.Replace(baseAuthURI, "\r", "", -1)
 	if len(baseAuthURI) > 0 {
 		setConfigPropertyQuiet(params.BaseAuthURIKey, baseAuthURI)
+	}
+	// Prompt for tenant name
+	fmt.Printf("AST Tenant [%s]: ", tenant)
+	tenant, _ = reader.ReadString('\n')
+	tenant = strings.Replace(tenant, "\n", "", -1)
+	tenant = strings.Replace(tenant, "\r", "", -1)
+	if len(tenant) > 0 {
+		setConfigPropertyQuiet(params.TenantKey, tenant)
 	}
 	// Prompt for access credentials type
 	fmt.Printf("Do you want to use API Key authentication? (Y/N): ")
