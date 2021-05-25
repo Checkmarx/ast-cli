@@ -1,6 +1,7 @@
 package params
 
 const (
+	TenantEnv                           = "CX_TENANT"
 	BaseURIEnv                          = "CX_BASE_URI"
 	ProxyEnv                            = "CX_HTTP_PROXY"
 	BaseAuthURIEnv                      = "CX_BASE_AUTH_URI"

@@ -20,6 +20,8 @@ const (
 	verboseUsage             = "Verbose mode"
 	sourcesFlag              = "sources"
 	sourcesFlagSh            = "s"
+	tenantFlag               = "tenant"
+	tenantFlagUsage          = "Checkmarx tenant"
 	agentFlag                = "agent"
 	agentFlagUsage           = "Scan origin name"
 	waitFlag                 = "nowait"
@@ -99,6 +101,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
 	rootCmd.PersistentFlags().String(astAPIKeyFlag, params.BaseURI, astAPIKeyUsage)
 	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, agentFlagUsage)
+	rootCmd.PersistentFlags().String(tenantFlag, params.Tenant, tenantFlagUsage)
 
 	// Bind the viper key ast_access_key_id to flag --key of the root command and
 	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
@@ -106,6 +109,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
+	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(tenantFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(astAPIKeyFlag))
