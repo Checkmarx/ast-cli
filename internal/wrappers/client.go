@@ -157,6 +157,8 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 
 func getAuthURI() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
+	tenant := viper.GetString(commonParams.TenantKey)
+	authPath = strings.Replace(authPath, "organization", tenant, 1)
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
 	}
@@ -189,7 +191,6 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	} else if accessKeySecret == "" && astAPIKey == "" {
 		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
 	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
-		fmt.Println("API Key not found!")
 		return errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
 	}
 

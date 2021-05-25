@@ -3,6 +3,7 @@ package params
 import "strings"
 
 var (
+	TenantKey                           = strings.ToLower(TenantEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
 	ProxyKey                            = strings.ToLower(ProxyEnv)
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)
