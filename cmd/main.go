@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
 	params "github.com/checkmarxDev/ast-cli/internal/params"
@@ -41,6 +42,7 @@ func main() {
 	sastMetadataMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	logsEngineLogPath := viper.GetString(params.LogsEngineLogPathKey)
+	tenant := viper.GetString(params.TenantKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -61,6 +63,9 @@ func main() {
 	)
 	queriesCloneURIPath := fmt.Sprintf("%s/%s", queries, queriesClonePath)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
+
+	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
+
 	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
 	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastMetadata,
 		fmt.Sprintf("%s/%s", sastMetadata, sastMetadataMetricsPath),
