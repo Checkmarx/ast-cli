@@ -83,6 +83,7 @@ You may have noticed the parameters accepted by the CLI vary based on the comman
 - (--apikey), the token to authenticate with (see Authentication documentation).
 - (--proxy), optional proxy server to use (see Proxy Support documentation).
 - (--insecure), indicates CLI should ignore TLS certificate validations.
+- (--tenant), your AST tenant name.
 - (--profile), specifies the CLI profile to store options in (see Environment and Configuration documentation).
 
 Many CLI variables can be provided using environment variables, configuration variables or CLI parameters. The follow precidence is used when the same value is found in settings:
@@ -102,6 +103,7 @@ The CLI allows you to permanently store some CLI options in configuration files.
 ./cx configure set cx_client_secret <your-secret>
 ./cx configure set cx_http_proxy <your-proxy>
 ./cx configure set cx_apikey <your-apikey>
+./cx configure set cx_tenant <your-tenant-name>
 ```
 
 The (--profile) option provides a powerful tool to quickly switch through differnent sets of configurations. You can add a profile name to any CLI command and it utilize the corsponding profile settings. The following example setups up altnerative profile named "test" and calls a CLI command utilizing it.
@@ -121,6 +123,7 @@ The configure command supports an interactive mode that prompt you for the follo
 ./cx configure
 AST Base URI [http://<your-domain]: <your-updated-domain>
 AST Base Auth URI [<your-updated-domain>]: <your-updated-auth-domain>
+AST Tenant [organization]: <your-tenant-name>
 Do you want to use API Key authentication? (Y/N): n
 AST Client ID  [******f23d]: <your-updated-client-idy>
 AST Client Secret [******8913]: <your-updated-client-secret>
@@ -131,6 +134,7 @@ If the CLI has previously stored values they will show up like you see in the pr
 These values can be stored in CLI configurations:
 
 - cx_apikey: the apikey to authenticate with (see Authentication documentation).
+- cx_tenant: your AST tenant name.
 - cx_base_uri: the URL of the AST server.
 - cx_base_auth_uri: the URL of the AST server.
 - cx_http_proxy: optional proxy server to use (see Proxy Support documentation). 
@@ -193,7 +197,15 @@ export CX_CLIENT_SECRET=<your-client-secret>
 ./cx scan list
 ```
 
+## Tenant Configuration
 
+If you're are using a hosted AST instance you will need to include your tenant name when using the CLI. Failure to configure your tenant information correctly will result in communication failures with AST. 
+
+The tenant name can be provided in three different ways:
+
+1. As a CLI argument (--tenant <your-tenant-name>).
+2. As an environment variable (CX_TENANT=<your-tenant-name>).
+3. Through the (cx configure) action. 
 
 ## Command Completion
 
@@ -382,6 +394,7 @@ The following example demonstraights the use of a proxy server:
 | **CX_CLIENT_ID**     | Key portion of key/secret authentication pair.               |
 | **CX_CLIENT_SECRET** | Secret portion of key/secret authentication pair.            |
 | **CX_APIKEY**        | API Key for token based authentication.                      |
+| **CX_TENANT**        | Your AST tenant name.                                        |
 | **CX_BASE_URI**      | The URI of the AST server.                                   |
 | **CX_BASE_AUTH_URI** | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
 | **CX_HTTP_PROXY**    | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
