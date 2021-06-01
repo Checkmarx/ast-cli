@@ -29,10 +29,8 @@ jobs:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_APIKEY: ${{ github.event.inputs.apiKey }}
-          USER: ${{ secrets.USER }}
-          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git config --global url."https://${USER}:${TOKEN}@github.com".insteadOf "https://github.com"
+          git config --global url."https://${{ secrets.USER }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
           go mod download
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           sudo ./internal/commands/.scripts/integration_up.sh
