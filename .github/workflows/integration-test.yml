@@ -17,14 +17,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
       - name: Checkout
         uses: actions/checkout@v2.3.4
-      - name: Config GOPRIVATE environment variable
-        run: |
-          echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
       - name: Config Git credentials
         env:
           USER: ${{ secrets.USER }}
@@ -41,4 +40,4 @@ jobs:
           CX_APIKEY: ${{ github.event.inputs.apiKey }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
-          sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh
+          sudo ./internal/commands/.scripts/integration_up.sh
