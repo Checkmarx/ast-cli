@@ -30,9 +30,6 @@ jobs:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           git config --global url."https://${USER}:${TOKEN}@github.com".insteadOf "https://github.com"
-      - name: Go Mod
-        run: |
-          go mod download
       - name: Go integration test
         env:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
