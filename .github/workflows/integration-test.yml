@@ -24,12 +24,13 @@ jobs:
         uses: actions/setup-go@v2
       - name: Checkout
         uses: actions/checkout@v2.3.4
-      - name: Config Git credentials
+      - name: Go Mod
         env:
           USER: ${{ secrets.USER }}
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           git config --global url."https://${USER}:${TOKEN}@github.com".insteadOf "https://github.com"
+          go mod download
       - name: Go integration test
         env:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
