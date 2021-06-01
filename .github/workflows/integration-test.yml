@@ -31,6 +31,5 @@ jobs:
           CX_APIKEY: ${{ github.event.inputs.apiKey }}
         run: |
           git config --global url."https://${{ secrets.USER }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
-          go mod download
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           sudo ./internal/commands/.scripts/integration_up.sh
