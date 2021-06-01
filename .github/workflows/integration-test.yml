@@ -20,16 +20,24 @@ jobs:
     env:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
       - name: Checkout
         uses: actions/checkout@v2.3.4
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16.2'
+      - name: Setup git
+        run: |
+          git config --global url."https://${{ secrets.USER }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
+      - name: Setup git
+        run: |
+          go version
+          go mod download
       - name: Go Integration test
         env:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_APIKEY: ${{ github.event.inputs.apiKey }}
         run: |
-          git config --global url."https://${{ secrets.USER }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           sudo ./internal/commands/.scripts/integration_up.sh
