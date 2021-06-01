@@ -29,7 +29,7 @@ jobs:
           USER: ${{ secrets.USER }}
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          git config --global url."https://${USER}:${TOKEN}@github.com".insteadOf "https://github.com"
+          git config --global url."https://${TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com"
           go mod download
       - name: Go integration test
         env:
