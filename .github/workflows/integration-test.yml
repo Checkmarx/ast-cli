@@ -31,8 +31,7 @@ jobs:
       - name: Download
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
-        env:
-          CX_BASE_URI: ${{ github.event.inputs.baseUri }}
-          CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
-          CX_APIKEY: ${{ github.event.inputs.apiKey }}
-        run: go test ./test/integration/scan_test.go
+        shell: bash
+        run: |
+          git update-index --chmod=+x ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_up.sh
