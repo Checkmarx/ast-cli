@@ -30,7 +30,7 @@ jobs:
           echo ::add-mask::$INP_SECRET_PASSWORD
           echo ::add-mask::$INP_SECRET_TOKEN
           echo CX_AST_PASSWORD="$INP_SECRET_PASSWORD" >> $GITHUB_ENV
-          echo CX_APIKEY="$INP_SECRET_TOKEN" >> $GITHUB_ENV
+          echo CX_TOKEN="$INP_SECRET_TOKEN" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2.3.4
       - name: Install Go
