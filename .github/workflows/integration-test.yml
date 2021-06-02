@@ -11,8 +11,10 @@ on:
         required: true
       secret_token:
         description: 'AST API Key'
+        required: true
       tenant:
         description: 'Tenant'
+        required: true
 
 jobs:
   build:
