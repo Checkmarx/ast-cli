@@ -23,6 +23,12 @@ import (
 
 func TestScansE2E(t *testing.T) {
 	fmt.Println("Trying to run TestScansE2E")
+	//TODO: Implement more generic
+	defer func() {
+		if err := recover(); err != nil {
+			t.Fail()
+		}
+	}()
 	scanID, projectID := createScanSourcesFile(t)
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
