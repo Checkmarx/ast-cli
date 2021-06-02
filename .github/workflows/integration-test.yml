@@ -35,6 +35,4 @@ jobs:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_APIKEY: ${{ github.event.inputs.apiKey }}
-        run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh
-          sudo ./internal/commands/.scripts/integration_up.sh
+        run: go test ./test/integration/scan_test.go
