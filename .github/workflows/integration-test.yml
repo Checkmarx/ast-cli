@@ -9,12 +9,12 @@ on:
       baseAuthUri:
         description: 'AST Base Auth URI'
         required: true
-      username:
-        description: 'AST user name'
-      password:
-        description: 'AST Password'
-      apiKey:
+      secret_token:
         description: 'AST API Key'
+        required: true
+      tenant:
+        description: 'Tenant'
+        required: true
 
 jobs:
   build:
@@ -22,6 +22,12 @@ jobs:
     env:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
+      - name: Masking inputs
+        id: add_masks
+        run: |
+          INP_SECRET_TOKEN=$(jq -r '.inputs.secret_token' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_SECRET_TOKEN
+          echo CX_APIKEY="$INP_SECRET_TOKEN" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2.3.4
       - name: Install Go
@@ -38,8 +44,7 @@ jobs:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
-          CX_AST_PASSWORD: ${{ github.event.inputs.password }}
-          CX_APIKEY: ${{ github.event.inputs.apiKey }}
+          CX_TENANT: ${{ github.event.inputs.tenant }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_up.sh
