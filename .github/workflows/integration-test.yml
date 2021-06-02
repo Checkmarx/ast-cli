@@ -1,18 +1,20 @@
 name: AST Cli integration test
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       baseUri:
-        description: 'Cx Base URI'
+        description: 'AST Base URI'
         required: true
       baseAuthUri:
-        description: 'Cx Base Auth URI'
+        description: 'AST Base Auth URI'
         required: true
+      username:
+        description: 'AST user name'
+      password:
+        description: 'AST Password'
       apiKey:
-        description: 'Cx API Key'
-        required: true
+        description: 'AST API Key'
 
 jobs:
   build:
@@ -32,6 +34,12 @@ jobs:
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
         shell: bash
+        env:
+          CX_BASE_URI: ${{ github.event.inputs.baseUri }}
+          CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
+          CX_AST_USERNAME: ${{ github.event.inputs.username }}
+          CX_AST_PASSWORD: ${{ github.event.inputs.password }}
+          CX_APIKEY: ${{ github.event.inputs.apiKey }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_up.sh
