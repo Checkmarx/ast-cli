@@ -22,15 +22,6 @@ jobs:
     env:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
-      - name: Masking inputs
-        id: add_masks
-        run: |
-          INP_SECRET_PASSWORD=$(jq -r '.inputs.secret_password' $GITHUB_EVENT_PATH)
-          INP_SECRET_TOKEN=$(jq -r '.inputs.secret_token' $GITHUB_EVENT_PATH)
-          echo ::add-mask::INP_SECRET_PASSWORD
-          echo ::add-mask::INP_SECRET_TOKEN
-          echo SECRET_PASSWORD="INP_SECRET_PASSWORD" >> $GITHUB_ENV
-          echo SECRET_TOKEN="INP_SECRET_TOKEN" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2.3.4
       - name: Install Go
@@ -47,8 +38,8 @@ jobs:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
-          CX_AST_PASSWORD: ${{ env.SECRET_PASSWORD }}
-          CX_APIKEY: ${{ env.SECRET_TOKEN }}
+          CX_AST_PASSWORD: ${{ github.event.inputs.secret_password }}
+          CX_APIKEY: ${{ github.event.inputs.secret_token }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_up.sh
