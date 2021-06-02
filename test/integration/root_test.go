@@ -121,10 +121,13 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 }
 
 func execute(cmd *cobra.Command, args ...string) error {
-	args = append(args, "--client-id")
-	args = append(args, commands.AuthGeneratedClientID)
-	args = append(args, "--client-secret")
-	args = append(args, commands.AuthGeneratedClientSecret)
+	apikey := viper.GetString(params.AstAPIKey)
+	if len(apikey) == 0 {
+		args = append(args, "--client-id")
+		args = append(args, commands.AuthGeneratedClientID)
+		args = append(args, "--client-secret")
+		args = append(args, commands.AuthGeneratedClientSecret)
+	}
 	cmd.SetArgs(args)
 	return cmd.Execute()
 }
