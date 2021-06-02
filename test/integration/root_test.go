@@ -46,9 +46,9 @@ func RandomizeString(length int) string {
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	authASTServer()
-	//exitVal := m.Run()
-	//log.Println("CLI integration tests done")
-	//os.Exit(exitVal)
+	exitVal := m.Run()
+	log.Println("CLI integration tests done")
+	os.Exit(exitVal)
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
@@ -121,9 +121,9 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 }
 
 func execute(cmd *cobra.Command, args ...string) error {
-	args = append(args, "--key")
+	args = append(args, "--client-id")
 	args = append(args, commands.AuthGeneratedClientID)
-	args = append(args, "--secret")
+	args = append(args, "--client-secret")
 	args = append(args, commands.AuthGeneratedClientSecret)
 	cmd.SetArgs(args)
 	return cmd.Execute()
