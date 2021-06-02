@@ -47,6 +47,8 @@ jobs:
           CX_BASE_URI: ${{ github.event.inputs.baseUri }}
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
+          CX_AST_PASSWORD: ${{env.CX_AST_PASSWORD}}
+          CX_APIKEY: ${{env.CX_APIKEY}}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_up.sh
