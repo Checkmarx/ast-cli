@@ -33,5 +33,5 @@ jobs:
       - name: Go Integration test
         shell: bash
         run: |
-          git update-index --chmod=+x ./internal/commands/.scripts/integration_up.sh
+          sudo chmod +x ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_up.sh
