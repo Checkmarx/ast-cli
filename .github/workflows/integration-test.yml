@@ -27,8 +27,7 @@ jobs:
         with:
           go-version: '^1.16.2'
       - name: Setup git
-        run: |
-          git config --global url."https://${{ secrets.USER }}:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
+        run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: Setup git
         run: |
           go mod download
