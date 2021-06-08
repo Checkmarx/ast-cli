@@ -46,7 +46,6 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE:  runCreateProjectCommand(projectsWrapper),
 	}
 	createProjCmd.PersistentFlags().StringP(projectName, "", "", "Name of project")
-	createProjCmd.PersistentFlags().StringP(repoURLFlag, "", "", "RepoURL of project")
 	createProjCmd.PersistentFlags().StringP(mainBranchFlag, "", "", "Main branch")
 
 	listProjectsCmd := &cobra.Command{

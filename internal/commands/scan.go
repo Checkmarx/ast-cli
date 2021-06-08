@@ -60,7 +60,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completiot (default true)")
+	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
@@ -98,7 +98,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 
 	cacnelScanCmd := &cobra.Command{
-		Use:   "cancel [scan id...]",
+		Use:   "cancel <scan id>",
 		Short: "Cancel one or more scans from running",
 		RunE:  runCancelScanCommand(scansWrapper),
 	}
