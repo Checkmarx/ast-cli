@@ -21,10 +21,10 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 	}
 	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	envCheckCmd := NewEnvCheckCommand()
-	//ssiCmd := NewSastMetadataCommand(ssiWrapper)
-	//rmCmd := NewSastResourcesCommand(rmWrapper)
-	//queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
-	//logsCmd := NewLogsCommand(logsWrapper)
+	// ssiCmd := NewSastMetadataCommand(ssiWrapper)
+	// rmCmd := NewSastResourcesCommand(rmWrapper)
+	// queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
+	// logsCmd := NewLogsCommand(logsWrapper)
 	var completionCmd = &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate completion script",

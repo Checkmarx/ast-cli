@@ -107,10 +107,8 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, agentFlagUsage)
 	rootCmd.PersistentFlags().String(tenantFlag, params.Tenant, tenantFlagUsage)
 
-	//
-	/// This monitors and traps situations where "extra/garbage" commands
-	/// are passed to Cobra.
-	//
+	// This monitors and traps situations where "extra/garbage" commands
+	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			cmd.Help()
