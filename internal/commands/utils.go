@@ -83,7 +83,6 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 			}
 		},
 	}
-	// scanCmd.AddCommand(healthCheckCmd, ssiCmd, rmCmd, queriesCmd, logsCmd, completionCmd)
 	scanCmd.AddCommand(healthCheckCmd, completionCmd, envCheckCmd)
 	return scanCmd
 }
