@@ -25,7 +25,6 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 	//rmCmd := NewSastResourcesCommand(rmWrapper)
 	//queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
 	//logsCmd := NewLogsCommand(logsWrapper)
-
 	var completionCmd = &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate completion script",
