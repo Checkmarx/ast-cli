@@ -69,7 +69,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(branchFlag, params.Branch, branchFlagUsage)
-
+	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
 
 	listScansCmd := &cobra.Command{
@@ -422,11 +422,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
-		//branchName, _ := cmd.Flags().GetString(branchFlag)
-		branchName := viper.GetString(params.BranchKey)
-		fmt.Println("BranchName: ", branchName)
-		os.Exit(0)
-		pHandler.Branch = "master"
+		pHandler.Branch = viper.GetString(params.BranchKey)
 		//pHandler.Branch = "tsunez-patch-2"
 		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL

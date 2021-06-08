@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -106,9 +107,18 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, agentFlagUsage)
 	rootCmd.PersistentFlags().String(tenantFlag, params.Tenant, tenantFlagUsage)
 
-	// Bind the viper key ast_access_key_id to flag --key of the root command and
-	// to the environment variable AST_ACCESS_KEY_ID so that it will be taken from environment variables first
-	// and can be overridden by command flag --key
+	//
+	/// This monitors and traps situations where "extra/garbage" commands
+	/// are passed to Cobra.
+	//
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			cmd.Help()
+			os.Exit(0)
+		}
+	}
+
+	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
@@ -116,10 +126,10 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(astAPIKeyFlag))
+	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(agentFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
 	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
-	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(agentFlag))
 
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
