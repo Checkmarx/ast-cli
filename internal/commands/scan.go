@@ -14,7 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/checkmarxDev/ast-cli/internal/params"
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
@@ -68,9 +67,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
-	createScanCmd.PersistentFlags().String(branchFlag, params.Branch, branchFlagUsage)
+	createScanCmd.PersistentFlags().String(branchFlag, commonParams.Branch, branchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(params.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
+	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -422,7 +421,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
-		pHandler.Branch = viper.GetString(params.BranchKey)
+		pHandler.Branch = viper.GetString(commonParams.BranchKey)
 		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
