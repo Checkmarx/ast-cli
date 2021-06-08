@@ -14,6 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
@@ -67,6 +68,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(branchFlag, params.Branch, branchFlagUsage)
+
+	_ = viper.BindPFlag(params.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -418,7 +422,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
+		//branchName, _ := cmd.Flags().GetString(branchFlag)
+		branchName := viper.GetString(params.BranchKey)
+		fmt.Println("BranchName: ", branchName)
+		os.Exit(0)
 		pHandler.Branch = "master"
+		//pHandler.Branch = "tsunez-patch-2"
 		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
