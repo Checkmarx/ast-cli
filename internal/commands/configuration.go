@@ -30,7 +30,7 @@ func NewConfigCommand() *cobra.Command {
 
 	setCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_client_id, cx_client_secret, cx_http_proxy)",
+		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_tenant, cx_client_id, cx_client_secret, cx_http_proxy)",
 		RunE:  runSetValue(),
 	}
 	scanCmd.AddCommand(storValCmd, setCmd)

@@ -67,10 +67,19 @@ Usage:
   cx scan create [flags]
 
 Flags:
-  -s, --sources string             Path to scan
-  -f, --filter string              Source file filtering pattern
-      --preset-name string         The name of the Checkmarx preset to use
-      --project-name string       
+  cx scan create [flags]
+
+Flags:
+  -f, --filter string             Source file filtering pattern
+      --format string             Format for the output. One of [table json list] (default "list")
+  -h, --help                      help for create
+  -w, --nowait                    Wait for scan completiot (default true)
+      --project-name string       Name of the project
+      --sast-incremental string   Incremental SAST scan should be performed. (default "false")
+      --sast-preset-name string   The name of the Checkmarx preset to use.
+      --scan-types string         Scan types, ex: (sast,kics,sca)
+  -s, --sources string            Sources like: directory, zip file or git URL.
+      --wait-delay int            Polling wait time in seconds (default 5)     
       ....
 ```
 
@@ -262,19 +271,19 @@ tags    -- Get a list of all available tags
 
 ## Triggering Scans
 
-You need to specify a project using the (--project-name) parameter when you create a scan. If the project doesn't exist then it will be created automatically; however, if the the project exists it will be reused. The following examples will all use the same project name for simplicity.
+You need to specify a project using the (--project-name) parameter when you create a scan. If the project doesn't exist then it will be created automatically; however, if the project exists it will be reused. The following examples will all use the same project name for simplicity.
 
-You can optionally specify the name of the preset to use when scanning projects using the (--preset-name) parameter. If you don't specify the preset name then "Checkmarx Default" will be used. 
+You can optionally specify the name of the preset to use when scanning projects using the (--sast-preset-name) parameter. If you don't specify the preset name then "Checkmarx Default" will be used. 
 
-You can indicate if an incremental or full scan should be performed with the (--incremental) parameter. If you don't provide the incremental flag then a full scan will be triggered.
+You can indicate if an incremental or full scan should be performed with the (--sast-incremental) parameter. If you don't provide the incremental flag then a full scan will be triggered.
 
-The (--scans-type) parameter is used to indicate which types of scan should be performed by AST. You can provide a comma separated list of scan types if you want multiple scans to be performed, but you specify at least one scan type. The following scan types are available:
+The (--scan-types) parameter is used to indicate which types of scan should be performed by AST. You can provide a comma separated list of scan types if you want multiple scans to be performed, but you specify at least one scan type. The following scan types are available:
 
 - SAST
 - SCA
 - KICS
 
-The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--sources) option will be examined and the type of scan being used will automatically be determined, you have the following options: 
+The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--sources) option will be examined, and the type of scan being used will automatically be determined, you have the following options: 
 
 1. A zip file with your source code. The CLI will assume any source that ends with (.zip) is contains zipped source files.
 3. A host git repo. The CLI will assume that any source that starts with (http://) or (https://) points to a GIT repository.
@@ -289,31 +298,31 @@ After you create a scan the CLI will wait until it is completed or an error has 
 Scanning zipped code archives can be achieved like this:
 
 ``` bash
-./cx scan create -s <your-file>.zip --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast"
+./cx scan create -s <your-file>.zip --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast"
 ```
 
 If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server. The filters are based on an inclusion and exclusion model. The following example shows how to scan a folder:
 
 ``` bash
-./cx scan create -s <path-to-your-folder> -f "s*.go" --project-name "testproj" --incremental "false" --project-type "sast" --scans-type "sast,sca,kics"
+./cx scan create -s <path-to-your-folder> -f "s*.go" --sast-project-name "testproj" --sast-incremental "false" --project-type "sast" --scan-types "sast,sca,kics"
 ```
 
-The filter in this case will include any go files that start with an 's'. You can include more then one set of files and directories by separating the inclusion patterns with a comma, example:
+The filter in this case will include any go files that start with an 's'. You can include more than one set of files and directories by separating the inclusion patterns with a comma, example:
 
 ``` bash
-./cx scan create -s <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast,kics"
+./cx scan create -s <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast,kics"
 ```
 
 In this previous example any files that start with 's' will be included, as well as any files that end with '.txt'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'zip':
 
 ``` bash
-./cx scan create -s <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --preset-name "Checkmarx Default" --incremental "false" --scans-type "sast" 
+./cx scan create -s <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast" 
 ```
 
 Git repositories can be scanned like this:
 
 ``` bash
-./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" 
+./cx scan create -s <your-repo-url> --project-name "testproj" --scan-types "sast" 
 ```
 
 When you're scanning repos AST will fetch the code directly from the repository.
@@ -327,13 +336,13 @@ You can specify the name of branch to scan to can with the (--branch) option. If
 You can disable polling mode like this:
 
 ``` bash
-./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" --nowait true
+./cx scan create -s <your-repo-url> --project-name "testproj" --scan-types "sast" --nowait true
 ```
 
 
 ## Managing Projects
 
-You can create, delete, list or show details about AST projects using the CLI. You specifically create projects before trigging scans though, the (scan create) will automatically create projects that don't exist for you. The commands just provide a help way to work with projects.
+You can create, delete, list or show details about AST projects using the CLI. You specifically create projects before triggering scans though, the (scan create) will automatically create projects that don't exist for you. The commands just provide a help way to work with projects.
 
 You can create projects like this:
 
