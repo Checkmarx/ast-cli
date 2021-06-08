@@ -67,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
-	createScanCmd.PersistentFlags().String(branchFlag, commonParams.Branch, branchFlagUsage)
+	createScanCmd.PersistentFlags().StringP(branchFlag, branchFlagSh, commonParams.Branch, branchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
 
