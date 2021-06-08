@@ -29,8 +29,8 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	}
 	createClientCmd := &cobra.Command{
 		Use:   "register",
-		Short: "Register new oauth2 client for ast",
-		Long: "Register new oath2 client and outputs its generated credentials in the format <key>=<value>.\n" +
+		Short: "Register new OAuth2 client for ast",
+		Long: "Register new OAuth2 client and outputs its generated credentials in the format <key>=<value>.\n" +
 			"\n" +
 			"  cx auth register -u <user> -p <pass> \n",
 		RunE: runRegister(authWrapper),

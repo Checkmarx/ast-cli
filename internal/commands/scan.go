@@ -423,7 +423,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = viper.GetString(params.BranchKey)
-		//pHandler.Branch = "tsunez-patch-2"
 		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)

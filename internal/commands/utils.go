@@ -20,10 +20,11 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 		Short: "AST Utility functions",
 	}
 	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
-	ssiCmd := NewSastMetadataCommand(ssiWrapper)
-	rmCmd := NewSastResourcesCommand(rmWrapper)
-	queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
-	logsCmd := NewLogsCommand(logsWrapper)
+	envCheckCmd := NewEnvCheckCommand()
+	//ssiCmd := NewSastMetadataCommand(ssiWrapper)
+	//rmCmd := NewSastResourcesCommand(rmWrapper)
+	//queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
+	//logsCmd := NewLogsCommand(logsWrapper)
 
 	var completionCmd = &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
@@ -87,6 +88,7 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 			}
 		},
 	}
-	scanCmd.AddCommand(healthCheckCmd, ssiCmd, rmCmd, queriesCmd, logsCmd, completionCmd)
+	//scanCmd.AddCommand(healthCheckCmd, ssiCmd, rmCmd, queriesCmd, logsCmd, completionCmd)
+	scanCmd.AddCommand(healthCheckCmd, completionCmd, envCheckCmd)
 	return scanCmd
 }
