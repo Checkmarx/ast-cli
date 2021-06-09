@@ -63,6 +63,12 @@ func createScanSourcesFile(t *testing.T) (string, string) {
 	fmt.Println("Trying to create source file")
 	// Create a full scan
 	b := bytes.NewBufferString("")
+
+	//username := viper.GetString(params.AstUsernameKey)
+	//if len(username) > 0 {
+	authASTServer()
+	//}
+
 	createCommand := createASTIntegrationTestCommand(t)
 	createCommand.SetOut(b)
 	err := execute(createCommand, "-v", "--format", "json", "scan", "create", "--project-name", "abcde", "--sources", "sources.zip")

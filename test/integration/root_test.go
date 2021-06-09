@@ -53,7 +53,6 @@ func TestMain(m *testing.M) {
 
 	//exitVal := m.Run()
 	log.Println("CLI integration tests done")
-	//os.Exit(exitVal)
 	os.Exit(0)
 }
 
@@ -144,7 +143,6 @@ func execute(cmd *cobra.Command, args ...string) error {
 // used by the integration tests during the runtime.
 func authASTServer() {
 	fmt.Println("Authenticating to AST Server")
-	fmt.Println("Authenticating to AST ServerLOG")
 	cmd := createASTIntegrationTestCommand(nil)
 	username := viper.GetString(params.AstUsernameKey)
 	password := viper.GetString(params.AstPasswordKey)
