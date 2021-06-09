@@ -168,6 +168,7 @@ func createIncScan(t *testing.T) (string, string) {
 
 func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.ScanStatus, timeout, sleep int) bool {
 	log.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
+	fmt.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
 	// Wait for the scan to finish. See it's completed successfully
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
@@ -178,6 +179,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			return false
 		default:
 			log.Printf("Polling scan %s\n", scanID)
+			fmt.Printf("Polling scan %s\n", scanID)
 			scan := getScanByID(t, scanID)
 			getScanByIDList(t, scanID)
 			if s := string(scan.Status); s == string(requiredStatus) {
