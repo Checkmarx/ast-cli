@@ -45,6 +45,7 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
+	fmt.Println("CLI integration test startedLOG")
 	username := viper.GetString(params.AstUsernameKey)
 	if len(username) > 0 {
 		authASTServer()
@@ -141,6 +142,7 @@ func execute(cmd *cobra.Command, args ...string) error {
 // used by the integration tests during the runtime.
 func authASTServer() {
 	fmt.Println("Authenticating to AST Server")
+	fmt.Println("Authenticating to AST ServerLOG")
 	cmd := createASTIntegrationTestCommand(nil)
 	username := viper.GetString(params.AstUsernameKey)
 	password := viper.GetString(params.AstPasswordKey)
