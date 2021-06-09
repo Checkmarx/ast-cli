@@ -45,10 +45,10 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
-	username := viper.GetString(params.AstUsernameKey)
-	if len(username) > 0 {
-		authASTServer()
-	}
+	//username := viper.GetString(params.AstUsernameKey)
+	//if len(username) > 0 {
+	authASTServer()
+	//}
 
 	exitVal := m.Run()
 	log.Println("CLI integration tests done")
