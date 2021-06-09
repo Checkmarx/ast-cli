@@ -114,10 +114,10 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	fmt.PrintLn("TEST: getScanByID() scanID: ", scanID)
+	fmt.Println("TEST: getScanByID() scanID: ", scanID)
 	err := execute(getCommand, "-v", "--format", "json", "scan", "show", scanID)
 	assert.NilError(t, err)
-	fmt.PrintLn("TEST: getScanByID() has run ")
+	fmt.Println("TEST: getScanByID() has run ")
 	// Read response from buffer
 	var getScanJSON []byte
 	getScanJSON, err = ioutil.ReadAll(getBuffer)
