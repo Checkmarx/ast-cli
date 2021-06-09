@@ -60,7 +60,7 @@ func TestScansE2E(t *testing.T) {
 }
 
 func createScanSourcesFile(t *testing.T) (string, string) {
-	fmt.Println("Trying to create source file")
+	log.Printf("Trying to create source file")
 	// Create a full scan
 	b := bytes.NewBufferString("")
 	createCommand := createASTIntegrationTestCommand(t)
