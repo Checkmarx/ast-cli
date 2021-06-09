@@ -33,6 +33,7 @@ func TestScansE2E(t *testing.T) {
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
+	fmt.Println("TEST: Trying to run TestScansE2E - phase 2")
 	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
 	incScanWaitTime := viper.GetInt("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS")
 	scanCompleted := pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, fullScanWaitTime, 5)
@@ -43,6 +44,7 @@ func TestScansE2E(t *testing.T) {
 	log.Println("Full scan results number is", scanResults)
 	assert.Check(t, scanResults > 0, "Wrong number of scan results of 0")
 	**/
+	fmt.Println("TEST: Trying to run TestScansE2E - phase 3")
 	incScanID, _ := createIncScan(t)
 	incScanCompleted := pollScanUntilStatus(t, incScanID, scansApi.ScanCompleted, incScanWaitTime, 5)
 	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
@@ -54,9 +56,11 @@ func TestScansE2E(t *testing.T) {
 	assert.Check(t, incScanResults < scanResults, "Wrong number of inc scan results - same as the full scan results")
 	**/
 
+	fmt.Println("TEST: Trying to run TestScansE2E - phase 4")
 	listScans(t)
 	getScansTags(t)
 	deleteScan(t, incScanID)
+	fmt.Println("TEST: Trying to run TestScansE2E - phase 5")
 }
 
 func createScanSourcesFile(t *testing.T) (string, string) {
