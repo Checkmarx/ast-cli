@@ -181,6 +181,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			log.Printf("Polling scan %s\n", scanID)
 			fmt.Printf("Polling scan %s\n", scanID)
 			scan := getScanByID(t, scanID)
+			fmt.Println("Scan Status: ", string(scan.Status), ", ", string(requiredStatus))
 			getScanByIDList(t, scanID)
 			if s := string(scan.Status); s == string(requiredStatus) {
 				return true
