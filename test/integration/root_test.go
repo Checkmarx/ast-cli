@@ -45,7 +45,6 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
-	fmt.Println("CLI integration test startedLOG")
 	username := viper.GetString(params.AstUsernameKey)
 	if len(username) > 0 {
 		authASTServer()
