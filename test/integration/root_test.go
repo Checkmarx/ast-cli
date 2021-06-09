@@ -57,6 +57,7 @@ func TestMain(m *testing.M) {
 }
 
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	fmt.Println("createASTIntegrationTestCommand() Start LOG")
 	bindKeysToEnvAndDefault(t)
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
