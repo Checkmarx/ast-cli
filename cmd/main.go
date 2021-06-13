@@ -43,7 +43,6 @@ func main() {
 	logs := viper.GetString(params.LogsPathKey)
 	logsEngineLogPath := viper.GetString(params.LogsEngineLogPathKey)
 	tenant := viper.GetString(params.TenantKey)
-
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)

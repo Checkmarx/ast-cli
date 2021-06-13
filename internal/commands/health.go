@@ -31,7 +31,6 @@ var (
 		strings.Join([]string{
 			commonParams.ScaAgent,
 			commonParams.SastALlInOne,
-			commonParams.SastManager,
 			commonParams.SastEngine}, ","))
 	singleNodeLogger = log.New(deploymentLogWriter{}, "", 0)
 )
@@ -118,7 +117,7 @@ func runChecksConcurrently(checks []*wrappers.HealthCheck) []*healthView {
 }
 
 func newHealthChecksByRole(h wrappers.HealthCheckWrapper, role string) (checksByRole []*wrappers.HealthCheck) {
-	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine, commonParams.SastManager}
+	sastRoles := [...]string{commonParams.SastALlInOne, commonParams.SastEngine}
 	sastAndScaRoles := append(sastRoles[:], commonParams.ScaAgent)
 	healthChecks := []*wrappers.HealthCheck{
 		wrappers.NewHealthCheck("DB", h.RunDBCheck, sastRoles[:]),
