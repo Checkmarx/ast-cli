@@ -67,6 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tabB,etc)")
 	createScanCmd.PersistentFlags().StringP(branchFlag, branchFlagSh, commonParams.Branch, branchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
@@ -153,6 +154,24 @@ func createProject(projectName string) (string, error) {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Create(&projModel)
 	return resp.ID, err
+}
+
+func updateTagValues(input *[]byte, cmd *cobra.Command) {
+	tagListStr, _ := cmd.Flags().GetString(tagList)
+	tags := strings.Split(tagListStr, ",")
+	var info map[string]interface{}
+	_ = json.Unmarshal(*input, &info)
+	if _, ok := info["tags"]; !ok {
+		var tagMap map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &tagMap)
+		info["tags"] = tagMap
+	}
+	for _, tag := range tags {
+		if len(tag) > 0 {
+			info["tags"].(map[string]interface{})[tag] = ""
+		}
+	}
+	*input, _ = json.Marshal(info)
 }
 
 func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
@@ -411,6 +430,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			uploadType = "git"
 		}
 		updateScanRequestValues(&input, cmd, uploadType)
+		updateTagValues(&input, cmd)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel

@@ -36,6 +36,7 @@ const (
 	mainBranchFlag           = "branch"
 	projectName              = "project-name"
 	scanTypes                = "scan-types"
+	tagList                  = "tags"
 	incrementalSast          = "sast-incremental"
 	presetName               = "sast-preset-name"
 	accessKeyIDFlag          = "client-id"
