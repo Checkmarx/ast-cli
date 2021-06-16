@@ -327,6 +327,12 @@ Git repositories can be scanned like this:
 
 When you're scanning repos AST will fetch the code directly from the repository.
 
+You can specify the name of branch to scan to can with the (--branch) option. If the (--source) type indicates a GIT repository the (--branch) value will also indicate the branch to pull code from. The (--branch) option can be used like this:
+
+``` bash
+./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" --branch yourBranch
+```
+
 You can disable polling mode like this:
 
 ``` bash
@@ -407,5 +413,5 @@ The following example demonstraights the use of a proxy server:
 | **CX_BASE_URI**      | The URI of the AST server.                                   |
 | **CX_BASE_AUTH_URI** | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
 | **CX_HTTP_PROXY**    | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
-
+| **CX_BRANCH**        | The branch to scan.                                          |
 

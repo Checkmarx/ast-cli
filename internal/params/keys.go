@@ -4,6 +4,7 @@ import "strings"
 
 var (
 	TenantKey                           = strings.ToLower(TenantEnv)
+	BranchKey                           = strings.ToLower(BranchEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
 	ProxyKey                            = strings.ToLower(ProxyEnv)
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)

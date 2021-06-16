@@ -144,6 +144,8 @@ func ShowConfiguration() {
 	fmt.Println(viper.GetString(params.BaseURIKey))
 	fmt.Printf("%30v", "BaseAuthURIKey: ")
 	fmt.Println(viper.GetString(params.BaseAuthURIKey))
+	fmt.Printf("%30v", "AST Tenant: ")
+	fmt.Println(viper.GetString(params.TenantKey))
 	fmt.Printf("%30v", "Client ID: ")
 	fmt.Println(viper.GetString(params.AccessKeyIDConfigKey))
 	fmt.Printf("%30v", "Client Secret: ")
