@@ -63,10 +63,7 @@ func printList(w io.Writer, entities []*entity) {
 }
 
 func columnFilters(key string) bool {
-	if key == "Updated at" {
-		return false
-	}
-	return true
+	return key != "Updated at"
 }
 
 func columnReformat(entities []*entity) {

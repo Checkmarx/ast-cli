@@ -16,7 +16,6 @@ const (
 	pleaseProvideFlag    = "%s: Please provide %s flag"
 	adminClientID        = "ast-app"
 	adminClientSecret    = "1d71c35c-818e-4ee8-8fb1-d6cbf8fe2e2a"
-	failedClientCreds    = "You must provide a client ID and secret"
 )
 
 type ClientCreated struct {
@@ -57,9 +56,9 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scansWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
-		params := make(map[string]string)
+		paramsList := make(map[string]string)
 		var err error
-		_, _, err = scansWrapper.Get(params)
+		_, _, err = scansWrapper.Get(paramsList)
 		if err != nil {
 			fmt.Println("Failed authentication test!")
 		} else {
