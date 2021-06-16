@@ -33,7 +33,6 @@ func TestScansE2E(t *testing.T) {
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
-	fmt.Println("TEST: Trying to run TestScansE2E - phase 2")
 	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
 	incScanWaitTime := viper.GetInt("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS")
 	scanCompleted := pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, fullScanWaitTime, 5)
@@ -44,7 +43,6 @@ func TestScansE2E(t *testing.T) {
 	log.Println("Full scan results number is", scanResults)
 	assert.Check(t, scanResults > 0, "Wrong number of scan results of 0")
 	**/
-	fmt.Println("TEST: Trying to run TestScansE2E - phase 3")
 	incScanID, _ := createIncScan(t)
 	incScanCompleted := pollScanUntilStatus(t, incScanID, scansApi.ScanCompleted, incScanWaitTime, 5)
 	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
@@ -56,15 +54,13 @@ func TestScansE2E(t *testing.T) {
 	assert.Check(t, incScanResults < scanResults, "Wrong number of inc scan results - same as the full scan results")
 	**/
 
-	fmt.Println("TEST: Trying to run TestScansE2E - phase 4")
 	listScans(t)
 	getScansTags(t)
 	deleteScan(t, incScanID)
-	fmt.Println("TEST: Trying to run TestScansE2E - phase 5")
 }
 
 func createScanSourcesFile(t *testing.T) (string, string) {
-	log.Printf("Trying to create source file")
+	fmt.Println("Trying to create source file")
 	// Create a full scan
 	b := bytes.NewBufferString("")
 	createCommand := createASTIntegrationTestCommand(t)
@@ -114,10 +110,8 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	fmt.Println("TEST: getScanByID() scanID: ", scanID)
 	err := execute(getCommand, "-v", "--format", "json", "scan", "show", scanID)
 	assert.NilError(t, err)
-	fmt.Println("TEST: getScanByID() has run ")
 	// Read response from buffer
 	var getScanJSON []byte
 	getScanJSON, err = ioutil.ReadAll(getBuffer)
@@ -170,7 +164,6 @@ func createIncScan(t *testing.T) (string, string) {
 
 func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.ScanStatus, timeout, sleep int) bool {
 	log.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
-	fmt.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
 	// Wait for the scan to finish. See it's completed successfully
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
@@ -181,9 +174,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			return false
 		default:
 			log.Printf("Polling scan %s\n", scanID)
-			fmt.Printf("Polling scan %s\n", scanID)
 			scan := getScanByID(t, scanID)
-			fmt.Println("Scan Status: ", string(scan.Status), ", ", string(requiredStatus))
 			getScanByIDList(t, scanID)
 			if s := string(scan.Status); s == string(requiredStatus) {
 				return true

@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,8 +34,6 @@ func parseHealthcheckResponse(body io.ReadCloser) (*HealthStatus, error) {
 
 func runHealthCheckRequest(path string, timeout uint, parser func(body io.ReadCloser) (*HealthStatus, error),
 ) (*HealthStatus, error) {
-
-	fmt.Println("Health Check: ", path)
 	resp, err := SendHTTPRequest(http.MethodGet, path, nil, false, timeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Http request %v failed", GetURL(path))
