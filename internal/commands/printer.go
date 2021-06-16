@@ -48,14 +48,33 @@ func printList(w io.Writer, entities []*entity) {
 	if len(entities) == 0 {
 		return
 	}
+	columnReformat(entities)
 	fmt.Fprintln(w)
 	maxColumn := entities[0].maxKey()
 	format := fmt.Sprintf("%%-%ds : %%v\n", maxColumn)
 	for _, e := range entities {
 		for _, p := range e.Properties {
-			fmt.Fprintf(w, format, p.Key, p.Value)
+			if columnFilters(p.Key) {
+				fmt.Fprintf(w, format, p.Key, p.Value)
+			}
 		}
 		fmt.Fprintln(w)
+	}
+}
+
+func columnFilters(key string) bool {
+	return key != "Updated at"
+}
+
+func columnReformat(entities []*entity) {
+	// Dates should just not contain HH:MM:SS
+	for _, e := range entities {
+		for i := 0; i < len(e.Properties); i++ {
+			key := e.Properties[i].Key
+			if key == "Created at" {
+				e.Properties[i].Value = e.Properties[i].Value[0:8]
+			}
+		}
 	}
 }
 
@@ -63,25 +82,34 @@ func printTable(w io.Writer, entities []*entity) {
 	if len(entities) == 0 {
 		return
 	}
+	columnReformat(entities)
 	fmt.Fprintln(w)
 	colWidth := getColumnWidth(entities)
 	// print header
 	for i := 0; i < len(colWidth); i++ {
 		key := entities[0].Properties[i].Key
-		fmt.Fprint(w, key, pad(colWidth[i], key))
+		if columnFilters(key) {
+			fmt.Fprint(w, key, pad(colWidth[i], key))
+		}
 	}
 	fmt.Fprintln(w)
 	// print delimiter
 	for i := 0; i < len(colWidth); i++ {
+		key := entities[0].Properties[i].Key
 		line := strings.Repeat("-", len(entities[0].Properties[i].Key))
-		fmt.Fprint(w, line, pad(colWidth[i], line))
+		if columnFilters(key) {
+			fmt.Fprint(w, line, pad(colWidth[i], line))
+		}
 	}
 	fmt.Fprintln(w)
 	// print rows by columns
 	for _, e := range entities {
 		for i := 0; i < len(colWidth); i++ {
 			val := e.Properties[i].Value
-			fmt.Fprint(w, val, pad(colWidth[i], val))
+			key := entities[0].Properties[i].Key
+			if columnFilters(key) {
+				fmt.Fprint(w, val, pad(colWidth[i], val))
+			}
 		}
 		fmt.Fprintln(w)
 	}

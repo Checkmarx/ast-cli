@@ -59,7 +59,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completiot (default true)")
+	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
@@ -67,6 +67,10 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tabB,etc)")
+	createScanCmd.PersistentFlags().StringP(branchFlag, branchFlagSh, commonParams.Branch, branchFlagUsage)
+	// Link the environment variable to the CLI argument(s).
+	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
@@ -94,7 +98,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 
 	cacnelScanCmd := &cobra.Command{
-		Use:   "cancel [scan id...]",
+		Use:   "cancel <scan id>",
 		Short: "Cancel one or more scans from running",
 		RunE:  runCancelScanCommand(scansWrapper),
 	}
@@ -150,6 +154,24 @@ func createProject(projectName string) (string, error) {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Create(&projModel)
 	return resp.ID, err
+}
+
+func updateTagValues(input *[]byte, cmd *cobra.Command) {
+	tagListStr, _ := cmd.Flags().GetString(tagList)
+	tags := strings.Split(tagListStr, ",")
+	var info map[string]interface{}
+	_ = json.Unmarshal(*input, &info)
+	if _, ok := info["tags"]; !ok {
+		var tagMap map[string]interface{}
+		_ = json.Unmarshal([]byte("{}"), &tagMap)
+		info["tags"] = tagMap
+	}
+	for _, tag := range tags {
+		if len(tag) > 0 {
+			info["tags"].(map[string]interface{})[tag] = ""
+		}
+	}
+	*input, _ = json.Marshal(info)
 }
 
 func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
@@ -408,6 +430,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			uploadType = "git"
 		}
 		updateScanRequestValues(&input, cmd, uploadType)
+		updateTagValues(&input, cmd)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
@@ -418,7 +441,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
-		pHandler.Branch = "master"
+		pHandler.Branch = viper.GetString(commonParams.BranchKey)
 		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)

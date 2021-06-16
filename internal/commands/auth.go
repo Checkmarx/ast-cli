@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -29,8 +30,8 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	}
 	createClientCmd := &cobra.Command{
 		Use:   "register",
-		Short: "Register new oauth2 client for ast",
-		Long: "Register new oath2 client and outputs its generated credentials in the format <key>=<value>.\n" +
+		Short: "Register new OAuth2 client for ast",
+		Long: "Register new OAuth2 client and outputs its generated credentials in the format <key>=<value>.\n" +
 			"\n" +
 			"  cx auth register -u <user> -p <pass> \n",
 		RunE: runRegister(authWrapper),
@@ -42,8 +43,29 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		"create clients")
 	createClientCmd.PersistentFlags().StringSliceP(clientRolesFlag, clientRolesSh, []string{"ast-admin"},
 		"A list of roles of the client")
-	authCmd.AddCommand(createClientCmd)
+	validLoginCmd := &cobra.Command{
+		Use:   "validate",
+		Short: "Validates a client/secret",
+		Long:  "Validates if a client/secret pair can communicate with AST.",
+		RunE:  validLogin(authWrapper),
+	}
+	authCmd.AddCommand(createClientCmd, validLoginCmd)
 	return authCmd
+}
+
+func validLogin(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scansWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
+		paramsList := make(map[string]string)
+		var err error
+		_, _, err = scansWrapper.Get(paramsList)
+		if err != nil {
+			fmt.Println("Failed authentication test!")
+		} else {
+			fmt.Println("Successfully authenticated to AST server!")
+		}
+		return nil
+	}
 }
 
 func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
@@ -71,7 +93,8 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 
 		errorMsg, err := authWrapper.CreateOauth2Client(client, username, password, adminClientID, adminClientSecret)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingClient)
+			fmt.Println("Could not create OAuth2 credentials!")
+			return nil
 		}
 
 		if errorMsg != nil {
