@@ -45,7 +45,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	createClientCmd.PersistentFlags().StringSliceP(clientRolesFlag, clientRolesSh, []string{"ast-admin"},
 		"A list of roles of the client")
 	validLoginCmd := &cobra.Command{
-		Use:   "validate-client",
+		Use:   "validate",
 		Short: "Validates a client/secret",
 		Long:  "Validates if a client/secret pair can communicate with AST.",
 		RunE:  validLogin(authWrapper),
