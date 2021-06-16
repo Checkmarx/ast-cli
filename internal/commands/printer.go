@@ -48,12 +48,15 @@ func printList(w io.Writer, entities []*entity) {
 	if len(entities) == 0 {
 		return
 	}
+	columnReformat(entities)
 	fmt.Fprintln(w)
 	maxColumn := entities[0].maxKey()
 	format := fmt.Sprintf("%%-%ds : %%v\n", maxColumn)
 	for _, e := range entities {
 		for _, p := range e.Properties {
-			fmt.Fprintf(w, format, p.Key, p.Value)
+			if columnFilters(p.Key) {
+				fmt.Fprintf(w, format, p.Key, p.Value)
+			}
 		}
 		fmt.Fprintln(w)
 	}
