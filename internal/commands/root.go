@@ -26,7 +26,6 @@ const (
 	agentFlag                = "agent"
 	agentFlagUsage           = "Scan origin name"
 	waitFlag                 = "nowait"
-	waitFlagSh               = "w"
 	waitDelayFlag            = "wait-delay"
 	sourceDirFilterFlag      = "filter"
 	sourceDirFilterFlagSh    = "f"

@@ -59,7 +59,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().BoolP(waitFlag, waitFlagSh, false, "Wait for scan completion (default true)")
+	createScanCmd.PersistentFlags().BoolP(waitFlag, "", false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
@@ -67,7 +67,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
-	createScanCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tabB,etc)")
+	createScanCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(branchFlag, branchFlagSh, commonParams.Branch, branchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
@@ -168,7 +168,12 @@ func updateTagValues(input *[]byte, cmd *cobra.Command) {
 	}
 	for _, tag := range tags {
 		if len(tag) > 0 {
-			info["tags"].(map[string]interface{})[tag] = ""
+			value := ""
+			keyValuePair := strings.Split(tag, ":")
+			if len(keyValuePair) > 1 {
+				value = keyValuePair[1]
+			}
+			info["tags"].(map[string]interface{})[keyValuePair[0]] = value
 		}
 	}
 	*input, _ = json.Marshal(info)
