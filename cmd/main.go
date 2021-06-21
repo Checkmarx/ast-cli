@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	commands "github.com/checkmarxDev/ast-cli/internal/commands"
 	params "github.com/checkmarxDev/ast-cli/internal/params"
@@ -37,12 +36,10 @@ func main() {
 	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathKey)
 	queries := viper.GetString(params.QueriesPathKey)
 	queriesClonePath := viper.GetString(params.QueriesClonePathKey)
-	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
 	sastMetadata := viper.GetString(params.SastMetadataPathKey)
 	sastMetadataMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	logsEngineLogPath := viper.GetString(params.LogsEngineLogPathKey)
-	tenant := viper.GetString(params.TenantKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
@@ -62,16 +59,12 @@ func main() {
 	)
 	queriesCloneURIPath := fmt.Sprintf("%s/%s", queries, queriesClonePath)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, queriesCloneURIPath)
-
-	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
-
-	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
+	authWrapper := wrappers.NewAuthHTTPWrapper()
 	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastMetadata,
 		fmt.Sprintf("%s/%s", sastMetadata, sastMetadataMetricsPath),
 	)
 	logsWrapper := wrappers.NewLogsWrapper(logs,
 		fmt.Sprintf("%s/%s", logs, logsEngineLogPath))
-
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		uploadsWrapper,
@@ -85,7 +78,6 @@ func main() {
 		sastMetadataWrapper,
 		logsWrapper,
 	)
-
 	err := astCli.Execute()
 	exitIfError(err)
 	os.Exit(successfulExitCode)
@@ -103,7 +95,6 @@ func bindKeysToEnvAndDefault() {
 		if err != nil {
 			exitIfError(err)
 		}
-
 		viper.SetDefault(b.Key, b.Default)
 	}
 }
