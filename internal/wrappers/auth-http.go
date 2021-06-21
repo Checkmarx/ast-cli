@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -35,7 +34,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	}
 	// Update the auth path, delayed to here because bind not ready in main.go
 	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
-	tenant := viper.GetString(commonParams.TenantKey)
+	tenant := viper.GetString(params.TenantKey)
 	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
 	a.SetPath(createClientPath)
 	// send the request
