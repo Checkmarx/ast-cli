@@ -7,5 +7,4 @@ func (a *AuthMockWrapper) CreateOauth2Client(*Oath2Client, string, string, strin
 }
 
 func (a *AuthMockWrapper) SetPath(path string) {
-	return
 }
