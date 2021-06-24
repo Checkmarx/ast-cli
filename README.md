@@ -339,6 +339,31 @@ You can disable polling mode like this:
 ./cx scan create -s <your-repo-url> --project-name "testproj" --scan-types "sast" --nowait true
 ```
 
+You can view the information about a scan like this:
+
+``` bash
+./cx scan show --scan-id <scan-id>
+```
+
+You can cancel running scans like this:
+
+``` bash
+# Cancel a single scan
+./cx scan cancel --scan-id <scan-id>
+# Cancel multiple scans at once
+./cx scan cancel --scan-id <scan-id>,<scan-id>,etc
+```
+
+You can delete existing scan like this:
+
+``` bash
+# Delete a single scan
+./cx scan delete --scan-id <scan-id>
+# Cancel multiple scans at once
+./cx scan delete --scan-id <scan-id>,<scan-id>,etc
+```
+
+
 
 ## Managing Projects
 
@@ -369,7 +394,7 @@ Project ID       Name       Created at          Updated at
 You can show the details about a specific project like this:
 
 ``` bash
-./cx project list <your-project-id>
+./cx project show --project-id <your-project-id>
 
 Project ID       Name       Created at          Updated at          Tags Groups 
 ----------       ----       ----------          ----------          ---- ------ 
@@ -379,7 +404,7 @@ Project ID       Name       Created at          Updated at
 Finally you can delete a project like this:
 
 ``` bash
-./cx project delete <your-project-id>
+./cx project delete --project-id <your-project-id>
 ```
 
 
