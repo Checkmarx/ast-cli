@@ -56,16 +56,18 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	listProjectsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
-		Use:   "show <project-id>",
+		Use:   "show",
 		Short: "Show information about a project",
 		RunE:  runGetProjectByIDCommand(projectsWrapper),
 	}
+	addProjectIDFlag(showProjectCmd, "Project ID to show.")
 
 	deleteProjCmd := &cobra.Command{
-		Use:   "delete <project-id>",
+		Use:   "delete",
 		Short: "Delete a project",
 		RunE:  runDeleteProjectCommand(projectsWrapper),
 	}
+	addProjectIDFlag(deleteProjCmd, "Project ID to delete.")
 
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
@@ -170,10 +172,10 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		var projectResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
-		if len(args) == 0 {
+		projectID, _ := cmd.Flags().GetString(projectIDFlag)
+		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedGettingProj)
 		}
-		projectID := args[0]
 		projectResponseModel, errorModel, err = projectsWrapper.GetByID(projectID)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingProj)
@@ -195,10 +197,10 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	return func(cmd *cobra.Command, args []string) error {
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
-		if len(args) == 0 {
+		projectID, _ := cmd.Flags().GetString(projectIDFlag)
+		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedDeletingProj)
 		}
-		projectID := args[0]
 		errorModel, err = projectsWrapper.Delete(projectID)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedDeletingProj)
