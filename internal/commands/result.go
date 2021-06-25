@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 
 	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
@@ -20,6 +21,9 @@ import (
 const (
 	failedListingResults = "Failed listing results"
 	targetFlag           = "target"
+	templateFlag         = "template"
+	exportTemplateFlag   = "template-export"
+	templateFileName     = "summary.tpl"
 )
 
 type ScanResults struct {
@@ -106,8 +110,61 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 	listSimpleResultsCmd.PersistentFlags().String(targetFlag, "./simple-results.json", "Output file")
 
-	resultCmd.AddCommand(listResultsCmd, listSimpleResultsCmd)
+	summaryCmd := &cobra.Command{
+		Use:   "summary",
+		Short: "Creates summary report for scan",
+		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
+	}
+	addFormatFlag(summaryCmd, formatHTML, formatText)
+	summaryCmd.PersistentFlags().String(scanIDFlag, "", "ID of the scan")
+	summaryCmd.PersistentFlags().String(targetFlag, "console", "Output file")
+	summaryCmd.PersistentFlags().String(templateFlag, "default", "Template file")
+	summaryCmd.PersistentFlags().String(exportTemplateFlag, "no", "'yes' to export summary template")
+
+	resultCmd.AddCommand(listResultsCmd, listSimpleResultsCmd, summaryCmd)
 	return resultCmd
+}
+
+func readSummaryTemplate(templateFile string, exportTemplateFlag string) (*template.Template, error) {
+	if templateFile == "default" {
+		exportTemplate(exportTemplateFlag, summaryTemplate)
+		return template.New("summaryTemplate").Parse(summaryTemplate)
+	} else {
+		// read the template file
+		exportTemplate(exportTemplateFlag, summaryTemplate)
+		return template.New("summaryTemplate").Parse(summaryTemplate)
+	}
+}
+
+func exportTemplate(exportTemplateFlag string, templateStr string) {
+	if exportTemplateFlag == "yes" {
+		err := os.WriteFile(templateFileName, []byte(templateStr), 0666)
+		if err != nil {
+			fmt.Println("Error writing to template file.")
+		}
+	}
+}
+
+func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		targetFile, _ := cmd.Flags().GetString(targetFlag)
+		templateFile, _ := cmd.Flags().GetString(templateFlag)
+		exportTemplateFlag, _ := cmd.Flags().GetString(exportTemplateFlag)
+		fmt.Println("Target File: ", targetFile)
+		//results, _ := os.ReadFile("mock-results.json")
+		//var scanResults = ScanResults{}
+		//_ = json.Unmarshal(results, &scanResults)
+		//createSimpleResults(scanResults, targetFile)
+		//t, err := template.New("foo").Parse(`{{define "T"}}Hello, {{.}}!{{end}}`)
+		template, err := readSummaryTemplate(templateFile, exportTemplateFlag)
+		f, err2 := os.Create("/tmp/dat2")
+		if err == nil && err2 == nil {
+			//err = t.ExecuteTemplate(os.Stdout, "T", "<script>alert('This is AST!')</script>")
+			err = template.ExecuteTemplate(f, "T", "<script>alert('This is AST!')</script>")
+			f.Close()
+		}
+		return nil
+	}
 }
 
 func runGetSimpleResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
@@ -242,3 +299,5 @@ func outputSingleResult(model *resultsReader.Result) {
 		fmt.Println()
 	}
 }
+
+const summaryTemplate = `{{define "T"}}Hello, {{.}}!{{end}}`
