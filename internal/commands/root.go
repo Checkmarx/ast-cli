@@ -29,6 +29,8 @@ const (
 	waitDelayFlag            = "wait-delay"
 	sourceDirFilterFlag      = "filter"
 	sourceDirFilterFlagSh    = "f"
+	scanIDFlag               = "scan-id"
+	projectIDFlag            = "project-id"
 	branchFlag               = "branch"
 	branchFlagSh             = "b"
 	scanIDFlag               = "scan-id"
@@ -190,6 +192,14 @@ func addFormatFlagToMultipleCommands(cmds []*cobra.Command, defaultFormat string
 func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
 	cmd.PersistentFlags().String(formatFlag, defaultFormat,
 		fmt.Sprintf(formatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
+func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
+	cmd.PersistentFlags().String(scanIDFlag, "", helpMsg)
+}
+
+func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
+	cmd.PersistentFlags().String(projectIDFlag, "", helpMsg)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
