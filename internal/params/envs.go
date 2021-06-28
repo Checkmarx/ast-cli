@@ -15,6 +15,8 @@ const (
 	AgentNameEnv                        = "CX_AGENT_NAME"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
+	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
+	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
 	BflPathEnv                          = "CX_BFL_PATH"
 	SastRmPathEnv                       = "CX_SAST_RM_PATH"
 	UploadsPathEnv                      = "CX_UPLOADS_PATH"

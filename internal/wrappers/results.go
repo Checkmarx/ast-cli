@@ -6,5 +6,6 @@ import (
 )
 
 type ResultsWrapper interface {
-	GetByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error)
+	GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error)
+	GetKicsByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error)
 }

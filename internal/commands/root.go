@@ -29,7 +29,6 @@ const (
 	waitDelayFlag            = "wait-delay"
 	sourceDirFilterFlag      = "filter"
 	sourceDirFilterFlagSh    = "f"
-	scanIDFlag               = "scan-id"
 	projectIDFlag            = "project-id"
 	branchFlag               = "branch"
 	branchFlagSh             = "b"

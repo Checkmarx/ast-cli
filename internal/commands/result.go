@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -102,6 +103,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
 	addFormatFlag(listResultsCmd, formatList, formatJSON)
+	addScanIDFlag(listResultsCmd, "ID to report on.")
 
 	listSimpleResultsCmd := &cobra.Command{
 		Use:   "list-simple <scan-id>",
@@ -116,54 +118,41 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
 	}
 	addFormatFlag(summaryCmd, formatHTML, formatText)
-	summaryCmd.PersistentFlags().String(scanIDFlag, "", "ID of the scan")
+	addScanIDFlag(summaryCmd, "ID to report on.")
 	summaryCmd.PersistentFlags().String(targetFlag, "console", "Output file")
-	summaryCmd.PersistentFlags().String(templateFlag, "default", "Template file")
-	summaryCmd.PersistentFlags().String(exportTemplateFlag, "no", "'yes' to export summary template")
 
 	resultCmd.AddCommand(listResultsCmd, listSimpleResultsCmd, summaryCmd)
 	return resultCmd
 }
 
-func readSummaryTemplate(templateFile string, exportTemplateFlag string) (*template.Template, error) {
-	if templateFile == "default" {
-		exportTemplate(exportTemplateFlag, summaryTemplate)
-		return template.New("summaryTemplate").Parse(summaryTemplate)
-	} else {
-		// read the template file
-		exportTemplate(exportTemplateFlag, summaryTemplate)
-		return template.New("summaryTemplate").Parse(summaryTemplate)
-	}
-}
-
-func exportTemplate(exportTemplateFlag string, templateStr string) {
-	if exportTemplateFlag == "yes" {
-		err := os.WriteFile(templateFileName, []byte(templateStr), 0666)
-		if err != nil {
-			fmt.Println("Error writing to template file.")
-		}
-	}
-}
-
 func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(targetFlag)
-		templateFile, _ := cmd.Flags().GetString(templateFlag)
-		exportTemplateFlag, _ := cmd.Flags().GetString(exportTemplateFlag)
-		fmt.Println("Target File: ", targetFile)
 		//results, _ := os.ReadFile("mock-results.json")
 		//var scanResults = ScanResults{}
 		//_ = json.Unmarshal(results, &scanResults)
 		//createSimpleResults(scanResults, targetFile)
 		//t, err := template.New("foo").Parse(`{{define "T"}}Hello, {{.}}!{{end}}`)
-		template, err := readSummaryTemplate(templateFile, exportTemplateFlag)
-		f, err2 := os.Create("/tmp/dat2")
-		if err == nil && err2 == nil {
-			//err = t.ExecuteTemplate(os.Stdout, "T", "<script>alert('This is AST!')</script>")
-			err = template.ExecuteTemplate(f, "T", "<script>alert('This is AST!')</script>")
-			f.Close()
-		}
+		//template, err := readSummaryTemplate(templateFile, exportTemplateFlag)
+		writeSummary(targetFile)
 		return nil
+	}
+}
+
+func writeSummary(targetFile string) {
+	template, err := template.New("summaryTemplate").Parse(summaryTemplate)
+	if err == nil {
+		if targetFile == "console" {
+			buffer := new(bytes.Buffer)
+			err = template.ExecuteTemplate(buffer, "T", "<script>alert('This is AST!')</script>")
+			fmt.Println(buffer)
+		} else {
+			f, err := os.Create(targetFile)
+			if err == nil {
+				err = template.ExecuteTemplate(f, "T", "<script>alert('This is AST!')</script>")
+				f.Close()
+			}
+		}
 	}
 }
 
@@ -214,46 +203,60 @@ func createSimpleResults(results ScanResults, targetFile string) {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		var sastResultResponseModel *resultsRaw.ResultsCollection
+		var kicsResultResponseModel *resultsRaw.ResultsCollection
 		var resultResponseModel *resultsRaw.ResultsCollection
 		var errorModel *resultsHelpers.WebError
+		var kicsErrorModel *resultsHelpers.WebError
 		var err error
-		if len(args) == 0 {
+		var kicsErr error
+		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
-
-		scanID := args[0]
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
 		params[commonParams.ScanIDQueryParam] = scanID
-
-		resultResponseModel, errorModel, err = resultsWrapper.GetByScanID(params)
-		if err != nil {
+		sastResultResponseModel, errorModel, err = resultsWrapper.GetSastByScanID(params)
+		kicsResultResponseModel, kicsErrorModel, kicsErr = resultsWrapper.GetKicsByScanID(params)
+		if err != nil && kicsErr != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		} else if resultResponseModel != nil {
-			f, _ := cmd.Flags().GetString(formatFlag)
-			if IsFormat(f, formatJSON) {
-				var resultsJSON []byte
-				resultsJSON, err = json.Marshal(resultResponseModel)
-				if err != nil {
-					return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
-				}
-
-				fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
-				return nil
-			}
-
-			// Not supporting table view because it gets ugly
-			return outputResultsPretty(resultResponseModel.Results)
+		} else if kicsErrorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedListingResults, kicsErrorModel.Code, kicsErrorModel.Message)
+		} else if sastResultResponseModel != nil && kicsResultResponseModel != nil {
+			resultResponseModel = mergeResults(sastResultResponseModel, kicsResultResponseModel)
+			return exportResults(cmd, resultResponseModel)
 		}
-
+		fmt.Println("Nothing to do")
 		return nil
 	}
+}
+
+// Merges all results into the sast collection, currently only supports sast and kics
+func mergeResults(sast *resultsRaw.ResultsCollection, kics *resultsRaw.ResultsCollection) *resultsRaw.ResultsCollection {
+	sast.Results = append(sast.Results, kics.Results...)
+	sast.TotalCount += kics.TotalCount
+	return sast
+}
+
+func exportResults(cmd *cobra.Command, results *resultsRaw.ResultsCollection) error {
+	var err error
+	formatFlag, _ := cmd.Flags().GetString(formatFlag)
+	if IsFormat(formatFlag, formatJSON) {
+		var resultsJSON []byte
+		resultsJSON, err = json.Marshal(results)
+		if err != nil {
+			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+		return nil
+	}
+	return outputResultsPretty(results.Results)
 }
 
 func outputResultsPretty(results []*resultsReader.Result) error {
