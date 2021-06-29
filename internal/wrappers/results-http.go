@@ -30,6 +30,7 @@ func NewHTTPResultsWrapper(path string, sastPath string, kicsPath string) Result
 }
 
 func (r *ResultsHTTPWrapper) GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
+	params["limit"] = "10000"
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.sastPath, params, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return nil, nil, err
