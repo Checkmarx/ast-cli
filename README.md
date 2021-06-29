@@ -106,20 +106,20 @@ Many CLI variables can be provided using environment variables, configuration va
 The CLI allows you to permanently store some CLI options in configuration files. The configuration files are kept in the users home directory under a subdirectory named  ($HOME/.checkmarx). 
 
 ``` bash
-./cx configure set cx_base_uri "http://<your-server>[:<port>]"
-./cx configure set cx_base_auth_uri "http://<your-server>[:<port>]"
-./cx configure set cx_client_id <your-key>
-./cx configure set cx_client_secret <your-secret>
-./cx configure set cx_http_proxy <your-proxy>
-./cx configure set cx_apikey <your-apikey>
-./cx configure set cx_tenant <your-tenant-name>
+./cx configure set --prop-name cx_base_uri --prop-value "http://<your-server>[:<port>]"
+./cx configure set --prop-name cx_base_auth_uri --prop-value "http://<your-server>[:<port>]"
+./cx configure set --prop-name cx_client_id --prop-value <your-key>
+./cx configure set --prop-name cx_client_secret --prop-value <your-secret>
+./cx configure set --prop-name cx_http_proxy --prop-value <your-proxy>
+./cx configure set --prop-name cx_apikey --prop-value <your-apikey>
+./cx configure set --prop-name cx_tenant --prop-value <your-tenant-name>
 ```
 
 The (--profile) option provides a powerful tool to quickly switch through differnent sets of configurations. You can add a profile name to any CLI command and it utilize the corsponding profile settings. The following example setups up altnerative profile named "test" and calls a CLI command utilizing it.
 
 ``` bash
 # Create the alternative profile
-./cx configure set cx_base_uri "http://your-test-server" --profile test
+./cx configure set --prop-name cx_base_uri --prop-value "http://your-test-server" --profile test
 # Use the cx_base_uri from the "test" profile.
 ./cx scan list --profile test
 # This uses the default profile (if it exists)
@@ -339,6 +339,31 @@ You can disable polling mode like this:
 ./cx scan create -s <your-repo-url> --project-name "testproj" --scan-types "sast" --nowait true
 ```
 
+You can view the information about a scan like this:
+
+``` bash
+./cx scan show --scan-id <scan-id>
+```
+
+You can cancel running scans like this:
+
+``` bash
+# Cancel a single scan
+./cx scan cancel --scan-id <scan-id>
+# Cancel multiple scans at once
+./cx scan cancel --scan-id <scan-id>,<scan-id>,etc
+```
+
+You can delete existing scan like this:
+
+``` bash
+# Delete a single scan
+./cx scan delete --scan-id <scan-id>
+# Cancel multiple scans at once
+./cx scan delete --scan-id <scan-id>,<scan-id>,etc
+```
+
+
 
 ## Managing Projects
 
@@ -369,7 +394,7 @@ Project ID       Name       Created at          Updated at
 You can show the details about a specific project like this:
 
 ``` bash
-./cx project list <your-project-id>
+./cx project show --project-id <your-project-id>
 
 Project ID       Name       Created at          Updated at          Tags Groups 
 ----------       ----       ----------          ----------          ---- ------ 
@@ -379,7 +404,7 @@ Project ID       Name       Created at          Updated at
 Finally you can delete a project like this:
 
 ``` bash
-./cx project delete <your-project-id>
+./cx project delete --project-id <your-project-id>
 ```
 
 

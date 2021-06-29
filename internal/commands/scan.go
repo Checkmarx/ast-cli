@@ -80,10 +80,11 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
-		Use:   "show <scan id>",
+		Use:   "show",
 		Short: "Show information about a scan",
 		RunE:  runGetScanByIDCommand(scansWrapper),
 	}
+	addScanIDFlag(showScanCmd, "Scan ID to show.")
 
 	workflowScanCmd := &cobra.Command{
 		Use:   "workflow <scan id>",
@@ -92,16 +93,18 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 
 	deleteScanCmd := &cobra.Command{
-		Use:   "delete [scan id...]",
+		Use:   "delete",
 		Short: "Deletes one or more scans",
 		RunE:  runDeleteScanCommand(scansWrapper),
 	}
+	addScanIDFlag(deleteScanCmd, "One or more scan IDs to delete, ex: <scan-id>,<scan-id>,...")
 
-	cacnelScanCmd := &cobra.Command{
-		Use:   "cancel <scan id>",
+	cancelScanCmd := &cobra.Command{
+		Use:   "cancel",
 		Short: "Cancel one or more scans from running",
 		RunE:  runCancelScanCommand(scansWrapper),
 	}
+	addScanIDFlag(cancelScanCmd, "One or more scan IDs to cancel, ex: <scan-id>,<scan-id>,...")
 
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
@@ -113,7 +116,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		formatTable, formatList, formatJSON)
 	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd},
 		formatList, formatTable, formatJSON)
-	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cacnelScanCmd, tagsCmd)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd)
 	return scanCmd
 }
 
@@ -535,10 +538,10 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
-		if len(args) == 0 {
+		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
 		}
-		scanID := args[0]
 		scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGetting)
@@ -584,11 +587,11 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 
 func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		scanIDs, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanIDs == "" {
 			return errors.Errorf("%s: Please provide at least one scan ID", failedDeleting)
 		}
-
-		for _, scanID := range args {
+		for _, scanID := range strings.Split(scanIDs, ",") {
 			errorModel, err := scansWrapper.Delete(scanID)
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedDeleting)
@@ -606,11 +609,11 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+		scanIDs, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanIDs == "" {
 			return errors.Errorf("%s: Please provide at least one scan ID", failedCanceling)
 		}
-
-		for _, scanID := range args {
+		for _, scanID := range strings.Split(scanIDs, ",") {
 			errorModel, err := scansWrapper.Cancel(scanID)
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCanceling)
