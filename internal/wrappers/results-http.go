@@ -171,7 +171,7 @@ type KicsResult struct {
 	// Platform didn't exist in SAST
 	Platform string `json:"platform,omitempty"`
 	//
-	/// start: None of the following values exist in SAST
+	// start: None of the following values exist in SAST
 	//
 	IssueType     string `json:"issueType,omitempty"`
 	SearchKey     string `json:"searchKey,omitempty"`
@@ -183,14 +183,14 @@ type KicsResult struct {
 	Comments      string `json:"comments,omitempty"`
 	Category      string `json:"category,omitempty"`
 	//
-	/// End: None of the following values exist in SAST
+	// End: None of the following values exist in SAST
 	//
 	// ProjectId does not exist in kics
 	// ProjectID string `json:"-"` // not exported
 	// TenantID does not exist in kics
 	// TenantID  string `json:"-"` // not exported
 	//
-	/// These were found in ResultNode in Sast structure
+	// These were found in ResultNode in Sast structure
 	//
 	// Column does not exist in kics
 	// Column       int32  `json:"column,omitempty"`

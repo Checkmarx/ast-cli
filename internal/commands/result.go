@@ -163,9 +163,8 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 				writeSummary(targetFile, summary, format)
 			}
 			return sumErr
-		} else {
-			return err
 		}
+		return err
 	}
 }
 
@@ -203,7 +202,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
-			if format == "html" {
+			if format == formatHTML {
 				buffer := new(bytes.Buffer)
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				fmt.Println(buffer)
@@ -213,7 +212,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 		} else {
 			f, err := os.Create(targetFile)
 			if err == nil {
-				if format == "html" {
+				if format == formatHTML {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 				} else {
 					writeTextSummary(f, summary)
@@ -238,17 +237,17 @@ func writeTextSummary(target *os.File, summary *ResultSummary) {
 		_, _ = target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
 		_, _ = target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
 	} else {
-		fmt.Printf(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
-		fmt.Printf(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
-		fmt.Printf(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
-		fmt.Printf(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
-		fmt.Printf(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
-		fmt.Printf(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
-		fmt.Printf(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
-		fmt.Printf(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
-		fmt.Printf(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
-		fmt.Printf(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
-		fmt.Printf(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
+		fmt.Printf("         Created At: %s\n", summary.CreatedAt)
+		fmt.Printf("               Risk: %s\n", summary.RiskMsg)
+		fmt.Printf("         Project ID: %s\n", summary.ProjectID)
+		fmt.Printf("            Scan ID: %s\n", summary.ScanID)
+		fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
+		fmt.Printf("        High Issues: %d\n", summary.HighIssues)
+		fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
+		fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
+		fmt.Printf("        SAST Issues: %d\n", summary.SastIssues)
+		fmt.Printf("        KICS Issues: %d\n", summary.KicsIssues)
+		fmt.Printf("         SCA Issues: %d\n", summary.ScaIssues)
 	}
 }
 
@@ -257,9 +256,8 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 		err, results := readResults(resultsWrapper, cmd)
 		if err == nil {
 			return exportResults(cmd, results)
-		} else {
-			return err
 		}
+		return err
 	}
 }
 
