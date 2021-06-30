@@ -207,35 +207,41 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				fmt.Println(buffer)
 			} else {
-				writeTextSummary(false, nil, summary)
+				writeTextSummary("", summary)
 			}
 		} else {
-			f, err := os.Create(targetFile)
-			if err == nil {
-				if format == formatHTML {
+			if format == formatHTML {
+				f, err := os.Create(targetFile)
+				if err == nil {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
-				} else {
-					writeTextSummary(true, f, summary)
 				}
-				f.Close()
+			} else {
+				writeTextSummary(targetFile, summary)
 			}
 		}
 	}
 }
 
-func writeTextSummary(junk bool, target *os.File, summary *ResultSummary) {
-	if junk {
-		_, _ = target.WriteString(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
-		_, _ = target.WriteString(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
-		_, _ = target.WriteString(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
-		_, _ = target.WriteString(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
-		_, _ = target.WriteString(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
-		_, _ = target.WriteString(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
-		_, _ = target.WriteString(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
-		_, _ = target.WriteString(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
-		_, _ = target.WriteString(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
-		_, _ = target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
-		_, _ = target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
+func writeTextSummary(targetFile string, summary *ResultSummary) {
+	if targetFile != "" {
+		f, err := os.Create(targetFile)
+		if err == nil {
+			sumMsg := ""
+			sumMsg += fmt.Sprintf("         Created At: %s\n", summary.CreatedAt)
+
+			sumMsg += fmt.Sprintf("               Risk: %s\n", summary.RiskMsg)
+			sumMsg += fmt.Sprintf("         Project ID: %s\n", summary.ProjectID)
+			sumMsg += fmt.Sprintf("            Scan ID: %s\n", summary.ScanID)
+			sumMsg += fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues)
+			sumMsg += fmt.Sprintf("        High Issues: %d\n", summary.HighIssues)
+			sumMsg += fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues)
+			sumMsg += fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues)
+			sumMsg += fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues)
+			sumMsg += fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues)
+			sumMsg += fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues)
+			f.WriteString(sumMsg)
+			f.Close()
+		}
 	} else {
 		fmt.Printf("         Created At: %s\n", summary.CreatedAt)
 		fmt.Printf("               Risk: %s\n", summary.RiskMsg)
