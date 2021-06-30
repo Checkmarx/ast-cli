@@ -158,7 +158,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 		format, _ := cmd.Flags().GetString(formatFlag)
 		err, results := readResults(resultsWrapper, cmd)
 		if err == nil {
-			sumErr, summary := summaryReport(results, scanID)
+			summary, sumErr := summaryReport(results, scanID)
 			if sumErr == nil {
 				writeSummary(targetFile, summary, format)
 			}
@@ -168,10 +168,10 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 	}
 }
 
-func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error, *ResultSummary) {
+func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (*ResultSummary, error) {
 	summary, err := getScanInfo(scanID)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	summary.TotalIssues = int(results.TotalCount)
 	for _, result := range results.Results {
@@ -195,7 +195,7 @@ func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error,
 			}
 		}
 	}
-	return nil, summary
+	return summary, nil
 }
 
 func writeSummary(targetFile string, summary *ResultSummary, format string) {
@@ -215,7 +215,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 				if format == formatHTML {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 				} else {
-					writeTextSummary(f, summary)
+					writeTextSummary(true, f, summary)
 				}
 				f.Close()
 			}
@@ -223,8 +223,8 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 	}
 }
 
-func writeTextSummary(target *os.File, summary *ResultSummary) {
-	if target != nil {
+func writeTextSummary(junk bool, target *os.File, summary *ResultSummary) {
+	if junk {
 		_, _ = target.WriteString(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
 		_, _ = target.WriteString(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
 		_, _ = target.WriteString(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
@@ -261,7 +261,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (err error, results *resultsRaw.ResultsCollection) {
+func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (results *resultsRaw.ResultsCollection, err error) {
 	var sastResultResponseModel *resultsRaw.ResultsCollection
 	var kicsResultResponseModel *resultsRaw.ResultsCollection
 	var errorModel *resultsHelpers.WebError
@@ -269,30 +269,30 @@ func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (er
 	var kicsErr error
 	scanID, _ := cmd.Flags().GetString(scanIDFlag)
 	if scanID == "" {
-		return errors.Errorf("%s: Please provide a scan ID", failedListingResults), nil
+		return nil, errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 	}
 	params, err := getFilters(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "%s", failedListingResults), nil
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	params[commonParams.ScanIDQueryParam] = scanID
 	sastResultResponseModel, errorModel, err = resultsWrapper.GetSastByScanID(params)
 	kicsResultResponseModel, kicsErrorModel, kicsErr = resultsWrapper.GetKicsByScanID(params)
 	if err != nil && kicsErr != nil {
-		return errors.Wrapf(err, "%s", failedListingResults), nil
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message), nil
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if kicsErrorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, kicsErrorModel.Code, kicsErrorModel.Message), nil
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, kicsErrorModel.Code, kicsErrorModel.Message)
 	} else if sastResultResponseModel != nil && kicsResultResponseModel != nil {
-		return nil, mergeResults(sastResultResponseModel, kicsResultResponseModel)
+		return mergeResults(sastResultResponseModel, kicsResultResponseModel), nil
 	}
 	return nil, nil
 }
 
 // Merges all results into the sast collection, currently only supports sast and kics
-func mergeResults(sast *resultsRaw.ResultsCollection, kics *resultsRaw.ResultsCollection) *resultsRaw.ResultsCollection {
+func mergeResults(sast, kics *resultsRaw.ResultsCollection) *resultsRaw.ResultsCollection {
 	sast.Results = append(sast.Results, kics.Results...)
 	sast.TotalCount += kics.TotalCount
 	return sast
@@ -740,7 +740,7 @@ const summaryTemplate = `
         <div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
-                <div class="total">Total Vulnerabilites</div>
+                <div class="total">Total Vulnerabilities</div>
                 <div>
                     <div class="legend"><span class="severity-legend-dot">high</span>
                         <div class="severity-legend-text bg-red"></div>
