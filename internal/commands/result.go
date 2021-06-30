@@ -121,17 +121,17 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	return resultCmd
 }
 
-func getScanInfo(scanID string) (error, *ResultSummary) {
+func getScanInfo(scanID string) (*ResultSummary, error) {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scanAPIPath)
 	scanInfo, errorModel, err := scansWrapper.GetByID(scanID)
 	if err != nil {
-		return errors.Wrapf(err, "%s", failedGetting), nil
+		return nil, errors.Wrapf(err, "%s", failedGetting)
 	}
 	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message), nil
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanInfo != nil {
 		if err == nil {
-			return nil, &ResultSummary{
+			return &ResultSummary{
 				ScanID:       scanInfo.ID,
 				Status:       string(scanInfo.Status),
 				CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
@@ -145,10 +145,10 @@ func getScanInfo(scanID string) (error, *ResultSummary) {
 				KicsIssues:   0,
 				ScaIssues:    0,
 				Tags:         scanInfo.Tags,
-			}
+			}, nil
 		}
 	}
-	return err, nil
+	return nil, err
 }
 
 func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
@@ -170,7 +170,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 }
 
 func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error, *ResultSummary) {
-	err, summary := getScanInfo(scanID)
+	summary, err := getScanInfo(scanID)
 	if err != nil {
 		return err, nil
 	}
@@ -200,12 +200,12 @@ func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error,
 }
 
 func writeSummary(targetFile string, summary *ResultSummary, format string) {
-	template, err := template.New("summaryTemplate").Parse(summaryTemplate)
+	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
 			if format == "html" {
 				buffer := new(bytes.Buffer)
-				_ = template.ExecuteTemplate(buffer, "SummaryTemplate", summary)
+				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				fmt.Println(buffer)
 			} else {
 				writeTextSummary(nil, summary)
@@ -214,7 +214,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 			f, err := os.Create(targetFile)
 			if err == nil {
 				if format == "html" {
-					_ = template.ExecuteTemplate(f, "SummaryTemplate", summary)
+					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 				} else {
 					writeTextSummary(f, summary)
 				}
