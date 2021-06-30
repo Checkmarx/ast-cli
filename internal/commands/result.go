@@ -239,7 +239,7 @@ func writeTextSummary(targetFile string, summary *ResultSummary) {
 			sumMsg += fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues)
 			sumMsg += fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues)
 			sumMsg += fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues)
-			f.WriteString(sumMsg)
+			_, _ = f.WriteString(sumMsg)
 			f.Close()
 		}
 	} else {
@@ -630,7 +630,9 @@ const summaryTemplate = `
         }
 
         .bar-chart .progress {
-            background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQYV2NkQAIfPnz6zwjjgzgCAnyMYAEYB8RmROaABAAU7g/W6mdTYAAAAABJRU5ErkJggg==) repeat;
+            background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhE
+							UgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQYV2NkQAIfPnz6zwjjgzgCAny
+							MYAEYB8RmROaABAAU7g/W6mdTYAAAAABJRU5ErkJggg==) repeat;
             border: 1px solid #f0f0f0;
             border-radius: 3px;
             height: 1.5rem;
@@ -706,10 +708,18 @@ const summaryTemplate = `
                 <div class="data">
                     <div class="scan-svg"><svg width="40" height="40" fill="none">
                             <path fill-rule="evenodd" clip-rule="evenodd"
-                                d="M9.393 32.273c-.65.651-1.713.656-2.296-.057A16.666 16.666 0 1136.583 20h1.75v3.333H22.887a3.333 3.333 0 110-3.333h3.911a7 7 0 10-12.687 5.45c.447.698.464 1.641-.122 2.227-.586.586-1.546.591-2.038-.075A10 10 0 1129.86 20h3.368a13.331 13.331 0 00-18.33-10.652A13.334 13.334 0 009.47 29.846c.564.727.574 1.776-.077 2.427z"
+                                d="M9.393 32.273c-.65.651-1.713.656-2.296-.057A16.666 
+																16.666 0 1136.583 20h1.75v3.333H22.887a3.333 3.333 0 110-3.333h3.911a7 7 0 10-12.687 
+																5.45c.447.698.464 1.641-.122 2.227-.586.586-1.546.591-2.038-.075A10 
+																10 0 1129.86 20h3.368a13.331 13.331 0 00-18.33-10.652A13.334 13.334 0 009.47 
+																29.846c.564.727.574 1.776-.077 2.427z"
                                 fill="url(#scans_svg__paint0_angular)"></path>
                             <path fill-rule="evenodd" clip-rule="evenodd"
-                                d="M9.393 32.273c-.65.651-1.713.656-2.296-.057A16.666 16.666 0 1136.583 20h1.75v3.333H22.887a3.333 3.333 0 110-3.333h3.911a7 7 0 10-12.687 5.45c.447.698.464 1.641-.122 2.227-.586.586-1.546.591-2.038-.075A10 10 0 1129.86 20h3.368a13.331 13.331 0 00-18.33-10.652A13.334 13.334 0 009.47 29.846c.564.727.574 1.776-.077 2.427z"
+                                d="M9.393 32.273c-.65.651-1.713.656-2.296-.057A16.666 16.666 0 1136.583 
+																20h1.75v3.333H22.887a3.333 3.333 0 110-3.333h3.911a7 7 0 10-12.687 
+																5.45c.447.698.464 1.641-.122 2.227-.586.586-1.546.591-2.038-.075A10 
+																10 0 1129.86 20h3.368a13.331 13.331 0 00-18.33-10.652A13.334 13.334 0 
+																009.47 29.846c.564.727.574 1.776-.077 2.427z"
                                 fill="url(#scans_svg__paint1_angular)"></path>
                             <defs>
                                 <radialGradient id="scans_svg__paint0_angular" cx="0" cy="0" r="1"
@@ -731,7 +741,9 @@ const summaryTemplate = `
                 <div class="data">
                     <div class="calendar-svg"><svg width="12" height="12" fill="none">
                             <path fill-rule="evenodd" clip-rule="evenodd"
-                                d="M3.333 0h1.334v1.333h2.666V0h1.334v1.333h2c.368 0 .666.299.666.667v8.667a.667.667 0 01-.666.666H1.333a.667.667 0 01-.666-.666V2c0-.368.298-.667.666-.667h2V0zm4 2.667V4h1.334V2.667H10V10H2V2.667h1.333V4h1.334V2.667h2.666z"
+                                d="M3.333 0h1.334v1.333h2.666V0h1.334v1.333h2c.368 0 .666.299.666.667v8.667a.667.667 
+																0 01-.666.666H1.333a.667.667 0 01-.666-.666V2c0-.368.298-.667.666-.667h2V0zm4 
+																2.667V4h1.334V2.667H10V10H2V2.667h1.333V4h1.334V2.667h2.666z"
                                 fill="#95939B"></path>
                         </svg></div>
                     <div>{{.CreatedAt}}</div>
