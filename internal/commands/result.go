@@ -22,9 +22,9 @@ import (
 const (
 	failedListingResults = "Failed listing results"
 	targetFlag           = "target"
-	templateFlag         = "template"
-	exportTemplateFlag   = "template-export"
-	templateFileName     = "summary.tpl"
+	mediumLabel          = "medium"
+	highLabel            = "high"
+	lowLabel             = "low"
 )
 
 type ScanResults struct {
@@ -178,20 +178,20 @@ func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error,
 	for _, result := range results.Results {
 		if result.Severity == "HIGH" {
 			summary.HighIssues++
-			summary.RiskStyle = "high"
+			summary.RiskStyle = highLabel
 			summary.RiskMsg = "High Risk"
 		}
 		if result.Severity == "LOW" {
 			summary.LowIssues++
-			if summary.RiskStyle != "high" && summary.RiskStyle != "medium" {
-				summary.RiskStyle = "low"
+			if summary.RiskStyle != highLabel && summary.RiskStyle != mediumLabel {
+				summary.RiskStyle = lowLabel
 				summary.RiskMsg = "Low Risk"
 			}
 		}
-		if result.Severity == "MEDIUM" {
+		if result.Severity == mediumLabel {
 			summary.MediumIssues++
-			if summary.RiskStyle != "high" {
-				summary.RiskStyle = "medium"
+			if summary.RiskStyle != highLabel {
+				summary.RiskStyle = mediumLabel
 				summary.RiskMsg = "Medium Risk"
 			}
 		}
@@ -226,17 +226,17 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 
 func writeTextSummary(target *os.File, summary *ResultSummary) {
 	if target != nil {
-		target.WriteString(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
-		target.WriteString(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
-		target.WriteString(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
-		target.WriteString(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
-		target.WriteString(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
-		target.WriteString(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
-		target.WriteString(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
-		target.WriteString(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
-		target.WriteString(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
-		target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
-		target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
+		_, _ = target.WriteString(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
+		_, _ = target.WriteString(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
+		_, _ = target.WriteString(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
+		_, _ = target.WriteString(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
+		_, _ = target.WriteString(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
+		_, _ = target.WriteString(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
+		_, _ = target.WriteString(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
+		_, _ = target.WriteString(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
+		_, _ = target.WriteString(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
+		_, _ = target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
+		_, _ = target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
 	} else {
 		fmt.Printf(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
 		fmt.Printf(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
