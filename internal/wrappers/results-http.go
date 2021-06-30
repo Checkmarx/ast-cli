@@ -129,38 +129,14 @@ func normalizeKicsResult(srcResult *KicsResultsCollection) *resultsRaw.ResultsCo
 /*
  * NOTE: these Kics data structures a ripped of mods from whats in
  * what's in sast-results/results.go. This shim code until we can figure out
- * how to bring these items together. IT DOES NOT BELONG HERE.
+ * how to bring these items together. IT DOES NOT BELONG HERE. It will
+ * be replaced when the agregated api/results endpoint is ready, hopefully by
+ * the first week of July?
  */
 type KicsResultsCollection struct {
 	Results    []*KicsResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`
 }
-
-//"ID":"SvWMXc05xEEs3mn3kwLwASgchd8=",
-//"similarityID":"cc02172daa86dc2804201e98627f455246dbb7284a58a1a3d491135e3a4aee8a",
-//"severity":"HIGH",
-//"firstScanID":"adfc597a-825e-4d1f-ba4e-07eb556b4fc7",
-//"firstFoundAt":"0001-01-01T00:00:00Z",
-//"foundAt":"0001-01-01T00:00:00Z",
-//"status":"NEW",
-//"state":"TO_VERIFY",
-//"type":"Missing Attribute",
-//"queryID":"fd54f200-402c-4333-a5a4-36ef6709af2f",
-//"queryName":"Missing User Instruction",
-//"group":"fd54f200-402c-4333-a5a4-36ef6709af2f",
-//"queryURL":"Missing User Instruction",
-//"fileName":"/dvna-master/Dockerfile",
-//"line":3,
-//"platform":"Dockerfile",
-//"issueType":"Missing Attribute",
-//"searchKey":"Missing Attribute",
-//"searchValue":"3",
-//"expectedValue":"The 'Dockerfile' contains the 'USER' instruction",
-//"actualValue":"The 'Dockerfile' does not contain any 'USER' instruction",
-//"value":"The 'Dockerfile' does not contain any 'USER' instruction",
-//"description":"/dvna-master/Dockerfile",
-//"comments":"/dvna-master/Dockerfile",
-//"category":"Build Process"},
 
 type KicsResult struct {
 	// Was ResultQuery structure
