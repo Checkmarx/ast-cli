@@ -16,17 +16,23 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	path     string
-	sastPath string
-	kicsPath string
+	path      string
+	sastPath  string
+	kicsPath  string
+	scansPath string
 }
 
-func NewHTTPResultsWrapper(path string, sastPath string, kicsPath string) ResultsWrapper {
+func NewHTTPResultsWrapper(path string, sastPath string, kicsPath string, scansPath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		path:     path,
-		sastPath: sastPath,
-		kicsPath: kicsPath,
+		path:      path,
+		sastPath:  sastPath,
+		kicsPath:  kicsPath,
+		scansPath: scansPath,
 	}
+}
+
+func (r *ResultsHTTPWrapper) GetScaAPIPath() string {
+	return r.scansPath
 }
 
 func (r *ResultsHTTPWrapper) GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
@@ -64,6 +70,11 @@ func (r *ResultsHTTPWrapper) GetKicsByScanID(params map[string]string) (*results
 	}
 	decoder := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
+
+	//b, _ := io.ReadAll(resp.Body)
+	//fmt.Println(string(b))
+	//os.Exit(0)
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}

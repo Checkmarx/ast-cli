@@ -8,4 +8,5 @@ import (
 type ResultsWrapper interface {
 	GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error)
 	GetKicsByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error)
+	GetScaAPIPath() string
 }

@@ -45,7 +45,7 @@ func main() {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, sastResults, kicsResults)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, sastResults, kicsResults, scans)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(

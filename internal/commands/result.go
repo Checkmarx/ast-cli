@@ -88,9 +88,11 @@ var (
 			commonParams.GroupQueryParam,
 			commonParams.StatusQueryParam,
 			commonParams.SeverityQueryParam}, ","))
+	scanAPIPath = ""
 )
 
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
+	scanAPIPath = resultsWrapper.GetScaAPIPath()
 	resultCmd := &cobra.Command{
 		Use:   "result",
 		Short: "Retrieve results",
@@ -119,62 +121,136 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	return resultCmd
 }
 
+func getScanInfo(scanID string) (error, *ResultSummary) {
+	scansWrapper := wrappers.NewHTTPScansWrapper(scanAPIPath)
+	scanInfo, errorModel, err := scansWrapper.GetByID(scanID)
+	if err != nil {
+		return errors.Wrapf(err, "%s", failedGetting), nil
+	}
+	if errorModel != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message), nil
+	} else if scanInfo != nil {
+		if err == nil {
+			return nil, &ResultSummary{
+				ScanID:       scanInfo.ID,
+				Status:       string(scanInfo.Status),
+				CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+				ProjectID:    scanInfo.ProjectID,
+				RiskStyle:    "",
+				RiskMsg:      "",
+				HighIssues:   0,
+				MediumIssues: 0,
+				LowIssues:    0,
+				SastIssues:   0,
+				KicsIssues:   0,
+				ScaIssues:    0,
+				Tags:         scanInfo.Tags,
+			}
+		}
+	}
+	return err, nil
+}
+
 func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(targetFlag)
 		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		format, _ := cmd.Flags().GetString(formatFlag)
 		err, results := readResults(resultsWrapper, cmd)
 		if err == nil {
-			summary := summaryReport(results, scanID)
-			writeSummary(targetFile, summary)
+			sumErr, summary := summaryReport(results, scanID)
+			if sumErr == nil {
+				writeSummary(targetFile, summary, format)
+			}
+			return sumErr
 		} else {
 			return err
 		}
-		return nil
 	}
 }
 
-func summaryReport(results *resultsRaw.ResultsCollection, scanID string) *ResultSummary {
-	summary := ResultSummary{}
+func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (error, *ResultSummary) {
+	err, summary := getScanInfo(scanID)
+	if err != nil {
+		return err, nil
+	}
 	summary.TotalIssues = int(results.TotalCount)
-	summary.HighIssues = 0
-	summary.MediumIssues = 0
-	summary.LowIssues = 0
-	summary.SastIssues = 0
-	summary.KicsIssues = 0
-	summary.ScaIssues = 0
-	summary.ScanID = scanID
-	summary.ScanDate = "2021.06.23"
-	summary.ScanTime = "14:22:11"
 	for _, result := range results.Results {
 		if result.Severity == "HIGH" {
 			summary.HighIssues++
+			summary.RiskStyle = "high"
+			summary.RiskMsg = "High Risk"
 		}
 		if result.Severity == "LOW" {
 			summary.LowIssues++
+			if summary.RiskStyle != "high" && summary.RiskStyle != "medium" {
+				summary.RiskStyle = "low"
+				summary.RiskMsg = "Low Risk"
+			}
 		}
 		if result.Severity == "MEDIUM" {
 			summary.MediumIssues++
+			if summary.RiskStyle != "high" {
+				summary.RiskStyle = "medium"
+				summary.RiskMsg = "Medium Risk"
+			}
 		}
 	}
-	return &summary
+	return nil, summary
 }
 
-func writeSummary(targetFile string, summary *ResultSummary) {
+func writeSummary(targetFile string, summary *ResultSummary, format string) {
 	template, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
-			buffer := new(bytes.Buffer)
-			err = template.ExecuteTemplate(buffer, "SummaryTemplate", summary)
-			fmt.Println(buffer)
+			if format == "html" {
+				buffer := new(bytes.Buffer)
+				_ = template.ExecuteTemplate(buffer, "SummaryTemplate", summary)
+				fmt.Println(buffer)
+			} else {
+				writeTextSummary(nil, summary)
+			}
 		} else {
 			f, err := os.Create(targetFile)
 			if err == nil {
-				err = template.ExecuteTemplate(f, "SummaryTemplate", summary)
+				if format == "html" {
+					_ = template.ExecuteTemplate(f, "SummaryTemplate", summary)
+				} else {
+					writeTextSummary(f, summary)
+				}
 				f.Close()
 			}
 		}
 	}
+}
+
+func writeTextSummary(target *os.File, summary *ResultSummary) {
+	if target != nil {
+		target.WriteString(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
+		target.WriteString(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
+		target.WriteString(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
+		target.WriteString(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
+		target.WriteString(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
+		target.WriteString(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
+		target.WriteString(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
+		target.WriteString(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
+		target.WriteString(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
+		target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
+		target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
+	} else {
+		fmt.Println(fmt.Sprintf("         Created At: %s", summary.CreatedAt))
+		fmt.Println(fmt.Sprintf("               Risk: %s", summary.RiskMsg))
+		fmt.Println(fmt.Sprintf("         Project ID: %s", summary.ProjectID))
+		fmt.Println(fmt.Sprintf("            Scan ID: %s", summary.ScanID))
+		fmt.Println(fmt.Sprintf("       Total Issues: %d", summary.TotalIssues))
+		fmt.Println(fmt.Sprintf("        High Issues: %d", summary.HighIssues))
+		fmt.Println(fmt.Sprintf("      Medium Issues: %d", summary.MediumIssues))
+		fmt.Println(fmt.Sprintf("         Low Issues: %d", summary.LowIssues))
+		fmt.Println(fmt.Sprintf("        SAST Issues: %d", summary.SastIssues))
+		fmt.Println(fmt.Sprintf("        KICS Issues: %d", summary.KicsIssues))
+		fmt.Println(fmt.Sprintf("         SCA Issues: %d", summary.ScaIssues))
+	}
+	os.Exit(0)
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
@@ -292,9 +368,15 @@ type ResultSummary struct {
 	SastIssues   int
 	KicsIssues   int
 	ScaIssues    int
+	RiskStyle    string
+	RiskMsg      string
+	Status       string
 	ScanID       string
 	ScanDate     string
 	ScanTime     string
+	CreatedAt    string
+	ProjectID    string
+	Tags         map[string]string
 }
 
 const summaryTemplate = `
@@ -444,6 +526,15 @@ const summaryTemplate = `
             color: #fcfdff;
         }
 
+				.top-row .risk-level-tile.medium {
+					background-color: #f9ae4d;
+					color: #fcfdff;
+        }
+
+				.top-row .risk-level-tile.low {
+					background-color: #bdbdbd;
+					color: #fcfdff;
+				}
 
         .chart .total {
             font-size: 24px;
@@ -640,17 +731,17 @@ const summaryTemplate = `
                                 d="M3.333 0h1.334v1.333h2.666V0h1.334v1.333h2c.368 0 .666.299.666.667v8.667a.667.667 0 01-.666.666H1.333a.667.667 0 01-.666-.666V2c0-.368.298-.667.666-.667h2V0zm4 2.667V4h1.334V2.667H10V10H2V2.667h1.333V4h1.334V2.667h2.666z"
                                 fill="#95939B"></path>
                         </svg></div>
-                    <div>{{.ScanDate}}, {{.ScanTime}}</div>
+                    <div>{{.CreatedAt}}</div>
                 </div>
                 
                 <div class="data">
-                    <a href="" target="_blank">More details</a>
+                    <a href="https://ast-master.dev.cxast.net/#/projects/{{.ProjectID}}/overview" target="_blank">More details</a>
                 </div>
             </div>
 
         </div>
         <div class="top-row">
-            <div class="element risk-level-tile high"><span class="value">High Risk</span></div>
+            <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
                 <div class="total">Total Vulnerabilites</div>
                 <div>
