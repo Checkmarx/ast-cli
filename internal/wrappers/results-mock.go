@@ -29,3 +29,15 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 		TotalCount: 1,
 	}, nil, nil
 }
+
+func (r ResultsMockWrapper) GetKicsByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
+	return nil, nil, nil
+}
+
+func (r ResultsMockWrapper) GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
+	return nil, nil, nil
+}
+
+func (r *ResultsMockWrapper) GetScaAPIPath() string {
+	return ""
+}

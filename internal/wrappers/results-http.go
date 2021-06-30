@@ -22,7 +22,7 @@ type ResultsHTTPWrapper struct {
 	scansPath string
 }
 
-func NewHTTPResultsWrapper(path string, sastPath string, kicsPath string, scansPath string) ResultsWrapper {
+func NewHTTPResultsWrapper(path, sastPath, kicsPath, scansPath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
 		path:      path,
 		sastPath:  sastPath,
@@ -71,10 +71,6 @@ func (r *ResultsHTTPWrapper) GetKicsByScanID(params map[string]string) (*results
 	decoder := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
 
-	//b, _ := io.ReadAll(resp.Body)
-	//fmt.Println(string(b))
-	//os.Exit(0)
-
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}
@@ -101,14 +97,14 @@ func normalizeKicsResult(srcResult *KicsResultsCollection) *resultsRaw.ResultsCo
 		result := srcResult.Results[idx]
 		r := reader.Result{}
 		// RESULT NODE IS MISSING Type. ALSO type seems to mean something different on the kics value
-		//r.Type = "kics"
+		// r.Type = "kics"
 		r.ID = result.ID
 		// Can't map QueryID to correct type
-		//r.ResultQuery.QueryID = srcResult.Results[0].QueryID
+		// r.ResultQuery.QueryID = srcResult.Results[0].QueryID
 		r.ResultQuery.QueryName = result.QueryName
 		r.ResultQuery.Severity = result.Severity
 		// String to int64?
-		//r.SimilarityID = srcResult.Results[0].SimilarityID
+		// r.SimilarityID = srcResult.Results[0].SimilarityID
 		r.Group = result.Group
 		r.FirstScanID = result.FirstScanID
 		r.FirstFoundAt = result.FirstFoundAt
