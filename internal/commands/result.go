@@ -156,7 +156,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 		targetFile, _ := cmd.Flags().GetString(targetFlag)
 		scanID, _ := cmd.Flags().GetString(scanIDFlag)
 		format, _ := cmd.Flags().GetString(formatFlag)
-		err, results := readResults(resultsWrapper, cmd)
+		results, err := readResults(resultsWrapper, cmd)
 		if err == nil {
 			summary, sumErr := summaryReport(results, scanID)
 			if sumErr == nil {
@@ -207,7 +207,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				fmt.Println(buffer)
 			} else {
-				writeTextSummary(nil, summary)
+				writeTextSummary(false, nil, summary)
 			}
 		} else {
 			f, err := os.Create(targetFile)
@@ -253,7 +253,7 @@ func writeTextSummary(junk bool, target *os.File, summary *ResultSummary) {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		err, results := readResults(resultsWrapper, cmd)
+		results, err := readResults(resultsWrapper, cmd)
 		if err == nil {
 			return exportResults(cmd, results)
 		}
