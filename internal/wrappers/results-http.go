@@ -140,22 +140,22 @@ type KicsResult struct {
 	QueryID   string `json:"queryID,omitempty"`
 	QueryName string `json:"queryName,omitempty"`
 	Severity  string `json:"severity,omitempty"`
-	//CweID     int64  `json:"cweID,omitempty"`
+	// CweID     int64  `json:"cweID,omitempty"`
 	// I swapped SimilarityID from int64 to string
-	//SimilarityID    int64         `json:"similarityID,omitempty"`
+	// SimilarityID    int64         `json:"similarityID,omitempty"`
 	SimilarityID string `json:"similarityID,omitempty"`
 	// UniqueID doesn't exist on kics
-	//UniqueID        int64         `json:"uniqueID,omitempty"`
+	// UniqueID        int64         `json:"uniqueID,omitempty"`
 	// Nodes does not exist on kics
-	//Nodes           []*ResultNode `json:"nodes,omitempty"`
+	// Nodes           []*ResultNode `json:"nodes,omitempty"`
 	// Confidence level does not exist on kics
-	//ConfidenceLevel float32       `json:"confidenceLevel,omitempty"`
+	// ConfidenceLevel float32       `json:"confidenceLevel,omitempty"`
 	// query
 	Group string `json:"group,omitempty"`
 	// PathSystemID does not exist on kics
-	//PathSystemID string `json:"pathSystemID,omitempty"`
+	// PathSystemID string `json:"pathSystemID,omitempty"`
 	// LanguageName does not exist on kics
-	//LanguageName string `json:"languageName,omitempty"`
+	// LanguageName string `json:"languageName,omitempty"`
 	ID          string `json:"id,omitempty"`
 	FirstScanID string `json:"firstScanID,omitempty"`
 	// Should this be a date data structure?
@@ -186,28 +186,28 @@ type KicsResult struct {
 	/// End: None of the following values exist in SAST
 	//
 	// ProjectId does not exist in kics
-	//ProjectID string `json:"-"` // not exported
+	// ProjectID string `json:"-"` // not exported
 	// TenantID does not exist in kics
-	//TenantID  string `json:"-"` // not exported
+	// TenantID  string `json:"-"` // not exported
 	//
 	/// These were found in ResultNode in Sast structure
 	//
 	// Column does not exist in kics
-	//Column       int32  `json:"column,omitempty"`
+	// Column       int32  `json:"column,omitempty"`
 	FileName string `json:"fileName,omitempty"`
 	// Fullname does not exist in kics
-	//FullName string `json:"fullName,omitempty"`
+	// FullName string `json:"fullName,omitempty"`
 	// Lengh does not exist in kics
-	//Length       int32  `json:"length,omitempty"`
+	// Length       int32  `json:"length,omitempty"`
 	Line int32 `json:"line,omitempty"`
 	// MethodLine does not exist in kics
-	//MethodLine   int32  `json:"methodLine,omitempty"`
+	// MethodLine   int32  `json:"methodLine,omitempty"`
 	// Name does not make sense in kics
 	// Name         string `json:"name,omitempty"`
 	// NodeID does not exist in kics
-	//NodeID       int32  `json:"-"`
+	// NodeID       int32  `json:"-"`
 	// DomType does not exist in kics
 	// DomType      string `json:"domType,omitempty"`
 	// NodeSystemID does not exist in kics
-	//NodeSystemID string `json:"nodeSystemID,omitempty"` ,
+	// NodeSystemID string `json:"nodeSystemID,omitempty"` ,
 }

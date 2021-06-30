@@ -238,19 +238,18 @@ func writeTextSummary(target *os.File, summary *ResultSummary) {
 		target.WriteString(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
 		target.WriteString(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
 	} else {
-		fmt.Println(fmt.Sprintf("         Created At: %s", summary.CreatedAt))
-		fmt.Println(fmt.Sprintf("               Risk: %s", summary.RiskMsg))
-		fmt.Println(fmt.Sprintf("         Project ID: %s", summary.ProjectID))
-		fmt.Println(fmt.Sprintf("            Scan ID: %s", summary.ScanID))
-		fmt.Println(fmt.Sprintf("       Total Issues: %d", summary.TotalIssues))
-		fmt.Println(fmt.Sprintf("        High Issues: %d", summary.HighIssues))
-		fmt.Println(fmt.Sprintf("      Medium Issues: %d", summary.MediumIssues))
-		fmt.Println(fmt.Sprintf("         Low Issues: %d", summary.LowIssues))
-		fmt.Println(fmt.Sprintf("        SAST Issues: %d", summary.SastIssues))
-		fmt.Println(fmt.Sprintf("        KICS Issues: %d", summary.KicsIssues))
-		fmt.Println(fmt.Sprintf("         SCA Issues: %d", summary.ScaIssues))
+		fmt.Printf(fmt.Sprintf("         Created At: %s\n", summary.CreatedAt))
+		fmt.Printf(fmt.Sprintf("               Risk: %s\n", summary.RiskMsg))
+		fmt.Printf(fmt.Sprintf("         Project ID: %s\n", summary.ProjectID))
+		fmt.Printf(fmt.Sprintf("            Scan ID: %s\n", summary.ScanID))
+		fmt.Printf(fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues))
+		fmt.Printf(fmt.Sprintf("        High Issues: %d\n", summary.HighIssues))
+		fmt.Printf(fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues))
+		fmt.Printf(fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues))
+		fmt.Printf(fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues))
+		fmt.Printf(fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues))
+		fmt.Printf(fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues))
 	}
-	os.Exit(0)
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
