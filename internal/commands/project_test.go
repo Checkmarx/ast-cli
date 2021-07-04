@@ -62,7 +62,7 @@ func TestRunGetProjectByIdCommandFlagNonExist(t *testing.T) {
 
 func TestRunGetProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "show", "MOCK")
+	err := executeTestCommand(cmd, "-v", "project", "show", "--project-id", "MOCK")
 	assert.NilError(t, err)
 }
 
@@ -82,7 +82,7 @@ func TestRunDeleteProjectByIdCommandFlagNonExist(t *testing.T) {
 
 func TestRunDeleteProjectByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "delete", "MOCK")
+	err := executeTestCommand(cmd, "-v", "project", "delete", "--project-id", "MOCK")
 	assert.NilError(t, err)
 }
 
