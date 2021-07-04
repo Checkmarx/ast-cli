@@ -101,7 +101,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
-	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
+	authWrapper := wrappers.NewAuthHTTPWrapper()
 	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastScanInc,
 		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncMetricsPath),
 	)
