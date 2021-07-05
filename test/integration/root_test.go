@@ -75,7 +75,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathKey)
 	queries := viper.GetString(params.QueriesPathKey)
 	queriesClone := viper.GetString(params.QueriesClonePathKey)
-	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
 	sastScanInc := viper.GetString(params.SastMetadataPathKey)
 	sastScanIncMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
