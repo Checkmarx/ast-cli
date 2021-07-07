@@ -105,7 +105,7 @@ func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 
 func TestRunGetScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "show", "MOCK")
+	err := executeTestCommand(cmd, "-v", "scan", "show", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 
@@ -125,13 +125,13 @@ func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
 
 func TestRunDeleteScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "delete", "MOCK")
+	err := executeTestCommand(cmd, "-v", "scan", "delete", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 
 func TestRunCancelScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "cancel", "MOCK")
+	err := executeTestCommand(cmd, "-v", "scan", "cancel", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 

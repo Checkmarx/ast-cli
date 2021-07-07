@@ -81,7 +81,7 @@ func createScanSourcesFile(t *testing.T) (string, string) {
 
 func deleteScan(t *testing.T, scanID string) {
 	deleteScanCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteScanCommand, "scan", "delete", scanID)
+	err := execute(deleteScanCommand, "scan", "delete", "--scan-id", scanID)
 	assert.NilError(t, err, "Deleting a scan should pass")
 }
 
@@ -110,7 +110,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 	getBuffer := bytes.NewBufferString("")
 	getCommand := createASTIntegrationTestCommand(t)
 	getCommand.SetOut(getBuffer)
-	err := execute(getCommand, "-v", "--format", "json", "scan", "show", scanID)
+	err := execute(getCommand, "-v", "--format", "json", "scan", "show", "--scan-id", scanID)
 	assert.NilError(t, err)
 	// Read response from buffer
 	var getScanJSON []byte
@@ -125,7 +125,7 @@ func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
 
 func getScanByIDList(t *testing.T, scanID string) {
 	getCommand := createASTIntegrationTestCommand(t)
-	err := execute(getCommand, "-v", "--format", "list", "scan", "show", scanID)
+	err := execute(getCommand, "-v", "--format", "list", "scan", "show", "--scan-id", scanID)
 	assert.NilError(t, err)
 }
 

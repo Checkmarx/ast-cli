@@ -19,6 +19,13 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 		Use:   "utils",
 		Short: "AST Utility functions",
 	}
+	/**
+		Remove command not supported by AST
+		ssiCmd := NewSastMetadataCommand(ssiWrapper)
+		rmCmd := NewSastResourcesCommand(rmWrapper)
+		queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
+		logsCmd := NewLogsCommand(logsWrapper)
+	**/
 	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	envCheckCmd := NewEnvCheckCommand()
 	var completionCmd = &cobra.Command{
@@ -83,6 +90,12 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 			}
 		},
 	}
+	/**
+	Remove command not supported by AST
+	scanCmd.AddCommand(healthCheckCmd, ssiCmd, rmCmd, queriesCmd, logsCmd, completionCmd, envCheckCmd)
+	*/
+
 	scanCmd.AddCommand(healthCheckCmd, completionCmd, envCheckCmd)
+
 	return scanCmd
 }
