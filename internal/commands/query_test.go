@@ -2,16 +2,8 @@
 
 package commands
 
-import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
-
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-
-	"gotest.tools/assert"
-)
+/**
+Remove test not supported by AST
 
 func TestQueryHelp(t *testing.T) {
 	cmd := createASTTestCommand()
@@ -89,3 +81,4 @@ func TestRunDeleteCommand(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "utils", "query", "delete", "mock")
 	assert.NilError(t, err)
 }
+*/
