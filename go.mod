@@ -3,6 +3,7 @@ module github.com/checkmarxDev/ast-cli
 go 1.13
 
 require (
+	github.com/anynines/go-proxy-setup-ntlm v0.0.0-20171026093854-638c5b468c2e // indirect
 	github.com/checkmarxDev/healthcheck v1.10.2
 	github.com/checkmarxDev/logs v1.10.0
 	github.com/checkmarxDev/sast-metadata v1.10.3
@@ -19,6 +20,7 @@ require (
 	github.com/h2non/filetype v1.1.0 // indirect
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
 	github.com/juju/testing v0.0.0-20200706033705-4c23f9c453cd // indirect
+	github.com/launchdarkly/go-ntlm-proxy-auth v1.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mssola/user_agent v0.5.2
 	github.com/pkg/errors v0.9.1

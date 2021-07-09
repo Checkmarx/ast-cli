@@ -1,11 +1,11 @@
 package wrappers
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +17,8 @@ import (
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/spf13/viper"
+
+	ntlm "github.com/launchdarkly/go-ntlm-proxy-auth"
 )
 
 const (
@@ -52,7 +54,7 @@ func setAgentName(req *http.Request) {
 }
 
 func getClient(timeout uint) *http.Client {
-	insecure := viper.GetBool("insecure")
+	//insecure := viper.GetBool("insecure")
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	if len(proxyStr) > 0 {
 		if !usingProxyMsgDisplayed {
@@ -61,11 +63,29 @@ func getClient(timeout uint) *http.Client {
 		}
 		os.Setenv("HTTP_PROXY", proxyStr)
 	}
+	/* Jeff: This is the original code
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		Proxy:           http.ProxyFromEnvironment,
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
+	*/
+	// This is the new NTLM code.
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+
+	u, _ := url.Parse("http://172.28.11.150:8081")
+	//proxyURL := http.ProxyURL(u)
+	ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, *u, "jarmstrong", "password1", "WINGATE", nil)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: ntlmDialContext,
+		},
+	}
+	// End NEW CODE
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
