@@ -2,13 +2,8 @@
 
 package commands
 
-import (
-	"testing"
-
-	"gotest.tools/assert/cmp"
-
-	"gotest.tools/assert"
-)
+/**
+import "gotest.tools/assert"
 
 func TestSastResourcesScansCommand(t *testing.T) {
 	err := executeASTTestCommand("utils", "sast-rm", "scans", "--format", "list")
@@ -82,3 +77,4 @@ func executeASTTestCommand(args ...string) error {
 	cmd := createASTTestCommand()
 	return executeTestCommand(cmd, args...)
 }
+*/

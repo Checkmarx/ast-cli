@@ -76,7 +76,7 @@ func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
 
 func getProjectByIDList(t *testing.T, projectID string) {
 	getProjectCommand := createASTIntegrationTestCommand(t)
-	err := execute(getProjectCommand, "-v", "--format", "list", "project", "show", projectID)
+	err := execute(getProjectCommand, "-v", "--format", "list", "project", "show", "--project-id", projectID)
 	assert.NilError(t, err, "Getting a project should pass")
 }
 
@@ -84,7 +84,7 @@ func getProjectByID(t *testing.T, projectID string) {
 	b := bytes.NewBufferString("")
 	getProjectCommand := createASTIntegrationTestCommand(t)
 	getProjectCommand.SetOut(b)
-	err := execute(getProjectCommand, "-v", "--format", "json", "project", "show", projectID)
+	err := execute(getProjectCommand, "-v", "--format", "json", "project", "show", "--project-id", projectID)
 	assert.NilError(t, err, "Getting a project should pass")
 	// Read response from buffer
 	var projectJSON []byte
@@ -129,7 +129,7 @@ func getAllProjects(t *testing.T, projectID string) {
 
 func deleteProject(t *testing.T, projectID string) {
 	deleteProjCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteProjCommand, "-v", "project", "delete", projectID)
+	err := execute(deleteProjCommand, "-v", "project", "delete", "--project-id", projectID)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
 

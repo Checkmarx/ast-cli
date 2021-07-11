@@ -75,6 +75,7 @@ const (
 	passwordSh               = "p"
 	profileFlag              = "profile"
 	profileFlagUsage         = "The default configuration profile"
+	help                     = "help"
 )
 
 // Return an AST CLI root command to execute
@@ -112,7 +113,7 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
+		if len(args) > 0 && cmd.Name() != help {
 			_ = cmd.Help()
 			os.Exit(0)
 		}

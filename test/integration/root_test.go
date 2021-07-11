@@ -45,11 +45,7 @@ func RandomizeString(length int) string {
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
-	username := viper.GetString(params.AstUsernameKey)
-	if len(username) > 0 {
-		authASTServer()
-	}
-
+	authASTServer()
 	exitVal := m.Run()
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
@@ -75,7 +71,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathKey)
 	queries := viper.GetString(params.QueriesPathKey)
 	queriesClone := viper.GetString(params.QueriesClonePathKey)
-	createClientPath := viper.GetString(params.CreateOath2ClientPathKey)
 	sastScanInc := viper.GetString(params.SastMetadataPathKey)
 	sastScanIncMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
@@ -101,7 +96,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
 	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
-	authWrapper := wrappers.NewAuthHTTPWrapper(createClientPath)
+	authWrapper := wrappers.NewAuthHTTPWrapper()
 	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastScanInc,
 		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncMetricsPath),
 	)
@@ -144,6 +139,9 @@ func authASTServer() {
 	cmd := createASTIntegrationTestCommand(nil)
 	username := viper.GetString(params.AstUsernameKey)
 	password := viper.GetString(params.AstPasswordKey)
+	if username == "" {
+		return
+	}
 	var args = []string{"auth", "register", "-u", username, "-p", password}
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
