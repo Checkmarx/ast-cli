@@ -20,7 +20,8 @@ import (
 	"time"
 	"unicode/utf16"
 
-	"golang.org/x/crypto/md4"
+	// MD4 is required by NTLMv2, we're stuck with it here.
+	"golang.org/x/crypto/md4" //nolint
 )
 
 // DialContext is the DialContext function that should be wrapped with a
