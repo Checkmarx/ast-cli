@@ -234,14 +234,17 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 	resp, err = http.ReadResponse(br, connect)
 	if err != nil {
 		fmt.Printf("ntlm> Could not read response from proxy: %s", err)
+		resp.Body.Close()
 		return conn, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("ntlm> Expected %d as return status, got: %d", http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
 	// Succussfully authorized with NTLM
 	fmt.Printf("ntlm> Successfully injected NTLM to connection")
+	resp.Body.Close()
 	return conn, nil
 }
 
