@@ -31,7 +31,11 @@ import (
 // dialContext := (&net.Dialer{KeepAlive: 30*time.Second, Timeout: 30*time.Second}).DialContext
 type DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 
-const expMsgBodyLen = 40
+const (
+	expMsgBodyLen     = 40
+	ntmlChallengeLen  = 2
+	ntmlAuthHeaderLen = 3
+)
 
 // Version is a struct representing https://msdn.microsoft.com/en-us/library/cc236654.aspx
 type Version struct {
@@ -155,16 +159,8 @@ type avID uint16
 
 const (
 	avIDMsvAvEOL avID = iota
-	avIDMsvAvNbComputerName
-	avIDMsvAvNbDomainName
-	avIDMsvAvDNSComputerName
-	avIDMsvAvDNSDomainName
-	avIDMsvAvDNSTreeName
-	avIDMsvAvFlags
 	avIDMsvAvTimestamp
 	avIDMsvAvSingleHost
-	avIDMsvAvTargetName
-	avIDMsvChannelBindings
 )
 
 // NewNTLMProxyDialContext provides a DialContext function that includes transparent NTLM proxy authentication.
@@ -240,7 +236,7 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
 	challenge := strings.Split(resp.Header.Get("Proxy-Authenticate"), " ")
-	if len(challenge) < 2 {
+	if len(challenge) < ntmlChallengeLen {
 		fmt.Printf("ntlm> The proxy did not return an NTLM challenge, got: '%s'", resp.Header.Get("Proxy-Authenticate"))
 		return conn, errors.New("no NTLM challenge received")
 	}
@@ -265,7 +261,7 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 		Host:   addr,
 		Header: header,
 	}
-	if err := connect.Write(conn); err != nil {
+	if err = connect.Write(conn); err != nil {
 		fmt.Printf("ntlm> Could not write authorization to proxy: %s", err)
 		return conn, err
 	}
@@ -306,7 +302,8 @@ func newNegotiateMessage(domainName, workstationName string) ([]byte, error) {
 	}
 
 	b := bytes.Buffer{}
-	if err := binary.Write(&b, binary.LittleEndian, &msg); err != nil {
+	err := binary.Write(&b, binary.LittleEndian, &msg)
+	if err != nil {
 		return nil, err
 	}
 	if b.Len() != expMsgBodyLen {
@@ -350,7 +347,7 @@ func DefaultVersion() Version {
 
 func (f varField) ReadFrom(buffer []byte) ([]byte, error) {
 	if len(buffer) < int(f.BufferOffset+uint32(f.Len)) {
-		return nil, errors.New("Error reading data, varField extends beyond buffer")
+		return nil, errors.New("error reading data, varField extends beyond buffer")
 	}
 	return buffer[f.BufferOffset : f.BufferOffset+uint32(f.Len)], nil
 }
@@ -379,9 +376,9 @@ func newVarField(ptr *int, fieldsize int) varField {
 
 func fromUnicode(d []byte) (string, error) {
 	if len(d)%2 > 0 {
-		return "", errors.New("Unicode (UTF 16 LE) specified, but uneven data length")
+		return "", errors.New("unicode (UTF 16 LE) specified, but uneven data length")
 	}
-	s := make([]uint16, len(d)/2)
+	s := make([]uint16, len(d)/ntmlChallengeLen)
 	err := binary.Read(bytes.NewReader(d), binary.LittleEndian, &s)
 	if err != nil {
 		return "", err
@@ -398,7 +395,7 @@ func toUnicode(s string) []byte {
 
 func (m authenicateMessage) MarshalBinary() ([]byte, error) {
 	if !m.NegotiateFlags.Has(negotiateFlagNTLMSSPNEGOTIATEUNICODE) {
-		return nil, errors.New("Only unicode is supported")
+		return nil, errors.New("only unicode is supported")
 	}
 
 	target, user := toUnicode(m.TargetName), toUnicode(m.UserName)
@@ -406,7 +403,7 @@ func (m authenicateMessage) MarshalBinary() ([]byte, error) {
 
 	ptr := binary.Size(&authenticateMessageFields{})
 	f := authenticateMessageFields{
-		messageHeader:       newMessageHeader(3),
+		messageHeader:       newMessageHeader(ntmlAuthHeaderLen),
 		NegotiateFlags:      m.NegotiateFlags,
 		LmChallengeResponse: newVarField(&ptr, len(m.LmChallengeResponse)),
 		NtChallengeResponse: newVarField(&ptr, len(m.NtChallengeResponse)),
