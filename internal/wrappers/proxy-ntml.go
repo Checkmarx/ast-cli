@@ -178,7 +178,8 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 		Host:   addr,
 		Header: header,
 	}
-	if err := connect.Write(conn); err != nil {
+	err = connect.Write(conn)
+	if err != nil {
 		fmt.Printf("ntlm> Could not write negotiate message to proxy: %s", err)
 		return conn, err
 	}
@@ -244,8 +245,8 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 	return conn, nil
 }
 
-//NewNegotiateMessage creates a new NEGOTIATE message with the
-//flags that this package supports.
+// NewNegotiateMessage creates a new NEGOTIATE message with the
+// flags that this package supports.
 func newNegotiateMessage(domainName, workstationName string) ([]byte, error) {
 	payloadOffset := expMsgBodyLen
 	flags := defaultFlags
@@ -407,8 +408,8 @@ func (m authenicateMessage) MarshalBinary() ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-//ProcessChallenge crafts an AUTHENTICATE message in response to the CHALLENGE message
-//that was received from the server
+// ProcessChallenge crafts an AUTHENTICATE message in response to the CHALLENGE message
+// that was received from the server
 func processChallenge(challengeMessageData []byte, user, password string) ([]byte, error) {
 	if user == "" && password == "" {
 		return nil, errors.New("anonymous authentication not supported")

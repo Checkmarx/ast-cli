@@ -24,6 +24,7 @@ const (
 	expiryGraceSeconds    = 10
 	DefaultTimeoutSeconds = 5
 	NoTimeout             = 0
+	ntlmProxyToken        = "ntlm"
 )
 
 type ClientCredentialsInfo struct {
@@ -57,19 +58,18 @@ func getClient(timeout uint) *http.Client {
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	if len(proxyStr) > 0 {
 		if !usingProxyMsgDisplayed {
-			if proxyTypeStr == "ntlm" {
+			if proxyTypeStr == ntlmProxyToken {
 				fmt.Printf("Using NTLM Proxy [%s]\n", proxyStr)
 			} else {
 				fmt.Printf("Using Basic Proxy [%s]\n", proxyStr)
 			}
 			usingProxyMsgDisplayed = true
 		}
-		if proxyTypeStr == "ntlm" {
+		if proxyTypeStr == ntlmProxyToken {
 			return ntmlProxyClient(timeout, proxyStr)
-		} else {
-			os.Setenv("HTTP_PROXY", proxyStr)
-			return basicProxyClient(timeout)
 		}
+		os.Setenv("HTTP_PROXY", proxyStr)
+		return basicProxyClient(timeout)
 	} else {
 		return basicProxyClient(timeout)
 	}
