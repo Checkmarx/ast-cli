@@ -289,7 +289,7 @@ func (field negotiateFlags) Has(flags negotiateFlags) bool {
 }
 
 func (field *negotiateFlags) Unset(flags negotiateFlags) {
-	*field = *field ^ (*field & flags)
+	*field ^= (*field & flags)
 }
 
 func (h messageHeader) IsValid() bool {
@@ -355,7 +355,7 @@ func fromUnicode(d []byte) (string, error) {
 func toUnicode(s string) []byte {
 	uints := utf16.Encode([]rune(s))
 	b := bytes.Buffer{}
-	binary.Write(&b, binary.LittleEndian, &uints)
+	_ = binary.Write(&b, binary.LittleEndian, &uints)
 	return b.Bytes()
 }
 
@@ -440,20 +440,15 @@ func processChallenge(challengeMessageData []byte, user, password string) ([]byt
 		timestamp = make([]byte, 8)
 		binary.LittleEndian.PutUint64(timestamp, ft)
 	}
-
 	clientChallenge := make([]byte, 8)
-	rand.Reader.Read(clientChallenge)
-
+	_, _ = rand.Reader.Read(clientChallenge)
 	ntlmV2Hash := getNtlmV2Hash(password, user, cm.TargetName)
-
 	am.NtChallengeResponse = computeNtlmV2Response(ntlmV2Hash,
 		cm.ServerChallenge[:], clientChallenge, timestamp, cm.TargetInfoRaw)
-
 	if cm.TargetInfoRaw == nil {
 		am.LmChallengeResponse = computeLmV2Response(ntlmV2Hash,
 			cm.ServerChallenge[:], clientChallenge)
 	}
-
 	return am.MarshalBinary()
 }
 
@@ -475,7 +470,7 @@ func (m *challengeMessage) UnmarshalBinary(data []byte) error {
 		return err
 	}
 	if !m.challengeMessageFields.IsValid() {
-		return fmt.Errorf("Message is not a valid challenge message: %+v", m.challengeMessageFields.messageHeader)
+		return fmt.Errorf("message is not a valid challenge message: %+v", m.challengeMessageFields.messageHeader)
 	}
 
 	if m.challengeMessageFields.TargetName.Len > 0 {
@@ -514,7 +509,7 @@ func (m *challengeMessage) UnmarshalBinary(data []byte) error {
 				return err
 			}
 			if n != int(l) {
-				return fmt.Errorf("Expected to read %d bytes, got only %d", l, n)
+				return fmt.Errorf("expected to read %d bytes, got only %d", l, n)
 			}
 			m.TargetInfo[id] = value
 		}

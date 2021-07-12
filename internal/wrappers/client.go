@@ -70,9 +70,8 @@ func getClient(timeout uint) *http.Client {
 		}
 		os.Setenv("HTTP_PROXY", proxyStr)
 		return basicProxyClient(timeout)
-	} else {
-		return basicProxyClient(timeout)
 	}
+	return basicProxyClient(timeout)
 }
 
 func basicProxyClient(timeout uint) *http.Client {
