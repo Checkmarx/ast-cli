@@ -130,7 +130,8 @@ type avID uint16
 
 // NewNTLMProxyDialContext provides a DialContext function that includes transparent NTLM proxy authentication.
 // Unlike WrapDialContext, it describes the proxy location with a full URL, whose scheme can be HTTP or HTTPS.
-func NewNTLMProxyDialContext(dialer *net.Dialer, proxyURL *url.URL, proxyUsername, proxyPassword, proxyDomain string, tlsConfig *tls.Config) DialContext {
+func NewNTLMProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
+	proxyUsername, proxyPassword, proxyDomain string, tlsConfig *tls.Config) DialContext {
 	if dialer == nil {
 		dialer = &net.Dialer{}
 	}
