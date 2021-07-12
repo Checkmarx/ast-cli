@@ -32,9 +32,11 @@ import (
 type DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 
 const (
-	expMsgBodyLen     = 40
-	ntmlChallengeLen  = 2
-	ntmlAuthHeaderLen = 3
+	expMsgBodyLen          = 40
+	ntmlChallengeLen       = 2
+	ntmlAuthHeaderLen      = 3
+	avIDMsvAvEOL      avID = iota
+	avIDMsvAvTimestamp
 )
 
 // Version is a struct representing https://msdn.microsoft.com/en-us/library/cc236654.aspx
@@ -54,18 +56,13 @@ type messageHeader struct {
 }
 
 type authenicateMessage struct {
-	LmChallengeResponse []byte
-	NtChallengeResponse []byte
-
-	TargetName string
-	UserName   string
-
-	// only set if negotiateFlag_NTLMSSP_NEGOTIATE_KEY_EXCH
+	LmChallengeResponse       []byte
+	NtChallengeResponse       []byte
+	TargetName                string
+	UserName                  string
 	EncryptedRandomSessionKey []byte
-
-	NegotiateFlags negotiateFlags
-
-	MIC []byte
+	NegotiateFlags            negotiateFlags
+	MIC                       []byte
 }
 
 type varField struct {
@@ -116,52 +113,20 @@ type negotiateFlags uint32
 
 const (
 	/*A*/ negotiateFlagNTLMSSPNEGOTIATEUNICODE negotiateFlags = 1 << 0
-	/*B*/ negotiateFlagNTLMNEGOTIATEOEM = 1 << 1
-	/*C*/ negotiateFlagNTLMSSPREQUESTTARGET = 1 << 2
-
-	/*D*/
-	negotiateFlagNTLMSSPNEGOTIATESIGN = 1 << 4
-	/*E*/ negotiateFlagNTLMSSPNEGOTIATESEAL = 1 << 5
-	/*F*/ negotiateFlagNTLMSSPNEGOTIATEDATAGRAM = 1 << 6
 	/*G*/ negotiateFlagNTLMSSPNEGOTIATELMKEY = 1 << 7
-
-	/*H*/
-	negotiateFlagNTLMSSPNEGOTIATENTLM = 1 << 9
-
-	/*J*/
-	negotiateFlagANONYMOUS = 1 << 11
+	/*H*/ negotiateFlagNTLMSSPNEGOTIATENTLM = 1 << 9
 	/*K*/ negotiateFlagNTLMSSPNEGOTIATEOEMDOMAINSUPPLIED = 1 << 12
 	/*L*/ negotiateFlagNTLMSSPNEGOTIATEOEMWORKSTATIONSUPPLIED = 1 << 13
-
-	/*M*/
-	negotiateFlagNTLMSSPNEGOTIATEALWAYSSIGN = 1 << 15
-	/*N*/ negotiateFlagNTLMSSPTARGETTYPEDOMAIN = 1 << 16
-	/*O*/ negotiateFlagNTLMSSPTARGETTYPESERVER = 1 << 17
-
-	/*P*/
-	negotiateFlagNTLMSSPNEGOTIATEEXTENDEDSESSIONSECURITY = 1 << 19
-	/*Q*/ negotiateFlagNTLMSSPNEGOTIATEIDENTIFY = 1 << 20
-
-	/*R*/
-	negotiateFlagNTLMSSPREQUESTNONNTSESSIONKEY = 1 << 22
+	/*M*/ negotiateFlagNTLMSSPNEGOTIATEALWAYSSIGN = 1 << 15
+	/*P*/ negotiateFlagNTLMSSPNEGOTIATEEXTENDEDSESSIONSECURITY = 1 << 19
 	/*S*/ negotiateFlagNTLMSSPNEGOTIATETARGETINFO = 1 << 23
-
-	/*T*/
-	negotiateFlagNTLMSSPNEGOTIATEVERSION = 1 << 25
-
-	/*U*/
-	negotiateFlagNTLMSSPNEGOTIATE128 = 1 << 29
+	/*T*/ negotiateFlagNTLMSSPNEGOTIATEVERSION = 1 << 25
+	/*U*/ negotiateFlagNTLMSSPNEGOTIATE128 = 1 << 29
 	/*V*/ negotiateFlagNTLMSSPNEGOTIATEKEYEXCH = 1 << 30
 	/*W*/ negotiateFlagNTLMSSPNEGOTIATE56 = 1 << 31
 )
 
 type avID uint16
-
-const (
-	avIDMsvAvEOL avID = iota
-	avIDMsvAvTimestamp
-	avIDMsvAvSingleHost
-)
 
 // NewNTLMProxyDialContext provides a DialContext function that includes transparent NTLM proxy authentication.
 // Unlike WrapDialContext, it describes the proxy location with a full URL, whose scheme can be HTTP or HTTPS.
@@ -415,25 +380,30 @@ func (m authenicateMessage) MarshalBinary() ([]byte, error) {
 	f.NegotiateFlags.Unset(negotiateFlagNTLMSSPNEGOTIATEVERSION)
 
 	b := bytes.Buffer{}
-	if err := binary.Write(&b, binary.LittleEndian, &f); err != nil {
+	err := binary.Write(&b, binary.LittleEndian, &f)
+	if err != nil {
 		return nil, err
 	}
-	if err := binary.Write(&b, binary.LittleEndian, &m.LmChallengeResponse); err != nil {
+	err = binary.Write(&b, binary.LittleEndian, &m.LmChallengeResponse)
+	if err != nil {
 		return nil, err
 	}
-	if err := binary.Write(&b, binary.LittleEndian, &m.NtChallengeResponse); err != nil {
+	err = binary.Write(&b, binary.LittleEndian, &m.NtChallengeResponse)
+	if err != nil {
 		return nil, err
 	}
-	if err := binary.Write(&b, binary.LittleEndian, &target); err != nil {
+	err = binary.Write(&b, binary.LittleEndian, &target)
+	if err != nil {
 		return nil, err
 	}
-	if err := binary.Write(&b, binary.LittleEndian, &user); err != nil {
+	err = binary.Write(&b, binary.LittleEndian, &user)
+	if err != nil {
 		return nil, err
 	}
-	if err := binary.Write(&b, binary.LittleEndian, &workstation); err != nil {
+	err = binary.Write(&b, binary.LittleEndian, &workstation)
+	if err != nil {
 		return nil, err
 	}
-
 	return b.Bytes(), nil
 }
 
@@ -441,7 +411,7 @@ func (m authenicateMessage) MarshalBinary() ([]byte, error) {
 //that was received from the server
 func processChallenge(challengeMessageData []byte, user, password string) ([]byte, error) {
 	if user == "" && password == "" {
-		return nil, errors.New("Anonymous authentication not supported")
+		return nil, errors.New("anonymous authentication not supported")
 	}
 
 	var cm challengeMessage
@@ -450,10 +420,10 @@ func processChallenge(challengeMessageData []byte, user, password string) ([]byt
 	}
 
 	if cm.NegotiateFlags.Has(negotiateFlagNTLMSSPNEGOTIATELMKEY) {
-		return nil, errors.New("Only NTLM v2 is supported, but server requested v1 (NTLMSSP_NEGOTIATE_LM_KEY)")
+		return nil, errors.New("only NTLM v2 is supported, but server requested v1 (NTLMSSP_NEGOTIATE_LM_KEY)")
 	}
 	if cm.NegotiateFlags.Has(negotiateFlagNTLMSSPNEGOTIATEKEYEXCH) {
-		return nil, errors.New("Key exchange requested but not supported (NTLMSSP_NEGOTIATE_KEY_EXCH)")
+		return nil, errors.New("key exchange requested but not supported (NTLMSSP_NEGOTIATE_KEY_EXCH)")
 	}
 
 	am := authenicateMessage{
@@ -562,16 +532,13 @@ func getNtlmHash(password string) []byte {
 	return hash.Sum(nil)
 }
 
-func computeNtlmV2Response(ntlmV2Hash, serverChallenge, clientChallenge,
-	timestamp, targetInfo []byte) []byte {
-
+func computeNtlmV2Response(ntlmV2Hash, serverChallenge, clientChallenge, timestamp, targetInfo []byte) []byte {
 	temp := []byte{1, 1, 0, 0, 0, 0, 0, 0}
 	temp = append(temp, timestamp...)
 	temp = append(temp, clientChallenge...)
 	temp = append(temp, 0, 0, 0, 0)
 	temp = append(temp, targetInfo...)
 	temp = append(temp, 0, 0, 0, 0)
-
 	NTProofStr := hmacMd5(ntlmV2Hash, serverChallenge, temp)
 	return append(NTProofStr, temp...)
 }
