@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,8 +18,6 @@ import (
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
 	"github.com/spf13/viper"
-
-	ntlm "github.com/launchdarkly/go-ntlm-proxy-auth"
 )
 
 const (
@@ -54,38 +53,53 @@ func setAgentName(req *http.Request) {
 }
 
 func getClient(timeout uint) *http.Client {
-	//insecure := viper.GetBool("insecure")
+	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	if len(proxyStr) > 0 {
 		if !usingProxyMsgDisplayed {
-			fmt.Printf("Using Proxy [%s]", proxyStr)
+			if proxyTypeStr == "ntlm" {
+				fmt.Printf("Using NTLM Proxy [%s]\n", proxyStr)
+			} else {
+				fmt.Printf("Using Basic Proxy [%s]\n", proxyStr)
+			}
 			usingProxyMsgDisplayed = true
 		}
-		os.Setenv("HTTP_PROXY", proxyStr)
+		if proxyTypeStr == "ntlm" {
+			return ntmlProxyClient(timeout, proxyStr)
+		} else {
+			os.Setenv("HTTP_PROXY", proxyStr)
+			return basicProxyClient(timeout)
+		}
+	} else {
+		return basicProxyClient(timeout)
 	}
-	/* Jeff: This is the original code
+}
+
+func basicProxyClient(timeout uint) *http.Client {
+	insecure := viper.GetBool("insecure")
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		Proxy:           http.ProxyFromEnvironment,
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
-	*/
-	// This is the new NTLM code.
+}
+
+func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
-
-	u, _ := url.Parse("http://172.28.11.150:8081")
-	//proxyURL := http.ProxyURL(u)
-	ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, *u, "jarmstrong", "password1", "WINGATE", nil)
+	u, _ := url.Parse(proxyStr)
+	domainStr := viper.GetString(commonParams.ProxyDomainKey)
+	proxyUser := u.User.Username()
+	proxyPass, _ := u.User.Password()
+	ntlmDialContext := NewNTLMProxyDialContext(dialer, *u, proxyUser, proxyPass, domainStr, nil)
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy:       nil,
 			DialContext: ntlmDialContext,
 		},
-	}
-	// End NEW CODE
+		Timeout: time.Duration(timeout) * time.Second}
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
@@ -94,8 +108,8 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 }
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	req, err := http.NewRequest(method, fullURL, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -116,9 +130,9 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -151,9 +165,9 @@ func GetAuthURL(path string) string {
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err

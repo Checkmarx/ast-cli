@@ -5,6 +5,8 @@ const (
 	BranchEnv                           = "CX_BRANCH"
 	BaseURIEnv                          = "CX_BASE_URI"
 	ProxyEnv                            = "CX_HTTP_PROXY"
+	ProxyTypeEnv                        = "CX_PROXY_AUTH_TYPE"
+	ProxyDomainEnv                      = "CX_PROXY_NTLM_DOMAIN"
 	BaseAuthURIEnv                      = "CX_BASE_AUTH_URI"
 	AstUsernameEnv                      = "CX_AST_USERNAME"
 	AstPasswordEnv                      = "CX_AST_PASSWORD"

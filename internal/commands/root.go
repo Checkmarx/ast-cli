@@ -55,6 +55,10 @@ const (
 	baseURIFlag              = "base-uri"
 	proxyFlag                = "proxy"
 	proxyFlagUsage           = "Proxy server to send communication through"
+	proxyTypeFlag            = "proxy-auth-type"
+	proxyTypeFlagUsage       = "Proxy authentication type, (basic or ntlm)"
+	ntlmProxyDomainFlag      = "proxy-ntlm-domain"
+	ntlmProxyDomainFlagUsage = "Window domain when using NTLM proxy"
 	baseURIFlagUsage         = "The base system URI"
 	baseAuthURIFlag          = "base-auth-uri"
 	baseAuthURIFlagUsage     = "The base system IAM URI"
@@ -103,6 +107,8 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
 	rootCmd.PersistentFlags().String(proxyFlag, "", proxyFlagUsage)
+	rootCmd.PersistentFlags().String(proxyTypeFlag, "", proxyTypeFlagUsage)
+	rootCmd.PersistentFlags().String(ntlmProxyDomainFlag, "", ntlmProxyDomainFlagUsage)
 	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
 	rootCmd.PersistentFlags().String(baseAuthURIFlag, params.BaseIAMURI, baseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
@@ -125,6 +131,8 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
 	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(tenantFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
+	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(proxyTypeFlag))
+	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(ntlmProxyDomainFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(astAPIKeyFlag))
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(agentFlag))

@@ -27,6 +27,7 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
+	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
 	golang.org/x/sys v0.0.0-20210301091718-77cc2087c03b // indirect
 	google.golang.org/grpc/examples v0.0.0-20201125005357-44e408dab41e // indirect
 	gotest.tools v2.2.0+incompatible
