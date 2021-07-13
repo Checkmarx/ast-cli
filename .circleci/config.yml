@@ -151,59 +151,6 @@ jobs:
             docker tag $IMAGE_NAME:latest $DOCKER_USER/$IMAGE_NAME:latest
             docker push $DOCKER_USER/$IMAGE_NAME:latest
 
-  publish-github-release:
-    executor:
-      go-container
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - run:
-          name: Install AWS CLI
-          working_directory: ~/aws
-          command: |
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-      - run:
-          name: Configure AWS credentials
-          command: |
-            aws configure set aws_access_key_id ${ACCESS_KEY_ID} --profile default
-            aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY} --profile default
-            aws configure set region ${AWS_REGION} --profile default
-      - run:
-          name: Config GOPRIVATE environment variable
-          command: echo "export GOPRIVATE=github.com/checkmarxDev/*" >> $BASH_ENV
-      - run:
-          name: Config Git credentials
-          command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
-      - restore_cache:
-          keys:
-            - go-mod-v1-{{ checksum "go.sum" }}
-      - run: go mod download
-      - run:
-          name: Build CX CIRCLE_PROJECT_REPONAME Linux_amd64 binary
-          command: GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/cx cmd/main.go
-      - run:
-          name: Build CX CLI Windows binary
-          command: GOOS=windows GOARCH=amd64 go build -ldflags "-s -w" -o bin/cx.exe cmd/main.go
-      - run:
-          name: Build sca-agent Linux binary
-          command: GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o bin/cx cmd/main.go
-      - run:
-          name: Build MacOS binary
-          command: GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w" -o bin/cx-mac cmd/main.go
-      - run: go get github.com/tcnksm/ghr
-      - run:
-          name: Publish GitHub release
-          command: |
-            VERSION=$(./bin/cx version)
-            VERSION="2.0.0_RC13"
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./bin/
-      - save_cache: # Store cache in the /go/pkg directory
-          key: go-mod-v1-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-
 workflows:
   Visibility-workflow:
     jobs:
@@ -234,13 +181,4 @@ workflows:
           filters:
             branches:
               only: master
-          context: AWS
-
-  release-publish-workflow:
-    jobs:
-      - publish-github-release:
-          filters:
-            branches:
-              only:
-                - master
           context: AWS

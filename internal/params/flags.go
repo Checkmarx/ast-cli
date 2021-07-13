@@ -37,6 +37,6 @@ const (
 	SastALlInOne = "SAST_ALL_IN_ONE"
 )
 
-const (
-	Version = "2.0.0_RC13"
+var (
+	Version = "dev"
 )
