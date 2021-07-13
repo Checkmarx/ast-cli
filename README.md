@@ -110,7 +110,7 @@ The CLI allows you to permanently store some CLI options in configuration files.
 ./cx configure set --prop-name cx_base_auth_uri --prop-value "http://<your-server>[:<port>]"
 ./cx configure set --prop-name cx_client_id --prop-value <your-key>
 ./cx configure set --prop-name cx_client_secret --prop-value <your-secret>
-./cx configure set --prop-name cx_http_proxy --prop-value <your-proxy>
+./cx configure set --prop-name http_proxy --prop-value <your-proxy>
 ./cx configure set --prop-name cx_apikey --prop-value <your-apikey>
 ./cx configure set --prop-name cx_tenant --prop-value <your-tenant-name>
 ```
@@ -417,7 +417,7 @@ Finally you can delete a project like this:
 
 The CLI full supports proxy servers and optional proxy server authentication. When the proxy server variable is found all CLI operations will be routed through the target server. Proxy server URLs should like this: "http[s]://your-server.com:[port]"
 
-Proxy support is enabled by creating an environment variable named CX_HTTP_PROXY. You can also specify the proxy by storing the proxy URL in a CLI configuration variable (cx_proxy_http), or directly through with the CLI with the parameter  (--proxy).
+Proxy support is enabled by creating an environment variable named HTTP_PROXY. You can also specify the proxy by storing the proxy URL in a CLI configuration variable (proxy_http), or directly through with the CLI with the parameter  (--proxy).
 
 The following example demonstraights the use of a proxy server:
 
@@ -425,7 +425,13 @@ The following example demonstraights the use of a proxy server:
 ./cx scan list --proxy "http://<your-proxy>:8081"
 ```
 
+The AST CLI supports proxies that provide that use NTLM based authentication. The following example shows the use of an NTLM proxy:
 
+``` bash
+./cx scan list --proxy "http://<ntlm-user>:<ntlm-password>@<your-proxy>:8081" --proxy-auth-type ntlm --proxy-ntlm-domain "<your-domain>"
+```
+
+If you choose to use a proxy that uses NTLM authentication you will need to provide a username, password and domain name for your Active Directory.
 
 ## Environment Variables
 
@@ -437,6 +443,6 @@ The following example demonstraights the use of a proxy server:
 | **CX_TENANT**        | Your AST tenant name.                                        |
 | **CX_BASE_URI**      | The URI of the AST server.                                   |
 | **CX_BASE_AUTH_URI** | The URI of KeyCloak instance. This optional and only required when you're not using AST's built in KeyCloak instance. |
-| **CX_HTTP_PROXY**    | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
+| **HTTP_PROXY**       | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
 | **CX_BRANCH**        | The branch to scan.                                          |
 
