@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -23,6 +23,7 @@ const (
 	expiryGraceSeconds    = 10
 	DefaultTimeoutSeconds = 5
 	NoTimeout             = 0
+	ntlmProxyToken        = "ntlm"
 )
 
 type ClientCredentialsInfo struct {
@@ -42,7 +43,6 @@ type ClientCredentialsError struct {
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
-var usingProxyMsgDisplayed = false
 var cachedAccessToken string
 var cachedAccessTime time.Time
 
@@ -52,20 +52,40 @@ func setAgentName(req *http.Request) {
 }
 
 func getClient(timeout uint) *http.Client {
-	insecure := viper.GetBool("insecure")
+	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
-	if len(proxyStr) > 0 {
-		if !usingProxyMsgDisplayed {
-			fmt.Printf("Using Proxy [%s]", proxyStr)
-			usingProxyMsgDisplayed = true
-		}
-		os.Setenv("HTTP_PROXY", proxyStr)
+	if proxyTypeStr == ntlmProxyToken {
+		return ntmlProxyClient(timeout, proxyStr)
 	}
+	return basicProxyClient(timeout, proxyStr)
+}
+
+func basicProxyClient(timeout uint, proxyStr string) *http.Client {
+	insecure := viper.GetBool("insecure")
+	u, _ := url.Parse(proxyStr)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           http.ProxyFromEnvironment,
+		Proxy:           http.ProxyURL(u),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
+}
+
+func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	u, _ := url.Parse(proxyStr)
+	domainStr := viper.GetString(commonParams.ProxyDomainKey)
+	proxyUser := u.User.Username()
+	proxyPass, _ := u.User.Password()
+	ntlmDialContext := NewNTLMProxyDialContext(dialer, u, proxyUser, proxyPass, domainStr, nil)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: ntlmDialContext,
+		},
+		Timeout: time.Duration(timeout) * time.Second}
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
@@ -74,8 +94,8 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 }
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	req, err := http.NewRequest(method, fullURL, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -96,9 +116,9 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -131,9 +151,9 @@ func GetAuthURL(path string) string {
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader, timeout uint) (*http.Response, error) {
-	client := getClient(timeout)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
