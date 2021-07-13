@@ -51,7 +51,7 @@ func setAgentName(req *http.Request) {
 	req.Header.Set("User-Agent", agentStr)
 }
 
-func getClient(timeout uint, req *http.Request) *http.Client {
+func getClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	if proxyTypeStr == ntlmProxyToken {
@@ -95,7 +95,7 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout, req)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout, req)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	body io.Reader, timeout uint) (*http.Response, error) {
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout, req)
+	client := getClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
