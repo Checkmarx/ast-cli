@@ -51,20 +51,21 @@ func setAgentName(req *http.Request) {
 	req.Header.Set("User-Agent", agentStr)
 }
 
-func getClient(timeout uint) *http.Client {
+func getClient(timeout uint, req *http.Request) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	if proxyTypeStr == ntlmProxyToken {
 		return ntmlProxyClient(timeout, proxyStr)
 	}
-	return basicProxyClient(timeout)
+	return basicProxyClient(timeout, proxyStr)
 }
 
-func basicProxyClient(timeout uint) *http.Client {
+func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 	insecure := viper.GetBool("insecure")
+	u, _ := url.Parse(proxyStr)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           http.ProxyFromEnvironment,
+		Proxy:           http.ProxyURL(u),
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
@@ -94,7 +95,7 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout)
+	client := getClient(timeout, req)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -117,7 +118,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := getClient(timeout, req)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	body io.Reader, timeout uint) (*http.Response, error) {
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := getClient(timeout, req)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
