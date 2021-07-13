@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"strings"
+
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -51,7 +53,7 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 			wrappers.SetConfigProperty(propName, propValue)
 		} else if propName == params.BaseAuthURIKey {
 			wrappers.SetConfigProperty(propName, propValue)
-		} else if propName == params.ProxyKey {
+		} else if strings.EqualFold(propName, params.ProxyKey) {
 			wrappers.SetConfigProperty(propName, propValue)
 		} else if propName == params.AccessKeySecretConfigKey {
 			wrappers.SetConfigProperty(propName, propValue)

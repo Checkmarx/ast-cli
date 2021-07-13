@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -44,7 +43,6 @@ type ClientCredentialsError struct {
 
 const failedToAuth = "Failed to authenticate - please provide an %s"
 
-var usingProxyMsgDisplayed = false
 var cachedAccessToken string
 var cachedAccessTime time.Time
 
@@ -56,20 +54,8 @@ func setAgentName(req *http.Request) {
 func getClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
-	if len(proxyStr) > 0 {
-		if !usingProxyMsgDisplayed {
-			if proxyTypeStr == ntlmProxyToken {
-				fmt.Printf("Using NTLM Proxy [%s]\n", proxyStr)
-			} else {
-				fmt.Printf("Using Basic Proxy [%s]\n", proxyStr)
-			}
-			usingProxyMsgDisplayed = true
-		}
-		if proxyTypeStr == ntlmProxyToken {
-			return ntmlProxyClient(timeout, proxyStr)
-		}
-		os.Setenv("HTTP_PROXY", proxyStr)
-		return basicProxyClient(timeout)
+	if proxyTypeStr == ntlmProxyToken {
+		return ntmlProxyClient(timeout, proxyStr)
 	}
 	return basicProxyClient(timeout)
 }
