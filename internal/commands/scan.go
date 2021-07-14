@@ -34,6 +34,7 @@ const (
 )
 
 var (
+	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.LimitQueryParam,
@@ -220,9 +221,31 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	*input, _ = json.Marshal(info)
 }
 
+func determineScanTypes(cmd *cobra.Command) {
+	userScanTypes, _ := cmd.Flags().GetString(scanTypes)
+	if len(userScanTypes) > 0 {
+		actualScanTypes = userScanTypes
+	}
+}
+
+func validateScanTypes() {
+	scanTypes := strings.Split(actualScanTypes, ",")
+	for _, scanType := range scanTypes {
+		isValid := false
+		if strings.EqualFold(strings.TrimSpace(scanType), "sast") ||
+			strings.EqualFold(strings.TrimSpace(scanType), "kics") ||
+			strings.EqualFold(strings.TrimSpace(scanType), "sca") {
+			isValid = true
+		}
+		if !isValid {
+			fmt.Println("Error: unknown scan type: ", scanType)
+			os.Exit(1)
+		}
+	}
+}
+
 func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
-	newProjectType, _ := cmd.Flags().GetString(scanTypes)
-	scanTypes := strings.Split(newProjectType, ",")
+	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, a := range scanTypes {
 		if strings.EqualFold(strings.TrimSpace(a), scanType) {
 			return true
@@ -423,6 +446,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
+		determineScanTypes(cmd)
+		validateScanTypes()
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
