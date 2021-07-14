@@ -1,3 +1,10 @@
+project_name: ast-cli
+
+release:
+  draft: true
+  prerelease: true
+  name: "AST CLI {{.Version}}"
+  
 builds:
   - main: ./cmd/main.go
     binary: cx
@@ -29,11 +36,3 @@ archives:
       386: x32
     files:
       - LICENSE
-release:
-  prerelease: true
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
