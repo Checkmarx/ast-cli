@@ -28,7 +28,7 @@ builds:
         - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 
 dockers:
-  - use: buildx
+  - use: docker
     dockerfile: Dockerfile
     image_templates:
       - "CheckmarxDev/ast-cli:{{ .Tag }}"
