@@ -34,8 +34,6 @@ dockers:
       - "checkmarxdev/ast-cli:{{ .Tag }}"
     build_flag_templates:
       - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
-    push_flags:
-      - --tls-verify=false
 archives:
   - format_overrides:
       - goos: windows
