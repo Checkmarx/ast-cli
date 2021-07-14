@@ -29,8 +29,6 @@ builds:
 
 dockers:
   - image_templates:
-      - "cxsdlc/ast-cli:latest"
-      - "cxsdlc/ast-cli:{{ .Tag }}"
       - "gcr.io/CheckmarxDev/ast-cli:latest"
       - "gcr.io/CheckmarxDev/ast-cli:{{ .Tag }}"
     build_flag_templates:
