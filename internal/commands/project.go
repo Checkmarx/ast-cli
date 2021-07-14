@@ -45,6 +45,8 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		Short: "Creates a new project",
 		RunE:  runCreateProjectCommand(projectsWrapper),
 	}
+	createProjCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
+	createProjCmd.PersistentFlags().String(groupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(projectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(mainBranchFlag, "", "", "Main branch")
 
@@ -102,6 +104,25 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	return nil
 }
 
+func updateGroupValues(input *[]byte, cmd *cobra.Command) {
+	groupListStr, _ := cmd.Flags().GetString(groupList)
+	groups := strings.Split(groupListStr, ",")
+	var groupMap []string
+	var info map[string]interface{}
+	_ = json.Unmarshal(*input, &info)
+	if _, ok := info["groups"]; !ok {
+		_ = json.Unmarshal([]byte("[]"), &groupMap)
+		info["groups"] = groupMap
+	}
+	for _, group := range groups {
+		if len(group) > 0 {
+			groupMap = append(groupMap, group)
+		}
+	}
+	info["groups"] = groupMap
+	*input, _ = json.Marshal(info)
+}
+
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
@@ -110,6 +131,8 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if err != nil {
 			return err
 		}
+		updateTagValues(&input, cmd)
+		updateGroupValues(&input, cmd)
 		var projModel = projectsRESTApi.Project{}
 		var projResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel

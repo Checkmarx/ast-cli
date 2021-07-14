@@ -63,9 +63,16 @@ func getClient(timeout uint) *http.Client {
 func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 	insecure := viper.GetBool("insecure")
 	u, _ := url.Parse(proxyStr)
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
-		Proxy:           http.ProxyURL(u),
+	var tr *http.Transport
+	if len(proxyStr) > 0 {
+		tr = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+			Proxy:           http.ProxyURL(u),
+		}
+	} else {
+		tr = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+		}
 	}
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
