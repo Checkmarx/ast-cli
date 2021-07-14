@@ -34,7 +34,7 @@ dockers:
       - "gcr.io/CheckmarxDev/ast-cli:latest"
       - "gcr.io/CheckmarxDev/ast-cli:{{ .Tag }}"
     build_flag_templates:
-      - "--build-arg=GIT_TOKEN={{.GITHUB_TOKEN}}"
+      - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
 
 archives:
   - format_overrides:
