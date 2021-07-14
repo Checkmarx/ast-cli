@@ -209,11 +209,11 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig map[string]interface{} = addKicsScan(cmd)
+	var kicsConfig map[string]interface{} = addKicsScan()
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig map[string]interface{} = addScaScan(cmd)
+	var scaConfig map[string]interface{} = addScaScan()
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -276,7 +276,7 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addKicsScan(cmd *cobra.Command) map[string]interface{} {
+func addKicsScan() map[string]interface{} {
 	if scanTypeEnabled("kics") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
@@ -292,7 +292,7 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command) map[string]interface{} {
+func addScaScan() map[string]interface{} {
 	if scanTypeEnabled("sca") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
