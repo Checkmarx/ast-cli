@@ -28,13 +28,14 @@ builds:
         - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 
 dockers:
-  - use: docker
+  - use: buildx
     dockerfile: Dockerfile
     image_templates:
       - "CheckmarxDev/ast-cli:{{ .Tag }}"
     build_flag_templates:
       - "--pull"
       - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
+      - "--platform=linux/amd64"
 
 archives:
   - format_overrides:
