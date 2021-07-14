@@ -26,4 +26,12 @@ builds:
         - -s
         - -w
         - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
-
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
