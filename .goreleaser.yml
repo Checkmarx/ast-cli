@@ -32,10 +32,10 @@ dockers:
       - "cxsdlc/ast-cli:latest"
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "gcr.io/CheckmarxDev/ast-cli:latest"
-      - "cxsdlc/ast-cli:{{ .Tag }}"
-  build_flag_templates:
-    - "--build-arg=GIT_USER={{.GITHUB_USER}}"
-    - "--build-arg=GIT_TOKEN={{.GITHUB_TOKEN}}"
+      - "gcr.io/CheckmarxDev/ast-cli:{{ .Tag }}"
+    build_flag_templates:
+      - "--build-arg=GIT_USER={{.GITHUB_USER}}"
+      - "--build-arg=GIT_TOKEN={{.GITHUB_TOKEN}}"
 
 archives:
   - format_overrides:
