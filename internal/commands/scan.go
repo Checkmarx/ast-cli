@@ -244,7 +244,7 @@ func validateScanTypes() {
 	}
 }
 
-func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
+func scanTypeEnabled(scanType string) bool {
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, a := range scanTypes {
 		if strings.EqualFold(strings.TrimSpace(a), scanType) {
@@ -255,7 +255,7 @@ func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
 }
 
 func addSastScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "sast") {
+	if scanTypeEnabled("sast") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		newIncremental, _ := cmd.Flags().GetString(incrementalSast)
@@ -277,7 +277,7 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addKicsScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "kics") {
+	if scanTypeEnabled("kics") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		objArr["type"] = "kics"
@@ -293,7 +293,7 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addScaScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "sca") {
+	if scanTypeEnabled("sca") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		objArr["type"] = "sca"
