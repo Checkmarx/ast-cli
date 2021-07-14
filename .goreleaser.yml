@@ -29,6 +29,7 @@ builds:
 
 dockers:
   - use: buildx
+    dockerfile: Dockerfile
     image_templates:
       - "CheckmarxDev/ast-cli:{{ .Tag }}"
     build_flag_templates:
