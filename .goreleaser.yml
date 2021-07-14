@@ -31,7 +31,7 @@ dockers:
   - use: buildx
     dockerfile: Dockerfile
     image_templates:
-      - "checkmarxDev/ast-cli:{{ .Tag }}"
+      - "checkmarxdev/ast-cli:{{ .Tag }}"
     build_flag_templates:
       - "--pull"
       - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
