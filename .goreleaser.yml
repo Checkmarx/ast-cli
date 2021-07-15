@@ -31,7 +31,7 @@ dockers:
   - use: docker
     dockerfile: Dockerfile
     image_templates:
-      - "checkmarxdev/ast-cli:{{ .Tag }}"
+      - "pedrolopesch/ast-cli:{{ .Tag }}"
     build_flag_templates:
       - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
 archives:
