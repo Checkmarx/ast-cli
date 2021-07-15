@@ -17,6 +17,8 @@ var EnvVarsBinds = []struct {
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
+	{SastResultsPathKey, SastResultsPathEnv, "api/sast-results"},
+	{KicsResultsPathKey, KicsResultsPathEnv, "api/kics-results"},
 	{BflPathKey, BflPathEnv, "api/bfl"},
 	{UploadsPathKey, UploadsPathEnv, "api/uploads"},
 	{SastRmPathKey, SastRmPathEnv, "api/sast-rm"},
