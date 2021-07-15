@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	failedAuthValidate   = "Failed authentication!"
 	failedCreatingClient = "failed creating client"
 	pleaseProvideFlag    = "%s: Please provide %s flag"
 	adminClientID        = "ast-app"
@@ -47,23 +48,23 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Use:   "validate",
 		Short: "Validates a client/secret",
 		Long:  "Validates if a client/secret pair can communicate with AST.",
-		RunE:  validLogin(authWrapper),
+		RunE:  validLogin(),
 	}
 	authCmd.AddCommand(createClientCmd, validLoginCmd)
 	return authCmd
 }
 
-func validLogin(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
+func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scansWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
 		paramsList := make(map[string]string)
-		var err error
-		_, _, err = scansWrapper.Get(paramsList)
+		_, _, err := scansWrapper.Get(paramsList)
 		if err != nil {
-			fmt.Println("Failed authentication test!")
-		} else {
-			fmt.Println("Successfully authenticated to AST server!")
+			return errors.Errorf("%s", failedAuthValidate)
 		}
+
+		fmt.Println("Successfully authenticated to AST server!")
+
 		return nil
 	}
 }

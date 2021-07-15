@@ -7,6 +7,8 @@ var (
 	BranchKey                           = strings.ToLower(BranchEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
 	ProxyKey                            = strings.ToLower(ProxyEnv)
+	ProxyTypeKey                        = strings.ToLower(ProxyTypeEnv)
+	ProxyDomainKey                      = strings.ToLower(ProxyDomainEnv)
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)
 	AstUsernameKey                      = strings.ToLower(AstUsernameEnv)
 	AstPasswordKey                      = strings.ToLower(AstPasswordEnv)

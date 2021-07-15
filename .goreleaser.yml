@@ -1,0 +1,39 @@
+builds:
+  - main: ./cmd/main.go
+    binary: cx
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarm: 7
+      - goos: windows
+        goarm: 7
+    ldflags:
+        - -s
+        - -w
+        - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
+archives:
+  - builds: [cx]
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
+release:
+  prerelease: true
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

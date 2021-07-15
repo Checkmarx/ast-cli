@@ -503,7 +503,12 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 			return true
 		}
 	}
+	if scanResponseModel.Status != "Completed" {
+		fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
+		os.Exit(1)
+	}
 	fmt.Println("Scan finished, final status: ", scanResponseModel.Status)
+
 	return false
 }
 
