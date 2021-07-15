@@ -67,6 +67,7 @@ func (r *ResultsHTTPWrapper) GetSastResultsByScanID(params map[string]string) (*
 		return nil, nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}

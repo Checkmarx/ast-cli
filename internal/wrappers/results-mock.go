@@ -30,11 +30,11 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 	}, nil, nil
 }
 
-func (r ResultsMockWrapper) GetKicsByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
+func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
 	return nil, nil, nil
 }
 
-func (r ResultsMockWrapper) GetSastByScanID(params map[string]string) (*resultsRaw.ResultsCollection, *resultsHelpers.WebError, error) {
+func (r ResultsMockWrapper) GetSastResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
 	return nil, nil, nil
 }
 
