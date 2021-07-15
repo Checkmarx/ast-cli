@@ -314,17 +314,17 @@ func outputResultsPretty(results []*wrappers.ScanResult) error {
 }
 
 func outputSingleResult(model *wrappers.ScanResult) {
-	//fmt.Println("Result Unique ID:", model.UniqueID)
+	fmt.Println("Result Unique ID:", model.UniqueID)
 	fmt.Println("Query ID:", model.QueryID)
 	fmt.Println("Query Name:", model.QueryName)
 	fmt.Println("Severity:", model.Severity)
-	//fmt.Println("CWE ID:", model.CweID)
+	// fmt.Println("CWE ID:", model.CweID)
 	fmt.Println("Similarity ID:", model.SimilarityID)
 	fmt.Println("First Scan ID:", model.FirstScanID)
 	fmt.Println("Found At:", model.FoundAt)
 	fmt.Println("First Found At:", model.FirstFoundAt)
 	fmt.Println("Status:", model.Status)
-	//fmt.Println("Path System ID:", model.PathSystemID)
+	// fmt.Println("Path System ID:", model.PathSystemID)
 	fmt.Println()
 	fmt.Println("************ Nodes ************")
 	/*
