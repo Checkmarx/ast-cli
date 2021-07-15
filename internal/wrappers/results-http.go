@@ -61,33 +61,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*S
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetSastResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.sastPath, params, nil, DefaultTimeoutSeconds)
-	if err != nil {
-		return nil, nil, err
-	}
-	decoder := json.NewDecoder(resp.Body)
-	defer resp.Body.Close()
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := resultsHelpers.WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		model := ScanResultsCollection{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return &model, nil, nil
-	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
-	}
-}
-
 type VulnerabilityDetails struct {
 	CveName            string `json:"cveName,omitempty"`
 	CVSS               string `json:"cvss*,omitempty"`

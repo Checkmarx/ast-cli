@@ -34,10 +34,6 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (*Sc
 	return nil, nil, nil
 }
 
-func (r ResultsMockWrapper) GetSastResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
-	return nil, nil, nil
-}
-
 func (r *ResultsMockWrapper) GetScaAPIPath() string {
 	return ""
 }
