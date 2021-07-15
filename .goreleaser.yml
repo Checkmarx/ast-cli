@@ -29,11 +29,9 @@ builds:
 
 dockers:
   - use: docker
-    dockerfile: Dockerfile
+    dockerfile: goreleaser/Dockerfile
     image_templates:
       - "pedrolopesch/ast-cli:{{ .Tag }}"
-    build_flag_templates:
-      - "--build-arg=GIT_TOKEN={{ .Env.GITHUB_TOKEN }}"
 archives:
   - format_overrides:
       - goos: windows

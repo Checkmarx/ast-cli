@@ -13,8 +13,8 @@ RUN apk add --no-cache git \
   "https://github.com"
 
 #Copy go mod and sum files
-#COPY go.mod .
-#COPY go.sum .
+COPY go.mod .
+COPY go.sum .
 
 # Get dependancies - will also be cached if we won't change mod/sum
 RUN go mod download
