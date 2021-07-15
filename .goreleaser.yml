@@ -2,7 +2,7 @@ project_name: ast-cli
 
 release:
   draft: true
-  prerelease: true
+  prerelease: auto
   name_template: "AST CLI {{.Version}}"
 
 builds:
@@ -26,12 +26,12 @@ builds:
         - -s
         - -w
         - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
-
 dockers:
   - use: docker
     dockerfile: goreleaser/Dockerfile
     image_templates:
-      - "pedrolopesch/ast-cli:{{ .Tag }}"
+      - "cxsdlc/ast-cli:latest"
+      - "cxsdlc/ast-cli:{{ .Tag }}"
 archives:
   - format_overrides:
       - goos: windows
