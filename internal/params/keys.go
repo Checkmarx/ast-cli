@@ -15,6 +15,8 @@ var (
 	AgentNameKey                        = strings.ToLower(AgentNameEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
+	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
+	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
 	BflPathKey                          = strings.ToLower(BflPathEnv)
 	UploadsPathKey                      = strings.ToLower(UploadsPathEnv)
 	SastRmPathKey                       = strings.ToLower(SastRmPathEnv)
