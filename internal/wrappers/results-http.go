@@ -2,10 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
@@ -34,18 +31,6 @@ func NewHTTPResultsWrapper(path, sastPath, kicsPath, scansPath string) ResultsWr
 
 func (r *ResultsHTTPWrapper) GetScaAPIPath() string {
 	return r.scansPath
-}
-
-func printResultBody(resp *http.Response) {
-	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		bodyString := string(bodyBytes)
-		fmt.Println(bodyString)
-	}
-	os.Exit(0)
 }
 
 func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
@@ -106,7 +91,7 @@ type VulnerabilityDetails struct {
 	CveName            string `json:"cveName,omitempty"`
 	CVSS               string `json:"cvss*,omitempty"`
 	CvssScore          string `json:"cvssScore,omitempty"`
-	CweId              string `json:"cweId,omitempty"`
+	CweID              string `json:"cweId,omitempty"`
 	Owasp2017          string `json:"owasp2017,omitempty"`
 	CopyLeft           string `json:"copyLeft,omitempty"`
 	CopyrightRiskScore string `json:"copyrightRiskScore,omitempty"`
@@ -145,7 +130,7 @@ type ScanResultData struct {
 	UniqueID           string `json:"uniqueID,omitempty"`
 	Description        string `json:"description,omitempty"`
 	Recommendation     string `json:"recommendation,omitempty"`
-	PackageId          string `json:"packageId,omitempty"`
+	PackageID          string `json:"packageId,omitempty"`
 	RecommendedVersion string `json:"recommendedVersion,omitempty"`
 	PackagePublishAt   string `json:"packagePublishAt,omitempty"`
 	QueryURL           string `json:"queryURL,omitempty"`
