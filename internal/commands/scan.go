@@ -34,6 +34,7 @@ const (
 )
 
 var (
+	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.LimitQueryParam,
@@ -208,11 +209,11 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig map[string]interface{} = addKicsScan(cmd)
+	var kicsConfig map[string]interface{} = addKicsScan()
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig map[string]interface{} = addScaScan(cmd)
+	var scaConfig map[string]interface{} = addScaScan()
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -220,9 +221,31 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	*input, _ = json.Marshal(info)
 }
 
-func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
-	newProjectType, _ := cmd.Flags().GetString(scanTypes)
-	scanTypes := strings.Split(newProjectType, ",")
+func determineScanTypes(cmd *cobra.Command) {
+	userScanTypes, _ := cmd.Flags().GetString(scanTypes)
+	if len(userScanTypes) > 0 {
+		actualScanTypes = userScanTypes
+	}
+}
+
+func validateScanTypes() {
+	scanTypes := strings.Split(actualScanTypes, ",")
+	for _, scanType := range scanTypes {
+		isValid := false
+		if strings.EqualFold(strings.TrimSpace(scanType), "sast") ||
+			strings.EqualFold(strings.TrimSpace(scanType), "kics") ||
+			strings.EqualFold(strings.TrimSpace(scanType), "sca") {
+			isValid = true
+		}
+		if !isValid {
+			fmt.Println("Error: unknown scan type: ", scanType)
+			os.Exit(1)
+		}
+	}
+}
+
+func scanTypeEnabled(scanType string) bool {
+	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, a := range scanTypes {
 		if strings.EqualFold(strings.TrimSpace(a), scanType) {
 			return true
@@ -232,7 +255,7 @@ func scanTypeEnabled(cmd *cobra.Command, scanType string) bool {
 }
 
 func addSastScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "sast") {
+	if scanTypeEnabled("sast") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		newIncremental, _ := cmd.Flags().GetString(incrementalSast)
@@ -253,8 +276,8 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addKicsScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "kics") {
+func addKicsScan() map[string]interface{} {
+	if scanTypeEnabled("kics") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		objArr["type"] = "kics"
@@ -269,8 +292,8 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(cmd, "sca") {
+func addScaScan() map[string]interface{} {
+	if scanTypeEnabled("sca") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
 		objArr["type"] = "sca"
@@ -423,6 +446,8 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
+		determineScanTypes(cmd)
+		validateScanTypes()
 		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
 		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
 		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)

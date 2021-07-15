@@ -1,3 +1,10 @@
+project_name: ast-cli
+
+release:
+  draft: true
+  prerelease: true
+  name_template: "AST CLI {{.Version}}"
+
 builds:
   - main: ./cmd/main.go
     binary: cx
@@ -20,8 +27,7 @@ builds:
         - -w
         - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 archives:
-  - builds: [cx]
-    format_overrides:
+  - format_overrides:
       - goos: windows
         format: zip
     replacements:
@@ -29,11 +35,3 @@ archives:
       386: x32
     files:
       - LICENSE
-release:
-  prerelease: true
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'

@@ -38,6 +38,7 @@ const (
 	projectName              = "project-name"
 	scanTypes                = "scan-types"
 	tagList                  = "tags"
+	groupList                = "groups"
 	incrementalSast          = "sast-incremental"
 	presetName               = "sast-preset-name"
 	accessKeyIDFlag          = "client-id"
