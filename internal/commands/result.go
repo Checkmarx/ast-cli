@@ -8,9 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
-	resultsRaw "github.com/checkmarxDev/sast-results/pkg/web/path/raw"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 
@@ -168,7 +166,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 	}
 }
 
-func summaryReport(results *resultsRaw.ResultsCollection, scanID string) (*ResultSummary, error) {
+func summaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
 	summary, err := getScanInfo(scanID)
 	if err != nil {
 		return nil, err
@@ -267,12 +265,9 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (results *resultsRaw.ResultsCollection, err error) {
-	var sastResultResponseModel *resultsRaw.ResultsCollection
-	var kicsResultResponseModel *resultsRaw.ResultsCollection
+func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (results *wrappers.ScanResultsCollection, err error) {
+	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *resultsHelpers.WebError
-	var kicsErrorModel *resultsHelpers.WebError
-	var kicsErr error
 	scanID, _ := cmd.Flags().GetString(scanIDFlag)
 	if scanID == "" {
 		return nil, errors.Errorf("%s: Please provide a scan ID", failedListingResults)
@@ -282,29 +277,19 @@ func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (re
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	params[commonParams.ScanIDQueryParam] = scanID
-	sastResultResponseModel, errorModel, err = resultsWrapper.GetSastByScanID(params)
-	kicsResultResponseModel, kicsErrorModel, kicsErr = resultsWrapper.GetKicsByScanID(params)
-	if err != nil && kicsErr != nil {
+	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-	} else if kicsErrorModel != nil {
-		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, kicsErrorModel.Code, kicsErrorModel.Message)
-	} else if sastResultResponseModel != nil && kicsResultResponseModel != nil {
-		return mergeResults(sastResultResponseModel, kicsResultResponseModel), nil
+	} else if resultsModel != nil {
+		return resultsModel, nil
 	}
 	return nil, nil
 }
 
-// Merges all results into the sast collection, currently only supports sast and kics
-func mergeResults(sast, kics *resultsRaw.ResultsCollection) *resultsRaw.ResultsCollection {
-	sast.Results = append(sast.Results, kics.Results...)
-	sast.TotalCount += kics.TotalCount
-	return sast
-}
-
-func exportResults(cmd *cobra.Command, results *resultsRaw.ResultsCollection) error {
+func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
 	formatFlag, _ := cmd.Flags().GetString(formatFlag)
 	if IsFormat(formatFlag, formatJSON) {
@@ -319,48 +304,35 @@ func exportResults(cmd *cobra.Command, results *resultsRaw.ResultsCollection) er
 	return outputResultsPretty(results.Results)
 }
 
-func outputResultsPretty(results []*resultsReader.Result) error {
+func outputResultsPretty(results []*wrappers.ScanResult) error {
 	fmt.Println("************ Results ************")
 	for i := 0; i < len(results); i++ {
-		outputSingleResult(&resultsReader.Result{
-			ResultQuery: resultsReader.ResultQuery{
-				QueryID:   results[i].QueryID,
-				QueryName: results[i].QueryName,
-				Severity:  results[i].Severity,
-				CweID:     results[i].CweID,
-			},
-			SimilarityID: results[i].SimilarityID,
-			UniqueID:     results[i].UniqueID,
-			FirstScanID:  results[i].FirstScanID,
-			FirstFoundAt: results[i].FirstFoundAt,
-			FoundAt:      results[i].FoundAt,
-			Status:       results[i].Status,
-			PathSystemID: results[i].PathSystemID,
-			Nodes:        results[i].Nodes,
-		})
+		outputSingleResult(results[i])
 		fmt.Println()
 	}
 	return nil
 }
 
-func outputSingleResult(model *resultsReader.Result) {
-	fmt.Println("Result Unique ID:", model.UniqueID)
+func outputSingleResult(model *wrappers.ScanResult) {
+	//fmt.Println("Result Unique ID:", model.UniqueID)
 	fmt.Println("Query ID:", model.QueryID)
 	fmt.Println("Query Name:", model.QueryName)
 	fmt.Println("Severity:", model.Severity)
-	fmt.Println("CWE ID:", model.CweID)
+	//fmt.Println("CWE ID:", model.CweID)
 	fmt.Println("Similarity ID:", model.SimilarityID)
 	fmt.Println("First Scan ID:", model.FirstScanID)
 	fmt.Println("Found At:", model.FoundAt)
 	fmt.Println("First Found At:", model.FirstFoundAt)
 	fmt.Println("Status:", model.Status)
-	fmt.Println("Path System ID:", model.PathSystemID)
+	//fmt.Println("Path System ID:", model.PathSystemID)
 	fmt.Println()
 	fmt.Println("************ Nodes ************")
-	for i := 0; i < len(model.Nodes); i++ {
-		outputSingleResultNodePretty(model.Nodes[i])
-		fmt.Println()
-	}
+	/*
+		for i := 0; i < len(model.Nodes); i++ {
+			outputSingleResultNodePretty(model.Nodes[i])
+			fmt.Println()
+		}
+	*/
 }
 
 type ResultSummary struct {
