@@ -15,6 +15,7 @@ const (
 	failedAuthValidate   = "Failed authentication!"
 	failedCreatingClient = "failed creating client"
 	pleaseProvideFlag    = "%s: Please provide %s flag"
+	SuccessAuthValidate  = "Successfully authenticated to AST server!"
 	adminClientID        = "ast-app"
 	adminClientSecret    = "1d71c35c-818e-4ee8-8fb1-d6cbf8fe2e2a"
 )
@@ -63,7 +64,7 @@ func validLogin() func(cmd *cobra.Command, args []string) error {
 			return errors.Errorf("%s", failedAuthValidate)
 		}
 
-		fmt.Println("Successfully authenticated to AST server!")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
 
 		return nil
 	}
@@ -94,7 +95,7 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 
 		errorMsg, err := authWrapper.CreateOauth2Client(client, username, password, adminClientID, adminClientSecret)
 		if err != nil {
-			fmt.Println("Could not create OAuth2 credentials!")
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Could not create OAuth2 credentials!")
 			return nil
 		}
 
@@ -102,8 +103,8 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 			return errors.Errorf("%s: CODE: %d, %s", failedCreatingClient, errorMsg.Code, errorMsg.Message)
 		}
 
-		fmt.Printf("%s=%s\n", params.AccessKeyIDEnv, generatedClientID)
-		fmt.Printf("%s=%s\n", params.AccessKeySecretEnv, generatedClientSecret)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s=%s\n", params.AccessKeyIDEnv, generatedClientID)
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s=%s\n", params.AccessKeySecretEnv, generatedClientSecret)
 		return nil
 	}
 }
