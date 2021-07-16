@@ -92,6 +92,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "Show information about a scan workflow",
 		RunE:  runScanWorkflowByIDCommand(scansWrapper),
 	}
+	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
 
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete",
@@ -157,7 +158,11 @@ func createProject(projectName string) (string, error) {
 	projects := viper.GetString(commonParams.ProjectsPathKey)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Create(&projModel)
-	return resp.ID, err
+	projectID := ""
+	if err == nil {
+		projectID = resp.ID
+	}
+	return projectID, err
 }
 
 func updateTagValues(input *[]byte, cmd *cobra.Command) {
@@ -283,10 +288,6 @@ func addKicsScan() map[string]interface{} {
 		objArr["type"] = "kics"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		foundValue := false
-		if foundValue {
-			objArr["value"] = valueMap
-		}
 		return objArr
 	}
 	return nil
@@ -299,10 +300,6 @@ func addScaScan() map[string]interface{} {
 		objArr["type"] = "sca"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		foundValue := false
-		if foundValue {
-			objArr["value"] = valueMap
-		}
 		return objArr
 	}
 	return nil
@@ -594,10 +591,10 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 		var taskResponseModel []*wrappers.ScanTaskResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
-		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
+		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanID == "" {
+			return errors.Errorf("Please provide a scan ID")
 		}
-		scanID := args[0]
 		taskResponseModel, errorModel, err = scansWrapper.GetWorkflowByID(scanID)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGetting)
@@ -677,7 +674,10 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize scan tags response ", failedGettingTags)
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to log scan tags response ", failedGettingTags)
+			}
 		}
 		return nil
 	}
