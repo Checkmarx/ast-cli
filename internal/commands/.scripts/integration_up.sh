@@ -1,6 +1,1 @@
-go test ./test/integration/scan_test.go \
-            ./test/integration/root_test.go \
-            ./test/integration/project_test.go \
-            ./test/integration/health_check_test.go \
-            ./test/integration/result_test.go \
-            ./test/integration/query_test.go
+go test -tags integration github.com/checkmarxDev/ast-cli/test/integration
