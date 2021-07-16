@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	FullScanWait  = 400
-	IncScanWait   = 60
+	FullScanWait  = 60
+	IncScanWait   = 30
 	ScanPollSleep = 5
 )
 

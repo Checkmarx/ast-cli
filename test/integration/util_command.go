@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -12,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 	"testing"
+	"time"
 )
 
 // Bind environment vars and their defaults to viper
@@ -104,7 +106,25 @@ func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 }
 
 func execute(cmd *cobra.Command, args ...string) error {
-	args = append(args, "-v")
+	return executeWithTimeout(cmd, time.Minute, args...)
+}
+
+func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
+	args = append(args, flag(commands.VerboseFlag))
 	cmd.SetArgs(args)
-	return cmd.Execute()
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	execChannel := make(chan error)
+	go func() {
+		execChannel <- cmd.ExecuteContext(ctx)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case result := <-execChannel:
+		return result
+	}
 }

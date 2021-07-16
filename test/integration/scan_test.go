@@ -45,7 +45,7 @@ func TestScansE2E(t *testing.T) {
 func TestNoWaitScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, sources, map[string]string{})
 
-	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep)
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
 
 	executeScanTest(t, projectID, scanID, Tags)
 }
@@ -56,7 +56,7 @@ func TestIncrementalScan(t *testing.T) {
 
 	defer deleteScan(t, scanID)
 
-	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep)
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
 
 	executeScanTest(t, projectID, scanID, Tags)
 
@@ -64,7 +64,7 @@ func TestIncrementalScan(t *testing.T) {
 
 	defer deleteScan(t, scanID)
 
-	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, IncScanWait, ScanPollSleep)
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, IncScanWait, ScanPollSleep), "Polling should complete")
 
 	executeScanTest(t, projectID, scanID, Tags)
 }
