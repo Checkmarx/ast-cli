@@ -5,6 +5,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/google/uuid"
 	"log"
 	"testing"
@@ -77,7 +78,11 @@ func TestScanWorkflow(t *testing.T) {
 
 	workflowCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(workflowCommand, "scan", "workflow", "--scan-id", scanID, "--format", "json")
+	err := execute(workflowCommand,
+		"scan", "workflow",
+		flag(commands.ScanIDFlag), scanID,
+		flag(commands.FormatFlag), commands.FormatJSON,
+	)
 	assert.NilError(t, err, "Workflow should pass")
 
 	var workflow []ScanWorkflowResponse
@@ -95,7 +100,10 @@ func TestCancelScan(t *testing.T) {
 
 	workflowCommand := createASTIntegrationTestCommand(t)
 
-	err := execute(workflowCommand, "scan", "cancel", "--scan-id", scanID)
+	err := execute(workflowCommand,
+		"scan", "cancel",
+		flag(commands.ScanIDFlag), scanID,
+	)
 	assert.NilError(t, err, "Cancel should pass")
 
 	scan := showScan(t, scanID)
@@ -154,12 +162,12 @@ func getCreateArgs(source string, tags map[string]string) []string {
 	projectName := fmt.Sprintf("integration_test_scan_%s", uuid.New().String())
 	args := []string{
 		"scan", "create",
-		"--project-name", projectName,
-		"--sources", source,
-		"--scan-types", "sast,kics,sca",
-		"--sast-preset-name", "Checkmarx Default",
-		"--format", "json",
-		"--tags", formatTags(tags),
+		flag(commands.ProjectName), projectName,
+		flag(commands.SourcesFlag), source,
+		flag(commands.ScanTypes), "sast,kics,sca",
+		flag(commands.PresetName), "Checkmarx Default",
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.TagList), formatTags(tags),
 	}
 	return args
 }
@@ -182,7 +190,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func deleteScan(t *testing.T, scanID string) {
 	deleteScanCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteScanCommand, "scan", "delete", "--scan-id", scanID)
+	err := execute(deleteScanCommand,
+		"scan", "delete",
+		flag(commands.ScanIDFlag), scanID,
+	)
 	assert.NilError(t, err, "Deleting a scan should pass")
 }
 
@@ -190,7 +201,11 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
-	err := execute(getCommand, "scan", "list", "--format", "json", "--filter", scanFilter)
+	err := execute(getCommand,
+		"scan", "list",
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FilterFlag), scanFilter,
+	)
 	assert.NilError(t, err, "Getting the scan should pass")
 
 	// Read response from buffer
@@ -204,7 +219,11 @@ func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(getCommand, "scan", "show", "--format", "json", "--scan-id", scanID)
+	err := execute(getCommand,
+		"scan", "show",
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.ScanIDFlag), scanID,
+	)
 	assert.NilError(t, err, "Getting the scan should pass")
 
 	// Read response from buffer

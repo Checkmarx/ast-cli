@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/google/uuid"
 	"testing"
 
@@ -61,8 +62,8 @@ func TestCreateAlreadyExisting(t *testing.T) {
 
 	err := execute(createASTIntegrationTestCommand(t),
 		"project", "create",
-		"--format", "json",
-		"--project-name", showProject(t, projectID).Name,
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.ProjectName), showProject(t, projectID).Name,
 	)
 	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
 }
@@ -76,10 +77,10 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 
 	err := execute(createProjCommand,
 		"project", "create",
-		"--format", "json",
-		"--project-name", projectName,
-		"--tags", tagsStr,
-		"--groups", groupsStr,
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.ProjectName), projectName,
+		flag(commands.TagList), tagsStr,
+		flag(commands.GroupList), groupsStr,
 	)
 	assert.NilError(t, err, "Creating a project should pass")
 
@@ -94,7 +95,10 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 
 func deleteProject(t *testing.T, projectID string) {
 	deleteProjCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteProjCommand, "project", "delete", "--project-id", projectID)
+	err := execute(deleteProjCommand,
+		"project", "delete",
+		flag(commands.ProjectIDFlag), projectID,
+	)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
 
@@ -102,7 +106,11 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 	getAllCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(getAllCommand, "project", "list", "--format", "json", "--filter", idFilter)
+	err := execute(getAllCommand,
+		"project", "list",
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FilterFlag), idFilter,
+	)
 	assert.NilError(t, err, "Getting the project should pass")
 
 	var projects []projectsRESTApi.ProjectResponseModel
@@ -114,7 +122,11 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponseModel {
 	showCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(showCommand, "project", "show", "--format", "json", "--project-id", projectID)
+	err := execute(showCommand,
+		"project", "show",
+		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.ProjectIDFlag), projectID,
+	)
 	assert.NilError(t, err, "Getting the project should pass")
 
 	var project projectsRESTApi.ProjectResponseModel

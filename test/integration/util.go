@@ -53,3 +53,7 @@ func getAllTags(t *testing.T, baseCmd string) map[string][]string {
 
 	return tags
 }
+
+func flag(f string) string {
+	return "--" + f
+}
