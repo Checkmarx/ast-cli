@@ -13,16 +13,16 @@ import (
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
-	if IsFormat(format, formatJSON) {
+	if IsFormat(format, FormatJSON) {
 		viewJSON, err := json.Marshal(view)
 		if err != nil {
 			return err
 		}
 		fmt.Fprintln(w, string(viewJSON))
-	} else if IsFormat(format, formatList) {
+	} else if IsFormat(format, FormatList) {
 		entities := toEntities(view)
 		printList(w, entities)
-	} else if IsFormat(format, formatTable) {
+	} else if IsFormat(format, FormatTable) {
 		entities := toEntities(view)
 		printTable(w, entities)
 	} else {

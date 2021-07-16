@@ -37,12 +37,12 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 			"  cx auth register -u <user> -p <pass> \n",
 		RunE: runRegister(authWrapper),
 	}
-	createClientCmd.PersistentFlags().StringP(clientDescriptionFlag, clientDescriptionSh, "", "A client description")
-	createClientCmd.PersistentFlags().StringP(usernameFlag, usernameSh, "", "Username for Ast user that privileges to "+
+	createClientCmd.PersistentFlags().StringP(ClientDescriptionFlag, ClientDescriptionSh, "", "A client description")
+	createClientCmd.PersistentFlags().StringP(UsernameFlag, UsernameSh, "", "Username for Ast user that privileges to "+
 		"create clients")
-	createClientCmd.PersistentFlags().StringP(passwordFlag, passwordSh, "", "Password for Ast user that privileges to "+
+	createClientCmd.PersistentFlags().StringP(PasswordFlag, PasswordSh, "", "Password for Ast user that privileges to "+
 		"create clients")
-	createClientCmd.PersistentFlags().StringSliceP(clientRolesFlag, clientRolesSh, []string{"ast-admin"},
+	createClientCmd.PersistentFlags().StringSliceP(ClientRolesFlag, ClientRolesSh, []string{"ast-admin"},
 		"A list of roles of the client")
 	validLoginCmd := &cobra.Command{
 		Use:   "validate",
@@ -71,18 +71,18 @@ func validLogin() func(cmd *cobra.Command, args []string) error {
 
 func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		username, _ := cmd.Flags().GetString(usernameFlag)
+		username, _ := cmd.Flags().GetString(UsernameFlag)
 		if username == "" {
-			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, usernameFlag)
+			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, UsernameFlag)
 		}
 
-		password, _ := cmd.Flags().GetString(passwordFlag)
+		password, _ := cmd.Flags().GetString(PasswordFlag)
 		if password == "" {
-			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, passwordFlag)
+			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, PasswordFlag)
 		}
 
-		roles, _ := cmd.Flags().GetStringSlice(clientRolesFlag)
-		description, _ := cmd.Flags().GetString(clientDescriptionFlag)
+		roles, _ := cmd.Flags().GetStringSlice(ClientRolesFlag)
+		description, _ := cmd.Flags().GetString(ClientDescriptionFlag)
 		generatedClientID := "ast-plugins-" + uuid.New().String()
 		generatedClientSecret := uuid.New().String()
 		client := &wrappers.Oath2Client{

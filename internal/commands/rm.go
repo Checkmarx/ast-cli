@@ -34,7 +34,7 @@ func NewSastResourcesCommand(rmWrapper wrappers.SastRmWrapper) *cobra.Command {
 	}
 
 	addFormatFlagToMultipleCommands([]*cobra.Command{scansCmd, enginesCmd, statsCmd, poolsCmd},
-		formatTable, formatJSON, formatList)
+		FormatTable, FormatJSON, FormatList)
 	sastrmCmd.AddCommand(scansCmd, enginesCmd, statsCmd, poolsCmd)
 	return sastrmCmd
 }

@@ -47,8 +47,8 @@ func NewSastMetadataCommand(sastMetadataWrapper wrappers.SastMetadataWrapper) *c
 		RunE:  runMetrics(sastMetadataWrapper),
 	}
 
-	addFormatFlag(scanInfoCmd, formatList, formatJSON, formatTable)
-	addFormatFlag(metricsCmd, formatList, formatJSON)
+	addFormatFlag(scanInfoCmd, FormatList, FormatJSON, FormatTable)
+	addFormatFlag(metricsCmd, FormatList, FormatJSON)
 	sastMetadataCmd.AddCommand(scanInfoCmd, metricsCmd)
 	return sastMetadataCmd
 }
@@ -94,8 +94,8 @@ func runMetrics(sastMetadataWrapper wrappers.SastMetadataWrapper) func(*cobra.Co
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingMetrics, errorModel.Code, errorModel.Message)
 		}
 
-		f, _ := cmd.Flags().GetString(formatFlag)
-		if IsFormat(f, formatJSON) {
+		f, _ := cmd.Flags().GetString(FormatFlag)
+		if IsFormat(f, FormatJSON) {
 			var resultsJSON []byte
 			resultsJSON, err = json.Marshal(metrics)
 			if err != nil {

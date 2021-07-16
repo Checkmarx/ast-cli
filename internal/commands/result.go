@@ -101,8 +101,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
-	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(listResultsCmd, formatList, formatJSON)
+	listResultsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
+	addFormatFlag(listResultsCmd, FormatList, FormatJSON)
 	addScanIDFlag(listResultsCmd, "ID to report on.")
 
 	summaryCmd := &cobra.Command{
@@ -110,8 +110,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "Creates summary report for scan",
 		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
 	}
-	summaryCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(summaryCmd, formatHTML, formatText)
+	summaryCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
+	addFormatFlag(summaryCmd, FormatHTML, FormatText)
 	addScanIDFlag(summaryCmd, "ID to report on.")
 	summaryCmd.PersistentFlags().String(targetFlag, "console", "Output file")
 
@@ -152,8 +152,8 @@ func getScanInfo(scanID string) (*ResultSummary, error) {
 func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(targetFlag)
-		scanID, _ := cmd.Flags().GetString(scanIDFlag)
-		format, _ := cmd.Flags().GetString(formatFlag)
+		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
+		format, _ := cmd.Flags().GetString(FormatFlag)
 		results, err := readResults(resultsWrapper, cmd)
 		if err == nil {
 			summary, sumErr := summaryReport(results, scanID)
@@ -200,7 +200,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
-			if format == formatHTML {
+			if format == FormatHTML {
 				buffer := new(bytes.Buffer)
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				fmt.Println(buffer)
@@ -208,7 +208,7 @@ func writeSummary(targetFile string, summary *ResultSummary, format string) {
 				writeTextSummary("", summary)
 			}
 		} else {
-			if format == formatHTML {
+			if format == FormatHTML {
 				f, err := os.Create(targetFile)
 				if err == nil {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
@@ -268,7 +268,7 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *resultsHelpers.WebError
-	scanID, _ := cmd.Flags().GetString(scanIDFlag)
+	scanID, _ := cmd.Flags().GetString(ScanIDFlag)
 	if scanID == "" {
 		return nil, errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 	}
@@ -291,8 +291,8 @@ func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (re
 
 func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
-	formatFlag, _ := cmd.Flags().GetString(formatFlag)
-	if IsFormat(formatFlag, formatJSON) {
+	formatFlag, _ := cmd.Flags().GetString(FormatFlag)
+	if IsFormat(formatFlag, FormatJSON) {
 		var resultsJSON []byte
 		resultsJSON, err = json.Marshal(results)
 		if err != nil {

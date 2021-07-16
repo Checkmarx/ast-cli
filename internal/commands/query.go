@@ -47,9 +47,9 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Short: "Upload local query repository archive file (tarball format) to AST",
 		RunE:  runUpload(queryWrapper, uploadsWrapper),
 	}
-	uploadCmd.PersistentFlags().StringP(queriesRepoNameFlag, queriesRepoNameSh, "",
+	uploadCmd.PersistentFlags().StringP(QueriesRepoNameFlag, QueriesRepoNameSh, "",
 		"A override name for your custom queries repository (default is the repository file name)")
-	uploadCmd.PersistentFlags().BoolP(queriesRepoActivateFlag, queriesRepoActivateSh, false,
+	uploadCmd.PersistentFlags().BoolP(QueriesRepoActivateFlag, QueriesRepoActivateSh, false,
 		"Whether to activate repository after uploading")
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -66,7 +66,7 @@ func NewQueryCommand(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappe
 		Short: "Delete a query repository",
 		RunE:  runDelete(queryWrapper),
 	}
-	addFormatFlag(listCmd, formatTable, formatList, formatJSON)
+	addFormatFlag(listCmd, FormatTable, FormatList, FormatJSON)
 	queryCmd.AddCommand(downloadCmd, uploadCmd, listCmd, activateCmd, deleteCmd)
 	return queryCmd
 }
@@ -117,8 +117,8 @@ func runUpload(queryWrapper wrappers.QueriesWrapper, uploadsWrapper wrappers.Upl
 		}
 
 		repoFile := args[0]
-		nameOverride, _ := cmd.Flags().GetString(queriesRepoNameFlag)
-		toActivate, _ := cmd.Flags().GetBool(queriesRepoActivateFlag)
+		nameOverride, _ := cmd.Flags().GetString(QueriesRepoNameFlag)
+		toActivate, _ := cmd.Flags().GetBool(QueriesRepoActivateFlag)
 		preSignedURL, err := uploadsWrapper.UploadFile(repoFile)
 		if err != nil {
 			return errors.Wrapf(err, "%s: failed to upload repository file", failedUploadingRepo)
