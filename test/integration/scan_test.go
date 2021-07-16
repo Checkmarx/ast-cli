@@ -3,79 +3,180 @@
 package integration
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/google/uuid"
 	"log"
-	"strconv"
 	"testing"
 	"time"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
-	"github.com/spf13/viper"
-	"gotest.tools/assert/cmp"
-
 	"gotest.tools/assert"
 )
 
+// Sources to use in scans
+const (
+	sources    = "sources.zip"
+	sourcesInc = "sources_inc.zip"
+	fastRepo   = "https://github.com/CheckmarxDev/ast-cli"
+	slowRepo   = "https://github.com/WebGoat/WebGoat"
+)
+
+// Type for scan workflow response, used to assert the validity of the command's response
+type ScanWorkflowResponse struct {
+	Source      string    `json:"source"`
+	Timestamp   time.Time `json:"timestamp"`
+	Information string    `json:"info"`
+}
+
+// Create scans from zip and url and perform assertions in executeScanTest
 func TestScansE2E(t *testing.T) {
-	fmt.Println("Trying to run TestScansE2E")
-	//TODO: Implement more generic
-	defer func() {
-		if err := recover(); err != nil {
-			t.Fail()
-		}
-	}()
-	scanID, projectID := createScanSourcesFile(t)
+
+	for _, source := range []string{sources, fastRepo} {
+		scanID, projectID := createScan(t, source, Tags)
+
+		executeScanTest(t, projectID, scanID, Tags)
+	}
+}
+
+// Perform a nowait scan and poll status until completed
+func TestNoWaitScan(t *testing.T) {
+	scanID, projectID := createScanNoWait(t, sources, map[string]string{})
+
+	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep)
+
+	executeScanTest(t, projectID, scanID, Tags)
+}
+
+// Perform an initial scan with complete sources and an incremental scan with a smaller wait time
+func TestIncrementalScan(t *testing.T) {
+	scanID, projectID := createScanIncremental(t, sources, map[string]string{})
+
+	defer deleteScan(t, scanID)
+
+	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep)
+
+	executeScanTest(t, projectID, scanID, Tags)
+
+	scanID, projectID = createScanIncremental(t, sourcesInc, map[string]string{})
+
+	defer deleteScan(t, scanID)
+
+	pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, IncScanWait, ScanPollSleep)
+
+	executeScanTest(t, projectID, scanID, Tags)
+}
+
+// Get a scan workflow and assert its structure
+func TestScanWorkflow(t *testing.T) {
+	scanID, projectID := createScanNoWait(t, sources, map[string]string{})
+
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
-	fullScanWaitTime := viper.GetInt("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS")
-	incScanWaitTime := viper.GetInt("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS")
-	scanCompleted := pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, fullScanWaitTime, 5)
-	assert.Assert(t, scanCompleted, "Full scan should be completed")
+	workflowCommand, buffer := createRedirectedTestCommand(t)
 
-	/**
-	scanResults := getResultsNumberForScan(t, scanID)
-	log.Println("Full scan results number is", scanResults)
-	assert.Check(t, scanResults > 0, "Wrong number of scan results of 0")
-	**/
-	incScanID, _ := createIncScan(t)
-	incScanCompleted := pollScanUntilStatus(t, incScanID, scansApi.ScanCompleted, incScanWaitTime, 5)
-	assert.Assert(t, incScanCompleted, "Incremental scan should be completed")
+	err := execute(workflowCommand, "scan", "workflow", "--scan-id", scanID, "--format", "json")
+	assert.NilError(t, err, "Workflow should pass")
 
-	/**
-	incScanResults := getResultsNumberForScan(t, incScanID)
-	log.Println("Incremental scan results number is", incScanResults)
-	assert.Check(t, incScanResults > 0, "Wrong number of inc scan results of 0")
-	assert.Check(t, incScanResults < scanResults, "Wrong number of inc scan results - same as the full scan results")
-	**/
+	var workflow []ScanWorkflowResponse
+	_ = unmarshall(t, buffer, &workflow, "Reading workflow output should work")
 
-	listScans(t)
-	getScansTags(t)
-	deleteScan(t, incScanID)
+	assert.Assert(t, len(workflow) > 0, "At least one item should exist in the workflow response")
 }
 
-func createScanSourcesFile(t *testing.T) (string, string) {
-	fmt.Println("Trying to create source file")
-	// Create a full scan
-	b := bytes.NewBufferString("")
-	createCommand := createASTIntegrationTestCommand(t)
-	createCommand.SetOut(b)
-	err := execute(createCommand, "-v", "--format", "json", "scan", "create", "--project-name", "abcde", "--sources", "sources.zip")
+// Start a scan guaranteed to take considerable time, cancel it and assert the status
+func TestCancelScan(t *testing.T) {
+	scanID, projectID := createScanNoWait(t, slowRepo, map[string]string{})
+
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
+
+	workflowCommand := createASTIntegrationTestCommand(t)
+
+	err := execute(workflowCommand, "scan", "cancel", "--scan-id", scanID)
+	assert.NilError(t, err, "Cancel should pass")
+
+	scan := showScan(t, scanID)
+
+	assert.Assert(t, scan.Status == scansApi.ScanCanceled, "Scan should be canceled")
+}
+
+// Generic scan test execution
+// - Get scan with 'scan list' and assert status and IDs
+// - Get scan with 'scan show' and assert the ID
+// - Assert all tags exist and are assigned to the scan
+// - Delete the scan and assert it is deleted
+func executeScanTest(t *testing.T, projectID string, scanID string, tags map[string]string) {
+	defer deleteProject(t, projectID)
+
+	response := listScanByID(t, scanID)
+
+	assert.Equal(t, len(response), 1, "Total scans should be 1")
+	assert.Equal(t, response[0].ID, scanID, "Scan ID should match the created scan's ID")
+	assert.Equal(t, response[0].ProjectID, projectID, "Project ID should match the created scan's project ID")
+	assert.Assert(t, response[0].Status == scansApi.ScanCompleted, "Scan should be completed")
+
+	scan := showScan(t, scanID)
+	assert.Equal(t, scan.ID, scanID, "Scan ID should match the created scan's ID")
+
+	allTags := getAllTags(t, "scan")
+	for key := range tags {
+		_, ok := allTags[key]
+		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
+
+		val, ok := scan.Tags[key]
+		assert.Assert(t, ok, "Scan should contain all created tags. Missing %s", key)
+		assert.Equal(t, val, Tags[key], "Tag value should be equal")
+	}
+
+	deleteScan(t, scanID)
+
+	response = listScanByID(t, scanID)
+
+	assert.Equal(t, len(response), 0, "Total scans should be 0 as the scan was deleted")
+}
+
+func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, getCreateArgs(source, tags))
+}
+
+func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags), "--nowait"))
+}
+
+func createScanIncremental(t *testing.T, source string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags), "--sast-incremental"))
+}
+
+func getCreateArgs(source string, tags map[string]string) []string {
+	projectName := fmt.Sprintf("integration_test_scan_%s", uuid.New().String())
+	args := []string{
+		"scan", "create",
+		"--project-name", projectName,
+		"--sources", source,
+		"--scan-types", "sast,kics,sca",
+		"--sast-preset-name", "Checkmarx Default",
+		"--format", "json",
+		"--tags", formatTags(tags),
+	}
+	return args
+}
+
+func executeCreateScan(t *testing.T, args []string) (string, string) {
+	createCommand, buffer := createRedirectedTestCommand(t)
+
+	err := execute(createCommand, args...)
 	assert.NilError(t, err, "Creating a scan should pass")
-	// Read response from buffer
-	var createdScanJSON []byte
-	createdScanJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading scan response JSON should pass")
+
 	createdScan := scansRESTApi.ScanResponseModel{}
-	err = json.Unmarshal(createdScanJSON, &createdScan)
-	assert.NilError(t, err, "Parsing scan response JSON should pass")
+	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
+
 	assert.Assert(t, createdScan.Status == scansApi.ScanQueued)
+
 	log.Printf("Scan ID %s created in test", createdScan.ID)
+
 	return createdScan.ID, createdScan.ProjectID
 }
 
@@ -85,81 +186,32 @@ func deleteScan(t *testing.T, scanID string) {
 	assert.NilError(t, err, "Deleting a scan should pass")
 }
 
-func listScans(t *testing.T) {
-	b := bytes.NewBufferString("")
-	getAllCommand := createASTIntegrationTestCommand(t)
-	getAllCommand.SetOut(b)
-	var limit uint64 = 40
-	var offset uint64 = 0
+func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel {
+	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
-	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
-	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
+	getCommand, outputBuffer := createRedirectedTestCommand(t)
+	err := execute(getCommand, "scan", "list", "--format", "json", "--filter", scanFilter)
+	assert.NilError(t, err, "Getting the scan should pass")
 
-	err := execute(getAllCommand, "-v", "--format", "json", "scan", "list", "--filter", lim, "--filter", off)
-	assert.NilError(t, err, "Getting all scans should pass")
 	// Read response from buffer
-	var getAllJSON []byte
-	getAllJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading all scans response JSON should pass")
-	allScans := []scansRESTApi.ScanResponseModel{}
-	err = json.Unmarshal(getAllJSON, &allScans)
-	assert.NilError(t, err, "Parsing all scans response JSON should pass")
+	var scanList []scansRESTApi.ScanResponseModel
+	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
+
+	return scanList
 }
 
-func getScanByID(t *testing.T, scanID string) *scansRESTApi.ScanResponseModel {
-	getBuffer := bytes.NewBufferString("")
-	getCommand := createASTIntegrationTestCommand(t)
-	getCommand.SetOut(getBuffer)
-	err := execute(getCommand, "-v", "--format", "json", "scan", "show", "--scan-id", scanID)
-	assert.NilError(t, err)
-	// Read response from buffer
-	var getScanJSON []byte
-	getScanJSON, err = ioutil.ReadAll(getBuffer)
-	assert.NilError(t, err, "Reading scan response JSON should pass")
-	getScan := scansRESTApi.ScanResponseModel{}
-	err = json.Unmarshal(getScanJSON, &getScan)
-	assert.NilError(t, err, "Parsing scan response JSON should pass")
-	assert.Assert(t, cmp.Equal(getScan.ID, scanID))
-	return &getScan
-}
+func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 
-func getScanByIDList(t *testing.T, scanID string) {
-	getCommand := createASTIntegrationTestCommand(t)
-	err := execute(getCommand, "-v", "--format", "list", "scan", "show", "--scan-id", scanID)
-	assert.NilError(t, err)
-}
+	getCommand, outputBuffer := createRedirectedTestCommand(t)
 
-func getScansTags(t *testing.T) {
-	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand(t)
-	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "scan", "tags")
-	assert.NilError(t, err, "Getting tags should pass")
-	// Read response from buffer
-	var tagsJSON []byte
-	tagsJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading tags JSON should pass")
-	tags := map[string][]string{}
-	err = json.Unmarshal(tagsJSON, &tags)
-	assert.NilError(t, err, "Parsing tags JSON should pass")
-}
+	err := execute(getCommand, "scan", "show", "--format", "json", "--scan-id", scanID)
+	assert.NilError(t, err, "Getting the scan should pass")
 
-func createIncScan(t *testing.T) (string, string) {
-	// Create an incremental scan
-	incBuff := bytes.NewBufferString("")
-	createIncCommand := createASTIntegrationTestCommand(t)
-	createIncCommand.SetOut(incBuff)
-	err := execute(createIncCommand, "-v", "--format", "json", "scan", "create", "--project-name", "ebfc", "--sources", "sources_inc.zip")
-	assert.NilError(t, err, "Creating an incremental scan should pass")
 	// Read response from buffer
-	var createdIncScanJSON []byte
-	createdIncScanJSON, err = ioutil.ReadAll(incBuff)
-	assert.NilError(t, err, "Reading incremental scan response JSON should pass")
-	createdIncScan := scansRESTApi.ScanResponseModel{}
-	err = json.Unmarshal(createdIncScanJSON, &createdIncScan)
-	assert.NilError(t, err, "Parsing incremental scan response JSON should pass")
-	assert.Assert(t, createdIncScan.Status == scansApi.ScanQueued)
-	return createdIncScan.ID, createdIncScan.ProjectID
+	scan := scansRESTApi.ScanResponseModel{}
+	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
+
+	return scan
 }
 
 func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.ScanStatus, timeout, sleep int) bool {
@@ -174,9 +226,8 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			return false
 		default:
 			log.Printf("Polling scan %s\n", scanID)
-			scan := getScanByID(t, scanID)
-			getScanByIDList(t, scanID)
-			if s := string(scan.Status); s == string(requiredStatus) {
+			scan := listScanByID(t, scanID)
+			if s := string(scan[0].Status); s == string(requiredStatus) {
 				return true
 			} else if s == scansApi.ScanFailed || s == scansApi.ScanCanceled ||
 				s == scansApi.ScanCompleted {
