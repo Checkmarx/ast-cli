@@ -32,8 +32,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	allTags := getAllTags(t)
-
+	allTags := getAllTags(t, "project")
 	for key := range Tags {
 		_, ok := allTags[key]
 		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
@@ -122,17 +121,4 @@ func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponse
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
 
 	return project
-}
-
-func getAllTags(t *testing.T) map[string][]string {
-	tagsCommand, b := createRedirectedTestCommand(t)
-
-	err := execute(tagsCommand, "project", "tags")
-	assert.NilError(t, err, "Getting tags should pass")
-
-	// Read response from buffer
-	tags := map[string][]string{}
-	_ = unmarshall(t, b, &tags, "Reading tags JSON should pass")
-
-	return tags
 }

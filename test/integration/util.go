@@ -2,7 +2,11 @@
 
 package integration
 
-import "strings"
+import (
+	"gotest.tools/assert"
+	"strings"
+	"testing"
+)
 
 func formatTags(tags map[string]string) string {
 	var tagsStr string
@@ -35,4 +39,17 @@ func contains(array []string, val string) bool {
 		}
 	}
 	return false
+}
+
+func getAllTags(t *testing.T, baseCmd string) map[string][]string {
+	tagsCommand, buffer := createRedirectedTestCommand(t)
+
+	err := execute(tagsCommand, baseCmd, "tags")
+	assert.NilError(t, err, "Getting tags should pass")
+
+	// Read response from buffer
+	tags := map[string][]string{}
+	_ = unmarshall(t, buffer, &tags, "Reading tags JSON should pass")
+
+	return tags
 }

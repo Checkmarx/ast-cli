@@ -8,6 +8,23 @@ import (
 	"testing"
 )
 
+const (
+	FullScanWait  = 400
+	IncScanWait   = 60
+	ScanPollSleep = 5
+)
+
+var Tags = map[string]string{
+	"it_test_tag_1": "",
+	"it_test_tag_2": "val",
+	"it_test_tag_3": "",
+}
+
+var Groups = []string{
+	"it_test_group_1",
+	"it_test_group_2",
+}
+
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	exitVal := m.Run()

@@ -50,9 +50,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastScanIncMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	logsEngineLogPath := viper.GetString(params.LogsEngineLogPathKey)
-	// Tests variables
-	viper.SetDefault("TEST_FULL_SCAN_WAIT_COMPLETED_SECONDS", 400)
-	viper.SetDefault("TEST_INC_SCAN_WAIT_COMPLETED_SECONDS", 60)
+
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
