@@ -2,7 +2,7 @@ version: 2.1 # use CircleCI 2.1
 executors:
   go-container:
     docker:
-      - image: circleci/golang:1.16.2
+      - image: circleci/golang:1.16.6
   go-lint:
     docker:
       - image: golangci/golangci-lint:v1.40.1-alpine
@@ -117,16 +117,7 @@ workflows:
       - checkmarx/circleci-kpi-shipper
   Test-workflow:
     jobs:
-      - unit-tests:
-          filters:
-            branches:
-              ignore:
-      - integration-tests:
-          filters:
-            branches:
-              ignore:
+      - unit-tests
+      - integration-tests
       - lint:
-          filters:
-            branches:
-              ignore:
           context: AWS
