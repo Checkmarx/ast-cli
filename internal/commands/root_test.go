@@ -59,6 +59,7 @@ func TestRootVersion(t *testing.T) {
 }
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
+	log.Println("Executing command with args ", args)
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = false
 	return cmd.Execute()
