@@ -33,10 +33,6 @@ func TestAuthValidate(t *testing.T) {
 
 // Register with credentials and validate the obtained id/secret pair
 func TestAuthRegister(t *testing.T) {
-
-	bindVar(t, AstUsernameEnv)
-	bindVar(t, AstPasswordEnv)
-
 	registerCommand, buffer := createRedirectedTestCommand(t)
 
 	err := execute(registerCommand,
@@ -74,10 +70,4 @@ func TestAuthRegister(t *testing.T) {
 	assert.NilError(t, err, "Reading result should pass")
 
 	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
-}
-
-func bindVar(t *testing.T, env string) {
-	err := viper.BindEnv(strings.ToLower(env), env)
-	assert.NilError(t, err, "Binding %s should pass", env)
-	viper.SetDefault(strings.ToLower(env), "wrongValue")
 }

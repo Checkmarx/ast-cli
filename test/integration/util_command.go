@@ -16,6 +16,13 @@ import (
 	"time"
 )
 
+//goland:noinspection HttpUrlsUsage
+const (
+	ProxyUserEnv = "PROXY_USERNAME"
+	ProxyPwEnv   = "PROXY_PASSWORD"
+	ProxyURLTmpl = "http://%s:%s@localhost:3128"
+)
+
 // Bind environment vars and their defaults to viper
 func bindKeysToEnvAndDefault(t *testing.T) {
 	for _, b := range params.EnvVarsBinds {
@@ -30,6 +37,7 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
+	viper.AutomaticEnv()
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
@@ -110,7 +118,12 @@ func execute(cmd *cobra.Command, args ...string) error {
 }
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
+	proxyUser := viper.GetString(ProxyUserEnv)
+	proxyPw := viper.GetString(ProxyPwEnv)
+
 	args = append(args, flag(commands.VerboseFlag))
+	args = append(args, flag(commands.ProxyFlag))
+	args = append(args, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw))
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
