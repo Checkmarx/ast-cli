@@ -56,6 +56,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
+	sastResults := viper.GetString(params.SastResultsPathKey)
+	kicsResults := viper.GetString(params.KicsResultsPathKey)
 	bfl := viper.GetString(params.BflPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	sastrm := viper.GetString(params.SastRmPathKey)
@@ -81,7 +83,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, sastResults, kicsResults, scans)
 	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
 	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(

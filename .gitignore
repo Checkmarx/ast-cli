@@ -2,6 +2,11 @@
 .vscode
 .idea
 
+# VS Code workspace files
+*.code-workspace
+
+**/.DS_Store
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
