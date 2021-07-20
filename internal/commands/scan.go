@@ -48,7 +48,9 @@ var (
 			commonParams.ToDateQueryParam}, ","))
 )
 
-func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+func NewScanCommand(scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
@@ -57,7 +59,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
-		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
+		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
 	}
 
 	createScanCmd.PersistentFlags().BoolP(waitFlag, "", false, "Wait for scan completion (default true)")
@@ -442,7 +444,8 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 }
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
-	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+	uploadsWrapper wrappers.UploadsWrapper,
+	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input []byte = []byte("{}")
 		var err error
@@ -508,8 +511,29 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				time.Sleep(time.Duration(waitDelay) * time.Second)
 			}
 		}
+		// Get the scan summary data
+		results, err := ReadResults(resultsWrapper, scanResponseModel.ID, make(map[string]string))
+		if err != nil {
+			return errors.Wrapf(err, "%s\n", failedCreating)
+		}
+		summary, err := SummaryReport(results, scanResponseModel.ID)
+		if err == nil {
+			writeConsoleSummary(summary)
+		}
 		return nil
 	}
+}
+
+func writeConsoleSummary(summary *ResultSummary) {
+	fmt.Println("")
+	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
+	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
+	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
+	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
+	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
+	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
+	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
+	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
@@ -528,12 +552,10 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 			return true
 		}
 	}
+	fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status != "Completed" {
-		fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 		os.Exit(1)
 	}
-	fmt.Println("Scan finished, final status: ", scanResponseModel.Status)
-
 	return false
 }
 
