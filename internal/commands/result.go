@@ -277,7 +277,9 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func ReadResults(resultsWrapper wrappers.ResultsWrapper, scanID string, params map[string]string) (results *wrappers.ScanResultsCollection, err error) {
+func ReadResults(resultsWrapper wrappers.ResultsWrapper,
+	scanID string,
+	params map[string]string) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *resultsHelpers.WebError
 	params[commonParams.ScanIDQueryParam] = scanID
