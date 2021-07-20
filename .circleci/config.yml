@@ -73,6 +73,11 @@ jobs:
       - run:
           name: Config Git credentials
           command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+      - run:
+          name: Config Squid host and port
+          command: |
+            echo "export PROXY_PORT=3128" >> $BASH_ENV
+            echo "export PROXY_HOST=localhost" >> $BASH_ENV
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}

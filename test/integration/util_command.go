@@ -20,7 +20,9 @@ import (
 const (
 	ProxyUserEnv = "PROXY_USERNAME"
 	ProxyPwEnv   = "PROXY_PASSWORD"
-	ProxyURLTmpl = "http://%s:%s@localhost:3128"
+	ProxyPortEnv = "PROXY_PORT"
+	ProxyHostEnv = "PROXY_HOST"
+	ProxyURLTmpl = "http://%s:%s@%s:%d"
 )
 
 // Bind environment vars and their defaults to viper
@@ -120,10 +122,12 @@ func execute(cmd *cobra.Command, args ...string) error {
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 	proxyUser := viper.GetString(ProxyUserEnv)
 	proxyPw := viper.GetString(ProxyPwEnv)
+	proxyPort := viper.GetInt(ProxyPortEnv)
+	proxyHost := viper.GetString(ProxyHostEnv)
 
 	args = append(args, flag(commands.VerboseFlag))
 	args = append(args, flag(commands.ProxyFlag))
-	args = append(args, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw))
+	args = append(args, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
