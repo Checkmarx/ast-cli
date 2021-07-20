@@ -515,11 +515,10 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		results, err := getResultsSummary(scanResponseModel.ID, resultsWrapper)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedCreating)
-		} else {
-			summary, sumErr := SummaryReport(results, scanResponseModel.ID)
-			if sumErr == nil {
-				writeConsoleSummary(summary)
-			}
+		}
+		summary, sumErr := SummaryReport(results, scanResponseModel.ID)
+		if sumErr == nil {
+			writeConsoleSummary(summary)
 		}
 		return nil
 	}
