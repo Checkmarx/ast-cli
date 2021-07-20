@@ -156,7 +156,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 		format, _ := cmd.Flags().GetString(formatFlag)
 		results, err := readResults(resultsWrapper, cmd)
 		if err == nil {
-			summary, sumErr := summaryReport(results, scanID)
+			summary, sumErr := SummaryReport(results, scanID)
 			if sumErr == nil {
 				writeSummary(targetFile, summary, format)
 			}
@@ -166,7 +166,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 	}
 }
 
-func summaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
+func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
 	summary, err := getScanInfo(scanID)
 	if err != nil {
 		return nil, err
