@@ -154,9 +154,13 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 		targetFile, _ := cmd.Flags().GetString(targetFlag)
 		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
 		format, _ := cmd.Flags().GetString(FormatFlag)
-		results, err := readResults(resultsWrapper, cmd)
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingResults)
+		}
+		results, err := ReadResults(resultsWrapper, scanID, params)
 		if err == nil {
-			summary, sumErr := summaryReport(results, scanID)
+			summary, sumErr := SummaryReport(results, scanID)
 			if sumErr == nil {
 				writeSummary(targetFile, summary, format)
 			}
@@ -166,7 +170,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 	}
 }
 
-func summaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
+func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
 	summary, err := getScanInfo(scanID)
 	if err != nil {
 		return nil, err
@@ -257,7 +261,15 @@ func writeTextSummary(targetFile string, summary *ResultSummary) {
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		results, err := readResults(resultsWrapper, cmd)
+		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		if scanID == "" {
+			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
+		}
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingResults)
+		}
+		results, err := ReadResults(resultsWrapper, scanID, params)
 		if err == nil {
 			return exportResults(cmd, results)
 		}
@@ -265,17 +277,11 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func readResults(resultsWrapper wrappers.ResultsWrapper, cmd *cobra.Command) (results *wrappers.ScanResultsCollection, err error) {
+func ReadResults(resultsWrapper wrappers.ResultsWrapper,
+	scanID string,
+	params map[string]string) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *resultsHelpers.WebError
-	scanID, _ := cmd.Flags().GetString(ScanIDFlag)
-	if scanID == "" {
-		return nil, errors.Errorf("%s: Please provide a scan ID", failedListingResults)
-	}
-	params, err := getFilters(cmd)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedListingResults)
-	}
 	params[commonParams.ScanIDQueryParam] = scanID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 	if err != nil {

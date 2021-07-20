@@ -144,7 +144,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(InsecureFlag, rootCmd.PersistentFlags().Lookup(InsecureFlag))
 
 	// Create the CLI command structure
-	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
+	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
 	// Disable BFL until ready in AST.
