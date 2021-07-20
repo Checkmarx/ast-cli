@@ -512,12 +512,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			}
 		}
 		// Get the scan summary data
-		results, err := getResultsSummary(scanResponseModel.ID, resultsWrapper)
+		results, err := ReadResults(resultsWrapper, scanResponseModel.ID, make(map[string]string))
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedCreating)
 		}
-		summary, sumErr := SummaryReport(results, scanResponseModel.ID)
-		if sumErr == nil {
+		summary, err := SummaryReport(results, scanResponseModel.ID)
+		if err == nil {
 			writeConsoleSummary(summary)
 		}
 		return nil
@@ -525,6 +525,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 }
 
 func writeConsoleSummary(summary *ResultSummary) {
+	fmt.Println("")
 	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
 	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
 	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
@@ -533,24 +534,6 @@ func writeConsoleSummary(summary *ResultSummary) {
 	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
 	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
 	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
-	fmt.Printf("        SAST Issues: %d\n", summary.SastIssues)
-	fmt.Printf("        KICS Issues: %d\n", summary.KicsIssues)
-	fmt.Printf("         SCA Issues: %d\n", summary.ScaIssues)
-}
-
-func getResultsSummary(scanID string, resultsWrapper wrappers.ResultsWrapper) (results *wrappers.ScanResultsCollection, err error) {
-	params := make(map[string]string)
-	params[commonParams.ScanIDQueryParam] = scanID
-	resultsModel, errorModel, err := resultsWrapper.GetAllResultsByScanID(params)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedListingResults)
-	}
-	if errorModel != nil {
-		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-	} else if resultsModel != nil {
-		return resultsModel, nil
-	}
-	return nil, nil
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
