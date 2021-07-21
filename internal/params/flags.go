@@ -29,12 +29,8 @@ const (
 	Branch                 = ""
 )
 
-// Roles
-const (
-	ScaAgent     = "SCA_AGENT"
-	SastEngine   = "SAST_ENGINE"
-	SastALlInOne = "SAST_ALL_IN_ONE"
-)
+// ScaAgent AST Role
+const ScaAgent = "SCA_AGENT"
 
 var (
 	Version = "dev"
