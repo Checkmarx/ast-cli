@@ -82,7 +82,7 @@ const (
 	TargetFlag               = "target"
 )
 
-// Return an AST CLI root command to execute
+// NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,

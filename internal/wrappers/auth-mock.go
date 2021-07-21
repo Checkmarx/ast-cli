@@ -6,5 +6,5 @@ func (a *AuthMockWrapper) CreateOauth2Client(*Oath2Client, string, string, strin
 	return nil, nil
 }
 
-func (a *AuthMockWrapper) SetPath(path string) {
+func (a *AuthMockWrapper) SetPath(_ string) {
 }

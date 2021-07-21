@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
@@ -40,7 +41,10 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*S
 		return nil, nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}
@@ -129,10 +133,9 @@ type ScanResultData struct {
 type ScanResultDataNode struct {
 }
 
-/*
- * NOTE: This should be read from scan-results library but that
- * isn't compatible with the mocked data from the results API???
- */
+// ScanResultsCollection
+// NOTE: This should be read from scan-results library but that
+// isn't compatible with the mocked data from the results API???
 type ScanResultsCollection struct {
 	Results    []*ScanResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`

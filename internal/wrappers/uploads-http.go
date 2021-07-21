@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -26,7 +27,9 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())
 	}
 	// Close the file later
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	// read all of the contents of our uploaded file into a
 	// byte array
@@ -39,7 +42,9 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -55,7 +60,10 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		return nil, errors.Errorf("invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {

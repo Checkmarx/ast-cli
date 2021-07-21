@@ -30,7 +30,7 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 	}, nil, nil
 }
 
-func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
+func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
 	return nil, nil, nil
 }
 

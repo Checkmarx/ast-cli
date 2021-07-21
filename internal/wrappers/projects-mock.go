@@ -18,7 +18,7 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get(params map[string]string) (
+func (p *ProjectsMockWrapper) Get(_ map[string]string) (
 	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
@@ -50,7 +50,7 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Delete(projectID string) (
+func (p *ProjectsMockWrapper) Delete(_ string) (
 	*projectsRESTApi.ErrorModel,
 	error) {
 	fmt.Println("Called Delete in ProjectsMockWrapper")

@@ -307,7 +307,10 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		return nil, errors.Errorf("%s: %s", credentialsErr.Error, credentialsErr.Description)
 	}
 
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
+
 	credentialsInfo := ClientCredentialsInfo{}
 	err = json.Unmarshal(body, &credentialsInfo)
 	if err != nil {

@@ -147,16 +147,6 @@ func NewNTLMProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 	}
 }
 
-// WrapDialContext wraps a DialContext with an NTLM Authentication to a proxy. Note that this does not support
-// using HTTPS to connect to the proxy; use NewNTLMProxyDialContext if that is required.
-func WrapDialContext(dialContext DialContext, proxyAddress, proxyUsername, proxyPassword, proxyDomain string) DialContext {
-	return func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain, func() (net.Conn, error) {
-			return dialContext(ctx, network, proxyAddress)
-		})
-	}
-}
-
 func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, baseDial func() (net.Conn, error)) (net.Conn, error) {
 	conn, err := baseDial()
 	if err != nil {
@@ -195,7 +185,7 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 		fmt.Printf("Could not read response body from proxy: %s", err)
 		return conn, err
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusProxyAuthRequired {
 		fmt.Printf("Expected %d as return status, got: %d", http.StatusProxyAuthRequired, resp.StatusCode)
 		return conn, errors.New(http.StatusText(resp.StatusCode))
@@ -230,16 +220,16 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 	resp, err = http.ReadResponse(br, connect)
 	if err != nil {
 		fmt.Printf("Could not read response from proxy: %s", err)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return conn, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Expected %d as return status, got: %d", http.StatusOK, resp.StatusCode)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
 	// Succussfully authorized with NTLM
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return conn, nil
 }
 

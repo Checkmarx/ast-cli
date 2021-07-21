@@ -132,7 +132,6 @@ func verifyConfigDir(fullPath string) {
 		err = os.Mkdir(fullPath, 0755)
 		if err != nil {
 			log.Fatal("Cannot file home directory.", err)
-			panic(err)
 		}
 	}
 }

@@ -18,7 +18,7 @@ func Print(w io.Writer, view interface{}, format string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(w, string(viewJSON))
+		_, _ = fmt.Fprintln(w, string(viewJSON))
 	} else if IsFormat(format, FormatList) {
 		entities := toEntities(view)
 		printList(w, entities)
@@ -49,16 +49,16 @@ func printList(w io.Writer, entities []*entity) {
 		return
 	}
 	columnReformat(entities)
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	maxColumn := entities[0].maxKey()
 	format := fmt.Sprintf("%%-%ds : %%v\n", maxColumn)
 	for _, e := range entities {
 		for _, p := range e.Properties {
 			if columnFilters(p.Key) {
-				fmt.Fprintf(w, format, p.Key, p.Value)
+				_, _ = fmt.Fprintf(w, format, p.Key, p.Value)
 			}
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 }
 
@@ -83,37 +83,37 @@ func printTable(w io.Writer, entities []*entity) {
 		return
 	}
 	columnReformat(entities)
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	colWidth := getColumnWidth(entities)
 	// print header
 	for i := 0; i < len(colWidth); i++ {
 		key := entities[0].Properties[i].Key
 		if columnFilters(key) {
-			fmt.Fprint(w, key, pad(colWidth[i], key))
+			_, _ = fmt.Fprint(w, key, pad(colWidth[i], key))
 		}
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	// print delimiter
 	for i := 0; i < len(colWidth); i++ {
 		key := entities[0].Properties[i].Key
 		line := strings.Repeat("-", len(entities[0].Properties[i].Key))
 		if columnFilters(key) {
-			fmt.Fprint(w, line, pad(colWidth[i], line))
+			_, _ = fmt.Fprint(w, line, pad(colWidth[i], line))
 		}
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	// print rows by columns
 	for _, e := range entities {
 		for i := 0; i < len(colWidth); i++ {
 			val := e.Properties[i].Value
 			key := entities[0].Properties[i].Key
 			if columnFilters(key) {
-				fmt.Fprint(w, val, pad(colWidth[i], val))
+				_, _ = fmt.Fprint(w, val, pad(colWidth[i], val))
 			}
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 }
 
 func pad(width int, key string) string {

@@ -255,7 +255,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize project tags response ", failedGettingTags)
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
 		}
 		return nil
 	}
