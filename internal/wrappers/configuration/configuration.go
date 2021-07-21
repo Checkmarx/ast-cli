@@ -153,8 +153,4 @@ func ShowConfiguration() {
 	fmt.Println(obfuscateString(viper.GetString(params.AstAPIKey)))
 	fmt.Printf("%30v", "Proxy: ")
 	fmt.Println(viper.GetString(params.ProxyKey))
-
-	/*
-		CX_AGENT_NAME
-	*/
 }

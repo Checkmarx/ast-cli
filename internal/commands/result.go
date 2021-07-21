@@ -325,24 +325,13 @@ func outputSingleResult(w io.Writer, model *wrappers.ScanResult) {
 	_, _ = fmt.Fprintln(w, "Query ID:", model.QueryID)
 	_, _ = fmt.Fprintln(w, "Query Name:", model.QueryName)
 	_, _ = fmt.Fprintln(w, "Severity:", model.Severity)
-	//nolint
-	// fmt.Println("CWE ID:", model.CweID)
 	_, _ = fmt.Fprintln(w, "Similarity ID:", model.SimilarityID)
 	_, _ = fmt.Fprintln(w, "First Scan ID:", model.FirstScanID)
 	_, _ = fmt.Fprintln(w, "Found At:", model.FoundAt)
 	_, _ = fmt.Fprintln(w, "First Found At:", model.FirstFoundAt)
 	_, _ = fmt.Fprintln(w, "Status:", model.Status)
-	//nolint
-	// fmt.Println("Path System ID:", model.PathSystemID)
 	_, _ = fmt.Fprintln(w)
 	_, _ = fmt.Fprintln(w, "************ Nodes ************")
-	//nolint
-	/*
-		for i := 0; i < len(model.Nodes); i++ {
-			outputSingleResultNodePretty(model.Nodes[i])
-			fmt.Println()
-		}
-	*/
 }
 
 type ResultSummary struct {
