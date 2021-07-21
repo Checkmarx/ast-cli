@@ -45,9 +45,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := projectsRESTApi.ErrorModel{}
