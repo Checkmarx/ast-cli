@@ -1,5 +1,5 @@
 FROM golang:1.16.4-alpine3.13
 
-COPY cx /app/bin/cx
+COPY dist/ast-cli_linux_amd64/cx /app/bin/cx
 
 ENTRYPOINT ["/app/bin/cx"]
