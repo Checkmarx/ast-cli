@@ -4,16 +4,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
+func NewUtilsCommand() *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "AST Utility functions",
 	}
-	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	envCheckCmd := NewEnvCheckCommand()
 	var completionCmd = &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
@@ -78,7 +76,7 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Comm
 		},
 	}
 
-	scanCmd.AddCommand(healthCheckCmd, completionCmd, envCheckCmd)
+	scanCmd.AddCommand(completionCmd, envCheckCmd)
 
 	return scanCmd
 }

@@ -2,8 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var singleNodeLogger = log.New(deploymentLogWriter{}, "", 0)
 
 const (
 	KeyValuePairSize         = 2
@@ -88,7 +92,6 @@ func NewAstCLI(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
-	healthCheckWrapper wrappers.HealthCheckWrapper,
 	authWrapper wrappers.AuthWrapper,
 ) *cobra.Command {
 	// Create the root
@@ -141,7 +144,7 @@ func NewAstCLI(
 	resultCmd := NewResultCommand(resultsWrapper)
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := NewUtilsCommand(healthCheckWrapper)
+	utilsCmd := NewUtilsCommand()
 	configCmd := NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
@@ -156,9 +159,16 @@ func NewAstCLI(
 	return rootCmd
 }
 
+type deploymentLogWriter struct {
+}
+
+func (writer deploymentLogWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().Format(time.RFC3339) + " " + string(bytes))
+}
+
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(VerboseFlag) {
-		writeToStandardOutput(msg)
+		singleNodeLogger.Println(msg)
 	}
 }
 
