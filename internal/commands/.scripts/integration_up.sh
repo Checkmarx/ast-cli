@@ -9,6 +9,7 @@ docker run \
 go test \
   -tags integration \
   -v \
+  -timeout 30m \
   -coverpkg github.com/checkmarxDev/ast-cli/internal/commands,github.com/checkmarxDev/ast-cli/internal/wrappers \
   -coverprofile cover.out \
   github.com/checkmarxDev/ast-cli/test/integration
