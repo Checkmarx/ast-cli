@@ -8,24 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
-	ssiWrapper wrappers.SastMetadataWrapper,
-	rmWrapper wrappers.SastRmWrapper,
-	logsWrapper wrappers.LogsWrapper,
-	queriesWrapper wrappers.QueriesWrapper,
-	uploadsWrapper wrappers.UploadsWrapper,
-) *cobra.Command {
+func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "AST Utility functions",
 	}
-	/**
-		Remove command not supported by AST
-		ssiCmd := NewSastMetadataCommand(ssiWrapper)
-		rmCmd := NewSastResourcesCommand(rmWrapper)
-		queriesCmd := NewQueryCommand(queriesWrapper, uploadsWrapper)
-		logsCmd := NewLogsCommand(logsWrapper)
-	**/
 	healthCheckCmd := NewHealthCheckCommand(healthCheckWrapper)
 	envCheckCmd := NewEnvCheckCommand()
 	var completionCmd = &cobra.Command{
@@ -90,10 +77,6 @@ func NewUtilsCommand(healthCheckWrapper wrappers.HealthCheckWrapper,
 			}
 		},
 	}
-	/**
-	Remove command not supported by AST
-	scanCmd.AddCommand(healthCheckCmd, ssiCmd, rmCmd, queriesCmd, logsCmd, completionCmd, envCheckCmd)
-	*/
 
 	scanCmd.AddCommand(healthCheckCmd, completionCmd, envCheckCmd)
 

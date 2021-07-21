@@ -68,10 +68,6 @@ const (
 	AstAPIKeyFlag            = "apikey"
 	AstAPIKeyUsage           = "The API Key to login to AST with"
 	RepoURLFlag              = "repo-url"
-	QueriesRepoNameFlag      = "name"
-	QueriesRepoNameSh        = "n"
-	QueriesRepoActivateFlag  = "activate"
-	QueriesRepoActivateSh    = "a"
 	ClientRolesFlag          = "roles"
 	ClientRolesSh            = "r"
 	ClientDescriptionFlag    = "description"
@@ -92,13 +88,8 @@ func NewAstCLI(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
-	bflWrapper wrappers.BFLWrapper,
-	rmWrapper wrappers.SastRmWrapper,
 	healthCheckWrapper wrappers.HealthCheckWrapper,
-	queriesWrapper wrappers.QueriesWrapper,
 	authWrapper wrappers.AuthWrapper,
-	ssiWrapper wrappers.SastMetadataWrapper,
-	logsWrapper wrappers.LogsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -148,18 +139,15 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
-	// Disable BFL until ready in AST.
-	// bflCmd := NewBFLCommand(bflWrapper)
 	versionCmd := NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
+	utilsCmd := NewUtilsCommand(healthCheckWrapper)
 	configCmd := NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		// bflCmd,
 		authCmd,
 		utilsCmd,
 		configCmd,

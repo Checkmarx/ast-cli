@@ -45,9 +45,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	results := viper.GetString(params.ResultsPathKey)
 	sastResults := viper.GetString(params.SastResultsPathKey)
 	kicsResults := viper.GetString(params.KicsResultsPathKey)
-	bfl := viper.GetString(params.BflPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
-	sastrm := viper.GetString(params.SastRmPathKey)
 	webAppHlthChk := viper.GetString(params.AstWebAppHealthCheckPathKey)
 	keyCloakWebAppHlthChk := viper.GetString(params.AstKeycloakWebAppHealthCheckPathKey)
 	healthcheck := viper.GetString(params.HealthcheckPathKey)
@@ -58,19 +56,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	healthcheckLoggingPath := viper.GetString(params.HealthcheckLoggingPathKey)
 	healthcheckScanFlowPath := viper.GetString(params.HealthcheckScanFlowPathKey)
 	healthcheckSastEnginesPath := viper.GetString(params.HealthcheckSastEnginesPathKey)
-	queries := viper.GetString(params.QueriesPathKey)
-	queriesClone := viper.GetString(params.QueriesClonePathKey)
-	sastScanInc := viper.GetString(params.SastMetadataPathKey)
-	sastScanIncMetricsPath := viper.GetString(params.SastMetadataMetricsPathKey)
-	logs := viper.GetString(params.LogsPathKey)
-	logsEngineLogPath := viper.GetString(params.LogsEngineLogPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, sastResults, kicsResults, scans)
-	bflWrapper := wrappers.NewHTTPBFLWrapper(bfl)
-	rmWrapper := wrappers.NewSastRmHTTPWrapper(sastrm)
 	healthCheckWrapper := wrappers.NewHealthCheckHTTPWrapper(
 		webAppHlthChk,
 		keyCloakWebAppHlthChk,
@@ -82,26 +72,15 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckScanFlowPath),
 		fmt.Sprintf("%s/%s", healthcheck, healthcheckSastEnginesPath),
 	)
-	queriesWrapper := wrappers.NewQueriesHTTPWrapper(queries, fmt.Sprintf("%s/%s", queries, queriesClone))
 	authWrapper := wrappers.NewAuthHTTPWrapper()
-	sastMetadataWrapper := wrappers.NewSastMetadataHTTPWrapper(sastScanInc,
-		fmt.Sprintf("%s/%s", sastScanInc, sastScanIncMetricsPath),
-	)
-	logsWrapper := wrappers.NewLogsWrapper(logs,
-		fmt.Sprintf("%s/%s", logs, logsEngineLogPath))
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
-		bflWrapper,
-		rmWrapper,
 		healthCheckWrapper,
-		queriesWrapper,
 		authWrapper,
-		sastMetadataWrapper,
-		logsWrapper,
 	)
 	return astCli
 }
