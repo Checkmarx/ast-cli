@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 	"io"
@@ -25,7 +26,7 @@ func TestResultList(t *testing.T) {
 
 	err := execute(resultCommand,
 		"result", "list",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting results should pass")
@@ -61,7 +62,7 @@ func TestResultListPretty(t *testing.T) {
 // Create a scan and test getting its summary in text
 func TestResultSummaryText(t *testing.T) {
 
-	scanID, projectID, result := executeResultSummary(t, commands.FormatText)
+	scanID, projectID, result := executeResultSummary(t, util.FormatText)
 
 	assert.Assert(t, strings.Contains(result, "Scan ID: "+scanID))
 	assert.Assert(t, strings.Contains(result, "Project ID: "+projectID))
@@ -70,7 +71,7 @@ func TestResultSummaryText(t *testing.T) {
 // Create a scan and test getting its summary in HTML
 func TestResultSummaryHtml(t *testing.T) {
 
-	scanID, projectID, result := executeResultSummary(t, commands.FormatHTML)
+	scanID, projectID, result := executeResultSummary(t, util.FormatHTML)
 
 	assert.Assert(t, strings.Contains(result, fmt.Sprintf("<div>Scan: %s</div>", scanID)))
 	assert.Assert(t, strings.Contains(result, projectID))
@@ -100,7 +101,7 @@ func executeResultSummary(t *testing.T, format string) (string, string, string) 
 
 // Create a scan and test getting its summary into an html file
 func TestResultSummaryOutputFileHtml(t *testing.T) {
-	scanID, projectID, html := executeResultSummaryToFile(t, "output.html", commands.FormatHTML)
+	scanID, projectID, html := executeResultSummaryToFile(t, "output.html", util.FormatHTML)
 
 	assert.Assert(t, strings.Contains(html, fmt.Sprintf("<div>Scan: %s</div>", scanID)), "HTML should contain scan id")
 	assert.Assert(t, strings.Contains(html, projectID), "HTML should contain project id")
@@ -108,7 +109,7 @@ func TestResultSummaryOutputFileHtml(t *testing.T) {
 
 // Create a scan and test getting its summary into a text file
 func TestResultSummaryOutputFileText(t *testing.T) {
-	scanID, projectID, text := executeResultSummaryToFile(t, "output.txt", commands.FormatText)
+	scanID, projectID, text := executeResultSummaryToFile(t, "output.txt", util.FormatText)
 
 	assert.Assert(t, strings.Contains(text, fmt.Sprintf("Scan ID: %s", scanID)), "Text file should contain scan id")
 	assert.Assert(t, strings.Contains(text, fmt.Sprintf("Project ID: %s", projectID)), "Text file should contain project id")

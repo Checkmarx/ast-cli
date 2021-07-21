@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"log"
 	"os"
 	"strings"
@@ -53,11 +54,7 @@ const (
 	InsecureFlagUsage        = "Ignore TLS certificate validations"
 	FormatFlag               = "format"
 	FormatFlagUsageFormat    = "Format for the output. One of %s"
-	FormatJSON               = "json"
-	FormatList               = "list"
-	FormatTable              = "table"
-	FormatHTML               = "html"
-	FormatText               = "text"
+
 	FilterFlag               = "filter"
 	BaseURIFlag              = "base-uri"
 	ProxyFlag                = "proxy"
@@ -142,10 +139,10 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
-	versionCmd := NewVersionCommand()
+	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := NewUtilsCommand()
-	configCmd := NewConfigCommand()
+	utilsCmd := util.NewUtilsCommand()
+	configCmd := util.NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
@@ -212,5 +209,5 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(FormatFlag)
-	return Print(cmd.OutOrStdout(), view, f)
+	return util.Print(cmd.OutOrStdout(), view, f)
 }

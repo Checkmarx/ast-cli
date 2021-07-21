@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"io/ioutil"
 	"log"
 	"os"
@@ -117,9 +118,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 	}
 
 	addFormatFlagToMultipleCommands([]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		FormatTable, FormatList, FormatJSON)
+		util.FormatTable, util.FormatList, util.FormatJSON)
 	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd},
-		FormatList, FormatTable, FormatJSON)
+		util.FormatList, util.FormatTable, util.FormatJSON)
 	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd)
 	return scanCmd
 }

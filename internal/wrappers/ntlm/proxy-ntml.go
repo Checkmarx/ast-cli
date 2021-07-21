@@ -1,4 +1,4 @@
-package wrappers
+package ntlm
 
 import (
 	"bufio"

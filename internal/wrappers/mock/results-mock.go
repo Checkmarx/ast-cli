@@ -1,6 +1,7 @@
-package wrappers
+package mock
 
 import (
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	resultsRaw "github.com/checkmarxDev/sast-results/pkg/web/path/raw"
@@ -30,7 +31,7 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 	}, nil, nil
 }
 
-func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
+func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *resultsHelpers.WebError, error) {
 	return nil, nil, nil
 }
 

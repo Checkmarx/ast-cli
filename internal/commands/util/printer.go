@@ -1,4 +1,4 @@
-package commands
+package util
 
 import (
 	"encoding/json"
@@ -10,6 +10,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	FormatJSON  = "json"
+	FormatList  = "list"
+	FormatTable = "table"
+	FormatHTML  = "html"
+	FormatText  = "text"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
 	"os"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
@@ -16,7 +17,7 @@ const (
 
 func main() {
 	bindKeysToEnvAndDefault()
-	wrappers.LoadConfiguration()
+	configuration.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)

@@ -1,10 +1,10 @@
-package commands
+package util
 
 import (
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +20,7 @@ func NewConfigCommand() *cobra.Command {
 		Use:   "configure",
 		Short: "Manage scan configurations",
 		Run: func(cmd *cobra.Command, args []string) {
-			wrappers.PromptConfiguration()
+			configuration.PromptConfiguration()
 		},
 	}
 
@@ -28,7 +28,7 @@ func NewConfigCommand() *cobra.Command {
 		Use:   "show",
 		Short: "Shows current profiles configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			wrappers.ShowConfiguration()
+			configuration.ShowConfiguration()
 		},
 	}
 
@@ -48,17 +48,17 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 		propName, _ := cmd.Flags().GetString(propNameFlag)
 		propValue, _ := cmd.Flags().GetString(propValFlag)
 		if propName == params.AstAPIKey {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else if propName == params.BaseURIKey {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else if propName == params.BaseAuthURIKey {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else if strings.EqualFold(propName, params.ProxyKey) {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else if propName == params.AccessKeySecretConfigKey {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else if propName == params.AccessKeyIDConfigKey {
-			wrappers.SetConfigProperty(propName, propValue)
+			configuration.SetConfigProperty(propName, propValue)
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)
 		}

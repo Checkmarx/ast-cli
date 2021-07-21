@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/ntlm"
 	"io"
 	"io/ioutil"
 	"net"
@@ -86,7 +87,7 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	domainStr := viper.GetString(commonParams.ProxyDomainKey)
 	proxyUser := u.User.Username()
 	proxyPass, _ := u.User.Password()
-	ntlmDialContext := NewNTLMProxyDialContext(dialer, u, proxyUser, proxyPass, domainStr, nil)
+	ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, u, proxyUser, proxyPass, domainStr, nil)
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy:       nil,

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"io"
 	"os"
 	"strings"
@@ -102,7 +103,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
 	listResultsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(listResultsCmd, FormatList, FormatJSON)
+	addFormatFlag(listResultsCmd, util.FormatList, util.FormatJSON)
 	addScanIDFlag(listResultsCmd, "ID to report on.")
 
 	summaryCmd := &cobra.Command{
@@ -111,7 +112,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
 	}
 	summaryCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(summaryCmd, FormatHTML, FormatText)
+	addFormatFlag(summaryCmd, util.FormatHTML, util.FormatText)
 	addScanIDFlag(summaryCmd, "ID to report on.")
 	summaryCmd.PersistentFlags().String(TargetFlag, "console", "Output file")
 
@@ -202,7 +203,7 @@ func writeSummary(w io.Writer, targetFile string, summary *ResultSummary, format
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
-			if format == FormatHTML {
+			if format == util.FormatHTML {
 				buffer := new(bytes.Buffer)
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
 				_, _ = fmt.Fprintln(w, buffer)
@@ -210,7 +211,7 @@ func writeSummary(w io.Writer, targetFile string, summary *ResultSummary, format
 				writeTextSummary(w, "", summary)
 			}
 		} else {
-			if format == FormatHTML {
+			if format == util.FormatHTML {
 				f, err := os.Create(targetFile)
 				if err == nil {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
@@ -297,7 +298,7 @@ func ReadResults(resultsWrapper wrappers.ResultsWrapper,
 func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
 	formatFlag, _ := cmd.Flags().GetString(FormatFlag)
-	if IsFormat(formatFlag, FormatJSON) {
+	if util.IsFormat(formatFlag, util.FormatJSON) {
 		var resultsJSON []byte
 		resultsJSON, err = json.Marshal(results)
 		if err != nil {

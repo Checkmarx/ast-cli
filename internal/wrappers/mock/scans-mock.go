@@ -1,7 +1,8 @@
-package wrappers
+package mock
 
 import (
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
 	"github.com/google/uuid"
 
@@ -11,7 +12,7 @@ import (
 type ScansMockWrapper struct {
 }
 
-func (m *ScansMockWrapper) GetWorkflowByID(_ string) ([]*ScanTaskResponseModel, *scansRESTApi.ErrorModel, error) {
+func (m *ScansMockWrapper) GetWorkflowByID(_ string) ([]*wrappers.ScanTaskResponseModel, *scansRESTApi.ErrorModel, error) {
 	return nil, nil, nil
 }
 

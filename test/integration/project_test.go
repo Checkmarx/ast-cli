@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"github.com/google/uuid"
 	"testing"
 
@@ -62,7 +63,7 @@ func TestCreateAlreadyExisting(t *testing.T) {
 
 	err := execute(createASTIntegrationTestCommand(t),
 		"project", "create",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ProjectName), showProject(t, projectID).Name,
 	)
 	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
@@ -77,7 +78,7 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 
 	err := execute(createProjCommand,
 		"project", "create",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ProjectName), projectName,
 		flag(commands.TagList), tagsStr,
 		flag(commands.GroupList), groupsStr,
@@ -108,7 +109,7 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 
 	err := execute(getAllCommand,
 		"project", "list",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.FilterFlag), idFilter,
 	)
 	assert.NilError(t, err, "Getting the project should pass")
@@ -124,7 +125,7 @@ func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponse
 
 	err := execute(showCommand,
 		"project", "show",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ProjectIDFlag), projectID,
 	)
 	assert.NilError(t, err, "Getting the project should pass")

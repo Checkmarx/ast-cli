@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"github.com/google/uuid"
 	"log"
 	"testing"
@@ -68,7 +69,7 @@ func TestScanWorkflow(t *testing.T) {
 	err := execute(workflowCommand,
 		"scan", "workflow",
 		flag(commands.ScanIDFlag), scanID,
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 	)
 	assert.NilError(t, err, "Workflow should pass")
 
@@ -153,7 +154,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(commands.SourcesFlag), source,
 		flag(commands.ScanTypes), "sast",
 		flag(commands.PresetName), "Checkmarx Default",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.TagList), formatTags(tags),
 		flag(commands.FilterFlag), "!*.zip",
 	}
@@ -191,7 +192,7 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
 	err := execute(getCommand,
 		"scan", "list",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.FilterFlag), scanFilter,
 	)
 	assert.NilError(t, err, "Getting the scan should pass")
@@ -209,7 +210,7 @@ func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 
 	err := execute(getCommand,
 		"scan", "show",
-		flag(commands.FormatFlag), commands.FormatJSON,
+		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting the scan should pass")
