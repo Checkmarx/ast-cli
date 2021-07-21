@@ -9,8 +9,14 @@ on:
       baseAuthUri:
         description: 'AST Base Auth URI'
         required: true
-      secret_token:
+      secretToken:
         description: 'AST API Key'
+        required: true
+      username:
+        description: 'AST Username'
+        required: true
+      password:
+        description: 'AST Password'
         required: true
       tenant:
         description: 'Tenant'
@@ -25,9 +31,13 @@ jobs:
       - name: Masking inputs
         id: add_masks
         run: |
-          INP_SECRET_TOKEN=$(jq -r '.inputs.secret_token' $GITHUB_EVENT_PATH)
+          INP_SECRET_TOKEN=$(jq -r '.inputs.secretToken' $GITHUB_EVENT_PATH)
           echo ::add-mask::$INP_SECRET_TOKEN
           echo CX_APIKEY="$INP_SECRET_TOKEN" >> $GITHUB_ENV
+
+          INP_PASSWORD=$(jq -r '.inputs.password' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_PASSWORD
+          echo CX_AST_PASSWORD="$INP_PASSWORD" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2.3.4
       - name: Install Go
@@ -45,6 +55,9 @@ jobs:
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
           CX_TENANT: ${{ github.event.inputs.tenant }}
+          PROXY_HOST: localhost
+          PROXY_PORT: 3128
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh
+          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_down.sh
