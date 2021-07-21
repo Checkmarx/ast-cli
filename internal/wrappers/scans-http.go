@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
@@ -49,9 +48,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCol
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -98,9 +95,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -154,9 +149,7 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

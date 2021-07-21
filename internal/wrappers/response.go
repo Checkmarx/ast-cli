@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
 	projectsApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
@@ -21,9 +20,7 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotFound:
@@ -48,9 +45,7 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -81,9 +76,7 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -108,9 +101,7 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
