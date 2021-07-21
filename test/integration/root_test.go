@@ -10,7 +10,6 @@ import (
 
 const (
 	FullScanWait  = 60
-	IncScanWait   = 30
 	ScanPollSleep = 5
 	Dir           = ".."
 	Zip           = "sources.zip"
