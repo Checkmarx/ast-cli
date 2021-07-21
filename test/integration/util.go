@@ -3,9 +3,10 @@
 package integration
 
 import (
-	"gotest.tools/assert"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func formatTags(tags map[string]string) string {

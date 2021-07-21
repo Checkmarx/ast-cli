@@ -5,9 +5,10 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
-	"gotest.tools/assert"
 	"io/ioutil"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 // Read and unmarshall json from 'src' into 'dest'

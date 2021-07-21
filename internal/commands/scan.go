@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	"github.com/pkg/errors"
 

@@ -3,9 +3,10 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"strings"
 	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 

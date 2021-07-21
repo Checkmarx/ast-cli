@@ -2,11 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
 

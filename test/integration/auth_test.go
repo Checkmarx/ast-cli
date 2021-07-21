@@ -4,13 +4,14 @@ package integration
 
 import (
 	"fmt"
+	"io"
+	"strings"
+	"testing"
+
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
-	"io"
-	"strings"
-	"testing"
 )
 
 const (

@@ -5,12 +5,13 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/google/uuid"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/google/uuid"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"

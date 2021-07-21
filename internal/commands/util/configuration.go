@@ -1,10 +1,10 @@
 package util
 
 import (
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

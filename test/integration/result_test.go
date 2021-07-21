@@ -4,15 +4,16 @@ package integration
 
 import (
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-	"gotest.tools/assert"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"gotest.tools/assert"
 )
 
 // Create a scan and test getting its results

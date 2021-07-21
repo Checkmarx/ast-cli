@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 	"io"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
