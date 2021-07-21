@@ -121,7 +121,7 @@ workflows:
   Visibility-workflow:
     jobs:
       - checkmarx/circleci-kpi-shipper
-  Test-workflow:
+  Validation-workflow:
     jobs:
       - unit-tests:
           filters:
