@@ -6,4 +6,9 @@ docker run \
   -v $(pwd)/internal/commands/.scripts/passwords:/etc/squid/passwords \
   datadog/squid
 
-go test -tags integration -v github.com/checkmarxDev/ast-cli/test/integration
+go test \
+  -tags integration \
+  -v \
+  -coverpkg github.com/checkmarxDev/ast-cli/internal/commands,github.com/checkmarxDev/ast-cli/internal/wrappers \
+  -coverprofile cover.out \
+  github.com/checkmarxDev/ast-cli/test/integration
