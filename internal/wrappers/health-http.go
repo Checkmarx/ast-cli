@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	errors "github.com/pkg/errors"
+	"github.com/pkg/errors"
 )
 
 type healthCheckHTTPWrapper struct {

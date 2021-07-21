@@ -212,15 +212,15 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	if _, ok := info["config"]; !ok {
 		_ = json.Unmarshal([]byte("[]"), &configArr)
 	}
-	var sastConfig map[string]interface{} = addSastScan(cmd)
+	var sastConfig = addSastScan(cmd)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig map[string]interface{} = addKicsScan()
+	var kicsConfig = addKicsScan()
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig map[string]interface{} = addScaScan()
+	var scaConfig = addScaScan()
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -444,7 +444,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input []byte = []byte("{}")
+		var input = []byte("{}")
 		var err error
 		determineScanTypes(cmd)
 		validateScanTypes()

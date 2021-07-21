@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	wrappers "github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"github.com/spf13/cobra"
@@ -125,7 +125,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command) {
 
 func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input []byte = []byte("{}")
+		var input = []byte("{}")
 		var err error
 		err = updateProjectRequestValues(&input, cmd)
 		if err != nil {

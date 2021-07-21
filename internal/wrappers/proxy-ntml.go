@@ -287,7 +287,7 @@ func (field negotiateFlags) Has(flags negotiateFlags) bool {
 }
 
 func (field *negotiateFlags) Unset(flags negotiateFlags) {
-	*field ^= (*field & flags)
+	*field ^= *field & flags
 }
 
 func (h messageHeader) IsValid() bool {
