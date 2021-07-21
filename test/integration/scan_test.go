@@ -26,7 +26,8 @@ type ScanWorkflowResponse struct {
 // Create scans from current dir, zip and url and perform assertions in executeScanTest
 func TestScansE2E(t *testing.T) {
 
-	scanID, projectID := createScan(t, Dir, Tags)
+	scanID, projectID := createScan(t, Zip, Tags)
+	defer deleteProject(t, projectID)
 
 	executeScanTest(t, projectID, scanID, Tags)
 }
@@ -34,6 +35,7 @@ func TestScansE2E(t *testing.T) {
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
+	defer deleteProject(t, projectID)
 
 	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
 
@@ -42,16 +44,15 @@ func TestNoWaitScan(t *testing.T) {
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
-	scanID, projectID := createScanIncremental(t, Zip, map[string]string{})
+	projectName := fmt.Sprintf("integration_test_incremental_%s", uuid.New().String())
 
-	defer deleteScan(t, scanID)
+	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
+	defer deleteProject(t, projectID)
+	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
+
+	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
 
 	executeScanTest(t, projectID, scanID, map[string]string{})
-
-	scanIDInc, projectIDInc := createScanIncremental(t, ZipInc, map[string]string{})
-
-	defer deleteScan(t, scanIDInc)
-
 	executeScanTest(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
@@ -101,8 +102,6 @@ func TestCancelScan(t *testing.T) {
 // - Assert all tags exist and are assigned to the scan
 // - Delete the scan and assert it is deleted
 func executeScanTest(t *testing.T, projectID string, scanID string, tags map[string]string) {
-	defer deleteProject(t, projectID)
-
 	response := listScanByID(t, scanID)
 
 	assert.Equal(t, len(response), 1, "Total scans should be 1")
@@ -138,12 +137,16 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 	return executeCreateScan(t, append(getCreateArgs(source, tags), "--nowait"))
 }
 
-func createScanIncremental(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), "--sast-incremental"))
+func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name), "--sast-incremental"))
 }
 
 func getCreateArgs(source string, tags map[string]string) []string {
 	projectName := fmt.Sprintf("integration_test_scan_%s", uuid.New().String())
+	return getCreateArgsWithName(source, tags, projectName)
+}
+
+func getCreateArgsWithName(source string, tags map[string]string, projectName string) []string {
 	args := []string{
 		"scan", "create",
 		flag(commands.ProjectName), projectName,
