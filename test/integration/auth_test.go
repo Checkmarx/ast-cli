@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -70,4 +71,21 @@ func TestAuthRegister(t *testing.T) {
 	assert.NilError(t, err, "Reading result should pass")
 
 	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
+}
+
+func TestFailProxyAuth(t *testing.T) {
+	proxyUser := viper.GetString(ProxyUserEnv)
+	proxyPort := viper.GetInt(ProxyPortEnv)
+	proxyHost := viper.GetString(ProxyHostEnv)
+	proxyArg := fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyUser, proxyHost, proxyPort)
+
+	validate := createASTIntegrationTestCommand(t)
+
+	args := []string{"auth", "validate", flag(commands.VerboseFlag), flag(commands.ProxyFlag), proxyArg}
+	validate.SetArgs(args)
+
+	err := validate.Execute()
+	assert.Assert(t, err != nil, "Executing without proxy should fail")
+	//goland:noinspection GoNilness
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "failed authentication"))
 }

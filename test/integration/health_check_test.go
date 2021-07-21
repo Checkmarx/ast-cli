@@ -4,39 +4,39 @@ package integration
 
 import (
 	"fmt"
+	"github.com/checkmarxDev/ast-cli/internal/params"
+	"gotest.tools/assert"
+	"io/ioutil"
+	"strings"
 	"testing"
 )
 
-func TestSastHealthCheck(t *testing.T) {
-	// TODO: fix this
-	fmt.Println("TODO: Disabled healthcheck because its not working.")
-	// healthCheckCmd := createASTIntegrationTestCommand(t)
-	// b := bytes.NewBufferString("")
-	// healthCheckCmd.SetOut(b)
-	/*
-		err := execute(healthCheckCmd, "single-node", "health-check", "--role", "SAST_ALL_IN_ONE")
-		assert.NilError(t, err, "Health check should pass")
-		out, err := ioutil.ReadAll(b)
-		assert.NilError(t, err, "Should read the command output")
-		s := string(out)
-		assert.Assert(t, !(strings.Contains(s, "Failure ") || strings.Contains(s, "Error ")),
-			"Command output should be success and not %v", s)
-	*/
+var roles = []string{
+	params.ScaAgent,
+	params.SastEngine,
+	params.SastALlInOne,
 }
 
-func TestScaHealthCheck(t *testing.T) {
-	// TODO: fix this
-	fmt.Println("TODO: Disabled healthcheck because its not working.")
-	/*
-		healthCheckCmd := createASTIntegrationTestCommand(t)
-		b := bytes.NewBufferString("")
-		healthCheckCmd.SetOut(b)
-		err := execute(healthCheckCmd, "single-node", "health-check", "--role", "SCA_AGENT")
-		assert.NilError(t, err, "Health check should pass")
-		out, err := ioutil.ReadAll(b)
-		assert.NilError(t, err, "Should read the command output")
-		s := string(out)
-		assert.Assert(t, !(strings.Contains(s, "Failure ") || strings.Contains(s, "Error ")),
-			"Command output should be success and not %v", s)
-	*/
+func TestHealthCheck(t *testing.T) {
+	for _, role := range roles {
+		fmt.Printf("Health check test for role %s\n", role)
+		executeHealthCheckTest(t, role)
+	}
+}
+
+func executeHealthCheckTest(t *testing.T, role string) {
+	healthCheckCommand, outBuffer := createRedirectedTestCommand(t)
+
+	err := execute(healthCheckCommand, "utils", "health-check", "--role", role)
+	assert.NilError(t, err, "Health check for role %s should pass", role)
+
+	out, err := ioutil.ReadAll(outBuffer)
+	assert.NilError(t, err, "Should read the command output for role %s")
+
+	outputStr := strings.ToLower(string(out))
+
+	assert.Assert(t, !strings.Contains(outputStr, "error"),
+		"Command output for role %s should not contain error", role)
+	assert.Assert(t, !strings.Contains(outputStr, "fail"),
+		"Command output for role %s should not contain fail", role)
 }

@@ -16,14 +16,6 @@ import (
 	"gotest.tools/assert"
 )
 
-// Sources to use in scans
-const (
-	sources    = "sources.zip"
-	sourcesInc = "sources_inc.zip"
-	fastRepo   = "https://github.com/CheckmarxDev/ast-cli"
-	slowRepo   = "https://github.com/WebGoat/WebGoat"
-)
-
 // Type for scan workflow response, used to assert the validity of the command's response
 type ScanWorkflowResponse struct {
 	Source      string    `json:"source"`
@@ -31,47 +23,41 @@ type ScanWorkflowResponse struct {
 	Information string    `json:"info"`
 }
 
-// Create scans from zip and url and perform assertions in executeScanTest
+// Create scans from current dir, zip and url and perform assertions in executeScanTest
 func TestScansE2E(t *testing.T) {
 
-	for _, source := range []string{sources, fastRepo} {
-		scanID, projectID := createScan(t, source, Tags)
+	scanID, projectID := createScan(t, Dir, Tags)
 
-		executeScanTest(t, projectID, scanID, Tags)
-	}
+	executeScanTest(t, projectID, scanID, Tags)
 }
 
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
-	scanID, projectID := createScanNoWait(t, sources, map[string]string{})
+	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 
 	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
 
-	executeScanTest(t, projectID, scanID, Tags)
+	executeScanTest(t, projectID, scanID, map[string]string{})
 }
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
-	scanID, projectID := createScanIncremental(t, sources, map[string]string{})
+	scanID, projectID := createScanIncremental(t, Zip, map[string]string{})
 
 	defer deleteScan(t, scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
+	executeScanTest(t, projectID, scanID, map[string]string{})
 
-	executeScanTest(t, projectID, scanID, Tags)
+	scanIDInc, projectIDInc := createScanIncremental(t, ZipInc, map[string]string{})
 
-	scanID, projectID = createScanIncremental(t, sourcesInc, map[string]string{})
+	defer deleteScan(t, scanIDInc)
 
-	defer deleteScan(t, scanID)
-
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, IncScanWait, ScanPollSleep), "Polling should complete")
-
-	executeScanTest(t, projectID, scanID, Tags)
+	executeScanTest(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
 // Get a scan workflow and assert its structure
 func TestScanWorkflow(t *testing.T) {
-	scanID, projectID := createScanNoWait(t, sources, map[string]string{})
+	scanID, projectID := createScan(t, Dir, map[string]string{})
 
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
@@ -93,7 +79,7 @@ func TestScanWorkflow(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
-	scanID, projectID := createScanNoWait(t, slowRepo, map[string]string{})
+	scanID, projectID := createScanNoWait(t, SlowRepo, map[string]string{})
 
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
@@ -106,9 +92,7 @@ func TestCancelScan(t *testing.T) {
 	)
 	assert.NilError(t, err, "Cancel should pass")
 
-	scan := showScan(t, scanID)
-
-	assert.Assert(t, scan.Status == scansApi.ScanCanceled, "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
 }
 
 // Generic scan test execution
@@ -164,10 +148,11 @@ func getCreateArgs(source string, tags map[string]string) []string {
 		"scan", "create",
 		flag(commands.ProjectName), projectName,
 		flag(commands.SourcesFlag), source,
-		flag(commands.ScanTypes), "sast,kics,sca",
+		flag(commands.ScanTypes), "sast",
 		flag(commands.PresetName), "Checkmarx Default",
 		flag(commands.FormatFlag), commands.FormatJSON,
 		flag(commands.TagList), formatTags(tags),
+		flag(commands.FilterFlag), "!*.zip",
 	}
 	return args
 }
@@ -175,7 +160,7 @@ func getCreateArgs(source string, tags map[string]string) []string {
 func executeCreateScan(t *testing.T, args []string) (string, string) {
 	createCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(createCommand, args...)
+	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
 	assert.NilError(t, err, "Creating a scan should pass")
 
 	createdScan := scansRESTApi.ScanResponseModel{}

@@ -83,6 +83,7 @@ const (
 	ProfileFlag              = "profile"
 	ProfileFlagUsage         = "The default configuration profile"
 	Help                     = "help"
+	TargetFlag               = "target"
 )
 
 // Return an AST CLI root command to execute

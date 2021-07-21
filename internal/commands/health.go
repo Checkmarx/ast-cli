@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -63,31 +64,25 @@ func getLongestWidth(checkViews []*healthView) int {
 	return width
 }
 
-func printHealthChecks(checkViews []*healthView) {
+func printHealthChecks(w io.Writer, checkViews []*healthView) {
 	longestWidth := getLongestWidth(checkViews)
 	for _, checkView := range checkViews {
-		fmt.Println(checkView.Name)
-		fmt.Println(strings.Repeat("-", len(checkView.Name)))
+		_, _ = fmt.Fprintf(w, checkView.Name+"\n"+strings.Repeat("-", len(checkView.Name))+"\n")
 		if checkView.Error != nil {
-			fmt.Printf(errorColor, checkView.Error)
-			fmt.Println()
+			_, _ = fmt.Fprintf(w, errorColor+"\n", checkView.Error)
 		} else {
 			for _, subCheck := range checkView.SubChecks {
-				fmt.Print(subCheck.Name, pad(longestWidth-len(subCheck.Name)+reportBlankPadWidth, ""))
+				_, _ = fmt.Fprint(w, subCheck.Name, pad(longestWidth-len(subCheck.Name)+reportBlankPadWidth, ""))
 				if subCheck.Success {
-					fmt.Printf(successColor, checkMarkCode)
-					fmt.Println()
+					_, _ = fmt.Fprintf(w, successColor+"\n", checkMarkCode)
 				} else {
-					fmt.Printf(errorColor, crossMarkCode)
-					fmt.Println()
+					_, _ = fmt.Fprintf(w, errorColor+"\n", crossMarkCode)
 					for _, e := range subCheck.Errors {
-						fmt.Printf(errorColor, e)
-						fmt.Println()
+						_, _ = fmt.Fprintf(w, errorColor+"\n", e)
 					}
 				}
 			}
 		}
-
 		fmt.Print("\n\n")
 	}
 }
@@ -151,7 +146,7 @@ func runAllHealthChecks(healthCheckWrapper wrappers.HealthCheckWrapper) func(cmd
 
 		hlthChks := newHealthChecksByRole(healthCheckWrapper, role)
 		views := runChecksConcurrently(hlthChks)
-		printHealthChecks(views)
+		printHealthChecks(cmd.OutOrStdout(), views)
 		return nil
 	}
 }
