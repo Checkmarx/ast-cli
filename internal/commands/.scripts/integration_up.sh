@@ -2,8 +2,8 @@ docker run \
   --name squid \
   -d \
   -p $PROXY_PORT:3128 \
-  -v $(pwd)/internal/commands/.scripts/squid.conf:/etc/squid/squid.conf \
-  -v $(pwd)/internal/commands/.scripts/passwords:/etc/squid/passwords \
+  -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+  -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
   datadog/squid
 
 go test \
