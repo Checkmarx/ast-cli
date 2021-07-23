@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
@@ -19,7 +22,6 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
-	targetFlag           = "target"
 	mediumLabel          = "medium"
 	highLabel            = "high"
 	lowLabel             = "low"
@@ -101,8 +103,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "List results for a given scan",
 		RunE:  runGetResultByScanIDCommand(resultsWrapper),
 	}
-	listResultsCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(listResultsCmd, formatList, formatJSON)
+	listResultsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
+	addFormatFlag(listResultsCmd, util.FormatList, util.FormatJSON)
 	addScanIDFlag(listResultsCmd, "ID to report on.")
 
 	summaryCmd := &cobra.Command{
@@ -110,10 +112,10 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 		Short: "Creates summary report for scan",
 		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
 	}
-	summaryCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(summaryCmd, formatHTML, formatText)
+	summaryCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
+	addFormatFlag(summaryCmd, util.FormatHTML, util.FormatText)
 	addScanIDFlag(summaryCmd, "ID to report on.")
-	summaryCmd.PersistentFlags().String(targetFlag, "console", "Output file")
+	summaryCmd.PersistentFlags().String(TargetFlag, "console", "Output file")
 
 	resultCmd.AddCommand(listResultsCmd, summaryCmd)
 	return resultCmd
@@ -128,32 +130,30 @@ func getScanInfo(scanID string) (*ResultSummary, error) {
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanInfo != nil {
-		if err == nil {
-			return &ResultSummary{
-				ScanID:       scanInfo.ID,
-				Status:       string(scanInfo.Status),
-				CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-				ProjectID:    scanInfo.ProjectID,
-				RiskStyle:    "",
-				RiskMsg:      "",
-				HighIssues:   0,
-				MediumIssues: 0,
-				LowIssues:    0,
-				SastIssues:   0,
-				KicsIssues:   0,
-				ScaIssues:    0,
-				Tags:         scanInfo.Tags,
-			}, nil
-		}
+		return &ResultSummary{
+			ScanID:       scanInfo.ID,
+			Status:       string(scanInfo.Status),
+			CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+			ProjectID:    scanInfo.ProjectID,
+			RiskStyle:    "",
+			RiskMsg:      "",
+			HighIssues:   0,
+			MediumIssues: 0,
+			LowIssues:    0,
+			SastIssues:   0,
+			KicsIssues:   0,
+			ScaIssues:    0,
+			Tags:         scanInfo.Tags,
+		}, nil
 	}
 	return nil, err
 }
 
 func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		targetFile, _ := cmd.Flags().GetString(targetFlag)
-		scanID, _ := cmd.Flags().GetString(scanIDFlag)
-		format, _ := cmd.Flags().GetString(formatFlag)
+		targetFile, _ := cmd.Flags().GetString(TargetFlag)
+		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
+		format, _ := cmd.Flags().GetString(FormatFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
@@ -162,7 +162,7 @@ func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(c
 		if err == nil {
 			summary, sumErr := SummaryReport(results, scanID)
 			if sumErr == nil {
-				writeSummary(targetFile, summary, format)
+				writeSummary(cmd.OutOrStdout(), targetFile, summary, format)
 			}
 			return sumErr
 		}
@@ -200,31 +200,32 @@ func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*Res
 	return summary, nil
 }
 
-func writeSummary(targetFile string, summary *ResultSummary, format string) {
+func writeSummary(w io.Writer, targetFile string, summary *ResultSummary, format string) {
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		if targetFile == "console" {
-			if format == formatHTML {
+			if format == util.FormatHTML {
 				buffer := new(bytes.Buffer)
 				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
-				fmt.Println(buffer)
+				_, _ = fmt.Fprintln(w, buffer)
 			} else {
-				writeTextSummary("", summary)
+				writeTextSummary(w, "", summary)
 			}
 		} else {
-			if format == formatHTML {
+			if format == util.FormatHTML {
 				f, err := os.Create(targetFile)
 				if err == nil {
 					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
+					_ = f.Close()
 				}
 			} else {
-				writeTextSummary(targetFile, summary)
+				writeTextSummary(w, targetFile, summary)
 			}
 		}
 	}
 }
 
-func writeTextSummary(targetFile string, summary *ResultSummary) {
+func writeTextSummary(w io.Writer, targetFile string, summary *ResultSummary) {
 	if targetFile != "" {
 		f, err := os.Create(targetFile)
 		if err == nil {
@@ -242,26 +243,26 @@ func writeTextSummary(targetFile string, summary *ResultSummary) {
 			sumMsg += fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues)
 			sumMsg += fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues)
 			_, _ = f.WriteString(sumMsg)
-			f.Close()
+			_ = f.Close()
 		}
 	} else {
-		fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-		fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-		fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-		fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-		fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-		fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-		fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-		fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
-		fmt.Printf("        SAST Issues: %d\n", summary.SastIssues)
-		fmt.Printf("        KICS Issues: %d\n", summary.KicsIssues)
-		fmt.Printf("         SCA Issues: %d\n", summary.ScaIssues)
+		_, _ = fmt.Fprintf(w, "         Created At: %s\n", summary.CreatedAt)
+		_, _ = fmt.Fprintf(w, "               Risk: %s\n", summary.RiskMsg)
+		_, _ = fmt.Fprintf(w, "         Project ID: %s\n", summary.ProjectID)
+		_, _ = fmt.Fprintf(w, "            Scan ID: %s\n", summary.ScanID)
+		_, _ = fmt.Fprintf(w, "       Total Issues: %d\n", summary.TotalIssues)
+		_, _ = fmt.Fprintf(w, "        High Issues: %d\n", summary.HighIssues)
+		_, _ = fmt.Fprintf(w, "      Medium Issues: %d\n", summary.MediumIssues)
+		_, _ = fmt.Fprintf(w, "         Low Issues: %d\n", summary.LowIssues)
+		_, _ = fmt.Fprintf(w, "        SAST Issues: %d\n", summary.SastIssues)
+		_, _ = fmt.Fprintf(w, "        KICS Issues: %d\n", summary.KicsIssues)
+		_, _ = fmt.Fprintf(w, "         SCA Issues: %d\n", summary.ScaIssues)
 	}
 }
 
 func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
 		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
@@ -297,51 +298,40 @@ func ReadResults(resultsWrapper wrappers.ResultsWrapper,
 
 func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
-	formatFlag, _ := cmd.Flags().GetString(formatFlag)
-	if IsFormat(formatFlag, formatJSON) {
+	formatFlag, _ := cmd.Flags().GetString(FormatFlag)
+	if util.IsFormat(formatFlag, util.FormatJSON) {
 		var resultsJSON []byte
 		resultsJSON, err = json.Marshal(results)
 		if err != nil {
 			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
 		return nil
 	}
-	return outputResultsPretty(results.Results)
+	return outputResultsPretty(cmd.OutOrStdout(), results.Results)
 }
 
-func outputResultsPretty(results []*wrappers.ScanResult) error {
-	fmt.Println("************ Results ************")
+func outputResultsPretty(w io.Writer, results []*wrappers.ScanResult) error {
+	_, _ = fmt.Fprintln(w, "************ Results ************")
 	for i := 0; i < len(results); i++ {
-		outputSingleResult(results[i])
-		fmt.Println()
+		outputSingleResult(w, results[i])
+		_, _ = fmt.Fprintln(w)
 	}
 	return nil
 }
 
-func outputSingleResult(model *wrappers.ScanResult) {
-	fmt.Println("Result Unique ID:", model.UniqueID)
-	fmt.Println("Query ID:", model.QueryID)
-	fmt.Println("Query Name:", model.QueryName)
-	fmt.Println("Severity:", model.Severity)
-	//nolint
-	// fmt.Println("CWE ID:", model.CweID)
-	fmt.Println("Similarity ID:", model.SimilarityID)
-	fmt.Println("First Scan ID:", model.FirstScanID)
-	fmt.Println("Found At:", model.FoundAt)
-	fmt.Println("First Found At:", model.FirstFoundAt)
-	fmt.Println("Status:", model.Status)
-	//nolint
-	// fmt.Println("Path System ID:", model.PathSystemID)
-	fmt.Println()
-	fmt.Println("************ Nodes ************")
-	//nolint
-	/*
-		for i := 0; i < len(model.Nodes); i++ {
-			outputSingleResultNodePretty(model.Nodes[i])
-			fmt.Println()
-		}
-	*/
+func outputSingleResult(w io.Writer, model *wrappers.ScanResult) {
+	_, _ = fmt.Fprintln(w, "Result Unique ID:", model.UniqueID)
+	_, _ = fmt.Fprintln(w, "Query ID:", model.QueryID)
+	_, _ = fmt.Fprintln(w, "Query Name:", model.QueryName)
+	_, _ = fmt.Fprintln(w, "Severity:", model.Severity)
+	_, _ = fmt.Fprintln(w, "Similarity ID:", model.SimilarityID)
+	_, _ = fmt.Fprintln(w, "First Scan ID:", model.FirstScanID)
+	_, _ = fmt.Fprintln(w, "Found At:", model.FoundAt)
+	_, _ = fmt.Fprintln(w, "First Found At:", model.FirstFoundAt)
+	_, _ = fmt.Fprintln(w, "Status:", model.Status)
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "************ Nodes ************")
 }
 
 type ResultSummary struct {

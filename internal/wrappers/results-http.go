@@ -41,6 +41,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*S
 	}
 	decoder := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}
@@ -129,10 +130,9 @@ type ScanResultData struct {
 type ScanResultDataNode struct {
 }
 
-/*
- * NOTE: This should be read from scan-results library but that
- * isn't compatible with the mocked data from the results API???
- */
+// ScanResultsCollection
+// NOTE: This should be read from scan-results library but that
+// isn't compatible with the mocked data from the results API???
 type ScanResultsCollection struct {
 	Results    []*ScanResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`

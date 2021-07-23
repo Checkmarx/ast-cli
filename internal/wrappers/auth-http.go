@@ -45,6 +45,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	}
 
 	defer res.Body.Close()
+
 	switch res.StatusCode {
 	case http.StatusBadRequest:
 		decoder := json.NewDecoder(res.Body)
