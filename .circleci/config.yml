@@ -73,15 +73,34 @@ jobs:
       - run:
           name: Config Git credentials
           command: git config --global url."https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+      - run:
+          name: Config Squid host and port
+          command: |
+            echo "export PROXY_PORT=3128" >> $BASH_ENV
+            echo "export PROXY_HOST=localhost" >> $BASH_ENV
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "go.sum" }}
       - run:
           name: go integration test
           command: |
-            sudo chmod +x ./internal/commands/.scripts/integration_up.sh
+            sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
             sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_up.sh
+            sudo -E env "PATH=$PATH" ./internal/commands/.scripts/integration_down.sh
           no_output_timeout: 2m
+      - run:
+          name: Check if total coverage is greater then 75
+          command: |
+            CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+            EXPECTED_CODE_COV=75
+            var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
+            if [ "$var" -eq 1 ];then
+              echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+              exit 1
+            else
+              echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+              exit 0
+            fi
       - save_cache: # Store cache in the /go/pkg directory
           key: go-mod-v2-{{ checksum "go.sum" }}
           paths:
@@ -115,7 +134,7 @@ workflows:
   Visibility-workflow:
     jobs:
       - checkmarx/circleci-kpi-shipper
-  Test-workflow:
+  Validation-workflow:
     jobs:
       - unit-tests:
           filters:

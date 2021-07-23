@@ -9,11 +9,23 @@ on:
       baseAuthUri:
         description: 'AST Base Auth URI'
         required: true
-      secret_token:
+      secretToken:
         description: 'AST API Key'
+        required: true
+      username:
+        description: 'AST Username'
+        required: true
+      password:
+        description: 'AST Password'
         required: true
       tenant:
         description: 'Tenant'
+        required: true
+      proxyUser:
+        description: 'Proxy Username'
+        required: true
+      proxyPassword:
+        description: 'Proxy Password'
         required: true
 
 jobs:
@@ -25,9 +37,17 @@ jobs:
       - name: Masking inputs
         id: add_masks
         run: |
-          INP_SECRET_TOKEN=$(jq -r '.inputs.secret_token' $GITHUB_EVENT_PATH)
+          INP_SECRET_TOKEN=$(jq -r '.inputs.secretToken' $GITHUB_EVENT_PATH)
           echo ::add-mask::$INP_SECRET_TOKEN
           echo CX_APIKEY="$INP_SECRET_TOKEN" >> $GITHUB_ENV
+
+          INP_PASSWORD=$(jq -r '.inputs.password' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_PASSWORD
+          echo CX_AST_PASSWORD="$INP_PASSWORD" >> $GITHUB_ENV
+
+          INP_PROXY_PASSWORD=$(jq -r '.inputs.proxyPassword' $GITHUB_EVENT_PATH)
+          echo ::add-mask::$INP_PROXY_PASSWORD
+          echo PROXY_PASSWORD="$INP_PROXY_PASSWORD" >> $GITHUB_ENV
       - name: Checkout
         uses: actions/checkout@v2.3.4
       - name: Install Go
@@ -45,6 +65,23 @@ jobs:
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
           CX_TENANT: ${{ github.event.inputs.tenant }}
+          PROXY_HOST: localhost
+          PROXY_PORT: 3128
+          PROXY_USERNAME: ${{ github.event.inputs.proxyUser }}
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh
+          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_down.sh
+      - name: Check if total coverage is greater then 75
+        shell: bash
+        run: |
+          CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          EXPECTED_CODE_COV=75
+          var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
+          if [ "$var" -eq 1 ];then
+            echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+            exit 1
+          else
+            echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+            exit 0
+          fi

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/mock"
 
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
@@ -20,28 +20,16 @@ func TestMain(m *testing.M) {
 }
 
 func createASTTestCommand() *cobra.Command {
-	scansMockWrapper := &wrappers.ScansMockWrapper{}
-	uploadsMockWrapper := &wrappers.UploadsMockWrapper{}
-	projectsMockWrapper := &wrappers.ProjectsMockWrapper{}
-	resultsMockWrapper := &wrappers.ResultsMockWrapper{}
-	bflMockWrapper := &wrappers.BFLMockWrapper{}
-	rmMockWrapper := &wrappers.SastRmMockWrapper{}
-	healthMockWrapper := &wrappers.HealthCheckMockWrapper{}
-	queriesMockWrapper := &wrappers.QueriesMockWrapper{}
-	authWrapper := &wrappers.AuthMockWrapper{}
-	sastMetadataWrapper := &wrappers.SastMetadataMockWrapper{}
-	logsWrapper := &wrappers.LogsMockWrapper{}
+	scansMockWrapper := &mock.ScansMockWrapper{}
+	uploadsMockWrapper := &mock.UploadsMockWrapper{}
+	projectsMockWrapper := &mock.ProjectsMockWrapper{}
+	resultsMockWrapper := &mock.ResultsMockWrapper{}
+	authWrapper := &mock.AuthMockWrapper{}
 	return NewAstCLI(scansMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
 		resultsMockWrapper,
-		bflMockWrapper,
-		rmMockWrapper,
-		healthMockWrapper,
-		queriesMockWrapper,
 		authWrapper,
-		sastMetadataWrapper,
-		logsWrapper,
 	)
 }
 

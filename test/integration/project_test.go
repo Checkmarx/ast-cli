@@ -3,149 +3,136 @@
 package integration
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"strconv"
 	"testing"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/google/uuid"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"gotest.tools/assert"
 )
 
+// End to end test of project handling.
+// - Create a project
+// - Get and assert the project exists
+// - Get all tags
+// - Assert assigned tags exist
+// - Assert project contains the tags
+// - Assert project contains the groups
+// - Delete the created project
+// - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	// TODO: fix this
-	fmt.Println("TODO: Disabled TestProjectsE2E because its not working.")
-	/*
-		projectFromFile := createProjectFromInputFile(t)
-		getAllProjects(t, projectFromFile)
-		getAllProjectsList(t)
-		deleteProject(t, projectFromFile)
 
-		tags := map[string]string{}
-		projectID := createProjectFromInput(t, RandomizeString(5), tags)
-		getProjectByID(t, projectID)
-		getProjectByIDList(t, projectID)
-		tags = map[string]string{
-			"A_KEY": "A_VAL",
-			"B_KEY": "B_VAL",
-			"C_KEY": "C_VAL",
-		}
-		deleteProject(t, projectID)
+	projectID := createProject(t, Tags, Groups)
 
-		projectID = createProjectFromInput(t, RandomizeString(5), tags)
-		getProjectTags(t)
-		deleteProject(t, projectID)
-	*/
+	response := listProjectByID(t, projectID)
+
+	assert.Equal(t, len(response), 1, "Total projects should be 1")
+	assert.Equal(t, response[0].ID, projectID, "Project ID should match the created project")
+
+	project := showProject(t, projectID)
+	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
+
+	allTags := getAllTags(t, "project")
+	for key := range Tags {
+		_, ok := allTags[key]
+		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
+
+		val, ok := project.Tags[key]
+		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
+		assert.Equal(t, val, Tags[key], "Tag value should be equal")
+	}
+
+	for _, group := range Groups {
+		assert.Assert(t, contains(project.Groups, group), "Project should contain group %s", group)
+	}
+
+	deleteProject(t, projectID)
+
+	response = listProjectByID(t, projectID)
+
+	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
 }
 
-func createProjectFromInputFile(t *testing.T) string {
-	b := bytes.NewBufferString("")
-	createProjCommand := createASTIntegrationTestCommand(t)
-	createProjCommand.SetOut(b)
-	err := execute(createProjCommand, "-v", "--format", "json", "project", "create", "--input-file", "project_payload.json")
-	return executeCreateProject(t, err, b)
+// Create the same project twice and assert that it fails
+func TestCreateAlreadyExisting(t *testing.T) {
+	projectID := createProject(t, map[string]string{}, []string{})
+
+	defer deleteProject(t, projectID)
+
+	err := execute(createASTIntegrationTestCommand(t),
+		"project", "create",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.ProjectName), showProject(t, projectID).Name,
+	)
+	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
 }
 
-func createProjectFromInput(t *testing.T, projectID string, tags map[string]string) string {
-	b := bytes.NewBufferString("")
-	createProjCommand := createASTIntegrationTestCommand(t)
-	createProjCommand.SetOut(b)
-	tagsJSON, err := json.Marshal(tags)
-	assert.NilError(t, err, "Marshaling tags should pass")
-	payload := fmt.Sprintf("{\"id\":\"integration_test_%s\", \"tags\":%s}", projectID, string(tagsJSON))
-	err = execute(createProjCommand, "-v", "--format", "json", "project", "create", "--input", payload)
-	return executeCreateProject(t, err, b)
-}
+func createProject(t *testing.T, tags map[string]string, groups []string) string {
+	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
+	createProjCommand, outBuffer := createRedirectedTestCommand(t)
 
-func executeCreateProject(t *testing.T, err error, b *bytes.Buffer) string {
+	tagsStr := formatTags(tags)
+	groupsStr := formatGroups(groups)
+
+	err := execute(createProjCommand,
+		"project", "create",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.ProjectName), projectName,
+		flag(commands.TagList), tagsStr,
+		flag(commands.GroupList), groupsStr,
+	)
 	assert.NilError(t, err, "Creating a project should pass")
-	// Read response from buffer
-	var createdProjectJSON []byte
-	createdProjectJSON, err = ioutil.ReadAll(b)
-	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
-	assert.NilError(t, err, "Reading project response JSON should pass")
+
 	createdProject := projectsRESTApi.ProjectResponseModel{}
-	err = json.Unmarshal(createdProjectJSON, &createdProject)
-	assert.NilError(t, err, "Parsing project response JSON should pass")
-	log.Printf("Project ID %s created in test", createdProject.ID)
+	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+
+	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
+	fmt.Printf("Project ID %s created\n", createdProject.ID)
+
 	return createdProject.ID
-}
-
-func getProjectByIDList(t *testing.T, projectID string) {
-	getProjectCommand := createASTIntegrationTestCommand(t)
-	err := execute(getProjectCommand, "-v", "--format", "list", "project", "show", "--project-id", projectID)
-	assert.NilError(t, err, "Getting a project should pass")
-}
-
-func getProjectByID(t *testing.T, projectID string) {
-	b := bytes.NewBufferString("")
-	getProjectCommand := createASTIntegrationTestCommand(t)
-	getProjectCommand.SetOut(b)
-	err := execute(getProjectCommand, "-v", "--format", "json", "project", "show", "--project-id", projectID)
-	assert.NilError(t, err, "Getting a project should pass")
-	// Read response from buffer
-	var projectJSON []byte
-	projectJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading project response JSON should pass")
-	project := projectsRESTApi.ProjectResponseModel{}
-	err = json.Unmarshal(projectJSON, &project)
-	assert.NilError(t, err, "Parsing project response JSON should pass")
-	assert.Assert(t, projectID == project.ID)
-}
-
-func getAllProjectsList(t *testing.T) {
-	getAllCommand := createASTIntegrationTestCommand(t)
-	var limit uint64 = 40
-	var offset uint64 = 0
-	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
-	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
-	err := execute(getAllCommand, "-v", "--format", "list", "project", "list", "--filter", lim, "--filter", off)
-	assert.NilError(t, err, "Getting all projects should pass")
-}
-
-func getAllProjects(t *testing.T, projectID string) {
-	b := bytes.NewBufferString("")
-	getAllCommand := createASTIntegrationTestCommand(t)
-	getAllCommand.SetOut(b)
-	var limit uint64 = 40
-	var offset uint64 = 0
-	lim := fmt.Sprintf("limit=%s", strconv.FormatUint(limit, 10))
-	off := fmt.Sprintf("offset=%s", strconv.FormatUint(offset, 10))
-	err := execute(getAllCommand, "-v", "--format", "json", "project", "list", "--filter", lim, "--filter", off)
-	assert.NilError(t, err, "Getting all projects should pass")
-	// Read response from buffer
-	var getAllJSON []byte
-	getAllJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading all projects response JSON should pass")
-	allProjects := []projectsRESTApi.ProjectResponseModel{}
-	err = json.Unmarshal(getAllJSON, &allProjects)
-	assert.NilError(t, err, "Parsing all projects response JSON should pass")
-	assert.Equal(t, len(allProjects), 1, "Total projects should be 1")
-	assert.Equal(t, allProjects[0].ID, projectID)
 }
 
 func deleteProject(t *testing.T, projectID string) {
 	deleteProjCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteProjCommand, "-v", "project", "delete", "--project-id", projectID)
+	err := execute(deleteProjCommand,
+		"project", "delete",
+		flag(commands.ProjectIDFlag), projectID,
+	)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
 
-func getProjectTags(t *testing.T) {
-	b := bytes.NewBufferString("")
-	tagsCommand := createASTIntegrationTestCommand(t)
-	tagsCommand.SetOut(b)
-	err := execute(tagsCommand, "-v", "--format", "json", "project", "tags")
-	assert.NilError(t, err, "Getting tags should pass")
-	// Read response from buffer
-	var tagsJSON []byte
-	tagsJSON, err = ioutil.ReadAll(b)
-	assert.NilError(t, err, "Reading tags JSON should pass")
-	tags := map[string][]string{}
-	err = json.Unmarshal(tagsJSON, &tags)
-	assert.NilError(t, err, "Parsing tags JSON should pass")
-	assert.Assert(t, tags != nil)
-	assert.Assert(t, len(tags) == 3)
+func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectResponseModel {
+	idFilter := fmt.Sprintf("ids=%s", projectID)
+	getAllCommand, outputBuffer := createRedirectedTestCommand(t)
+
+	err := execute(getAllCommand,
+		"project", "list",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.FilterFlag), idFilter,
+	)
+	assert.NilError(t, err, "Getting the project should pass")
+
+	var projects []projectsRESTApi.ProjectResponseModel
+	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
+
+	return projects
+}
+
+func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponseModel {
+	showCommand, outputBuffer := createRedirectedTestCommand(t)
+
+	err := execute(showCommand,
+		"project", "show",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.ProjectIDFlag), projectID,
+	)
+	assert.NilError(t, err, "Getting the project should pass")
+
+	var project projectsRESTApi.ProjectResponseModel
+	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
+
+	return project
 }

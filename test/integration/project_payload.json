@@ -1,8 +1,0 @@
-{
-  "id": "integration_test",
-  "tags":{
-    "A_KEY" :  "A_VAL",
-    "B_KEY" :  "B_VAL",
-    "C_KEY" :  "C_VAL"
-  }
-}

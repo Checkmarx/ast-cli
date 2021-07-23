@@ -38,9 +38,6 @@ func (s *ScansHTTPWrapper) Create(model *scansRestApi.Scan) (*scansRestApi.ScanR
 	if err != nil {
 		return nil, nil, err
 	}
-	if err != nil {
-		return nil, nil, err
-	}
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -52,6 +49,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCol
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := scansRestApi.ErrorModel{}
@@ -98,6 +96,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := scansRestApi.ErrorModel{}
@@ -107,7 +106,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := []*ScanTaskResponseModel{}
+		var model []*ScanTaskResponseModel
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to parse workflow response")
@@ -151,6 +150,7 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := scansRestApi.ErrorModel{}
