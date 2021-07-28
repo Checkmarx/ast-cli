@@ -25,9 +25,12 @@ go build -o ./bin/cx-mac ./cmd
 
 ** **
 
-## Contributing
+## Contribution
 
-If you would like to contribute improvements to the CLI, do check out our [contribution guide][contributing] to help you get started!
+We appreciate feedback and contribution to the CLI! Before you get started, please see the following:
+
+- [Checkmarx contribution guidelines](docs/contributing.md)
+- [Checkmarx Code of Conduct](docs/code_of_conduct.md)
 
 ** **
 
@@ -452,4 +455,8 @@ If you choose to use a proxy that uses NTLM authentication you will need to prov
 | **HTTP_PROXY**       | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
 | **CX_BRANCH**        | The branch to scan.                                          |
 
-[contributing]: ./docs/contributing.md
+** **
+
+## License
+
+This repo is covered under [Apache 2.0](LICENSE).
