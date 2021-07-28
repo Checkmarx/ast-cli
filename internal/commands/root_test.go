@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -47,6 +48,7 @@ func TestRootVersion(t *testing.T) {
 }
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
+	fmt.Println("Executing command with args ", args)
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = false
 	return cmd.Execute()
