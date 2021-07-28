@@ -24,6 +24,11 @@ By participating and contributing to the project, you agree to uphold our [Code 
 
 Before submitting a PR, please make sure you performed the following steps:
 
-- linted the code with `golangci-lint run ./...` and fixed any warning thrown
+- linted the code and fixed any warning thrown
+
+`golangci-lint run ./...`
+
+- added/updated unit and integration tests for your changes
 - updated the documentation to reflect any changes when necessary
 - updated the cli help when changed the command structure
+
