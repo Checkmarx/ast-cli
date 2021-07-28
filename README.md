@@ -25,6 +25,12 @@ go build -o ./bin/cx-mac ./cmd
 
 ** **
 
+## Contributing
+
+If you would like to contribute improvements to the CLI, do check out our [contribution guide][contributing] to help you get started!
+
+** **
+
 ## Basic CLI Operation
 
 This document provides many examples of using the AST CLI but it's impossible to cover every possible action. You can  you can always fall back to the (--help or -h) option, ex:
@@ -446,3 +452,4 @@ If you choose to use a proxy that uses NTLM authentication you will need to prov
 | **HTTP_PROXY**       | When provided this variable will trigger the CLI to use the proxy server pointed to (see proxy support documentation). |
 | **CX_BRANCH**        | The branch to scan.                                          |
 
+[contributing]: ./docs/contributing.md
