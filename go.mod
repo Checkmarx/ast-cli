@@ -1,6 +1,6 @@
 module github.com/checkmarxDev/ast-cli
 
-go 1.13
+go 1.16
 
 require (
 	github.com/checkmarxDev/sast-results v1.10.1
