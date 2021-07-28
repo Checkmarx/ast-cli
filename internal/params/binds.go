@@ -10,8 +10,6 @@ var EnvVarsBinds = []struct {
 	{ProxyTypeKey, ProxyTypeEnv, "basic"},
 	{ProxyDomainKey, ProxyDomainEnv, ""},
 	{BaseAuthURIKey, BaseAuthURIEnv, ""},
-	{AstUsernameKey, AstUsernameEnv, ""},
-	{AstPasswordKey, AstPasswordEnv, ""},
 	{AstAPIKey, AstAPIKeyEnv, ""},
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},

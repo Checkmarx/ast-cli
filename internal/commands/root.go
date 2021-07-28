@@ -2,8 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
 
@@ -14,90 +18,79 @@ import (
 	"github.com/spf13/viper"
 )
 
+var singleNodeLogger = log.New(deploymentLogWriter{}, "", 0)
+
 const (
-	keyValuePairSize         = 2
-	verboseFlag              = "verbose"
-	verboseFlagSh            = "v"
-	verboseUsage             = "Verbose mode"
-	sourcesFlag              = "sources"
-	sourcesFlagSh            = "s"
-	tenantFlag               = "tenant"
-	tenantFlagUsage          = "Checkmarx tenant"
-	agentFlag                = "agent"
-	agentFlagUsage           = "Scan origin name"
-	waitFlag                 = "nowait"
-	waitDelayFlag            = "wait-delay"
-	sourceDirFilterFlag      = "filter"
-	sourceDirFilterFlagSh    = "f"
-	projectIDFlag            = "project-id"
-	branchFlag               = "branch"
-	branchFlagSh             = "b"
-	scanIDFlag               = "scan-id"
-	branchFlagUsage          = "Branch to scan"
-	mainBranchFlag           = "branch"
-	projectName              = "project-name"
-	scanTypes                = "scan-types"
-	tagList                  = "tags"
-	groupList                = "groups"
-	incrementalSast          = "sast-incremental"
-	presetName               = "sast-preset-name"
-	accessKeyIDFlag          = "client-id"
-	accessKeySecretFlag      = "client-secret"
-	accessKeyIDFlagUsage     = "The OAuth2 client ID"
-	accessKeySecretFlagUsage = "The OAuth2 client secret"
-	insecureFlag             = "insecure"
-	insecureFlagUsage        = "Ignore TLS certificate validations"
-	formatFlag               = "format"
-	formatFlagUsageFormat    = "Format for the output. One of %s"
-	formatJSON               = "json"
-	formatList               = "list"
-	formatTable              = "table"
-	formatHTML               = "html"
-	formatText               = "text"
-	filterFlag               = "filter"
-	baseURIFlag              = "base-uri"
-	proxyFlag                = "proxy"
-	proxyFlagUsage           = "Proxy server to send communication through"
-	proxyTypeFlag            = "proxy-auth-type"
-	proxyTypeFlagUsage       = "Proxy authentication type, (basic or ntlm)"
-	ntlmProxyDomainFlag      = "proxy-ntlm-domain"
-	ntlmProxyDomainFlagUsage = "Window domain when using NTLM proxy"
-	baseURIFlagUsage         = "The base system URI"
-	baseAuthURIFlag          = "base-auth-uri"
-	baseAuthURIFlagUsage     = "The base system IAM URI"
-	astAPIKeyFlag            = "apikey"
-	astAPIKeyUsage           = "The API Key to login to AST with"
-	repoURLFlag              = "repo-url"
-	queriesRepoNameFlag      = "name"
-	queriesRepoNameSh        = "n"
-	queriesRepoActivateFlag  = "activate"
-	queriesRepoActivateSh    = "a"
-	clientRolesFlag          = "roles"
-	clientRolesSh            = "r"
-	clientDescriptionFlag    = "description"
-	clientDescriptionSh      = "d"
-	usernameFlag             = "username"
-	usernameSh               = "u"
-	passwordFlag             = "password"
-	passwordSh               = "p"
-	profileFlag              = "profile"
-	profileFlagUsage         = "The default configuration profile"
-	help                     = "help"
+	KeyValuePairSize         = 2
+	VerboseFlag              = "verbose"
+	VerboseFlagSh            = "v"
+	VerboseUsage             = "Verbose mode"
+	SourcesFlag              = "sources"
+	SourcesFlagSh            = "s"
+	TenantFlag               = "tenant"
+	TenantFlagUsage          = "Checkmarx tenant"
+	AgentFlag                = "agent"
+	AgentFlagUsage           = "Scan origin name"
+	WaitFlag                 = "nowait"
+	WaitDelayFlag            = "wait-delay"
+	SourceDirFilterFlag      = "filter"
+	SourceDirFilterFlagSh    = "f"
+	ProjectIDFlag            = "project-id"
+	BranchFlag               = "branch"
+	BranchFlagSh             = "b"
+	ScanIDFlag               = "scan-id"
+	BranchFlagUsage          = "Branch to scan"
+	MainBranchFlag           = "branch"
+	ProjectName              = "project-name"
+	ScanTypes                = "scan-types"
+	TagList                  = "tags"
+	GroupList                = "groups"
+	IncrementalSast          = "sast-incremental"
+	PresetName               = "sast-preset-name"
+	AccessKeyIDFlag          = "client-id"
+	AccessKeySecretFlag      = "client-secret"
+	AccessKeyIDFlagUsage     = "The OAuth2 client ID"
+	AccessKeySecretFlagUsage = "The OAuth2 client secret"
+	InsecureFlag             = "insecure"
+	InsecureFlagUsage        = "Ignore TLS certificate validations"
+	FormatFlag               = "format"
+	FormatFlagUsageFormat    = "Format for the output. One of %s"
+
+	FilterFlag               = "filter"
+	BaseURIFlag              = "base-uri"
+	ProxyFlag                = "proxy"
+	ProxyFlagUsage           = "Proxy server to send communication through"
+	ProxyTypeFlag            = "proxy-auth-type"
+	ProxyTypeFlagUsage       = "Proxy authentication type, (basic or ntlm)"
+	NtlmProxyDomainFlag      = "proxy-ntlm-domain"
+	NtlmProxyDomainFlagUsage = "Window domain when using NTLM proxy"
+	BaseURIFlagUsage         = "The base system URI"
+	BaseAuthURIFlag          = "base-auth-uri"
+	BaseAuthURIFlagUsage     = "The base system IAM URI"
+	AstAPIKeyFlag            = "apikey"
+	AstAPIKeyUsage           = "The API Key to login to AST with"
+	RepoURLFlag              = "repo-url"
+	ClientRolesFlag          = "roles"
+	ClientRolesSh            = "r"
+	ClientDescriptionFlag    = "description"
+	ClientDescriptionSh      = "d"
+	UsernameFlag             = "username"
+	UsernameSh               = "u"
+	PasswordFlag             = "password"
+	PasswordSh               = "p"
+	ProfileFlag              = "profile"
+	ProfileFlagUsage         = "The default configuration profile"
+	Help                     = "help"
+	TargetFlag               = "target"
 )
 
-// Return an AST CLI root command to execute
+// NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
-	bflWrapper wrappers.BFLWrapper,
-	rmWrapper wrappers.SastRmWrapper,
-	healthCheckWrapper wrappers.HealthCheckWrapper,
-	queriesWrapper wrappers.QueriesWrapper,
 	authWrapper wrappers.AuthWrapper,
-	ssiWrapper wrappers.SastMetadataWrapper,
-	logsWrapper wrappers.LogsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -105,60 +98,57 @@ func NewAstCLI(
 	}
 
 	// Load default flags
-	rootCmd.PersistentFlags().BoolP(verboseFlag, verboseFlagSh, false, verboseUsage)
-	rootCmd.PersistentFlags().String(accessKeyIDFlag, "", accessKeyIDFlagUsage)
-	rootCmd.PersistentFlags().String(accessKeySecretFlag, "", accessKeySecretFlagUsage)
-	rootCmd.PersistentFlags().Bool(insecureFlag, false, insecureFlagUsage)
-	rootCmd.PersistentFlags().String(proxyFlag, "", proxyFlagUsage)
-	rootCmd.PersistentFlags().String(proxyTypeFlag, "", proxyTypeFlagUsage)
-	rootCmd.PersistentFlags().String(ntlmProxyDomainFlag, "", ntlmProxyDomainFlagUsage)
-	rootCmd.PersistentFlags().String(baseURIFlag, params.BaseURI, baseURIFlagUsage)
-	rootCmd.PersistentFlags().String(baseAuthURIFlag, params.BaseIAMURI, baseAuthURIFlagUsage)
-	rootCmd.PersistentFlags().String(profileFlag, params.Profile, profileFlagUsage)
-	rootCmd.PersistentFlags().String(astAPIKeyFlag, params.BaseURI, astAPIKeyUsage)
-	rootCmd.PersistentFlags().String(agentFlag, params.AgentFlag, agentFlagUsage)
-	rootCmd.PersistentFlags().String(tenantFlag, params.Tenant, tenantFlagUsage)
+	rootCmd.PersistentFlags().BoolP(VerboseFlag, VerboseFlagSh, false, VerboseUsage)
+	rootCmd.PersistentFlags().String(AccessKeyIDFlag, "", AccessKeyIDFlagUsage)
+	rootCmd.PersistentFlags().String(AccessKeySecretFlag, "", AccessKeySecretFlagUsage)
+	rootCmd.PersistentFlags().Bool(InsecureFlag, false, InsecureFlagUsage)
+	rootCmd.PersistentFlags().String(ProxyFlag, "", ProxyFlagUsage)
+	rootCmd.PersistentFlags().String(ProxyTypeFlag, "", ProxyTypeFlagUsage)
+	rootCmd.PersistentFlags().String(NtlmProxyDomainFlag, "", NtlmProxyDomainFlagUsage)
+	rootCmd.PersistentFlags().String(BaseURIFlag, params.BaseURI, BaseURIFlagUsage)
+	rootCmd.PersistentFlags().String(BaseAuthURIFlag, params.BaseIAMURI, BaseAuthURIFlagUsage)
+	rootCmd.PersistentFlags().String(ProfileFlag, params.Profile, ProfileFlagUsage)
+	rootCmd.PersistentFlags().String(AstAPIKeyFlag, params.BaseURI, AstAPIKeyUsage)
+	rootCmd.PersistentFlags().String(AgentFlag, params.AgentFlag, AgentFlagUsage)
+	rootCmd.PersistentFlags().String(TenantFlag, params.Tenant, TenantFlagUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 && cmd.Name() != help {
+		if len(args) > 0 && cmd.Name() != Help {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
 	}
 
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(accessKeyIDFlag))
-	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(accessKeySecretFlag))
-	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(baseURIFlag))
-	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(tenantFlag))
-	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(proxyFlag))
-	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(proxyTypeFlag))
-	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(ntlmProxyDomainFlag))
-	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(baseAuthURIFlag))
-	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(astAPIKeyFlag))
-	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(agentFlag))
+	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(AccessKeyIDFlag))
+	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(AccessKeySecretFlag))
+	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(BaseURIFlag))
+	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(TenantFlag))
+	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(ProxyFlag))
+	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(ProxyTypeFlag))
+	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(NtlmProxyDomainFlag))
+	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(BaseAuthURIFlag))
+	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(AstAPIKeyFlag))
+	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(AgentFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
-	_ = viper.BindPFlag(verboseFlag, rootCmd.PersistentFlags().Lookup(verboseFlag))
-	_ = viper.BindPFlag(insecureFlag, rootCmd.PersistentFlags().Lookup(insecureFlag))
+	_ = viper.BindPFlag(VerboseFlag, rootCmd.PersistentFlags().Lookup(VerboseFlag))
+	_ = viper.BindPFlag(InsecureFlag, rootCmd.PersistentFlags().Lookup(InsecureFlag))
 
 	// Create the CLI command structure
-	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper)
+	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper)
-	// Disable BFL until ready in AST.
-	// bflCmd := NewBFLCommand(bflWrapper)
-	versionCmd := NewVersionCommand()
+	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := NewUtilsCommand(healthCheckWrapper, ssiWrapper, rmWrapper, logsWrapper, queriesWrapper, uploadsWrapper)
-	configCmd := NewConfigCommand()
+	utilsCmd := util.NewUtilsCommand()
+	configCmd := util.NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
 		versionCmd,
-		// bflCmd,
 		authCmd,
 		utilsCmd,
 		configCmd,
@@ -167,21 +157,28 @@ func NewAstCLI(
 	return rootCmd
 }
 
+type deploymentLogWriter struct {
+}
+
+func (writer deploymentLogWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().Format(time.RFC3339) + " " + string(bytes))
+}
+
 func PrintIfVerbose(msg string) {
-	if viper.GetBool(verboseFlag) {
-		writeToStandardOutput(msg)
+	if viper.GetBool(VerboseFlag) {
+		singleNodeLogger.Println(msg)
 	}
 }
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
-	filters, err := cmd.Flags().GetStringSlice(filterFlag)
+	filters, err := cmd.Flags().GetStringSlice(FilterFlag)
 	if err != nil {
 		return nil, err
 	}
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
-		if len(filterKeyVal) != keyValuePairSize {
+		if len(filterKeyVal) != KeyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
 
@@ -199,19 +196,19 @@ func addFormatFlagToMultipleCommands(cmds []*cobra.Command, defaultFormat string
 }
 
 func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(formatFlag, defaultFormat,
-		fmt.Sprintf(formatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(FormatFlag, defaultFormat,
+		fmt.Sprintf(FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
 }
 
 func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
-	cmd.PersistentFlags().String(scanIDFlag, "", helpMsg)
+	cmd.PersistentFlags().String(ScanIDFlag, "", helpMsg)
 }
 
 func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
-	cmd.PersistentFlags().String(projectIDFlag, "", helpMsg)
+	cmd.PersistentFlags().String(ProjectIDFlag, "", helpMsg)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
-	f, _ := cmd.Flags().GetString(formatFlag)
-	return Print(cmd.OutOrStdout(), view, f)
+	f, _ := cmd.Flags().GetString(FormatFlag)
+	return util.Print(cmd.OutOrStdout(), view, f)
 }

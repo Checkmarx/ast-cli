@@ -1,7 +1,15 @@
-go test ./test/integration/scan_test.go \
-            ./test/integration/root_test.go \
-            ./test/integration/project_test.go \
-            ./test/integration/health_check_test.go \
-            ./test/integration/result_test.go \
-            ./test/integration/query_test.go \
-            ./test/integration/sast_resources_test.go
+docker run \
+  --name squid \
+  -d \
+  -p $PROXY_PORT:3128 \
+  -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+  -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+  datadog/squid
+
+go test \
+  -tags integration \
+  -v \
+  -timeout 30m \
+  -coverpkg github.com/checkmarxDev/ast-cli/internal/commands,github.com/checkmarxDev/ast-cli/internal/wrappers \
+  -coverprofile cover.out \
+  github.com/checkmarxDev/ast-cli/test/integration

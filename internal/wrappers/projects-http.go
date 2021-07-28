@@ -97,6 +97,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	decoder := json.NewDecoder(resp.Body)
 
 	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := projectsRESTApi.ErrorModel{}

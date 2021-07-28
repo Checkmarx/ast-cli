@@ -26,7 +26,9 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())
 	}
 	// Close the file later
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	// read all of the contents of our uploaded file into a
 	// byte array
@@ -56,6 +58,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 	}
 
 	defer resp.Body.Close()
+
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {

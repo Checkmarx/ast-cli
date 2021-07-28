@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -48,7 +50,9 @@ var (
 			commonParams.ToDateQueryParam}, ","))
 )
 
-func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+func NewScanCommand(scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
@@ -57,28 +61,28 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
-		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper),
+		RunE:  runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
 	}
 
-	createScanCmd.PersistentFlags().BoolP(waitFlag, "", false, "Wait for scan completion (default true)")
-	createScanCmd.PersistentFlags().IntP(waitDelayFlag, "", 5, "Polling wait time in seconds")
-	createScanCmd.PersistentFlags().StringP(sourcesFlag, sourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
-	createScanCmd.PersistentFlags().StringP(sourceDirFilterFlag, sourceDirFilterFlagSh, "", "Source file filtering pattern")
-	createScanCmd.PersistentFlags().String(projectName, "", "Name of the project")
-	createScanCmd.PersistentFlags().String(incrementalSast, "false", "Incremental SAST scan should be performed.")
-	createScanCmd.PersistentFlags().String(presetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(scanTypes, "", "Scan types, ex: (sast,kics,sca)")
-	createScanCmd.PersistentFlags().String(tagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
-	createScanCmd.PersistentFlags().StringP(branchFlag, branchFlagSh, commonParams.Branch, branchFlagUsage)
+	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
+	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", 5, "Polling wait time in seconds")
+	createScanCmd.PersistentFlags().StringP(SourcesFlag, SourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
+	createScanCmd.PersistentFlags().StringP(SourceDirFilterFlag, SourceDirFilterFlagSh, "", "Source file filtering pattern")
+	createScanCmd.PersistentFlags().String(ProjectName, "", "Name of the project")
+	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
+	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
+	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
+	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(branchFlag))
+	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in the system",
 		RunE:  runListScansCommand(scansWrapper),
 	}
-	listScansCmd.PersistentFlags().StringSlice(filterFlag, []string{}, filterScanListFlagUsage)
+	listScansCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterScanListFlagUsage)
 
 	showScanCmd := &cobra.Command{
 		Use:   "show",
@@ -92,6 +96,7 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 		Short: "Show information about a scan workflow",
 		RunE:  runScanWorkflowByIDCommand(scansWrapper),
 	}
+	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
 
 	deleteScanCmd := &cobra.Command{
 		Use:   "delete",
@@ -114,9 +119,9 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper, uploadsWrapper wrappers.
 	}
 
 	addFormatFlagToMultipleCommands([]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		formatTable, formatList, formatJSON)
+		util.FormatTable, util.FormatList, util.FormatJSON)
 	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd},
-		formatList, formatTable, formatJSON)
+		util.FormatList, util.FormatTable, util.FormatJSON)
 	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd)
 	return scanCmd
 }
@@ -157,11 +162,15 @@ func createProject(projectName string) (string, error) {
 	projects := viper.GetString(commonParams.ProjectsPathKey)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Create(&projModel)
-	return resp.ID, err
+	projectID := ""
+	if err == nil {
+		projectID = resp.ID
+	}
+	return projectID, err
 }
 
 func updateTagValues(input *[]byte, cmd *cobra.Command) {
-	tagListStr, _ := cmd.Flags().GetString(tagList)
+	tagListStr, _ := cmd.Flags().GetString(TagList)
 	tags := strings.Split(tagListStr, ",")
 	var info map[string]interface{}
 	_ = json.Unmarshal(*input, &info)
@@ -185,7 +194,7 @@ func updateTagValues(input *[]byte, cmd *cobra.Command) {
 
 func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
 	var info map[string]interface{}
-	newProjectName, _ := cmd.Flags().GetString(projectName)
+	newProjectName, _ := cmd.Flags().GetString(ProjectName)
 	_ = json.Unmarshal(*input, &info)
 	info["type"] = sourceType
 	// Handle the project settings
@@ -205,15 +214,15 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 	if _, ok := info["config"]; !ok {
 		_ = json.Unmarshal([]byte("[]"), &configArr)
 	}
-	var sastConfig map[string]interface{} = addSastScan(cmd)
+	var sastConfig = addSastScan(cmd)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig map[string]interface{} = addKicsScan()
+	var kicsConfig = addKicsScan()
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig map[string]interface{} = addScaScan()
+	var scaConfig = addScaScan()
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -222,7 +231,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 }
 
 func determineScanTypes(cmd *cobra.Command) {
-	userScanTypes, _ := cmd.Flags().GetString(scanTypes)
+	userScanTypes, _ := cmd.Flags().GetString(ScanTypes)
 	if len(userScanTypes) > 0 {
 		actualScanTypes = userScanTypes
 	}
@@ -258,8 +267,8 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled("sast") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(incrementalSast)
-		newPresetName, _ := cmd.Flags().GetString(presetName)
+		newIncremental, _ := cmd.Flags().GetString(IncrementalSast)
+		newPresetName, _ := cmd.Flags().GetString(PresetName)
 		objArr["type"] = "sast"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
@@ -283,10 +292,6 @@ func addKicsScan() map[string]interface{} {
 		objArr["type"] = "kics"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		foundValue := false
-		if foundValue {
-			objArr["value"] = valueMap
-		}
 		return objArr
 	}
 	return nil
@@ -299,10 +304,6 @@ func addScaScan() map[string]interface{} {
 		objArr["type"] = "sca"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		foundValue := false
-		if foundValue {
-			objArr["value"] = valueMap
-		}
 		return objArr
 	}
 	return nil
@@ -442,20 +443,21 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 }
 
 func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
-	uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+	uploadsWrapper wrappers.UploadsWrapper,
+	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input []byte = []byte("{}")
+		var input = []byte("{}")
 		var err error
 		determineScanTypes(cmd)
 		validateScanTypes()
-		sourceDirFilter, _ := cmd.Flags().GetString(sourceDirFilterFlag)
-		sourcesFile, _ := cmd.Flags().GetString(sourcesFlag)
+		sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
+		sourcesFile, _ := cmd.Flags().GetString(SourcesFlag)
 		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
 		if err != nil {
 			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
-		noWaitFlag, _ := cmd.Flags().GetBool(waitFlag)
-		waitDelay, _ := cmd.Flags().GetInt(waitDelayFlag)
+		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
+		waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
@@ -508,8 +510,29 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				time.Sleep(time.Duration(waitDelay) * time.Second)
 			}
 		}
+		// Get the scan summary data
+		results, err := ReadResults(resultsWrapper, scanResponseModel.ID, make(map[string]string))
+		if err != nil {
+			return errors.Wrapf(err, "%s\n", failedCreating)
+		}
+		summary, err := SummaryReport(results, scanResponseModel.ID)
+		if err == nil {
+			writeConsoleSummary(summary)
+		}
 		return nil
 	}
+}
+
+func writeConsoleSummary(summary *ResultSummary) {
+	fmt.Println("")
+	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
+	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
+	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
+	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
+	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
+	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
+	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
+	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
@@ -528,12 +551,10 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 			return true
 		}
 	}
+	fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status != "Completed" {
-		fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 		os.Exit(1)
 	}
-	fmt.Println("Scan finished, final status: ", scanResponseModel.Status)
-
 	return false
 }
 
@@ -568,7 +589,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		var scanResponseModel *scansRESTApi.ScanResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
-		scanID, _ := cmd.Flags().GetString(scanIDFlag)
+		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
 		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
 		}
@@ -594,10 +615,10 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 		var taskResponseModel []*wrappers.ScanTaskResponseModel
 		var errorModel *scansRESTApi.ErrorModel
 		var err error
-		if len(args) == 0 {
-			return errors.Errorf("%s: Please provide a scan ID", failedGetting)
+		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
+		if scanID == "" {
+			return errors.Errorf("Please provide a scan ID")
 		}
-		scanID := args[0]
 		taskResponseModel, errorModel, err = scansWrapper.GetWorkflowByID(scanID)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGetting)
@@ -617,7 +638,7 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 
 func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		scanIDs, _ := cmd.Flags().GetString(scanIDFlag)
+		scanIDs, _ := cmd.Flags().GetString(ScanIDFlag)
 		if scanIDs == "" {
 			return errors.Errorf("%s: Please provide at least one scan ID", failedDeleting)
 		}
@@ -639,7 +660,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		scanIDs, _ := cmd.Flags().GetString(scanIDFlag)
+		scanIDs, _ := cmd.Flags().GetString(ScanIDFlag)
 		if scanIDs == "" {
 			return errors.Errorf("%s: Please provide at least one scan ID", failedCanceling)
 		}
@@ -677,7 +698,10 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize scan tags response ", failedGettingTags)
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to log scan tags response ", failedGettingTags)
+			}
 		}
 		return nil
 	}
