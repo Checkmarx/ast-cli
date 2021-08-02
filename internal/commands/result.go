@@ -376,11 +376,12 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 	}
 	for _, result := range results.Results {
 		if result.Type == sastTypeFlag {
-			var sarifRule wrappers.SarifDriverRule
-			sarifRule.ID = result.QueryID
-			sarifRule.Name = result.QueryName
-			sarifRules = append(sarifRules, sarifRule)
+			continue
 		}
+		var sarifRule wrappers.SarifDriverRule
+		sarifRule.ID = result.QueryID
+		sarifRule.Name = result.QueryName
+		sarifRules = append(sarifRules, sarifRule)
 	}
 	return sarifRules
 }
@@ -394,13 +395,16 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 		if result.Type != sastTypeFlag {
 			continue
 		}
+
 		var scanResult wrappers.SarifScanResult
 		scanResult.RuleID = result.QueryID
 		scanResult.Message.Text = result.Comments
 		scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
 		scanResult.Locations = []wrappers.SarifLocation{}
 		var scanLocation wrappers.SarifLocation
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = "c:\foo.txts"
+		// TODO: when there is real data we need to find the source of the result from Result.Data.Nodes
+		// this is placeholder code
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
 		line, _ := strconv.Atoi(result.Line)
 		scanLocation.PhysicalLocation.Region.StartLine = line
 		column, _ := strconv.Atoi(result.Line)
