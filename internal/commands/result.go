@@ -372,6 +372,9 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 
 func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDriverRule {
 	var sarifRules = []wrappers.SarifDriverRule{}
+	if results == nil {
+		return sarifRules
+	}
 	for _, result := range results.Results {
 		if result.Type == sastTypeFlag {
 			var sarifRule wrappers.SarifDriverRule
@@ -385,6 +388,9 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 
 func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifScanResult {
 	var sarifResults = []wrappers.SarifScanResult{}
+	if results == nil {
+		return sarifResults
+	}
 	for _, result := range results.Results {
 		if result.Type != sastTypeFlag {
 			continue
