@@ -376,7 +376,7 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 	for _, result := range results.Results {
 		if result.Type == sastTypeFlag {
 			var sarifRule wrappers.SarifDriverRule
-			sarifRule.Id = result.QueryID
+			sarifRule.ID = result.QueryID
 			sarifRule.Name = result.QueryName
 			sarifRules = append(sarifRules, sarifRule)
 		}
@@ -389,7 +389,7 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 	for _, result := range results.Results {
 		if result.Type == sastTypeFlag {
 			var scanResult wrappers.SarifScanResult
-			scanResult.RuleId = result.QueryID
+			scanResult.RuleID = result.QueryID
 			scanResult.Message.Text = result.Comments
 			scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
 			scanResult.Locations = []wrappers.SarifLocation{}
