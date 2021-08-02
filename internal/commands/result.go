@@ -322,7 +322,7 @@ func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollect
 	var resultsJSON []byte
 	var sarifResults *wrappers.SarifResultsCollection
 	// TODO: REMOVE THIS, is debug code!
-	// fakeSarifData(results)
+	fakeSarifData(results)
 	sarifResults = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
