@@ -57,7 +57,7 @@ func TestResultListSarif(t *testing.T) {
 	result := wrappers.ScanResultsCollection{}
 	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
 
-	assert.Assert(t, len(result.Results) > 0, "Should have results")
+	assert.Assert(t, len(result.runs.results) > 0, "Should have results")
 }
 
 // Create a scan and test getting its results
