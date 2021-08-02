@@ -313,9 +313,6 @@ func fakeSarifData(results *wrappers.ScanResultsCollection) {
 	fmt.Println("REMOVE THIS, IT JUST MOCKS RESULTS UNTIL WE HAVE REAL ONES!")
 	results.Results[0].QueryID = "10526212270892872000"
 	results.Results[0].QueryName = "Stored XSS"
-
-	//var scanResult *ScanResult = new(ScanResult)
-	//results.Results = append(results.Results, scanResult)
 }
 
 func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
@@ -387,23 +384,24 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifScanResult {
 	var sarifResults = []wrappers.SarifScanResult{}
 	for _, result := range results.Results {
-		if result.Type == sastTypeFlag {
-			var scanResult wrappers.SarifScanResult
-			scanResult.RuleID = result.QueryID
-			scanResult.Message.Text = result.Comments
-			scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
-			scanResult.Locations = []wrappers.SarifLocation{}
-			var scanLocation wrappers.SarifLocation
-			scanLocation.PhysicalLocation.ArtifactLocation.URI = "c:\foo.txts"
-			line, _ := strconv.Atoi(result.Line)
-			scanLocation.PhysicalLocation.Region.StartLine = line
-			column, _ := strconv.Atoi(result.Line)
-			scanLocation.PhysicalLocation.Region.StartColumn = column
-			length, _ := strconv.Atoi(result.Length)
-			scanLocation.PhysicalLocation.Region.EndColumn = column + length
-			scanResult.Locations = append(scanResult.Locations, scanLocation)
-			sarifResults = append(sarifResults, scanResult)
+		if result.Type != sastTypeFlag {
+			continue
 		}
+		var scanResult wrappers.SarifScanResult
+		scanResult.RuleID = result.QueryID
+		scanResult.Message.Text = result.Comments
+		scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
+		scanResult.Locations = []wrappers.SarifLocation{}
+		var scanLocation wrappers.SarifLocation
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = "c:\foo.txts"
+		line, _ := strconv.Atoi(result.Line)
+		scanLocation.PhysicalLocation.Region.StartLine = line
+		column, _ := strconv.Atoi(result.Line)
+		scanLocation.PhysicalLocation.Region.StartColumn = column
+		length, _ := strconv.Atoi(result.Length)
+		scanLocation.PhysicalLocation.Region.EndColumn = column + length
+		scanResult.Locations = append(scanResult.Locations, scanLocation)
+		sarifResults = append(sarifResults, scanResult)
 	}
 	return sarifResults
 }
