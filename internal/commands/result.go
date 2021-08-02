@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -297,18 +298,49 @@ func ReadResults(resultsWrapper wrappers.ResultsWrapper,
 }
 
 func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
-	var err error
 	formatFlag, _ := cmd.Flags().GetString(FormatFlag)
 	if util.IsFormat(formatFlag, util.FormatJSON) {
-		var resultsJSON []byte
-		resultsJSON, err = json.Marshal(results)
-		if err != nil {
-			return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
-		return nil
+		return exportJSONResults(cmd, results)
+	}
+	if util.IsFormat(formatFlag, util.FormatSarif) {
+		return exportSarifResults(cmd, results)
 	}
 	return outputResultsPretty(cmd.OutOrStdout(), results.Results)
+}
+
+func fakeSarifData(results *wrappers.ScanResultsCollection) {
+	fmt.Println("REMOVE THIS, IT JUST MOCKS RESULTS UNTIL WE HAVE REAL ONES!")
+	results.Results[0].QueryID = "10526212270892872000"
+	results.Results[0].QueryName = "Stored XSS"
+
+	//var scanResult *ScanResult = new(ScanResult)
+	//results.Results = append(results.Results, scanResult)
+}
+
+func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
+	var err error
+	var resultsJSON []byte
+	var sarifResults *wrappers.SarifResultsCollection
+	// TODO: REMOVE THIS, is debug code!
+	fakeSarifData(results)
+	sarifResults = convertCxResultsToSarif(results)
+	resultsJSON, err = json.Marshal(sarifResults)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+	return nil
+}
+
+func exportJSONResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
+	var err error
+	var resultsJSON []byte
+	resultsJSON, err = json.Marshal(results)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+	return nil
 }
 
 func outputResultsPretty(w io.Writer, results []*wrappers.ScanResult) error {
@@ -318,6 +350,65 @@ func outputResultsPretty(w io.Writer, results []*wrappers.ScanResult) error {
 		_, _ = fmt.Fprintln(w)
 	}
 	return nil
+}
+
+func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
+	var sarif *wrappers.SarifResultsCollection
+	sarif = new(wrappers.SarifResultsCollection)
+	sarif.Schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+	sarif.Version = "2.1.0"
+	sarif.Runs = []wrappers.SarifRun{}
+	sarif.Runs = append(sarif.Runs, createSarifRun(results))
+	return sarif
+}
+
+func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
+	var sarifRun wrappers.SarifRun
+	sarifRun.Tool.Driver.Name = "Checkmarx AST"
+	sarifRun.Tool.Driver.Version = "1.0"
+	sarifRun.Tool.Driver.Rules = findSarifRules(results)
+	sarifRun.Results = findSarifResults(results)
+	return sarifRun
+}
+
+func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDriverRule {
+	var sarifRules = []wrappers.SarifDriverRule{}
+	for _, result := range results.Results {
+		if result.Type == "sast" {
+			var sarifRule wrappers.SarifDriverRule
+			sarifRule.Id = result.QueryID
+			sarifRule.Name = result.QueryName
+			sarifRules = append(sarifRules, sarifRule)
+		}
+	}
+	return sarifRules
+}
+
+func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifScanResult {
+	var sarifResults = []wrappers.SarifScanResult{}
+	for _, result := range results.Results {
+		if result.Type == "sast" {
+			var scanResult wrappers.SarifScanResult
+			scanResult.RuleId = result.QueryID
+			scanResult.Message.Text = result.Comments
+			scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
+			scanResult.Locations = []wrappers.SarifLocation{}
+			var scanLocation wrappers.SarifLocation
+			scanLocation.PhysicalLocation.ArtifactLocation.URI = "c:\foo.txts"
+			line, _ := strconv.Atoi(result.Line)
+			line = 5
+			scanLocation.PhysicalLocation.Region.StartLine = line
+			column, _ := strconv.Atoi(result.Line)
+			column = 4
+			scanLocation.PhysicalLocation.Region.StartColumn = column
+			length, _ := strconv.Atoi(result.Length)
+			length = 5
+			scanLocation.PhysicalLocation.Region.EndColumn = column + length
+			scanResult.Locations = append(scanResult.Locations, scanLocation)
+			sarifResults = append(sarifResults, scanResult)
+		}
+	}
+	return sarifResults
 }
 
 func outputSingleResult(w io.Writer, model *wrappers.ScanResult) {
