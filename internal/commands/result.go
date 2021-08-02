@@ -311,8 +311,10 @@ func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) 
 
 func fakeSarifData(results *wrappers.ScanResultsCollection) {
 	fmt.Println("REMOVE THIS, IT JUST MOCKS RESULTS UNTIL WE HAVE REAL ONES!")
-	results.Results[0].QueryID = "10526212270892872000"
-	results.Results[0].QueryName = "Stored XSS"
+	if len(results.Results) > 0 {
+		results.Results[0].QueryID = "10526212270892872000"
+		results.Results[0].QueryName = "Stored XSS"
+	}
 }
 
 func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
@@ -320,7 +322,7 @@ func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollect
 	var resultsJSON []byte
 	var sarifResults *wrappers.SarifResultsCollection
 	// TODO: REMOVE THIS, is debug code!
-	fakeSarifData(results)
+	// fakeSarifData(results)
 	sarifResults = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
