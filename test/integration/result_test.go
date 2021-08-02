@@ -54,10 +54,10 @@ func TestResultListSarif(t *testing.T) {
 	)
 	assert.NilError(t, err, "Getting results should pass")
 
-	result := wrappers.ScanResultsCollection{}
+	result := wrappers.SarifResultsCollection{}
 	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
 
-	assert.Assert(t, len(result.runs.results) > 0, "Should have results")
+	assert.Assert(t, len(result.Runs[0].Results) > 0, "Should have results")
 }
 
 // Create a scan and test getting its results
