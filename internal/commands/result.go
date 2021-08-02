@@ -26,6 +26,7 @@ const (
 	mediumLabel          = "medium"
 	highLabel            = "high"
 	lowLabel             = "low"
+	sastTypeFlag         = "sast"
 )
 
 type ScanResults struct {
@@ -353,8 +354,7 @@ func outputResultsPretty(w io.Writer, results []*wrappers.ScanResult) error {
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
-	var sarif *wrappers.SarifResultsCollection
-	sarif = new(wrappers.SarifResultsCollection)
+	var sarif *wrappers.SarifResultsCollection = new(wrappers.SarifResultsCollection)
 	sarif.Schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	sarif.Runs = []wrappers.SarifRun{}
@@ -374,7 +374,7 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDriverRule {
 	var sarifRules = []wrappers.SarifDriverRule{}
 	for _, result := range results.Results {
-		if result.Type == "sast" {
+		if result.Type == sastTypeFlag {
 			var sarifRule wrappers.SarifDriverRule
 			sarifRule.Id = result.QueryID
 			sarifRule.Name = result.QueryName
@@ -387,7 +387,7 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifScanResult {
 	var sarifResults = []wrappers.SarifScanResult{}
 	for _, result := range results.Results {
-		if result.Type == "sast" {
+		if result.Type == sastTypeFlag {
 			var scanResult wrappers.SarifScanResult
 			scanResult.RuleId = result.QueryID
 			scanResult.Message.Text = result.Comments
@@ -396,13 +396,10 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 			var scanLocation wrappers.SarifLocation
 			scanLocation.PhysicalLocation.ArtifactLocation.URI = "c:\foo.txts"
 			line, _ := strconv.Atoi(result.Line)
-			line = 5
 			scanLocation.PhysicalLocation.Region.StartLine = line
 			column, _ := strconv.Atoi(result.Line)
-			column = 4
 			scanLocation.PhysicalLocation.Region.StartColumn = column
 			length, _ := strconv.Atoi(result.Length)
-			length = 5
 			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 			scanResult.Locations = append(scanResult.Locations, scanLocation)
 			sarifResults = append(sarifResults, scanResult)
