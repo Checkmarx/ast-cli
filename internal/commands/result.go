@@ -310,8 +310,7 @@ func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) 
 }
 
 func fakeSarifData(results *wrappers.ScanResultsCollection) {
-	fmt.Println("REMOVE THIS, IT JUST MOCKS RESULTS UNTIL WE HAVE REAL ONES!")
-	if results != nil && len(results.Results) > 0 {
+	if results != nil && results.Results != nil {
 		results.Results[0].QueryID = "10526212270892872000"
 		results.Results[0].QueryName = "Stored XSS"
 	}
