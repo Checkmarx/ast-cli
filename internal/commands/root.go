@@ -68,7 +68,7 @@ const (
 	BaseAuthURIFlag          = "base-auth-uri"
 	BaseAuthURIFlagUsage     = "The base system IAM URI"
 	AstAPIKeyFlag            = "apikey"
-	AstAPIKeyUsage           = "The API Key to login to AST with"
+	AstAPIKeyUsage           = "The API Key to login to AST"
 	RepoURLFlag              = "repo-url"
 	ClientRolesFlag          = "roles"
 	ClientRolesSh            = "r"
@@ -108,7 +108,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(BaseURIFlag, params.BaseURI, BaseURIFlagUsage)
 	rootCmd.PersistentFlags().String(BaseAuthURIFlag, params.BaseIAMURI, BaseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(ProfileFlag, params.Profile, ProfileFlagUsage)
-	rootCmd.PersistentFlags().String(AstAPIKeyFlag, params.BaseURI, AstAPIKeyUsage)
+	rootCmd.PersistentFlags().String(AstAPIKeyFlag, "", AstAPIKeyUsage)
 	rootCmd.PersistentFlags().String(AgentFlag, params.AgentFlag, AgentFlagUsage)
 	rootCmd.PersistentFlags().String(TenantFlag, params.Tenant, TenantFlagUsage)
 
