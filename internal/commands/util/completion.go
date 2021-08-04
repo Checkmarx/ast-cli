@@ -1,14 +1,17 @@
 package util
 
 import (
-	"github.com/spf13/cobra"
 	"log"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const (
 	shellFlag = "shell"
 	shellSh   = "s"
+
+	failedSetCompletion = "Failed setting completion for shell "
 )
 
 func NewCompletionCommand() *cobra.Command {
@@ -75,9 +78,12 @@ func runCompletionCmd() func(cmd *cobra.Command, args []string) error {
 			err = cmd.Root().GenFishCompletion(os.Stdout, true)
 		} else if shellType == "powershell" {
 			err = cmd.Root().GenPowerShellCompletion(os.Stdout)
-		} else {
-			log.Fatal(err)
 		}
+
+		if err != nil {
+			log.Fatal(failedSetCompletion, shellType)
+		}
+
 		return nil
 	}
 }
