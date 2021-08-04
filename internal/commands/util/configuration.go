@@ -16,7 +16,7 @@ const (
 )
 
 func NewConfigCommand() *cobra.Command {
-	scanCmd := &cobra.Command{
+	configCmd := &cobra.Command{
 		Use:   "configure",
 		Short: "Manage scan configurations",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -24,7 +24,7 @@ func NewConfigCommand() *cobra.Command {
 		},
 	}
 
-	storValCmd := &cobra.Command{
+	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Shows current profiles configuration",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -34,13 +34,13 @@ func NewConfigCommand() *cobra.Command {
 
 	setCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_tenant, cx_client_id, cx_client_secret, cx_http_proxy)",
+		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_tenant, cx_client_id, cx_client_secret, http_proxy)",
 		RunE:  runSetValue(),
 	}
 	setCmd.PersistentFlags().String(propNameFlag, "", "Name of property set")
 	setCmd.PersistentFlags().String(propValFlag, "", "Value of property set")
-	scanCmd.AddCommand(storValCmd, setCmd)
-	return scanCmd
+	configCmd.AddCommand(showCmd, setCmd)
+	return configCmd
 }
 
 func runSetValue() func(cmd *cobra.Command, args []string) error {
@@ -52,6 +52,8 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 		} else if propName == params.BaseURIKey {
 			configuration.SetConfigProperty(propName, propValue)
 		} else if propName == params.BaseAuthURIKey {
+			configuration.SetConfigProperty(propName, propValue)
+		} else if propName == params.ProxyTypeKey {
 			configuration.SetConfigProperty(propName, propValue)
 		} else if strings.EqualFold(propName, params.ProxyKey) {
 			configuration.SetConfigProperty(propName, propValue)
