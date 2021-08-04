@@ -14,6 +14,7 @@ import (
 
 const (
 	FormatJSON  = "json"
+	FormatSarif = "sarif"
 	FormatList  = "list"
 	FormatTable = "table"
 	FormatHTML  = "html"

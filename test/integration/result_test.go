@@ -17,7 +17,7 @@ import (
 )
 
 // Create a scan and test getting its results
-func TestResultList(t *testing.T) {
+func TestResultListJson(t *testing.T) {
 	scanID, projectID := createScan(t, Dir, Tags)
 
 	defer deleteProject(t, projectID)
@@ -36,6 +36,28 @@ func TestResultList(t *testing.T) {
 	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
 
 	assert.Assert(t, len(result.Results) > 0, "Should have results")
+}
+
+// Create a scan and test getting its results
+func TestResultListSarif(t *testing.T) {
+	scanID, projectID := createScan(t, Dir, Tags)
+
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
+
+	resultCommand, outputBuffer := createRedirectedTestCommand(t)
+
+	err := execute(resultCommand,
+		"result", "list",
+		flag(commands.FormatFlag), util.FormatSarif,
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.NilError(t, err, "Getting results should pass")
+
+	result := wrappers.SarifResultsCollection{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, len(result.Runs[0].Results) > 0, "Should have results")
 }
 
 // Create a scan and test getting its results
