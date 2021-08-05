@@ -157,7 +157,6 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(commands.PresetName), "Checkmarx Default",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.TagList), formatTags(tags),
-		flag(commands.FilterFlag), "!*.zip",
 	}
 	return args
 }
