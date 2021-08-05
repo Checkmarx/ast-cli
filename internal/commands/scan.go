@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -353,36 +354,59 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		return err
 	}
 	for _, file := range files {
-		fileName := parentDir + file.Name()
 		if file.IsDir() {
-			fmt.Println("Directory: ", fileName)
-			newParent := parentDir + file.Name() + "/"
-			newBase := baseDir + file.Name() + "/"
-			err = addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
-			if err != nil {
-				return err
-			}
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, file)
 		} else {
-			if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
-				fmt.Println("Included: ", fileName)
-				dat, err := ioutil.ReadFile(parentDir + file.Name())
-				if err != nil {
-					return err
-				}
-				f, err := zipWriter.Create(baseDir + file.Name())
-				if err != nil {
-					return err
-				}
-				_, err = f.Write(dat)
-				if err != nil {
-					return err
-				}
-			} else {
-				fmt.Println("Excluded: ", fileName)
-			}
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, file)
+		}
+		if err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func handleFile(
+	zipWriter *zip.Writer,
+	baseDir string,
+	parentDir string,
+	filters []string,
+	includeFilters []string,
+	file fs.FileInfo,
+) error {
+	fileName := parentDir + file.Name()
+	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
+		fmt.Println("Included: ", fileName)
+		dat, err := ioutil.ReadFile(parentDir + file.Name())
+		if err != nil {
+			return err
+		}
+		f, err := zipWriter.Create(baseDir + file.Name())
+		if err != nil {
+			return err
+		}
+		_, err = f.Write(dat)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Excluded: ", fileName)
+	}
+	return nil
+}
+
+func handleDir(
+	zipWriter *zip.Writer,
+	baseDir string,
+	parentDir string,
+	filters []string,
+	includeFilters []string,
+	file fs.FileInfo,
+) error {
+	fmt.Println("Directory: ", parentDir+file.Name())
+	newParent := parentDir + file.Name() + "/"
+	newBase := baseDir + file.Name() + "/"
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
 }
 
 func filterMatched(filters []string, fileName string) bool {
