@@ -1,6 +1,7 @@
 package util
 
 import (
+	"github.com/MakeNowJust/heredoc"
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
@@ -16,31 +17,73 @@ const (
 )
 
 func NewConfigCommand() *cobra.Command {
-	configCmd := &cobra.Command{
+	configureCmd := &cobra.Command{
 		Use:   "configure",
-		Short: "Manage scan configurations",
+		Short: "Configure authentication and global properties",
+		Long:  "The configure command is the fastest way to set up your AST CLI",
+		Example: `
+			$ cx configure
+			AST Base URI []:
+			AST Base Auth URI (IAM) []:
+			AST Tenant []:
+			Do you want to use API Key authentication? (Y/N): Y
+			AST API Key []:
+		`,
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration.PromptConfiguration()
+		},
+		Annotations: map[string]string{
+			"utils:env": heredoc.Doc(`
+				See 'cx utils env' for the list of supported environment variables	
+			`),
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+			`),
 		},
 	}
 
 	showCmd := &cobra.Command{
 		Use:   "show",
-		Short: "Shows current profiles configuration",
+		Short: "Shows effective profile configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration.ShowConfiguration()
+		},
+		Example: heredoc.Doc(`
+			$ cx configure show
+			Current Effective Configuration
+                     BaseURI: 
+              BaseAuthURIKey: 
+                  AST Tenant: 
+                   Client ID:
+               Client Secret:
+                      APIKey: 
+                       Proxy:`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+			`),
 		},
 	}
 
 	setCmd := &cobra.Command{
 		Use:   "set",
-		Short: "Set configuration property (cx_base_uri, cx_base_auth_uri, cx_apikey, cx_tenant, cx_client_id, cx_client_secret, http_proxy)",
+		Short: "Set configuration properties",
+		Long:  "Set configuration properties\nRun 'cx utils env' for the list of supported environment variables",
 		RunE:  runSetValue(),
+		Example: heredoc.Doc(`
+			$ cx configure set cx_base_uri <base_uri>
+			Setting property [cx_base_uri] to value [<base_uri>]`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+			`),
+		},
 	}
 	setCmd.PersistentFlags().String(propNameFlag, "", "Name of property set")
 	setCmd.PersistentFlags().String(propValFlag, "", "Value of property set")
-	configCmd.AddCommand(showCmd, setCmd)
-	return configCmd
+
+	configureCmd.AddCommand(showCmd, setCmd)
+	return configureCmd
 }
 
 func runSetValue() func(cmd *cobra.Command, args []string) error {

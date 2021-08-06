@@ -7,10 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-
 	"github.com/checkmarxDev/ast-cli/internal/params"
-
 	"github.com/pkg/errors"
 
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
@@ -94,7 +93,22 @@ func NewAstCLI(
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
-		Use: "cx",
+		Use:   "cx <command> <subcommand> [flags]",
+		Short: "Checkmarx AST CLI",
+		Long:  "The AST CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx CxAST server.",
+		Example: heredoc.Doc(`
+			$ cx configure
+			$ cx scan create -s . --project-name my_project_name
+			$ cx scan list
+		`),
+		Annotations: map[string]string{
+			"utils:env": heredoc.Doc(`
+				See 'cx utils env' for  the list of supported environment variables.
+			`),
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/MYDCkQ
+			`),
+		},
 	}
 
 	// Load default flags
@@ -136,6 +150,11 @@ func NewAstCLI(
 	_ = viper.BindPFlag(VerboseFlag, rootCmd.PersistentFlags().Lookup(VerboseFlag))
 	_ = viper.BindPFlag(InsecureFlag, rootCmd.PersistentFlags().Lookup(InsecureFlag))
 
+	// Set help func
+	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		util.RootHelpFunc(command)
+	})
+
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
@@ -153,6 +172,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 	)
+
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }
@@ -206,6 +226,10 @@ func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(ProjectIDFlag, "", helpMsg)
+}
+
+func markProjectIDFlagRequired(cmd *cobra.Command) {
+	cmd.MarkPersistentFlagRequired(ProjectIDFlag)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {

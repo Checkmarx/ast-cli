@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/MakeNowJust/heredoc"
 	"strings"
 	"time"
 
@@ -40,43 +41,93 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
+		Long:  "The project command enables the ability to manage projects in CxAST.",
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/BQDMkQ
+			`),
+		},
 	}
 
 	createProjCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates a new project",
-		RunE:  runCreateProjectCommand(projectsWrapper),
+		Long:  "The project create command enables the ability to create a new project in CxAST.",
+		Example: heredoc.Doc(`
+			$ cx project create --project-name <Project Name>
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/hIYhuw
+			`),
+		},
+		RunE: runCreateProjectCommand(projectsWrapper),
 	}
 	createProjCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(GroupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(ProjectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(MainBranchFlag, "", "", "Main branch")
+	createProjCmd.MarkPersistentFlagRequired(ProjectName)
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all projects in the system",
-		RunE:  runListProjectsCommand(projectsWrapper),
+		Example: heredoc.Doc(`
+			$ cx project list --format list
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/Tochuw
+			`),
+		},
+		RunE: runListProjectsCommand(projectsWrapper),
 	}
 	listProjectsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a project",
-		RunE:  runGetProjectByIDCommand(projectsWrapper),
+		Example: heredoc.Doc(`
+			$ cx project show --project-id <project_id>
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/agghuw
+			`),
+		},
+		RunE: runGetProjectByIDCommand(projectsWrapper),
 	}
 	addProjectIDFlag(showProjectCmd, "Project ID to show.")
+	markProjectIDFlagRequired(showProjectCmd)
 
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a project",
-		RunE:  runDeleteProjectCommand(projectsWrapper),
+		Example: heredoc.Doc(`
+			$ cx project delete --project-id <project_id>
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/UAchuw
+			`),
+		},
+		RunE: runDeleteProjectCommand(projectsWrapper),
 	}
 	addProjectIDFlag(deleteProjCmd, "Project ID to delete.")
+	markProjectIDFlagRequired(deleteProjCmd)
 
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Get a list of all available tags",
-		RunE:  runGetProjectsTagsCommand(projectsWrapper),
+		Example: heredoc.Doc(`
+			$ cx project tags
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/FIghuw
+			`),
+		},
+		RunE: runGetProjectsTagsCommand(projectsWrapper),
 	}
 
 	addFormatFlagToMultipleCommands([]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd}, util.FormatTable,
