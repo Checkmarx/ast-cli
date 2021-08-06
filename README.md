@@ -155,7 +155,7 @@ These values can be stored in CLI configurations:
 - cx_tenant: your AST tenant name.
 - cx_base_uri: the URL of the AST server.
 - cx_base_auth_uri: the URL of the AST server.
-- cx_http_proxy: optional proxy server to use (see Proxy Support documentation). 
+- http_proxy: optional proxy server to use (see Proxy Support documentation). 
 - cx_client_id: the client ID used for authentication (see Authentication documentation).
 - cx_client_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
 
@@ -232,12 +232,12 @@ In most console environments the CLI supports command completion. In order for c
 Bash command completion setup:
 
 ``` bash
-$ source < (cx completion bash)
+$ source < (cx utils completion --shell bash)
 # To load completions for each session, execute once:
 # Linux:
-$ cx completion bash > /etc/bash_completion.d/cx
+$ cx utils completion --shell bash > /etc/bash_completion.d/cx
 # macOS:
-$ cx completion bash > /usr/local/etc/bash_completion.d/cx
+$ cx utils completion --shell bash > /usr/local/etc/bash_completion.d/cx
 ```
 
 Zsh command completion setup:
@@ -248,17 +248,17 @@ Zsh command completion setup:
 $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
 # To load completions for each session, execute once:
-$ cx completion zsh > "${fpath[1]}/_cx"	
+$ cx utils completion --shell zsh > "${fpath[1]}/_cx"	
 # You will need to start a new shell for this setup to take effect.
 ```
 
 PowerShell command completion setup:
 
 ``` powershell
-PS> cx completion powershell | Out-String | Invoke-Expression
+PS> cx utils completion --shell powershell | Out-String | Invoke-Expression
 	
 # To load completions for every new session, run:
-PS> cx completion powershell > cx.ps1
+PS> cx utils completion --shell powershell > cx.ps1
 # and source this file from your PowerShell profile.
 ```
 
