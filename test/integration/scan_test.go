@@ -5,7 +5,9 @@ package integration
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -96,6 +98,50 @@ func TestCancelScan(t *testing.T) {
 	assert.NilError(t, err, "Cancel should pass")
 
 	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
+}
+
+// Create a scan with the sources from the integration package
+// Assert a zip is excluded by default
+// Create another scan and include zips
+// Assert the zip is included
+func TestScanCreateIncludeFilter(t *testing.T) {
+
+	projectID := createProject(t, nil, nil)
+	defer deleteProject(t, projectID)
+
+	projectName := showProject(t, projectID).Name
+
+	args := []string{
+		"scan", "create",
+		flag(commands.ProjectName), projectName,
+		flag(commands.SourcesFlag), ".",
+		flag(commands.ScanTypes), "sast",
+		flag(commands.PresetName), "Checkmarx Default",
+	}
+
+	createCommand, buffer := createRedirectedTestCommand(t)
+	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
+	assert.NilError(t, err, "Creating a scan should pass")
+
+	bufferBytes, err := io.ReadAll(buffer)
+	assert.NilError(t, err, "Reading the output should pass")
+
+	output := string(bufferBytes)
+
+	assert.Assert(t, strings.Contains(output, "Excluded:  ./sources.zip"), "Zip should be excluded by default")
+
+	args = append(args, flag(commands.IncludeFilterFlag), "*zip")
+
+	createCommand, buffer = createRedirectedTestCommand(t)
+	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
+	assert.NilError(t, err, "Creating a scan should pass")
+
+	bufferBytes, err = io.ReadAll(buffer)
+	assert.NilError(t, err, "Reading the output should pass")
+
+	output = string(bufferBytes)
+
+	assert.Assert(t, strings.Contains(output, "Included:  ./sources.zip"), "Zip should be included by the flag")
 }
 
 // Generic scan test execution
