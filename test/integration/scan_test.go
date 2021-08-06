@@ -121,7 +121,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 	createCommand, buffer := createRedirectedTestCommand(t)
 	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Creating a scan should pass")
+	assert.NilError(t, err, "Creating a default scan should pass")
 
 	bufferBytes, err := io.ReadAll(buffer)
 	assert.NilError(t, err, "Reading the output should pass")
@@ -134,7 +134,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 	createCommand, buffer = createRedirectedTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Creating a scan should pass")
+	assert.NilError(t, err, "Creating a scan including zips should pass")
 
 	bufferBytes, err = io.ReadAll(buffer)
 	assert.NilError(t, err, "Reading the output should pass")
