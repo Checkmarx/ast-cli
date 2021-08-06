@@ -27,6 +27,8 @@ func runEnvChecks() func(cmd *cobra.Command, args []string) error {
 		fmt.Println(os.Getenv("CX_TENANT"))
 		fmt.Printf("%30v", "HTTP_PROXY: ")
 		fmt.Println(os.Getenv("HTTP_PROXY"))
+		fmt.Printf("%30v", "HTTP_PROXY_TYPE: ")
+		fmt.Println(os.Getenv("CX_PROXY_AUTH_TYPE"))
 		fmt.Printf("%30v", "CX_CLIENT_ID: ")
 		fmt.Println(os.Getenv("CX_CLIENT_ID"))
 		fmt.Printf("%30v", "CX_CLIENT_SECRET: ")
