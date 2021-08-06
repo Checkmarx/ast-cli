@@ -5,9 +5,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,7 +39,11 @@ func TestNoWaitScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
+	assert.Assert(
+		t,
+		pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep),
+		"Polling should complete",
+	)
 
 	executeScanTest(t, projectID, scanID, map[string]string{})
 }
@@ -69,7 +71,8 @@ func TestScanWorkflow(t *testing.T) {
 
 	workflowCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(workflowCommand,
+	err := execute(
+		workflowCommand,
 		"scan", "workflow",
 		flag(commands.ScanIDFlag), scanID,
 		flag(commands.FormatFlag), util.FormatJSON,
@@ -91,7 +94,8 @@ func TestCancelScan(t *testing.T) {
 
 	workflowCommand := createASTIntegrationTestCommand(t)
 
-	err := execute(workflowCommand,
+	err := execute(
+		workflowCommand,
 		"scan", "cancel",
 		flag(commands.ScanIDFlag), scanID,
 	)
@@ -100,10 +104,8 @@ func TestCancelScan(t *testing.T) {
 	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
 }
 
-// Create a scan with the sources from the integration package
-// Assert a zip is excluded by default
-// Create another scan and include zips
-// Assert the zip is included
+// Create a scan with the sources from the integration package, excluding go files and including zips
+// Assert the scan completes
 func TestScanCreateIncludeFilter(t *testing.T) {
 
 	projectID := createProject(t, nil, nil)
@@ -117,31 +119,13 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(commands.SourcesFlag), ".",
 		flag(commands.ScanTypes), "sast",
 		flag(commands.PresetName), "Checkmarx Default",
+		flag(commands.SourceDirFilterFlag), "!*go",
+		flag(commands.IncludeFilterFlag), "*zip",
 	}
 
-	createCommand, buffer := createRedirectedTestCommand(t)
+	createCommand := createASTIntegrationTestCommand(t)
 	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Creating a default scan should pass")
-
-	bufferBytes, err := io.ReadAll(buffer)
-	assert.NilError(t, err, "Reading the output should pass")
-
-	output := string(bufferBytes)
-
-	assert.Assert(t, strings.Contains(output, "Excluded:  ./sources.zip"), "Zip should be excluded by default")
-
-	args = append(args, flag(commands.IncludeFilterFlag), "*zip")
-
-	createCommand, buffer = createRedirectedTestCommand(t)
-	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Creating a scan including zips should pass")
-
-	bufferBytes, err = io.ReadAll(buffer)
-	assert.NilError(t, err, "Reading the output should pass")
-
-	output = string(bufferBytes)
-
-	assert.Assert(t, strings.Contains(output, "Included:  ./sources.zip"), "Zip should be included by the flag")
+	assert.NilError(t, err, "Creating a scan including the zips should pass")
 }
 
 // Generic scan test execution
@@ -225,7 +209,8 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func deleteScan(t *testing.T, scanID string) {
 	deleteScanCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteScanCommand,
+	err := execute(
+		deleteScanCommand,
 		"scan", "delete",
 		flag(commands.ScanIDFlag), scanID,
 	)
@@ -236,7 +221,8 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
-	err := execute(getCommand,
+	err := execute(
+		getCommand,
 		"scan", "list",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.FilterFlag), scanFilter,
@@ -254,7 +240,8 @@ func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(getCommand,
+	err := execute(
+		getCommand,
 		"scan", "show",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ScanIDFlag), scanID,
