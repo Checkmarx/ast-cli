@@ -69,10 +69,13 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(SourcesFlag, SourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(SourceDirFilterFlag, SourceDirFilterFlagSh, "", "Source file filtering pattern")
-	createScanCmd.PersistentFlags().StringP(IncludeFilterFlag,
+	createScanCmd.PersistentFlags().StringP(
+		IncludeFilterFlag,
 		IncludeFilterFlagSh,
 		"",
-		"Comma separated list of extra inclusions, ex: *zip,file.txt")
+		"Only files scannable by AST are included by default."+
+			" Add a comma separated list of extra inclusions, ex: *zip,file.txt",
+	)
 	createScanCmd.PersistentFlags().String(ProjectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
