@@ -273,14 +273,7 @@ var mockResults = `
           "status": "RECURRENT",
           "state": "CONFIRMED",          
           "data": {
-            "description": "Apache Commons BeanUtils, as 
-						distributed in lib/commons-beanutils-1.8.0.jar in Apache Struts 1.x 
-						through 1.3.10 and in other products requiring commons-beanutils 
-						through 1.9.3, does not suppress the class property, which allows 
-						remote attackers to \"manipulate\" the ClassLoader and execute 
-						arbitrary code via the class parameter, as demonstrated by the passing 
-						of this parameter to the getClass method of the ActionForm object in 
-						Struts 1.",
+            "description": "Apache Commons BeanUtils, as distributed in lib/commons-beanutils-1.8.0.jar...",
             "recommendations": "",
             "packageId": "Maven-commons-beanutils:commons-beanutils-1.8.3",
             "recommendedVersion": "1.9.4",
