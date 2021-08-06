@@ -153,7 +153,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		"scan", "create",
 		flag(commands.ProjectName), projectName,
 		flag(commands.SourcesFlag), source,
-		flag(commands.ScanTypes), "sast",
+		flag(commands.ScanTypes), "sast,kics",
 		flag(commands.PresetName), "Checkmarx Default",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.TagList), formatTags(tags),
