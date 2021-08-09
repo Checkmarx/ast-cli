@@ -39,7 +39,11 @@ func TestNoWaitScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep), "Polling should complete")
+	assert.Assert(
+		t,
+		pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep),
+		"Polling should complete",
+	)
 
 	executeScanTest(t, projectID, scanID, map[string]string{})
 }
@@ -67,7 +71,8 @@ func TestScanWorkflow(t *testing.T) {
 
 	workflowCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(workflowCommand,
+	err := execute(
+		workflowCommand,
 		"scan", "workflow",
 		flag(commands.ScanIDFlag), scanID,
 		flag(commands.FormatFlag), util.FormatJSON,
@@ -89,13 +94,38 @@ func TestCancelScan(t *testing.T) {
 
 	workflowCommand := createASTIntegrationTestCommand(t)
 
-	err := execute(workflowCommand,
+	err := execute(
+		workflowCommand,
 		"scan", "cancel",
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Cancel should pass")
 
 	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
+}
+
+// Create a scan with the sources from the integration package, excluding go files and including zips
+// Assert the scan completes
+func TestScanCreateIncludeFilter(t *testing.T) {
+
+	projectID := createProject(t, nil, nil)
+	defer deleteProject(t, projectID)
+
+	projectName := showProject(t, projectID).Name
+
+	args := []string{
+		"scan", "create",
+		flag(commands.ProjectName), projectName,
+		flag(commands.SourcesFlag), ".",
+		flag(commands.ScanTypes), "sast",
+		flag(commands.PresetName), "Checkmarx Default",
+		flag(commands.SourceDirFilterFlag), "!*go",
+		flag(commands.IncludeFilterFlag), "*zip",
+	}
+
+	createCommand := createASTIntegrationTestCommand(t)
+	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
+	assert.NilError(t, err, "Creating a scan including the zips should pass")
 }
 
 // Generic scan test execution
@@ -157,7 +187,6 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(commands.PresetName), "Checkmarx Default",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.TagList), formatTags(tags),
-		flag(commands.FilterFlag), "!*.zip",
 	}
 	return args
 }
@@ -180,7 +209,8 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func deleteScan(t *testing.T, scanID string) {
 	deleteScanCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteScanCommand,
+	err := execute(
+		deleteScanCommand,
 		"scan", "delete",
 		flag(commands.ScanIDFlag), scanID,
 	)
@@ -191,7 +221,8 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
-	err := execute(getCommand,
+	err := execute(
+		getCommand,
 		"scan", "list",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.FilterFlag), scanFilter,
@@ -209,7 +240,8 @@ func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 
 	getCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(getCommand,
+	err := execute(
+		getCommand,
 		"scan", "show",
 		flag(commands.FormatFlag), util.FormatJSON,
 		flag(commands.ScanIDFlag), scanID,
