@@ -229,7 +229,7 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 }
 
 func markProjectIDFlagRequired(cmd *cobra.Command) {
-	cmd.MarkPersistentFlagRequired(ProjectIDFlag)
+	_ := cmd.MarkPersistentFlagRequired(ProjectIDFlag)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {

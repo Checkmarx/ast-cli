@@ -84,7 +84,7 @@ func RootHelpFunc(command *cobra.Command) {
 func indent(s, indent string) string {
 	var lineRE = regexp.MustCompile(`(?m)^`)
 
-	if len(strings.TrimSpace(s)) == 0 {
+	if strings.TrimSpace(s) == "" {
 		return s
 	}
 	return lineRE.ReplaceAllLiteralString(s, indent)
@@ -100,7 +100,7 @@ func dedent(s string) string {
 	minIndent := -1
 
 	for _, l := range lines {
-		if len(l) == 0 {
+		if l == "" {
 			continue
 		}
 
