@@ -489,7 +489,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
-		var err error
 		determineScanTypes(cmd)
 		validateScanTypes()
 		sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
@@ -544,17 +543,9 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Wait until the scan is done: Queued, Running
 		if !noWaitFlag {
-			fmt.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
-			time.Sleep(time.Duration(waitDelay) * time.Second)
-			for {
-				running, err := isScanRunning(scansWrapper, scanResponseModel.ID)
-				if err != nil {
-					return err
-				}
-				if !running {
-					break
-				}
-				time.Sleep(time.Duration(waitDelay) * time.Second)
+			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
+			if err != nil {
+				return err
 			}
 		}
 		// Get the scan summary data
@@ -568,6 +559,26 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		return nil
 	}
+}
+
+func waitForScanCompletion(
+	scanResponseModel *scansRESTApi.ScanResponseModel,
+	waitDelay int,
+	scansWrapper wrappers.ScansWrapper,
+) error {
+	fmt.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
+	time.Sleep(time.Duration(waitDelay) * time.Second)
+	for {
+		running, err := isScanRunning(scansWrapper, scanResponseModel.ID)
+		if err != nil {
+			return err
+		}
+		if !running {
+			break
+		}
+		time.Sleep(time.Duration(waitDelay) * time.Second)
+	}
+	return nil
 }
 
 func writeConsoleSummary(summary *ResultSummary) {
@@ -600,7 +611,7 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, err
 	}
 	fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status != "Completed" {
-		return false, errors.New("scan did not complete successfully.")
+		return false, errors.New("scan did not complete successfully")
 	}
 	return false, nil
 }
