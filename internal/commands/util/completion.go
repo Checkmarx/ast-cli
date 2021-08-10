@@ -64,7 +64,7 @@ func NewCompletionCommand() *cobra.Command {
 				See 'cx utils env' for the list of supported environment variables	
 			`),
 			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+				https://checkmarx.atlassian.net/wiki/x/iw0huw
 			`),
 		},
 	}

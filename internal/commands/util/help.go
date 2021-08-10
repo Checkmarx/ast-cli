@@ -15,7 +15,7 @@ func RootHelpFunc(command *cobra.Command) {
 	var commands []string
 
 	for _, c := range command.Commands() {
-		s := rpad(c.Name()+":", c.NamePadding()) + c.Short
+		s := rightPad(c.Name()+":", c.NamePadding()) + c.Short
 		commands = append(commands, s)
 	}
 
@@ -74,7 +74,6 @@ func RootHelpFunc(command *cobra.Command) {
 			color.Bold.Println(e.Title)
 			fmt.Fprintln(out, indent(strings.Trim(e.Body, "\r\n"), "  "))
 		} else {
-			// If there is no title print the body as is
 			fmt.Fprintln(out, e.Body)
 		}
 		fmt.Fprintln(out)
@@ -90,7 +89,7 @@ func indent(s, indent string) string {
 	return lineRE.ReplaceAllLiteralString(s, indent)
 }
 
-func rpad(s string, padding int) string {
+func rightPad(s string, padding int) string {
 	template := fmt.Sprintf("%%-%ds ", padding)
 	return fmt.Sprintf(template, s)
 }

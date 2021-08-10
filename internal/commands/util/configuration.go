@@ -21,14 +21,14 @@ func NewConfigCommand() *cobra.Command {
 		Use:   "configure",
 		Short: "Configure authentication and global properties",
 		Long:  "The configure command is the fastest way to set up your AST CLI",
-		Example: `
+		Example: heredoc.Doc(`
 			$ cx configure
 			AST Base URI []:
 			AST Base Auth URI (IAM) []:
 			AST Tenant []:
 			Do you want to use API Key authentication? (Y/N): Y
 			AST API Key []:
-		`,
+		`),
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration.PromptConfiguration()
 		},
