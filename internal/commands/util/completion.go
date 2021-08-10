@@ -69,7 +69,7 @@ func NewCompletionCommand() *cobra.Command {
 		},
 	}
 	completionCmd.PersistentFlags().StringP(shellFlag, shellSh, "", "The type of shell [bash/zsh/fish/powershell]")
-	completionCmd.MarkPersistentFlagRequired(shellFlag)
+	_ = completionCmd.MarkPersistentFlagRequired(shellFlag)
 
 	return completionCmd
 }
