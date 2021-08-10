@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-
 	"github.com/pkg/errors"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -490,7 +489,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
-		var err error
 		determineScanTypes(cmd)
 		validateScanTypes()
 		sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
@@ -545,13 +543,9 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		// Wait until the scan is done: Queued, Running
 		if !noWaitFlag {
-			fmt.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
-			time.Sleep(time.Duration(waitDelay) * time.Second)
-			for {
-				if !isScanRunning(scansWrapper, scanResponseModel.ID) {
-					break
-				}
-				time.Sleep(time.Duration(waitDelay) * time.Second)
+			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
+			if err != nil {
+				return err
 			}
 		}
 		// Get the scan summary data
@@ -567,6 +561,26 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 	}
 }
 
+func waitForScanCompletion(
+	scanResponseModel *scansRESTApi.ScanResponseModel,
+	waitDelay int,
+	scansWrapper wrappers.ScansWrapper,
+) error {
+	fmt.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
+	time.Sleep(time.Duration(waitDelay) * time.Second)
+	for {
+		running, err := isScanRunning(scansWrapper, scanResponseModel.ID)
+		if err != nil {
+			return err
+		}
+		if !running {
+			break
+		}
+		time.Sleep(time.Duration(waitDelay) * time.Second)
+	}
+	return nil
+}
+
 func writeConsoleSummary(summary *ResultSummary) {
 	fmt.Println("")
 	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
@@ -579,7 +593,7 @@ func writeConsoleSummary(summary *ResultSummary) {
 	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 }
 
-func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
+func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *scansRESTApi.ScanResponseModel
 	var errorModel *scansRESTApi.ErrorModel
 	var err error
@@ -592,14 +606,14 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == "Running" || scanResponseModel.Status == "Queued" {
 			fmt.Println("Scan status: ", scanResponseModel.Status)
-			return true
+			return true, nil
 		}
 	}
 	fmt.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status != "Completed" {
-		os.Exit(1)
+		return false, errors.New("scan did not complete successfully")
 	}
-	return false
+	return false, nil
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
