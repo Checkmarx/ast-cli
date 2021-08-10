@@ -1,6 +1,4 @@
-By submitting a PR to this repository, you agree to the terms within
-the [Checkmarx Code of Conduct](../docs/code_of_conduct.md). Please see
-the [contributing guidelines](../docs/contributing.md) for how to create and submit a high-quality PR for this repo.
+By submitting a PR to this repository, you agree to the terms within the [Checkmarx Code of Conduct](../docs/code_of_conduct.md). Please see the [contributing guidelines](../docs/contributing.md) for how to create and submit a high-quality PR for this repo.
 
 ### Description
 
