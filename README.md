@@ -76,18 +76,18 @@ Usage:
   cx scan create [flags]
 
 Flags:
-  cx scan create [flags]
-
-Flags:
-  -f, --filter string             Source file filtering pattern
+  -b, --branch string             Branch to scan
+  -f, --file-filter string        Source file filtering pattern
+  -i, --file-include string       Comma separated list of extra inclusions, ex: *zip,file.txt
+  -s, --file-source string        Sources like: directory, zip file or git URL.
       --format string             Format for the output. One of [table json list] (default "list")
   -h, --help                      help for create
-  -w, --nowait                    Wait for scan completiot (default true)
+      --nowait                    Wait for scan completion (default true)
       --project-name string       Name of the project
       --sast-incremental string   Incremental SAST scan should be performed. (default "false")
       --sast-preset-name string   The name of the Checkmarx preset to use.
       --scan-types string         Scan types, ex: (sast,kics,sca)
-  -s, --sources string            Sources like: directory, zip file or git URL.
+      --tags string               List of tags, ex: (tagA,tagB:val,etc)
       --wait-delay int            Polling wait time in seconds (default 5)     
       ....
 ```
@@ -292,11 +292,11 @@ The (--scan-types) parameter is used to indicate which types of scan should be p
 - SCA
 - KICS
 
-The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--sources) option will be examined, and the type of scan being used will automatically be determined, you have the following options: 
+The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--file-source) option will be examined, and the type of scan being used will automatically be determined, you have the following options: 
 
 1. A zip file with your source code. The CLI will assume any source that ends with (.zip) is contains zipped source files.
 3. A host git repo. The CLI will assume that any source that starts with (http://) or (https://) points to a GIT repository.
-3. A directory with your source code. If this option is specified the (--filter) option can be specified to control what is sent to AST.
+3. A directory with your source code. If this option is specified the (--file-filter) option can be specified to control what is sent to AST.
 
 **NOTE**: for simplicity the following examples assume you have stored your authentication and base-uri information in either environment variables or CLI configuration parameters. These values are required but will not appear in the commands.
 
@@ -310,22 +310,12 @@ Scanning zipped code archives can be achieved like this:
 ./cx scan create -s <your-file>.zip --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast"
 ```
 
-If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server. The filters are based on an inclusion and exclusion model. The following example shows how to scan a folder:
+If you decide to scan a local directory you can provide filters that determine which resources are sent to the AST server.
+For more details, refer to the [filtering](#filtering) section.
+The following example shows how to scan a folder. The filter in this case will include any go files that start with an 's':
 
 ``` bash
 ./cx scan create -s <path-to-your-folder> -f "s*.go" --sast-project-name "testproj" --sast-incremental "false" --project-type "sast" --scan-types "sast,sca,kics"
-```
-
-The filter in this case will include any go files that start with an 's'. You can include more than one set of files and directories by separating the inclusion patterns with a comma, example:
-
-``` bash
-./cx scan create -s <path-to-your-folder> -f "s*,*.txt" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast,kics"
-```
-
-In this previous example any files that start with 's' will be included, as well as any files that end with '.txt'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'zip':
-
-``` bash
-./cx scan create -s <path-to-your-folder> -f "s*,*.txt,!*.zip" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast" 
 ```
 
 Git repositories can be scanned like this:
@@ -336,7 +326,7 @@ Git repositories can be scanned like this:
 
 When you're scanning repos AST will fetch the code directly from the repository.
 
-You can specify the name of branch to scan to can with the (--branch) option. If the (--source) type indicates a GIT repository the (--branch) value will also indicate the branch to pull code from. The (--branch) option can be used like this:
+You can specify the name of branch to scan to can with the (--branch) option. If the (--file-source) type indicates a GIT repository the (--branch) value will also indicate the branch to pull code from. The (--branch) option can be used like this:
 
 ``` bash
 ./cx scan create -s <your-repo-url> --project-name "testproj" --scans-type "sast" --branch yourBranch
@@ -372,7 +362,31 @@ You can delete existing scan like this:
 ./cx scan delete --scan-id <scan-id>,<scan-id>,etc
 ```
 
+### Filtering
 
+The filters are based on an inclusion and exclusion model.
+There is a default inclusion list so only files scannable by AST are included.
+Filters you provide with the filtering flag will be applied on top of the default inclusion list.
+Building on the previous example:
+
+You can include more than one set of files and directories by separating the inclusion patterns with a comma, example:
+
+``` bash
+./cx scan create -s <path-to-your-folder> -f "s*,f*" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast,kics"
+```
+
+In this previous example any files that start with 's' will be included, as well as any files that start with 'f'. You can add an exclusion into the list by prepending the pattern with a '!'. The following query demonstrates exclusion by filtering files that end with 'dat':
+
+``` bash
+./cx scan create -s <path-to-your-folder> -f "s*,f*,!*dat" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast" 
+```
+
+You can also add extra patterns to the inclusion list so more of your files are included before applying the filters.
+If you want to include zip files and a configuration file called project.cfg, which are typically not included:
+
+``` bash
+./cx scan create -s <path-to-your-folder> -f "s*,f*,!*dat" -i "*.zip,project.cfg" --project-name "testproj" --sast-preset-name "Checkmarx Default" --sast-incremental "false" --scan-types "sast" 
+```
 
 ## Managing Projects
 

@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"github.com/MakeNowJust/heredoc"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,11 +17,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/MakeNowJust/heredoc"
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
-
 	"github.com/mssola/user_agent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -81,9 +81,16 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 	}
 
 	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
-	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", 5, "Polling wait time in seconds")
+	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(SourcesFlag, SourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
 	createScanCmd.PersistentFlags().StringP(SourceDirFilterFlag, SourceDirFilterFlagSh, "", "Source file filtering pattern")
+	createScanCmd.PersistentFlags().StringP(
+		IncludeFilterFlag,
+		IncludeFilterFlagSh,
+		"",
+		"Only files scannable by AST are included by default."+
+			" Add a comma separated list of extra inclusions, ex: *zip,file.txt",
+	)
 	createScanCmd.PersistentFlags().String(ProjectName, "", "Name of the project")
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
@@ -378,19 +385,18 @@ func addScaScan() map[string]interface{} {
 	return nil
 }
 
-func compressFolder(sourceDir, filter string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error) {
 	var err error
-	var filters []string = nil
-	if len(filter) > 0 {
-		filters = strings.Split(filter, ",")
-	}
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	zipWriter := zip.NewWriter(outputFile)
 	sourceDir += "/"
-	addDirFiles(zipWriter, "/", sourceDir, filters)
+	err = addDirFiles(zipWriter, "/", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Close the file
 	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
@@ -398,82 +404,118 @@ func compressFolder(sourceDir, filter string) (string, error) {
 	return outputFile.Name(), err
 }
 
-func filterMatched(filters []string, fileName string) (foundMatch, foundExclusion bool) {
-	var matched = true
-	var firstMatch = true
-	var excluded = false
+func getIncludeFilters(userIncludeFilter string) []string {
+	return buildFilters(commonParams.BaseFilters, userIncludeFilter)
+}
+
+func getUserFilters(filterStr string) []string {
+	return buildFilters(nil, filterStr)
+}
+
+func buildFilters(base []string, extra string) []string {
+	if len(extra) > 0 {
+		return append(base, strings.Split(extra, ",")...)
+	}
+	return base
+}
+
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
+	files, err := ioutil.ReadDir(parentDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, file)
+		} else {
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, file)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func handleFile(
+	zipWriter *zip.Writer,
+	baseDir string,
+	parentDir string,
+	filters []string,
+	includeFilters []string,
+	file fs.FileInfo,
+) error {
+	fileName := parentDir + file.Name()
+	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
+		fmt.Println("Included: ", fileName)
+		dat, err := ioutil.ReadFile(parentDir + file.Name())
+		if err != nil {
+			return err
+		}
+		f, err := zipWriter.Create(baseDir + file.Name())
+		if err != nil {
+			return err
+		}
+		_, err = f.Write(dat)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("Excluded: ", fileName)
+	}
+	return nil
+}
+
+func handleDir(
+	zipWriter *zip.Writer,
+	baseDir string,
+	parentDir string,
+	filters []string,
+	includeFilters []string,
+	file fs.FileInfo,
+) error {
+	fmt.Println("Directory: ", parentDir+file.Name())
+	newParent := parentDir + file.Name() + "/"
+	newBase := baseDir + file.Name() + "/"
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+}
+
+func filterMatched(filters []string, fileName string) bool {
+	firstMatch := true
+	matched := true
 	for _, filter := range filters {
 		if filter[0] == '!' {
 			// it just needs to match one exclusion to be excluded.
-			if !excluded {
-				excluded, _ = path.Match(filter[1:], fileName)
+			excluded, _ := path.Match(filter[1:], fileName)
+			if excluded {
+				return false
 			}
 		} else {
-			// 1. If there are no inclusions everythng is considered included
-			// 2. If there is at least one included and nothing matches the its
-			// not included
-			// it just needs to match one thing to be matched
+			// If there are no inclusions everything is considered included
 			if firstMatch {
-				// Need to reset the match flag because now we need to find one.
-				matched = false
+				// Inclusion filter found so reset the match flag and search for a match
 				firstMatch = false
+				matched = false
 			}
+			// We can't immediately return as we can still find an exclusion further down the slice
+			// So we store the match result and never try again
 			if !matched {
 				matched, _ = path.Match(filter, fileName)
 			}
 		}
 	}
-	return matched, excluded
+	return matched
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters []string) {
-	files, err := ioutil.ReadDir(parentDir)
-	if err != nil {
-		fmt.Println(err)
-	}
-	for _, file := range files {
-		fileName := parentDir + file.Name()
-		if !file.IsDir() {
-			var matched = true
-			var excluded = false
-			if filters != nil {
-				matched, excluded = filterMatched(filters, file.Name())
-			}
-			if matched && !excluded {
-				fmt.Println("Included: ", fileName)
-				dat, err := ioutil.ReadFile(parentDir + file.Name())
-				if err != nil {
-					fmt.Println(err)
-				}
-				f, err := zipWriter.Create(baseDir + file.Name())
-				if err != nil {
-					fmt.Println(err)
-				}
-				_, err = f.Write(dat)
-				if err != nil {
-					fmt.Println(err)
-				}
-			} else {
-				fmt.Println("Excluded: ", fileName)
-			}
-		} else if file.IsDir() {
-			fmt.Println("Directory: ", fileName)
-			newParent := parentDir + file.Name() + "/"
-			newBase := baseDir + file.Name() + "/"
-			addDirFiles(zipWriter, newBase, newParent, filters)
-		}
-	}
-}
-
-func determineSourceFile(
-	uploadsWrapper wrappers.UploadsWrapper,
+func determineSourceFile(uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
 	sourceDir,
-	sourceDirFilter string) (string, error) {
+	sourceDirFilter,
+	userIncludeFilter string) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter)
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -520,6 +562,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		determineScanTypes(cmd)
 		validateScanTypes()
 		sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
+		userIncludeFilter, _ := cmd.Flags().GetString(IncludeFilterFlag)
 		sourcesFile, _ := cmd.Flags().GetString(SourcesFlag)
 		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
 		if err != nil {
@@ -546,7 +589,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = viper.GetString(commonParams.BranchKey)
-		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter)
+		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
