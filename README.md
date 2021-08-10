@@ -1,6 +1,6 @@
 [![CircleCI](https://circleci.com/gh/CheckmarxDev/ast-cli/tree/master.svg?style=svg&circle-token=32eeef7505db60c11294e63db64e70882bde83b0)](https://circleci.com/gh/CheckmarxDev/ast-cli/tree/master)
 ## Building from source code
-### Windows
+### Windows 
 ``` powershell
 setx GOOS=windows 
 setx GOARCH=am
@@ -108,11 +108,11 @@ Many CLI variables can be provided using environment variables, configuration va
 
 1. CLI parameters, these always overide configuration and environment variables.
 2. Configuration variables always overide environment variables.
-3. Environment variables are the first order precidence.
+3. Environment variables are the first order precidence. 
 
 ## CLI Configurations
 
-The CLI allows you to permanently store some CLI options in configuration files. The configuration files are kept in the users home directory under a subdirectory named  ($HOME/.checkmarx).
+The CLI allows you to permanently store some CLI options in configuration files. The configuration files are kept in the users home directory under a subdirectory named  ($HOME/.checkmarx). 
 
 ``` bash
 ./cx configure set --prop-name cx_base_uri --prop-value "http://<your-server>[:<port>]"
@@ -155,7 +155,7 @@ These values can be stored in CLI configurations:
 - cx_tenant: your AST tenant name.
 - cx_base_uri: the URL of the AST server.
 - cx_base_auth_uri: the URL of the AST server.
-- http_proxy: optional proxy server to use (see Proxy Support documentation).
+- http_proxy: optional proxy server to use (see Proxy Support documentation). 
 - cx_client_id: the client ID used for authentication (see Authentication documentation).
 - cx_client_secret: the secret that corrosponds to the client-id  (see Authentication documentation).
 
@@ -217,17 +217,17 @@ export CX_CLIENT_SECRET=<your-client-secret>
 
 ## Tenant Configuration
 
-If you're are using a hosted AST instance you will need to include your tenant name when using the CLI. Failure to configure your tenant information correctly will result in communication failures with AST.
+If you're are using a hosted AST instance you will need to include your tenant name when using the CLI. Failure to configure your tenant information correctly will result in communication failures with AST. 
 
 The tenant name can be provided in three different ways:
 
 1. As a CLI argument (--tenant <your-tenant-name>).
 2. As an environment variable (CX_TENANT=<your-tenant-name>).
-3. Through the (cx configure) action.
+3. Through the (cx configure) action. 
 
 ## Command Completion
 
-In most console environments the CLI supports command completion. In order for command completion to work you need configure your console correctly. You can skip the following setup if you have installed the CLI from a prepacked source like Home Brew, Apt, Chocolately, etc.
+In most console environments the CLI supports command completion. In order for command completion to work you need configure your console correctly. You can skip the following setup if you have installed the CLI from a prepacked source like Home Brew, Apt, Chocolately, etc. 
 
 Bash command completion setup:
 
@@ -282,7 +282,7 @@ tags    -- Get a list of all available tags
 
 You need to specify a project using the (--project-name) parameter when you create a scan. If the project doesn't exist then it will be created automatically; however, if the project exists it will be reused. The following examples will all use the same project name for simplicity.
 
-You can optionally specify the name of the preset to use when scanning projects using the (--sast-preset-name) parameter. If you don't specify the preset name then "Checkmarx Default" will be used.
+You can optionally specify the name of the preset to use when scanning projects using the (--sast-preset-name) parameter. If you don't specify the preset name then "Checkmarx Default" will be used. 
 
 You can indicate if an incremental or full scan should be performed with the (--sast-incremental) parameter. If you don't provide the incremental flag then a full scan will be triggered.
 
@@ -292,7 +292,7 @@ The (--scan-types) parameter is used to indicate which types of scan should be p
 - SCA
 - KICS
 
-The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--file-source) option will be examined, and the type of scan being used will automatically be determined, you have the following options:
+The most important thing you need to decide is where the scan is going to come from. The type of parameter you pass to the (--file-source) option will be examined, and the type of scan being used will automatically be determined, you have the following options: 
 
 1. A zip file with your source code. The CLI will assume any source that ends with (.zip) is contains zipped source files.
 3. A host git repo. The CLI will assume that any source that starts with (http://) or (https://) points to a GIT repository.
