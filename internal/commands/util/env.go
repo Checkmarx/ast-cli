@@ -2,8 +2,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/MakeNowJust/heredoc"
 	"os"
+
+	"github.com/MakeNowJust/heredoc"
 
 	"github.com/spf13/cobra"
 )

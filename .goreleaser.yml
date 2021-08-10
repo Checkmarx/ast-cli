@@ -23,9 +23,9 @@ builds:
       - goos: windows
         goarm: 7
     ldflags:
-        - -s
-        - -w
-        - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
+      - -s
+      - -w
+      - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 dockers:
   - use: docker
     dockerfile: goreleaser/Dockerfile

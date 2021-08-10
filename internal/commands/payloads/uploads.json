@@ -5,7 +5,9 @@
     "handler": {
       "url": ""
     },
-    "tags": {"test1": "test3"}
+    "tags": {
+      "test1": "test3"
+    }
   },
   "config": [
     {
@@ -16,5 +18,7 @@
       }
     }
   ],
-  "tags": {"test1": "test3"}
+  "tags": {
+    "test1": "test3"
+  }
 }

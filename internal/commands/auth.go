@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/MakeNowJust/heredoc"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"

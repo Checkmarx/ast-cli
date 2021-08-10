@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/MakeNowJust/heredoc"
 	"strings"
+
+	"github.com/MakeNowJust/heredoc"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"

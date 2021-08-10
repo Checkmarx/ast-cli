@@ -3,9 +3,10 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/MakeNowJust/heredoc"
 	"regexp"
 	"strings"
+
+	"github.com/MakeNowJust/heredoc"
 
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
