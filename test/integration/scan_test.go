@@ -120,12 +120,17 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(commands.ScanTypes), "sast",
 		flag(commands.PresetName), "Checkmarx Default",
 		flag(commands.SourceDirFilterFlag), "!*go",
-		flag(commands.IncludeFilterFlag), "*zip",
 	}
 
 	createCommand := createASTIntegrationTestCommand(t)
-	err := executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Creating a scan including the zips should pass")
+	err := execute(createCommand, args...)
+	assert.Assert(t, err != nil, "Creating a scan with !*go should fail")
+
+	args = append(args, flag(commands.IncludeFilterFlag), "*zip")
+
+	createCommand = createASTIntegrationTestCommand(t)
+	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
+	assert.NilError(t, err, "Including zip should fix the scan")
 }
 
 // Generic scan test execution
