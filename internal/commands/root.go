@@ -212,8 +212,8 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
-func addFormatFlagToMultipleCommands(cmds []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	for _, c := range cmds {
+func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	for _, c := range commands {
 		addFormatFlag(c, defaultFormat, otherAvailableFormats...)
 	}
 }
@@ -232,7 +232,7 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 }
 
 func markProjectIDFlagRequired(cmd *cobra.Command) {
-	_ := cmd.MarkPersistentFlagRequired(ProjectIDFlag)
+	_ = cmd.MarkPersistentFlagRequired(ProjectIDFlag)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
