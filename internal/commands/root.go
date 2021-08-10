@@ -231,10 +231,6 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(ProjectIDFlag, "", helpMsg)
 }
 
-func markProjectIDFlagRequired(cmd *cobra.Command) {
-	_ = cmd.MarkPersistentFlagRequired(ProjectIDFlag)
-}
-
 func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(FormatFlag)
 	return util.Print(cmd.OutOrStdout(), view, f)

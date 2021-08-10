@@ -68,7 +68,6 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	createProjCmd.PersistentFlags().String(GroupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(ProjectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(MainBranchFlag, "", "", "Main branch")
-	_ = createProjCmd.MarkPersistentFlagRequired(ProjectName)
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -99,7 +98,6 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE: runGetProjectByIDCommand(projectsWrapper),
 	}
 	addProjectIDFlag(showProjectCmd, "Project ID to show.")
-	markProjectIDFlagRequired(showProjectCmd)
 
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
@@ -115,7 +113,6 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE: runDeleteProjectCommand(projectsWrapper),
 	}
 	addProjectIDFlag(deleteProjCmd, "Project ID to delete.")
-	markProjectIDFlagRequired(deleteProjCmd)
 
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
