@@ -111,6 +111,8 @@ var BaseFilters = []string{
 	"*.jar",
 	"*.js",
 	"*.dll",
+	"*.tf",
+	"*.yaml",
 	"build.gradle",
 	"build.sbt",
 	"yarn.lock",
