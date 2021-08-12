@@ -28,7 +28,7 @@ builds:
       - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 dockers:
   - use: docker
-    dockerfile: goreleaser/Dockerfile
+    dockerfile: Dockerfile
     image_templates:
       - "cxsdlc/ast-cli:latest"
       - "cxsdlc/ast-cli:{{ .Tag }}"
