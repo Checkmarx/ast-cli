@@ -5,7 +5,7 @@ var EnvVarsBinds = []struct {
 	Env     string
 	Default string
 }{
-	{BaseURIKey, BaseURIEnv, "http://127.0.0.1:80"},
+	{BaseURIKey, BaseURIEnv, ""},
 	{ProxyKey, ProxyEnv, ""},
 	{ProxyTypeKey, ProxyTypeEnv, "basic"},
 	{ProxyDomainKey, ProxyDomainEnv, ""},

@@ -24,6 +24,7 @@ func PromptConfiguration() {
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
 	accessAPIKey := viper.GetString(params.AstAPIKey)
 	tenant := viper.GetString(params.TenantKey)
+	fmt.Print("Setup guide: https://checkmarx.atlassian.net/wiki/x/mIKctw \n\n")
 	// Prompt for Base URI
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')
@@ -36,7 +37,7 @@ func PromptConfiguration() {
 	if len(baseAuthURI) < 1 {
 		baseAuthURI = baseURISrc
 	}
-	fmt.Printf("AST Base Auth URI [%s]: ", baseAuthURI)
+	fmt.Printf("AST Base Auth URI (IAM) [%s]: ", baseAuthURI)
 	baseAuthURI, _ = reader.ReadString('\n')
 	baseAuthURI = strings.Replace(baseAuthURI, "\n", "", -1)
 	baseAuthURI = strings.Replace(baseAuthURI, "\r", "", -1)

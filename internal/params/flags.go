@@ -22,7 +22,7 @@ const (
 	IncludeNodesQueryParam = "include-nodes"
 	SortQueryParam         = "sort"
 	Profile                = "default"
-	BaseURI                = "127.0.0.1:80"
+	BaseURI                = ""
 	AgentFlag              = "ASTCLI"
 	BaseIAMURI             = ""
 	Tenant                 = ""

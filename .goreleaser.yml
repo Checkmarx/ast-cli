@@ -23,15 +23,17 @@ builds:
       - goos: windows
         goarm: 7
     ldflags:
-        - -s
-        - -w
-        - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
+      - -s
+      - -w
+      - -X github.com/checkmarxDev/ast-cli/internal/params.Version={{.Version}}
 dockers:
   - use: docker
     dockerfile: goreleaser/Dockerfile
     image_templates:
       - "cxsdlc/ast-cli:latest"
       - "cxsdlc/ast-cli:{{ .Tag }}"
+      - "checkmarx/ast-cli:latest"
+      - "checkmarx/ast-cli:{{ .Tag }}"
 archives:
   - format_overrides:
       - goos: windows

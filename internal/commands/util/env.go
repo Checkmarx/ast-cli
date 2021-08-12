@@ -4,14 +4,24 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/MakeNowJust/heredoc"
+
 	"github.com/spf13/cobra"
 )
 
 func NewEnvCheckCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "env",
-		Short: "Show environment variables",
-		RunE:  runEnvChecks(),
+		Short: "Shows the current profiles configuration properties",
+		Example: heredoc.Doc(`
+			$ cx utils env
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/VJGXtw
+			`),
+		},
+		RunE: runEnvChecks(),
 	}
 	return cmd
 }
