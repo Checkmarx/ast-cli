@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/MakeNowJust/heredoc"
+
 	"github.com/spf13/cobra"
 )
 
@@ -58,8 +60,17 @@ func NewCompletionCommand() *cobra.Command {
 		# and source this file from your PowerShell profile.
 	`,
 		RunE: runCompletionCmd(),
+		Annotations: map[string]string{
+			"utils:env": heredoc.Doc(`
+				See 'cx utils env' for the list of supported environment variables	
+			`),
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/iw0huw
+			`),
+		},
 	}
 	completionCmd.PersistentFlags().StringP(shellFlag, shellSh, "", "The type of shell [bash/zsh/fish/powershell]")
+	_ = completionCmd.MarkPersistentFlagRequired(shellFlag)
 
 	return completionCmd
 }
