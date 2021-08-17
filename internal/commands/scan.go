@@ -33,6 +33,8 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
+
+	mbBytes = 1024.0 * 1024.0
 )
 
 var (
@@ -391,7 +393,6 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	zipWriter := zip.NewWriter(outputFile)
-	sourceDir += "/"
 	err = addDirFiles(zipWriter, "/", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		log.Fatal(err)
@@ -400,6 +401,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
+	stat, err := outputFile.Stat()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes) // Megabytes
 	return outputFile.Name(), err
 }
 
@@ -473,6 +479,20 @@ func handleDir(
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
+	// Check if the folder is excluded
+	for _, filter := range filters {
+		if filter[0] == '!' {
+			match, err := path.Match(filter[1:], file.Name())
+			if err != nil {
+				return err
+			}
+			if match {
+				fmt.Println("Excluded: ", parentDir+file.Name()+"/")
+				return nil
+			}
+		}
+	}
+
 	fmt.Println("Directory: ", parentDir+file.Name())
 	newParent := parentDir + file.Name() + "/"
 	newBase := baseDir + file.Name() + "/"
@@ -539,7 +559,10 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 			if filepath.Ext(sourcesFile) == ".zip" {
 				zipFile = sourcesFile
 			} else if info.IsDir() {
-				sourceDir = sourcesFile
+				sourceDir = filepath.ToSlash(sourcesFile)
+				if !strings.HasSuffix(sourceDir, "/") {
+					sourceDir += "/"
+				}
 			} else {
 				msg := fmt.Sprintf("Sources input has bad format: %v", sourcesFile)
 				err = errors.New(msg)
