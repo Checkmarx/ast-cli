@@ -33,6 +33,8 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
+
+	mbBytes = 1024.0 * 1024.0
 )
 
 var (
@@ -403,7 +405,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Zip size:  %.2fMB\n", float64(stat.Size())/1024.0/1024.0) // Megabytes
+	fmt.Printf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes) // Megabytes
 	return outputFile.Name(), err
 }
 
