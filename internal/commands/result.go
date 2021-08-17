@@ -398,7 +398,7 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 
 		var scanResult wrappers.SarifScanResult
 		scanResult.RuleID = result.QueryID
-		scanResult.Message.Text = result.Comments
+		//scanResult.Message.Text = result.Comments
 		scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
 		scanResult.Locations = []wrappers.SarifLocation{}
 		var scanLocation wrappers.SarifLocation

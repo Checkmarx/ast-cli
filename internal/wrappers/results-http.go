@@ -3,7 +3,6 @@ package wrappers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
@@ -41,10 +40,9 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*S
 		return nil, nil, err
 	}
 	// TODO: REMOVE mocked decoder
-	// decoder := json.NewDecoder(resp.Body)
-	decoder := json.NewDecoder(strings.NewReader(mockResults))
+	decoder := json.NewDecoder(resp.Body)
+	//decoder := json.NewDecoder(strings.NewReader(mockResults))
 	defer resp.Body.Close()
-
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := resultsHelpers.WebError{}
@@ -54,7 +52,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*S
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		// TODO: REMOVE mocked results...
 		model := ScanResultsCollection{}
 		err = decoder.Decode(&model)
 		if err != nil {

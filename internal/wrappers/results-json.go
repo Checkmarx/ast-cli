@@ -11,7 +11,6 @@ type ScanResultsCollection struct {
 type ScanResult struct {
 	VulnerabilityDetails
 	ScanResultData
-	Comments        string `json:"comments,omitempty"`
 	Type            string `json:"type,omitempty"`
 	ID              string `json:"id,omitempty"`
 	SimilarityID    string `json:"similarityID,omitempty"`
@@ -92,7 +91,4 @@ type ScanResultData struct {
 	ScanResultNode
 	// This an array
 	ScanResultPackageData
-}
-
-type ScanResultDataNode struct {
 }
