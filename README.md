@@ -7,7 +7,7 @@ setx GOARCH=am
 go build -o ./bin/cx.exe ./cmd
 ```
 
-### Linux
+### Linux 
 
 ``` bash
 export GOARCH=amd64
