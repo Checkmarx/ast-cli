@@ -399,6 +399,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 	if err = zipWriter.Close(); err != nil {
 		log.Fatal(err)
 	}
+	stat, err := outputFile.Stat()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Zip size:  %.2fMB\n", float64(stat.Size())/1024.0/1024.0) // Megabytes
 	return outputFile.Name(), err
 }
 
