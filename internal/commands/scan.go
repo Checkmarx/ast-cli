@@ -482,7 +482,8 @@ func handleDir(
 	// Check if the folder is excluded
 	for _, filter := range filters {
 		if filter[0] == '!' {
-			match, err := path.Match(filter[1:], file.Name())
+			filterStr := strings.TrimSuffix(filepath.ToSlash(filter[1:]), "/")
+			match, err := path.Match(filterStr, file.Name())
 			if err != nil {
 				return err
 			}
