@@ -113,6 +113,7 @@ var BaseFilters = []string{
 	"*.dll",
 	"*.tf",
 	"*.yaml",
+	"*.yml",
 	"build.gradle",
 	"build.sbt",
 	"yarn.lock",
