@@ -308,19 +308,10 @@ func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) 
 	return outputResultsPretty(cmd.OutOrStdout(), results.Results)
 }
 
-func fakeSarifData(results *wrappers.ScanResultsCollection) {
-	if results != nil && results.Results != nil {
-		results.Results[0].ScanResultData.QueryID = 12345
-		results.Results[0].ScanResultData.QueryName = "Stored XSS"
-	}
-}
-
 func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
 	var sarifResults *wrappers.SarifResultsCollection
-	// TODO: REMOVE THIS, is debug code!
-	fakeSarifData(results)
 	sarifResults = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
