@@ -35,7 +35,7 @@ func TestResultListJson(t *testing.T) {
 	result := wrappers.ScanResultsCollection{}
 	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
 
-	assert.Assert(t, len(result.Results) > 0, "Should have results")
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 }
 
 // Create a scan and test getting its results
@@ -57,7 +57,7 @@ func TestResultListSarif(t *testing.T) {
 	result := wrappers.SarifResultsCollection{}
 	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
 
-	assert.Assert(t, len(result.Runs[0].Results) > 0, "Should have results")
+	assert.Assert(t, len(result.Runs) > 0, "Should have results")
 }
 
 // Create a scan and test getting its results
