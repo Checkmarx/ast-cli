@@ -66,25 +66,206 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 		},
 	}
 
+	createScanCmd := scanCreateSubCommand(scansWrapper, uploadsWrapper, resultsWrapper)
+
+	listScansCmd := scanListSubCommand(scansWrapper)
+
+	showScanCmd := scanShowSubCommand(scansWrapper)
+
+	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
+
+	deleteScanCmd := scanDeleteSubCommand(scansWrapper)
+
+	cancelScanCmd := scanCancelSubCommand(scansWrapper)
+
+	tagsCmd := scanTagsSubCommand(scansWrapper)
+
+	addFormatFlagToMultipleCommands(
+		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
+		util.FormatTable, util.FormatList, util.FormatJSON,
+	)
+	addFormatFlagToMultipleCommands(
+		[]*cobra.Command{createScanCmd},
+		util.FormatList, util.FormatTable, util.FormatJSON,
+	)
+	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd)
+	return scanCmd
+}
+
+func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	tagsCmd := &cobra.Command{
+		Use:   "tags",
+		Short: "Get a list of all available tags to filter by",
+		Long:  "The tags command enables the ability to provide a list of all the available tags in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan tags
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/546Xtw
+			`,
+			),
+		},
+		RunE: runGetTagsCommand(scansWrapper),
+	}
+	return tagsCmd
+}
+
+func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	cancelScanCmd := &cobra.Command{
+		Use:   "cancel",
+		Short: "Cancel one or more scans from running",
+		Long:  "The cancel command enables the ability to cancel one or more running scans in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan cancel --scan-id <scan ID>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/aY2Xtw
+			`,
+			),
+		},
+		RunE: runCancelScanCommand(scansWrapper),
+	}
+	addScanIDFlag(cancelScanCmd, "One or more scan IDs to cancel, ex: <scan-id>,<scan-id>,...")
+	return cancelScanCmd
+}
+
+func scanDeleteSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	deleteScanCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Deletes one or more scans",
+		Example: heredoc.Doc(
+			`
+			$ cx scan delete --scan-id <scan Id>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/-AuYtw
+			`,
+			),
+		},
+		RunE: runDeleteScanCommand(scansWrapper),
+	}
+	addScanIDFlag(deleteScanCmd, "One or more scan IDs to delete, ex: <scan-id>,<scan-id>,...")
+	return deleteScanCmd
+}
+
+func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	workflowScanCmd := &cobra.Command{
+		Use:   "workflow <scan id>",
+		Short: "Show information about a scan workflow",
+		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan workflow --scan-id <scan Id>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/Ug2Ytw
+			`,
+			),
+		},
+		RunE: runScanWorkflowByIDCommand(scansWrapper),
+	}
+	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
+	return workflowScanCmd
+}
+
+func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	showScanCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show information about a scan",
+		Long:  "The show command enables the ability to show information about a requested scan in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan show --scan-id <scan Id>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/qAyYtw
+			`,
+			),
+		},
+		RunE: runGetScanByIDCommand(scansWrapper),
+	}
+	addScanIDFlag(showScanCmd, "Scan ID to show.")
+	return showScanCmd
+}
+
+func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	listScansCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all scans in CxAST",
+		Long:  "The list command provides a list of all the scans in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan list
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/wiki/x/K46Xtw
+			`,
+			),
+		},
+		RunE: runListScansCommand(scansWrapper),
+	}
+	listScansCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterScanListFlagUsage)
+	return listScansCmd
+}
+
+func scanCreateSubCommand(
+	scansWrapper wrappers.ScansWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
 		Long:  "The create command enables the ability to create and run a new scan in CxAST.",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx scan create --project-name <Project Name> --sources <path or repository url>
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/WguYtw
-			`),
+			`,
+			),
 		},
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
 	}
 
 	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
-	createScanCmd.PersistentFlags().StringP(SourcesFlag, SourcesFlagSh, "", "Sources like: directory, zip file or git URL.")
-	createScanCmd.PersistentFlags().StringP(SourceDirFilterFlag, SourceDirFilterFlagSh, "", "Source file filtering pattern")
+	createScanCmd.PersistentFlags().StringP(
+		SourcesFlag,
+		SourcesFlagSh,
+		"",
+		"Sources like: directory, zip file or git URL.",
+	)
+	createScanCmd.PersistentFlags().StringP(
+		SourceDirFilterFlag,
+		SourceDirFilterFlagSh,
+		"",
+		"Source file filtering pattern",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		IncludeFilterFlag,
 		IncludeFilterFlagSh,
@@ -93,114 +274,21 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 			" Add a comma separated list of extra inclusions, ex: *zip,file.txt",
 	)
 	createScanCmd.PersistentFlags().String(ProjectName, "", "Name of the project")
+	err := createScanCmd.MarkPersistentFlagRequired(ProjectName)
+	if err != nil {
+		log.Fatal(err)
+	}
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
-
-	listScansCmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all scans in CxAST",
-		Long:  "The list command provides a list of all the scans in CxAST.",
-		Example: heredoc.Doc(`
-			$ cx scan list
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/K46Xtw
-			`),
-		},
-		RunE: runListScansCommand(scansWrapper),
+	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
+	if err != nil {
+		log.Fatal(err)
 	}
-	listScansCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterScanListFlagUsage)
-
-	showScanCmd := &cobra.Command{
-		Use:   "show",
-		Short: "Show information about a scan",
-		Long:  "The show command enables the ability to show information about a requested scan in CxAST.",
-		Example: heredoc.Doc(`
-			$ cx scan show --scan-id <scan Id>
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/qAyYtw
-			`),
-		},
-		RunE: runGetScanByIDCommand(scansWrapper),
-	}
-	addScanIDFlag(showScanCmd, "Scan ID to show.")
-
-	workflowScanCmd := &cobra.Command{
-		Use:   "workflow <scan id>",
-		Short: "Show information about a scan workflow",
-		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in CxAST.",
-		Example: heredoc.Doc(`
-			$ cx scan workflow --scan-id <scan Id>
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/Ug2Ytw
-			`),
-		},
-		RunE: runScanWorkflowByIDCommand(scansWrapper),
-	}
-	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
-
-	deleteScanCmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Deletes one or more scans",
-		Example: heredoc.Doc(`
-			$ cx scan delete --scan-id <scan Id>
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/-AuYtw
-			`),
-		},
-		RunE: runDeleteScanCommand(scansWrapper),
-	}
-	addScanIDFlag(deleteScanCmd, "One or more scan IDs to delete, ex: <scan-id>,<scan-id>,...")
-
-	cancelScanCmd := &cobra.Command{
-		Use:   "cancel",
-		Short: "Cancel one or more scans from running",
-		Long:  "The cancel command enables the ability to cancel one or more running scans in CxAST.",
-		Example: heredoc.Doc(`
-			$ cx scan cancel --scan-id <scan ID>
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/aY2Xtw
-			`),
-		},
-		RunE: runCancelScanCommand(scansWrapper),
-	}
-	addScanIDFlag(cancelScanCmd, "One or more scan IDs to cancel, ex: <scan-id>,<scan-id>,...")
-
-	tagsCmd := &cobra.Command{
-		Use:   "tags",
-		Short: "Get a list of all available tags to filter by",
-		Long:  "The tags command enables the ability to provide a list of all the available tags in CxAST.",
-		Example: heredoc.Doc(`
-			$ cx scan tags
-		`),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/546Xtw
-			`),
-		},
-		RunE: runGetTagsCommand(scansWrapper),
-	}
-
-	addFormatFlagToMultipleCommands([]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		util.FormatTable, util.FormatList, util.FormatJSON)
-	addFormatFlagToMultipleCommands([]*cobra.Command{createScanCmd},
-		util.FormatList, util.FormatTable, util.FormatJSON)
-	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd)
-	return scanCmd
+	return createScanCmd
 }
 
 func findProject(projectName string) string {
