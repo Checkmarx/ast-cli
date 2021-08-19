@@ -93,13 +93,20 @@ func NewScanCommand(scansWrapper wrappers.ScansWrapper,
 			" Add a comma separated list of extra inclusions, ex: *zip,file.txt",
 	)
 	createScanCmd.PersistentFlags().String(ProjectName, "", "Name of the project")
+	err := createScanCmd.MarkPersistentFlagRequired(ProjectName)
+	if err != nil {
+		log.Fatal(err)
+	}
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
+	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
