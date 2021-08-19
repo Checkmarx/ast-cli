@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -311,8 +310,8 @@ func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) 
 
 func fakeSarifData(results *wrappers.ScanResultsCollection) {
 	if results != nil && results.Results != nil {
-		results.Results[0].QueryID = "10526212270892872000"
-		results.Results[0].QueryName = "Stored XSS"
+		results.Results[0].ScanResultData.QueryID = 12345
+		results.Results[0].ScanResultData.QueryName = "Stored XSS"
 	}
 }
 
@@ -379,8 +378,8 @@ func findSarifRules(results *wrappers.ScanResultsCollection) []wrappers.SarifDri
 			continue
 		}
 		var sarifRule wrappers.SarifDriverRule
-		sarifRule.ID = result.QueryID
-		sarifRule.Name = result.QueryName
+		sarifRule.ID = result.ScanResultData.QueryID
+		sarifRule.Name = result.ScanResultData.QueryName
 		sarifRules = append(sarifRules, sarifRule)
 	}
 	return sarifRules
@@ -397,19 +396,19 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 		}
 
 		var scanResult wrappers.SarifScanResult
-		scanResult.RuleID = result.QueryID
-		scanResult.Message.Text = result.Comments
+		scanResult.RuleID = result.ScanResultData.QueryID
+		// Mock Fix
+		// scanResult.Message.Text = result.Comments
 		scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
 		scanResult.Locations = []wrappers.SarifLocation{}
 		var scanLocation wrappers.SarifLocation
 		// TODO: when there is real data we need to find the source of the result from Result.Data.Nodes
 		// this is placeholder code
 		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
-		line, _ := strconv.Atoi(result.Line)
-		scanLocation.PhysicalLocation.Region.StartLine = line
-		column, _ := strconv.Atoi(result.Line)
+		scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Nodes[0].Line
+		column := result.ScanResultData.Nodes[0].Column
+		length := result.ScanResultData.Nodes[0].Length
 		scanLocation.PhysicalLocation.Region.StartColumn = column
-		length, _ := strconv.Atoi(result.Length)
 		scanLocation.PhysicalLocation.Region.EndColumn = column + length
 		scanResult.Locations = append(scanResult.Locations, scanLocation)
 		sarifResults = append(sarifResults, scanResult)
@@ -418,9 +417,9 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 }
 
 func outputSingleResult(w io.Writer, model *wrappers.ScanResult) {
-	_, _ = fmt.Fprintln(w, "Result Unique ID:", model.UniqueID)
-	_, _ = fmt.Fprintln(w, "Query ID:", model.QueryID)
-	_, _ = fmt.Fprintln(w, "Query Name:", model.QueryName)
+	_, _ = fmt.Fprintln(w, "Result Unique ID:", model.ScanResultData.PackageID)
+	_, _ = fmt.Fprintln(w, "Query ID:", model.ScanResultData.QueryID)
+	_, _ = fmt.Fprintln(w, "Query Name:", model.ScanResultData.QueryName)
 	_, _ = fmt.Fprintln(w, "Severity:", model.Severity)
 	_, _ = fmt.Fprintln(w, "Similarity ID:", model.SimilarityID)
 	_, _ = fmt.Fprintln(w, "First Scan ID:", model.FirstScanID)

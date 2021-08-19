@@ -22,12 +22,12 @@ type SarifDriver struct {
 }
 
 type SarifDriverRule struct {
-	ID   string `json:"id"`
+	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
 type SarifScanResult struct {
-	RuleID              string                 `json:"ruleId"`
+	RuleID              int                    `json:"ruleId"`
 	Message             SarifMessage           `json:"message"`
 	PartialFingerprints SarifResultFingerprint `json:"partialFingerprints"`
 	Locations           []SarifLocation        `json:"locations"`
