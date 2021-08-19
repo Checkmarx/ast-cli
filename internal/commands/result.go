@@ -311,8 +311,7 @@ func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) 
 func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
-	var sarifResults *wrappers.SarifResultsCollection
-	sarifResults = convertCxResultsToSarif(results)
+	var sarifResults *wrappers.SarifResultsCollection = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
