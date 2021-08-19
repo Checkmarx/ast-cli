@@ -35,7 +35,7 @@ type VulnerabilityDetails struct {
 	CvssScore   float64           `json:"cvssScore,omitempty"`
 	CveName     string            `json:"cveName,omitempty"`
 	CVSS        VulnerabilityCVSS `json:"cvss,omitempty"`
-	Compliances []*string         `json:"compliances,omitemty"`
+	Compliances []*string         `json:"compliances,omitempty"`
 	// CweID       string            `json:"cweId,string"`
 }
 
