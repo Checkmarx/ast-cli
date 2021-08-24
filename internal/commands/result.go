@@ -28,67 +28,24 @@ const (
 	sastTypeFlag         = "sast"
 )
 
-type ScanResults struct {
-	Version string       `json:"version"`
-	Results []ScanResult `json:"results"`
-}
-
-type ScanResult struct {
-	ID             string         `json:"id"`
-	SimilarityID   string         `json:"similarityId"`
-	Severity       string         `json:"severity"`
-	Type           string         `json:"type"`
-	Status         string         `json:"status"`
-	State          string         `json:"state"`
-	ScanResultData ScanResultData `json:"data"`
-}
-
-type ScanResultData struct {
-	Comments  string               `json:"comments"`
-	QueryName string               `json:"queryName"`
-	Nodes     []ScanResultDataNode `json:"nodes"`
-}
-
-type ScanResultDataNode struct {
-	Column     string `json:"column"`
-	FileName   string `json:"fileName"`
-	FullName   string `json:"fullName"`
-	Name       string `json:"name"`
-	Line       string `json:"line"`
-	MethodLine string `json:"methodLine"`
-}
-
-type SimpleScanResult struct {
-	ID             string `json:"id"`
-	SimilarityID   string `json:"similarityId"`
-	Type           string `json:"type"`
-	Status         string `json:"status"`
-	State          string `json:"state"`
-	ScanResultData string `json:"data"`
-	Severity       string `json:"severity"`
-	Column         string `json:"column"`
-	FileName       string `json:"fileName"`
-	FullName       string `json:"fullName"`
-	Name           string `json:"name"`
-	Line           string `json:"line"`
-	MethodLine     string `json:"methodLine"`
-	Comments       string `json:"comments"`
-	QueryName      string `json:"queryName"`
-}
-
 var (
-	filterResultsListFlagUsage = fmt.Sprintf("Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
-		strings.Join([]string{
-			commonParams.ScanIDQueryParam,
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.SortQueryParam,
-			commonParams.IncludeNodesQueryParam,
-			commonParams.NodeIDsQueryParam,
-			commonParams.QueryQueryParam,
-			commonParams.GroupQueryParam,
-			commonParams.StatusQueryParam,
-			commonParams.SeverityQueryParam}, ","))
+	filterResultsListFlagUsage = fmt.Sprintf(
+		"Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.ScanIDQueryParam,
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.SortQueryParam,
+				commonParams.IncludeNodesQueryParam,
+				commonParams.NodeIDsQueryParam,
+				commonParams.QueryQueryParam,
+				commonParams.GroupQueryParam,
+				commonParams.StatusQueryParam,
+				commonParams.SeverityQueryParam,
+			}, ",",
+		),
+	)
 	scanAPIPath = ""
 )
 
@@ -150,7 +107,10 @@ func getScanInfo(scanID string) (*ResultSummary, error) {
 	return nil, err
 }
 
-func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(
+	cmd *cobra.Command,
+	args []string,
+) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(TargetFlag)
 		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
@@ -279,9 +239,11 @@ func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cm
 	}
 }
 
-func ReadResults(resultsWrapper wrappers.ResultsWrapper,
+func ReadResults(
+	resultsWrapper wrappers.ResultsWrapper,
 	scanID string,
-	params map[string]string) (results *wrappers.ScanResultsCollection, err error) {
+	params map[string]string,
+) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *resultsHelpers.WebError
 	params[commonParams.ScanIDQueryParam] = scanID

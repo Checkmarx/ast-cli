@@ -22,12 +22,12 @@ type SarifDriver struct {
 }
 
 type SarifDriverRule struct {
-	ID   int    `json:"id"`
+	ID   uint64 `json:"id"`
 	Name string `json:"name"`
 }
 
 type SarifScanResult struct {
-	RuleID              int                    `json:"ruleId"`
+	RuleID              uint64                 `json:"ruleId"`
 	Message             SarifMessage           `json:"message"`
 	PartialFingerprints SarifResultFingerprint `json:"partialFingerprints"`
 	Locations           []SarifLocation        `json:"locations"`
@@ -43,9 +43,9 @@ type SarifPhysicalLocation struct {
 }
 
 type SarifRegion struct {
-	StartLine   int `json:"startLine"`
-	StartColumn int `json:"startColumn"`
-	EndColumn   int `json:"endColumn"`
+	StartLine   uint `json:"startLine"`
+	StartColumn uint `json:"startColumn"`
+	EndColumn   uint `json:"endColumn"`
 }
 
 type SarifArtifactLocation struct {

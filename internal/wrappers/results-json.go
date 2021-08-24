@@ -11,20 +11,20 @@ type ScanResultsCollection struct {
 type ScanResult struct {
 	Type                 string               `json:"type,omitempty"`
 	ID                   string               `json:"id,omitempty"`
-	SimilarityID         string               `json:"similarityID,omitempty"`
+	SimilarityID         string               `json:"similarityId,omitempty"`
 	Status               string               `json:"status,omitempty"`
 	State                string               `json:"state,omitempty"`
 	Severity             string               `json:"severity,omitempty"`
+	Created              string               `json:"created,omitempty"`
 	FirstFoundAt         string               `json:"firstFoundAt,omitempty"`
 	FoundAt              string               `json:"foundAt,omitempty"`
 	FirstScan            string               `json:"firstScan,omitempty"`
-	FirstScanID          string               `json:"firstScanID,omitempty"`
+	FirstScanID          string               `json:"firstScanId,omitempty"`
 	PublishedAt          string               `json:"publishedAt,omitempty"`
-	Created              string               `json:"created,omitempty"`
 	Recommendations      string               `json:"recommendations,omitempty"`
-	Comments             ResultComments       `json:"Comments,omitempty"`
-	VulnerabilityDetails VulnerabilityDetails `json:"vulnerabilityDetails,omitempty"`
 	ScanResultData       ScanResultData       `json:"data,omitempty"`
+	Comments             ResultComments       `json:"comments,omitempty"`
+	VulnerabilityDetails VulnerabilityDetails `json:"vulnerabilityDetails,omitempty"`
 }
 
 type ResultComments struct {
@@ -32,11 +32,11 @@ type ResultComments struct {
 }
 
 type VulnerabilityDetails struct {
+	CweID       int               `json:"cweId,omitempty"`
 	CvssScore   float64           `json:"cvssScore,omitempty"`
 	CveName     string            `json:"cveName,omitempty"`
 	CVSS        VulnerabilityCVSS `json:"cvss,omitempty"`
 	Compliances []*string         `json:"compliances,omitempty"`
-	// CweID       string            `json:"cweId,string"`
 }
 
 type VulnerabilityCVSS struct {
@@ -48,16 +48,19 @@ type VulnerabilityCVSS struct {
 }
 
 type ScanResultNode struct {
-	ID         string `json:"id,omitempty"`
-	Line       int    `json:"line,omitempty"`
-	Name       string `json:"name,omitempty"`
-	Column     int    `json:"column,omitempty"`
-	Length     int    `json:"length,omitempty"`
-	NodeID     int    `json:"nodeID,omitempty"`
-	DomType    string `json:"domType,omitempty"`
-	FileName   string `json:"fileName,omitempty"`
-	FullName   string `json:"fullName,omitempty"`
-	MethodLine int    `json:"methodLine,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Line        uint   `json:"line,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Column      uint   `json:"column,omitempty"`
+	Length      uint   `json:"length,omitempty"`
+	Method      string `json:"method,omitempty"`
+	NodeID      int    `json:"nodeID,omitempty"`
+	DomType     string `json:"domType,omitempty"`
+	FileName    string `json:"fileName,omitempty"`
+	FullName    string `json:"fullName,omitempty"`
+	TypeName    string `json:"typeName,omitempty"`
+	MethodLine  uint   `json:"methodLine,omitempty"`
+	Definitions string `json:"definitions,omitempty"`
 }
 
 type ScanResultPackageData struct {
@@ -67,7 +70,7 @@ type ScanResultPackageData struct {
 }
 
 type ScanResultData struct {
-	QueryID      int                      `json:"queryIDFoo,omitempty"`
+	QueryID      uint64                   `json:"queryId,omitempty"`
 	QueryName    string                   `json:"queryName,omitempty"`
 	Group        string                   `json:"group,omitempty"`
 	ResultHash   string                   `json:"resultHash,omitempty"`
