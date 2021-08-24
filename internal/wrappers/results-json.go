@@ -32,7 +32,7 @@ type ResultComments struct {
 }
 
 type VulnerabilityDetails struct {
-	CweID       int               `json:"cweId,omitempty"`
+	CweID       interface{}       `json:"cweId,omitempty"`
 	CvssScore   float64           `json:"cvssScore,omitempty"`
 	CveName     string            `json:"cveName,omitempty"`
 	CVSS        VulnerabilityCVSS `json:"cvss,omitempty"`
@@ -70,7 +70,7 @@ type ScanResultPackageData struct {
 }
 
 type ScanResultData struct {
-	QueryID      uint64                   `json:"queryId,omitempty"`
+	QueryID      interface{}              `json:"queryId,omitempty"`
 	QueryName    string                   `json:"queryName,omitempty"`
 	Group        string                   `json:"group,omitempty"`
 	ResultHash   string                   `json:"resultHash,omitempty"`
