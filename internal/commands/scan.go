@@ -283,6 +283,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
+	addResultFormatFlag(createScanCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
+	createScanCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
+	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	// Link the environment variable to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
 	if err != nil {
@@ -728,15 +732,18 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return err
 			}
 		}
-		// Get the scan summary data
-		results, err := ReadResults(resultsWrapper, scanResponseModel.ID, make(map[string]string))
-		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedCreating)
-		}
-		summary, err := SummaryReport(results, scanResponseModel.ID)
-		if err == nil {
-			writeConsoleSummary(summary)
-		}
+		// Write the summary to the console
+		CreateScanReport(resultsWrapper,
+			scanResponseModel.ID,
+			util.FormatSummaryConsole,
+			"",
+			make(map[string]string))
+		// Optinally create the scan report if requested
+		CreateScanReport(resultsWrapper,
+			scanResponseModel.ID,
+			util.FormatSummaryConsole,
+			"",
+			make(map[string]string))
 		return nil
 	}
 }
@@ -759,18 +766,6 @@ func waitForScanCompletion(
 		time.Sleep(time.Duration(waitDelay) * time.Second)
 	}
 	return nil
-}
-
-func writeConsoleSummary(summary *ResultSummary) {
-	fmt.Println("")
-	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {

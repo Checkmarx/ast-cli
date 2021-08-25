@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,28 +53,13 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "result",
 		Short: "Retrieve results",
+		RunE:  runGetResultCommand(resultsWrapper),
 	}
-
-	listResultsCmd := &cobra.Command{
-		Use:   "list <scan-id>",
-		Short: "List results for a given scan",
-		RunE:  runGetResultByScanIDCommand(resultsWrapper),
-	}
-	listResultsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(listResultsCmd, util.FormatList, util.FormatJSON)
-	addScanIDFlag(listResultsCmd, "ID to report on.")
-
-	summaryCmd := &cobra.Command{
-		Use:   "summary",
-		Short: "Creates summary report for scan",
-		RunE:  runGetSummaryByScanIDCommand(resultsWrapper),
-	}
-	summaryCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	addFormatFlag(summaryCmd, util.FormatHTML, util.FormatText)
-	addScanIDFlag(summaryCmd, "ID to report on.")
-	summaryCmd.PersistentFlags().String(TargetFlag, "console", "Output file")
-
-	resultCmd.AddCommand(listResultsCmd, summaryCmd)
+	addScanIDFlag(resultCmd, "ID to report on.")
+	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
+	resultCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	resultCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
+	resultCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	return resultCmd
 }
 
@@ -105,30 +89,6 @@ func getScanInfo(scanID string) (*ResultSummary, error) {
 		}, nil
 	}
 	return nil, err
-}
-
-func runGetSummaryByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(
-	cmd *cobra.Command,
-	args []string,
-) error {
-	return func(cmd *cobra.Command, args []string) error {
-		targetFile, _ := cmd.Flags().GetString(TargetFlag)
-		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
-		format, _ := cmd.Flags().GetString(FormatFlag)
-		params, err := getFilters(cmd)
-		if err != nil {
-			return errors.Wrapf(err, "%s", failedListingResults)
-		}
-		results, err := ReadResults(resultsWrapper, scanID, params)
-		if err == nil {
-			summary, sumErr := SummaryReport(results, scanID)
-			if sumErr == nil {
-				writeSummary(cmd.OutOrStdout(), targetFile, summary, format)
-			}
-			return sumErr
-		}
-		return err
-	}
 }
 
 func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*ResultSummary, error) {
@@ -161,38 +121,23 @@ func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*Res
 	return summary, nil
 }
 
-func writeSummary(w io.Writer, targetFile string, summary *ResultSummary, format string) {
+func writeHTMLSummary(targetFile string, summary *ResultSummary) {
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
-		if targetFile == "console" {
-			if format == util.FormatHTML {
-				buffer := new(bytes.Buffer)
-				_ = summaryTemp.ExecuteTemplate(buffer, "SummaryTemplate", summary)
-				_, _ = fmt.Fprintln(w, buffer)
-			} else {
-				writeTextSummary(w, "", summary)
-			}
-		} else {
-			if format == util.FormatHTML {
-				f, err := os.Create(targetFile)
-				if err == nil {
-					_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
-					_ = f.Close()
-				}
-			} else {
-				writeTextSummary(w, targetFile, summary)
-			}
+		f, err := os.Create(targetFile)
+		if err == nil {
+			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
+			_ = f.Close()
 		}
 	}
 }
 
-func writeTextSummary(w io.Writer, targetFile string, summary *ResultSummary) {
+func writeTextSummary(targetFile string, summary *ResultSummary) {
 	if targetFile != "" {
 		f, err := os.Create(targetFile)
 		if err == nil {
 			sumMsg := ""
 			sumMsg += fmt.Sprintf("         Created At: %s\n", summary.CreatedAt)
-
 			sumMsg += fmt.Sprintf("               Risk: %s\n", summary.RiskMsg)
 			sumMsg += fmt.Sprintf("         Project ID: %s\n", summary.ProjectID)
 			sumMsg += fmt.Sprintf("            Scan ID: %s\n", summary.ScanID)
@@ -207,36 +152,62 @@ func writeTextSummary(w io.Writer, targetFile string, summary *ResultSummary) {
 			_ = f.Close()
 		}
 	} else {
-		_, _ = fmt.Fprintf(w, "         Created At: %s\n", summary.CreatedAt)
-		_, _ = fmt.Fprintf(w, "               Risk: %s\n", summary.RiskMsg)
-		_, _ = fmt.Fprintf(w, "         Project ID: %s\n", summary.ProjectID)
-		_, _ = fmt.Fprintf(w, "            Scan ID: %s\n", summary.ScanID)
-		_, _ = fmt.Fprintf(w, "       Total Issues: %d\n", summary.TotalIssues)
-		_, _ = fmt.Fprintf(w, "        High Issues: %d\n", summary.HighIssues)
-		_, _ = fmt.Fprintf(w, "      Medium Issues: %d\n", summary.MediumIssues)
-		_, _ = fmt.Fprintf(w, "         Low Issues: %d\n", summary.LowIssues)
-		_, _ = fmt.Fprintf(w, "        SAST Issues: %d\n", summary.SastIssues)
-		_, _ = fmt.Fprintf(w, "        KICS Issues: %d\n", summary.KicsIssues)
-		_, _ = fmt.Fprintf(w, "         SCA Issues: %d\n", summary.ScaIssues)
+		fmt.Println("")
+		fmt.Printf("         Created At: %s\n", summary.CreatedAt)
+		fmt.Printf("               Risk: %s\n", summary.RiskMsg)
+		fmt.Printf("         Project ID: %s\n", summary.ProjectID)
+		fmt.Printf("            Scan ID: %s\n", summary.ScanID)
+		fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
+		fmt.Printf("        High Issues: %d\n", summary.HighIssues)
+		fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
+		fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 	}
 }
 
-func runGetResultByScanIDCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetResultCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		targetFile, _ := cmd.Flags().GetString(TargetFlag)
+		// targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+		format, _ := cmd.Flags().GetString(TargetFormatFlag)
 		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
-		if scanID == "" {
-			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
-		}
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		results, err := ReadResults(resultsWrapper, scanID, params)
-		if err == nil {
-			return exportResults(cmd, results)
-		}
-		return err
+		return CreateScanReport(resultsWrapper, scanID, format, targetFile, params)
 	}
+}
+
+func CreateScanReport(resultsWrapper wrappers.ResultsWrapper,
+	scanID string,
+	format string,
+	targetFile string,
+	params map[string]string) error {
+	if scanID == "" {
+		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
+	}
+	results, err := ReadResults(resultsWrapper, scanID, params)
+	if err == nil {
+		if util.IsFormat(format, util.FormatSarif) {
+			return exportSarifResults(targetFile, results)
+		}
+		if util.IsFormat(format, util.FormatJSON) {
+			return exportJSONResults(targetFile, results)
+		}
+		if util.IsFormat(format, util.FormatSummaryConsole) ||
+			util.IsFormat(format, util.FormatSummary) {
+			summary, err := SummaryReport(results, scanID)
+			if err == nil {
+				if util.IsFormat(format, util.FormatSummaryConsole) {
+					writeTextSummary(targetFile, summary)
+				}
+				if util.IsFormat(format, util.FormatSummary) {
+					writeHTMLSummary(targetFile, summary)
+				}
+			}
+		}
+	}
+	return err
 }
 
 func ReadResults(
@@ -259,18 +230,7 @@ func ReadResults(
 	return nil, nil
 }
 
-func exportResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
-	formatFlag, _ := cmd.Flags().GetString(FormatFlag)
-	if util.IsFormat(formatFlag, util.FormatJSON) {
-		return exportJSONResults(cmd, results)
-	}
-	if util.IsFormat(formatFlag, util.FormatSarif) {
-		return exportSarifResults(cmd, results)
-	}
-	return outputResultsPretty(cmd.OutOrStdout(), results.Results)
-}
-
-func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
+func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
 	var sarifResults *wrappers.SarifResultsCollection = convertCxResultsToSarif(results)
@@ -278,27 +238,28 @@ func exportSarifResults(cmd *cobra.Command, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	f.Close()
 	return nil
 }
 
-func exportJSONResults(cmd *cobra.Command, results *wrappers.ScanResultsCollection) error {
+func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
 	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(resultsJSON))
-	return nil
-}
-
-func outputResultsPretty(w io.Writer, results []*wrappers.ScanResult) error {
-	_, _ = fmt.Fprintln(w, "************ Results ************")
-	for i := 0; i < len(results); i++ {
-		outputSingleResult(w, results[i])
-		_, _ = fmt.Fprintln(w)
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
 	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	f.Close()
 	return nil
 }
 

@@ -13,12 +13,14 @@ import (
 )
 
 const (
-	FormatJSON  = "json"
-	FormatSarif = "sarif"
-	FormatList  = "list"
-	FormatTable = "table"
-	FormatHTML  = "html"
-	FormatText  = "text"
+	FormatJSON           = "json"
+	FormatSarif          = "sarif"
+	FormatSummary        = "summaryHTML"
+	FormatSummaryConsole = "summaryConsole"
+	FormatList           = "list"
+	FormatTable          = "table"
+	FormatHTML           = "html"
+	FormatText           = "text"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
