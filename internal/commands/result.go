@@ -24,6 +24,9 @@ const (
 	highLabel            = "high"
 	lowLabel             = "low"
 	sastTypeFlag         = "sast"
+	sastTypeLabel        = "sast"
+	kicsTypeLabel        = "infrastructure"
+	scaTypeLabel         = "dependency"
 )
 
 var (
@@ -97,19 +100,29 @@ func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*Res
 	}
 	summary.TotalIssues = int(results.TotalCount)
 	for _, result := range results.Results {
-		if result.Severity == "HIGH" {
+		if result.Type == sastTypeLabel {
+			summary.SastIssues++
+		}
+		if result.Type == scaTypeLabel {
+			summary.ScaIssues++
+		}
+		if result.Type == kicsTypeLabel {
+			summary.KicsIssues++
+		}
+		severity := strings.ToLower(result.Severity)
+		if severity == highLabel {
 			summary.HighIssues++
 			summary.RiskStyle = highLabel
 			summary.RiskMsg = "High Risk"
 		}
-		if result.Severity == "LOW" {
+		if severity == lowLabel {
 			summary.LowIssues++
 			if summary.RiskStyle != highLabel && summary.RiskStyle != mediumLabel {
 				summary.RiskStyle = lowLabel
 				summary.RiskMsg = "Low Risk"
 			}
 		}
-		if result.Severity == mediumLabel {
+		if severity == mediumLabel {
 			summary.MediumIssues++
 			if summary.RiskStyle != highLabel {
 				summary.RiskStyle = mediumLabel
@@ -144,6 +157,11 @@ func writeConsoleSummary(summary *ResultSummary) error {
 	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
 	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
 	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
+
+	fmt.Printf("         Kics Issues: %d\n", summary.KicsIssues)
+	fmt.Printf("         Sast Issues: %d\n", summary.SastIssues)
+	fmt.Printf("         SCA Issues: %d\n", summary.ScaIssues)
+
 	return nil
 }
 
