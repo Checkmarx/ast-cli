@@ -251,7 +251,6 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
 	}
-
 	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(
@@ -732,18 +731,25 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return err
 			}
 		}
-		// Write the summary to the console
+		// Create the required reports
+		targetFile, _ := cmd.Flags().GetString(TargetFlag)
+		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+		reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
+		params, err := getFilters(cmd)
+
+		fmt.Println("Remove debug messages")
+		fmt.Println("Target File: ", targetFile)
+		fmt.Println("Target Path: ", targetPath)
+		fmt.Println("Formats", reportFormats)
+		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
+			reportFormats += util.FormatSummaryConsole
+		}
 		CreateScanReport(resultsWrapper,
 			scanResponseModel.ID,
-			util.FormatSummaryConsole,
-			"",
-			make(map[string]string))
-		// Optinally create the scan report if requested
-		CreateScanReport(resultsWrapper,
-			scanResponseModel.ID,
-			util.FormatSummaryConsole,
-			"",
-			make(map[string]string))
+			reportFormats,
+			targetFile,
+			targetPath,
+			params)
 		return nil
 	}
 }

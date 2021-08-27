@@ -121,7 +121,8 @@ func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*Res
 	return summary, nil
 }
 
-func writeHTMLSummary(targetFile string, summary *ResultSummary) {
+func writeHTMLSummary(targetFile string, summary *ResultSummary) error {
+	fmt.Println("Creating Summary Report: ", targetFile)
 	summaryTemp, err := template.New("summaryTemplate").Parse(summaryTemplate)
 	if err == nil {
 		f, err := os.Create(targetFile)
@@ -129,85 +130,91 @@ func writeHTMLSummary(targetFile string, summary *ResultSummary) {
 			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 			_ = f.Close()
 		}
+		return err
 	}
+	return nil
 }
 
-func writeTextSummary(targetFile string, summary *ResultSummary) {
-	if targetFile != "" {
-		f, err := os.Create(targetFile)
-		if err == nil {
-			sumMsg := ""
-			sumMsg += fmt.Sprintf("         Created At: %s\n", summary.CreatedAt)
-			sumMsg += fmt.Sprintf("               Risk: %s\n", summary.RiskMsg)
-			sumMsg += fmt.Sprintf("         Project ID: %s\n", summary.ProjectID)
-			sumMsg += fmt.Sprintf("            Scan ID: %s\n", summary.ScanID)
-			sumMsg += fmt.Sprintf("       Total Issues: %d\n", summary.TotalIssues)
-			sumMsg += fmt.Sprintf("        High Issues: %d\n", summary.HighIssues)
-			sumMsg += fmt.Sprintf("      Medium Issues: %d\n", summary.MediumIssues)
-			sumMsg += fmt.Sprintf("         Low Issues: %d\n", summary.LowIssues)
-			sumMsg += fmt.Sprintf("        SAST Issues: %d\n", summary.SastIssues)
-			sumMsg += fmt.Sprintf("        KICS Issues: %d\n", summary.KicsIssues)
-			sumMsg += fmt.Sprintf("         SCA Issues: %d\n", summary.ScaIssues)
-			_, _ = f.WriteString(sumMsg)
-			_ = f.Close()
-		}
-	} else {
-		fmt.Println("")
-		fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-		fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-		fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-		fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-		fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-		fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-		fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-		fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
-	}
+func writeConsoleSummary(summary *ResultSummary) error {
+	fmt.Println("")
+	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
+	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
+	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
+	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
+	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
+	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
+	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
+	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
+	return nil
 }
 
 func runGetResultCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(TargetFlag)
-		// targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
 		format, _ := cmd.Flags().GetString(TargetFormatFlag)
 		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		return CreateScanReport(resultsWrapper, scanID, format, targetFile, params)
+		return CreateScanReport(resultsWrapper, scanID, format, targetFile, targetPath, params)
 	}
 }
 
 func CreateScanReport(resultsWrapper wrappers.ResultsWrapper,
 	scanID string,
-	format string,
+	reportTypes string,
 	targetFile string,
+	targetPath string,
 	params map[string]string) error {
 	if scanID == "" {
 		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 	}
 	results, err := ReadResults(resultsWrapper, scanID, params)
-	if err == nil {
-		if util.IsFormat(format, util.FormatSarif) {
-			return exportSarifResults(targetFile, results)
-		}
-		if util.IsFormat(format, util.FormatJSON) {
-			return exportJSONResults(targetFile, results)
-		}
-		if util.IsFormat(format, util.FormatSummaryConsole) ||
-			util.IsFormat(format, util.FormatSummary) {
-			summary, err := SummaryReport(results, scanID)
-			if err == nil {
-				if util.IsFormat(format, util.FormatSummaryConsole) {
-					writeTextSummary(targetFile, summary)
-				}
-				if util.IsFormat(format, util.FormatSummary) {
-					writeHTMLSummary(targetFile, summary)
-				}
-			}
+	if err != nil {
+		return err
+	}
+	summary, err := SummaryReport(results, scanID)
+	if err != nil {
+		return err
+	}
+	reportList := strings.Split(reportTypes, ",")
+	for _, reportType := range reportList {
+		err = createReport(reportType, targetFile, targetPath, results, summary)
+		if err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+func createReport(format string,
+	targetFile string,
+	targetPath string,
+	results *wrappers.ScanResultsCollection,
+	summary *ResultSummary) error {
+	if util.IsFormat(format, util.FormatSarif) {
+		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
+		return exportSarifResults(sarifRpt, results)
+	}
+	if util.IsFormat(format, util.FormatJSON) {
+		jsonRpt := createTargetName(targetFile, targetPath, "json")
+		return exportJSONResults(jsonRpt, results)
+	}
+	if util.IsFormat(format, util.FormatSummaryConsole) {
+		return writeConsoleSummary(summary)
+	}
+	if util.IsFormat(format, util.FormatSummary) {
+		summaryRpt := createTargetName(targetFile, targetPath, "html")
+		return writeHTMLSummary(summaryRpt, summary)
+	}
+	err := fmt.Errorf("Bad report format %s", format)
 	return err
+}
+
+func createTargetName(targetFile string, targetPath string, targetType string) string {
+	return targetPath + "/" + targetFile + "." + targetType
 }
 
 func ReadResults(
@@ -233,6 +240,7 @@ func ReadResults(
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
+	fmt.Println("Creating SARIF Report: ", targetFile)
 	var sarifResults *wrappers.SarifResultsCollection = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
@@ -250,6 +258,7 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
+	fmt.Println("Creating JSON Report: ", targetFile)
 	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
@@ -319,7 +328,10 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 		// this is placeholder code
 		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
 		scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Nodes[0].Line
-		column := result.ScanResultData.Nodes[0].Column
+		// TODO: fix this column issue and places that reference it when
+		// the data structures are fixed.
+		// column := result.ScanResultData.Nodes[0].Column
+		var column uint = 0
 		length := result.ScanResultData.Nodes[0].Length
 		scanLocation.PhysicalLocation.Region.StartColumn = column
 		scanLocation.PhysicalLocation.Region.EndColumn = column + length
