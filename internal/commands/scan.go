@@ -239,7 +239,7 @@ func scanCreateSubCommand(
 		Long:  "The create command enables the ability to create and run a new scan in CxAST.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan create --project-name <Project Name> --sources <path or repository url>
+			$ cx scan create --project-name <Project Name> -s <path or repository url>
 		`,
 		),
 		Annotations: map[string]string{
@@ -740,7 +740,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			return err
 		}
 		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-			reportFormats += util.FormatSummaryConsole
+			reportFormats += ("," + util.FormatSummaryConsole)
 		}
 		return CreateScanReport(resultsWrapper,
 			scanResponseModel.ID,
