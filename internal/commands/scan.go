@@ -736,21 +736,18 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
 		reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
 		params, err := getFilters(cmd)
-
-		fmt.Println("Remove debug messages")
-		fmt.Println("Target File: ", targetFile)
-		fmt.Println("Target Path: ", targetPath)
-		fmt.Println("Formats", reportFormats)
+		if err != nil {
+			return err
+		}
 		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
 			reportFormats += util.FormatSummaryConsole
 		}
-		CreateScanReport(resultsWrapper,
+		return CreateScanReport(resultsWrapper,
 			scanResponseModel.ID,
 			reportFormats,
 			targetFile,
 			targetPath,
 			params)
-		return nil
 	}
 }
 

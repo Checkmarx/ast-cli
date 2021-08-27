@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -209,11 +208,11 @@ func createReport(format string,
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		return writeHTMLSummary(summaryRpt, summary)
 	}
-	err := fmt.Errorf("Bad report format %s", format)
+	err := fmt.Errorf("bad report format %s", format)
 	return err
 }
 
-func createTargetName(targetFile string, targetPath string, targetType string) string {
+func createTargetName(targetFile, targetPath, targetType string) string {
 	return targetPath + "/" + targetFile + "." + targetType
 }
 
@@ -339,20 +338,6 @@ func findSarifResults(results *wrappers.ScanResultsCollection) []wrappers.SarifS
 		sarifResults = append(sarifResults, scanResult)
 	}
 	return sarifResults
-}
-
-func outputSingleResult(w io.Writer, model *wrappers.ScanResult) {
-	_, _ = fmt.Fprintln(w, "Result Unique ID:", model.ScanResultData.PackageID)
-	_, _ = fmt.Fprintln(w, "Query ID:", model.ScanResultData.QueryID)
-	_, _ = fmt.Fprintln(w, "Query Name:", model.ScanResultData.QueryName)
-	_, _ = fmt.Fprintln(w, "Severity:", model.Severity)
-	_, _ = fmt.Fprintln(w, "Similarity ID:", model.SimilarityID)
-	_, _ = fmt.Fprintln(w, "First Scan ID:", model.FirstScanID)
-	_, _ = fmt.Fprintln(w, "Found At:", model.FoundAt)
-	_, _ = fmt.Fprintln(w, "First Found At:", model.FirstFoundAt)
-	_, _ = fmt.Fprintln(w, "Status:", model.Status)
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "************ Nodes ************")
 }
 
 type ResultSummary struct {
