@@ -26,13 +26,13 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
+func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "result", "--scan-id", "MOCK", "--report-format", "summaryHTML")
 	assert.NilError(t, err)
 }
 
-func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
+func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "-v", "result", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
