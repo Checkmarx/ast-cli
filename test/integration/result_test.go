@@ -22,7 +22,7 @@ func TestResultListJson(t *testing.T) {
 
 	err := execute(resultCommand,
 		"result",
-		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.TargetFormatFlag), util.FormatJSON,
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting results should pass")
@@ -45,6 +45,50 @@ func TestResultListSarif(t *testing.T) {
 	err := execute(resultCommand,
 		"result",
 		flag(commands.TargetFormatFlag), util.FormatSarif,
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.NilError(t, err, "Getting results should pass")
+
+	result := wrappers.SarifResultsCollection{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, len(result.Runs) > 0, "Should have results")
+}
+
+// Create a scan and test getting its results
+func TestResultListSummaryConsole(t *testing.T) {
+	scanID, projectID := createScan(t, Dir, Tags)
+
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
+
+	resultCommand, outputBuffer := createRedirectedTestCommand(t)
+
+	err := execute(resultCommand,
+		"result",
+		flag(commands.TargetFormatFlag), util.FormatSummaryConsole,
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.NilError(t, err, "Getting results should pass")
+
+	result := wrappers.SarifResultsCollection{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, len(result.Runs) > 0, "Should have results")
+}
+
+// Create a scan and test getting its results
+func TestResultListSummaryHtml(t *testing.T) {
+	scanID, projectID := createScan(t, Dir, Tags)
+
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
+
+	resultCommand, outputBuffer := createRedirectedTestCommand(t)
+
+	err := execute(resultCommand,
+		"result",
+		flag(commands.TargetFormatFlag), util.FormatSummary,
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting results should pass")
