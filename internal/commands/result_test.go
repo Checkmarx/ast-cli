@@ -11,7 +11,7 @@ import (
 func TestResultHelp(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "help", "result")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
