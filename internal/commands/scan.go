@@ -282,7 +282,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
-	addResultFormatFlag(createScanCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
+	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
 	createScanCmd.PersistentFlags().String(TargetFlag, "", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
