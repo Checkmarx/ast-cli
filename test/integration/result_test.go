@@ -5,6 +5,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
@@ -27,16 +28,17 @@ func TestResultListJson(t *testing.T) {
 	err := execute(
 		resultCommand,
 		"result",
-		flag(commands.TargetFormatFlag), util.FormatJSON,
+		flag(commands.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary}, ","),
 		flag(commands.TargetFlag), fileName,
 		flag(commands.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting results should pass")
 
-	completeFileName := fmt.Sprintf("%s.json", fileName)
-
+	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML}
 	defer func() {
-		_ = os.Remove(completeFileName)
+		for _, e := range extensions {
+			_ = os.Remove(fmt.Sprintf("%s.%s", fileName, e))
+		}
 	}()
 
 	result := wrappers.ScanResultsCollection{}
@@ -44,6 +46,8 @@ func TestResultListJson(t *testing.T) {
 
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
-	_, err = os.Stat(completeFileName)
-	assert.NilError(t, err, "Report file should exist")
+	for _, e := range extensions {
+		_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, e))
+		assert.NilError(t, err, "Report file should exist for extension "+e)
+	}
 }
