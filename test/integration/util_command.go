@@ -78,14 +78,9 @@ func execute(cmd *cobra.Command, args ...string) error {
 }
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
-	proxyUser := viper.GetString(ProxyUserEnv)
-	proxyPw := viper.GetString(ProxyPwEnv)
-	proxyPort := viper.GetInt(ProxyPortEnv)
-	proxyHost := viper.GetString(ProxyHostEnv)
 
 	args = append(args, flag(commands.VerboseFlag))
-	args = append(args, flag(commands.ProxyFlag))
-	args = append(args, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
+	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -102,4 +97,14 @@ func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...strin
 	case result := <-execChannel:
 		return result
 	}
+}
+
+func appendProxyArgs(args []string) []string {
+	proxyUser := viper.GetString(ProxyUserEnv)
+	proxyPw := viper.GetString(ProxyPwEnv)
+	proxyPort := viper.GetInt(ProxyPortEnv)
+	proxyHost := viper.GetString(ProxyHostEnv)
+	argsWithProxy := append(args, flag(commands.ProxyFlag))
+	argsWithProxy = append(argsWithProxy, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
+	return argsWithProxy
 }
