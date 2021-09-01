@@ -57,7 +57,6 @@ const (
 	InsecureFlagUsage        = "Ignore TLS certificate validations"
 	FormatFlag               = "format"
 	FormatFlagUsageFormat    = "Format for the output. One of %s"
-
 	FilterFlag               = "filter"
 	BaseURIFlag              = "base-uri"
 	ProxyFlag                = "proxy"
@@ -83,7 +82,9 @@ const (
 	ProfileFlag              = "profile"
 	ProfileFlagUsage         = "The default configuration profile"
 	Help                     = "help"
-	TargetFlag               = "target"
+	TargetFlag               = "output-name"
+	TargetPathFlag           = "output-path"
+	TargetFormatFlag         = "report-format"
 )
 
 // NewAstCLI Return an AST CLI root command to execute
@@ -220,6 +221,11 @@ func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat st
 
 func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
 	cmd.PersistentFlags().String(FormatFlag, defaultFormat,
+		fmt.Sprintf(FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
+func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(TargetFormatFlag, defaultFormat,
 		fmt.Sprintf(FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
 }
 
