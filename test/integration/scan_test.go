@@ -205,7 +205,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 	createdScan := scansRESTApi.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
 
-	assert.Assert(t, createdScan.Status == scansApi.ScanQueued)
+	assert.Assert(t, createdScan.Status != scansApi.ScanFailed && createdScan.Status != scansApi.ScanCanceled)
 
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 

@@ -48,10 +48,10 @@ type VulnerabilityCVSS struct {
 }
 
 type ScanResultNode struct {
-	ID          string `json:"id,omitempty"`
-	Line        uint   `json:"line,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Column      uint   `json:"column,omitempty"`
+	ID   string `json:"id,omitempty"`
+	Line uint   `json:"line,omitempty"`
+	Name string `json:"name,omitempty"`
+	// Column      uint   `json:"column,omitempty"`
 	Length      uint   `json:"length,omitempty"`
 	Method      string `json:"method,omitempty"`
 	NodeID      int    `json:"nodeID,omitempty"`
