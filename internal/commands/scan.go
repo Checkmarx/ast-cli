@@ -239,7 +239,7 @@ func scanCreateSubCommand(
 		Long:  "The create command enables the ability to create and run a new scan in CxAST.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan create --project-name <Project Name> --sources <path or repository url>
+			$ cx scan create --project-name <Project Name> -s <path or repository url>
 		`,
 		),
 		Annotations: map[string]string{
@@ -251,7 +251,6 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
 	}
-
 	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(
@@ -283,6 +282,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
+	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
+	createScanCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
+	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	// Link the environment variable to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
 	if err != nil {
@@ -728,16 +731,23 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return err
 			}
 		}
-		// Get the scan summary data
-		results, err := ReadResults(resultsWrapper, scanResponseModel.ID, make(map[string]string))
+		// Create the required reports
+		targetFile, _ := cmd.Flags().GetString(TargetFlag)
+		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+		reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
+		params, err := getFilters(cmd)
 		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedCreating)
+			return err
 		}
-		summary, err := SummaryReport(results, scanResponseModel.ID)
-		if err == nil {
-			writeConsoleSummary(summary)
+		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
+			reportFormats += ("," + util.FormatSummaryConsole)
 		}
-		return nil
+		return CreateScanReport(resultsWrapper,
+			scanResponseModel.ID,
+			reportFormats,
+			targetFile,
+			targetPath,
+			params)
 	}
 }
 
@@ -759,18 +769,6 @@ func waitForScanCompletion(
 		time.Sleep(time.Duration(waitDelay) * time.Second)
 	}
 	return nil
-}
-
-func writeConsoleSummary(summary *ResultSummary) {
-	fmt.Println("")
-	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
