@@ -98,35 +98,37 @@ func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*wra
 	}
 	summary.TotalIssues = int(results.TotalCount)
 	for _, result := range results.Results {
-		if result.Type == sastTypeLabel {
-			summary.SastIssues++
-		}
-		if result.Type == scaTypeLabel {
-			summary.ScaIssues++
-		}
-		if result.Type == kicsTypeLabel {
-			summary.KicsIssues++
-		}
-		severity := strings.ToLower(result.Severity)
-		if severity == highLabel {
-			summary.HighIssues++
-			summary.RiskStyle = highLabel
-			summary.RiskMsg = "High Risk"
-		} else if severity == lowLabel {
-			summary.LowIssues++
-			if summary.RiskStyle != highLabel && summary.RiskStyle != mediumLabel {
-				summary.RiskStyle = lowLabel
-				summary.RiskMsg = "Low Risk"
-			}
-		} else if severity == mediumLabel {
-			summary.MediumIssues++
-			if summary.RiskStyle != highLabel {
-				summary.RiskStyle = mediumLabel
-				summary.RiskMsg = "Medium Risk"
-			}
-		}
+		countResult(summary, result)
+	}
+	if summary.HighIssues > 0 {
+		summary.RiskStyle = highLabel
+		summary.RiskMsg = "High Risk"
+	} else if summary.MediumIssues > 0 {
+		summary.RiskStyle = mediumLabel
+		summary.RiskMsg = "Medium Risk"
+	} else if summary.LowIssues > 0 {
+		summary.RiskStyle = lowLabel
+		summary.RiskMsg = "Low Risk"
 	}
 	return summary, nil
+}
+
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+	if result.Type == sastTypeLabel {
+		summary.SastIssues++
+	} else if result.Type == scaTypeLabel {
+		summary.ScaIssues++
+	} else if result.Type == kicsTypeLabel {
+		summary.KicsIssues++
+	}
+	severity := strings.ToLower(result.Severity)
+	if severity == highLabel {
+		summary.HighIssues++
+	} else if severity == lowLabel {
+		summary.LowIssues++
+	} else if severity == mediumLabel {
+		summary.MediumIssues++
+	}
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -313,7 +315,6 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 	if results != nil {
 		ruleIds := map[interface{}]bool{}
 		for _, result := range results.Results {
-
 			if rule := findRule(ruleIds, result); rule != nil {
 				sarifRules = append(sarifRules, *rule)
 			}
@@ -332,7 +333,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	if result.ScanResultData.QueryID == nil {
 		sarifRule.ID = result.ID
 	} else {
-		sarifRule.ID = getRuleId(result.ScanResultData.QueryID)
+		sarifRule.ID = getRuleID(result.ScanResultData.QueryID)
 	}
 
 	if result.ScanResultData.QueryName != "" {
@@ -351,7 +352,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
-	scanResult.RuleID = getRuleId(result.ScanResultData.QueryID)
+	scanResult.RuleID = getRuleID(result.ScanResultData.QueryID)
 	scanResult.Message.Text = result.Comments.Comments
 	scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
 	scanResult.Locations = []wrappers.SarifLocation{}
@@ -377,8 +378,8 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	return nil
 }
 
-//getRuleId this method should be unnecessary when AST fixes the queryId field's type
-func getRuleId(queryId interface{}) string {
+// getRuleID this method should be unnecessary when AST fixes the queryId field's type
+func getRuleID(queryId interface{}) string {
 	switch queryId.(type) {
 	case float64:
 		return fmt.Sprintf("%0.f", queryId)
