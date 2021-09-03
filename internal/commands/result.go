@@ -379,11 +379,11 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 }
 
 // getRuleID this method should be unnecessary when AST fixes the queryId field's type
-func getRuleID(queryId interface{}) string {
-	switch queryId.(type) {
+func getRuleID(queryID interface{}) string {
+	switch queryID.(type) {
 	case float64:
-		return fmt.Sprintf("%0.f", queryId)
+		return fmt.Sprintf("%0.f", queryID)
 	default:
-		return fmt.Sprintf("%v", queryId)
+		return fmt.Sprintf("%v", queryID)
 	}
 }
