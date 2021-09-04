@@ -8,6 +8,7 @@ const (
 	ProxyTypeEnv                        = "CX_PROXY_AUTH_TYPE"
 	ProxyDomainEnv                      = "CX_PROXY_NTLM_DOMAIN"
 	BaseAuthURIEnv                      = "CX_BASE_AUTH_URI"
+	ScaToolEnv                          = "SCA_TOOL"
 	AstAPIKeyEnv                        = "CX_APIKEY"
 	AccessKeyIDEnv                      = "CX_CLIENT_ID"
 	AccessKeySecretEnv                  = "CX_CLIENT_SECRET"
