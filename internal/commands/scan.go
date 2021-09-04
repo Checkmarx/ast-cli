@@ -676,8 +676,6 @@ func determineSourceFile(uploadsWrapper wrappers.UploadsWrapper,
 		runScaResolver(scaResolverFlag, sourceDir)
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolverFlag)
 	}
-	fmt.Println("Sources: ", sourcesFile)
-	os.Exit(0)
 	if sourcesFile != "" {
 		// Send a request to uploads service
 		var preSignedURL *string
