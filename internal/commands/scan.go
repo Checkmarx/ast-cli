@@ -287,7 +287,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
 	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
-	createScanCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	createScanCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	// Link the environment variable to the CLI argument(s).
@@ -773,30 +773,42 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
 		}
+
 		// Wait until the scan is done: Queued, Running
 		if !noWaitFlag {
 			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
 			if err != nil {
+				verboseFlag, _ := cmd.Flags().GetBool(VerboseFlag)
+				if verboseFlag {
+					fmt.Println("Printing workflow logs")
+					var taskResponseModel []*wrappers.ScanTaskResponseModel
+					taskResponseModel, _, _ = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
+					util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+				}
+
 				return err
 			}
+
+			// Create the required reports
+			targetFile, _ := cmd.Flags().GetString(TargetFlag)
+			targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+			reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
+			params, err := getFilters(cmd)
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
+				reportFormats += "," + util.FormatSummaryConsole
+			}
+			return CreateScanReport(resultsWrapper,
+				scanResponseModel.ID,
+				reportFormats,
+				targetFile,
+				targetPath,
+				params)
 		}
-		// Create the required reports
-		targetFile, _ := cmd.Flags().GetString(TargetFlag)
-		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
-		reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
-		params, err := getFilters(cmd)
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-			reportFormats += ("," + util.FormatSummaryConsole)
-		}
-		return CreateScanReport(resultsWrapper,
-			scanResponseModel.ID,
-			reportFormats,
-			targetFile,
-			targetPath,
-			params)
+
+		return nil
 	}
 }
 
@@ -833,6 +845,7 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, err
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == "Running" || scanResponseModel.Status == "Queued" {
 			fmt.Println("Scan status: ", scanResponseModel.Status)
+
 			return true, nil
 		}
 	}
