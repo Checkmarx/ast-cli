@@ -72,6 +72,42 @@ func TestScaResolverAdd(t *testing.T) {
 	assert.Error(t, err, "Deleting a scan should pass")
 }
 
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverAddPt2(t *testing.T) {
+	scanID := ""
+	deleteScanCommand := createASTIntegrationTestCommand(t)
+	err := execute(
+		deleteScanCommand,
+		"scan", "delete",
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.Error(t, err, "Deleting a scan should pass")
+}
+
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverAddPt3(t *testing.T) {
+	scanID := ""
+	deleteScanCommand := createASTIntegrationTestCommand(t)
+	err := execute(
+		deleteScanCommand,
+		"scan", "delete",
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.Error(t, err, "Deleting a scan should pass")
+}
+
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverAddPt4(t *testing.T) {
+	scanID := ""
+	deleteScanCommand := createASTIntegrationTestCommand(t)
+	err := execute(
+		deleteScanCommand,
+		"scan", "delete",
+		flag(commands.ScanIDFlag), scanID,
+	)
+	assert.Error(t, err, "Deleting a scan should pass")
+}
+
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
 	projectName := fmt.Sprintf("integration_test_incremental_%s", uuid.New().String())
