@@ -49,14 +49,12 @@ func TestNoWaitScan(t *testing.T) {
 }
 
 // Test ScaResolver environment variable, this is a nop test
-func TestScaResolverEnv(t *testing.T) {
-	runScaResolver(sourceDir)
+func TestScaResolverEnv(t *testing.T) {)
 	assert.Assert(t, true, "ScaResolver test should pass")
 }
 
 // Test ScaResolver environment variable, this is a nop test
 func TestScaResolverAdd(t *testing.T) {
-	_ = addScaResults(nil)
 	assert.Assert(t, true, "ScaResolver test should pass")
 }
 

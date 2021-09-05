@@ -281,7 +281,6 @@ func scanCreateSubCommand(
 	}
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
-	//createScanCmd.PersistentFlags().BoolP(ScaResolver, "", false, "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
@@ -672,8 +671,7 @@ func determineSourceFile(uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
 	sourceDir,
 	sourceDirFilter,
-	userIncludeFilter,
-	scaResolver string) (string, error) {
+	userIncludeFilter string) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
@@ -735,7 +733,6 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
 		waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
-		scaResolver, _ := cmd.Flags().GetString(ScaResolverFlag)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
@@ -755,7 +752,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = viper.GetString(commonParams.BranchKey)
-		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
+		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
