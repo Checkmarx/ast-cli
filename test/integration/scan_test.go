@@ -50,12 +50,42 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver environment variable, this is a nop test
 func TestScaResolverEnv(t *testing.T) {
-	assert.Assert(t, true, "ScaResolver test should pass")
+	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
+
+	getCommand, outputBuffer := createRedirectedTestCommand(t)
+	err := execute(
+		getCommand,
+		"scan", "list",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.FilterFlag), scanFilter,
+	)
+	assert.NilError(t, err, "Getting the scan should pass")
+
+	// Read response from buffer
+	var scanList []scansRESTApi.ScanResponseModel
+	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
+
+	return scanList
 }
 
 // Test ScaResolver environment variable, this is a nop test
 func TestScaResolverAdd(t *testing.T) {
-	assert.Assert(t, true, "ScaResolver test should pass")
+	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
+
+	getCommand, outputBuffer := createRedirectedTestCommand(t)
+	err := execute(
+		getCommand,
+		"scan", "list",
+		flag(commands.FormatFlag), util.FormatJSON,
+		flag(commands.FilterFlag), scanFilter,
+	)
+	assert.NilError(t, err, "Getting the scan should pass")
+
+	// Read response from buffer
+	var scanList []scansRESTApi.ScanResponseModel
+	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
+
+	return scanList
 }
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
