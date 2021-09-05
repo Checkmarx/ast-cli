@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
@@ -629,10 +628,9 @@ func filterMatched(filters []string, fileName string) bool {
 }
 
 func runScaResolver(scaResolverFlag bool, sourceDir string) {
-	scaToolPath := viper.GetString(params.ScaToolKey)
+	scaToolPath := viper.GetString(commonParams.ScaToolKey)
 	if len(scaToolPath) > 0 && scaResolverFlag {
 		fmt.Println("Using SCA resolver: " + scaToolPath)
-		ioutil.TempDir("", "")
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
@@ -729,9 +727,9 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if err != nil {
 			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
-		noWaitFlag, _ := cmd.Flags().GetBool(ScaResolver)
-		scaResolverFlag, _ := cmd.Flags().GetBool(ScaResolver)
+		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
 		waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
+		scaResolverFlag, _ := cmd.Flags().GetBool(ScaResolver)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
