@@ -48,6 +48,18 @@ func TestNoWaitScan(t *testing.T) {
 	executeScanTest(t, projectID, scanID, map[string]string{})
 }
 
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverEnv(t *testing.T) {
+	runScaResolver(sourceDir)
+	assert.Assert(t, true, "ScaResolver test should pass")
+}
+
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverAdd(t *testing.T) {
+	_ = addScaResults(nil)
+	assert.Assert(t, true, "ScaResolver test should pass")
+}
+
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
 	projectName := fmt.Sprintf("integration_test_incremental_%s", uuid.New().String())

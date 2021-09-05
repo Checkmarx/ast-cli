@@ -281,7 +281,8 @@ func scanCreateSubCommand(
 	}
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().BoolP(ScaResolver, "", false, "Resolve SCA project dependencies (default true)")
+	//createScanCmd.PersistentFlags().BoolP(ScaResolver, "", false, "Resolve SCA project dependencies (default true)")
+	createScanCmd.PersistentFlags().String(ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
@@ -289,8 +290,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	// Link the environment variable to the CLI argument(s).
+	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScaToolKey, createScanCmd.PersistentFlags().Lookup(ScaResolverFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -480,8 +485,9 @@ func addScaScan() map[string]interface{} {
 	return nil
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter string, scaResolverFlag bool) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error) {
 	var err error
+	scaToolPath := viper.GetString(commonParams.ScaToolKey)
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
@@ -491,7 +497,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter string, scaResolverFlag
 	if err != nil {
 		log.Fatal(err)
 	}
-	if scaResolverFlag && len(scaResolverResultsFile) > 0 {
+	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
 			log.Fatal(err)
@@ -627,9 +633,9 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(scaResolverFlag bool, sourceDir string) {
+func runScaResolver(sourceDir string) {
 	scaToolPath := viper.GetString(commonParams.ScaToolKey)
-	if len(scaToolPath) > 0 && scaResolverFlag {
+	if len(scaToolPath) > 0 {
 		fmt.Println("Using SCA resolver: " + scaToolPath)
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -666,13 +672,13 @@ func determineSourceFile(uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
 	sourceDir,
 	sourceDirFilter,
-	userIncludeFilter string,
-	scaResolverFlag bool) (string, error) {
+	userIncludeFilter,
+	scaResolver string) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
-		runScaResolver(scaResolverFlag, sourceDir)
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolverFlag)
+		runScaResolver(sourceDir)
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -729,7 +735,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		}
 		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
 		waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
-		scaResolverFlag, _ := cmd.Flags().GetBool(ScaResolver)
+		scaResolver, _ := cmd.Flags().GetString(ScaResolverFlag)
 		var uploadType string
 		if sourceDir != "" || sourcesFile != "" {
 			uploadType = "upload"
@@ -749,7 +755,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = viper.GetString(commonParams.BranchKey)
-		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scaResolverFlag)
+		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
