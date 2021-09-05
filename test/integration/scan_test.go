@@ -50,6 +50,7 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver environment variable, this is a nop test
 func TestScaResolverEnv(t *testing.T) {
+	scanID := ""
 	deleteScanCommand := createASTIntegrationTestCommand(t)
 	err := execute(
 		deleteScanCommand,
@@ -61,6 +62,7 @@ func TestScaResolverEnv(t *testing.T) {
 
 // Test ScaResolver environment variable, this is a nop test
 func TestScaResolverAdd(t *testing.T) {
+	scanID := ""
 	deleteScanCommand := createASTIntegrationTestCommand(t)
 	err := execute(
 		deleteScanCommand,
