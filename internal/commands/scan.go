@@ -729,13 +729,12 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		if !noWaitFlag {
 			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
 			if err != nil {
-
 				verboseFlag, _ := cmd.Flags().GetBool(VerboseFlag)
 				if verboseFlag {
 					fmt.Println("Printing workflow logs")
 					var taskResponseModel []*wrappers.ScanTaskResponseModel
-					taskResponseModel, errorModel, err = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
-					_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+					taskResponseModel, _, _ = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
+					util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
 				}
 
 				return err
