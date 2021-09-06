@@ -641,10 +641,19 @@ func runScaResolver(sourceDir string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		out, err := exec.Command(scaToolPath, "offline", "-s", sourceDir, "-n", ProjectName, "-r", scaResolverResultsFile).Output()
-		fmt.Println(string(out))
-		if err != nil {
-			log.Fatal(err)
+		if scaToolPath != "nop" {
+			out, err := exec.Command(scaToolPath, "offline", "-s", sourceDir, "-n", ProjectName, "-r", scaResolverResultsFile).Output()
+			fmt.Println(string(out))
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			fmt.Println("Creating 'No Op' resolver file.")
+			d1 := []byte("{}")
+			err := os.WriteFile(scaResolverResultsFile, d1, 0644)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
