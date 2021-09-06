@@ -130,7 +130,7 @@ func LoadConfiguration() {
 func verifyConfigDir(fullPath string) {
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		fmt.Println("Creating directory")
-		err = os.Mkdir(fullPath, 0755)
+		err = os.Mkdir(fullPath, 0600)
 		if err != nil {
 			log.Fatal("Cannot file home directory.", err)
 		}
