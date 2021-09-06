@@ -724,13 +724,24 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
 		}
+
 		// Wait until the scan is done: Queued, Running
 		if !noWaitFlag {
 			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
 			if err != nil {
+
+				verboseFlag, _ := cmd.Flags().GetBool(VerboseFlag)
+				if verboseFlag {
+					fmt.Println("Printing workflow logs")
+					var taskResponseModel []*wrappers.ScanTaskResponseModel
+					taskResponseModel, errorModel, err = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
+					_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+				}
+
 				return err
 			}
 		}
+
 		// Create the required reports
 		targetFile, _ := cmd.Flags().GetString(TargetFlag)
 		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
@@ -740,7 +751,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			return err
 		}
 		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-			reportFormats += ("," + util.FormatSummaryConsole)
+			reportFormats += "," + util.FormatSummaryConsole
 		}
 		return CreateScanReport(resultsWrapper,
 			scanResponseModel.ID,
@@ -784,6 +795,7 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, err
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == "Running" || scanResponseModel.Status == "Queued" {
 			fmt.Println("Scan status: ", scanResponseModel.Status)
+
 			return true, nil
 		}
 	}
