@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -59,7 +60,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
 	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
-	resultCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	resultCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	resultCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	resultCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	return resultCmd
@@ -231,7 +232,7 @@ func createReport(format string,
 }
 
 func createTargetName(targetFile, targetPath, targetType string) string {
-	return targetPath + "/" + targetFile + "." + targetType
+	return filepath.Join(targetPath, targetFile+"."+targetType)
 }
 
 func ReadResults(
