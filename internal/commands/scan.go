@@ -283,7 +283,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
 	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
-	createScanCmd.PersistentFlags().String(TargetFlag, "", "Output file")
+	createScanCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	// Link the environment variable to the CLI argument(s).
@@ -739,25 +739,27 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 
 				return err
 			}
+
+			// Create the required reports
+			targetFile, _ := cmd.Flags().GetString(TargetFlag)
+			targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+			reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
+			params, err := getFilters(cmd)
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
+				reportFormats += "," + util.FormatSummaryConsole
+			}
+			return CreateScanReport(resultsWrapper,
+				scanResponseModel.ID,
+				reportFormats,
+				targetFile,
+				targetPath,
+				params)
 		}
 
-		// Create the required reports
-		targetFile, _ := cmd.Flags().GetString(TargetFlag)
-		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
-		reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
-		params, err := getFilters(cmd)
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-			reportFormats += "," + util.FormatSummaryConsole
-		}
-		return CreateScanReport(resultsWrapper,
-			scanResponseModel.ID,
-			reportFormats,
-			targetFile,
-			targetPath,
-			params)
+		return nil
 	}
 }
 
