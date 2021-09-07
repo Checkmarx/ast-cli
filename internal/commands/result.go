@@ -245,7 +245,7 @@ func createDirectory(targetPath string) error {
 		fmt.Printf("Creating directory: %s\n", targetPath)
 		err = os.Mkdir(targetPath, 0600)
 		if err != nil {
-			fmt.Errorf("Cannot create directory: %s\n", err)
+			fmt.Errorf("cannot create directory: %s", err)
 			return err
 		}
 	}
