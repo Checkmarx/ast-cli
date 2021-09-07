@@ -189,6 +189,10 @@ func CreateScanReport(resultsWrapper wrappers.ResultsWrapper,
 	if scanID == "" {
 		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 	}
+	err := createDirectory(targetPath)
+	if err != nil {
+		return err
+	}
 	results, err := ReadResults(resultsWrapper, scanID, params)
 	if err != nil {
 		return err
@@ -233,6 +237,19 @@ func createReport(format string,
 
 func createTargetName(targetFile, targetPath, targetType string) string {
 	return filepath.Join(targetPath, targetFile+"."+targetType)
+}
+
+func createDirectory(targetPath string) error {
+	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
+		fmt.Printf("\nOutput path not found: %s\n", targetPath)
+		fmt.Printf("Creating directory: %s\n", targetPath)
+		err = os.Mkdir(targetPath, 0600)
+		if err != nil {
+			fmt.Errorf("Cannot create directory: %s\n", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func ReadResults(
