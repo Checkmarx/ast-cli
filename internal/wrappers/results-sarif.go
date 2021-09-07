@@ -1,5 +1,11 @@
 package wrappers
 
+var (
+	SarifName           = "Checkmarx AST"
+	SarifVersion        = "1.0"
+	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST/pages/5844861345/CxAST+Documentation"
+)
+
 type SarifResultsCollection struct {
 	Schema  string     `json:"$schema"`
 	Version string     `json:"version"`
@@ -16,21 +22,23 @@ type SarifTool struct {
 }
 
 type SarifDriver struct {
-	Name    string            `json:"name"`
-	Version string            `json:"version"`
-	Rules   []SarifDriverRule `json:"rules"`
+	Name           string            `json:"name"`
+	Version        string            `json:"version"`
+	InformationURI string            `json:"informationUri"`
+	Rules          []SarifDriverRule `json:"rules"`
 }
 
 type SarifDriverRule struct {
-	ID   interface{} `json:"id"`
-	Name string      `json:"name"`
+	ID      string `json:"id"`
+	Name    string `json:"name,omitempty"`
+	HelpURI string `json:"helpUri"`
 }
 
 type SarifScanResult struct {
-	RuleID              interface{}            `json:"ruleId"`
+	RuleID              string                 `json:"ruleId"`
 	Message             SarifMessage           `json:"message"`
 	PartialFingerprints SarifResultFingerprint `json:"partialFingerprints"`
-	Locations           []SarifLocation        `json:"locations"`
+	Locations           []SarifLocation        `json:"locations,omitempty"`
 }
 
 type SarifLocation struct {
@@ -39,13 +47,13 @@ type SarifLocation struct {
 
 type SarifPhysicalLocation struct {
 	ArtifactLocation SarifArtifactLocation `json:"artifactLocation"`
-	Region           SarifRegion           `json:"region"`
+	Region           *SarifRegion          `json:"region,omitempty"`
 }
 
 type SarifRegion struct {
-	StartLine   uint `json:"startLine"`
-	StartColumn uint `json:"startColumn"`
-	EndColumn   uint `json:"endColumn"`
+	StartLine   uint `json:"startLine,omitempty"`
+	StartColumn uint `json:"startColumn,omitempty"`
+	EndColumn   uint `json:"endColumn,omitempty"`
 }
 
 type SarifArtifactLocation struct {
