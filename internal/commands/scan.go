@@ -484,7 +484,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "/", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
+	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -734,7 +734,7 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 					fmt.Println("Printing workflow logs")
 					var taskResponseModel []*wrappers.ScanTaskResponseModel
 					taskResponseModel, _, _ = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
-					util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+					_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
 				}
 
 				return err
