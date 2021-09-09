@@ -659,13 +659,13 @@ func runScaResolver(sourceDir string) {
 }
 
 func addScaResults(zipWriter *zip.Writer) error {
-	fmt.Println("Included SCA Results: ", "cxsca-results.json")
+	fmt.Println("Included SCA Results: ", ".cxsca-results.json")
 	dat, err := ioutil.ReadFile(scaResolverResultsFile)
 	os.Remove(scaResolverResultsFile)
 	if err != nil {
 		return err
 	}
-	f, err := zipWriter.Create("/cxsca-results.json")
+	f, err := zipWriter.Create(".cxsca-results.json")
 	if err != nil {
 		return err
 	}
