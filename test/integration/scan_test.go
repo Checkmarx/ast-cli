@@ -48,6 +48,18 @@ func TestNoWaitScan(t *testing.T) {
 	executeScanTest(t, projectID, scanID, map[string]string{})
 }
 
+// Test ScaResolver environment variable, this is a nop test
+func TestScaResolverEnv(t *testing.T) {
+	scanID, projectID := createScanNoWaitWithResolver(t, Dir, map[string]string{})
+	defer deleteProject(t, projectID)
+	assert.Assert(
+		t,
+		pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep),
+		"Polling should complete when resolver used.",
+	)
+	executeScanTest(t, projectID, scanID, map[string]string{})
+}
+
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
 	projectName := fmt.Sprintf("integration_test_incremental_%s", uuid.New().String())
@@ -172,6 +184,10 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgs(source, tags), "--nowait"))
+}
+
+func createScanNoWaitWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags), "--nowait", "--sca-resolver", "nop"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
