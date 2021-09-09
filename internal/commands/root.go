@@ -49,6 +49,7 @@ const (
 	GroupList                = "groups"
 	IncrementalSast          = "sast-incremental"
 	PresetName               = "sast-preset-name"
+	ScaResolverFlag          = "sca-resolver"
 	AccessKeyIDFlag          = "client-id"
 	AccessKeySecretFlag      = "client-secret"
 	AccessKeyIDFlagUsage     = "The OAuth2 client ID"
