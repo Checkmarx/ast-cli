@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,7 @@ const (
 )
 
 var (
+	scaResolverResultsFile  = ""
 	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
@@ -288,6 +290,7 @@ func scanCreateSubCommand(
 	}
 	createScanCmd.PersistentFlags().String(IncrementalSast, "false", "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(PresetName, "", "The name of the Checkmarx preset to use.")
+	createScanCmd.PersistentFlags().String(ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(BranchFlag, BranchFlagSh, commonParams.Branch, BranchFlagUsage)
@@ -295,8 +298,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
-	// Link the environment variable to the CLI argument(s).
+	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScaToolKey, createScanCmd.PersistentFlags().Lookup(ScaResolverFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -488,6 +495,7 @@ func addScaScan() map[string]interface{} {
 
 func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error) {
 	var err error
+	scaToolPath := viper.GetString(commonParams.ScaToolKey)
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
@@ -496,6 +504,12 @@ func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error)
 	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		log.Fatal(err)
+	}
+	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
+		err = addScaResults(zipWriter)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	// Close the file
 	if err = zipWriter.Close(); err != nil {
@@ -627,6 +641,50 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
+func runScaResolver(sourceDir string) {
+	scaToolPath := viper.GetString(commonParams.ScaToolKey)
+	if len(scaToolPath) > 0 {
+		fmt.Println("Using SCA resolver: " + scaToolPath)
+		scaFile, err := ioutil.TempFile("", "sca")
+		scaResolverResultsFile = scaFile.Name() + ".json"
+		if err != nil {
+			log.Fatal(err)
+		}
+		if scaToolPath != "nop" {
+			out, err := exec.Command(scaToolPath, "offline", "-s", sourceDir, "-n", ProjectName, "-r", scaResolverResultsFile).Output()
+			fmt.Println(string(out))
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			fmt.Println("Creating 'No Op' resolver file.")
+			d1 := []byte("{}")
+			err := os.WriteFile(scaResolverResultsFile, d1, 0644)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+}
+
+func addScaResults(zipWriter *zip.Writer) error {
+	fmt.Println("Included SCA Results: ", ".cxsca-results.json")
+	dat, err := ioutil.ReadFile(scaResolverResultsFile)
+	os.Remove(scaResolverResultsFile)
+	if err != nil {
+		return err
+	}
+	f, err := zipWriter.Create(".cxsca-results.json")
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(dat)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func determineSourceFile(
 	uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
@@ -637,6 +695,7 @@ func determineSourceFile(
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
+		runScaResolver(sourceDir)
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter)
 	}
 	if sourcesFile != "" {

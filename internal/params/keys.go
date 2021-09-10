@@ -11,6 +11,7 @@ var (
 	ProxyDomainKey                      = strings.ToLower(ProxyDomainEnv)
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)
 	AstAPIKey                           = strings.ToLower(AstAPIKeyEnv)
+	ScaToolKey                          = strings.ToLower(ScaToolEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	AgentNameKey                        = strings.ToLower(AgentNameEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
