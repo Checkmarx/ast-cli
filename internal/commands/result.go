@@ -28,33 +28,29 @@ const (
 	scaTypeLabel         = "dependency"
 )
 
-var (
-	filterResultsListFlagUsage = fmt.Sprintf(
-		"Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
-		strings.Join(
-			[]string{
-				commonParams.ScanIDQueryParam,
-				commonParams.LimitQueryParam,
-				commonParams.OffsetQueryParam,
-				commonParams.SortQueryParam,
-				commonParams.IncludeNodesQueryParam,
-				commonParams.NodeIDsQueryParam,
-				commonParams.QueryQueryParam,
-				commonParams.GroupQueryParam,
-				commonParams.StatusQueryParam,
-				commonParams.SeverityQueryParam,
-			}, ",",
-		),
-	)
-	scanAPIPath = ""
+var filterResultsListFlagUsage = fmt.Sprintf(
+	"Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
+	strings.Join(
+		[]string{
+			commonParams.ScanIDQueryParam,
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.SortQueryParam,
+			commonParams.IncludeNodesQueryParam,
+			commonParams.NodeIDsQueryParam,
+			commonParams.QueryQueryParam,
+			commonParams.GroupQueryParam,
+			commonParams.StatusQueryParam,
+			commonParams.SeverityQueryParam,
+		}, ",",
+	),
 )
 
-func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
-	scanAPIPath = resultsWrapper.GetScaAPIPath()
+func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "result",
 		Short: "Retrieve results",
-		RunE:  runGetResultCommand(resultsWrapper),
+		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
 	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
@@ -64,8 +60,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
 	return resultCmd
 }
 
-func getScanInfo(scanID string) (*wrappers.ResultSummary, error) {
-	scansWrapper := wrappers.NewHTTPScansWrapper(scanAPIPath)
+func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.ResultSummary, error) {
 	scanInfo, errorModel, err := scansWrapper.GetByID(scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedGetting)
@@ -92,8 +87,12 @@ func getScanInfo(scanID string) (*wrappers.ResultSummary, error) {
 	return nil, err
 }
 
-func SummaryReport(results *wrappers.ScanResultsCollection, scanID string) (*wrappers.ResultSummary, error) {
-	summary, err := getScanInfo(scanID)
+func SummaryReport(
+	scanWrapper wrappers.ScansWrapper,
+	results *wrappers.ScanResultsCollection,
+	scanID string,
+) (*wrappers.ResultSummary, error) {
+	summary, err := getScanInfo(scanWrapper, scanID)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +163,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	return nil
 }
 
-func runGetResultCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetResultCommand(
+	resultsWrapper wrappers.ResultsWrapper,
+	scanWrapper wrappers.ScansWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(TargetFlag)
 		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
@@ -174,12 +176,13 @@ func runGetResultCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		return CreateScanReport(resultsWrapper, scanID, format, targetFile, targetPath, params)
+		return CreateScanReport(resultsWrapper, scanWrapper, scanID, format, targetFile, targetPath, params)
 	}
 }
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
+	scanWrapper wrappers.ScansWrapper,
 	scanID string,
 	reportTypes string,
 	targetFile string,
@@ -197,7 +200,7 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	summary, err := SummaryReport(results, scanID)
+	summary, err := SummaryReport(scanWrapper, results, scanID)
 	if err != nil {
 		return err
 	}
@@ -347,7 +350,7 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
 
-	if result.ScanResultData.QueryID == nil {
+	if result.ScanResultData.QueryID == 0 {
 		sarifRule.ID = result.ID
 	} else {
 		sarifRule.ID = getRuleID(result.ScanResultData.QueryID)

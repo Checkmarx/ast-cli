@@ -21,13 +21,11 @@ func main() {
 	scans := viper.GetString(params.ScansPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
-	sastResults := viper.GetString(params.SastResultsPathKey)
-	kicsResults := viper.GetString(params.KicsResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, sastResults, kicsResults, scans)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	astCli := commands.NewAstCLI(
 		scansWrapper,
