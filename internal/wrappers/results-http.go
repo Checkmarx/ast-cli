@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
 )
@@ -34,8 +36,9 @@ func (r *ResultsHTTPWrapper) GetScaAPIPath() string {
 }
 
 func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params["limit"] = "10000"
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, DefaultTimeoutSeconds)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -64,6 +64,8 @@ const (
 	ProxyFlagUsage           = "Proxy server to send communication through"
 	ProxyTypeFlag            = "proxy-auth-type"
 	ProxyTypeFlagUsage       = "Proxy authentication type, (basic or ntlm)"
+	TimeoutFlag              = "timeout"
+	TimeoutFlagUsage         = "timeout for network activity, (default 5 seconds)"
 	NtlmProxyDomainFlag      = "proxy-ntlm-domain"
 	NtlmProxyDomainFlagUsage = "Window domain when using NTLM proxy"
 	BaseURIFlagUsage         = "The base system URI"
@@ -124,6 +126,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(ProxyFlag, "", ProxyFlagUsage)
 	rootCmd.PersistentFlags().String(ProxyTypeFlag, "", ProxyTypeFlagUsage)
 	rootCmd.PersistentFlags().String(NtlmProxyDomainFlag, "", NtlmProxyDomainFlagUsage)
+	rootCmd.PersistentFlags().String(TimeoutFlag, "", TimeoutFlagUsage)
 	rootCmd.PersistentFlags().String(BaseURIFlag, params.BaseURI, BaseURIFlagUsage)
 	rootCmd.PersistentFlags().String(BaseAuthURIFlag, params.BaseIAMURI, BaseAuthURIFlagUsage)
 	rootCmd.PersistentFlags().String(ProfileFlag, params.Profile, ProfileFlagUsage)
@@ -148,6 +151,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(ProxyFlag))
 	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(ProxyTypeFlag))
 	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(NtlmProxyDomainFlag))
+	_ = viper.BindPFlag(params.ClientTimeoutKey, rootCmd.PersistentFlags().Lookup(TimeoutFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(BaseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(AstAPIKeyFlag))
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(AgentFlag))
