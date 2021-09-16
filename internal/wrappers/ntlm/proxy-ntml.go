@@ -512,7 +512,10 @@ func getNtlmV2Hash(password, username, target string) []byte {
 
 func getNtlmHash(password string) []byte {
 	hash := md4.New()
-	hash.Write(toUnicode(password))
+	_, err := hash.Write(toUnicode(password))
+	if err != nil {
+		fmt.Println(err)
+	}
 	return hash.Sum(nil)
 }
 
@@ -534,7 +537,10 @@ func computeLmV2Response(ntlmV2Hash, serverChallenge, clientChallenge []byte) []
 func hmacMd5(key []byte, data ...[]byte) []byte {
 	mac := hmac.New(md5.New, key)
 	for _, d := range data {
-		mac.Write(d)
+		_, err := mac.Write(d)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 	return mac.Sum(nil)
 }
