@@ -549,9 +549,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 
 func handleFile(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
@@ -578,9 +578,9 @@ func handleFile(
 
 func handleDir(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {

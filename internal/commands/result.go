@@ -181,9 +181,9 @@ func runGetResultCommand(resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
-	scanID string,
-	reportTypes string,
-	targetFile string,
+	scanID,
+	reportTypes,
+	targetFile,
 	targetPath string,
 	params map[string]string,
 ) error {
@@ -212,9 +212,8 @@ func CreateScanReport(
 	return nil
 }
 
-func createReport(
-	format string,
-	targetFile string,
+func createReport(format,
+	targetFile,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
