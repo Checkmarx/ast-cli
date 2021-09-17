@@ -138,11 +138,11 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	err := execute(createCommand, args...)
 	assert.Assert(t, err != nil, "Creating a scan with !*go should fail")
 
-	args = append(args, flag(commands.IncludeFilterFlag), "s*")
+	args = append(args, flag(commands.IncludeFilterFlag), "*txt")
 
 	createCommand = createASTIntegrationTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
-	assert.NilError(t, err, "Including file started with s should fix the scan")
+	assert.NilError(t, err, "Including zip should fix the scan")
 }
 
 // Generic scan test execution
