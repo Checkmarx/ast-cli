@@ -111,5 +111,5 @@ jobs:
           base_uri: ${{ secrets.BASE_URI }}
           cx_tenant: ${{ secrets.TENANT }}
           cx_client_id: ${{ secrets.CLIENT_ID }}
-          cx_client_secret: ${{ secrets.CLIENT_SECRET }}
+          cx_client_secret: ${{ secrets.SECRET }}
           additional_params: --tags galactica-team

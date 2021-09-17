@@ -34,8 +34,8 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
-
-	mbBytes = 1024.0 * 1024.0
+	mbBytes           = 1024.0 * 1024.0
+	resolverFilePerm  = 0644
 )
 
 var (
@@ -650,7 +650,7 @@ func runScaResolver(sourceDir string) {
 		} else {
 			fmt.Println("Creating 'No Op' resolver file.")
 			d1 := []byte("{}")
-			err := os.WriteFile(scaResolverResultsFile, d1, 0644)
+			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
 			if err != nil {
 				log.Fatal(err)
 			}

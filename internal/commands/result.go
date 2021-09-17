@@ -26,6 +26,7 @@ const (
 	sastTypeLabel        = "sast"
 	kicsTypeLabel        = "infrastructure"
 	scaTypeLabel         = "dependency"
+	permission           = 0600
 )
 
 var (
@@ -245,7 +246,7 @@ func createDirectory(targetPath string) error {
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		fmt.Printf("\nOutput path not found: %s\n", targetPath)
 		fmt.Printf("Creating directory: %s\n", targetPath)
-		err = os.Mkdir(targetPath, 0600)
+		err = os.Mkdir(targetPath, permission)
 		if err != nil {
 			return err
 		}

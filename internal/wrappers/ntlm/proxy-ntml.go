@@ -36,6 +36,7 @@ const (
 	expMsgBodyLen          = 40
 	ntmlChallengeLen       = 2
 	ntmlAuthHeaderLen      = 3
+	ntmlMakeLen            = 8
 	avIDMsvAvEOL      avID = iota
 	avIDMsvAvTimestamp
 )
@@ -425,10 +426,10 @@ func processChallenge(challengeMessageData []byte, user, password string) ([]byt
 	if timestamp == nil { // no time sent, take current time
 		ft := uint64(time.Now().UnixNano()) / 100
 		ft += 116444736000000000 // add time between unix & windows offset
-		timestamp = make([]byte, 8)
+		timestamp = make([]byte, ntmlMakeLen)
 		binary.LittleEndian.PutUint64(timestamp, ft)
 	}
-	clientChallenge := make([]byte, 8)
+	clientChallenge := make([]byte, ntmlMakeLen)
 	_, _ = rand.Reader.Read(clientChallenge)
 	ntlmV2Hash := getNtlmV2Hash(password, user, cm.TargetName)
 	am.NtChallengeResponse = computeNtlmV2Response(ntlmV2Hash,
