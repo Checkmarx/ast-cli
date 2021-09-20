@@ -95,7 +95,7 @@ func NewAstCLI(
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	authWrapper wrappers.AuthWrapper,
-	logsWraper wrappers.LogsWrapper,
+	logsWrapper wrappers.LogsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -167,7 +167,7 @@ func NewAstCLI(
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := util.NewUtilsCommand(logsWraper)
+	utilsCmd := util.NewUtilsCommand(logsWrapper)
 	configCmd := util.NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,

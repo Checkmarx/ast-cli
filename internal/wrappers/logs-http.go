@@ -24,8 +24,8 @@ func NewLogsWrapper(path string) LogsWrapper {
 	return &LogsHTTPWrapper{path: path}
 }
 
-func (l *LogsHTTPWrapper) GetLog(scanId, scanType string) (string, error) {
-	reportPath := fmt.Sprintf("%s/%s/%s", l.path, scanId, scanType)
+func (l *LogsHTTPWrapper) GetLog(scanID, scanType string) (string, error) {
+	reportPath := fmt.Sprintf("%s/%s/%s", l.path, scanID, scanType)
 	resp, err := SendHTTPRequest(http.MethodGet, reportPath, nil, true, DefaultTimeoutSeconds)
 	if err != nil {
 		return "", err
