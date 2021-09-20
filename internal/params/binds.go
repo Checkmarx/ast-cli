@@ -45,4 +45,5 @@ var EnvVarsBinds = []struct {
 	{BranchKey, BranchEnv, "master"},
 	{AstRoleKey, AstRoleEnv, ScaAgent},
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
+	{ClientTimeoutKey, ClientTimeoutEnv, "5"},
 }
