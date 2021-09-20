@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/checkmarxDev/ast-cli/internal/params"
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -29,7 +28,7 @@ func (a *AuthHTTPWrapper) SetPath(newPath string) {
 
 func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, password,
 	adminClientID, adminClientSecret string) (*ErrorMsg, error) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(client)
 	if err != nil {
 		return nil, err
