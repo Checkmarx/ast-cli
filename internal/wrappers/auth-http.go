@@ -67,3 +67,21 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 		}())
 	}
 }
+
+func (s *AuthHTTPWrapper) Test() error {
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, map[string]string{}, nil, DefaultTimeoutSeconds)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	default:
+		return errors.Errorf("failed authentication: %d", resp.StatusCode)
+	}
+}

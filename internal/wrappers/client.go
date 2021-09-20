@@ -178,7 +178,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		return nil, err
+		return resp, err
 	}
 	return resp, nil
 }
@@ -263,7 +263,7 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 		}
 
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get access token from auth server")
+			return nil, errors.Errorf("%s", err)
 		}
 
 		writeCredentialsToCache(accessToken)
@@ -305,7 +305,7 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		if err != nil {
 			return nil, err
 		}
-		return nil, errors.Errorf("%s: %s", credentialsErr.Error, credentialsErr.Description)
+		return nil, errors.Errorf("%v %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
 	}
 
 	defer res.Body.Close()
