@@ -17,23 +17,23 @@ func TestResultHelp(t *testing.T) {
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--report-format", "sarif")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--report-format", "json")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--report-format", "summaryHTML")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--report-format", "summaryConsole")
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err)
 }

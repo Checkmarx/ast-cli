@@ -70,7 +70,7 @@ type ScanResultPackageData struct {
 }
 
 type ScanResultData struct {
-	QueryID      interface{}              `json:"queryId,omitempty"`
+	QueryID      uint64                   `json:"queryId,omitempty"`
 	QueryName    string                   `json:"queryName,omitempty"`
 	Group        string                   `json:"group,omitempty"`
 	ResultHash   string                   `json:"resultHash,omitempty"`
