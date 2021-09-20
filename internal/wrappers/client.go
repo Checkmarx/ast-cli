@@ -21,10 +21,9 @@ import (
 )
 
 const (
-	expiryGraceSeconds    = 10
-	DefaultTimeoutSeconds = 20
-	NoTimeout             = 0
-	ntlmProxyToken        = "ntlm"
+	expiryGraceSeconds = 10
+	NoTimeout          = 0
+	ntlmProxyToken     = "ntlm"
 )
 
 type ClientCredentialsInfo struct {
@@ -75,7 +74,6 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		}
 	}
-
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
 

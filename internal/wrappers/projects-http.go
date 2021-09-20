@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
@@ -23,12 +25,13 @@ func NewHTTPProjectsWrapper(path string) ProjectsWrapper {
 func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, DefaultTimeoutSeconds)
+	resp, err := SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +41,8 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, DefaultTimeoutSeconds)
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +74,8 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*projectsRESTApi.ProjectResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, nil, true, DefaultTimeoutSeconds)
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, nil, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +83,8 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 }
 
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
-	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true, DefaultTimeoutSeconds)
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +95,8 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	map[string][]string,
 	*projectsRESTApi.ErrorModel,
 	error) {
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", nil, true, DefaultTimeoutSeconds)
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", nil, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
 )
@@ -28,9 +30,10 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	*resultsHelpers.WebError,
 	error,
 ) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = "10000"
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, DefaultTimeoutSeconds)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
