@@ -34,37 +34,46 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
-
-	mbBytes = 1024.0 * 1024.0
+	mbBytes           = 1024.0 * 1024.0
+	resolverFilePerm  = 0644
 )
 
 var (
 	scaResolverResultsFile  = ""
 	actualScanTypes         = "sast,kics,sca"
-	filterScanListFlagUsage = fmt.Sprintf("Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
-		strings.Join([]string{
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.ScanIDsQueryParam,
-			commonParams.TagsKeyQueryParam,
-			commonParams.TagsValueQueryParam,
-			commonParams.StatusesQueryParam,
-			commonParams.ProjectIDQueryParam,
-			commonParams.FromDateQueryParam,
-			commonParams.ToDateQueryParam}, ","))
+	filterScanListFlagUsage = fmt.Sprintf(
+		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.ScanIDsQueryParam,
+				commonParams.TagsKeyQueryParam,
+				commonParams.TagsValueQueryParam,
+				commonParams.StatusesQueryParam,
+				commonParams.ProjectIDQueryParam,
+				commonParams.FromDateQueryParam,
+				commonParams.ToDateQueryParam,
+			}, ",",
+		),
+	)
 )
 
-func NewScanCommand(scansWrapper wrappers.ScansWrapper,
+func NewScanCommand(
+	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
-	resultsWrapper wrappers.ResultsWrapper) *cobra.Command {
+	resultsWrapper wrappers.ResultsWrapper,
+) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
 		Long:  "The scan command enables the ability to manage scans in CxAST.",
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/9YuXtw
-			`),
+			`,
+			),
 		},
 	}
 
@@ -549,9 +558,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 
 func handleFile(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
@@ -578,9 +587,9 @@ func handleFile(
 
 func handleDir(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
@@ -650,7 +659,7 @@ func runScaResolver(sourceDir string) {
 		} else {
 			fmt.Println("Creating 'No Op' resolver file.")
 			d1 := []byte("{}")
-			err := os.WriteFile(scaResolverResultsFile, d1, 0644)
+			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -676,11 +685,13 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func determineSourceFile(uploadsWrapper wrappers.UploadsWrapper,
+func determineSourceFile(
+	uploadsWrapper wrappers.UploadsWrapper,
 	sourcesFile,
 	sourceDir,
 	sourceDirFilter,
-	userIncludeFilter string) (string, error) {
+	userIncludeFilter string,
+) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
@@ -726,9 +737,11 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 	return zipFile, sourceDir, scanRepoURL, err
 }
 
-func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
+func runCreateScanCommand(
+	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
-	resultsWrapper wrappers.ResultsWrapper) func(cmd *cobra.Command, args []string) error {
+	resultsWrapper wrappers.ResultsWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
 		determineScanTypes(cmd)
@@ -761,7 +774,13 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 		// Setup the project handler (either git or upload)
 		pHandler := scansRESTApi.UploadProjectHandler{}
 		pHandler.Branch = viper.GetString(commonParams.BranchKey)
-		pHandler.UploadURL, err = determineSourceFile(uploadsWrapper, sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter)
+		pHandler.UploadURL, err = determineSourceFile(
+			uploadsWrapper,
+			sourcesFile,
+			sourceDir,
+			sourceDirFilter,
+			userIncludeFilter,
+		)
 		pHandler.RepoURL = scanRepoURL
 		scanModel.Handler, _ = json.Marshal(pHandler)
 		if err != nil {
@@ -810,12 +829,15 @@ func runCreateScanCommand(scansWrapper wrappers.ScansWrapper,
 			if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
 				reportFormats += "," + util.FormatSummaryConsole
 			}
-			return CreateScanReport(resultsWrapper,
+			return CreateScanReport(
+				resultsWrapper,
+				scansWrapper,
 				scanResponseModel.ID,
 				reportFormats,
 				targetFile,
 				targetPath,
-				params)
+				params,
+			)
 		}
 
 		return nil
