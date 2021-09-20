@@ -22,7 +22,7 @@ import (
 
 const (
 	expiryGraceSeconds    = 10
-	DefaultTimeoutSeconds = 5
+	DefaultTimeoutSeconds = 20
 	NoTimeout             = 0
 	ntlmProxyToken        = "ntlm"
 )
@@ -75,6 +75,7 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		}
 	}
+
 	return &http.Client{Transport: tr, Timeout: time.Duration(timeout) * time.Second}
 }
 

@@ -34,8 +34,8 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
-
-	mbBytes = 1024.0 * 1024.0
+	mbBytes           = 1024.0 * 1024.0
+	resolverFilePerm  = 0644
 )
 
 var (
@@ -558,9 +558,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 
 func handleFile(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
@@ -587,9 +587,9 @@ func handleFile(
 
 func handleDir(
 	zipWriter *zip.Writer,
-	baseDir string,
+	baseDir,
 	parentDir string,
-	filters []string,
+	filters,
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
@@ -659,7 +659,7 @@ func runScaResolver(sourceDir string) {
 		} else {
 			fmt.Println("Creating 'No Op' resolver file.")
 			d1 := []byte("{}")
-			err := os.WriteFile(scaResolverResultsFile, d1, 0644)
+			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -26,6 +26,7 @@ const (
 	sastTypeLabel        = "sast"
 	kicsTypeLabel        = "infrastructure"
 	scaTypeLabel         = "dependency"
+	permission           = 0600
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -183,9 +184,9 @@ func runGetResultCommand(
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	scanID string,
-	reportTypes string,
-	targetFile string,
+	scanID,
+	reportTypes,
+	targetFile,
 	targetPath string,
 	params map[string]string,
 ) error {
@@ -214,9 +215,8 @@ func CreateScanReport(
 	return nil
 }
 
-func createReport(
-	format string,
-	targetFile string,
+func createReport(format,
+	targetFile,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
@@ -248,7 +248,7 @@ func createDirectory(targetPath string) error {
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		fmt.Printf("\nOutput path not found: %s\n", targetPath)
 		fmt.Printf("Creating directory: %s\n", targetPath)
-		err = os.Mkdir(targetPath, 0600)
+		err = os.Mkdir(targetPath, permission)
 		if err != nil {
 			return err
 		}
