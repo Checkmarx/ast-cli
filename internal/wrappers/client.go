@@ -24,7 +24,6 @@ const (
 	expiryGraceSeconds = 10
 	NoTimeout          = 0
 	ntlmProxyToken     = "ntlm"
-	//DefaultTimeoutSeconds = 5
 )
 
 type ClientCredentialsInfo struct {

@@ -138,7 +138,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	err := execute(createCommand, args...)
 	assert.Assert(t, err != nil, "Creating a scan with !*go should fail")
 
-	args = append(args, flag(commands.IncludeFilterFlag), "*zip")
+	args = append(args, flag(commands.IncludeFilterFlag), "*txt")
 
 	createCommand = createASTIntegrationTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)

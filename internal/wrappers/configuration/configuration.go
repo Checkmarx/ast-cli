@@ -14,6 +14,7 @@ import (
 
 const configDirName = "/.checkmarx"
 const obfuscateLimit = 4
+const homeDirectoryPermissions = 0600
 
 func PromptConfiguration() {
 	reader := bufio.NewReader(os.Stdin)
@@ -130,7 +131,7 @@ func LoadConfiguration() {
 func verifyConfigDir(fullPath string) {
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		fmt.Println("Creating directory")
-		err = os.Mkdir(fullPath, 0600)
+		err = os.Mkdir(fullPath, homeDirectoryPermissions)
 		if err != nil {
 			log.Fatal("Cannot file home directory.", err)
 		}
