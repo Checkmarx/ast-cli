@@ -79,6 +79,7 @@ func TestScanWorkflow(t *testing.T) {
 	scanID, projectID := createScan(t, Dir, map[string]string{})
 
 	defer deleteProject(t, projectID)
+	defer testSastLogs(t, scanID)
 	defer deleteScan(t, scanID)
 
 	workflowCommand, buffer := createRedirectedTestCommand(t)
@@ -226,6 +227,17 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 
 	return createdScan.ID, createdScan.ProjectID
+}
+
+func testSastLogs(t *testing.T, scanID string) {
+	logsCommand := createASTIntegrationTestCommand(t)
+	err := execute(
+		logsCommand,
+		"utils", "logs",
+		flag(commands.ScanIDFlag), scanID,
+		flag(commands.ScanTypeFlag), "sast",
+	)
+	assert.NilError(t, err, "Getting scan log should pass")
 }
 
 func deleteScan(t *testing.T, scanID string) {

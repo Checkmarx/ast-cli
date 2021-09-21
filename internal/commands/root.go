@@ -45,6 +45,7 @@ const (
 	MainBranchFlag           = "branch"
 	ProjectName              = "project-name"
 	ScanTypes                = "scan-types"
+	ScanTypeFlag             = "scan-type"
 	TagList                  = "tags"
 	GroupList                = "groups"
 	IncrementalSast          = "sast-incremental"
