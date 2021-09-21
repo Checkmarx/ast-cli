@@ -10,6 +10,7 @@ var (
 	ProxyTypeKey                        = strings.ToLower(ProxyTypeEnv)
 	ProxyDomainKey                      = strings.ToLower(ProxyDomainEnv)
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)
+	ClientTimeoutKey                    = strings.ToLower(ClientTimeoutEnv)
 	AstAPIKey                           = strings.ToLower(AstAPIKeyEnv)
 	ScaToolKey                          = strings.ToLower(ScaToolEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)

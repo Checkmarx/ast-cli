@@ -4,6 +4,7 @@ const (
 	TenantEnv                           = "CX_TENANT"
 	BranchEnv                           = "CX_BRANCH"
 	BaseURIEnv                          = "CX_BASE_URI"
+	ClientTimeoutEnv                    = "CX_TIMEOUT"
 	ProxyEnv                            = "HTTP_PROXY"
 	ProxyTypeEnv                        = "CX_PROXY_AUTH_TYPE"
 	ProxyDomainEnv                      = "CX_PROXY_NTLM_DOMAIN"

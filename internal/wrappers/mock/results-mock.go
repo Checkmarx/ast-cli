@@ -32,9 +32,8 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 }
 
 func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *resultsHelpers.WebError, error) {
-	return nil, nil, nil
-}
-
-func (r *ResultsMockWrapper) GetScaAPIPath() string {
-	return ""
+	return &wrappers.ScanResultsCollection{
+		TotalCount: 0,
+		Results:    []*wrappers.ScanResult{},
+	}, nil, nil
 }

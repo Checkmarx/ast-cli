@@ -28,6 +28,7 @@ func (a *AuthHTTPWrapper) SetPath(newPath string) {
 
 func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, password,
 	adminClientID, adminClientSecret string) (*ErrorMsg, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(client)
 	if err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
 	a.SetPath(createClientPath)
 	// send the request
-	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), DefaultTimeoutSeconds,
+	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), clientTimeout,
 		username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err

@@ -21,10 +21,9 @@ import (
 )
 
 const (
-	expiryGraceSeconds    = 10
-	DefaultTimeoutSeconds = 5
-	NoTimeout             = 0
-	ntlmProxyToken        = "ntlm"
+	expiryGraceSeconds = 10
+	NoTimeout          = 0
+	ntlmProxyToken     = "ntlm"
 )
 
 type ClientCredentialsInfo struct {

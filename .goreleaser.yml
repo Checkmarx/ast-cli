@@ -45,3 +45,18 @@ archives:
       386: x32
     files:
       - LICENSE
+brews:
+  - tap:
+      owner: checkmarx
+      name: homebrew-ast-cli
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/Checkmarx/ast-cli
+    description: CLI for AST
+    license: Apache
+    test: |
+      system "#{bin}/cx version"
+    install: |-
+      pkgshare.mkpath
+      cp_r "assets", pkgshare
+      bin.install "cx"

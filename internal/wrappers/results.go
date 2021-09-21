@@ -6,5 +6,4 @@ import (
 
 type ResultsWrapper interface {
 	GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error)
-	GetScaAPIPath() string
 }

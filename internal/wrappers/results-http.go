@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
+	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
+	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
 )
@@ -14,28 +16,24 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	path      string
-	sastPath  string
-	kicsPath  string
-	scansPath string
+	path string
 }
 
-func NewHTTPResultsWrapper(path, sastPath, kicsPath, scansPath string) ResultsWrapper {
+func NewHTTPResultsWrapper(path string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		path:      path,
-		sastPath:  sastPath,
-		kicsPath:  kicsPath,
-		scansPath: scansPath,
+		path: path,
 	}
 }
 
-func (r *ResultsHTTPWrapper) GetScaAPIPath() string {
-	return r.scansPath
-}
-
-func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (*ScanResultsCollection, *resultsHelpers.WebError, error) {
+func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
+	*ScanResultsCollection,
+	*resultsHelpers.WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = "10000"
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, DefaultTimeoutSeconds)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
