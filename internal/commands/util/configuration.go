@@ -17,29 +17,46 @@ const (
 	propValFlag       = "prop-value"
 )
 
+var properties = map[string]bool{
+	params.AstAPIKey:                true,
+	params.BaseURIKey:               true,
+	params.BaseAuthURIKey:           true,
+	params.TenantKey:                true,
+	params.ProxyTypeKey:             true,
+	params.ProxyKey:                 true,
+	params.AccessKeySecretConfigKey: true,
+	params.AccessKeyIDConfigKey:     true,
+}
+
 func NewConfigCommand() *cobra.Command {
 	configureCmd := &cobra.Command{
 		Use:   "configure",
 		Short: "Configure authentication and global properties",
 		Long:  "The configure command is the fastest way to set up your AST CLI",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx configure 
 			AST Base URI []: https://ast.checkmarx.net/
 			AST Base Auth URI (IAM) []: https://iam.checkmarx.net/
 			AST Tenant []: organization
 			Do you want to use API Key authentication? (Y/N): Y
 			AST API Key []: myapikey
-		`),
+		`,
+		),
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration.PromptConfiguration()
 		},
 		Annotations: map[string]string{
-			"utils:env": heredoc.Doc(`
+			"utils:env": heredoc.Doc(
+				`
 				See 'cx utils env' for the list of supported environment variables	
-			`),
-			"command:doc": heredoc.Doc(`
+			`,
+			),
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/gwQRtw
-			`),
+			`,
+			),
 		},
 	}
 
@@ -49,7 +66,8 @@ func NewConfigCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			configuration.ShowConfiguration()
 		},
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx configure show
 			Current Effective Configuration
                      BaseURI: 
@@ -58,11 +76,14 @@ func NewConfigCommand() *cobra.Command {
                    Client ID:
                Client Secret:
                       APIKey: 
-                       Proxy:`),
+                       Proxy:`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/gwQRtw
-			`),
+			`,
+			),
 		},
 	}
 
@@ -71,13 +92,17 @@ func NewConfigCommand() *cobra.Command {
 		Short: "Set configuration properties",
 		Long:  "Set configuration properties\nRun 'cx utils env' for the list of supported environment variables",
 		RunE:  runSetValue(),
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx configure set cx_base_uri <base_uri>
-			Setting property [cx_base_uri] to value [<base_uri>]`),
+			Setting property [cx_base_uri] to value [<base_uri>]`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/gwQRtw
-			`),
+			`,
+			),
 		},
 	}
 	setCmd.PersistentFlags().String(propNameFlag, "", "Name of property set")
@@ -91,19 +116,7 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		propName, _ := cmd.Flags().GetString(propNameFlag)
 		propValue, _ := cmd.Flags().GetString(propValFlag)
-		if propName == params.AstAPIKey {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if propName == params.BaseURIKey {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if propName == params.BaseAuthURIKey {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if propName == params.ProxyTypeKey {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if strings.EqualFold(propName, params.ProxyKey) {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if propName == params.AccessKeySecretConfigKey {
-			configuration.SetConfigProperty(propName, propValue)
-		} else if propName == params.AccessKeyIDConfigKey {
+		if properties[strings.ToLower(propName)] {
 			configuration.SetConfigProperty(propName, propValue)
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)
