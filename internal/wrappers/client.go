@@ -21,9 +21,11 @@ import (
 )
 
 const (
-	expiryGraceSeconds = 10
-	NoTimeout          = 0
-	ntlmProxyToken     = "ntlm"
+	expiryGraceSeconds    = 10
+	DefaultTimeoutSeconds = 5
+	NoTimeout             = 0
+	ntlmProxyToken        = "ntlm"
+	checkmarxUrlError     = "Could not reach provided Checkmarx server"
 )
 
 type ClientCredentialsInfo struct {
@@ -177,7 +179,11 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		return resp, err
+		//TODO: Add error object to debug log
+		return resp, errors.Errorf("%s %s \n", checkmarxUrlError, req.URL)
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return resp, errors.Errorf("%s %s", "Provided credentials do not have permissions for this command")
 	}
 	return resp, nil
 }
@@ -223,7 +229,7 @@ func enrichWithOath2Credentials(request *http.Request) error {
 
 	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 	if err != nil {
-		return errors.Wrap(err, "failed to authenticate")
+		return err
 	}
 
 	request.Header.Add("Authorization", *accessToken)
@@ -293,21 +299,41 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	}
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	res, err := http.DefaultClient.Do(req)
+
 	if err != nil {
-		return nil, err
+		//TODO: Add error object to debug log
+		return nil, errors.Errorf("%s %s", checkmarxUrlError, GetAuthURL(""))
 	}
+	if res.StatusCode == http.StatusBadRequest {
+		//TODO: Add error object to debug log
+		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+	}
+	if res.StatusCode == http.StatusNotFound {
+		//TODO: Add error object to debug log
+		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
+	}
+	if res.StatusCode == http.StatusUnauthorized {
+		//TODO: Add error object to debug log
+		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+	}
+
+	//check for permissions (403 forbidden)
 
 	body, _ := ioutil.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		credentialsErr := ClientCredentialsError{}
 		err = json.Unmarshal(body, &credentialsErr)
+
 		if err != nil {
 			return nil, err
 		}
+
 		return nil, errors.Errorf("%v %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	credentialsInfo := ClientCredentialsInfo{}
 	err = json.Unmarshal(body, &credentialsInfo)
