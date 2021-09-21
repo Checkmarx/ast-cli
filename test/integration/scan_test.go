@@ -79,7 +79,6 @@ func TestScanWorkflow(t *testing.T) {
 	scanID, projectID := createScan(t, Dir, map[string]string{})
 
 	defer deleteProject(t, projectID)
-	defer testSastLogs(t, scanID)
 	defer deleteScan(t, scanID)
 
 	workflowCommand, buffer := createRedirectedTestCommand(t)
@@ -91,6 +90,8 @@ func TestScanWorkflow(t *testing.T) {
 		flag(commands.FormatFlag), util.FormatJSON,
 	)
 	assert.NilError(t, err, "Workflow should pass")
+	testSastLogs(t, scanID)
+	testKicsLogs(t, scanID)
 
 	var workflow []ScanWorkflowResponse
 	_ = unmarshall(t, buffer, &workflow, "Reading workflow output should work")
@@ -237,7 +238,18 @@ func testSastLogs(t *testing.T, scanID string) {
 		flag(commands.ScanIDFlag), scanID,
 		flag(commands.ScanTypeFlag), "sast",
 	)
-	assert.NilError(t, err, "Getting scan log should pass")
+	assert.NilError(t, err, "Getting scan SAST log should pass")
+}
+
+func testKicsLogs(t *testing.T, scanID string) {
+	logsCommand := createASTIntegrationTestCommand(t)
+	err := execute(
+		logsCommand,
+		"utils", "logs",
+		flag(commands.ScanIDFlag), scanID,
+		flag(commands.ScanTypeFlag), "kics",
+	)
+	assert.NilError(t, err, "Getting scan KICS log should pass")
 }
 
 func deleteScan(t *testing.T, scanID string) {
