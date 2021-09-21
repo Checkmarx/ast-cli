@@ -15,7 +15,7 @@ func TestUtilLogsSAST(t *testing.T) {
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
-	logsCommand, outputBuffer := createRedirectedTestCommand(t)
+	logsCommand := createASTIntegrationTestCommand(t)
 
 	err := execute(
 		logsCommand,
@@ -33,6 +33,7 @@ func TestUtilLogsKICS(t *testing.T) {
 	defer deleteScan(t, scanID)
 
 	logsCommand := createASTIntegrationTestCommand(t)
+
 	err := execute(
 		logsCommand,
 		"utils", "logs",
