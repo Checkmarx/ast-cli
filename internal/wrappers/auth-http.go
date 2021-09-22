@@ -68,3 +68,22 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 		}())
 	}
 }
+
+func (a *AuthHTTPWrapper) ValidateLogin() error {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, a.path, map[string]string{}, nil, clientTimeout)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		return nil
+	default:
+		return errors.Errorf("failed authentication: %d", resp.StatusCode)
+	}
+}

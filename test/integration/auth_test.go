@@ -88,5 +88,5 @@ func TestFailProxyAuth(t *testing.T) {
 	err := validate.Execute()
 	assert.Assert(t, err != nil, "Executing without proxy should fail")
 	//goland:noinspection GoNilness
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "failed authentication"))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
 }

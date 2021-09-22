@@ -16,4 +16,5 @@ type ErrorMsg struct {
 type AuthWrapper interface {
 	CreateOauth2Client(client *Oath2Client, username, password, adminClientID, adminClientSecret string) (*ErrorMsg, error)
 	SetPath(path string)
+	ValidateLogin() error
 }
