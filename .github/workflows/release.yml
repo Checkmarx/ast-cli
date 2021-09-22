@@ -31,3 +31,4 @@ jobs:
           args: release --rm-dist --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
