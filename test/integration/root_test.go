@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -12,7 +13,7 @@ const (
 	FullScanWait  = 60
 	ScanPollSleep = 5
 	Dir           = ".."
-	Zip           = "sources.zip"
+	Zip           = "data/sources.zip"
 	SlowRepo      = "https://github.com/WebGoat/WebGoat"
 )
 
