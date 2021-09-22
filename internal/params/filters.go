@@ -120,4 +120,5 @@ var BaseFilters = []string{
 	"requirements.txt",
 	"requirement.txt",
 	"composer.lock",
+	"Dockerfile",
 }

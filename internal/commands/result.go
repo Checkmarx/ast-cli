@@ -350,7 +350,7 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
 
-	if result.ScanResultData.QueryID == 0 {
+	if result.ScanResultData.QueryID == nil {
 		sarifRule.ID = result.ID
 	} else {
 		sarifRule.ID = getRuleID(result.ScanResultData.QueryID)

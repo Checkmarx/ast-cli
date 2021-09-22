@@ -131,12 +131,12 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(commands.SourcesFlag), ".",
 		flag(commands.ScanTypes), "sast",
 		flag(commands.PresetName), "Checkmarx Default",
-		flag(commands.SourceDirFilterFlag), "!*go",
+		flag(commands.SourceDirFilterFlag), "!*go,!*Dockerfile",
 	}
 
 	createCommand := createASTIntegrationTestCommand(t)
 	err := execute(createCommand, args...)
-	assert.Assert(t, err != nil, "Creating a scan with !*go should fail")
+	assert.Assert(t, err != nil, "Creating a scan with !*go,!*Dockerfile should fail")
 
 	args = append(args, flag(commands.IncludeFilterFlag), "*txt")
 

@@ -318,7 +318,7 @@ func findProject(projectName string) (string, error) {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s\n", failedGettingAll)
+		return "", err
 	}
 	if resp.FilteredTotalCount > 0 {
 		for i := 0; i < len(resp.Projects); i++ {
@@ -329,7 +329,7 @@ func findProject(projectName string) (string, error) {
 	} else {
 		projectID, err = createProject(projectName)
 		if err != nil {
-			return "", errors.Wrapf(err, "%s", failedCreatingProj)
+			return "", err
 		}
 	}
 	return projectID, nil
