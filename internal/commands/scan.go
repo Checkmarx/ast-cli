@@ -310,7 +310,7 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(projectName string) string {
+func findProject(projectName string) (string, error) {
 	projectID := ""
 	params := make(map[string]string)
 	params["name"] = projectName
@@ -318,9 +318,7 @@ func findProject(projectName string) string {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
-		fmt.Println(err)
-		_ = errors.Wrapf(err, "%s\n", failedGettingAll)
-		os.Exit(0)
+		return "", errors.Wrapf(err, "%s\n", failedGettingAll)
 	}
 	if resp.FilteredTotalCount > 0 {
 		for i := 0; i < len(resp.Projects); i++ {
@@ -331,11 +329,10 @@ func findProject(projectName string) string {
 	} else {
 		projectID, err = createProject(projectName)
 		if err != nil {
-			_ = errors.Wrapf(err, "%s", failedCreatingProj)
-			os.Exit(0)
+			return "", errors.Wrapf(err, "%s", failedCreatingProj)
 		}
 	}
-	return projectID
+	return projectID, nil
 }
 
 func createProject(projectName string) (string, error) {
@@ -376,7 +373,7 @@ func updateTagValues(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) {
+func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -391,12 +388,18 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	}
 	// We need to convert the project name into an ID
-	projectID := findProject(info["project"].(map[string]interface{})["id"].(string))
+	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string))
+	if err != nil {
+		return err
+	}
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
 	if _, ok := info["config"]; !ok {
-		_ = json.Unmarshal([]byte("[]"), &configArr)
+		err = json.Unmarshal([]byte("[]"), &configArr)
+		if err != nil {
+			return err
+		}
 	}
 	var sastConfig = addSastScan(cmd)
 	if sastConfig != nil {
@@ -411,7 +414,8 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 		configArr = append(configArr, scaConfig)
 	}
 	info["config"] = configArr
-	*input, _ = json.Marshal(info)
+	*input, err = json.Marshal(info)
+	return err
 }
 
 func determineScanTypes(cmd *cobra.Command) {
@@ -651,7 +655,16 @@ func runScaResolver(sourceDir string) {
 			log.Fatal(err)
 		}
 		if scaToolPath != "nop" {
-			out, err := exec.Command(scaToolPath, "offline", "-s", sourceDir, "-n", ProjectName, "-r", scaResolverResultsFile).Output()
+			out, err := exec.Command(
+				scaToolPath,
+				"offline",
+				"-s",
+				sourceDir,
+				"-n",
+				ProjectName,
+				"-r",
+				scaResolverResultsFile,
+			).Output()
 			fmt.Println(string(out))
 			if err != nil {
 				log.Fatal(err)
@@ -761,7 +774,10 @@ func runCreateScanCommand(
 		} else {
 			uploadType = "git"
 		}
-		updateScanRequestValues(&input, cmd, uploadType)
+		err = updateScanRequestValues(&input, cmd, uploadType)
+		if err != nil {
+			return err
+		}
 		updateTagValues(&input, cmd)
 		var scanModel = scansRESTApi.Scan{}
 		var scanResponseModel *scansRESTApi.ScanResponseModel
