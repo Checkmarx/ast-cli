@@ -57,6 +57,4 @@ brews:
     test: |
       system "#{bin}/cx version"
     install: |-
-      pkgshare.mkpath
-      cp_r "assets", pkgshare
       bin.install "cx"
