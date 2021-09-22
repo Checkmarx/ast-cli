@@ -21,11 +21,10 @@ import (
 )
 
 const (
-	expiryGraceSeconds    = 10
-	DefaultTimeoutSeconds = 5
-	NoTimeout             = 0
-	ntlmProxyToken        = "ntlm"
-	checkmarxUrlError     = "Could not reach provided Checkmarx server"
+	expiryGraceSeconds = 10
+	NoTimeout          = 0
+	ntlmProxyToken     = "ntlm"
+	checkmarxURLError  = "Could not reach provided Checkmarx server"
 )
 
 type ClientCredentialsInfo struct {
@@ -179,11 +178,11 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		//TODO: Add error object to debug log
-		return resp, errors.Errorf("%s %s \n", checkmarxUrlError, req.URL)
+		// TODO: Add error object to debug log
+		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL)
 	}
 	if resp.StatusCode == http.StatusForbidden {
-		return resp, errors.Errorf("%s %s", "Provided credentials do not have permissions for this command")
+		return resp, errors.Errorf("%s", "Provided credentials do not have permissions for this command")
 	}
 	return resp, nil
 }
@@ -301,19 +300,19 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		//TODO: Add error object to debug log
-		return nil, errors.Errorf("%s %s", checkmarxUrlError, GetAuthURL(""))
+		// TODO: Add error object to debug log
+		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		//TODO: Add error object to debug log
+		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 	if res.StatusCode == http.StatusNotFound {
-		//TODO: Add error object to debug log
+		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		//TODO: Add error object to debug log
+		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 

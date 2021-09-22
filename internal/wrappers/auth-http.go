@@ -3,7 +3,6 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -29,6 +28,7 @@ func (a *AuthHTTPWrapper) SetPath(newPath string) {
 
 func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, password,
 	adminClientID, adminClientSecret string) (*ErrorMsg, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(client)
 	if err != nil {
 		return nil, err
@@ -39,17 +39,13 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
 	a.SetPath(createClientPath)
 	// send the request
-	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), DefaultTimeoutSeconds,
+	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), clientTimeout,
 		username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-		}
-	}(res.Body)
+	defer res.Body.Close()
 
 	switch res.StatusCode {
 	case http.StatusBadRequest:
@@ -73,8 +69,9 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	}
 }
 
-func (s *AuthHTTPWrapper) ValidateLogin() error {
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, map[string]string{}, nil, DefaultTimeoutSeconds)
+func (a *AuthHTTPWrapper) ValidateLogin() error {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, a.path, map[string]string{}, nil, clientTimeout)
 	if err != nil {
 		return err
 	}
