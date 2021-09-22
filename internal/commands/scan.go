@@ -756,56 +756,13 @@ func runCreateScanCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input = []byte("{}")
-		determineScanTypes(cmd)
-		validateScanTypes()
-		sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
-		userIncludeFilter, _ := cmd.Flags().GetString(IncludeFilterFlag)
-		sourcesFile, _ := cmd.Flags().GetString(SourcesFlag)
-		sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
-		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
-		}
-		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
-		waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
-		var uploadType string
-		if sourceDir != "" || sourcesFile != "" {
-			uploadType = "upload"
-		} else {
-			uploadType = "git"
-		}
-		err = updateScanRequestValues(&input, cmd, uploadType)
+		scanModel, err := createScanModel(cmd, uploadsWrapper)
 		if err != nil {
 			return err
 		}
-		updateTagValues(&input, cmd)
-		var scanModel = scansRESTApi.Scan{}
-		var scanResponseModel *scansRESTApi.ScanResponseModel
-		var errorModel *scansRESTApi.ErrorModel
-		// Try to parse to a scan model in order to manipulate the request payload
-		err = json.Unmarshal(input, &scanModel)
-		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", failedCreating)
-		}
-		// Setup the project handler (either git or upload)
-		pHandler := scansRESTApi.UploadProjectHandler{}
-		pHandler.Branch = viper.GetString(commonParams.BranchKey)
-		pHandler.UploadURL, err = determineSourceFile(
-			uploadsWrapper,
-			sourcesFile,
-			sourceDir,
-			sourceDirFilter,
-			userIncludeFilter,
-		)
-		pHandler.RepoURL = scanRepoURL
-		scanModel.Handler, _ = json.Marshal(pHandler)
-		if err != nil {
-			return err
-		}
-		var payload []byte
-		payload, _ = json.Marshal(scanModel)
+		payload, _ := json.Marshal(scanModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to scans service: %s\n", string(payload)))
-		scanResponseModel, errorModel, err = scansWrapper.Create(&scanModel)
+		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
 		}
@@ -820,44 +777,126 @@ func runCreateScanCommand(
 		}
 
 		// Wait until the scan is done: Queued, Running
+		noWaitFlag, _ := cmd.Flags().GetBool(WaitFlag)
 		if !noWaitFlag {
-			err = waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
-			if err != nil {
-				verboseFlag, _ := cmd.Flags().GetBool(VerboseFlag)
-				if verboseFlag {
-					fmt.Println("Printing workflow logs")
-					var taskResponseModel []*wrappers.ScanTaskResponseModel
-					taskResponseModel, _, _ = scansWrapper.GetWorkflowByID(scanResponseModel.ID)
-					_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
-				}
-
-				return err
-			}
-
-			// Create the required reports
-			targetFile, _ := cmd.Flags().GetString(TargetFlag)
-			targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
-			reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
-			params, err := getFilters(cmd)
-			if err != nil {
-				return err
-			}
-			if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-				reportFormats += "," + util.FormatSummaryConsole
-			}
-			return CreateScanReport(
-				resultsWrapper,
-				scansWrapper,
-				scanResponseModel.ID,
-				reportFormats,
-				targetFile,
-				targetPath,
-				params,
-			)
+			waitDelay, _ := cmd.Flags().GetInt(WaitDelayFlag)
+			return handleWait(cmd, scanResponseModel, waitDelay, scansWrapper, resultsWrapper)
 		}
 
 		return nil
 	}
+}
+
+func createScanModel(
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper,
+) (*scansRESTApi.Scan, error) {
+	determineScanTypes(cmd)
+	validateScanTypes()
+	sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
+	userIncludeFilter, _ := cmd.Flags().GetString(IncludeFilterFlag)
+	sourcesFile, _ := cmd.Flags().GetString(SourcesFlag)
+	sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+	}
+	uploadType := getUploadType(sourceDir, sourcesFile)
+	var input = []byte("{}")
+	err = updateScanRequestValues(&input, cmd, uploadType)
+	if err != nil {
+		return nil, err
+	}
+	updateTagValues(&input, cmd)
+	scanModel := scansRESTApi.Scan{}
+	// Try to parse to a scan model in order to manipulate the request payload
+	err = json.Unmarshal(input, &scanModel)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+	}
+	// Setup the project handler (either git or upload)
+	pHandler, err := setupProjectHandler(
+		uploadsWrapper,
+		sourcesFile,
+		sourceDir,
+		sourceDirFilter,
+		userIncludeFilter,
+		scanRepoURL,
+	)
+	scanModel.Handler, _ = json.Marshal(pHandler)
+	if err != nil {
+		return nil, err
+	}
+	return &scanModel, nil
+}
+
+func getUploadType(sourceDir, sourcesFile string) string {
+	if sourceDir != "" || sourcesFile != "" {
+		return "upload"
+	}
+	return "git"
+}
+
+func setupProjectHandler(
+	uploadsWrapper wrappers.UploadsWrapper,
+	sourcesFile,
+	sourceDir,
+	sourceDirFilter,
+	userIncludeFilter,
+	scanRepoURL string,
+) (scansRESTApi.UploadProjectHandler, error) {
+	pHandler := scansRESTApi.UploadProjectHandler{}
+	pHandler.Branch = viper.GetString(commonParams.BranchKey)
+	var err error
+	pHandler.UploadURL, err = determineSourceFile(
+		uploadsWrapper,
+		sourcesFile,
+		sourceDir,
+		sourceDirFilter,
+		userIncludeFilter,
+	)
+	pHandler.RepoURL = scanRepoURL
+	return pHandler, err
+}
+
+func handleWait(
+	cmd *cobra.Command,
+	scanResponseModel *scansRESTApi.ScanResponseModel,
+	waitDelay int,
+	scansWrapper wrappers.ScansWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+) error {
+	err := waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
+	if err != nil {
+		verboseFlag, _ := cmd.Flags().GetBool(VerboseFlag)
+		if verboseFlag {
+			fmt.Println("Printing workflow logs")
+			taskResponseModel, _, _ := scansWrapper.GetWorkflowByID(scanResponseModel.ID)
+			_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+		}
+
+		return err
+	}
+
+	// Create the required reports
+	targetFile, _ := cmd.Flags().GetString(TargetFlag)
+	targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
+	reportFormats, _ := cmd.Flags().GetString(TargetFormatFlag)
+	params, err := getFilters(cmd)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
+		reportFormats += "," + util.FormatSummaryConsole
+	}
+	return CreateScanReport(
+		resultsWrapper,
+		scansWrapper,
+		scanResponseModel.ID,
+		reportFormats,
+		targetFile,
+		targetPath,
+		params,
+	)
 }
 
 func waitForScanCompletion(
