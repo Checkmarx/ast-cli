@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/checkmarxDev/logs v1.10.0 // indirect
 	github.com/checkmarxDev/sast-results v1.10.1
 	github.com/checkmarxDev/sast-results-handler v1.10.2 // indirect
 	github.com/checkmarxDev/scans v1.10.13
