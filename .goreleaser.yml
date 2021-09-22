@@ -48,7 +48,7 @@ archives:
 brews:
   - tap:
       owner: checkmarx
-      name: homebrew-ast-cli
+      name: homebrew-tap
       token: "{{ .Env.GITHUB_TOKEN }}"
     folder: Formula
     homepage: https://github.com/Checkmarx/ast-cli
