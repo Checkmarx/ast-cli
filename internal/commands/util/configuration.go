@@ -18,14 +18,17 @@ const (
 )
 
 var properties = map[string]bool{
-	params.AstAPIKey:                true,
 	params.BaseURIKey:               true,
 	params.BaseAuthURIKey:           true,
 	params.TenantKey:                true,
-	params.ProxyTypeKey:             true,
 	params.ProxyKey:                 true,
-	params.AccessKeySecretConfigKey: true,
+	params.ProxyTypeKey:             true,
 	params.AccessKeyIDConfigKey:     true,
+	params.AccessKeySecretConfigKey: true,
+	params.AstAPIKey:                true,
+	params.BranchKey:                true,
+	params.ScaToolKey:               true,
+	params.ClientTimeoutKey:         true,
 }
 
 func NewConfigCommand() *cobra.Command {
