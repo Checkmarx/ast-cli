@@ -28,9 +28,9 @@ func NewCompletionCommand() *cobra.Command {
 	
 		# To load completions for each session, execute once:
 		# Linux:
-		$ cx completion bash > /etc/bash_completion.d/cx
+		$ cx utils completion -s bash > /etc/bash_completion.d/cx
 		# macOS:
-		$ cx completion bash > /usr/local/etc/bash_completion.d/cx
+		$ cx utils completion -s bash > /usr/local/etc/bash_completion.d/cx
 	
 	Zsh:
 	
@@ -40,23 +40,23 @@ func NewCompletionCommand() *cobra.Command {
 		$ echo "autoload -U compinit; compinit" >> ~/.zshrc
 	
 		# To load completions for each session, execute once:
-		$ cx completion zsh > "${fpath[1]}/_cx"
+		$ cx utils completion -s zsh > "${fpath[1]}/_cx"
 	
 		# You will need to start a new shell for this setup to take effect.
 	
 	fish:
 	
-		$ cx completion fish | source
+		$ cx utils completion -s fish | source
 	
 		# To load completions for each session, execute once:
-		$ cx completion fish > ~/.config/fish/completions/cx.fish
+		$ cx utils completion -s fish > ~/.config/fish/completions/cx.fish
 	
 	PowerShell:
 	
-		PS> cx completion powershell | Out-String | Invoke-Expression
+		PS> cx utils completion -s powershell | Out-String | Invoke-Expression
 	
 		# To load completions for every new session, run:
-		PS> cx completion powershell > cx.ps1
+		PS> cx utils completion -s powershell > cx.ps1
 		# and source this file from your PowerShell profile.
 	`,
 		RunE: runCompletionCmd(),
