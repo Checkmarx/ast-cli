@@ -316,8 +316,6 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 
-	//check for permissions (403 forbidden)
-
 	body, _ := ioutil.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		credentialsErr := ClientCredentialsError{}
