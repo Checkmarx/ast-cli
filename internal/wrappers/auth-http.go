@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -44,7 +45,11 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 		return nil, err
 	}
 
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+		}
+	}(res.Body)
 
 	switch res.StatusCode {
 	case http.StatusBadRequest:
@@ -68,7 +73,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	}
 }
 
-func (s *AuthHTTPWrapper) Test() error {
+func (s *AuthHTTPWrapper) ValidateLogin() error {
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, map[string]string{}, nil, DefaultTimeoutSeconds)
 	if err != nil {
 		return err

@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	failedAuthValidate   = "Failed authentication!"
 	failedCreatingClient = "failed creating client"
 	pleaseProvideFlag    = "%s: Please provide %s flag"
 	SuccessAuthValidate  = "Successfully authenticated to AST server!"
@@ -85,7 +84,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		authWrapper := wrappers.NewAuthHTTPWrapper()
-		err := authWrapper.Test()
+		err := authWrapper.ValidateLogin()
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}

@@ -10,3 +10,7 @@ func (a *AuthMockWrapper) CreateOauth2Client(*wrappers.Oath2Client, string, stri
 
 func (a *AuthMockWrapper) SetPath(_ string) {
 }
+
+func (a *AuthMockWrapper) ValidateLogin() error {
+	return nil
+}
