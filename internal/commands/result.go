@@ -373,11 +373,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
 	scanResult.RuleID = getRuleID(result.ScanResultData.QueryID)
-	if result.ScanResultData.QueryName != "" {
-		scanResult.Message.Text = result.ScanResultData.QueryName
-	} else {
-		scanResult.Message.Text = result.ID
-	}
+	scanResult.Message.Text = result.ScanResultData.QueryName
 	scanResult.Locations = []wrappers.SarifLocation{}
 
 	for _, node := range result.ScanResultData.Nodes {
