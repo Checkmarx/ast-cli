@@ -35,10 +35,10 @@ type SarifDriverRule struct {
 }
 
 type SarifScanResult struct {
-	RuleID              string                 `json:"ruleId"`
-	Message             SarifMessage           `json:"message"`
-	PartialFingerprints SarifResultFingerprint `json:"partialFingerprints"`
-	Locations           []SarifLocation        `json:"locations,omitempty"`
+	RuleID              string                  `json:"ruleId"`
+	Message             SarifMessage            `json:"message"`
+	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
+	Locations           []SarifLocation         `json:"locations,omitempty"`
 }
 
 type SarifLocation struct {
@@ -65,5 +65,5 @@ type SarifMessage struct {
 }
 
 type SarifResultFingerprint struct {
-	PrimaryLocationLineHash string `json:"primaryLocationLineHash"`
+	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
 }
