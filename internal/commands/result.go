@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -57,9 +56,9 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
 	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
-	resultCmd.PersistentFlags().String(params.TargetFlag, "cx_result", "Output file")
-	resultCmd.PersistentFlags().String(params.TargetPathFlag, ".", "Output Path")
-	resultCmd.PersistentFlags().StringSlice(params.FilterFlag, []string{}, filterResultsListFlagUsage)
+	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
+	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
+	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 	return resultCmd
 }
 
@@ -171,10 +170,10 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		targetFile, _ := cmd.Flags().GetString(params.TargetFlag)
-		targetPath, _ := cmd.Flags().GetString(params.TargetPathFlag)
-		format, _ := cmd.Flags().GetString(params.TargetFormatFlag)
-		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
+		targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
+		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
