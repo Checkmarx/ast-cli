@@ -297,6 +297,7 @@ func scanCreateSubCommand(
 	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
 	createScanCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
+	createScanCmd.PersistentFlags().String(GroupList, "", "List of groups to associate")
 	createScanCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(BranchFlag))
@@ -310,7 +311,7 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(projectName string) (string, error) {
+func findProject(projectName string, cmd *cobra.Command) (string, error) {
 	projectID := ""
 	params := make(map[string]string)
 	params["name"] = projectName
@@ -327,7 +328,7 @@ func findProject(projectName string) (string, error) {
 			}
 		}
 	} else {
-		projectID, err = createProject(projectName)
+		projectID, err = createProject(projectName, cmd)
 		if err != nil {
 			return "", err
 		}
@@ -335,10 +336,12 @@ func findProject(projectName string) (string, error) {
 	return projectID, nil
 }
 
-func createProject(projectName string) (string, error) {
+func createProject(projectName string, cmd *cobra.Command) (string, error) {
 	var projModel = projectsRESTApi.Project{}
 	projModel.Name = projectName
-	projModel.Groups = []string{}
+	groupListStr, _ := cmd.Flags().GetString(GroupList)
+	groups := strings.Split(groupListStr, ",")
+	projModel.Groups = groups
 	projModel.Tags = make(map[string]string)
 	projects := viper.GetString(commonParams.ProjectsPathKey)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
@@ -388,7 +391,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	}
 	// We need to convert the project name into an ID
-	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string))
+	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string), cmd)
 	if err != nil {
 		return err
 	}
