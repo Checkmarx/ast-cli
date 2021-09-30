@@ -296,7 +296,8 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
-	createScanCmd.PersistentFlags().StringP(commonParams.BranchFlag, commonParams.BranchFlagSh, commonParams.Branch, commonParams.BranchFlagUsage)
+	createScanCmd.PersistentFlags().StringP(commonParams.BranchFlag, commonParams.BranchFlagSh,
+		commonParams.Branch, commonParams.BranchFlagUsage)
 	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
