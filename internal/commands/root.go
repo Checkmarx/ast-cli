@@ -113,9 +113,6 @@ func NewAstCLI(
 	return rootCmd
 }
 
-type deploymentLogWriter struct {
-}
-
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(params.DebugFlag) {
 		log.Println(msg)

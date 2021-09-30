@@ -191,19 +191,6 @@ func addReqMonitor(req *http.Request) *http.Request {
 	return req
 }
 
-func addNetTracing(req *http.Request) {
-	fmt.Println("Adding Network tracing!")
-	trace := &httptrace.ClientTrace{
-		DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
-			log.Print(fmt.Sprintf("DNS Info: %+v\n", dnsInfo))
-		},
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			fmt.Printf(fmt.Sprintf("Got Conn: %+v\n", connInfo))
-		},
-	}
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-}
-
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
 	bodyStr, body := convertReqBodyToString(body)
