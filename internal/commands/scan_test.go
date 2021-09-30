@@ -26,82 +26,82 @@ func TestScanNoSub(t *testing.T) {
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "show", "--chibutero")
+	err := executeTestCommand(cmd, "scan", "show", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "show", "--scan-id", "MOCK")
+	err := executeTestCommand(cmd, "scan", "show", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 
 func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "delete")
+	err := executeTestCommand(cmd, "scan", "delete")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == "Failed deleting a scan: Please provide at least one scan ID")
 }
 
 func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "delete", "--chibutero")
+	err := executeTestCommand(cmd, "scan", "delete", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunDeleteScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "delete", "--scan-id", "MOCK")
+	err := executeTestCommand(cmd, "scan", "delete", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 
 func TestRunCancelScanByIdCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "cancel", "--scan-id", "MOCK")
+	err := executeTestCommand(cmd, "scan", "cancel", "--scan-id", "MOCK")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list")
+	err := executeTestCommand(cmd, "scan", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list")
+	err := executeTestCommand(cmd, "scan", "list", "--format", "list")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandLimitList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "limit=40")
+	err := executeTestCommand(cmd, "scan", "list", "--format", "list", "--filter", "limit=40")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandOffsetList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "offset=0")
+	err := executeTestCommand(cmd, "scan", "list", "--format", "list", "--filter", "offset=0")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandStatusesList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
+	err := executeTestCommand(cmd, "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
 	assert.NilError(t, err)
 }
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "list", "--chibutero")
+	err := executeTestCommand(cmd, "scan", "list", "--chibutero")
 	assert.Assert(t, err != nil)
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunTagsCommand(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "scan", "tags")
+	err := executeTestCommand(cmd, "scan", "tags")
 	assert.NilError(t, err)
 }
