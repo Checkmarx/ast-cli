@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/MakeNowJust/heredoc"
 
@@ -58,12 +59,12 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		},
 		RunE: runRegister(authWrapper),
 	}
-	createClientCmd.PersistentFlags().StringP(UsernameFlag, UsernameSh, "", "Username for Ast user that privileges to "+
+	createClientCmd.PersistentFlags().StringP(params.UsernameFlag, params.UsernameSh, "", "Username for Ast user that privileges to "+
 		"create clients")
-	createClientCmd.PersistentFlags().StringP(PasswordFlag, PasswordSh, "", "Password for Ast user that privileges to "+
+	createClientCmd.PersistentFlags().StringP(params.PasswordFlag, params.PasswordSh, "", "Password for Ast user that privileges to "+
 		"create clients")
-	createClientCmd.PersistentFlags().StringP(ClientDescriptionFlag, ClientDescriptionSh, "", "A client description")
-	createClientCmd.PersistentFlags().StringSliceP(ClientRolesFlag, ClientRolesSh, []string{"ast-admin"},
+	createClientCmd.PersistentFlags().StringP(params.ClientDescriptionFlag, params.ClientDescriptionSh, "", "A client description")
+	createClientCmd.PersistentFlags().StringSliceP(params.ClientRolesFlag, params.ClientRolesSh, []string{"ast-admin"},
 		"A list of roles of the client")
 
 	validLoginCmd := &cobra.Command{
@@ -97,18 +98,18 @@ func validLogin() func(cmd *cobra.Command, args []string) error {
 
 func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		username, _ := cmd.Flags().GetString(UsernameFlag)
+		username, _ := cmd.Flags().GetString(params.UsernameFlag)
 		if username == "" {
-			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, UsernameFlag)
+			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, params.UsernameFlag)
 		}
 
-		password, _ := cmd.Flags().GetString(PasswordFlag)
+		password, _ := cmd.Flags().GetString(params.PasswordFlag)
 		if password == "" {
-			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, PasswordFlag)
+			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, params.PasswordFlag)
 		}
 
-		roles, _ := cmd.Flags().GetStringSlice(ClientRolesFlag)
-		description, _ := cmd.Flags().GetString(ClientDescriptionFlag)
+		roles, _ := cmd.Flags().GetStringSlice(params.ClientRolesFlag)
+		description, _ := cmd.Flags().GetString(params.ClientDescriptionFlag)
 		generatedClientID := "ast-plugins-" + uuid.New().String()
 		generatedClientSecret := uuid.New().String()
 		client := &wrappers.Oath2Client{
@@ -120,7 +121,7 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 
 		errorMsg, err := authWrapper.CreateOauth2Client(client, username, password, adminClientID, adminClientSecret)
 		if err != nil {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Could not create OAuth2 credentials!")
+			log.Println("Could not create OAuth2 credentials!")
 			return nil
 		}
 

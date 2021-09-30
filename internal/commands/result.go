@@ -3,12 +3,14 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
@@ -55,9 +57,9 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
 	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
-	resultCmd.PersistentFlags().String(TargetFlag, "cx_result", "Output file")
-	resultCmd.PersistentFlags().String(TargetPathFlag, ".", "Output Path")
-	resultCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterResultsListFlagUsage)
+	resultCmd.PersistentFlags().String(params.TargetFlag, "cx_result", "Output file")
+	resultCmd.PersistentFlags().String(params.TargetPathFlag, ".", "Output Path")
+	resultCmd.PersistentFlags().StringSlice(params.FilterFlag, []string{}, filterResultsListFlagUsage)
 	return resultCmd
 }
 
@@ -133,7 +135,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
-	fmt.Println("Creating Summary Report: ", targetFile)
+	log.Println("Creating Summary Report: ", targetFile)
 	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate)
 	if err == nil {
 		f, err := os.Create(targetFile)
@@ -169,10 +171,10 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		targetFile, _ := cmd.Flags().GetString(TargetFlag)
-		targetPath, _ := cmd.Flags().GetString(TargetPathFlag)
-		format, _ := cmd.Flags().GetString(TargetFormatFlag)
-		scanID, _ := cmd.Flags().GetString(ScanIDFlag)
+		targetFile, _ := cmd.Flags().GetString(params.TargetFlag)
+		targetPath, _ := cmd.Flags().GetString(params.TargetPathFlag)
+		format, _ := cmd.Flags().GetString(params.TargetFormatFlag)
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
@@ -246,8 +248,8 @@ func createTargetName(targetFile, targetPath, targetType string) string {
 
 func createDirectory(targetPath string) error {
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
-		fmt.Printf("\nOutput path not found: %s\n", targetPath)
-		fmt.Printf("Creating directory: %s\n", targetPath)
+		log.Printf("\nOutput path not found: %s\n", targetPath)
+		log.Printf("Creating directory: %s\n", targetPath)
 		err = os.Mkdir(targetPath, permission)
 		if err != nil {
 			return err
@@ -279,7 +281,7 @@ func ReadResults(
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
-	fmt.Println("Creating SARIF Report: ", targetFile)
+	log.Println("Creating SARIF Report: ", targetFile)
 	var sarifResults = convertCxResultsToSarif(results)
 	resultsJSON, err = json.Marshal(sarifResults)
 	if err != nil {
@@ -297,7 +299,7 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
-	fmt.Println("Creating JSON Report: ", targetFile)
+	log.Println("Creating JSON Report: ", targetFile)
 	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
