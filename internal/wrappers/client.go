@@ -17,7 +17,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/checkmarxDev/ast-cli/internal/params"
 	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers/ntlm"
 
@@ -53,7 +52,7 @@ var cachedAccessToken string
 var cachedAccessTime time.Time
 
 func PrintIfVerbose(msg string) {
-	if viper.GetBool(params.DebugFlag) {
+	if viper.GetBool(commonParams.DebugFlag) {
 		log.Print(msg)
 	}
 }
@@ -158,7 +157,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 
 func addReqMonitor(req *http.Request) *http.Request {
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)
-	if viper.GetBool(params.DebugFlag) {
+	if viper.GetBool(commonParams.DebugFlag) {
 		trace := &httptrace.ClientTrace{
 			GetConn: func(hostPort string) {
 				startTime = time.Now().UnixNano() / int64(time.Millisecond)
@@ -175,7 +174,7 @@ func addReqMonitor(req *http.Request) *http.Request {
 			},
 			TLSHandshakeDone: func(c tls.ConnectionState, err error) {
 				if err == nil {
-					log.Print(fmt.Sprintf("Completed TLS handshake"))
+					log.Print("Completed TLS handshake")
 				} else {
 					log.Print("Error completing TLS handshake")
 				}
