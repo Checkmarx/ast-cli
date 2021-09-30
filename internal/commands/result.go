@@ -375,8 +375,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
 	scanResult.RuleID = getRuleID(result.ScanResultData.QueryID)
-	scanResult.Message.Text = result.Comments.Comments
-	scanResult.PartialFingerprints.PrimaryLocationLineHash = result.SimilarityID
+	scanResult.Message.Text = result.ScanResultData.QueryName
 	scanResult.Locations = []wrappers.SarifLocation{}
 
 	for _, node := range result.ScanResultData.Nodes {
