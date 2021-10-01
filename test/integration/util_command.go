@@ -80,7 +80,7 @@ func execute(cmd *cobra.Command, args ...string) error {
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
-	args = append(args, flag(commands.VerboseFlag))
+	args = append(args, flag(params.DebugFlag))
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 

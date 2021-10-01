@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/google/uuid"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
@@ -86,8 +86,8 @@ func TestScanWorkflow(t *testing.T) {
 	err := execute(
 		workflowCommand,
 		"scan", "workflow",
-		flag(commands.ScanIDFlag), scanID,
-		flag(commands.FormatFlag), util.FormatJSON,
+		flag(params.ScanIDFlag), scanID,
+		flag(params.FormatFlag), util.FormatJSON,
 	)
 	assert.NilError(t, err, "Workflow should pass")
 
@@ -109,7 +109,7 @@ func TestCancelScan(t *testing.T) {
 	err := execute(
 		workflowCommand,
 		"scan", "cancel",
-		flag(commands.ScanIDFlag), scanID,
+		flag(params.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Cancel should pass")
 
@@ -127,18 +127,18 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(commands.ProjectName), projectName,
-		flag(commands.SourcesFlag), ".",
-		flag(commands.ScanTypes), "sast",
-		flag(commands.PresetName), "Checkmarx Default",
-		flag(commands.SourceDirFilterFlag), "!*go,!*Dockerfile",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile",
 	}
 
 	createCommand := createASTIntegrationTestCommand(t)
 	err := execute(createCommand, args...)
 	assert.Assert(t, err != nil, "Creating a scan with !*go,!*Dockerfile should fail")
 
-	args = append(args, flag(commands.IncludeFilterFlag), "*txt")
+	args = append(args, flag(params.IncludeFilterFlag), "*txt")
 
 	createCommand = createASTIntegrationTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
@@ -202,12 +202,12 @@ func getCreateArgs(source string, tags map[string]string) []string {
 func getCreateArgsWithName(source string, tags map[string]string, projectName string) []string {
 	args := []string{
 		"scan", "create",
-		flag(commands.ProjectName), projectName,
-		flag(commands.SourcesFlag), source,
-		flag(commands.ScanTypes), "sast,kics",
-		flag(commands.PresetName), "Checkmarx Default",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.TagList), formatTags(tags),
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), source,
+		flag(params.ScanTypes), "sast,kics",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.TagList), formatTags(tags),
 	}
 	return args
 }
@@ -233,7 +233,7 @@ func deleteScan(t *testing.T, scanID string) {
 	err := execute(
 		deleteScanCommand,
 		"scan", "delete",
-		flag(commands.ScanIDFlag), scanID,
+		flag(params.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Deleting a scan should pass")
 }
@@ -245,8 +245,8 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	err := execute(
 		getCommand,
 		"scan", "list",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.FilterFlag), scanFilter,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FilterFlag), scanFilter,
 	)
 	assert.NilError(t, err, "Getting the scan should pass")
 
@@ -264,8 +264,8 @@ func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
 	err := execute(
 		getCommand,
 		"scan", "show",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.ScanIDFlag), scanID,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting the scan should pass")
 
