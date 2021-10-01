@@ -66,7 +66,7 @@ func TestAuthRegister(t *testing.T) {
 
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
-	err = execute(validateCommand, "auth", "validate", flag(commands.AccessKeyIDFlag), clientID, flag(commands.AccessKeySecretFlag), secret)
+	err = execute(validateCommand, "auth", "validate", flag(params.AccessKeyIDFlag), clientID, flag(params.AccessKeySecretFlag), secret)
 	assert.NilError(t, err, "Validate should pass")
 
 	result, err = io.ReadAll(buffer)
