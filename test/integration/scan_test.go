@@ -317,20 +317,3 @@ func TestScanLogsSAST(t *testing.T) {
 	)
 	assert.NilError(t, err, "Getting scan SAST log should pass")
 }
-
-func TestScanLogsKICS(t *testing.T) {
-	scanID, projectID := createScan(t, Dir, Tags)
-
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
-
-	logsCommand := createASTIntegrationTestCommand(t)
-
-	err := execute(
-		logsCommand,
-		"scan", "logs",
-		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypeFlag), "kics",
-	)
-	assert.NilError(t, err, "Getting scan KICS log should pass")
-}
