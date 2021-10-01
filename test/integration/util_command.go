@@ -105,7 +105,7 @@ func appendProxyArgs(args []string) []string {
 	proxyPw := viper.GetString(ProxyPwEnv)
 	proxyPort := viper.GetInt(ProxyPortEnv)
 	proxyHost := viper.GetString(ProxyHostEnv)
-	argsWithProxy := append(args, flag(commands.ProxyFlag))
+	argsWithProxy := append(args, flag(params.ProxyFlag))
 	argsWithProxy = append(argsWithProxy, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
 	return argsWithProxy
 }
