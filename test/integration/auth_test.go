@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -40,8 +39,8 @@ func TestAuthRegister(t *testing.T) {
 
 	err := execute(registerCommand,
 		"auth", "register",
-		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
-		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+		flag(commands.UsernameFlag), viper.GetString(AstUsernameEnv),
+		flag(commands.PasswordFlag), viper.GetString(AstPasswordEnv),
 	)
 	assert.NilError(t, err, "Register should pass")
 
@@ -66,7 +65,7 @@ func TestAuthRegister(t *testing.T) {
 
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
-	err = execute(validateCommand, "auth", "validate", flag(params.AccessKeyIDFlag), clientID, flag(commands.AccessKeySecretFlag), secret)
+	err = execute(validateCommand, "auth", "validate", flag(commands.AccessKeyIDFlag), clientID, flag(commands.AccessKeySecretFlag), secret)
 	assert.NilError(t, err, "Validate should pass")
 
 	result, err = io.ReadAll(buffer)
@@ -83,7 +82,7 @@ func TestFailProxyAuth(t *testing.T) {
 
 	validate := createASTIntegrationTestCommand(t)
 
-	args := []string{"auth", "validate", flag(params.DebugFlag), flag(parms.ProxyFlag), proxyArg}
+	args := []string{"auth", "validate", flag(commands.DebugFlag), flag(commands.ProxyFlag), proxyArg}
 	validate.SetArgs(args)
 
 	err := validate.Execute()
