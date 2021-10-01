@@ -5,7 +5,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands"
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"gotest.tools/assert"
 )
 
@@ -20,8 +20,8 @@ func TestUtilLogsSAST(t *testing.T) {
 	err := execute(
 		logsCommand,
 		"utils", "logs",
-		flag(commands.ScanIDFlag), scanID,
-		flag(commands.ScanTypeFlag), "sast",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "sast",
 	)
 	assert.NilError(t, err, "Getting scan SAST log should pass")
 }
@@ -37,8 +37,8 @@ func TestUtilLogsKICS(t *testing.T) {
 	err := execute(
 		logsCommand,
 		"utils", "logs",
-		flag(commands.ScanIDFlag), scanID,
-		flag(commands.ScanTypeFlag), "kics",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "kics",
 	)
 	assert.NilError(t, err, "Getting scan KICS log should pass")
 }
