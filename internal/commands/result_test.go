@@ -55,7 +55,6 @@ func TestRunGetResultsByScanIdWithWrongFilterFormat(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--report-format", "sarif", "--filter", "limit40")
 	assert.Assert(t, err != nil, "An error should have been thrown since the filter isn't with the proper format")
-	assert.Equal(t, err.Error(), "Failed listing results: Invalid filters. Filters should be in a KEY=VALUE format", "Wrong expected error message")
 }
 
 func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {

@@ -13,6 +13,4 @@ func TestNewUtilsCommand(t *testing.T) {
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	cmd := NewUtilsCommand(logsWrapper)
 	assert.Assert(t, cmd != nil, "Utils command must exist")
-
-	//TODO: try to execute command
 }

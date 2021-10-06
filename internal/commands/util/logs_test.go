@@ -11,8 +11,5 @@ func TestNewLogsCommand(t *testing.T) {
 	cmd := NewLogsCommand(logsWrapper)
 	assert.Assert(t, cmd != nil, "Logs command must exist")
 
-	//TODO: test doesn't pass when executed
-	/*cmd.SetArgs([]string{"--scan-id", "dummy"})
-	err := cmd.Execute()
-	assert.NilError(t, err, "Logs command should run with no errors")*/
+	//TODO: execute command without flags and try to catch exit code 0
 }

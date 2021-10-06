@@ -316,8 +316,6 @@ func findProject(projectName string, projectsWrapper wrappers.ProjectsWrapper) (
 	projectID := ""
 	params := make(map[string]string)
 	params["name"] = projectName
-	//projects := viper.GetString(commonParams.ProjectsPathKey)
-	//projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
 		return "", err
@@ -342,8 +340,6 @@ func createProject(projectName string, projectsWrapper wrappers.ProjectsWrapper)
 	projModel.Name = projectName
 	projModel.Groups = []string{}
 	projModel.Tags = make(map[string]string)
-	/*projects := viper.GetString(commonParams.ProjectsPathKey)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)*/
 	resp, _, err := projectsWrapper.Create(&projModel)
 	projectID := ""
 	if err == nil {

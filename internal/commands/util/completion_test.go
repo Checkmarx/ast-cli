@@ -29,30 +29,3 @@ func testShell(cmd *cobra.Command, shellType string, t *testing.T) {
 	err := cmd.Execute()
 	assert.NilError(t, err, "Completion command should run with no errors")
 }
-
-/*
-func TestCaptureOutput(t *testing.T) {
-	cmd := NewCompletionCommand()
-	assert.Assert(t, cmd != nil, "Completion command must exist")
-
-	err := cmd.Execute()
-	assert.Assert(t, err != nil, "Shell type must be defined")
-
-	output := captureOutput(func() {
-		args := []string{"-s", "bash"}
-		cmd.SetArgs(args)
-		err := cmd.Execute()
-		assert.NilError(t, err, "Completion command should run with no errors")
-	})
-
-	fmt.Println("=======================================================================================")
-	fmt.Println("Output: " + output)
-}
-
-func captureOutput(f func()) string {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	f()
-	log.SetOutput(os.Stdout)
-	return buf.String()
-}*/

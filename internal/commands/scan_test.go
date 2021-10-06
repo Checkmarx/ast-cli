@@ -139,10 +139,8 @@ func TestCreateScanWrongFormatSource(t *testing.T) {
 func TestCreateScanWithScaResolver(t *testing.T) {
 	cmd := createASTTestCommand()
 
-	//err := executeTestCommand(cmd,"scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "data/ScaResolver")
 	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "nop", "-f", "!ScaResolver-win64")
 	assert.NilError(t, err)
-	//assert.Assert(t, err != nil)
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
