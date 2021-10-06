@@ -1,9 +1,10 @@
 package util
 
 import (
+	"testing"
+
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestNewCompletionCommand(t *testing.T) {
