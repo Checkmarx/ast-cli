@@ -64,6 +64,7 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		PrintConfiguration()
 		if len(args) > 0 && cmd.Name() != params.Help {
 			_ = cmd.Help()
 			os.Exit(0)
@@ -109,8 +110,24 @@ func NewAstCLI(
 		configCmd,
 	)
 
+	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
 	return rootCmd
+}
+
+const configFormatString = "%30v: %s"
+
+func PrintConfiguration() {
+	if viper.GetBool(params.DebugFlag) {
+		log.Println("CLI Configuration:")
+		for param := range util.Properties {
+			if param == "cx_client_secret" {
+				log.Println(fmt.Sprintf(configFormatString, param, "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))
+			} else {
+				log.Println(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
+			}
+		}
+	}
 }
 
 func PrintIfVerbose(msg string) {

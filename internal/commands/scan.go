@@ -1077,6 +1077,14 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 		}
 		// Checking the response
 		if errorModel != nil {
+			//buf := new(bytes.Buffer)
+			//log.SetOutput(buf)
+			//log.Printf(" junk")
+			//log.SetOutput(os.Stdout)
+			//date := "1999-12-31"
+			//t, _ := time.Parse(layoutISO, date)
+			//errMsg := buf.String() + " %s: CODE: %d, %s"
+			//return errors.Errorf(errMsg, failedGettingTags, errorModel.Code, errorModel.Message)
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingTags, errorModel.Code, errorModel.Message)
 		} else if tags != nil {
 			var tagsJSON []byte
