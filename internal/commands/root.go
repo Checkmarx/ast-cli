@@ -167,7 +167,7 @@ func NewAstCLI(
 	})
 
 	// Create the CLI command structure
-	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
+	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
 	versionCmd := util.NewVersionCommand()

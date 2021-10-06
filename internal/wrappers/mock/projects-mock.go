@@ -18,12 +18,20 @@ func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) Get(_ map[string]string) (
+func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	*projectsRESTApi.ProjectsCollectionResponseModel,
 	*projectsRESTApi.ErrorModel,
 	error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
+
+	filteredTotalCount := 1
+
+	if params["name"] == "MOCK-NO-FILTERED-PROJECTS" {
+		filteredTotalCount = 0
+	}
+
 	return &projectsRESTApi.ProjectsCollectionResponseModel{
+		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []projectsRESTApi.ProjectResponseModel{
 			{
 				ID: "MOCK",

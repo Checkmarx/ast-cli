@@ -55,3 +55,8 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	cmd.SilenceUsage = false
 	return cmd.Execute()
 }
+
+func executeCmdWithNilErrorAssertion(t *testing.T, args ...string) {
+	err := executeTestCommand(createASTTestCommand(), args...)
+	assert.NilError(t, err)
+}

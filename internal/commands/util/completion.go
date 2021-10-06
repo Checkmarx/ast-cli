@@ -81,6 +81,7 @@ func runCompletionCmd() func(cmd *cobra.Command, args []string) error {
 
 		shellType, _ := cmd.Flags().GetString(shellFlag)
 
+		//TODO: throw when wrong value?
 		if shellType == "bash" {
 			err = cmd.Root().GenBashCompletion(os.Stdout)
 		} else if shellType == "zsh" {

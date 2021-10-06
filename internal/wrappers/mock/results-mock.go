@@ -33,7 +33,54 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*resultsRaw.Result
 
 func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *resultsHelpers.WebError, error) {
 	return &wrappers.ScanResultsCollection{
-		TotalCount: 0,
-		Results:    []*wrappers.ScanResult{},
+		TotalCount: 3,
+		Results: []*wrappers.ScanResult{
+			{
+				Type:     "sast",
+				Severity: "high",
+				ScanResultData: wrappers.ScanResultData{
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FileName: "dummy-file-name",
+							Line:     10,
+							Column:   10,
+							Length:   20,
+						},
+						{
+							FileName: "dummy-file-name",
+							Line:     0,
+							Column:   3,
+							Length:   10,
+						},
+					},
+				},
+			},
+			{
+				Type:     "dependency",
+				Severity: "medium",
+				ScanResultData: wrappers.ScanResultData{
+					QueryID:   12.4,
+					QueryName: "mock-query-name",
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FileName: "dummy-file-name",
+							Line:     10,
+							Column:   10,
+							Length:   20,
+						},
+						{
+							FileName: "dummy-file-name",
+							Line:     0,
+							Column:   3,
+							Length:   10,
+						},
+					},
+				},
+			},
+			{
+				Type:     "infrastructure",
+				Severity: "low",
+			},
+		},
 	}, nil, nil
 }

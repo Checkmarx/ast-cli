@@ -1,3 +1,4 @@
+//go:build !integration
 // +build !integration
 
 package commands
@@ -105,3 +106,90 @@ func TestRunTagsCommand(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "scan", "tags")
 	assert.NilError(t, err)
 }
+
+func TestCreateScan(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com")
+	assert.NilError(t, err)
+}
+
+func TestCreateScanSourceDirectory(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data")
+	assert.NilError(t, err)
+}
+
+func TestCreateScanSourceFile(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip")
+	assert.NilError(t, err)
+}
+
+func TestCreateScanWrongFormatSource(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "invalidSource")
+	assert.Assert(t, err != nil)
+	assert.Assert(t, err.Error() == "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+}
+
+func TestCreateScanWithScaResolver(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	//err := executeTestCommand(cmd,"scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "data/ScaResolver")
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "nop", "-f", "!ScaResolver-win64")
+	assert.NilError(t, err)
+	//assert.Assert(t, err != nil)
+}
+
+func TestCreateScanWithScanTypes(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "sast")
+	assert.NilError(t, err)
+
+	err = executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "kics")
+	assert.NilError(t, err)
+
+	err = executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "sca")
+	assert.NilError(t, err)
+}
+
+func TestCreateScanWithNoFilteredProjects(t *testing.T) {
+
+	cmd := createASTTestCommand()
+
+	// Cover "createProject" when no project is filtered when finding the provided project
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK-NO-FILTERED-PROJECTS", "-s", "https://www.dummy-repo.com")
+	assert.NilError(t, err)
+}
+
+func TestCreateScanWithTags(t *testing.T) {
+	cmd := createASTTestCommand()
+
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--tags", "dummy_tag:sub_dummy_tag")
+	assert.NilError(t, err)
+}
+
+// TODO: testar exit codes
+/*func TestInvalidScanTypes(t *testing.T) {
+
+	if os.Getenv("INVALID_SCAN_TYPE") == "1" {
+		cmd := createASTTestCommand()
+		executeTestCommand(cmd,"scan", "create", "--project-name", "dummy_project", "--scan-types", "dummy_scan_type")
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestInvalidScanTypes")
+	cmd.Env = append(os.Environ(), "INVALID_SCAN_TYPE=1")
+	err := cmd.Run()
+
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+
+	t.Fatalf("Process ran with err %v, an exit status 1 should have happened", err)
+}*/

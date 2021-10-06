@@ -63,6 +63,7 @@ func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -77,7 +78,7 @@ func NewScanCommand(
 		},
 	}
 
-	createScanCmd := scanCreateSubCommand(scansWrapper, uploadsWrapper, resultsWrapper)
+	createScanCmd := scanCreateSubCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper)
 
@@ -243,6 +244,7 @@ func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -260,7 +262,7 @@ func scanCreateSubCommand(
 			`,
 			),
 		},
-		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper),
+		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper),
 	}
 	createScanCmd.PersistentFlags().BoolP(WaitFlag, "", false, "Wait for scan completion (default true)")
 	createScanCmd.PersistentFlags().IntP(WaitDelayFlag, "", WaitDelayDefault, "Polling wait time in seconds")
@@ -310,12 +312,12 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(projectName string) (string, error) {
+func findProject(projectName string, projectsWrapper wrappers.ProjectsWrapper) (string, error) {
 	projectID := ""
 	params := make(map[string]string)
 	params["name"] = projectName
-	projects := viper.GetString(commonParams.ProjectsPathKey)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	//projects := viper.GetString(commonParams.ProjectsPathKey)
+	//projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
 		return "", err
@@ -327,7 +329,7 @@ func findProject(projectName string) (string, error) {
 			}
 		}
 	} else {
-		projectID, err = createProject(projectName)
+		projectID, err = createProject(projectName, projectsWrapper)
 		if err != nil {
 			return "", err
 		}
@@ -335,13 +337,13 @@ func findProject(projectName string) (string, error) {
 	return projectID, nil
 }
 
-func createProject(projectName string) (string, error) {
+func createProject(projectName string, projectsWrapper wrappers.ProjectsWrapper) (string, error) {
 	var projModel = projectsRESTApi.Project{}
 	projModel.Name = projectName
 	projModel.Groups = []string{}
 	projModel.Tags = make(map[string]string)
-	projects := viper.GetString(commonParams.ProjectsPathKey)
-	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	/*projects := viper.GetString(commonParams.ProjectsPathKey)
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)*/
 	resp, _, err := projectsWrapper.Create(&projModel)
 	projectID := ""
 	if err == nil {
@@ -373,7 +375,7 @@ func updateTagValues(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string) error {
+func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string, projectsWrapper wrappers.ProjectsWrapper) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -388,7 +390,7 @@ func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType strin
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	}
 	// We need to convert the project name into an ID
-	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string))
+	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string), projectsWrapper)
 	if err != nil {
 		return err
 	}
@@ -754,9 +756,10 @@ func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		scanModel, err := createScanModel(cmd, uploadsWrapper)
+		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper)
 		if err != nil {
 			return err
 		}
@@ -790,6 +793,7 @@ func runCreateScanCommand(
 func createScanModel(
 	cmd *cobra.Command,
 	uploadsWrapper wrappers.UploadsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
 ) (*scansRESTApi.Scan, error) {
 	determineScanTypes(cmd)
 	validateScanTypes()
@@ -802,7 +806,7 @@ func createScanModel(
 	}
 	uploadType := getUploadType(sourceDir, sourcesFile)
 	var input = []byte("{}")
-	err = updateScanRequestValues(&input, cmd, uploadType)
+	err = updateScanRequestValues(&input, cmd, uploadType, projectsWrapper)
 	if err != nil {
 		return nil, err
 	}
