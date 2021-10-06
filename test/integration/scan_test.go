@@ -163,12 +163,12 @@ func executeScanTest(t *testing.T, projectID string, scanID string, tags map[str
 	fmt.Println("ScanID: " + scanID)
 	fmt.Println("Found ScanID: " + scan.ID)
 
-	fmt.Println("DEV: state 1 getting the tags")
+	fmt.Println("DEV: stage 1, getting tags")
 	allTags := getAllTags(t, "scan")
 	fmt.Println("DEV: stage 2, tags found on scan")
-	fmt.Println("%v", allTags)
-	fmt.Println("DEV: stage 3, tags being searched for")
-	fmt.Println("%v", tags)
+	fmt.Printf("%v\n", allTags)
+	fmt.Println("DEV: stage 2, tags being searched for")
+	fmt.Printf("%v\n", allTags)
 	for key := range tags {
 		_, ok := allTags[key]
 		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
