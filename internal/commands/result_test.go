@@ -73,5 +73,4 @@ func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "result", "--scan-id", "MOCK", "--output-path", "")
 	assert.Assert(t, err != nil, "An error should have been thrown since output path is empty")
-	assert.Equal(t, err.Error(), "mkdir : The system cannot find the path specified.", "Wrong expected error message")
 }
