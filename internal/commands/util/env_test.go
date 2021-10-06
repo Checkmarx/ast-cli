@@ -1,9 +1,8 @@
 package util
 
 import (
-	"testing"
-
 	"gotest.tools/assert"
+	"testing"
 )
 
 func TestNewEnvCheckCommand(t *testing.T) {

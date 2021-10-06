@@ -2,10 +2,9 @@ package util
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
+	"testing"
 )
 
 func TestNewConfigCommand(t *testing.T) {
