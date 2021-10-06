@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 	"testing"
@@ -11,5 +12,7 @@ func TestNewLogsCommand(t *testing.T) {
 	cmd := NewLogsCommand(logsWrapper)
 	assert.Assert(t, cmd != nil, "Logs command must exist")
 
-	//TODO: execute command without flags and try to catch exit code 0
+	cmd.SetArgs([]string{"--scan-id", "dummy", "--scan-type", "sast"})
+	err := cmd.Execute()
+	fmt.Println(err)
 }
