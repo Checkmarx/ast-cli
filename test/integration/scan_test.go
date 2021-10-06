@@ -161,7 +161,9 @@ func executeScanTest(t *testing.T, projectID string, scanID string, tags map[str
 	scan := showScan(t, scanID)
 	assert.Equal(t, scan.ID, scanID, "Scan ID should match the created scan's ID")
 
+	fmt.Println("DEV:  TESTING TAG ISSUE")
 	allTags := getAllTags(t, "scan")
+	fmt.Printf("%v", allTags)
 	for key := range tags {
 		_, ok := allTags[key]
 		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
