@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -307,7 +306,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize project tags response ", failedGettingTags)
 			}
-			log.Println(string(tagsJSON))
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
 		}
 		return nil
 	}

@@ -1084,10 +1084,7 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 			if err != nil {
 				return errors.Wrapf(err, "%s: failed to serialize scan tags response ", failedGettingTags)
 			}
-			log.Println(string(tagsJSON))
-			if err != nil {
-				return errors.Wrapf(err, "%s: failed to log scan tags response ", failedGettingTags)
-			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
 		}
 		return nil
 	}
