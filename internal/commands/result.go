@@ -157,9 +157,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
 	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 
-	fmt.Printf("         Kics Issues: %d\n", summary.KicsIssues)
-	fmt.Printf("         Sast Issues: %d\n", summary.SastIssues)
-	fmt.Printf("         SCA Issues: %d\n", summary.ScaIssues)
+	fmt.Printf("        Kics Issues: %d\n", summary.KicsIssues)
+	fmt.Printf("      CxSAST Issues: %d\n", summary.SastIssues)
+	fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
 
 	return nil
 }
