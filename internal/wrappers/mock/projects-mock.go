@@ -34,7 +34,8 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []projectsRESTApi.ProjectResponseModel{
 			{
-				ID: "MOCK",
+				ID:   "MOCK",
+				Name: "MOCK",
 			},
 		},
 	}, nil, nil

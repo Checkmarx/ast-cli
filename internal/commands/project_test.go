@@ -1,3 +1,4 @@
+//go:build !integration
 // +build !integration
 
 package commands
@@ -42,7 +43,10 @@ func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
 
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "--format", "list", "-v", "project", "create", "--project-name", "test_project")
+	err := executeTestCommand(cmd,
+		"--format", "list", "-v", "project", "create",
+		"--project-name", "test_project",
+		"--branch", "dummy-branch")
 	assert.NilError(t, err)
 }
 

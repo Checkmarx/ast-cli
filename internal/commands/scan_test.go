@@ -117,7 +117,7 @@ func TestCreateScan(t *testing.T) {
 func TestCreateScanSourceDirectory(t *testing.T) {
 	cmd := createASTTestCommand()
 
-	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data")
+	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data", "--file-filter", "!.java")
 	assert.NilError(t, err)
 }
 
@@ -139,7 +139,12 @@ func TestCreateScanWrongFormatSource(t *testing.T) {
 func TestCreateScanWithScaResolver(t *testing.T) {
 	cmd := createASTTestCommand()
 
-	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "nop", "-f", "!ScaResolver-win64")
+	err := executeTestCommand(cmd,
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-s", "data",
+		"--sca-resolver", "nop", "-f", "!ScaResolver-win64")
+
 	assert.NilError(t, err)
 }
 
@@ -157,7 +162,6 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 }
 
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
-
 	cmd := createASTTestCommand()
 
 	// Cover "createProject" when no project is filtered when finding the provided project
@@ -168,26 +172,11 @@ func TestCreateScanWithNoFilteredProjects(t *testing.T) {
 func TestCreateScanWithTags(t *testing.T) {
 	cmd := createASTTestCommand()
 
-	err := executeTestCommand(cmd, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--tags", "dummy_tag:sub_dummy_tag")
+	err := executeTestCommand(cmd,
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-s", "https://www.dummy-repo.com",
+		"--tags", "dummy_tag:sub_dummy_tag")
+
 	assert.NilError(t, err)
 }
-
-// TODO: testar exit codes
-/*func TestInvalidScanTypes(t *testing.T) {
-
-	if os.Getenv("INVALID_SCAN_TYPE") == "1" {
-		cmd := createASTTestCommand()
-		executeTestCommand(cmd,"scan", "create", "--project-name", "dummy_project", "--scan-types", "dummy_scan_type")
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=TestInvalidScanTypes")
-	cmd.Env = append(os.Environ(), "INVALID_SCAN_TYPE=1")
-	err := cmd.Run()
-
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-
-	t.Fatalf("Process ran with err %v, an exit status 1 should have happened", err)
-}*/
