@@ -152,7 +152,7 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*scansRestApi.ErrorModel, erro
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags2", nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
