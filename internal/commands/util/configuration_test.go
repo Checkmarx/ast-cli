@@ -1,8 +1,9 @@
 package util
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestNewConfigCommand(t *testing.T) {

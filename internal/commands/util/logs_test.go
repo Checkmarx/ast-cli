@@ -2,9 +2,11 @@ package util
 
 import (
 	"fmt"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/mock"
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
+
+	"github.com/checkmarxDev/ast-cli/internal/wrappers/mock"
 )
 
 func TestNewLogsCommand(t *testing.T) {
