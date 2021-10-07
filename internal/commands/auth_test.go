@@ -10,37 +10,26 @@ import (
 )
 
 func TestAuthHelp(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "help", "auth")
-	assert.NilError(t, err)
+	execCmdNilAssertion(t, "help", "auth")
 }
 
 func TestAuthNoSub(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "auth")
-	assert.NilError(t, err)
+	execCmdNilAssertion(t, "auth")
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "auth", "register", "--username", "username",
-		"--password", "password")
-	assert.NilError(t, err)
+	args := []string{"-v", "auth", "register", "--username", "username", "--password", "password"}
+	execCmdNilAssertion(t, args...)
 
-	err = executeTestCommand(cmd, "-v", "auth", "register", "-u", "username",
-		"-p", "password", "--roles", "admin,user")
-	assert.NilError(t, err)
+	// Create Oath2Client with roles
+	execCmdNilAssertion(t, append(args, "--roles", "admin,user")...)
 }
 
 func TestRunCreateOath2ClientCommandInvalid(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "auth", "register")
-	assert.Assert(t, err != nil)
+	execCmdNotNilAssertion(t, "-v", "auth", "register")
 }
 
 func TestRunCreateOath2ClientCommandNoPassword(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "auth", "register", "--username", "username")
-	assert.Assert(t, err != nil)
+	err := execCmdNotNilAssertion(t, "-v", "auth", "register", "--username", "username")
 	assert.Equal(t, err.Error(), "failed creating client: Please provide password flag")
 }

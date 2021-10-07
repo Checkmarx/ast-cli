@@ -50,7 +50,7 @@ func TestRunGetResultsByScanIdWrongFormat(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdWithWrongFilterFormat(t *testing.T) {
-	execCmdNotNilAssertion(t, "result", "--scan-id", "MOCK", "--report-format", "sarif", "--filter", "limit40")
+	_ = execCmdNotNilAssertion(t, "result", "--scan-id", "MOCK", "--report-format", "sarif", "--filter", "limit40")
 }
 
 func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {
@@ -62,5 +62,5 @@ func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
-	execCmdNotNilAssertion(t, "result", "--scan-id", "MOCK", "--output-path", "")
+	_ = execCmdNotNilAssertion(t, "result", "--scan-id", "MOCK", "--output-path", "")
 }

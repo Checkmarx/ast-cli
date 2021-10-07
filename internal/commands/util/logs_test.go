@@ -9,7 +9,6 @@ import (
 
 func TestNewLogsCommand(t *testing.T) {
 	logsWrapper := &mock.LogsMockWrapper{}
-	//logsWrapper := wrappers.NewLogsWrapper(".")
 	cmd := NewLogsCommand(logsWrapper)
 	assert.Assert(t, cmd != nil, "Logs command must exist")
 
