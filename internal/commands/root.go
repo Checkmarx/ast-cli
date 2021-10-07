@@ -121,8 +121,10 @@ func PrintConfiguration() {
 	if viper.GetBool(params.DebugFlag) {
 		log.Println("CLI Configuration:")
 		for param := range util.Properties {
-			if param == "cx_client_secret" {
+			if param == "cx_client_secret" && len(viper.GetString(param)) > 0 {
 				log.Println(fmt.Sprintf(configFormatString, param, "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))
+			} else if param == "cx_apikey" && len(viper.GetString(param)) > 0 {
+				log.Println(fmt.Sprintf(configFormatString, param, "XXXXXXXXXXXXXXXXXXXXX"))
 			} else {
 				log.Println(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
 			}

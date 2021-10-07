@@ -378,6 +378,9 @@ func sanitizeCredentials(credentialsPayload string) string {
 		strs := strings.Split(credentialsPayload, "client_secret")
 		sanitized = strs[0] + "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 	}
+	if strings.Contains(credentialsPayload, "grant_type=refresh_token") {
+		sanitized = "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+	}
 	return sanitized
 }
 
