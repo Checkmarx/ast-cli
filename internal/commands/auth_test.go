@@ -26,7 +26,7 @@ func TestRunCreateOath2ClientCommand(t *testing.T) {
 }
 
 func TestRunCreateOath2ClientCommandInvalid(t *testing.T) {
-	execCmdNotNilAssertion(t, "-v", "auth", "register")
+	_ = execCmdNotNilAssertion(t, "-v", "auth", "register")
 }
 
 func TestRunCreateOath2ClientCommandNoPassword(t *testing.T) {
