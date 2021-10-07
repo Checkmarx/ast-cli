@@ -106,6 +106,8 @@ func TestCancelScan(t *testing.T) {
 
 	workflowCommand := createASTIntegrationTestCommand(t)
 
+	fmt.Println("Trying to delete scan!!!")
+	fmt.Println("ScanID: " + scanID)
 	err := execute(
 		workflowCommand,
 		"scan", "cancel",
