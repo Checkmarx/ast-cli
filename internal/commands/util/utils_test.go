@@ -1,11 +1,13 @@
 package util
 
 import (
+	"testing"
+
+	"gotest.tools/assert"
+
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
-	"gotest.tools/assert"
-	"testing"
 )
 
 func TestNewUtilsCommand(t *testing.T) {

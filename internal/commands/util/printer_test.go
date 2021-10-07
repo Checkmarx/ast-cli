@@ -2,9 +2,10 @@ package util
 
 import (
 	"fmt"
-	"gotest.tools/assert"
 	"os"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestPrintInvalidFormat(t *testing.T) {
