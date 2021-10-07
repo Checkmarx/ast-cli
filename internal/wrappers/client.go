@@ -73,6 +73,7 @@ func convertReqBodyToString(body io.Reader) (string, io.Reader) {
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	PrintIfVerbose("Using Agent Name: " + agentStr)
+	fmt.Println(req)
 	req.Header.Set("User-Agent", agentStr)
 }
 
@@ -219,13 +220,15 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 }
 
 func GetURL(path string) string {
-	cleanURL := strings.Trim(viper.GetString(commonParams.BaseURIKey), "/")
+	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path)
 }
 
 func GetAuthURL(path string) string {
 	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
-		cleanURL := strings.Trim(viper.GetString(commonParams.BaseAuthURIKey), "/")
+		cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+		cleanURL = strings.Trim(cleanURL, "/")
 		PrintIfVerbose("Auth URL is: " + cleanURL + path)
 		return fmt.Sprintf("%s/%s", cleanURL, path)
 	}
@@ -281,8 +284,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		baseURI := viper.GetString(commonParams.BaseURIKey)
-		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
+		authURI = GetURL("/" + strings.TrimLeft(authURI, "/"))
 	}
 
 	return authURI, nil
