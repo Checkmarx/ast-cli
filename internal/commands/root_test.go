@@ -56,7 +56,13 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	return cmd.Execute()
 }
 
-func executeCmdWithNilErrorAssertion(t *testing.T, args ...string) {
+func execCmdNilAssertion(t *testing.T, args ...string) {
 	err := executeTestCommand(createASTTestCommand(), args...)
 	assert.NilError(t, err)
+}
+
+func execCmdNotNilAssertion(t *testing.T, args ...string) error {
+	err := executeTestCommand(createASTTestCommand(), args...)
+	assert.Assert(t, err != nil)
+	return err
 }

@@ -9,10 +9,11 @@ import (
 
 func TestNewLogsCommand(t *testing.T) {
 	logsWrapper := &mock.LogsMockWrapper{}
+	//logsWrapper := wrappers.NewLogsWrapper(".")
 	cmd := NewLogsCommand(logsWrapper)
 	assert.Assert(t, cmd != nil, "Logs command must exist")
 
-	cmd.SetArgs([]string{"--scan-id", "dummy", "--scan-type", "sast"})
-	err := cmd.Execute()
+	err := executeTestCommand(cmd, "--scan-id", "dummy", "--scan-type", "sast")
+	assert.NilError(t, err)
 	fmt.Println(err)
 }

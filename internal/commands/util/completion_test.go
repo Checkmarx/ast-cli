@@ -7,25 +7,37 @@ import (
 )
 
 func TestNewCompletionCommand(t *testing.T) {
+	cmd := testCmdExistsAndRequiredShell(t)
+
+	testShell(cmd, "bash", true, t)
+	testShell(cmd, "zsh", true, t)
+	testShell(cmd, "fish", true, t)
+	testShell(cmd, "powershell", true, t)
+}
+
+func TestNewCompletionCommandInvalidValue(t *testing.T) {
+	cmd := testCmdExistsAndRequiredShell(t)
+
+	testShell(cmd, "invalidShellValue", false, t)
+}
+
+func testCmdExistsAndRequiredShell(t *testing.T) *cobra.Command {
 	cmd := NewCompletionCommand()
 	assert.Assert(t, cmd != nil, "Completion command must exist")
 
 	err := cmd.Execute()
 	assert.Assert(t, err != nil, "Shell type must be defined")
 
-	testShell(cmd, "bash", t)
-	testShell(cmd, "zsh", t)
-	testShell(cmd, "fish", t)
-	testShell(cmd, "powershell", t)
-
-	//TODO: catch console to check completion was printed out
-	//TODO: wrong type does not return error
-	testShell(cmd, "cenas", t)
+	return cmd
 }
 
-func testShell(cmd *cobra.Command, shellType string, t *testing.T) {
-	args := []string{"-s", shellType}
-	cmd.SetArgs(args)
-	err := cmd.Execute()
-	assert.NilError(t, err, "Completion command should run with no errors")
+func testShell(cmd *cobra.Command, shellType string, assertNil bool, t *testing.T) {
+	err := executeTestCommand(cmd, "--shell", shellType)
+
+	if assertNil {
+		assert.NilError(t, err)
+		return
+	}
+
+	assert.Assert(t, err != nil)
 }

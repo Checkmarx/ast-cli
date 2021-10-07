@@ -1,10 +1,10 @@
 package util
 
 import (
+	"fmt"
+	"github.com/MakeNowJust/heredoc"
 	"log"
 	"os"
-
-	"github.com/MakeNowJust/heredoc"
 
 	"github.com/spf13/cobra"
 )
@@ -59,7 +59,17 @@ func NewCompletionCommand() *cobra.Command {
 		PS> cx utils completion -s powershell > cx.ps1
 		# and source this file from your PowerShell profile.
 	`,
-		RunE: runCompletionCmd(),
+		Args: func(cmd *cobra.Command, args []string) error {
+			shellType, _ := cmd.Flags().GetString(shellFlag)
+
+			if len(shellType) == 0 || contains(cmd.ValidArgs, shellType) {
+				return nil
+			}
+
+			return fmt.Errorf("invalid argument \"%s\" for %s. Allowed values: %s", shellType, shellFlag, cmd.ValidArgs)
+		},
+		ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
+		RunE:      runCompletionCmd(),
 		Annotations: map[string]string{
 			"utils:env": heredoc.Doc(`
 				See 'cx utils env' for the list of supported environment variables	
@@ -81,7 +91,6 @@ func runCompletionCmd() func(cmd *cobra.Command, args []string) error {
 
 		shellType, _ := cmd.Flags().GetString(shellFlag)
 
-		//TODO: throw when wrong value?
 		if shellType == "bash" {
 			err = cmd.Root().GenBashCompletion(os.Stdout)
 		} else if shellType == "zsh" {

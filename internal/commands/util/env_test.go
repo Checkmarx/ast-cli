@@ -11,6 +11,4 @@ func TestNewEnvCheckCommand(t *testing.T) {
 
 	err := cmd.Execute()
 	assert.NilError(t, err, "Env check command should run with no errors")
-
-	//TODO: catch console to check completion was printed out
 }
