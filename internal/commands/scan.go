@@ -311,7 +311,6 @@ func scanCreateSubCommand(
 }
 
 func findProject(projectName string) (string, error) {
-	projectID := ""
 	params := make(map[string]string)
 	params["name"] = projectName
 	projects := viper.GetString(commonParams.ProjectsPathKey)
@@ -320,17 +319,14 @@ func findProject(projectName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp.FilteredTotalCount > 0 {
-		for i := 0; i < len(resp.Projects); i++ {
-			if strings.EqualFold(resp.Projects[i].Name, projectName) {
-				projectID = resp.Projects[i].ID
-			}
+	for i := 0; i < len(resp.Projects); i++ {
+		if resp.Projects[i].Name == projectName {
+			return resp.Projects[i].ID, nil
 		}
-	} else {
-		projectID, err = createProject(projectName)
-		if err != nil {
-			return "", err
-		}
+	}
+	projectID, err := createProject(projectName)
+	if err != nil {
+		return "", err
 	}
 	return projectID, nil
 }
@@ -683,7 +679,7 @@ func runScaResolver(sourceDir string) {
 func addScaResults(zipWriter *zip.Writer) error {
 	fmt.Println("Included SCA Results: ", ".cxsca-results.json")
 	dat, err := ioutil.ReadFile(scaResolverResultsFile)
-	os.Remove(scaResolverResultsFile)
+	_ = os.Remove(scaResolverResultsFile)
 	if err != nil {
 		return err
 	}
