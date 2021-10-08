@@ -73,7 +73,6 @@ func convertReqBodyToString(body io.Reader) (string, io.Reader) {
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	PrintIfVerbose("Using Agent Name: " + agentStr)
-	fmt.Println(req)
 	req.Header.Set("User-Agent", agentStr)
 }
 
