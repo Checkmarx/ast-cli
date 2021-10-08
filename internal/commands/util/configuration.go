@@ -17,7 +17,7 @@ const (
 	propValFlag       = "prop-value"
 )
 
-var properties = map[string]bool{
+var Properties = map[string]bool{
 	params.BaseURIKey:               true,
 	params.BaseAuthURIKey:           true,
 	params.TenantKey:                true,
@@ -119,7 +119,7 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		propName, _ := cmd.Flags().GetString(propNameFlag)
 		propValue, _ := cmd.Flags().GetString(propValFlag)
-		if properties[strings.ToLower(propName)] {
+		if Properties[strings.ToLower(propName)] {
 			configuration.SetConfigProperty(propName, propValue)
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)

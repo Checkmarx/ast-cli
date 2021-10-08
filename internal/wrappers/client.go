@@ -1,13 +1,16 @@
 package wrappers
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"time"
@@ -25,6 +28,7 @@ const (
 	NoTimeout          = 0
 	ntlmProxyToken     = "ntlm"
 	checkmarxURLError  = "Could not reach provided Checkmarx server"
+	DebugFlag          = "debug"
 )
 
 type ClientCredentialsInfo struct {
@@ -47,8 +51,29 @@ const failedToAuth = "Failed to authenticate - please provide an %s"
 var cachedAccessToken string
 var cachedAccessTime time.Time
 
+func PrintIfVerbose(msg string) {
+	if viper.GetBool(commonParams.DebugFlag) {
+		log.Print(msg)
+	}
+}
+
+func convertReqBodyToString(body io.Reader) (string, io.Reader) {
+	var bodyStr string
+	if body != nil {
+		b, err := ioutil.ReadAll(body)
+		if err != nil {
+			panic(err)
+		}
+		body = bytes.NewBuffer(b)
+		bodyStr = string(b)
+	}
+	return bodyStr, body
+}
+
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+	PrintIfVerbose("Using Agent Name: " + agentStr)
+	fmt.Println(req)
 	req.Header.Set("User-Agent", agentStr)
 }
 
@@ -66,11 +91,13 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 	u, _ := url.Parse(proxyStr)
 	var tr *http.Transport
 	if len(proxyStr) > 0 {
+		PrintIfVerbose("Creating HTTP Client with Proxy: " + proxyStr)
 		tr = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 			Proxy:           http.ProxyURL(u),
 		}
 	} else {
+		PrintIfVerbose("Creating HTTP Client.")
 		tr = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		}
@@ -87,6 +114,7 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	domainStr := viper.GetString(commonParams.ProxyDomainKey)
 	proxyUser := u.User.Username()
 	proxyPass, _ := u.User.Password()
+	PrintIfVerbose("Creating HTTP client using NTLM Proxy using: " + proxyStr)
 	ntlmDialContext := ntlm.NewNTLMProxyDialContext(dialer, u, proxyUser, proxyPass, domainStr, nil)
 	return &http.Client{
 		Transport: &http.Transport{
@@ -102,6 +130,7 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 }
 
 func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+	bodyStr, body := convertReqBodyToString(body)
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -114,6 +143,11 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 			return nil, err
 		}
 	}
+	PrintIfVerbose("Sending API request to: " + fullURL)
+	if len(bodyStr) > 0 {
+		PrintIfVerbose(bodyStr)
+	}
+	req = addReqMonitor(req)
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
@@ -122,8 +156,44 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 	return resp, nil
 }
 
+func addReqMonitor(req *http.Request) *http.Request {
+	startTime := time.Now().UnixNano() / int64(time.Millisecond)
+	if viper.GetBool(commonParams.DebugFlag) {
+		trace := &httptrace.ClientTrace{
+			GetConn: func(hostPort string) {
+				startTime = time.Now().UnixNano() / int64(time.Millisecond)
+				log.Print("Starting connection: " + hostPort)
+			},
+			DNSStart: func(dnsInfo httptrace.DNSStartInfo) {
+				log.Print("DNS looking up host information for: " + dnsInfo.Host)
+			},
+			DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
+				log.Print(fmt.Sprintf("DNS found host address(s): %+v\n", dnsInfo.Addrs))
+			},
+			TLSHandshakeStart: func() {
+				log.Print("Started TLS Handshake")
+			},
+			TLSHandshakeDone: func(c tls.ConnectionState, err error) {
+				if err == nil {
+					log.Print("Completed TLS handshake")
+				} else {
+					log.Print("Error completing TLS handshake")
+				}
+			},
+			GotFirstResponseByte: func() {
+				endTime := time.Now().UnixNano() / int64(time.Millisecond)
+				diff := endTime - startTime
+				log.Printf("Connected completed in: %d (ms)", diff)
+			},
+		}
+		return req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	}
+	return req
+}
+
 func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
+	bodyStr, body := convertReqBodyToString(body)
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
 	client := getClient(timeout)
@@ -137,6 +207,11 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 		return nil, err
 	}
 	var resp *http.Response
+	PrintIfVerbose("Requesting Password Auth with Auth URL: " + u)
+	if len(bodyStr) > 0 {
+		PrintIfVerbose(bodyStr)
+	}
+	req = addReqMonitor(req)
 	resp, err = client.Do(req)
 	if err != nil {
 		return nil, err
@@ -145,20 +220,25 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 }
 
 func GetURL(path string) string {
-	cleanURL := strings.Trim(viper.GetString(commonParams.BaseURIKey), "/")
+	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path)
 }
 
 func GetAuthURL(path string) string {
 	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
-		cleanURL := strings.Trim(viper.GetString(commonParams.BaseAuthURIKey), "/")
+		cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+		cleanURL = strings.Trim(cleanURL, "/")
+		PrintIfVerbose("Auth URL is: " + cleanURL + path)
 		return fmt.Sprintf("%s/%s", cleanURL, path)
 	}
+	PrintIfVerbose("Auth URL is: " + path)
 	return GetURL(path)
 }
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
 	body io.Reader, timeout uint) (*http.Response, error) {
+	bodyStr, body := convertReqBodyToString(body)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
 	client := getClient(timeout)
@@ -175,10 +255,13 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	if err != nil {
 		return nil, err
 	}
+	PrintIfVerbose("Sending API request to: " + u)
+	if len(bodyStr) > 0 {
+		PrintIfVerbose(bodyStr)
+	}
 	var resp *http.Response
 	resp, err = client.Do(req)
 	if err != nil {
-		// TODO: Add error object to debug log
 		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL)
 	}
 	if resp.StatusCode == http.StatusForbidden {
@@ -201,8 +284,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		baseURI := viper.GetString(commonParams.BaseURIKey)
-		authURI = baseURI + "/" + strings.TrimLeft(authURI, "/")
+		authURI = GetURL("/" + strings.TrimLeft(authURI, "/"))
 	}
 
 	return authURI, nil
@@ -213,11 +295,9 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	if err != nil {
 		return err
 	}
-
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
-
 	if accessKeyID == "" && astAPIKey == "" {
 		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
@@ -253,6 +333,7 @@ func enrichWithPasswordCredentials(request *http.Request, username, password,
 }
 
 func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (*string, error) {
+	PrintIfVerbose("Fetching API access token.")
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	var accessToken *string
 	var err error
@@ -277,42 +358,56 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 }
 
 func getClientCredentialsFromCache(tokenExpirySeconds int) *string {
+	PrintIfVerbose("Checking cache for API access token.")
 	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
+		PrintIfVerbose("Using cached API access token!")
 		return &cachedAccessToken
 	}
+	PrintIfVerbose("API access token not found in cache!")
 	return nil
 }
 
 func writeCredentialsToCache(accessToken *string) {
+	PrintIfVerbose("Storing API access token to cache.")
 	cachedAccessToken = *accessToken
 	cachedAccessTime = time.Now()
 }
 
+func sanitizeCredentials(credentialsPayload string) string {
+	sanitized := credentialsPayload
+	if strings.Contains(credentialsPayload, "grant_type=client_credentials") {
+		strs := strings.Split(credentialsPayload, "client_secret")
+		sanitized = strs[0] + "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+	}
+	if strings.Contains(credentialsPayload, "grant_type=refresh_token") {
+		sanitized = "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+	}
+	return sanitized
+}
+
 func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
+	PrintIfVerbose("Getting new API access token from: " + authServerURI)
+	PrintIfVerbose(sanitizeCredentials(credentialsPayload))
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
+	req = addReqMonitor(req)
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	res, err := http.DefaultClient.Do(req)
-
 	if err != nil {
-		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 	if res.StatusCode == http.StatusNotFound {
-		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		// TODO: Add error object to debug log
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 
@@ -338,18 +433,22 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		return nil, err
 	}
 
+	PrintIfVerbose("Successfully retreived API token.")
 	return &credentialsInfo.AccessToken, nil
 }
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
+	PrintIfVerbose("Using Client ID and secret credentials.")
 	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
 }
 
 func getAPIKeyPayload(astToken string) string {
+	PrintIfVerbose("Using API key credentials.")
 	return fmt.Sprintf("grant_type=refresh_token&client_id=ast-app&refresh_token=%s", astToken)
 }
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
+	PrintIfVerbose("Using username and password credentials.")
 	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
 		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
 }
