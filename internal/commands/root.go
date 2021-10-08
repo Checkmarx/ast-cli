@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const ErrorCodeFormat = "%s: CODE: %d, %s\n"
+
 // NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
