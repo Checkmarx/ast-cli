@@ -345,8 +345,11 @@ func createProject(projectName string, cmd *cobra.Command) (string, error) {
 	projModel.Tags = make(map[string]string)
 	projects := viper.GetString(commonParams.ProjectsPathKey)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resp, _, err := projectsWrapper.Create(&projModel)
+	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
+	if errorModel != nil {
+		err = errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
+	}
 	if err == nil {
 		projectID = resp.ID
 	}
@@ -771,7 +774,7 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedCreating, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
@@ -961,7 +964,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			err = printByFormat(cmd, toScanViews(allScansModel.Scans))
 			if err != nil {
@@ -1038,7 +1041,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf("%s: CODE: %d, %s\n", failedDeleting, errorModel.Code, errorModel.Message)
+				return errors.Errorf(ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -1060,7 +1063,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf("%s: CODE: %d, %s\n", failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 
