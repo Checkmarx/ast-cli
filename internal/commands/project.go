@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	failedCreatingProj = "Failed creating a project"
+	FailedCreatingProj = "Failed creating a project"
 	failedGettingProj  = "Failed getting a project"
 	failedDeletingProj = "Failed deleting a project"
 )
@@ -190,7 +190,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
+			return errors.Wrapf(err, "%s: Input in bad format", FailedCreatingProj)
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
@@ -198,16 +198,16 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingProj)
+			return errors.Wrapf(err, "%s", FailedCreatingProj)
 		}
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedCreatingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s", failedCreatingProj)
+				return errors.Wrapf(err, "%s", FailedCreatingProj)
 			}
 		}
 		return nil
@@ -230,7 +230,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
 			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
@@ -281,7 +281,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s\n", failedDeletingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedDeletingProj, errorModel.Code, errorModel.Message)
 		}
 		return nil
 	}
