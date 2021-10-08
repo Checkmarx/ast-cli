@@ -64,10 +64,10 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		},
 		RunE: runCreateProjectCommand(projectsWrapper),
 	}
-	createProjCmd.PersistentFlags().String(TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
-	createProjCmd.PersistentFlags().String(GroupList, "", "List of groups, ex: (PowerUsers,etc)")
-	createProjCmd.PersistentFlags().StringP(ProjectName, "", "", "Name of project")
-	createProjCmd.PersistentFlags().StringP(MainBranchFlag, "", "", "Main branch")
+	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
+	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
+	createProjCmd.PersistentFlags().StringP(commonParams.ProjectName, "", "", "Name of project")
+	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -82,7 +82,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		},
 		RunE: runListProjectsCommand(projectsWrapper),
 	}
-	listProjectsCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterProjectsListFlagUsage)
+	listProjectsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterProjectsListFlagUsage)
 
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
@@ -136,9 +136,9 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 
 func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	var info map[string]interface{}
-	projectName, _ := cmd.Flags().GetString(ProjectName)
-	mainBranch, _ := cmd.Flags().GetString(MainBranchFlag)
-	repoURL, _ := cmd.Flags().GetString(RepoURLFlag)
+	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
+	mainBranch, _ := cmd.Flags().GetString(commonParams.MainBranchFlag)
+	repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
 	_ = json.Unmarshal(*input, &info)
 	if projectName != "" {
 		info["name"] = projectName
@@ -156,7 +156,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 }
 
 func updateGroupValues(input *[]byte, cmd *cobra.Command) {
-	groupListStr, _ := cmd.Flags().GetString(GroupList)
+	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
 	groups := strings.Split(groupListStr, ",")
 	var groupMap []string
 	var info map[string]interface{}
@@ -246,7 +246,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		var projectResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
-		projectID, _ := cmd.Flags().GetString(ProjectIDFlag)
+		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedGettingProj)
 		}
@@ -271,7 +271,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 	return func(cmd *cobra.Command, args []string) error {
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
-		projectID, _ := cmd.Flags().GetString(ProjectIDFlag)
+		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedDeletingProj)
 		}

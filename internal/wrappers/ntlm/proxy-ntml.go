@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -151,13 +152,13 @@ func NewNTLMProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, baseDial func() (net.Conn, error)) (net.Conn, error) {
 	conn, err := baseDial()
 	if err != nil {
-		fmt.Printf("Could not call dial context with proxy: %s", err)
+		log.Printf("Could not call dial context with proxy: %s", err)
 		return conn, err
 	}
 	// NTLM Step 1: Send Negotiate Message
 	negotiateMessage, err := newNegotiateMessage(proxyDomain, "")
 	if err != nil {
-		fmt.Printf("Could not negotiate domain '%s': %s", proxyDomain, err)
+		log.Printf("Could not negotiate domain '%s': %s", proxyDomain, err)
 		return conn, err
 	}
 	header := make(http.Header)
@@ -171,40 +172,40 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 	}
 	err = connect.Write(conn)
 	if err != nil {
-		fmt.Printf("Could not write negotiate message to proxy: %s", err)
+		log.Printf("Could not write negotiate message to proxy: %s", err)
 		return conn, err
 	}
 	// NTLM Step 2: Receive Challenge Message
 	br := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(br, connect)
 	if err != nil {
-		fmt.Printf("Could not read response from proxy: %s", err)
+		log.Printf("Could not read response from proxy: %s", err)
 		return conn, err
 	}
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Could not read response body from proxy: %s", err)
+		log.Printf("Could not read response body from proxy: %s", err)
 		return conn, err
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode != http.StatusProxyAuthRequired {
-		fmt.Printf("Expected %d as return status, got: %d", http.StatusProxyAuthRequired, resp.StatusCode)
+		log.Printf("Expected %d as return status, got: %d", http.StatusProxyAuthRequired, resp.StatusCode)
 		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
 	challenge := strings.Split(resp.Header.Get("Proxy-Authenticate"), " ")
 	if len(challenge) < ntmlChallengeLen {
-		fmt.Printf("The proxy did not return an NTLM challenge, got: '%s'", resp.Header.Get("Proxy-Authenticate"))
+		log.Printf("The proxy did not return an NTLM challenge, got: '%s'", resp.Header.Get("Proxy-Authenticate"))
 		return conn, errors.New("no NTLM challenge received")
 	}
 	challengeMessage, err := base64.StdEncoding.DecodeString(challenge[1])
 	if err != nil {
-		fmt.Printf("Could not base64 decode the NTLM challenge: %s", err)
+		log.Printf("Could not base64 decode the NTLM challenge: %s", err)
 		return conn, err
 	}
 	// NTLM Step 3: Send Authorization Message
 	authenticateMessage, err := processChallenge(challengeMessage, proxyUsername, proxyPassword)
 	if err != nil {
-		fmt.Printf("Could not process the NTLM challenge: %s", err)
+		log.Printf("Could not process the NTLM challenge: %s", err)
 		return conn, err
 	}
 	header.Set("Proxy-Authorization", fmt.Sprintf("NTLM %s", base64.StdEncoding.EncodeToString(authenticateMessage)))
@@ -215,17 +216,17 @@ func dialAndNegotiate(addr, proxyUsername, proxyPassword, proxyDomain string, ba
 		Header: header,
 	}
 	if err = connect.Write(conn); err != nil {
-		fmt.Printf("Could not write authorization to proxy: %s", err)
+		log.Printf("Could not write authorization to proxy: %s", err)
 		return conn, err
 	}
 	resp, err = http.ReadResponse(br, connect)
 	if err != nil {
-		fmt.Printf("Could not read response from proxy: %s", err)
+		log.Printf("Could not read response from proxy: %s", err)
 		_ = resp.Body.Close()
 		return conn, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Expected %d as return status, got: %d", http.StatusOK, resp.StatusCode)
+		log.Printf("Expected %d as return status, got: %d", http.StatusOK, resp.StatusCode)
 		_ = resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
@@ -515,7 +516,7 @@ func getNtlmHash(password string) []byte {
 	hash := md4.New()
 	_, err := hash.Write(toUnicode(password))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return hash.Sum(nil)
 }
@@ -540,7 +541,7 @@ func hmacMd5(key []byte, data ...[]byte) []byte {
 	for _, d := range data {
 		_, err := mac.Write(d)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 	return mac.Sum(nil)
