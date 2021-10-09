@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 
@@ -145,7 +146,11 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 	}
 	PrintIfVerbose("Sending API request to: " + fullURL)
 	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
+		if utf8.Valid([]byte(bodyStr)) {
+			PrintIfVerbose(bodyStr)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
 	}
 	req = addReqMonitor(req)
 	var resp *http.Response
@@ -209,7 +214,11 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	var resp *http.Response
 	PrintIfVerbose("Requesting Password Auth with Auth URL: " + u)
 	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
+		if utf8.Valid([]byte(bodyStr)) {
+			PrintIfVerbose(bodyStr)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
 	}
 	req = addReqMonitor(req)
 	resp, err = client.Do(req)
@@ -257,7 +266,11 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	}
 	PrintIfVerbose("Sending API request to: " + u)
 	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
+		if utf8.Valid([]byte(bodyStr)) {
+			PrintIfVerbose(bodyStr)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
 	}
 	var resp *http.Response
 	resp, err = client.Do(req)
