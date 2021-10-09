@@ -54,7 +54,12 @@ var cachedAccessTime time.Time
 
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(commonParams.DebugFlag) {
-		log.Print(msg)
+		if utf8.Valid([]byte(msg)) {
+			log.Print(msg)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
+
 	}
 }
 
@@ -146,11 +151,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 	}
 	PrintIfVerbose("Sending API request to: " + fullURL)
 	if len(bodyStr) > 0 {
-		if utf8.Valid([]byte(bodyStr)) {
-			PrintIfVerbose(bodyStr)
-		} else {
-			PrintIfVerbose("Request contains binary data and cannot be printed!")
-		}
+		PrintIfVerbose(bodyStr)
 	}
 	req = addReqMonitor(req)
 	var resp *http.Response
@@ -214,11 +215,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 	var resp *http.Response
 	PrintIfVerbose("Requesting Password Auth with Auth URL: " + u)
 	if len(bodyStr) > 0 {
-		if utf8.Valid([]byte(bodyStr)) {
-			PrintIfVerbose(bodyStr)
-		} else {
-			PrintIfVerbose("Request contains binary data and cannot be printed!")
-		}
+		PrintIfVerbose(bodyStr)
 	}
 	req = addReqMonitor(req)
 	resp, err = client.Do(req)
@@ -266,11 +263,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	}
 	PrintIfVerbose("Sending API request to: " + u)
 	if len(bodyStr) > 0 {
-		if utf8.Valid([]byte(bodyStr)) {
-			PrintIfVerbose(bodyStr)
-		} else {
-			PrintIfVerbose("Request contains binary data and cannot be printed!")
-		}
+		PrintIfVerbose(bodyStr)
 	}
 	var resp *http.Response
 	resp, err = client.Do(req)
