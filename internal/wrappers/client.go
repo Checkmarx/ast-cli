@@ -261,7 +261,11 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	}
 	PrintIfVerbose("Sending API request to: " + u)
 	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
+		if utf8.Valid([]byte(bodyStr)) {
+			PrintIfVerbose(bodyStr)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
 	}
 	var resp *http.Response
 	resp, err = client.Do(req)
