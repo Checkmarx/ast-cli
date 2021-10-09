@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 
@@ -144,7 +145,11 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 	}
 	PrintIfVerbose("Sending API request to: " + fullURL)
 	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
+		if utf8.Valid([]byte(bodyStr)) {
+			PrintIfVerbose(bodyStr)
+		} else {
+			PrintIfVerbose("Request contains binary data and cannot be printed!")
+		}
 	}
 	req = addReqMonitor(req)
 	var resp *http.Response
