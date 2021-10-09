@@ -59,7 +59,6 @@ func PrintIfVerbose(msg string) {
 		} else {
 			PrintIfVerbose("Request contains binary data and cannot be printed!")
 		}
-
 	}
 }
 
