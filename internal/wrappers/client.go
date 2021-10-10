@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -57,7 +58,7 @@ func PrintIfVerbose(msg string) {
 		if utf8.Valid([]byte(msg)) {
 			log.Print(msg)
 		} else {
-			PrintIfVerbose("Request contains binary data and cannot be printed!")
+			log.Print("Request contains binary data and cannot be printed!")
 		}
 	}
 }
@@ -78,7 +79,6 @@ func convertReqBodyToString(body io.Reader) (string, io.Reader) {
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	PrintIfVerbose("Using Agent Name: " + agentStr)
-	fmt.Println(req)
 	req.Header.Set("User-Agent", agentStr)
 }
 
@@ -395,6 +395,10 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	PrintIfVerbose("Getting new API access token from: " + authServerURI)
 	PrintIfVerbose(sanitizeCredentials(credentialsPayload))
 	payload := strings.NewReader(credentialsPayload)
+	if strings.Contains(authServerURI, "") {
+		fmt.Println("CONTAINS UPLOADS")
+		debug.PrintStack()
+	}
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	setAgentName(req)
 	if err != nil {
