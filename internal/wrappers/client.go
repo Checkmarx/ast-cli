@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"runtime/debug"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -395,10 +394,6 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	PrintIfVerbose("Getting new API access token from: " + authServerURI)
 	PrintIfVerbose(sanitizeCredentials(credentialsPayload))
 	payload := strings.NewReader(credentialsPayload)
-	if strings.Contains(authServerURI, "") {
-		fmt.Println("CONTAINS UPLOADS")
-		debug.PrintStack()
-	}
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	setAgentName(req)
 	if err != nil {
