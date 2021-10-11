@@ -175,6 +175,13 @@ func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailabl
 		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
 }
 
+func markFlagAsRequired(cmd *cobra.Command, flag string) {
+	err := cmd.MarkPersistentFlagRequired(flag)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(params.ScanIDFlag, "", helpMsg)
 }
