@@ -731,7 +731,7 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 		if !os.IsNotExist(statErr) {
 			if filepath.Ext(sourcesFile) == ".zip" {
 				zipFile = sourcesFile
-			} else if info.IsDir() {
+			} else if info != nil && info.IsDir() {
 				sourceDir = filepath.ToSlash(sourcesFile)
 				if !strings.HasSuffix(sourceDir, "/") {
 					sourceDir += "/"
@@ -796,7 +796,7 @@ func createScanModel(
 	sourceDirFilter, _ := cmd.Flags().GetString(SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(IncludeFilterFlag)
 	sourcesFile, _ := cmd.Flags().GetString(SourcesFlag)
-	sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(sourcesFile)
+	sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(strings.TrimSpace(sourcesFile))
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}

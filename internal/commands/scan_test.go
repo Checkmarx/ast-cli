@@ -89,9 +89,16 @@ func TestCreateScanSourceFile(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip")
 }
 
+func TestCreateScanSourceFile1(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", " . ")
+}
+
 func TestCreateScanWrongFormatSource(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "invalidSource")
 	assert.Assert(t, err.Error() == "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "http:")
+	assert.Assert(t, err.Error() == "Failed creating a scan: Input in bad format: Sources input has bad format: http:")
 }
 
 func TestCreateScanWithScaResolver(t *testing.T) {
