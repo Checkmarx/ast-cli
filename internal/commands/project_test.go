@@ -18,73 +18,73 @@ func TestProjectNoSub(t *testing.T) {
 }
 
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "create", "--project-name", "test_project")
+	execCmdNilAssertion(t, "project", "create", "--project-name", "test_project")
 }
 
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "project", "create")
+	err := execCmdNotNilAssertion(t, "project", "create")
 	assert.Assert(t, err.Error() == "Project name is required")
 }
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "--format", "non-sense", "-v", "project", "create", "--project-name", "test_project")
+	err := execCmdNotNilAssertion(t, "--format", "non-sense", "project", "create", "--project-name", "test_project")
 	assert.Assert(t, err.Error() == "Failed creating a project: Invalid format non-sense")
 }
 
 func TestRunCreateProjectCommandWithInputList(t *testing.T) {
-	args := []string{"--format", "list", "-v", "project", "create", "--project-name", "test_project", "--branch", "dummy-branch"}
+	args := []string{"--format", "list", "project", "create", "--project-name", "test_project", "--branch", "dummy-branch"}
 	execCmdNilAssertion(t, args...)
 }
 
 func TestRunGetProjectByIdCommandNoScanID(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "project", "show")
+	err := execCmdNotNilAssertion(t, "project", "show")
 	assert.Assert(t, err.Error() == "Failed getting a project: Please provide a project ID")
 }
 
 func TestRunGetProjectByIdCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "project", "get", "--chibutero")
+	err := execCmdNotNilAssertion(t, "project", "get", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetProjectByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "show", "--project-id", "MOCK")
+	execCmdNilAssertion(t, "project", "show", "--project-id", "MOCK")
 }
 
 func TestRunDeleteProjectByIdCommandNoProjectID(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "project", "delete")
+	err := execCmdNotNilAssertion(t, "project", "delete")
 	assert.Assert(t, err.Error() == "Failed deleting a project: Please provide a project ID")
 }
 
 func TestRunDeleteProjectByIdCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "scan", "project", "--chibutero")
+	err := execCmdNotNilAssertion(t, "scan", "project", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunDeleteProjectByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "delete", "--project-id", "MOCK")
+	execCmdNilAssertion(t, "project", "delete", "--project-id", "MOCK")
 }
 
 func TestRunGetAllProjectsCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "list")
+	execCmdNilAssertion(t, "project", "list")
 }
 
 func TestRunGetAllProjectsCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "project", "list", "--chibutero")
+	err := execCmdNotNilAssertion(t, "project", "list", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetAllProjectsCommandWithLimit(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "list", "--filter", "limit=40")
+	execCmdNilAssertion(t, "project", "list", "--filter", "limit=40")
 }
 
 func TestRunGetAllProjectsCommandWithLimitList(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "list", "--format", "list", "--filter", "--limit=40")
+	execCmdNilAssertion(t, "project", "list", "--format", "list", "--filter", "--limit=40")
 }
 
 func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "list", "--filter", "offset=150")
+	execCmdNilAssertion(t, "project", "list", "--filter", "offset=150")
 }
 
 func TestRunGetProjectTagsCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "project", "tags")
+	execCmdNilAssertion(t, "project", "tags")
 }

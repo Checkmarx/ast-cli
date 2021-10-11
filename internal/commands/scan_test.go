@@ -22,59 +22,59 @@ func TestScanNoSub(t *testing.T) {
 }
 
 func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "scan", "show", "--chibutero")
+	err := execCmdNotNilAssertion(t, "scan", "show", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "show", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "show", "--scan-id", "MOCK")
 }
 
 func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "scan", "delete")
+	err := execCmdNotNilAssertion(t, "scan", "delete")
 	assert.Assert(t, err.Error() == "Failed deleting a scan: Please provide at least one scan ID")
 }
 
 func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "scan", "delete", "--chibutero")
+	err := execCmdNotNilAssertion(t, "scan", "delete", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunDeleteScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "delete", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "delete", "--scan-id", "MOCK")
 }
 
 func TestRunCancelScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "cancel", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "cancel", "--scan-id", "MOCK")
 }
 
 func TestRunGetAllCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "list")
+	execCmdNilAssertion(t, "scan", "list")
 }
 
 func TestRunGetAllCommandList(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "list", "--format", "list")
+	execCmdNilAssertion(t, "scan", "list", "--format", "list")
 }
 
 func TestRunGetAllCommandLimitList(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "list", "--format", "list", "--filter", "limit=40")
+	execCmdNilAssertion(t, "scan", "list", "--format", "list", "--filter", "limit=40")
 }
 
 func TestRunGetAllCommandOffsetList(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "list", "--format", "list", "--filter", "offset=0")
+	execCmdNilAssertion(t, "scan", "list", "--format", "list", "--filter", "offset=0")
 }
 
 func TestRunGetAllCommandStatusesList(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
+	execCmdNilAssertion(t, "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
 }
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "scan", "list", "--chibutero")
+	err := execCmdNotNilAssertion(t, "scan", "list", "--chibutero")
 	assert.Assert(t, err.Error() == unknownFlag)
 }
 
 func TestRunTagsCommand(t *testing.T) {
-	execCmdNilAssertion(t, "-v", "scan", "tags")
+	execCmdNilAssertion(t, "scan", "tags")
 }
 
 func TestCreateScan(t *testing.T) {

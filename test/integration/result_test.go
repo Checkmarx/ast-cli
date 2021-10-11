@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -8,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 )
@@ -28,9 +29,9 @@ func TestResultListJson(t *testing.T) {
 	err := execute(
 		resultCommand,
 		"result",
-		flag(commands.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary}, ","),
-		flag(commands.TargetFlag), fileName,
-		flag(commands.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary}, ","),
+		flag(params.TargetFlag), fileName,
+		flag(params.ScanIDFlag), scanID,
 	)
 	assert.NilError(t, err, "Getting results should pass")
 

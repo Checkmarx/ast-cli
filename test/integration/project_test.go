@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -6,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/google/uuid"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
@@ -64,8 +65,8 @@ func TestCreateAlreadyExisting(t *testing.T) {
 
 	err := execute(createASTIntegrationTestCommand(t),
 		"project", "create",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.ProjectName), showProject(t, projectID).Name,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ProjectName), showProject(t, projectID).Name,
 	)
 	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
 }
@@ -79,10 +80,10 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 
 	err := execute(createProjCommand,
 		"project", "create",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.ProjectName), projectName,
-		flag(commands.TagList), tagsStr,
-		flag(commands.GroupList), groupsStr,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ProjectName), projectName,
+		flag(params.TagList), tagsStr,
+		flag(params.GroupList), groupsStr,
 	)
 	assert.NilError(t, err, "Creating a project should pass")
 
@@ -99,7 +100,7 @@ func deleteProject(t *testing.T, projectID string) {
 	deleteProjCommand := createASTIntegrationTestCommand(t)
 	err := execute(deleteProjCommand,
 		"project", "delete",
-		flag(commands.ProjectIDFlag), projectID,
+		flag(params.ProjectIDFlag), projectID,
 	)
 	assert.NilError(t, err, "Deleting a project should pass")
 }
@@ -110,8 +111,8 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 
 	err := execute(getAllCommand,
 		"project", "list",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.FilterFlag), idFilter,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FilterFlag), idFilter,
 	)
 	assert.NilError(t, err, "Getting the project should pass")
 
@@ -126,8 +127,8 @@ func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponse
 
 	err := execute(showCommand,
 		"project", "show",
-		flag(commands.FormatFlag), util.FormatJSON,
-		flag(commands.ProjectIDFlag), projectID,
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
 	)
 	assert.NilError(t, err, "Getting the project should pass")
 

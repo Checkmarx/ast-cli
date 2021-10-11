@@ -18,7 +18,7 @@ func TestAuthNoSub(t *testing.T) {
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
-	args := []string{"-v", "auth", "register", "--username", "username", "--password", "password"}
+	args := []string{"auth", "register", "--username", "username", "--password", "password"}
 	execCmdNilAssertion(t, args...)
 
 	// Create Oath2Client with roles
@@ -26,10 +26,10 @@ func TestRunCreateOath2ClientCommand(t *testing.T) {
 }
 
 func TestRunCreateOath2ClientCommandInvalid(t *testing.T) {
-	_ = execCmdNotNilAssertion(t, "-v", "auth", "register")
+	_ = execCmdNotNilAssertion(t, "auth", "register")
 }
 
 func TestRunCreateOath2ClientCommandNoPassword(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "-v", "auth", "register", "--username", "username")
+	err := execCmdNotNilAssertion(t, "auth", "register", "--username", "username")
 	assert.Equal(t, err.Error(), "failed creating client: Please provide password flag")
 }
