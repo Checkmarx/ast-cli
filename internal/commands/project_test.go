@@ -122,3 +122,15 @@ func TestRunGetProjectTagsCommand(t *testing.T) {
 	err := executeTestCommand(cmd, "-v", "project", "tags")
 	assert.NilError(t, err)
 }
+
+func TestRunGetProjectBranchesCommand(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "project", "branches", "--project-id", "MOCK")
+	assert.NilError(t, err)
+}
+
+func TestRunGetProjectBranchesCommandWithFilter(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "-v", "project", "branches", "--project-id", "MOCK", "--filter", "fea")
+	assert.NilError(t, err)
+}

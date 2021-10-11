@@ -38,6 +38,7 @@ const (
 	IncludeFilterFlag        = "file-include"
 	IncludeFilterFlagSh      = "i"
 	ProjectIDFlag            = "project-id"
+	BranchNameFlag           = "branch-name"
 	BranchFlag               = "branch"
 	BranchFlagSh             = "b"
 	ScanIDFlag               = "scan-id"
