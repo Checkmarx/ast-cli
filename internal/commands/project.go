@@ -39,6 +39,15 @@ var (
 			commonParams.TagsValueQueryParam}, ","))
 )
 
+var (
+	filterBranchesFlagUsage = fmt.Sprintf("Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.BranchNameQueryParam,
+		}, ","))
+)
+
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
@@ -114,7 +123,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE: runGetBranchesByIDCommand(projectsWrapper),
 	}
 	addProjectIDFlag(projectBranchesCmd, "Project ID to get branches.")
-	projectBranchesCmd.PersistentFlags().String(FilterFlag, "", "Value used to filter by full or partial name")
+	projectBranchesCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterBranchesFlagUsage)
 
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
@@ -286,16 +295,22 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 
 func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+
 		var branches []string
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
+
 		projectID, _ := cmd.Flags().GetString(ProjectIDFlag)
-		branchName, _ := cmd.Flags().GetString(FilterFlag)
 		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedGettingBranches)
 		}
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
 
-		branches, errorModel, err = projectsWrapper.GetBranchesByID(projectID, branchName)
+		branches, errorModel, err = projectsWrapper.GetBranchesByID(projectID, params)
+
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBranches)
 		}

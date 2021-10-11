@@ -12,6 +12,7 @@ const (
 	TagsValueQueryParam    = "tags-values"
 	StatusesQueryParam     = "statuses"
 	StatusQueryParam       = "status"
+	BranchNameQueryParam   = "branch-name"
 	ProjectIDQueryParam    = "project-id"
 	FromDateQueryParam     = "from-date"
 	ToDateQueryParam       = "to-date"

@@ -50,7 +50,7 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	}, nil, nil
 }
 
-func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ string) (
+func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
 	[]string,
 	*projectsRESTApi.ErrorModel,
 	error) {

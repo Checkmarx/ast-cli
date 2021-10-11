@@ -131,6 +131,6 @@ func TestRunGetProjectBranchesCommand(t *testing.T) {
 
 func TestRunGetProjectBranchesCommandWithFilter(t *testing.T) {
 	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "-v", "project", "branches", "--project-id", "MOCK", "--filter", "fea")
+	err := executeTestCommand(cmd, "-v", "project", "branches", "--project-id", "MOCK", "--filter", "branch-name=ma,offset=1")
 	assert.NilError(t, err)
 }

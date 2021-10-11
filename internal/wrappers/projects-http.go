@@ -82,21 +82,18 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, branchName string) ([]string, *projectsRESTApi.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *projectsRESTApi.ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	var request = "/branches?project-id=" + projectID
-	if branchName != "" {
-		request = request + "&branch-name=" + branchName
-	}
 
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+request, nil, true, clientTimeout)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
+
 	if err != nil {
 		return nil, nil, err
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
