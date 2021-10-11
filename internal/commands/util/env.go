@@ -34,7 +34,7 @@ func NewEnvCheckCommand() *cobra.Command {
 func runEnvChecks() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nDetected Environment Variables:\n\n")
-		for param := range properties {
+		for param := range Properties {
 			fmt.Printf(formatString, param, os.Getenv(param))
 		}
 		return nil
