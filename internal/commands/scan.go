@@ -92,7 +92,7 @@ func NewScanCommand(
 
 	tagsCmd := scanTagsSubCommand(scansWrapper)
 
-	logsCmd := util.NewLogsCommand(logsWraper)
+	logsCmd := scanLogsSubCommand(logsWraper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -104,6 +104,24 @@ func NewScanCommand(
 	)
 	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd, logsCmd)
 	return scanCmd
+}
+
+func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
+	logsCmd := &cobra.Command{
+		Use:   "logs",
+		Short: "Download scan log for selected scan type",
+		Long:  "Accepts a scan-id and scan type (sast, kics or sca) and downloads the related scan log",
+		Example: heredoc.Doc(`
+			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | kics>
+		`),
+		RunE: runDownloadLogs(logsWrapper),
+	}
+	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, kics or sca.")
+	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
+	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
+
+	return logsCmd
 }
 
 func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -1085,6 +1103,19 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 			}
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(tagsJSON))
 		}
+		return nil
+	}
+}
+
+func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
+		log, err := logsWrapper.GetLog(scanID, scanType)
+		if err != nil {
+			return err
+		}
+		fmt.Print(log)
 		return nil
 	}
 }
