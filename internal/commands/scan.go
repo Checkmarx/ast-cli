@@ -1098,6 +1098,7 @@ type scanView struct {
 	Status    string
 	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	Branch    string
 	Tags      map[string]string
 	Initiator string
 	Origin    string
@@ -1125,6 +1126,7 @@ func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
 		CreatedAt: scan.CreatedAt,
 		UpdatedAt: scan.UpdatedAt,
 		ProjectID: scan.ProjectID,
+		Branch:    scan.Branch,
 		Tags:      scan.Tags,
 		Initiator: scan.Initiator,
 		Origin:    origin,
