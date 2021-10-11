@@ -1111,11 +1111,11 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	return func(cmd *cobra.Command, _ []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
-		log, err := logsWrapper.GetLog(scanID, scanType)
+		logText, err := logsWrapper.GetLog(scanID, scanType)
 		if err != nil {
 			return err
 		}
-		fmt.Print(log)
+		fmt.Print(logText)
 		return nil
 	}
 }
