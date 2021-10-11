@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 
@@ -53,7 +54,11 @@ var cachedAccessTime time.Time
 
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(commonParams.DebugFlag) {
-		log.Print(msg)
+		if utf8.Valid([]byte(msg)) {
+			log.Print(msg)
+		} else {
+			log.Print("Request contains binary data and cannot be printed!")
+		}
 	}
 }
 
@@ -73,7 +78,6 @@ func convertReqBodyToString(body io.Reader) (string, io.Reader) {
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	PrintIfVerbose("Using Agent Name: " + agentStr)
-	fmt.Println(req)
 	req.Header.Set("User-Agent", agentStr)
 }
 
