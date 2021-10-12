@@ -37,9 +37,7 @@ var (
 			commonParams.IDRegexQueryParam,
 			commonParams.TagsKeyQueryParam,
 			commonParams.TagsValueQueryParam}, ","))
-)
 
-var (
 	filterBranchesFlagUsage = fmt.Sprintf("Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.LimitQueryParam,
