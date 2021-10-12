@@ -10,6 +10,7 @@ import (
 
 const (
 	unknownFlag = "unknown flag: --chibutero"
+	blankSpace  = " "
 )
 
 func TestScanHelp(t *testing.T) {
@@ -88,8 +89,10 @@ func TestCreateScanSourceFile(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip")
 }
 
-func TestCreateScanSourceFile1(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", " . ")
+func TestCreateScanWithTrimmedSources(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"."+blankSpace)
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"data/"+blankSpace)
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"https://www.dummy-repo.com"+blankSpace)
 }
 
 func TestCreateScanWrongFormatSource(t *testing.T) {
