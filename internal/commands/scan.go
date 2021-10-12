@@ -363,7 +363,7 @@ func createProject(projectName string) (string, error) {
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
 	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
+		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
 	}
 	if err == nil {
 		projectID = resp.ID

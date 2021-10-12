@@ -25,7 +25,6 @@ const (
 	failedGettingProj     = "Failed getting a project"
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
-
 )
 
 var (
@@ -122,7 +121,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 		RunE: runGetBranchesByIDCommand(projectsWrapper),
 	}
 	addProjectIDFlag(projectBranchesCmd, "Project ID to get branches.")
-	projectBranchesCmd.PersistentFlags().StringSlice(FilterFlag, []string{}, filterBranchesFlagUsage)
+	projectBranchesCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterBranchesFlagUsage)
 
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
@@ -215,7 +214,7 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", FailedCreatingProj)
+			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
@@ -223,16 +222,16 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s", FailedCreatingProj)
+			return errors.Wrapf(err, "%s", failedCreatingProj)
 		}
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s", FailedCreatingProj)
+				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
 		return nil
@@ -299,7 +298,7 @@ func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
 
-		projectID, _ := cmd.Flags().GetString(ProjectIDFlag)
+		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
 			return errors.Errorf("%s: Please provide a project ID", failedGettingBranches)
 		}
