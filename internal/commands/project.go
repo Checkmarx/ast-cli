@@ -37,7 +37,6 @@ var (
 			commonParams.IDRegexQueryParam,
 			commonParams.TagsKeyQueryParam,
 			commonParams.TagsValueQueryParam}, ","))
-
 	filterBranchesFlagUsage = fmt.Sprintf("Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join([]string{
 			commonParams.LimitQueryParam,
@@ -219,12 +218,10 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
-
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreatingProj)
 		}
-
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
@@ -293,7 +290,6 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 
 func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-
 		var branches []string
 		var errorModel *projectsRESTApi.ErrorModel
 		var err error
