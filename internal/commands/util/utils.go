@@ -2,11 +2,10 @@ package util
 
 import (
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand(logsWraper wrappers.LogsWrapper) *cobra.Command {
+func NewUtilsCommand() *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
@@ -22,11 +21,9 @@ func NewUtilsCommand(logsWraper wrappers.LogsWrapper) *cobra.Command {
 	}
 	envCheckCmd := NewEnvCheckCommand()
 
-	logsCmd := NewLogsCommand(logsWraper)
-
 	completionCmd := NewCompletionCommand()
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, logsCmd)
+	utilsCmd.AddCommand(completionCmd, envCheckCmd)
 
 	return utilsCmd
 }

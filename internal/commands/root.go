@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarxDev/ast-cli/internal/commands/util"
@@ -16,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
 
 var singleNodeLogger = log.New(deploymentLogWriter{}, "", 0)
 
@@ -92,6 +92,9 @@ const (
 	TargetFormatFlag         = "report-format"
 )
 
+const ErrorCodeFormat = "%s: CODE: %d, %s\n"
+
+
 // NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
@@ -122,45 +125,46 @@ func NewAstCLI(
 	}
 
 	// Load default flags
-	rootCmd.PersistentFlags().BoolP(VerboseFlag, VerboseFlagSh, false, VerboseUsage)
-	rootCmd.PersistentFlags().String(AccessKeyIDFlag, "", AccessKeyIDFlagUsage)
-	rootCmd.PersistentFlags().String(AccessKeySecretFlag, "", AccessKeySecretFlagUsage)
-	rootCmd.PersistentFlags().Bool(InsecureFlag, false, InsecureFlagUsage)
-	rootCmd.PersistentFlags().String(ProxyFlag, "", ProxyFlagUsage)
-	rootCmd.PersistentFlags().String(ProxyTypeFlag, "", ProxyTypeFlagUsage)
-	rootCmd.PersistentFlags().String(NtlmProxyDomainFlag, "", NtlmProxyDomainFlagUsage)
-	rootCmd.PersistentFlags().String(TimeoutFlag, "", TimeoutFlagUsage)
-	rootCmd.PersistentFlags().String(BaseURIFlag, params.BaseURI, BaseURIFlagUsage)
-	rootCmd.PersistentFlags().String(BaseAuthURIFlag, params.BaseIAMURI, BaseAuthURIFlagUsage)
-	rootCmd.PersistentFlags().String(ProfileFlag, params.Profile, ProfileFlagUsage)
-	rootCmd.PersistentFlags().String(AstAPIKeyFlag, "", AstAPIKeyUsage)
-	rootCmd.PersistentFlags().String(AgentFlag, params.AgentFlag, AgentFlagUsage)
-	rootCmd.PersistentFlags().String(TenantFlag, params.Tenant, TenantFlagUsage)
+	rootCmd.PersistentFlags().BoolP(params.DebugFlag, "", false, params.DebugUsage)
+	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
+	rootCmd.PersistentFlags().String(params.AccessKeySecretFlag, "", params.AccessKeySecretFlagUsage)
+	rootCmd.PersistentFlags().Bool(params.InsecureFlag, false, params.InsecureFlagUsage)
+	rootCmd.PersistentFlags().String(params.ProxyFlag, "", params.ProxyFlagUsage)
+	rootCmd.PersistentFlags().String(params.ProxyTypeFlag, "", params.ProxyTypeFlagUsage)
+	rootCmd.PersistentFlags().String(params.NtlmProxyDomainFlag, "", params.NtlmProxyDomainFlagUsage)
+	rootCmd.PersistentFlags().String(params.TimeoutFlag, "", params.TimeoutFlagUsage)
+	rootCmd.PersistentFlags().String(params.BaseURIFlag, params.BaseURI, params.BaseURIFlagUsage)
+	rootCmd.PersistentFlags().String(params.BaseAuthURIFlag, params.BaseIAMURI, params.BaseAuthURIFlagUsage)
+	rootCmd.PersistentFlags().String(params.ProfileFlag, params.Profile, params.ProfileFlagUsage)
+	rootCmd.PersistentFlags().String(params.AstAPIKeyFlag, "", params.AstAPIKeyUsage)
+	rootCmd.PersistentFlags().String(params.AgentFlag, params.AgentFlag, params.DefaultAgent)
+	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 && cmd.Name() != Help {
+		PrintConfiguration()
+		if len(args) > 0 && cmd.Name() != params.Help {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
 	}
 
 	// Link the environment variable to the CLI argument(s).
-	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(AccessKeyIDFlag))
-	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(AccessKeySecretFlag))
-	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(BaseURIFlag))
-	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(TenantFlag))
-	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(ProxyFlag))
-	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(ProxyTypeFlag))
-	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(NtlmProxyDomainFlag))
-	_ = viper.BindPFlag(params.ClientTimeoutKey, rootCmd.PersistentFlags().Lookup(TimeoutFlag))
-	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(BaseAuthURIFlag))
-	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(AstAPIKeyFlag))
-	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(AgentFlag))
+	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
+	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
+	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(params.BaseURIFlag))
+	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(params.TenantFlag))
+	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(params.ProxyFlag))
+	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(params.ProxyTypeFlag))
+	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(params.NtlmProxyDomainFlag))
+	_ = viper.BindPFlag(params.ClientTimeoutKey, rootCmd.PersistentFlags().Lookup(params.TimeoutFlag))
+	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(params.BaseAuthURIFlag))
+	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(params.AstAPIKeyFlag))
+	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
-	_ = viper.BindPFlag(VerboseFlag, rootCmd.PersistentFlags().Lookup(VerboseFlag))
-	_ = viper.BindPFlag(InsecureFlag, rootCmd.PersistentFlags().Lookup(InsecureFlag))
+	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
+	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
 
 	// Set help func
 	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
@@ -168,12 +172,12 @@ func NewAstCLI(
 	})
 
 	// Create the CLI command structure
-	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper)
+	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, logsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := util.NewUtilsCommand(logsWrapper)
+	utilsCmd := util.NewUtilsCommand()
 	configCmd := util.NewConfigCommand()
 
 	rootCmd.AddCommand(scanCmd,
@@ -185,32 +189,43 @@ func NewAstCLI(
 		configCmd,
 	)
 
+	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }
 
-type deploymentLogWriter struct {
-}
+const configFormatString = "%30v: %s"
 
-func (writer deploymentLogWriter) Write(bytes []byte) (int, error) {
-	return fmt.Print(time.Now().Format(time.RFC3339) + " " + string(bytes))
+func PrintConfiguration() {
+	if viper.GetBool(params.DebugFlag) {
+		log.Println("CLI Configuration:")
+		for param := range util.Properties {
+			if param == "cx_client_secret" && len(viper.GetString(param)) > 0 {
+				log.Println(fmt.Sprintf(configFormatString, param, "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"))
+			} else if param == "cx_apikey" && len(viper.GetString(param)) > 0 {
+				log.Println(fmt.Sprintf(configFormatString, param, "XXXXXXXXXXXXXXXXXXXXX"))
+			} else {
+				log.Println(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
+			}
+		}
+	}
 }
 
 func PrintIfVerbose(msg string) {
-	if viper.GetBool(VerboseFlag) {
-		singleNodeLogger.Println(msg)
+	if viper.GetBool(params.DebugFlag) {
+		log.Println(msg)
 	}
 }
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
-	filters, err := cmd.Flags().GetStringSlice(FilterFlag)
+	filters, err := cmd.Flags().GetStringSlice(params.FilterFlag)
 	if err != nil {
 		return nil, err
 	}
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
-		if len(filterKeyVal) != KeyValuePairSize {
+		if len(filterKeyVal) != params.KeyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
 
@@ -228,24 +243,31 @@ func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat st
 }
 
 func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(FormatFlag, defaultFormat,
-		fmt.Sprintf(FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(params.FormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
 }
 
 func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(TargetFormatFlag, defaultFormat,
-		fmt.Sprintf(FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(params.TargetFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
+func markFlagAsRequired(cmd *cobra.Command, flag string) {
+	err := cmd.MarkPersistentFlagRequired(flag)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
-	cmd.PersistentFlags().String(ScanIDFlag, "", helpMsg)
+	cmd.PersistentFlags().String(params.ScanIDFlag, "", helpMsg)
 }
 
 func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
-	cmd.PersistentFlags().String(ProjectIDFlag, "", helpMsg)
+	cmd.PersistentFlags().String(params.ProjectIDFlag, "", helpMsg)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
-	f, _ := cmd.Flags().GetString(FormatFlag)
+	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return util.Print(cmd.OutOrStdout(), view, f)
 }

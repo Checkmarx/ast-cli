@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
@@ -44,6 +45,7 @@ func main() {
 
 func exitIfError(err error) {
 	if err != nil {
+		log.Println(err)
 		os.Exit(failureExitCode)
 	}
 }
