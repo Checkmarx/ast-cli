@@ -16,6 +16,7 @@ type ResultSummary struct {
 	ScanTime     string
 	CreatedAt    string
 	ProjectID    string
+	BaseURI      string
 	Tags         map[string]string
 }
 
@@ -387,7 +388,7 @@ const SummaryTemplate = `
                 </div>
                 
                 <div class="data">
-                    <a href="https://ast-master.dev.cxast.net/#/projects/{{.ProjectID}}/overview" target="_blank">More details</a>
+                    <a href="{{.BaseURI}}" target="_blank">More details</a>
                 </div>
             </div>
 
