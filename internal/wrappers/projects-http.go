@@ -82,6 +82,41 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
+func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *projectsRESTApi.ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+
+	var request = "/branches?project-id=" + projectID
+
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := projectsRESTApi.ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseBranches)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		var branches []string
+		err = decoder.Decode(&branches)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseBranches)
+		}
+		return branches, nil, nil
+
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true, clientTimeout)

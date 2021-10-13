@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	failedToParseGetAll = "Failed to parse list response"
-	failedToParseTags   = "Failed to parse tags response"
+	failedToParseGetAll   = "Failed to parse list response"
+	failedToParseTags     = "Failed to parse tags response"
+	failedToParseBranches = "Failed to parse branches response"
 )
 
 type ScansHTTPWrapper struct {

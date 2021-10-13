@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	FailedCreatingProj = "Failed creating a project"
-	failedGettingProj  = "Failed getting a project"
-	failedDeletingProj = "Failed deleting a project"
+	failedCreatingProj    = "Failed creating a project"
+	failedGettingProj     = "Failed getting a project"
+	failedDeletingProj    = "Failed deleting a project"
+	failedGettingBranches = "Failed getting branches for project"
 )
 
 var (
@@ -36,6 +37,12 @@ var (
 			commonParams.IDRegexQueryParam,
 			commonParams.TagsKeyQueryParam,
 			commonParams.TagsValueQueryParam}, ","))
+	filterBranchesFlagUsage = fmt.Sprintf("Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join([]string{
+			commonParams.LimitQueryParam,
+			commonParams.OffsetQueryParam,
+			commonParams.BranchNameQueryParam,
+		}, ","))
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
@@ -99,6 +106,22 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 	}
 	addProjectIDFlag(showProjectCmd, "Project ID to show.")
 
+	projectBranchesCmd := &cobra.Command{
+		Use:   "branches",
+		Short: "Show list of branches from a project",
+		Example: heredoc.Doc(`
+			$ cx project branches --project-id <project_id>
+		`),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(`
+				https://checkmarx.atlassian.net/wiki/x/agghuw
+			`),
+		},
+		RunE: runGetBranchesByIDCommand(projectsWrapper),
+	}
+	addProjectIDFlag(projectBranchesCmd, "Project ID to get branches.")
+	projectBranchesCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterBranchesFlagUsage)
+
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a project",
@@ -130,7 +153,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 
 	addFormatFlagToMultipleCommands([]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd}, util.FormatTable,
 		util.FormatJSON, util.FormatList)
-	projCmd.AddCommand(createProjCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
+	projCmd.AddCommand(createProjCmd, projectBranchesCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
 
@@ -190,24 +213,22 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", FailedCreatingProj)
+			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
 		PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
-
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s", FailedCreatingProj)
+			return errors.Wrapf(err, "%s", failedCreatingProj)
 		}
-
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s", FailedCreatingProj)
+				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
 		return nil
@@ -267,6 +288,41 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 	}
 }
 
+func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		var branches []string
+		var errorModel *projectsRESTApi.ErrorModel
+		var err error
+
+		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
+		if projectID == "" {
+			return errors.Errorf("%s: Please provide a project ID", failedGettingBranches)
+		}
+		params, err := getFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingAll)
+		}
+
+		branches, errorModel, err = projectsWrapper.GetBranchesByID(projectID, params)
+
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingBranches)
+		}
+		// Checking the response
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingBranches, errorModel.Code, errorModel.Message)
+		} else if branches != nil {
+			var branchesJSON []byte
+			branchesJSON, err = json.Marshal(branches)
+			if err != nil {
+				return errors.Wrapf(err, "%s: failed to serialize project branches response ", failedGettingBranches)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(branchesJSON))
+		}
+		return nil
+	}
+}
+
 func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var errorModel *projectsRESTApi.ErrorModel
@@ -311,6 +367,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		return nil
 	}
 }
+
 func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView {
 	result := make([]projectView, len(models))
 	for i := 0; i < len(models); i++ {

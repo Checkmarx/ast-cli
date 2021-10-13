@@ -348,7 +348,7 @@ func createProject(projectName string, cmd *cobra.Command) (string, error) {
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
 	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, FailedCreatingProj, errorModel.Code, errorModel.Message)
+		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
 	}
 	if err == nil {
 		projectID = resp.ID
@@ -1104,6 +1104,7 @@ type scanView struct {
 	Status    string
 	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	Branch    string
 	Tags      map[string]string
 	Initiator string
 	Origin    string
@@ -1131,6 +1132,7 @@ func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
 		CreatedAt: scan.CreatedAt,
 		UpdatedAt: scan.UpdatedAt,
 		ProjectID: scan.ProjectID,
+		Branch:    scan.Branch,
 		Tags:      scan.Tags,
 		Initiator: scan.Initiator,
 		Origin:    origin,
