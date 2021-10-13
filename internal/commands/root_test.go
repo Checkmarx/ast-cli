@@ -55,3 +55,14 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	cmd.SilenceUsage = false
 	return cmd.Execute()
 }
+
+func execCmdNilAssertion(t *testing.T, args ...string) {
+	err := executeTestCommand(createASTTestCommand(), args...)
+	assert.NilError(t, err)
+}
+
+func execCmdNotNilAssertion(t *testing.T, args ...string) error {
+	err := executeTestCommand(createASTTestCommand(), args...)
+	assert.Assert(t, err != nil)
+	return err
+}
