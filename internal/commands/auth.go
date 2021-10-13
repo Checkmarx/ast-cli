@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
@@ -85,13 +86,12 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		authWrapper := wrappers.NewAuthHTTPWrapper()
+		authWrapper.SetPath(viper.GetString(params.ScansPathKey))
 		err := authWrapper.ValidateLogin()
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
-
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
-
 		return nil
 	}
 }
