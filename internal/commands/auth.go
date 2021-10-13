@@ -2,16 +2,15 @@ package commands
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
-
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
