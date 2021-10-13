@@ -41,7 +41,7 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*scansRESTApi.ScanResponseMod
 	fmt.Println("Called GetByID in ScansMockWrapper")
 	return &scansRESTApi.ScanResponseModel{
 		ID:     scanID,
-		Status: "STATUS",
+		Status: "Completed",
 	}, nil, nil
 }
 
