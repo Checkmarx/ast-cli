@@ -48,7 +48,6 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
-
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
@@ -88,7 +87,6 @@ linters:
     - unused
     - varcheck
     - whitespace
-
   # don't enable:
   # - gochecknoglobals
   # - gocognit
@@ -102,14 +100,12 @@ issues:
     - path: _test\.go
       linters:
         - gomnd
-
 run:
   skip-dirs:
     - test/testdata_etc
     - internal/cache
     - internal/renameio
     - internal/robustio
-
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
