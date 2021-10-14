@@ -230,10 +230,9 @@ func GetURL(path string) string {
 
 func GetAuthURL(path string) string {
 	var authUrl string
-	if strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey)) != "" {
-		cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
-		cleanURL = strings.Trim(cleanURL, "/")
-		authUrl = fmt.Sprintf("%s/%s", cleanURL, path)
+	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+	if cleanURL != "" {
+		authUrl = fmt.Sprintf("%s/%s", strings.Trim(cleanURL, "/"), path)
 	} else {
 		authUrl = GetURL(path)
 	}
