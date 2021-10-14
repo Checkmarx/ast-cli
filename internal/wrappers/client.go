@@ -229,14 +229,16 @@ func GetURL(path string) string {
 }
 
 func GetAuthURL(path string) string {
-	if viper.GetString(commonParams.BaseAuthURIKey) != "" {
+	var authUrl string
+	if strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey)) != "" {
 		cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 		cleanURL = strings.Trim(cleanURL, "/")
-		PrintIfVerbose("Auth URL is: " + cleanURL + path)
-		return fmt.Sprintf("%s/%s", cleanURL, path)
+		authUrl = fmt.Sprintf("%s/%s", cleanURL, path)
+	} else {
+		authUrl = GetURL(path)
 	}
-	PrintIfVerbose("Auth URL is: " + path)
-	return GetURL(path)
+	PrintIfVerbose("Auth URL is: " + authUrl)
+	return authUrl
 }
 
 func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
