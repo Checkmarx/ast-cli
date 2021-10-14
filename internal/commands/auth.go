@@ -5,12 +5,12 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
-
 	"github.com/checkmarxDev/ast-cli/internal/params"
 	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -85,13 +85,12 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		authWrapper := wrappers.NewAuthHTTPWrapper()
+		authWrapper.SetPath(viper.GetString(params.ScansPathKey))
 		err := authWrapper.ValidateLogin()
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
-
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
-
 		return nil
 	}
 }

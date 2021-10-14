@@ -29,7 +29,6 @@ const (
 	NoTimeout          = 0
 	ntlmProxyToken     = "ntlm"
 	checkmarxURLError  = "Could not reach provided Checkmarx server"
-	DebugFlag          = "debug"
 )
 
 type ClientCredentialsInfo struct {
@@ -385,7 +384,7 @@ func sanitizeCredentials(credentialsPayload string) string {
 		sanitized = strs[0] + "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 	}
 	if strings.Contains(credentialsPayload, "grant_type=refresh_token") {
-		sanitized = "client_secret=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+		sanitized = "api_key=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	}
 	return sanitized
 }
