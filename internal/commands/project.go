@@ -308,17 +308,22 @@ func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBranches)
 		}
-		// Checking the response
+
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingBranches, errorModel.Code, errorModel.Message)
-		} else if branches != nil {
-			var branchesJSON []byte
-			branchesJSON, err = json.Marshal(branches)
-			if err != nil {
-				return errors.Wrapf(err, "%s: failed to serialize project branches response ", failedGettingBranches)
-			}
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(branchesJSON))
 		}
+
+		if branches == nil {
+			branches = []string{}
+		}
+
+		branchesJSON, err := json.Marshal(branches)
+		if err != nil {
+			return errors.Wrapf(err, "%s: failed to serialize project branches response ", failedGettingBranches)
+		}
+
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(branchesJSON))
+
 		return nil
 	}
 }
