@@ -59,6 +59,17 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	}, nil, nil
 }
 
+func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
+	[]string,
+	*projectsRESTApi.ErrorModel,
+	error) {
+	fmt.Println("Called GetBranchesByID in ProjectsMockWrapper")
+	return []string{
+		"master",
+		"feature/MOCK",
+	}, nil, nil
+}
+
 func (p *ProjectsMockWrapper) Delete(_ string) (
 	*projectsRESTApi.ErrorModel,
 	error) {

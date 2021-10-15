@@ -1,5 +1,4 @@
 //go:build !integration
-// +build !integration
 
 package commands
 
@@ -87,4 +86,14 @@ func TestRunGetAllProjectsCommandWithOffset(t *testing.T) {
 
 func TestRunGetProjectTagsCommand(t *testing.T) {
 	execCmdNilAssertion(t, "project", "tags")
+}
+
+func TestRunGetProjectBranchesCommand(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "project", "branches", "--project-id", "MOCK")
+	assert.NilError(t, err)
+}
+
+func TestRunGetProjectBranchesCommandWithFilter(t *testing.T) {
+	execCmdNilAssertion(t, "project", "branches", "--project-id", "MOCK", "--filter", "branch-name=ma,offset=1")
 }
