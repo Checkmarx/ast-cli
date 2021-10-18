@@ -27,7 +27,7 @@ const (
 	sastTypeLabel        = "sast"
 	kicsTypeLabel        = "infrastructure"
 	scaTypeLabel         = "dependency"
-	permission           = 0600
+	permission           = 0777
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(

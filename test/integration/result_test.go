@@ -15,22 +15,16 @@ import (
 )
 
 const (
-	fileName = "result-test"
+	fileName         = "result-test"
+	resultsDirectory = "output-results-folder/"
 )
-
-var resultsDirectory = os.TempDir() + "/output-results-folder/"
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
 	scanID, _ := getRootScan(t)
 	resultCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := os.Chmod(os.TempDir(), 0777)
-	if err != nil {
-		assert.NilError(t, err, "Set permissions on tmp folder should pass")
-	}
-
-	err = execute(
+	err := execute(
 		resultCommand,
 		"result",
 		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
