@@ -49,7 +49,7 @@ func getRootScan(t *testing.T) (string, string) {
 		return rootScanId, rootScanProjectId
 	}
 
-	rootScanId, rootScanProjectId = createScan(testInstance, Dir, Tags)
+	rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
 
 	return rootScanId, rootScanProjectId
 }

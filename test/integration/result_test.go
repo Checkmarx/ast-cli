@@ -21,7 +21,7 @@ const (
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
-	scanID, _ := createScan(t, Zip, Tags)
+	scanID, _ := getRootScan(t)
 	resultCommand, outputBuffer := createRedirectedTestCommand(t)
 
 	err := execute(
