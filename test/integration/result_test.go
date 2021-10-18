@@ -25,7 +25,12 @@ func TestResultListJson(t *testing.T) {
 	scanID, _ := getRootScan(t)
 	resultCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(
+	err := os.Chmod(os.TempDir(), 0777)
+	if err != nil {
+		assert.NilError(t, err, "Set permissions on tmp folder should pass")
+	}
+
+	err = execute(
 		resultCommand,
 		"result",
 		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
