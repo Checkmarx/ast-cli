@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	fileName         = "result-test"
-	resultsDirectory = "output-results-folder/"
+	fileName = "result-test"
 )
+
+var resultsDirectory = os.TempDir() + "/output-results-folder/"
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {

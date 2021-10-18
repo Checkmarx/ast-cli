@@ -22,7 +22,6 @@ const (
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
-	apiKeyValidationMessage         = "Validation should pass. API Key must be picked from environment variables"
 )
 
 // Test validate with credentials used in test env
@@ -42,14 +41,6 @@ func TestAuthValidateEmptyFlags(t *testing.T) {
 
 	err = execute(validateCommand, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
 	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key secret"))
-}
-
-// Test valid authentication passing an empty apiKey once it will be picked from environment variables
-func TestAuthValidatePickingAPIKeyFromEnvVariables(t *testing.T) {
-	validateCommand, buffer := createRedirectedTestCommand(t)
-
-	err := execute(validateCommand, "auth", "validate", "--apikey", "")
-	assertSuccessAuthentication(t, err, buffer, apiKeyValidationMessage)
 }
 
 // Tests with base auth uri
