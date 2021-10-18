@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package integration
 
@@ -15,31 +14,29 @@ import (
 	"gotest.tools/assert"
 )
 
-const fileName = "result-test"
+const (
+	fileName         = "result-test"
+	resultsDirectory = "output-results-folder/"
+)
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
-	scanID, projectID := createScan(t, Dir, Tags)
-
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
-
+	scanID, _ := createScan(t, Zip, Tags)
 	resultCommand, outputBuffer := createRedirectedTestCommand(t)
 
 	err := execute(
 		resultCommand,
 		"result",
-		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary}, ","),
+		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetPathFlag), resultsDirectory,
 	)
 	assert.NilError(t, err, "Getting results should pass")
 
 	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML}
 	defer func() {
-		for _, e := range extensions {
-			_ = os.Remove(fmt.Sprintf("%s.%s", fileName, e))
-		}
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
 	}()
 
 	result := wrappers.ScanResultsCollection{}
@@ -48,7 +45,7 @@ func TestResultListJson(t *testing.T) {
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
 	for _, e := range extensions {
-		_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, e))
+		_, err = os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
 		assert.NilError(t, err, "Report file should exist for extension "+e)
 	}
 }
