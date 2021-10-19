@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"

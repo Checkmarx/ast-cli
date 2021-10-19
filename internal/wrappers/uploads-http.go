@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"

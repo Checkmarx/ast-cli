@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
 
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"

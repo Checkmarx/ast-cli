@@ -9,7 +9,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 )
 
 const fileName = "cx_result"
