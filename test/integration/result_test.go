@@ -16,7 +16,7 @@ import (
 
 const (
 	fileName         = "result-test"
-	resultsDirectory = "./output-results-folder/"
+	resultsDirectory = "../../internal/commands/.scripts/output-results-folder/"
 )
 
 // Create a scan and test getting its results
