@@ -27,7 +27,7 @@ const (
 	sastTypeLabel        = "sast"
 	kicsTypeLabel        = "infrastructure"
 	scaTypeLabel         = "dependency"
-	permission           = 0600
+	directoryPermission  = 0700
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -250,7 +250,7 @@ func createDirectory(targetPath string) error {
 	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
 		log.Printf("\nOutput path not found: %s\n", targetPath)
 		log.Printf("Creating directory: %s\n", targetPath)
-		err = os.Mkdir(targetPath, permission)
+		err = os.Mkdir(targetPath, directoryPermission)
 		if err != nil {
 			return err
 		}

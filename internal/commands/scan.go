@@ -28,14 +28,15 @@ import (
 )
 
 const (
-	failedCreating    = "Failed creating a scan"
-	failedGetting     = "Failed showing a scan"
-	failedGettingTags = "Failed getting tags"
-	failedDeleting    = "Failed deleting a scan"
-	failedCanceling   = "Failed canceling a scan"
-	failedGettingAll  = "Failed listing"
-	mbBytes           = 1024.0 * 1024.0
-	resolverFilePerm  = 0644
+	failedCreating       = "Failed creating a scan"
+	failedGetting        = "Failed showing a scan"
+	failedGettingTags    = "Failed getting tags"
+	failedDeleting       = "Failed deleting a scan"
+	failedCanceling      = "Failed canceling a scan"
+	failedGettingAll     = "Failed listing"
+	mbBytes              = 1024.0 * 1024.0
+	resolverFilePerm     = 0644
+	defaultScannedBranch = "master"
 )
 
 var (
@@ -734,6 +735,8 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 	if strings.HasPrefix(sourcesFile, "https://") ||
 		strings.HasPrefix(sourcesFile, "http://") {
 		scanRepoURL = sourcesFile
+
+		logScannedBranch()
 	} else {
 		info, statErr := os.Stat(sourcesFile)
 		if !os.IsNotExist(statErr) {
@@ -754,6 +757,18 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 		}
 	}
 	return zipFile, sourceDir, scanRepoURL, err
+}
+
+// Log scanned branch
+func logScannedBranch() {
+	branchToScan := defaultScannedBranch
+	branchFromFlag := viper.GetString(commonParams.BranchKey)
+
+	if len(branchFromFlag) > 0 {
+		branchToScan = branchFromFlag
+	}
+
+	log.Printf("\n\nScanning branch %s...\n", branchToScan)
 }
 
 func runCreateScanCommand(

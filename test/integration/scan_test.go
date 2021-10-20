@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package integration
 
@@ -75,29 +74,6 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanTest(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
-// Get a scan workflow and assert its structure
-func TestScanWorkflow(t *testing.T) {
-	scanID, projectID := createScan(t, Dir, map[string]string{})
-
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
-
-	workflowCommand, buffer := createRedirectedTestCommand(t)
-
-	err := execute(
-		workflowCommand,
-		"scan", "workflow",
-		flag(params.ScanIDFlag), scanID,
-		flag(params.FormatFlag), util.FormatJSON,
-	)
-	assert.NilError(t, err, "Workflow should pass")
-
-	var workflow []ScanWorkflowResponse
-	_ = unmarshall(t, buffer, &workflow, "Reading workflow output should work")
-
-	assert.Assert(t, len(workflow) > 0, "At least one item should exist in the workflow response")
-}
-
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, SlowRepo, map[string]string{})
@@ -120,28 +96,23 @@ func TestCancelScan(t *testing.T) {
 // Create a scan with the sources from the integration package, excluding go files and including zips
 // Assert the scan completes
 func TestScanCreateIncludeFilter(t *testing.T) {
-
-	projectID := createProject(t, nil, nil)
-	defer deleteProject(t, projectID)
-
-	projectName := showProject(t, projectID).Name
+	_, projectName := getRootProject(t)
 
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile",
 	}
 
 	createCommand := createASTIntegrationTestCommand(t)
 	err := execute(createCommand, args...)
-	assert.Assert(t, err != nil, "Creating a scan with !*go,!*Dockerfile should fail")
+	assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 
 	args = append(args, flag(params.IncludeFilterFlag), "*txt")
 
-	createCommand = createASTIntegrationTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
 	assert.NilError(t, err, "Including zip should fix the scan")
 }
@@ -206,7 +177,6 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), source,
 		flag(params.ScanTypes), "sast,kics",
-		flag(params.PresetName), "Checkmarx Default",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 	}
@@ -302,11 +272,28 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 	}
 }
 
-func TestScanLogsSAST(t *testing.T) {
-	scanID, projectID := createScan(t, Dir, Tags)
+// Get a scan workflow and assert its structure
+func TestScanWorkflow(t *testing.T) {
+	scanID, _ := getRootScan(t)
 
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
+	workflowCommand, buffer := createRedirectedTestCommand(t)
+
+	err := execute(
+		workflowCommand,
+		"scan", "workflow",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.FormatFlag), util.FormatJSON,
+	)
+	assert.NilError(t, err, "Workflow should pass")
+
+	var workflow []ScanWorkflowResponse
+	_ = unmarshall(t, buffer, &workflow, "Reading workflow output should work")
+
+	assert.Assert(t, len(workflow) > 0, "At least one item should exist in the workflow response")
+}
+
+func TestScanLogsSAST(t *testing.T) {
+	scanID, _ := getRootScan(t)
 
 	logsCommand := createASTIntegrationTestCommand(t)
 
@@ -320,10 +307,7 @@ func TestScanLogsSAST(t *testing.T) {
 }
 
 func TestScanLogsKICS(t *testing.T) {
-	scanID, projectID := createScan(t, Dir, Tags)
-
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
+	scanID, _ := getRootScan(t)
 
 	logsCommand := createASTIntegrationTestCommand(t)
 
