@@ -46,7 +46,7 @@ type ClientCredentialsError struct {
 	Description string `json:"error_description"`
 }
 
-const failedToAuth = "Failed to authenticate - please provide an %s"
+const FailedToAuth = "Failed to authenticate - please provide an %s"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
@@ -279,7 +279,7 @@ func getAuthURI() (string, error) {
 	tenant := viper.GetString(commonParams.TenantKey)
 	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
 	if authPath == "" {
-		return "", errors.Errorf(fmt.Sprintf(failedToAuth, "authentication path"))
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "authentication path"))
 	}
 	authURI := GetAuthURL(authPath)
 	authURL, err := url.Parse(authURI)
@@ -303,11 +303,9 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	if accessKeyID == "" && astAPIKey == "" {
-		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key ID"))
+		return errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return errors.Errorf(fmt.Sprintf(failedToAuth, "access key secret"))
-	} else if astAPIKey == "" && accessKeyID == "" && accessKeySecret == "" {
-		return errors.Errorf(fmt.Sprintf(failedToAuth, "access API Key"))
+		return errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 	}
 
 	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
@@ -437,7 +435,7 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		return nil, err
 	}
 
-	PrintIfVerbose("Successfully retreived API token.")
+	PrintIfVerbose("Successfully retrieved API token.")
 	return &credentialsInfo.AccessToken, nil
 }
 

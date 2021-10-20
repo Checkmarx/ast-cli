@@ -1,9 +1,9 @@
 //go:build integration
-// +build integration
 
 package integration
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -11,15 +11,17 @@ import (
 
 	"github.com/checkmarxDev/ast-cli/internal/commands"
 	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarxDev/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
 const (
-	clientIDPrefix = "ast-plugins-"
-	AstUsernameEnv = "CX_AST_USERNAME"
-	AstPasswordEnv = "CX_AST_PASSWORD"
+	clientIDPrefix                  = "ast-plugins-"
+	AstUsernameEnv                  = "CX_AST_USERNAME"
+	AstPasswordEnv                  = "CX_AST_PASSWORD"
+	defaultSuccessValidationMessage = "Validation should pass"
 )
 
 // Test validate with credentials used in test env
@@ -27,12 +29,75 @@ func TestAuthValidate(t *testing.T) {
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
 	err := execute(validateCommand, "auth", "validate")
-	assert.NilError(t, err, "Validate should pass")
+	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
+}
 
-	result, err := io.ReadAll(buffer)
-	assert.NilError(t, err, "Reading result should pass")
+// Test validate with credentials from flags
+func TestAuthValidateEmptyFlags(t *testing.T) {
+	validateCommand, _ := createRedirectedTestCommand(t)
 
-	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
+	err := execute(validateCommand, "auth", "validate", "--apikey", "", "--client-id", "")
+	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key ID"))
+
+	err = execute(validateCommand, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
+	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key secret"))
+}
+
+// Tests with base auth uri
+func TestAuthValidateWithBaseAuthURI(t *testing.T) {
+	validateCommand, buffer := createRedirectedTestCommand(t)
+
+	avoidCachedToken()
+
+	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables
+	err := execute(validateCommand, "auth", "validate", "--base-auth-uri", "")
+	assertSuccessAuthentication(t, err, buffer, "")
+
+	avoidCachedToken()
+
+	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "invalid-base-uri")
+	assertError(t, err, "404 Provided Tenant Name is invalid \n")
+}
+
+// Test validate authentication with a wrong api key
+func TestAuthValidateWrongAPIKey(t *testing.T) {
+	validateCommand, _ := createRedirectedTestCommand(t)
+
+	// avoid picking cached token to allow invalid api key to be used
+	avoidCachedToken()
+
+	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey")
+	assertError(t, err, "400 Provided credentials are invalid")
+}
+
+func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
+	validateCommand, _ := createRedirectedTestCommand(t)
+
+	// avoid picking cached token to allow invalid api key to be used
+	_ = viper.BindEnv("cx_ast_authentication_path", "CX_AST_AUTHENTICATION_PATH")
+	viper.SetDefault("cx_ast_authentication_path", "")
+
+	err := execute(validateCommand, "auth", "validate")
+	assertError(t, err, "Failed to authenticate - please provide an authentication path")
+}
+
+// Register with empty username or password
+func TestAuthRegisterWithEmptyUsernameOrPassword(t *testing.T) {
+	registerCommand, _ := createRedirectedTestCommand(t)
+
+	err := execute(registerCommand,
+		"auth", "register",
+		flag(params.UsernameFlag), "",
+		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+	)
+	assertError(t, err, "Please provide username flag")
+
+	err = execute(registerCommand,
+		"auth", "register",
+		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
+		flag(params.PasswordFlag), "",
+	)
+	assertError(t, err, "Please provide password flag")
 }
 
 // Register with credentials and validate the obtained id/secret pair
@@ -68,12 +133,7 @@ func TestAuthRegister(t *testing.T) {
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
 	err = execute(validateCommand, "auth", "validate", flag(params.AccessKeyIDFlag), clientID, flag(params.AccessKeySecretFlag), secret)
-	assert.NilError(t, err, "Validate should pass")
-
-	result, err = io.ReadAll(buffer)
-	assert.NilError(t, err, "Reading result should pass")
-
-	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
+	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 func TestFailProxyAuth(t *testing.T) {
@@ -88,7 +148,20 @@ func TestFailProxyAuth(t *testing.T) {
 	validate.SetArgs(args)
 
 	err := validate.Execute()
-	assert.Assert(t, err != nil, "Executing without proxy should fail")
-	//goland:noinspection GoNilness
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
+	assertError(t, err, "could not reach provided")
+}
+
+// assert success authentication
+func assertSuccessAuthentication(t *testing.T, err error, buffer *bytes.Buffer, assertionMessage string) {
+	assert.NilError(t, err, assertionMessage)
+
+	result, readingError := io.ReadAll(buffer)
+	assert.NilError(t, readingError, "Reading result should pass")
+	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
+}
+
+// avoid picking cached token
+func avoidCachedToken() {
+	_ = viper.BindEnv("cx_token_expiry_seconds", "CX_TOKEN_EXPIRY_SECONDS")
+	viper.SetDefault("cx_token_expiry_seconds", 10)
 }
