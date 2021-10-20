@@ -59,14 +59,18 @@ func TestProjectsE2E(t *testing.T) {
 
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExisting(t *testing.T) {
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, "project", "create")
+	assertError(t, err, "Project name is required")
+
 	_, projectName := getRootProject(t)
 
-	err := execute(createASTIntegrationTestCommand(t),
+	err = execute(cmd,
 		"project", "create",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectName), projectName,
 	)
-	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
+	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
 
 // Test list project's branches
@@ -75,8 +79,7 @@ func TestProjectBranches(t *testing.T) {
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
 	err := execute(validateCommand, "project", "branches")
-	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(err.Error(), "Failed getting branches for project: Please provide a project ID"))
+	assertError(t, err, "Failed getting branches for project: Please provide a project ID")
 
 	err = execute(validateCommand, "project", "branches", "--project-id", projectId)
 	assert.NilError(t, err)

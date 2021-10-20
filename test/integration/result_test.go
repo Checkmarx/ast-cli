@@ -29,6 +29,15 @@ func TestResultListJson(t *testing.T) {
 		"result",
 		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
 		flag(params.TargetFlag), fileName,
+		flag(params.TargetPathFlag), resultsDirectory,
+	)
+	assertError(t, err, "Please provide a scan ID")
+
+	err = execute(
+		resultCommand,
+		"result",
+		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
+		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
 	)

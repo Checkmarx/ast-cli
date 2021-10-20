@@ -109,11 +109,10 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 	createCommand := createASTIntegrationTestCommand(t)
 	err := execute(createCommand, args...)
-	assert.Assert(t, err != nil, "Creating a scan with !*go,!*Dockerfile should fail")
+	assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 
 	args = append(args, flag(params.IncludeFilterFlag), "*txt")
 
-	createCommand = createASTIntegrationTestCommand(t)
 	err = executeWithTimeout(createCommand, 5*time.Minute, args...)
 	assert.NilError(t, err, "Including zip should fix the scan")
 }
@@ -178,7 +177,6 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), source,
 		flag(params.ScanTypes), "sast,kics",
-		flag(params.PresetName), "Checkmarx Default",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 	}

@@ -148,9 +148,7 @@ func TestFailProxyAuth(t *testing.T) {
 	validate.SetArgs(args)
 
 	err := validate.Execute()
-	assert.Assert(t, err != nil, "Executing without proxy should fail")
-	//goland:noinspection GoNilness
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
+	assertError(t, err, "could not reach provided")
 }
 
 // assert success authentication
@@ -160,12 +158,6 @@ func assertSuccessAuthentication(t *testing.T, err error, buffer *bytes.Buffer, 
 	result, readingError := io.ReadAll(buffer)
 	assert.NilError(t, readingError, "Reading result should pass")
 	assert.Assert(t, strings.Contains(string(result), commands.SuccessAuthValidate))
-}
-
-// assert error with expected message
-func assertError(t *testing.T, err error, expectedMessage string) {
-	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(err.Error(), expectedMessage))
 }
 
 // avoid picking cached token

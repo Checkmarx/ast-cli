@@ -3,8 +3,10 @@
 package integration
 
 import (
+	"gotest.tools/assert"
 	"log"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -78,4 +80,10 @@ func getRootProject(t *testing.T) (string, string) {
 	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
 
 	return rootProjectId, rootProjectName
+}
+
+// assert error with expected message
+func assertError(t *testing.T, err error, expectedMessage string) {
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
 }

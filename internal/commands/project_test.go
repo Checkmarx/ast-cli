@@ -89,9 +89,7 @@ func TestRunGetProjectTagsCommand(t *testing.T) {
 }
 
 func TestRunGetProjectBranchesCommand(t *testing.T) {
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, "project", "branches", "--project-id", "MOCK")
-	assert.NilError(t, err)
+	execCmdNilAssertion(t, "project", "branches", "--project-id", "MOCK")
 }
 
 func TestRunGetProjectBranchesCommandWithFilter(t *testing.T) {
