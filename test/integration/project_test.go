@@ -1,10 +1,11 @@
 //go:build integration
-// +build integration
 
 package integration
 
 import (
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -15,7 +16,7 @@ import (
 	"gotest.tools/assert"
 )
 
-// End to end test of project handling.
+// End-to-end test of project handling.
 // - Create a project
 // - Get and assert the project exists
 // - Get all tags
@@ -25,8 +26,7 @@ import (
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-
-	projectID := createProject(t, Tags, Groups)
+	projectID, _ := createProject(t, Tags, Groups)
 
 	response := listProjectByID(t, projectID)
 
@@ -59,19 +59,38 @@ func TestProjectsE2E(t *testing.T) {
 
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExisting(t *testing.T) {
-	projectID := createProject(t, map[string]string{}, []string{})
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, "project", "create")
+	assertError(t, err, "Project name is required")
 
-	defer deleteProject(t, projectID)
+	_, projectName := getRootProject(t)
 
-	err := execute(createASTIntegrationTestCommand(t),
+	err = execute(cmd,
 		"project", "create",
 		flag(params.FormatFlag), util.FormatJSON,
-		flag(params.ProjectName), showProject(t, projectID).Name,
+		flag(params.ProjectName), projectName,
 	)
-	assert.Assert(t, err != nil, "Creating a project with the same name should fail")
+	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
 
-func createProject(t *testing.T, tags map[string]string, groups []string) string {
+// Test list project's branches
+func TestProjectBranches(t *testing.T) {
+	projectId, _ := getRootProject(t)
+	validateCommand, buffer := createRedirectedTestCommand(t)
+
+	err := execute(validateCommand, "project", "branches")
+	assertError(t, err, "Failed getting branches for project: Please provide a project ID")
+
+	err = execute(validateCommand, "project", "branches", "--project-id", projectId)
+	assert.NilError(t, err)
+
+	result, readingError := io.ReadAll(buffer)
+	assert.NilError(t, readingError, "Reading result should pass")
+	assert.Assert(t, strings.Contains(string(result), "[]"))
+	assert.NilError(t, err)
+}
+
+func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
 	createProjCommand, outBuffer := createRedirectedTestCommand(t)
 
@@ -82,6 +101,7 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 		"project", "create",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
 		flag(params.GroupList), groupsStr,
 	)
@@ -93,7 +113,7 @@ func createProject(t *testing.T, tags map[string]string, groups []string) string
 	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
 	fmt.Printf("Project ID %s created\n", createdProject.ID)
 
-	return createdProject.ID
+	return createdProject.ID, projectName
 }
 
 func deleteProject(t *testing.T, projectID string) {

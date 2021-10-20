@@ -161,7 +161,6 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	var info map[string]interface{}
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	mainBranch, _ := cmd.Flags().GetString(commonParams.MainBranchFlag)
-	repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
 	_ = json.Unmarshal(*input, &info)
 	if projectName != "" {
 		info["name"] = projectName
@@ -170,9 +169,6 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
-	}
-	if repoURL != "" {
-		info["repoUrl"] = repoURL
 	}
 	*input, _ = json.Marshal(info)
 	return nil
