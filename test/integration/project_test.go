@@ -36,7 +36,20 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
+	assertTagsAndGroups(t, project)
+
+	deleteProject(t, projectID)
+
+	response = listProjectByID(t, projectID)
+
+	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
+}
+
+// Assert project contains created tags and groups
+func assertTagsAndGroups(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
+
 	allTags := getAllTags(t, "project")
+
 	for key := range Tags {
 		_, ok := allTags[key]
 		assert.Assert(t, ok, "Get all tags response should contain all created tags. Missing %s", key)
@@ -49,55 +62,39 @@ func TestProjectsE2E(t *testing.T) {
 	for _, group := range Groups {
 		assert.Assert(t, contains(project.Groups, group), "Project should contain group %s", group)
 	}
-
-	deleteProject(t, projectID)
-
-	response = listProjectByID(t, projectID)
-
-	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
 }
 
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExisting(t *testing.T) {
-	cmd := createASTIntegrationTestCommand(t)
-	err := execute(cmd, "project", "create")
-	assertError(t, err, "Project name is required")
+
+	assertRequiredParameter(t, "Project name is required", "project", "create")
 
 	_, projectName := getRootProject(t)
 
-	err = execute(cmd,
-		"project", "create",
-		flag(params.FormatFlag), util.FormatJSON,
-		flag(params.ProjectName), projectName,
-	)
+	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), projectName)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
 
 // Test list project's branches
 func TestProjectBranches(t *testing.T) {
+
+	assertRequiredParameter(t, "Failed getting branches for project: Please provide a project ID", "project", "branches")
+
 	projectId, _ := getRootProject(t)
-	validateCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(validateCommand, "project", "branches")
-	assertError(t, err, "Failed getting branches for project: Please provide a project ID")
-
-	err = execute(validateCommand, "project", "branches", "--project-id", projectId)
-	assert.NilError(t, err)
+	buffer := executeCmdNilAssertion(t, "Branches should be listed", "project", "branches", "--project-id", projectId)
 
 	result, readingError := io.ReadAll(buffer)
 	assert.NilError(t, readingError, "Reading result should pass")
 	assert.Assert(t, strings.Contains(string(result), "[]"))
-	assert.NilError(t, err)
 }
 
 func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
-	createProjCommand, outBuffer := createRedirectedTestCommand(t)
-
 	tagsStr := formatTags(tags)
 	groupsStr := formatGroups(groups)
 
-	err := execute(createProjCommand,
+	outBuffer := executeCmdNilAssertion(t, "Creating a project should pass",
 		"project", "create",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectName), projectName,
@@ -105,7 +102,6 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 		flag(params.TagList), tagsStr,
 		flag(params.GroupList), groupsStr,
 	)
-	assert.NilError(t, err, "Creating a project should pass")
 
 	createdProject := projectsRESTApi.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
@@ -117,24 +113,17 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 }
 
 func deleteProject(t *testing.T, projectID string) {
-	deleteProjCommand := createASTIntegrationTestCommand(t)
-	err := execute(deleteProjCommand,
-		"project", "delete",
-		flag(params.ProjectIDFlag), projectID,
-	)
-	assert.NilError(t, err, "Deleting a project should pass")
+	executeCmdNilAssertion(t, "Deleting a project should pass", "project", "delete", flag(params.ProjectIDFlag), projectID)
 }
 
 func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
-	getAllCommand, outputBuffer := createRedirectedTestCommand(t)
 
-	err := execute(getAllCommand,
+	outputBuffer := executeCmdNilAssertion(t,
+		"Getting the project should pass",
 		"project", "list",
-		flag(params.FormatFlag), util.FormatJSON,
-		flag(params.FilterFlag), idFilter,
+		flag(params.FormatFlag), util.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-	assert.NilError(t, err, "Getting the project should pass")
 
 	var projects []projectsRESTApi.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
@@ -143,14 +132,12 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 }
 
 func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponseModel {
-	showCommand, outputBuffer := createRedirectedTestCommand(t)
+	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
 
-	err := execute(showCommand,
-		"project", "show",
+	outputBuffer := executeCmdNilAssertion(t, "Getting the project should pass", "project", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 	)
-	assert.NilError(t, err, "Getting the project should pass")
 
 	var project projectsRESTApi.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")

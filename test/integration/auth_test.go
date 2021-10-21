@@ -26,20 +26,16 @@ const (
 
 // Test validate with credentials used in test env
 func TestAuthValidate(t *testing.T) {
-	validateCommand, buffer := createRedirectedTestCommand(t)
-
-	err := execute(validateCommand, "auth", "validate")
+	err, buffer := executeCommand(t, "auth", "validate")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 // Test validate with credentials from flags
 func TestAuthValidateEmptyFlags(t *testing.T) {
-	validateCommand, _ := createRedirectedTestCommand(t)
-
-	err := execute(validateCommand, "auth", "validate", "--apikey", "", "--client-id", "")
+	err, _ := executeCommand(t, "auth", "validate", "--apikey", "", "--client-id", "")
 	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key ID"))
 
-	err = execute(validateCommand, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
+	err, _ = executeCommand(t, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
 	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key secret"))
 }
 
@@ -83,21 +79,15 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 
 // Register with empty username or password
 func TestAuthRegisterWithEmptyUsernameOrPassword(t *testing.T) {
-	registerCommand, _ := createRedirectedTestCommand(t)
-
-	err := execute(registerCommand,
+	assertRequiredParameter(t, "Please provide username flag",
 		"auth", "register",
 		flag(params.UsernameFlag), "",
-		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
-	)
-	assertError(t, err, "Please provide username flag")
+		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv))
 
-	err = execute(registerCommand,
+	assertRequiredParameter(t, "Please provide password flag",
 		"auth", "register",
 		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
-		flag(params.PasswordFlag), "",
-	)
-	assertError(t, err, "Please provide password flag")
+		flag(params.PasswordFlag), "")
 }
 
 // Register with credentials and validate the obtained id/secret pair
@@ -142,12 +132,9 @@ func TestFailProxyAuth(t *testing.T) {
 	proxyHost := viper.GetString(ProxyHostEnv)
 	proxyArg := fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyUser, proxyHost, proxyPort)
 
-	validate := createASTIntegrationTestCommand(t)
-
 	args := []string{"auth", "validate", flag(params.DebugFlag), flag(params.ProxyFlag), proxyArg}
-	validate.SetArgs(args)
 
-	err := validate.Execute()
+	err, _ := executeCommand(t, args...)
 	assertError(t, err, "could not reach provided")
 }
 
