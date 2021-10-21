@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/cobra"
 )
 

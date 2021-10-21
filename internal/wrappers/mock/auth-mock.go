@@ -1,6 +1,6 @@
 package mock
 
-import "github.com/checkmarxDev/ast-cli/internal/wrappers"
+import "github.com/checkmarx/ast-cli/internal/wrappers"
 
 type AuthMockWrapper struct{}
 

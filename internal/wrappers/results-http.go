@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/spf13/viper"
 

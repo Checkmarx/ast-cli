@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/mssola/user_agent"

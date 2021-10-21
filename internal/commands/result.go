@@ -9,12 +9,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

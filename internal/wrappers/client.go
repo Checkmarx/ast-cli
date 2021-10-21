@@ -18,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/ntlm"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 
 	"github.com/spf13/viper"
 )

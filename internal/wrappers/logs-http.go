@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarxDev/logs/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"

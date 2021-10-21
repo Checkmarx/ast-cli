@@ -4,10 +4,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands"
-	"github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/commands"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/viper"
 )
 
