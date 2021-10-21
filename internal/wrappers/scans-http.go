@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	"github.com/spf13/viper"
 
