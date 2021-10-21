@@ -3,8 +3,10 @@
 package integration
 
 import (
+	"gotest.tools/assert"
 	"log"
 	"os"
+	"strings"
 	"testing"
 )
 
