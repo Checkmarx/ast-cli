@@ -132,10 +132,15 @@ func TestFailProxyAuth(t *testing.T) {
 	proxyHost := viper.GetString(ProxyHostEnv)
 	proxyArg := fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyUser, proxyHost, proxyPort)
 
-	args := []string{"auth", "validate", flag(params.DebugFlag), flag(params.ProxyFlag), proxyArg}
+	validate := createASTIntegrationTestCommand(t)
 
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "could not reach provided")
+	args := []string{"auth", "validate", flag(params.DebugFlag), flag(params.ProxyFlag), proxyArg}
+	validate.SetArgs(args)
+
+	err := validate.Execute()
+	assert.Assert(t, err != nil, "Executing without proxy should fail")
+	//goland:noinspection GoNilness
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
 }
 
 // assert success authentication
