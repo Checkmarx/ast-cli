@@ -8,13 +8,13 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/pkg/errors"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 
 	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"github.com/spf13/cobra"

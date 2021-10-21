@@ -5,8 +5,8 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 
-	"github.com/checkmarxDev/ast-cli/internal/params"
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

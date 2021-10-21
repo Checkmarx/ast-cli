@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"

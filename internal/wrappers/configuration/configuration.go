@@ -8,7 +8,7 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 

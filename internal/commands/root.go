@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarxDev/ast-cli/internal/commands/util"
-	"github.com/checkmarxDev/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

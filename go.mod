@@ -1,4 +1,4 @@
-module github.com/checkmarxDev/ast-cli
+module github.com/checkmarx/ast-cli
 
 go 1.17
 

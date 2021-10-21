@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"github.com/checkmarxDev/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	resultsReader "github.com/checkmarxDev/sast-results/pkg/reader"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	resultsRaw "github.com/checkmarxDev/sast-results/pkg/web/path/raw"
