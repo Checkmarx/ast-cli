@@ -778,7 +778,6 @@ func runCreateScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-
 		branch := viper.GetString(commonParams.BranchKey)
 		if branch == "" {
 			return errors.Errorf("%s: Please provide a branch", failedCreating)
