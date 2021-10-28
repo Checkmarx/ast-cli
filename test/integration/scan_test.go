@@ -98,6 +98,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
 	}
 
 	err, _ := executeCommand(t, args...)
