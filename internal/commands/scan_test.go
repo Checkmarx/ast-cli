@@ -11,8 +11,11 @@ import (
 )
 
 const (
-	unknownFlag = "unknown flag: --chibutero"
-	blankSpace  = " "
+	unknownFlag          = "unknown flag: --chibutero"
+	blankSpace           = " "
+	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
+	dummyRepo            = "https://www.dummy-repo.com"
+	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 )
 
 func TestScanHelp(t *testing.T) {
@@ -80,11 +83,12 @@ func TestRunTagsCommand(t *testing.T) {
 }
 
 func TestCreateScan(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "-b", "dummy_branch")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data", "--file-filter", "!.java", "-b", "dummy_branch")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", "data", "--file-filter", "!.java")...)
 }
 
 func TestCreateScanSourceFile(t *testing.T) {
@@ -92,58 +96,65 @@ func TestCreateScanSourceFile(t *testing.T) {
 }
 
 func TestCreateScanWithTrimmedSources(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"."+blankSpace, "-b", "dummy_branch")
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"data/"+blankSpace, "-b", "dummy_branch")
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", blankSpace+"https://www.dummy-repo.com"+blankSpace, "-b", "dummy_branch")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"data/"+blankSpace)...)
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+dummyRepo+blankSpace)...)
 }
 
 func TestCreateScanWrongFormatSource(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "invalidSource", "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "http:", "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == "Failed creating a scan: Input in bad format: Sources input has bad format: http:")
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", "invalidSource")...)
+	assert.Assert(t, err.Error() == errorSourceBadFormat+"invalidSource")
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "-s", "http:")...)
+	assert.Assert(t, err.Error() == errorSourceBadFormat+"http:")
 }
 
 func TestCreateScanWithScaResolver(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data", "--sca-resolver", "nop", "-f", "!ScaResolver-win64", "-b", "dummy_branch")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "--sca-resolver", "nop", "-f", "!ScaResolver-win64")...)
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "sast", "-b", "dummy_branch")
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "kics", "-b", "dummy_branch")
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--scan-types", "sca", "-b", "dummy_branch")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
+	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "kics")...)
+	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 }
 
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
+	baseArgs := []string{"scan", "create", "-s", dummyRepo, "-b", "dummy_branch"}
 	// Cover "createProject" when no project is filtered when finding the provided project
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK-NO-FILTERED-PROJECTS", "-s", "https://www.dummy-repo.com", "-b", "dummy_branch")
+	execCmdNilAssertion(t, append(baseArgs, "--project-name", "MOCK-NO-FILTERED-PROJECTS")...)
 }
 
 func TestCreateScanWithTags(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "--tags", "dummy_tag:sub_dummy_tag", "-b", "dummy_branch")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "--tags", "dummy_tag:sub_dummy_tag")...)
 }
 
 func TestCreateScanBranches(t *testing.T) {
 	// Test Missing branch either in flag and in the environment variable
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com")
-	assert.Assert(t, err.Error() == "Failed creating a scan: Please provide a branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
+	assert.Assert(t, err.Error() == errorMissingBranch)
 
 	// Bind cx_branch environment variable
 	_ = viper.BindEnv("cx_branch", "CX_BRANCH")
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
 
 	// Test branch from environment variable. Since the cx_branch is bind the scan must run successfully without a branch flag defined
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
 
 	// Test missing branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "-b")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b")
 	assert.Assert(t, err.Error() == "flag needs an argument: 'b' in -b")
 
 	// Test empty branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "-b", "")
-	assert.Assert(t, err.Error() == "Failed creating a scan: Please provide a branch")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "")
+	assert.Assert(t, err.Error() == errorMissingBranch)
 
 	// Test defined branch value
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "https://www.dummy-repo.com", "-b", "branch_defined")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "branch_defined")
 }
