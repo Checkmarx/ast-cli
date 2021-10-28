@@ -152,7 +152,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 	}
 	req = addReqMonitor(req)
 	var resp *http.Response
-	resp, err = client.Do(req)
+	resp, err = doRequest(client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout ui
 		PrintIfVerbose(bodyStr)
 	}
 	req = addReqMonitor(req)
-	resp, err = client.Do(req)
+	resp, err = doRequest(client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 		PrintIfVerbose(bodyStr)
 	}
 	var resp *http.Response
-	resp, err = client.Do(req)
+	resp, err = doRequest(client, req)
 	if err != nil {
 		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL)
 	}
@@ -399,7 +399,7 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	}
 	req = addReqMonitor(req)
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
-	res, err := http.DefaultClient.Do(req)
+	res, err := doRequest(http.DefaultClient, req)
 	if err != nil {
 		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
 	}
@@ -453,4 +453,22 @@ func getPasswordCredentialsPayload(username, password, adminClientID, adminClien
 	PrintIfVerbose("Using username and password credentials.")
 	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
 		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
+}
+
+func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+	var err error
+	var resp *http.Response
+	retryLimit := int(viper.GetUint(commonParams.RetryFlag))
+	retryWaitTimeSeconds := viper.GetUint(commonParams.RetryDelayFlag)
+	// try starts at -1 as we always do at least one request, retryLimit can be 0
+	for try := -1; try < retryLimit; try++ {
+		PrintIfVerbose(fmt.Sprintf("Request attempt %d in %d", try+2, retryLimit+1))
+		resp, err = client.Do(req)
+		if resp != nil && err == nil {
+			return resp, nil
+		}
+		PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+2))
+		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
+	}
+	return nil, err
 }
