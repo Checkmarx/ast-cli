@@ -25,10 +25,12 @@ import (
 )
 
 const (
-	expiryGraceSeconds = 10
-	NoTimeout          = 0
-	ntlmProxyToken     = "ntlm"
-	checkmarxURLError  = "Could not reach provided Checkmarx server"
+	expiryGraceSeconds    = 10
+	NoTimeout             = 0
+	ntlmProxyToken        = "ntlm"
+	checkmarxURLError     = "Could not reach provided Checkmarx server"
+	tryPrintOffset        = 2
+	retryLimitPrintOffset = 1
 )
 
 type ClientCredentialsInfo struct {
@@ -462,12 +464,12 @@ func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	retryWaitTimeSeconds := viper.GetUint(commonParams.RetryDelayFlag)
 	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
-		PrintIfVerbose(fmt.Sprintf("Request attempt %d in %d", try+2, retryLimit+1))
+		PrintIfVerbose(fmt.Sprintf("Request attempt %d in %d", try+tryPrintOffset, retryLimit+retryLimitPrintOffset))
 		resp, err = client.Do(req)
 		if resp != nil && err == nil {
 			return resp, nil
 		}
-		PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+2))
+		PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
