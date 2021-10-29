@@ -28,15 +28,14 @@ import (
 )
 
 const (
-	failedCreating       = "Failed creating a scan"
-	failedGetting        = "Failed showing a scan"
-	failedGettingTags    = "Failed getting tags"
-	failedDeleting       = "Failed deleting a scan"
-	failedCanceling      = "Failed canceling a scan"
-	failedGettingAll     = "Failed listing"
-	mbBytes              = 1024.0 * 1024.0
-	resolverFilePerm     = 0644
-	defaultScannedBranch = "master"
+	failedCreating    = "Failed creating a scan"
+	failedGetting     = "Failed showing a scan"
+	failedGettingTags = "Failed getting tags"
+	failedDeleting    = "Failed deleting a scan"
+	failedCanceling   = "Failed canceling a scan"
+	failedGettingAll  = "Failed listing"
+	mbBytes           = 1024.0 * 1024.0
+	resolverFilePerm  = 0644
 )
 
 var (
@@ -785,7 +784,7 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 		strings.HasPrefix(sourcesFile, "http://") {
 		scanRepoURL = sourcesFile
 
-		logScannedBranch()
+		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	} else {
 		info, statErr := os.Stat(sourcesFile)
 		if !os.IsNotExist(statErr) {
@@ -808,18 +807,6 @@ func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL st
 	return zipFile, sourceDir, scanRepoURL, err
 }
 
-// Log scanned branch
-func logScannedBranch() {
-	branchToScan := defaultScannedBranch
-	branchFromFlag := viper.GetString(commonParams.BranchKey)
-
-	if len(branchFromFlag) > 0 {
-		branchToScan = branchFromFlag
-	}
-
-	log.Printf("\n\nScanning branch %s...\n", branchToScan)
-}
-
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
@@ -828,6 +815,11 @@ func runCreateScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		branch := viper.GetString(commonParams.BranchKey)
+		if branch == "" {
+			return errors.Errorf("%s: Please provide a branch", failedCreating)
+		}
+
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
 			return err

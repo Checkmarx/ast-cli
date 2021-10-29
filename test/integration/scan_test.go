@@ -73,6 +73,7 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
 }
+
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanNoWait(t, SlowRepo, map[string]string{})
@@ -97,6 +98,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -168,6 +170,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ScanTypes), "sast,kics",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
+		flag(params.BranchFlag), "dummy_branch",
 	}
 	return args
 }

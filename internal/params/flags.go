@@ -7,6 +7,12 @@ const (
 	DefaultAgent             = "ASTCLI"
 	DebugFlag                = "debug"
 	DebugUsage               = "Debug mode with detailed logs"
+	RetryFlag                = "retry"
+	RetryDefault             = 0
+	RetryUsage               = "Retry requests to AST on connection failure"
+	RetryDelayFlag           = "retry-delay"
+	RetryDelayDefault        = 3
+	RetryDelayUsage          = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag              = "file-source"
 	SourcesFlagSh            = "s"
 	TenantFlag               = "tenant"
@@ -47,7 +53,6 @@ const (
 	BaseAuthURIFlagUsage     = "The base system IAM URI"
 	AstAPIKeyFlag            = "apikey"
 	AstAPIKeyUsage           = "The API Key to login to AST"
-	RepoURLFlag              = "repo-url"
 	ClientRolesFlag          = "roles"
 	ClientRolesSh            = "r"
 	ClientDescriptionFlag    = "description"
