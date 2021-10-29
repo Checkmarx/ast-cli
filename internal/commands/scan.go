@@ -339,7 +339,10 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(projectName string, cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) (string, error) {
+func findProject(projectName string,
+	cmd *cobra.Command,
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper) (string, error) {
 	params := make(map[string]string)
 	params["name"] = projectName
 	resp, _, err := projectsWrapper.Get(params)
@@ -427,7 +430,6 @@ func updateScanRequestValues(input *[]byte,
 	sourceType string,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper) error {
-
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
