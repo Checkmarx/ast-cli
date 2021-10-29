@@ -285,7 +285,7 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper),
 	}
-	createScanCmd.PersistentFlags().BoolP(commonParams.WaitFlag, "", true, "Wait for scan completion")
+	createScanCmd.PersistentFlags().BoolP(commonParams.AsyncFlag, "", false, "Wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(commonParams.WaitDelayFlag, "", commonParams.WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
@@ -795,8 +795,8 @@ func runCreateScanCommand(
 		}
 
 		// Wait until the scan is done: Queued, Running
-		WaitFlag, _ := cmd.Flags().GetBool(commonParams.WaitFlag)
-		if WaitFlag {
+		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
+		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 			return handleWait(cmd, scanResponseModel, waitDelay, scansWrapper, resultsWrapper)
 		}

@@ -184,11 +184,11 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), "--wait=false"))
+	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag)))
 }
 
 func createScanNoWaitWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), "--wait=false", "--sca-resolver", "nop"))
+	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag), "--sca-resolver", "nop"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
