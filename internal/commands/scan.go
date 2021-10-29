@@ -358,7 +358,10 @@ func findProject(projectName string, cmd *cobra.Command, projectsWrapper wrapper
 	return projectID, nil
 }
 
-func createProject(projectName string, cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) (string, error) {
+func createProject(projectName string,
+	cmd *cobra.Command,
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
@@ -419,7 +422,12 @@ func createTagMap(tagListStr string) map[string]string {
 	return tags
 }
 
-func updateScanRequestValues(input *[]byte, cmd *cobra.Command, sourceType string, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) error {
+func updateScanRequestValues(input *[]byte,
+	cmd *cobra.Command,
+	sourceType string,
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper) error {
+
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)

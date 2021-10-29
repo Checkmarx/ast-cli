@@ -207,9 +207,9 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 				return nil, err
 			}
 
-			groupId := findGroupId(groupIds, group)
-			if groupId != "" {
-				groupMap = append(groupMap, groupId)
+			groupID := findGroupID(groupIds, group)
+			if groupID != "" {
+				groupMap = append(groupMap, groupID)
 			} else {
 				groupsNotFound = append(groupsNotFound, group)
 			}
@@ -223,7 +223,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupMap, nil
 }
 
-func findGroupId(groups []wrappers.Group, name string) string {
+func findGroupID(groups []wrappers.Group, name string) string {
 	for i := 0; i < len(groups); i++ {
 		if groups[i].Name == name {
 			return groups[i].ID
@@ -232,7 +232,9 @@ func findGroupId(groups []wrappers.Group, name string) string {
 	return ""
 }
 
-func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) func(cmd *cobra.Command, args []string) error {
+func runCreateProjectCommand(
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
 		var err error
