@@ -115,7 +115,7 @@ func executeCmdWithTimeOutNilAssertion(t *testing.T, infoMsg string, timeout tim
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
-	args = append(args, flag(params.DebugFlag))
+	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
