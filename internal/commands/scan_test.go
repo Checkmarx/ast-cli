@@ -124,6 +124,6 @@ func TestCreateScanWithTags(t *testing.T) {
 
 func TestCreateScanWithProjectGroup(t *testing.T) {
 	err := execCmdNotNilAssertion(t,
-		"scan", "create", "--project-name", "MOCK", "-s", ".", "--project-group", "invalidGroup")
+		"scan", "create", "--project-name", "MOCK", "-s", ".", "--project-groups", "invalidGroup")
 	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]")
 }

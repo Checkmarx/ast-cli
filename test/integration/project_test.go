@@ -26,7 +26,7 @@ import (
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags, Groups)
+	projectID, _ := createProject(t, Tags)
 
 	response := listProjectByID(t, projectID)
 
@@ -58,10 +58,6 @@ func assertTagsAndGroups(t *testing.T, project projectsRESTApi.ProjectResponseMo
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-
-	for _, group := range Groups {
-		assert.Assert(t, contains(project.Groups, group), "Project should contain group %s", group)
-	}
 }
 
 // Create the same project twice and assert that it fails
@@ -89,10 +85,9 @@ func TestProjectBranches(t *testing.T) {
 	assert.Assert(t, strings.Contains(string(result), "[]"))
 }
 
-func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
+func createProject(t *testing.T, tags map[string]string) (string, string) {
 	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
 	tagsStr := formatTags(tags)
-	groupsStr := formatGroups(groups)
 
 	outBuffer := executeCmdNilAssertion(t, "Creating a project should pass",
 		"project", "create",
@@ -100,7 +95,6 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
-		flag(params.GroupList), groupsStr,
 	)
 
 	createdProject := projectsRESTApi.ProjectResponseModel{}

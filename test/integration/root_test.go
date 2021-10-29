@@ -75,7 +75,7 @@ func getRootProject(t *testing.T) (string, string) {
 		return rootProjectId, rootProjectName
 	}
 
-	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
+	rootProjectId, rootProjectName = createProject(t, Tags)
 
 	return rootProjectId, rootProjectName
 }
