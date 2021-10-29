@@ -43,12 +43,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
 	viper.AutomaticEnv()
 	scans := viper.GetString(params.ScansPathKey)
+	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
@@ -62,6 +64,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		resultsWrapper,
 		authWrapper,
 		logsWrapper,
+		groupsWrapper,
 	)
 	return astCli
 }
@@ -116,7 +119,7 @@ func executeCmdWithTimeOutNilAssertion(t *testing.T, infoMsg string, timeout tim
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag))
-	args = appendProxyArgs(args)
+	//args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

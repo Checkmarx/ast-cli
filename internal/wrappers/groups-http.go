@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
-	commonParams "github.com/checkmarxDev/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -23,13 +24,16 @@ type Group struct {
 	Name string `json:"name,omitempty"`
 }
 
-func NewGroupsWrapper(path string) GroupsWrapper {
-	return &GroupsHTTPWrapper{path: path}
+func NewHTTPGroupsWrapper(path string) GroupsWrapper {
+	tenant := viper.GetString(commonParams.TenantKey)
+	tenantPath := strings.Replace(path, "organization", tenant, 1)
+
+	return &GroupsHTTPWrapper{path: tenantPath}
 }
 
 func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	reportPath := fmt.Sprintf("%s?search=%s", g.path, groupName)
+	reportPath := fmt.Sprintf("%s?groupName=%s", g.path, groupName)
 	resp, err := SendHTTPRequest(http.MethodGet, reportPath, nil, true, clientTimeout)
 	if err != nil {
 		return nil, err

@@ -83,10 +83,30 @@ func setAgentName(req *http.Request) {
 func getClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
+
+	var client *http.Client
 	if proxyTypeStr == ntlmProxyToken {
-		return ntmlProxyClient(timeout, proxyStr)
+		client = ntmlProxyClient(timeout, proxyStr)
+	} else {
+		client = basicProxyClient(timeout, proxyStr)
 	}
-	return basicProxyClient(timeout, proxyStr)
+
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) > 1 {
+			return fmt.Errorf("too many redirects")
+		}
+		if len(via) != 0 && req.Response.StatusCode == http.StatusMovedPermanently {
+			for attr, val := range via[0].Header {
+				if _, ok := req.Header[attr]; !ok {
+					req.Header[attr] = val
+				}
+			}
+		}
+
+		return nil
+	}
+
+	return client
 }
 
 func basicProxyClient(timeout uint, proxyStr string) *http.Client {
@@ -313,7 +333,7 @@ func enrichWithOath2Credentials(request *http.Request) error {
 		return err
 	}
 
-	request.Header.Add("Authorization", *accessToken)
+	request.Header.Add("Authorization", "Bearer "+*accessToken)
 	return nil
 }
 

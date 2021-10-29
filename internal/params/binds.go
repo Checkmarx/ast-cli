@@ -15,6 +15,7 @@ var EnvVarsBinds = []struct {
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
+	{GroupsPathKey, GroupsPathEnv, "auth/realms/organization/pip/groups"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
 	{SastResultsPathKey, SastResultsPathEnv, "api/sast-results"},
 	{KicsResultsPathKey, KicsResultsPathEnv, "api/kics-results"},

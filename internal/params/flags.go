@@ -67,6 +67,8 @@ const (
 	ScanTypeFlag             = "scan-type"
 	TagList                  = "tags"
 	GroupList                = "groups"
+	ProjectGroupList         = "project-groups"
+	ProjectTagList           = "project-tags"
 	IncrementalSast          = "sast-incremental"
 	PresetName               = "sast-preset-name"
 	KeyValuePairSize         = 2
