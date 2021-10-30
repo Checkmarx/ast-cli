@@ -36,7 +36,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	assertTagsAndGroups(t, project)
+	assertTags(t, project)
 
 	deleteProject(t, projectID)
 
@@ -46,7 +46,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 // Assert project contains created tags and groups
-func assertTagsAndGroups(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
+func assertTags(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
 
 	allTags := getAllTags(t, "project")
 
@@ -69,6 +69,12 @@ func TestCreateAlreadyExisting(t *testing.T) {
 
 	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), projectName)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
+}
+
+func TestCreateWithInvalidGroup(t *testing.T) {
+	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag),
+		util.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup")
+	assertError(t, err, "Failed finding groups: [invalidGroup]")
 }
 
 // Test list project's branches
