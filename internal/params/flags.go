@@ -17,7 +17,7 @@ const (
 	SourcesFlagSh            = "s"
 	TenantFlag               = "tenant"
 	TenantFlagUsage          = "Checkmarx tenant"
-	WaitFlag                 = "nowait"
+	AsyncFlag                = "async"
 	WaitDelayFlag            = "wait-delay"
 	SourceDirFilterFlag      = "file-filter"
 	SourceDirFilterFlagSh    = "f"
