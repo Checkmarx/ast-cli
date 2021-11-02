@@ -95,3 +95,9 @@ func TestRunGetProjectBranchesCommand(t *testing.T) {
 func TestRunGetProjectBranchesCommandWithFilter(t *testing.T) {
 	execCmdNilAssertion(t, "project", "branches", "--project-id", "MOCK", "--filter", "branch-name=ma,offset=1")
 }
+
+func TestRunProjectCreateInvalidGroup(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"project", "create", "--project-name", "invalidprj", "--groups", "invalidgroup")
+	assert.Assert(t, err.Error() == "Failed finding groups: [invalidgroup]")
+}
