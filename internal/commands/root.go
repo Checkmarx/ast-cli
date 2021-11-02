@@ -70,7 +70,8 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		PrintConfiguration()
-		if len(args) > 0 && cmd.Name() != params.Help {
+		// Need to check the __complete command to allow correct behavior of the autocomplete
+		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
