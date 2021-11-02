@@ -25,6 +25,7 @@ const (
 	failedGettingProj     = "Failed getting a project"
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
+	failedFindingGroup    = "Failed finding groups"
 )
 
 var (
@@ -45,7 +46,7 @@ var (
 		}, ","))
 )
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command {
+func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -69,7 +70,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper) *cobra.Command 
 				https://checkmarx.atlassian.net/wiki/x/hIYhuw
 			`),
 		},
-		RunE: runCreateProjectCommand(projectsWrapper),
+		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -174,9 +175,9 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	return nil
 }
 
-func updateGroupValues(input *[]byte, cmd *cobra.Command) {
+func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) error {
 	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
-	groups := strings.Split(groupListStr, ",")
+
 	var groupMap []string
 	var info map[string]interface{}
 	_ = json.Unmarshal(*input, &info)
@@ -184,16 +185,56 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command) {
 		_ = json.Unmarshal([]byte("[]"), &groupMap)
 		info["groups"] = groupMap
 	}
-	for _, group := range groups {
-		if len(group) > 0 {
-			groupMap = append(groupMap, group)
-		}
+	groups, err := createGroupsMap(groupListStr, groupsWrapper)
+	if err != nil {
+		return err
 	}
-	info["groups"] = groupMap
+
+	info["groups"] = groups
 	*input, _ = json.Marshal(info)
+
+	return nil
 }
 
-func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
+func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]string, error) {
+	groups := strings.Split(groupsStr, ",")
+	var groupMap []string
+	var groupsNotFound []string
+	for _, group := range groups {
+		if len(group) > 0 {
+			groupIds, err := groupsWrapper.Get(group)
+			if err != nil {
+				return nil, err
+			}
+
+			groupID := findGroupID(groupIds, group)
+			if groupID != "" {
+				groupMap = append(groupMap, groupID)
+			} else {
+				groupsNotFound = append(groupsNotFound, group)
+			}
+		}
+	}
+
+	if len(groupsNotFound) > 0 {
+		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
+	}
+
+	return groupMap, nil
+}
+
+func findGroupID(groups []wrappers.Group, name string) string {
+	for i := 0; i < len(groups); i++ {
+		if groups[i].Name == name {
+			return groups[i].ID
+		}
+	}
+	return ""
+}
+
+func runCreateProjectCommand(
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
 		var err error
@@ -201,8 +242,11 @@ func runCreateProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		if err != nil {
 			return err
 		}
+		err = updateGroupValues(&input, cmd, groupsWrapper)
+		if err != nil {
+			return err
+		}
 		updateTagValues(&input, cmd)
-		updateGroupValues(&input, cmd)
 		var projModel = projectsRESTApi.Project{}
 		var projResponseModel *projectsRESTApi.ProjectResponseModel
 		var errorModel *projectsRESTApi.ErrorModel

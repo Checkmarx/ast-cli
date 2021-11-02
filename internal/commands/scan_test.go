@@ -158,3 +158,9 @@ func TestCreateScanBranches(t *testing.T) {
 	// Test defined branch value
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "branch_defined")
 }
+
+func TestCreateScanWithProjectGroup(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup")
+	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]")
+}

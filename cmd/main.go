@@ -20,11 +20,13 @@ func main() {
 	bindKeysToEnvAndDefault()
 	configuration.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
+	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
@@ -37,6 +39,7 @@ func main() {
 		resultsWrapper,
 		authWrapper,
 		logsWrapper,
+		groupsWrapper,
 	)
 	err := astCli.Execute()
 	exitIfError(err)

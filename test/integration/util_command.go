@@ -43,12 +43,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
 	viper.AutomaticEnv()
 	scans := viper.GetString(params.ScansPathKey)
+	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
@@ -62,6 +64,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		resultsWrapper,
 		authWrapper,
 		logsWrapper,
+		groupsWrapper,
 	)
 	return astCli
 }

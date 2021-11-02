@@ -26,7 +26,7 @@ import (
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags, Groups)
+	projectID, _ := createProject(t, Tags)
 
 	response := listProjectByID(t, projectID)
 
@@ -36,7 +36,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	assertTagsAndGroups(t, project)
+	assertTags(t, project)
 
 	deleteProject(t, projectID)
 
@@ -46,7 +46,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 // Assert project contains created tags and groups
-func assertTagsAndGroups(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
+func assertTags(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
 
 	allTags := getAllTags(t, "project")
 
@@ -57,10 +57,6 @@ func assertTagsAndGroups(t *testing.T, project projectsRESTApi.ProjectResponseMo
 		val, ok := project.Tags[key]
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
-	}
-
-	for _, group := range Groups {
-		assert.Assert(t, contains(project.Groups, group), "Project should contain group %s", group)
 	}
 }
 
@@ -73,6 +69,12 @@ func TestCreateAlreadyExisting(t *testing.T) {
 
 	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), projectName)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
+}
+
+func TestCreateWithInvalidGroup(t *testing.T) {
+	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag),
+		util.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup")
+	assertError(t, err, "Failed finding groups: [invalidGroup]")
 }
 
 // Test list project's branches
@@ -89,10 +91,9 @@ func TestProjectBranches(t *testing.T) {
 	assert.Assert(t, strings.Contains(string(result), "[]"))
 }
 
-func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
+func createProject(t *testing.T, tags map[string]string) (string, string) {
 	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
 	tagsStr := formatTags(tags)
-	groupsStr := formatGroups(groups)
 
 	outBuffer := executeCmdNilAssertion(t, "Creating a project should pass",
 		"project", "create",
@@ -100,7 +101,6 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
-		flag(params.GroupList), groupsStr,
 	)
 
 	createdProject := projectsRESTApi.ProjectResponseModel{}
