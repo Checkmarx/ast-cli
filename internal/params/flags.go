@@ -8,7 +8,7 @@ const (
 	DebugFlag                = "debug"
 	DebugUsage               = "Debug mode with detailed logs"
 	RetryFlag                = "retry"
-	RetryDefault             = 0
+	RetryDefault             = 3
 	RetryUsage               = "Retry requests to AST on connection failure"
 	RetryDelayFlag           = "retry-delay"
 	RetryDelayDefault        = 3
