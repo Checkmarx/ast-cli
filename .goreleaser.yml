@@ -28,6 +28,7 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
 dockers:
   - use: docker
     dockerfile: Dockerfile
@@ -45,6 +46,7 @@ archives:
       386: x32
     files:
       - LICENSE
+
 brews:
   - tap:
       owner: checkmarx
@@ -58,3 +60,12 @@ brews:
       system "#{bin}/cx version"
     install: |-
       bin.install "cx"
+      # Install bash completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s bash")
+      (bash_completion/"cx").write output
+      # Install zsh completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s zsh")
+      (zsh_completion/"_cx").write output
+      # Install fish completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s fish")
+      (fish_completion/"cx.fish").write output
