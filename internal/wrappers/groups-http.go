@@ -25,15 +25,14 @@ type Group struct {
 }
 
 func NewHTTPGroupsWrapper(path string) GroupsWrapper {
-	tenant := viper.GetString(commonParams.TenantKey)
-	tenantPath := strings.Replace(path, "organization", tenant, 1)
-
-	return &GroupsHTTPWrapper{path: tenantPath}
+	return &GroupsHTTPWrapper{path: path}
 }
 
 func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	reportPath := fmt.Sprintf("%s?groupName=%s", g.path, groupName)
+	tenant := viper.GetString(commonParams.TenantKey)
+	tenantPath := strings.Replace(g.path, "organization", tenant, 1)
+	reportPath := fmt.Sprintf("%s?groupName=%s", tenantPath, groupName)
 	resp, err := SendHTTPRequest(http.MethodGet, reportPath, nil, true, clientTimeout)
 	if err != nil {
 		return nil, err
