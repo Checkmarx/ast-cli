@@ -49,7 +49,7 @@ func NewAstCLI(
 	}
 
 	// Load default flags
-	rootCmd.PersistentFlags().BoolP(params.DebugFlag, "", false, params.DebugUsage)
+	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeySecretFlag, "", params.AccessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().Bool(params.InsecureFlag, false, params.InsecureFlagUsage)

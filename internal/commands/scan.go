@@ -287,7 +287,7 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, groupsWrapper),
 	}
-	createScanCmd.PersistentFlags().BoolP(commonParams.AsyncFlag, "", false, "Do not wait for scan completion")
+	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(commonParams.WaitDelayFlag, "", commonParams.WaitDelayDefault, "Polling wait time in seconds")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
@@ -313,7 +313,7 @@ func scanCreateSubCommand(
 	if err != nil {
 		log.Fatal(err)
 	}
-	createScanCmd.PersistentFlags().String(commonParams.IncrementalSast, "false", "Incremental SAST scan should be performed.")
+	createScanCmd.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan should be performed.")
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(commonParams.ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
@@ -510,14 +510,12 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled("sast") {
 		var objArr map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetString(commonParams.IncrementalSast)
+		newIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 		newPresetName, _ := cmd.Flags().GetString(commonParams.PresetName)
 		objArr["type"] = "sast"
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		if newIncremental != "" {
-			valueMap["incremental"] = newIncremental
-		}
+		valueMap["incremental"] = fmt.Sprintf("%v", newIncremental)
 		if newPresetName == "" {
 			newPresetName = "Checkmarx Default"
 		}
