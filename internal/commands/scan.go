@@ -595,6 +595,37 @@ func buildFilters(base []string, extra string) []string {
 	return base
 }
 
+func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
+	files, err := ioutil.ReadDir(parentDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			PrintIfVerbose("Directory: " + file.Name())
+			newParent := parentDir + file.Name() + "/"
+			newBase := baseDir + file.Name() + "/"
+			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent, filters, includeFilters)
+		} else {
+			fileName := parentDir + file.Name()
+			PrintIfVerbose("Included: " + fileName)
+			dat, err := ioutil.ReadFile(fileName)
+			if err != nil {
+				return err
+			}
+			f, err := zipWriter.Create(baseDir + file.Name())
+			if err != nil {
+				return err
+			}
+			_, err = f.Write(dat)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
@@ -650,6 +681,15 @@ func handleDir(
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
+
+	// Check if folder belongs to the disabled exclusions
+	if commonParams.DisabledExclusions[file.Name()] {
+		PrintIfVerbose("The folder .git is being included")
+		PrintIfVerbose("Directory: " + parentDir + file.Name())
+		newParent := parentDir + file.Name() + "/"
+		newBase := baseDir + file.Name() + "/"
+		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent, filters, includeFilters)
+	}
 	// Check if the folder is excluded
 	for _, filter := range filters {
 		if filter[0] == '!' {

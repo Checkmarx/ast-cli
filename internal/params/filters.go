@@ -122,3 +122,7 @@ var BaseFilters = []string{
 	"composer.lock",
 	"Dockerfile",
 }
+
+var DisabledExclusions = map[string]bool{
+	".git": true,
+}

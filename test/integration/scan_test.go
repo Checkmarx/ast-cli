@@ -3,9 +3,11 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -108,6 +110,26 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
+// Create a scan with the sources from the integration package, excluding go files and including zips
+// Assert the scan completes
+func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.SourceDirFilterFlag), "!.git",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	buffer, _ := executeScanGetBuffer(t, args)
+
+	assert.Assert(t, strings.Contains(buffer.String(), "Directory: ./.git"), ".git directory should be added to zip file")
+}
+
 // Generic scan test execution
 // - Get scan with 'scan list' and assert status and IDs
 // - Get scan with 'scan show' and assert the ID
@@ -177,6 +199,13 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
 
+	_, createdScan := executeScanGetBuffer(t, args)
+
+	return createdScan.ID, createdScan.ProjectID
+}
+
+func executeScanGetBuffer(t *testing.T, args []string) (*bytes.Buffer, scansRESTApi.ScanResponseModel) {
+
 	buffer := executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
 
 	createdScan := scansRESTApi.ScanResponseModel{}
@@ -185,8 +214,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 	assert.Assert(t, createdScan.Status != scansApi.ScanFailed && createdScan.Status != scansApi.ScanCanceled)
 
 	log.Printf("Scan ID %s created in test", createdScan.ID)
-
-	return createdScan.ID, createdScan.ProjectID
+	return buffer, createdScan
 }
 
 func deleteScan(t *testing.T, scanID string) {
