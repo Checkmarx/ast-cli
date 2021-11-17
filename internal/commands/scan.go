@@ -595,7 +595,7 @@ func buildFilters(base []string, extra string) []string {
 	return base
 }
 
-func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, includeFilters []string) error {
+func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) error {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -605,18 +605,14 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, i
 			PrintIfVerbose("Directory: " + file.Name())
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent, includeFilters)
+			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
 			PrintIfVerbose("Included: " + fileName)
-			dat, err := ioutil.ReadFile(fileName)
-			if err != nil {
-				return err
-			}
-			f, err := zipWriter.Create(baseDir + file.Name())
-			if err != nil {
-				return err
-			}
+			dat, _ := ioutil.ReadFile(fileName)
+
+			f, _ := zipWriter.Create(baseDir + file.Name())
+
 			_, err = f.Write(dat)
 		}
 		if err != nil {
@@ -687,7 +683,7 @@ func handleDir(
 		PrintIfVerbose("Directory: " + parentDir + file.Name())
 		newParent := parentDir + file.Name() + "/"
 		newBase := baseDir + file.Name() + "/"
-		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent, includeFilters)
+		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
 	// Check if the folder is excluded
 	for _, filter := range filters {
