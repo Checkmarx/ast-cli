@@ -595,7 +595,7 @@ func buildFilters(base []string, extra string) []string {
 	return base
 }
 
-func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
+func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, includeFilters []string) error {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -605,7 +605,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string, f
 			PrintIfVerbose("Directory: " + file.Name())
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent, filters, includeFilters)
+			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent, includeFilters)
 		} else {
 			fileName := parentDir + file.Name()
 			PrintIfVerbose("Included: " + fileName)
@@ -681,14 +681,13 @@ func handleDir(
 	includeFilters []string,
 	file fs.FileInfo,
 ) error {
-
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
 		PrintIfVerbose("The folder .git is being included")
 		PrintIfVerbose("Directory: " + parentDir + file.Name())
 		newParent := parentDir + file.Name() + "/"
 		newBase := baseDir + file.Name() + "/"
-		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent, filters, includeFilters)
+		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent, includeFilters)
 	}
 	// Check if the folder is excluded
 	for _, filter := range filters {
@@ -704,7 +703,6 @@ func handleDir(
 			}
 		}
 	}
-
 	PrintIfVerbose("Directory: " + parentDir + file.Name())
 	newParent := parentDir + file.Name() + "/"
 	newBase := baseDir + file.Name() + "/"
@@ -875,7 +873,6 @@ func runCreateScanCommand(
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
 		}
-
 		// Wait until the scan is done: Queued, Running
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
@@ -975,7 +972,6 @@ func handleWait(
 			taskResponseModel, _, _ := scansWrapper.GetWorkflowByID(scanResponseModel.ID)
 			_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
 		}
-
 		return err
 	}
 
