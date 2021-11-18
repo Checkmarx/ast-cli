@@ -137,12 +137,12 @@ func TestCreateScanWithTags(t *testing.T) {
 
 func TestCreateScanExcludeGitFolder(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch", "-f", "!.git"}
-	execCmdNilAssertion(t, append(baseArgs)...)
+	execCmdNilAssertion(t, baseArgs)
 }
 
 func TestCreateScanExcludeGitFolderChildren(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch", "-f", "!.git/HEAD"}
-	execCmdNilAssertion(t, append(baseArgs)...)
+	execCmdNilAssertion(t, baseArgs)
 }
 
 func TestCreateScanBranches(t *testing.T) {
