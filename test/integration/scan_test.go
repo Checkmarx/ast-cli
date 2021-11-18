@@ -120,10 +120,10 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), ".",
+		flag(params.SourcesFlag), "../..",
 		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.SourceDirFilterFlag), "!.git",
+		flag(params.SourceDirFilterFlag), ".git",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -140,9 +140,10 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
-		if strings.Contains(string(line), ".git") {
-			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded")
+		if strings.Contains(string(line), ".git") && !strings.Contains(string(line), ".github") && !strings.Contains(string(line), ".gitignore") {
+			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded"+string(line))
 		}
+		fmt.Println("AQUI")
 		fmt.Printf("%s \n", line)
 	}
 }
