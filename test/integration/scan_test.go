@@ -141,8 +141,9 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 			break
 		}
 		if strings.Contains(string(line), ".git") && !strings.Contains(string(line), ".github") && !strings.Contains(string(line), ".gitignore") {
-			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded"+string(line))
+			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded")
 		}
+		fmt.Println("")
 		fmt.Printf("%s \n", line)
 	}
 }
