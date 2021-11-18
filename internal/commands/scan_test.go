@@ -135,6 +135,16 @@ func TestCreateScanWithTags(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--tags", "dummy_tag:sub_dummy_tag")...)
 }
 
+func TestCreateScanExcludeGitFolder(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "-f", "!.git"}
+	execCmdNilAssertion(t, append(baseArgs)...)
+}
+
+func TestCreateScanExcludeGitFolderChildren(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "-f", "!.git/HEAD"}
+	execCmdNilAssertion(t, append(baseArgs)...)
+}
+
 func TestCreateScanBranches(t *testing.T) {
 	// Test Missing branch either in flag and in the environment variable
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
