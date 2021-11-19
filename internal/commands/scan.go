@@ -701,10 +701,10 @@ func handleDir(
 	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
 }
 
-func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (string, string) {
+func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (newParent string, newBase string) {
 	PrintIfVerbose("Directory: " + parentDir + file.Name())
-	newParent := parentDir + file.Name() + "/"
-	newBase := baseDir + file.Name() + "/"
+	newParent = parentDir + file.Name() + "/"
+	newBase = baseDir + file.Name() + "/"
 	return newParent, newBase
 }
 
