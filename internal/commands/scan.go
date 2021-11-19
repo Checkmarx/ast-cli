@@ -679,7 +679,7 @@ func handleDir(
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
-		PrintIfVerbose("The folder" + file.Name() + "is being included")
+		PrintIfVerbose("The folder " + file.Name() + " is being included")
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
