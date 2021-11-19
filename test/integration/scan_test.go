@@ -3,18 +3,22 @@
 package integration
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/google/uuid"
-
 	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
 	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
 
@@ -108,6 +112,42 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
+// Create a scan ignoring the exclusion of the .git directory
+// Assert the folder is included in the logs
+func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "../..",
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.SourceDirFilterFlag), ".git",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	_ = executeScanGetBuffer(t, args)
+	reader := bufio.NewReader(&buf)
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+		if strings.Contains(string(line), ".git") && !strings.Contains(string(line), ".github") && !strings.Contains(string(line), ".gitignore") {
+			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded")
+		}
+		fmt.Println("")
+		fmt.Printf("%s \n", line)
+	}
+}
+
 // Generic scan test execution
 // - Get scan with 'scan list' and assert status and IDs
 // - Get scan with 'scan show' and assert the ID
@@ -177,7 +217,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
 
-	buffer := executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
+	buffer := executeScanGetBuffer(t, args)
 
 	createdScan := scansRESTApi.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
@@ -187,6 +227,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 
 	return createdScan.ID, createdScan.ProjectID
+}
+
+func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {
