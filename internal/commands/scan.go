@@ -679,10 +679,8 @@ func handleDir(
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
-		PrintIfVerbose("The folder .git is being included")
-		PrintIfVerbose("Directory: " + parentDir + file.Name())
-		newParent := parentDir + file.Name() + "/"
-		newBase := baseDir + file.Name() + "/"
+		PrintIfVerbose("The folder" + file.Name() + "is being included")
+		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
 	// Check if the folder is excluded
@@ -699,10 +697,15 @@ func handleDir(
 			}
 		}
 	}
+	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+}
+
+func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (string, string) {
 	PrintIfVerbose("Directory: " + parentDir + file.Name())
 	newParent := parentDir + file.Name() + "/"
 	newBase := baseDir + file.Name() + "/"
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+	return newParent, newBase
 }
 
 func filterMatched(filters []string, fileName string) bool {
