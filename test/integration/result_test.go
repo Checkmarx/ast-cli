@@ -28,7 +28,7 @@ func TestResultListJson(t *testing.T) {
 
 	outputBuffer := executeCmdNilAssertion(t, "Getting results should pass",
 		"result",
-		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole}, ","),
+		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole, util.FormatSonar}, ","),
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
@@ -44,7 +44,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML}
+	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML, util.FormatJSON}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))

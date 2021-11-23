@@ -15,6 +15,7 @@ import (
 const (
 	FormatJSON           = "json"
 	FormatSarif          = "sarif"
+	FormatSonar          = "sonar"
 	FormatSummary        = "summaryHTML"
 	FormatSummaryConsole = "summaryConsole"
 	FormatList           = "list"
