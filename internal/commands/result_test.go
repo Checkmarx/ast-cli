@@ -28,8 +28,8 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 	execCmdNilAssertion(t, "result", "--scan-id", "MOCK", "--report-format", "sonar")
 
-	// Remove generated sarif file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatSarif))
+	// Remove generated sonar file
+	//os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatSonar))
 }
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
