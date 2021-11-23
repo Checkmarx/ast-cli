@@ -355,8 +355,7 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
-	sonar.Results = []wrappers.SonarIssues{}
-	sonar.Results = createSonarRun(results)
+	sonar.Results = parseResultsSonar(results)
 	return sonar
 }
 
@@ -367,11 +366,6 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 	sarifRun.Tool.Driver.InformationURI = wrappers.SarifInformationURI
 	sarifRun.Tool.Driver.Rules, sarifRun.Results = parseResults(results)
 	return sarifRun
-}
-
-func createSonarRun(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
-	var sonarIssues = parseResultsSonar(results)
-	return sonarIssues
 }
 
 func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriverRule, []wrappers.SarifScanResult) {
