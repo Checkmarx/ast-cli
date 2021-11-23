@@ -44,7 +44,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML}
+	extensions := []string{util.FormatJSON, util.FormatSarif, util.FormatHTML,util.FormatJSON}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
