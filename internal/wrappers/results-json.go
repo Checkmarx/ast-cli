@@ -79,4 +79,11 @@ type ScanResultData struct {
 	Nodes        []*ScanResultNode        `json:"nodes"`
 	PackageData  []*ScanResultPackageData `json:"packageData,omitempty"`
 	PackageID    []*ScanResultPackageData `json:"packageId,omitempty"`
+	// Added to support infrastructure results
+	Line				uint			  `json:"line,omitempty"`
+	Platform			string			  `json:"platform,omitempty"`
+	IssueType			string			  `json:"issueType,omitempty"`
+	ExpectedValue		string			  `json:"expectedValue,omitempty"`
+	Value				string			  `json:"value,omitempty"`
+	Filename 			string			  `json:"filename,omitempty"`
 }

@@ -1,0 +1,1 @@
+{"issues":[{"engineId":"sast","ruleId":"sast","severity":"sast"},{"engineId":"dependency","ruleId":"dependency","severity":"dependency"},{"engineId":"infrastructure","ruleId":"infrastructure","severity":"infrastructure"}]}

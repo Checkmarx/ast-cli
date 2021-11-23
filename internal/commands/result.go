@@ -25,9 +25,19 @@ const (
 	highLabel            = "high"
 	lowLabel             = "low"
 	sastTypeLabel        = "sast"
+	sonarTypeLabel       = "_sonar"
 	kicsTypeLabel        = "infrastructure"
 	scaTypeLabel         = "dependency"
 	directoryPermission  = 0700
+	infoSonar			 = "INFO"
+	lowSonar			 = "MINOR"
+	mediumSonar			 = "MAJOR"
+	highSonar			 = "CRITICAL"
+	vulnerabilitySonar	 = "VULNERABILITY"
+	infoCx				 = "INFO"
+	lowCx				 = "LOW"
+	mediumCx			 = "MEDIUM"
+	highCx			     = "HIGH"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -227,6 +237,10 @@ func createReport(format,
 		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
 		return exportSarifResults(sarifRpt, results)
 	}
+	if util.IsFormat(format, util.FormatSonar) {
+		sonarRpt := createTargetName(targetFile+sonarTypeLabel, targetPath, "json")
+		return exportSonarResults(sonarRpt, results)
+	}
 	if util.IsFormat(format, util.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, "json")
 		return exportJSONResults(jsonRpt, results)
@@ -296,6 +310,23 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 	return nil
 }
 
+func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollection) error {
+	var err error
+	var resultsJSON []byte
+	log.Println("Creating SONAR Report: ", targetFile)
+	var sonarResults = convertCxResultsToSonar(results)
+	resultsJSON, err = json.Marshal(sonarResults)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+	}
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	_ = f.Close()
+	return nil
+}
 func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
@@ -322,6 +353,13 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
+func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
+	var sonar = new(wrappers.ScanResultsSonar)
+	sonar.Results = []wrappers.SonarIssues{}
+	sonar.Results = createSonarRun(results)
+	return sonar
+}
+
 func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 	var sarifRun wrappers.SarifRun
 	sarifRun.Tool.Driver.Name = wrappers.SarifName
@@ -329,6 +367,12 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 	sarifRun.Tool.Driver.InformationURI = wrappers.SarifInformationURI
 	sarifRun.Tool.Driver.Rules, sarifRun.Results = parseResults(results)
 	return sarifRun
+}
+
+func createSonarRun(results *wrappers.ScanResultsCollection) [] wrappers.SonarIssues {
+	var sonarIssues []wrappers.SonarIssues
+	sonarIssues = parseResultsSonar(results)
+	return sonarIssues
 }
 
 func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriverRule, []wrappers.SarifScanResult) {
@@ -340,13 +384,96 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 			if rule := findRule(ruleIds, result); rule != nil {
 				sarifRules = append(sarifRules, *rule)
 			}
-
 			if sarifResult := findResult(result); sarifResult != nil {
 				sarifResults = append(sarifResults, *sarifResult)
 			}
 		}
 	}
 	return sarifRules, sarifResults
+}
+
+func parseResultsSonar(results *wrappers.ScanResultsCollection)  []wrappers.SonarIssues {
+	var sonarIssues []wrappers.SonarIssues
+	var auxIssue wrappers.SonarIssues
+	// Match cx severity with sonar severity
+	severities := map[string]string{
+		infoCx: infoSonar,
+		lowCx: lowSonar,
+		mediumCx: mediumSonar,
+		highCx: highSonar,
+	}
+	if results != nil {
+		for _, result := range results.Results {
+			auxIssue.Severity = severities[result.Severity]
+			auxIssue.Type = vulnerabilitySonar
+			// CxSAST result type
+			if result.Type != kicsTypeLabel {
+				auxIssue.EngineId = result.Type
+				auxIssue.RuleId = result.ID
+				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
+				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
+				auxIssue.EffortMinutes = 0
+				sonarIssues = append(sonarIssues, auxIssue)
+			// Infrastructure result type
+			} else {
+				auxIssue.EngineId = result.Type
+				auxIssue.RuleId = result.ID
+				auxIssue.PrimaryLocation = parseLocationInfrastructure(result)
+				sonarIssues = append(sonarIssues, auxIssue)
+			}
+		}
+	}
+	return sonarIssues
+}
+
+func parseLocationInfrastructure(results *wrappers.ScanResult)  wrappers.SonarLocation {
+		var auxLocation wrappers.SonarLocation
+		auxLocation.FilePath = results.ScanResultData.Filename
+		auxLocation.Message = results.ScanResultData.Value
+		var auxTextRange wrappers.SonarTextRange
+		auxTextRange.StartLine = results.ScanResultData.Line
+		auxTextRange.EndLine = results.ScanResultData.Line + 1
+		auxTextRange.StartColumn = 1
+		auxTextRange.EndColumn = 2
+		auxLocation.TextRange = auxTextRange
+		return auxLocation
+}
+
+func parseSonarPrimaryLocation(results *wrappers.ScanResult)  wrappers.SonarLocation {
+	var auxLocation wrappers.SonarLocation
+	// fill the details in the primary Location
+	if len(results.ScanResultData.Nodes) > 0 {
+		if len(results.ScanResultData.Nodes[0].FileName)<0 {
+			fmt.Println("No filename")
+		}
+		auxLocation.FilePath = results.ScanResultData.Nodes[0].FileName
+		auxLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName,"_"," ")
+		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0])
+	}
+	return auxLocation
+}
+
+func parseSonarSecondaryLocations(results *wrappers.ScanResult)  []wrappers.SonarLocation {
+	var auxSecondaryLocations []wrappers.SonarLocation
+	// Traverse all the rest of the scan result nodes into secondary location of sonar
+	for _, node := range results.ScanResultData.Nodes [1:]{
+		var auxSecondaryLocation wrappers.SonarLocation
+		auxSecondaryLocation.FilePath = node.FileName
+		auxSecondaryLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName,"_"," ")
+		auxSecondaryLocation.TextRange = parseSonarTextRange(node)
+		auxSecondaryLocations = append(auxSecondaryLocations,auxSecondaryLocation)
+	}
+	return auxSecondaryLocations
+}
+
+func parseSonarTextRange(results *wrappers.ScanResultNode)  wrappers.SonarTextRange {
+	var auxTextRange wrappers.SonarTextRange
+	auxTextRange.StartLine = results.Line
+	// Line range must have one line of difference
+	auxTextRange.EndLine = results.Line+1
+	auxTextRange.StartColumn = results.Column
+	auxTextRange.EndColumn = results.Column
+	return auxTextRange
 }
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
