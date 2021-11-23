@@ -370,8 +370,7 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 }
 
 func createSonarRun(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
-	var sonarIssues []wrappers.SonarIssues
-	sonarIssues = parseResultsSonar(results)
+	var sonarIssues = parseResultsSonar(results)
 	return sonarIssues
 }
 
