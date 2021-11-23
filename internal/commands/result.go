@@ -408,16 +408,16 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			auxIssue.Type = vulnerabilitySonar
 			// CxSAST result type
 			if result.Type != kicsTypeLabel {
-				auxIssue.EngineId = result.Type
-				auxIssue.RuleId = result.ID
+				auxIssue.EngineID = result.Type
+				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
 				auxIssue.EffortMinutes = 0
 				sonarIssues = append(sonarIssues, auxIssue)
 				// Infrastructure result type
 			} else {
-				auxIssue.EngineId = result.Type
-				auxIssue.RuleId = result.ID
+				auxIssue.EngineID = result.Type
+				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseLocationInfrastructure(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}

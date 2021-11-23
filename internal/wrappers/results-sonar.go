@@ -5,8 +5,8 @@ type ScanResultsSonar struct {
 }
 
 type SonarIssues struct {
-	EngineId           string          `json:"engineId,omitempty"`
-	RuleId             string          `json:"ruleId,omitempty"`
+	EngineID           string          `json:"engineId,omitempty"`
+	RuleID             string          `json:"ruleId,omitempty"`
 	Severity           string          `json:"severity,omitempty"`
 	Type               string          `json:"type,omitempty"`
 	PrimaryLocation    SonarLocation   `json:"primaryLocation"`
