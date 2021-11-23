@@ -443,9 +443,6 @@ func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocat
 	var auxLocation wrappers.SonarLocation
 	// fill the details in the primary Location
 	if len(results.ScanResultData.Nodes) > 0 {
-		if len(results.ScanResultData.Nodes[0].FileName) < 0 {
-			fmt.Println("No filename")
-		}
 		auxLocation.FilePath = results.ScanResultData.Nodes[0].FileName
 		auxLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
 		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0])
