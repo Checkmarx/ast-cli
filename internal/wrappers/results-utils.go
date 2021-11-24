@@ -6,7 +6,7 @@ import "encoding/json"
 func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	type Alias ScanResultNode
 	aux := &struct {
-		Column int `json:"column,omitempty"`
+		Column int `json:"column"`
 		*Alias
 	}{
 		Alias: (*Alias)(s),
@@ -15,9 +15,8 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if aux.Column <= 0 {
-		s.Column = 1
-	} else {
+	s.Column = 0
+	if aux.Column >= 0 {
 		s.Column = uint(aux.Column)
 	}
 
