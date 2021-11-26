@@ -39,9 +39,9 @@ func (s *ScanResultData) UnmarshalJSON(data []byte) error {
 	}
 
 	if aux.Description == "" {
-		if aux.Filename != "" && aux.ExpectedValue != "" && aux.Value != "" {
+		if aux.ExpectedValue != "" && aux.Value != "" {
 			s.Description =
-				fmt.Sprintf("File: %s\nValue: %s\nExpected Value: %s", aux.Filename, aux.Value, aux.ExpectedValue)
+				fmt.Sprintf("Value: %s<br />Expected Value: %s", aux.Value, aux.ExpectedValue)
 		}
 	}
 
