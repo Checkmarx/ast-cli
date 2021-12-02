@@ -21,6 +21,7 @@ const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 // NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -108,10 +109,12 @@ func NewAstCLI(
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand()
 	configCmd := util.NewConfigCommand()
+	triageCmd :=NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
+		triageCmd,
 		versionCmd,
 		authCmd,
 		utilsCmd,

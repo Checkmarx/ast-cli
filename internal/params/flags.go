@@ -78,6 +78,10 @@ const (
 	PresetName               = "sast-preset-name"
 	KeyValuePairSize         = 2
 	WaitDelayDefault         = 5
+	SimilarityIdFlag		 = "similarity-id"
+	SeverityFlag			 = "severity"
+	StateFlag				 = "state"
+	CommentFlag				 = "comment"
 )
 
 // Parameter values
