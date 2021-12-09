@@ -87,7 +87,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 30, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -277,8 +277,9 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			return false
 		default:
 			log.Printf("Polling scan %s\n", scanID)
-			scan := listScanByID(t, scanID)
-			if s := string(scan[0].Status); s == string(requiredStatus) {
+			scan := showScan(t, scanID)
+			log.Printf("Scan %s status %s\n", scanID, scan.Status)
+			if s := string(scan.Status); s == string(requiredStatus) {
 				return true
 			} else if s == scansApi.ScanFailed || s == scansApi.ScanCanceled ||
 				s == scansApi.ScanCompleted {
