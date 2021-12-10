@@ -25,7 +25,7 @@ func main() {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
-	triageSast := viper.GetString(params.SastResultsPredicatesPathKey)
+//	triageSast := viper.GetString(params.SastResultsPredicatesPathKey)
 //	triageKics := viper.GetString(params.KicsResultsPredicatesPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -35,7 +35,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
-	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper(triageSast)
+	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
