@@ -85,9 +85,12 @@ func TestCancelScan(t *testing.T) {
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
+	// cancelling too quickly after creating fails the scan...
+	time.Sleep(30 * time.Second)
+
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 30, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -140,8 +143,15 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 		if err == io.EOF {
 			break
 		}
-		if strings.Contains(string(line), ".git") && !strings.Contains(string(line), ".github") && !strings.Contains(string(line), ".gitignore") {
-			assert.Assert(t, !strings.Contains(string(line), "Excluded"), ".Git directory and children should not be excluded")
+		if strings.Contains(string(line), ".git") && !strings.Contains(
+			string(line),
+			".github",
+		) && !strings.Contains(string(line), ".gitignore") {
+			assert.Assert(
+				t,
+				!strings.Contains(string(line), "Excluded"),
+				".Git directory and children should not be excluded",
+			)
 		}
 		fmt.Println("")
 		fmt.Printf("%s \n", line)
@@ -210,7 +220,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ScanTypes), "sast,kics",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
-		flag(params.BranchFlag), "dummy_branch",
+		flag(params.BranchFlag), SlowRepoBranch,
 	}
 	return args
 }
@@ -240,7 +250,8 @@ func deleteScan(t *testing.T, scanID string) {
 func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel {
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
-	outputBuffer := executeCmdNilAssertion(t,
+	outputBuffer := executeCmdNilAssertion(
+		t,
 		"Getting the scan should pass",
 		"scan", "list", flag(params.FormatFlag), util.FormatJSON, flag(params.FilterFlag), scanFilter,
 	)
@@ -253,7 +264,8 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 }
 
 func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
-	outputBuffer := executeCmdNilAssertion(t, "Getting the scan should pass", "scan", "show",
+	outputBuffer := executeCmdNilAssertion(
+		t, "Getting the scan should pass", "scan", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ScanIDFlag), scanID,
 	)
@@ -277,8 +289,9 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			return false
 		default:
 			log.Printf("Polling scan %s\n", scanID)
-			scan := listScanByID(t, scanID)
-			if s := string(scan[0].Status); s == string(requiredStatus) {
+			scan := showScan(t, scanID)
+			log.Printf("Scan %s status %s\n", scanID, scan.Status)
+			if s := string(scan.Status); s == string(requiredStatus) {
 				return true
 			} else if s == scansApi.ScanFailed || s == scansApi.ScanCanceled ||
 				s == scansApi.ScanCompleted {
@@ -294,7 +307,8 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 func TestScanWorkflow(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
-	buffer := executeCmdNilAssertion(t, "Workflow should pass", "scan", "workflow",
+	buffer := executeCmdNilAssertion(
+		t, "Workflow should pass", "scan", "workflow",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.FormatFlag), util.FormatJSON,
 	)
@@ -308,7 +322,8 @@ func TestScanWorkflow(t *testing.T) {
 func TestScanLogsSAST(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
-	executeCmdNilAssertion(t, "Getting scan SAST log should pass",
+	executeCmdNilAssertion(
+		t, "Getting scan SAST log should pass",
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.ScanTypeFlag), "sast",
@@ -318,7 +333,8 @@ func TestScanLogsSAST(t *testing.T) {
 func TestScanLogsKICS(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
-	executeCmdNilAssertion(t, "Getting scan KICS log should pass",
+	executeCmdNilAssertion(
+		t, "Getting scan KICS log should pass",
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.ScanTypeFlag), "kics",

@@ -9,22 +9,18 @@ import (
 )
 
 const (
-	FullScanWait  = 60
-	ScanPollSleep = 5
-	Dir           = "./data"
-	Zip           = "data/sources.zip"
-	SlowRepo      = "https://github.com/WebGoat/WebGoat"
+	FullScanWait   = 60
+	ScanPollSleep  = 5
+	Dir            = "./data"
+	Zip            = "data/sources.zip"
+	SlowRepo       = "https://github.com/WebGoat/WebGoat"
+	SlowRepoBranch = "develop"
 )
 
 var Tags = map[string]string{
 	"it_test_tag_1": "",
 	"it_test_tag_2": "val",
 	"it_test_tag_3": "",
-}
-
-var Groups = []string{
-	"it_test_group_1",
-	"it_test_group_2",
 }
 
 var testInstance *testing.T
