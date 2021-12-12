@@ -57,7 +57,7 @@ func TestScaResolverEnv(t *testing.T) {
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, wrappers.FullScanWait, wrappers.ScanPollSleep),
+		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
 		"Polling should complete when resolver used.",
 	)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
