@@ -44,7 +44,7 @@ func TestNoWaitScan(t *testing.T) {
 
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, wrappers.FullScanWait, wrappers.ScanPollSleep),
+		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
 		"Polling should complete",
 	)
 
@@ -89,7 +89,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 20, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -231,7 +231,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
 
-	assert.Assert(t, createdScan.Status != ScanFailed && createdScan.Status != ScanCanceled)
+	assert.Assert(t, createdScan.Status != wrappers.ScanFailed && createdScan.Status != wrappers.ScanCanceled)
 
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 
@@ -275,7 +275,7 @@ func showScan(t *testing.T, scanID string) wrappers.ScanResponseModel {
 	return scan
 }
 
-func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus ScanStatus, timeout, sleep int) bool {
+func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.ScanStatus, timeout, sleep int) bool {
 	log.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
 	// Wait for the scan to finish. See it's completed successfully
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
