@@ -2,23 +2,24 @@ package mock
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type ProjectsMockWrapper struct{}
 
-func (p *ProjectsMockWrapper) Create(model *Project) (
-	*ProjectResponseModel,
-	*ErrorModel,
+func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
+	*wrappers.ProjectResponseModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
-	return &ProjectResponseModel{
+	return &wrappers.ProjectResponseModel{
 		Name: model.Name,
 	}, nil, nil
 }
 
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
-	*ProjectsCollectionResponseModel,
-	*ErrorModel,
+	*wrappers.ProjectsCollectionResponseModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
 
@@ -28,9 +29,9 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		filteredTotalCount = 0
 	}
 
-	return &ProjectsCollectionResponseModel{
+	return &wrappers.ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
-		Projects: []ProjectResponseModel{
+		Projects: []wrappers.ProjectResponseModel{
 			{
 				ID:   "MOCK",
 				Name: "MOCK",
@@ -40,11 +41,11 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 }
 
 func (p *ProjectsMockWrapper) GetByID(projectID string) (
-	*ProjectResponseModel,
-	*ErrorModel,
+	*wrappers.ProjectResponseModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
-	return &ProjectResponseModel{
+	return &wrappers.ProjectResponseModel{
 		ID: projectID,
 		Tags: map[string]string{
 			"a": "b",
@@ -59,7 +60,7 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 
 func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
 	[]string,
-	*ErrorModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called GetBranchesByID in ProjectsMockWrapper")
 	return []string{
@@ -69,7 +70,7 @@ func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
 }
 
 func (p *ProjectsMockWrapper) Delete(_ string) (
-	*ErrorModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Delete in ProjectsMockWrapper")
 	return nil, nil
@@ -77,7 +78,7 @@ func (p *ProjectsMockWrapper) Delete(_ string) (
 
 func (p *ProjectsMockWrapper) Tags() (
 	map[string][]string,
-	*ErrorModel,
+	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Tags in ProjectsMockWrapper")
 	return map[string][]string{

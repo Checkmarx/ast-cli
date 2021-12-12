@@ -1,22 +1,16 @@
 package mock
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers"	
 )
 
 type ResultsMockWrapper struct{}
 
-func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*ResultsCollection, *wrappers.WebError, error) {
+func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *wrappers.WebError, error) {
 	const mock = "MOCK"
-	return &ResultsCollection{
-		Results: []*Result{
+	return &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
 			{
-				ResultQuery: ResultQuery{
-					QueryID:   0,
-					QueryName: mock,
-					Severity:  mock,
-				},
-				PathSystemID: mock,
 				ID:           mock,
 				FirstScanID:  mock,
 				FirstFoundAt: mock,
