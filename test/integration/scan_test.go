@@ -44,7 +44,7 @@ func TestNoWaitScan(t *testing.T) {
 
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, ScanCompleted, FullScanWait, ScanPollSleep),
+		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, wrappers.FullScanWait, wrappers.ScanPollSleep),
 		"Polling should complete",
 	)
 
@@ -57,7 +57,7 @@ func TestScaResolverEnv(t *testing.T) {
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, ScanCompleted, FullScanWait, ScanPollSleep),
+		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, wrappers.FullScanWait, wrappers.ScanPollSleep),
 		"Polling should complete when resolver used.",
 	)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
@@ -168,7 +168,7 @@ func executeScanAssertions(t *testing.T, projectID string, scanID string, tags m
 	assert.Equal(t, len(response), 1, "Total scans should be 1")
 	assert.Equal(t, response[0].ID, scanID, "Scan ID should match the created scan's ID")
 	assert.Equal(t, response[0].ProjectID, projectID, "Project ID should match the created scan's project ID")
-	assert.Assert(t, response[0].Status == ScanCompleted, "Scan should be completed")
+	assert.Assert(t, response[0].Status == wrappers.ScanCompleted, "Scan should be completed")
 
 	scan := showScan(t, scanID)
 	assert.Equal(t, scan.ID, scanID, "Scan ID should match the created scan's ID")
@@ -291,8 +291,8 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus ScanStatus,
 			log.Printf("Scan %s status %s\n", scanID, scan.Status)
 			if s := string(scan.Status); s == string(requiredStatus) {
 				return true
-			} else if s == ScanFailed || s == ScanCanceled ||
-				s == ScanCompleted {
+			} else if s == wrappers.ScanFailed || s == wrappers.ScanCanceled ||
+				s == wrappers.ScanCompleted {
 				return false
 			} else {
 				time.Sleep(time.Duration(sleep) * time.Second)
