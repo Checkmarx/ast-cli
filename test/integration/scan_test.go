@@ -16,8 +16,6 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
-	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
@@ -45,7 +43,7 @@ func TestNoWaitScan(t *testing.T) {
 
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep),
+		pollScanUntilStatus(t, scanID, ScanCompleted, FullScanWait, ScanPollSleep),
 		"Polling should complete",
 	)
 
@@ -58,7 +56,7 @@ func TestScaResolverEnv(t *testing.T) {
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
-		pollScanUntilStatus(t, scanID, scansApi.ScanCompleted, FullScanWait, ScanPollSleep),
+		pollScanUntilStatus(t, scanID, ScanCompleted, FullScanWait, ScanPollSleep),
 		"Polling should complete when resolver used.",
 	)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
@@ -87,7 +85,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, scansApi.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, ScanCanceled, 20, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -159,7 +157,7 @@ func executeScanAssertions(t *testing.T, projectID string, scanID string, tags m
 	assert.Equal(t, len(response), 1, "Total scans should be 1")
 	assert.Equal(t, response[0].ID, scanID, "Scan ID should match the created scan's ID")
 	assert.Equal(t, response[0].ProjectID, projectID, "Project ID should match the created scan's project ID")
-	assert.Assert(t, response[0].Status == scansApi.ScanCompleted, "Scan should be completed")
+	assert.Assert(t, response[0].Status == ScanCompleted, "Scan should be completed")
 
 	scan := showScan(t, scanID)
 	assert.Equal(t, scan.ID, scanID, "Scan ID should match the created scan's ID")
@@ -219,10 +217,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 	buffer := executeScanGetBuffer(t, args)
 
-	createdScan := scansRESTApi.ScanResponseModel{}
+	createdScan := ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
 
-	assert.Assert(t, createdScan.Status != scansApi.ScanFailed && createdScan.Status != scansApi.ScanCanceled)
+	assert.Assert(t, createdScan.Status != ScanFailed && createdScan.Status != ScanCanceled)
 
 	log.Printf("Scan ID %s created in test", createdScan.ID)
 
@@ -237,7 +235,7 @@ func deleteScan(t *testing.T, scanID string) {
 	executeCmdNilAssertion(t, "Deleting a scan should pass", "scan", "delete", flag(params.ScanIDFlag), scanID)
 }
 
-func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel {
+func listScanByID(t *testing.T, scanID string) []ScanResponseModel {
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	outputBuffer := executeCmdNilAssertion(t,
@@ -246,26 +244,26 @@ func listScanByID(t *testing.T, scanID string) []scansRESTApi.ScanResponseModel 
 	)
 
 	// Read response from buffer
-	var scanList []scansRESTApi.ScanResponseModel
+	var scanList []ScanResponseModel
 	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
 
 	return scanList
 }
 
-func showScan(t *testing.T, scanID string) scansRESTApi.ScanResponseModel {
+func showScan(t *testing.T, scanID string) ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(t, "Getting the scan should pass", "scan", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ScanIDFlag), scanID,
 	)
 
 	// Read response from buffer
-	scan := scansRESTApi.ScanResponseModel{}
+	scan := ScanResponseModel{}
 	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
 
 	return scan
 }
 
-func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.ScanStatus, timeout, sleep int) bool {
+func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus ScanStatus, timeout, sleep int) bool {
 	log.Printf("Set timeout of %d seconds for the scan to complete...\n", timeout)
 	// Wait for the scan to finish. See it's completed successfully
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
@@ -280,8 +278,8 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus scansApi.Sc
 			scan := listScanByID(t, scanID)
 			if s := string(scan[0].Status); s == string(requiredStatus) {
 				return true
-			} else if s == scansApi.ScanFailed || s == scansApi.ScanCanceled ||
-				s == scansApi.ScanCompleted {
+			} else if s == ScanFailed || s == ScanCanceled ||
+				s == ScanCompleted {
 				return false
 			} else {
 				time.Sleep(time.Duration(sleep) * time.Second)

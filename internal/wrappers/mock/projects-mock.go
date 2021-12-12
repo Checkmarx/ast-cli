@@ -2,25 +2,23 @@ package mock
 
 import (
 	"fmt"
-
-	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 type ProjectsMockWrapper struct{}
 
-func (p *ProjectsMockWrapper) Create(model *projectsRESTApi.Project) (
-	*projectsRESTApi.ProjectResponseModel,
-	*projectsRESTApi.ErrorModel,
+func (p *ProjectsMockWrapper) Create(model *Project) (
+	*ProjectResponseModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
-	return &projectsRESTApi.ProjectResponseModel{
+	return &ProjectResponseModel{
 		Name: model.Name,
 	}, nil, nil
 }
 
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
-	*projectsRESTApi.ProjectsCollectionResponseModel,
-	*projectsRESTApi.ErrorModel,
+	*ProjectsCollectionResponseModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called Get in ProjectsMockWrapper")
 
@@ -30,9 +28,9 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		filteredTotalCount = 0
 	}
 
-	return &projectsRESTApi.ProjectsCollectionResponseModel{
+	return &ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
-		Projects: []projectsRESTApi.ProjectResponseModel{
+		Projects: []ProjectResponseModel{
 			{
 				ID:   "MOCK",
 				Name: "MOCK",
@@ -42,11 +40,11 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 }
 
 func (p *ProjectsMockWrapper) GetByID(projectID string) (
-	*projectsRESTApi.ProjectResponseModel,
-	*projectsRESTApi.ErrorModel,
+	*ProjectResponseModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
-	return &projectsRESTApi.ProjectResponseModel{
+	return &ProjectResponseModel{
 		ID: projectID,
 		Tags: map[string]string{
 			"a": "b",
@@ -61,7 +59,7 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 
 func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
 	[]string,
-	*projectsRESTApi.ErrorModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called GetBranchesByID in ProjectsMockWrapper")
 	return []string{
@@ -71,7 +69,7 @@ func (p *ProjectsMockWrapper) GetBranchesByID(_ string, _ map[string]string) (
 }
 
 func (p *ProjectsMockWrapper) Delete(_ string) (
-	*projectsRESTApi.ErrorModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called Delete in ProjectsMockWrapper")
 	return nil, nil
@@ -79,7 +77,7 @@ func (p *ProjectsMockWrapper) Delete(_ string) (
 
 func (p *ProjectsMockWrapper) Tags() (
 	map[string][]string,
-	*projectsRESTApi.ErrorModel,
+	*ErrorModel,
 	error) {
 	fmt.Println("Called Tags in ProjectsMockWrapper")
 	return map[string][]string{

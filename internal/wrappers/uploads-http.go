@@ -8,10 +8,13 @@ import (
 	"os"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	uploads "github.com/checkmarxDev/uploads/api/rest/v1"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
+
+type UploadModel struct {
+	URL string `json:"url"`
+}
 
 type UploadsHTTPWrapper struct {
 	path string
@@ -66,7 +69,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest:
-		errorModel := uploads.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, errors.Errorf("Parsing error model failed - %s", err.Error())
@@ -74,7 +77,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		return nil, errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 
 	case http.StatusOK:
-		model := uploads.UploadModel{}
+		model := UploadModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, errors.Errorf("Parsing upload model failed - %s", err.Error())

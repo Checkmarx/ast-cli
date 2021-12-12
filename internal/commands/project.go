@@ -14,9 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-
-	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
+	"github.com/checkmarx/ast-cli/internal/wrappers"	
 	"github.com/spf13/cobra"
 )
 
@@ -247,9 +245,9 @@ func runCreateProjectCommand(
 			return err
 		}
 		updateTagValues(&input, cmd)
-		var projModel = projectsRESTApi.Project{}
-		var projResponseModel *projectsRESTApi.ProjectResponseModel
-		var errorModel *projectsRESTApi.ErrorModel
+		var projModel = wrappers.Project{}
+		var projResponseModel *wrappers.ProjectResponseModel
+		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
@@ -277,8 +275,8 @@ func runCreateProjectCommand(
 
 func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allProjectsModel *projectsRESTApi.ProjectsCollectionResponseModel
-		var errorModel *projectsRESTApi.ErrorModel
+		var allProjectsModel *wrappers.ProjectsCollectionResponseModel
+		var errorModel *wrappers.ErrorModel
 
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -304,8 +302,8 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var projectResponseModel *projectsRESTApi.ProjectResponseModel
-		var errorModel *projectsRESTApi.ErrorModel
+		var projectResponseModel *wrappers.ProjectResponseModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
@@ -331,7 +329,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var branches []string
-		var errorModel *projectsRESTApi.ErrorModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
@@ -370,7 +368,7 @@ func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 
 func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var errorModel *projectsRESTApi.ErrorModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
@@ -391,7 +389,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var tags map[string][]string
-		var errorModel *projectsRESTApi.ErrorModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 
 		tags, errorModel, err = projectsWrapper.Tags()
@@ -413,7 +411,7 @@ func runGetProjectsTagsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cm
 	}
 }
 
-func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView {
+func toProjectViews(models []wrappers.ProjectResponseModel) []projectView {
 	result := make([]projectView, len(models))
 	for i := 0; i < len(models); i++ {
 		result[i] = toProjectView(models[i])
@@ -421,7 +419,7 @@ func toProjectViews(models []projectsRESTApi.ProjectResponseModel) []projectView
 	return result
 }
 
-func toProjectView(model projectsRESTApi.ProjectResponseModel) projectView { //nolint:gocritic
+func toProjectView(model wrappers.ProjectResponseModel) projectView { //nolint:gocritic
 	return projectView{
 		ID:        model.ID,
 		Name:      model.Name,

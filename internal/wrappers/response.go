@@ -3,9 +3,6 @@ package wrappers
 import (
 	"encoding/json"
 	"net/http"
-
-	projectsApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
-	scansApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/pkg/errors"
 )
 
@@ -14,7 +11,7 @@ const (
 )
 
 func handleScanResponseWithNoBody(resp *http.Response, err error,
-	successStatusCode int) (*scansApi.ErrorModel, error) {
+	successStatusCode int) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +21,7 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotFound:
-		errorModel := scansApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, errors.Wrapf(err, failedToParseErr)
@@ -39,7 +36,7 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 }
 
 func handleScanResponseWithBody(resp *http.Response, err error,
-	successStatusCode int) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
+	successStatusCode int) (*ScanResponseModel, *ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -49,14 +46,14 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responseScanParsingFailed(err)
 		}
 		return nil, &errorModel, nil
 	case successStatusCode:
-		model := scansApi.ScanResponseModel{}
+		model := ScanResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return responseScanParsingFailed(err)
@@ -70,7 +67,7 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 }
 
 func handleProjectResponseWithNoBody(resp *http.Response, err error,
-	successStatusCode int) (*projectsApi.ErrorModel, error) {
+	successStatusCode int) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +77,7 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := projectsApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, errors.Wrapf(err, failedToParseErr)
@@ -95,7 +92,7 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 }
 
 func handleProjectResponseWithBody(resp *http.Response, err error,
-	successStatusCode int) (*projectsApi.ProjectResponseModel, *projectsApi.ErrorModel, error) {
+	successStatusCode int) (*ProjectResponseModel, *ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -105,7 +102,7 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := projectsApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responseProjectParsingFailed(err)
@@ -114,7 +111,7 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("project not found")
 	case successStatusCode:
-		model := projectsApi.ProjectResponseModel{}
+		model := ProjectResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return responseProjectParsingFailed(err)
@@ -126,11 +123,11 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	}
 }
 
-func responseScanParsingFailed(err error) (*scansApi.ScanResponseModel, *scansApi.ErrorModel, error) {
+func responseScanParsingFailed(err error) (*ScanResponseModel, *ErrorModel, error) {
 	msg := "Failed to parse scan response"
 	return nil, nil, errors.Wrapf(err, msg)
 }
-func responseProjectParsingFailed(err error) (*projectsApi.ProjectResponseModel, *projectsApi.ErrorModel, error) {
+func responseProjectParsingFailed(err error) (*ProjectResponseModel, *ErrorModel, error) {
 	msg := "Failed to parse project response"
 	return nil, nil, errors.Wrapf(err, msg)
 }

@@ -7,10 +7,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	scansApi "github.com/checkmarxDev/scans/pkg/api/scans"
-	"github.com/spf13/viper"
-
-	scansRestApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
+	"github.com/spf13/viper"	
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +29,7 @@ func NewHTTPScansWrapper(path string) ScansWrapper {
 	}
 }
 
-func (s *ScansHTTPWrapper) Create(model *scansRestApi.Scan) (*scansRestApi.ScanResponseModel, *scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
@@ -45,7 +42,7 @@ func (s *ScansHTTPWrapper) Create(model *scansRestApi.Scan) (*scansRestApi.ScanR
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCollectionResponseModel, *scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, clientTimeout)
 	if err != nil {
@@ -57,14 +54,14 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCol
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansRestApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := scansRestApi.ScansCollectionResponseModel{}
+		model := ScansCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
@@ -77,7 +74,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*scansRestApi.ScansCol
 	}
 }
 
-func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansRestApi.ScanResponseModel, *scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true, clientTimeout)
 	if err != nil {
@@ -86,7 +83,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*scansRestApi.ScanResponseMod
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s/workflow", s.path, scanID)
 	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, clientTimeout)
@@ -96,7 +93,7 @@ func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseMo
 	return handleWorkflowResponseWithBody(resp, err)
 }
 
-func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTaskResponseModel, *scansRestApi.ErrorModel, error) {
+func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTaskResponseModel, *ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,7 +103,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansRestApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to parse workflow response")
@@ -125,7 +122,7 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	}
 }
 
-func (s *ScansHTTPWrapper) Delete(scanID string) (*scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true, clientTimeout)
 	if err != nil {
@@ -134,10 +131,10 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*scansRestApi.ErrorModel, erro
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
-func (s *ScansHTTPWrapper) Cancel(scanID string) (*scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	b, err := json.Marshal(&scansRestApi.CancelScanModel{
-		Status: scansApi.ScanCanceled,
+	b, err := json.Marshal(&CancelScanModel{
+		Status: ScanCanceled,
 	})
 	if err != nil {
 		return nil, err
@@ -151,7 +148,7 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*scansRestApi.ErrorModel, erro
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
-func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel, error) {
+func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, clientTimeout)
 	if err != nil {
@@ -163,7 +160,7 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *scansRestApi.ErrorModel
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := scansRestApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)

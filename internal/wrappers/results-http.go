@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -27,7 +26,7 @@ func NewHTTPResultsWrapper(path string) ResultsWrapper {
 
 func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	*ScanResultsCollection,
-	*resultsHelpers.WebError,
+	*WebError,
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
@@ -43,7 +42,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := resultsHelpers.WebError{}
+		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)

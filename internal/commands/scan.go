@@ -20,8 +20,6 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
-	scansRESTApi "github.com/checkmarxDev/scans/pkg/api/scans/rest/v1"
 	"github.com/mssola/user_agent"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -370,7 +368,7 @@ func createProject(projectName string,
 	if err != nil {
 		return "", err
 	}
-	var projModel = projectsRESTApi.Project{}
+	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
 	projModel.Tags = createTagMap(projectTags)
@@ -854,11 +852,10 @@ func runCreateScanCommand(
 		if branch == "" {
 			return errors.Errorf("%s: Please provide a branch", failedCreating)
 		}
-
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
 			return err
-		}
+		}		
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
@@ -888,7 +885,7 @@ func createScanModel(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-) (*scansRESTApi.Scan, error) {
+) (*wrappers.Scan, error) {
 	determineScanTypes(cmd)
 	validateScanTypes()
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -905,7 +902,7 @@ func createScanModel(
 		return nil, err
 	}
 	updateTagValues(&input, cmd)
-	scanModel := scansRESTApi.Scan{}
+	scanModel := wrappers.Scan{}
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
 	if err != nil {
@@ -941,8 +938,8 @@ func setupProjectHandler(
 	sourceDirFilter,
 	userIncludeFilter,
 	scanRepoURL string,
-) (scansRESTApi.UploadProjectHandler, error) {
-	pHandler := scansRESTApi.UploadProjectHandler{}
+) (wrappers.UploadProjectHandler, error) {
+	pHandler := wrappers.UploadProjectHandler{}
 	pHandler.Branch = viper.GetString(commonParams.BranchKey)
 	var err error
 	pHandler.UploadURL, err = determineSourceFile(
@@ -958,7 +955,7 @@ func setupProjectHandler(
 
 func handleWait(
 	cmd *cobra.Command,
-	scanResponseModel *scansRESTApi.ScanResponseModel,
+	scanResponseModel *wrappers.ScanResponseModel,
 	waitDelay int,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -997,7 +994,7 @@ func handleWait(
 }
 
 func waitForScanCompletion(
-	scanResponseModel *scansRESTApi.ScanResponseModel,
+	scanResponseModel *wrappers.ScanResponseModel,
 	waitDelay int,
 	scansWrapper wrappers.ScansWrapper,
 ) error {
@@ -1017,8 +1014,8 @@ func waitForScanCompletion(
 }
 
 func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
-	var scanResponseModel *scansRESTApi.ScanResponseModel
-	var errorModel *scansRESTApi.ErrorModel
+	var scanResponseModel *wrappers.ScanResponseModel
+	var errorModel *wrappers.ErrorModel
 	var err error
 	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 	if err != nil {
@@ -1041,8 +1038,8 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, err
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allScansModel *scansRESTApi.ScansCollectionResponseModel
-		var errorModel *scansRESTApi.ErrorModel
+		var allScansModel *wrappers.ScansCollectionResponseModel
+		var errorModel *wrappers.ErrorModel
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingAll)
@@ -1067,8 +1064,8 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 
 func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var scanResponseModel *scansRESTApi.ScanResponseModel
-		var errorModel *scansRESTApi.ErrorModel
+		var scanResponseModel *wrappers.ScanResponseModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -1094,7 +1091,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var taskResponseModel []*wrappers.ScanTaskResponseModel
-		var errorModel *scansRESTApi.ErrorModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -1164,7 +1161,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var tags map[string][]string
-		var errorModel *scansRESTApi.ErrorModel
+		var errorModel *wrappers.ErrorModel
 		var err error
 		tags, errorModel, err = scansWrapper.Tags()
 		if err != nil {
@@ -1210,7 +1207,7 @@ type scanView struct {
 	Origin    string
 }
 
-func toScanViews(scans []scansRESTApi.ScanResponseModel) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
 	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
 		views[i] = toScanView(&scans[i])
@@ -1218,7 +1215,7 @@ func toScanViews(scans []scansRESTApi.ScanResponseModel) []*scanView {
 	return views
 }
 
-func toScanView(scan *scansRESTApi.ScanResponseModel) *scanView {
+func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	var origin string
 	if scan.UserAgent != "" {
 		ua := user_agent.New(scan.UserAgent)

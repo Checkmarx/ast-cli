@@ -12,7 +12,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
 
-	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 	"gotest.tools/assert"
 )
 
@@ -46,7 +45,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 // Assert project contains created tags and groups
-func assertTags(t *testing.T, project projectsRESTApi.ProjectResponseModel) {
+func assertTags(t *testing.T, project ProjectResponseModel) {
 
 	allTags := getAllTags(t, "project")
 
@@ -103,7 +102,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 		flag(params.TagList), tagsStr,
 	)
 
-	createdProject := projectsRESTApi.ProjectResponseModel{}
+	createdProject := ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 
 	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
@@ -116,7 +115,7 @@ func deleteProject(t *testing.T, projectID string) {
 	executeCmdNilAssertion(t, "Deleting a project should pass", "project", "delete", flag(params.ProjectIDFlag), projectID)
 }
 
-func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectResponseModel {
+func listProjectByID(t *testing.T, projectID string) []ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 
 	outputBuffer := executeCmdNilAssertion(t,
@@ -125,13 +124,13 @@ func listProjectByID(t *testing.T, projectID string) []projectsRESTApi.ProjectRe
 		flag(params.FormatFlag), util.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
 
-	var projects []projectsRESTApi.ProjectResponseModel
+	var projects []ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 
 	return projects
 }
 
-func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponseModel {
+func showProject(t *testing.T, projectID string) ProjectResponseModel {
 	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
 
 	outputBuffer := executeCmdNilAssertion(t, "Getting the project should pass", "project", "show",
@@ -139,7 +138,7 @@ func showProject(t *testing.T, projectID string) projectsRESTApi.ProjectResponse
 		flag(params.ProjectIDFlag), projectID,
 	)
 
-	var project projectsRESTApi.ProjectResponseModel
+	var project ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
 
 	return project
