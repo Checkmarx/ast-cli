@@ -16,6 +16,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
@@ -227,7 +228,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 	buffer := executeScanGetBuffer(t, args)
 
-	createdScan := ScanResponseModel{}
+	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
 
 	assert.Assert(t, createdScan.Status != ScanFailed && createdScan.Status != ScanCanceled)
@@ -245,7 +246,7 @@ func deleteScan(t *testing.T, scanID string) {
 	executeCmdNilAssertion(t, "Deleting a scan should pass", "scan", "delete", flag(params.ScanIDFlag), scanID)
 }
 
-func listScanByID(t *testing.T, scanID string) []ScanResponseModel {
+func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -255,20 +256,20 @@ func listScanByID(t *testing.T, scanID string) []ScanResponseModel {
 	)
 
 	// Read response from buffer
-	var scanList []ScanResponseModel
+	var scanList []wrappers.ScanResponseModel
 	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
 
 	return scanList
 }
 
-func showScan(t *testing.T, scanID string) ScanResponseModel {
+func showScan(t *testing.T, scanID string) wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(t, "Getting the scan should pass", "scan", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ScanIDFlag), scanID,
 	)
 
 	// Read response from buffer
-	scan := ScanResponseModel{}
+	scan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
 
 	return scan
