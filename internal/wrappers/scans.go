@@ -3,7 +3,6 @@ package wrappers
 import (
 	"time"
 	"encoding/json"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -27,11 +26,7 @@ type ScanTaskResponseModel struct {
 	Info      string `json:"info"`
 }
 
-type Config struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
+type Config struct {	
 	Type  string            `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Value map[string]string `protobuf:"bytes,2,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
