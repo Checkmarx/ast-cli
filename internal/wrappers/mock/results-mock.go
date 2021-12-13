@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"	
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type ResultsMockWrapper struct{}

@@ -14,7 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/checkmarx/ast-cli/internal/wrappers"	
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
 
