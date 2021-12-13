@@ -2,8 +2,8 @@ package wrappers
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/pkg/errors"
+	"net/http"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"	
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 const (
