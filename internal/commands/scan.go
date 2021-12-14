@@ -324,6 +324,8 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ProjectGroupList, "", "List of groups to associate to project")
 	createScanCmd.PersistentFlags().String(commonParams.ProjectTagList, "", "List of tags to associate to project")
+
+	createScanCmd.PersistentFlags().String("external-results", "", "External results")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -902,6 +904,7 @@ func createScanModel(
 		return nil, err
 	}
 	updateTagValues(&input, cmd)
+	createExternalResult(&input, cmd, uploadsWrapper)
 	scanModel := wrappers.Scan{}
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
@@ -922,6 +925,24 @@ func createScanModel(
 		return nil, err
 	}
 	return &scanModel, nil
+}
+
+func createExternalResult(input *[]byte,
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper) {
+	sourcesFile, _ := cmd.Flags().GetString("external-results")
+	var info map[string]interface{}
+	_ = json.Unmarshal(*input, &info)
+
+	var preSignedURL, err = uploadsWrapper.UploadFile(sourcesFile)
+	if err != nil {
+		return
+	}
+	info["externalResults"] = wrappers.ExternalResults{
+		Type:    "zap",
+		Results: *preSignedURL,
+	}
+	*input, _ = json.Marshal(info)
 }
 
 func getUploadType(sourceDir, sourcesFile string) string {

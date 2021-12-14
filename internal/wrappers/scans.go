@@ -93,12 +93,21 @@ type ScanProject struct {
 	Tags map[string]string `json:"tags"`
 }
 
+type ExternalResults struct {
+	// An identifier for a project. A project is a way to group scans.
+	// Project id can be empty, and if none provided, a project id and name will be created.
+	// For example in git repositories, the created project name will be the repository URL and id will be a new uuid.
+	Type    string `json:"type"`
+	Results string `json:"results"`
+}
+
 type Scan struct {
-	Type    string            `json:"type"`    // [git|upload]
-	Handler json.RawMessage   `json:"handler"` // One of [GitProjectHandler|UploadProjectHandler]
-	Project ScanProject       `json:"project,omitempty"`
-	Config  []Config          `json:"config,omitempty"`
-	Tags    map[string]string `json:"tags,omitempty"`
+	Type            string            `json:"type"`    // [git|upload]
+	Handler         json.RawMessage   `json:"handler"` // One of [GitProjectHandler|UploadProjectHandler]
+	ExternalResults ExternalResults   `json:"externalResults,omitempty"`
+	Project         ScanProject       `json:"project,omitempty"`
+	Config          []Config          `json:"config,omitempty"`
+	Tags            map[string]string `json:"tags,omitempty"`
 }
 
 type ScansWrapper interface {
