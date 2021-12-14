@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	SAST = "sast"
 	KICS = "kics"
 )
 
