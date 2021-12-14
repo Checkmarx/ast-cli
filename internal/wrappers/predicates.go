@@ -1,8 +1,9 @@
 package wrappers
 
 import (
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"time"
+
+	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 )
 
 type BasePredicate struct {

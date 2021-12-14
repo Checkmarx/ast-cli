@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/checkmarx/ast-cli/internal/params"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"net/http"
-	"strings"
 )
 
 const (
@@ -26,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityId(similarityId string, projectID string, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityId(similarityId, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
 
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
