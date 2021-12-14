@@ -446,12 +446,14 @@ func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocat
 func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.SonarLocation {
 	var auxSecondaryLocations []wrappers.SonarLocation
 	// Traverse all the rest of the scan result nodes into secondary location of sonar
-	for _, node := range results.ScanResultData.Nodes[1:] {
-		var auxSecondaryLocation wrappers.SonarLocation
-		auxSecondaryLocation.FilePath = node.FileName
-		auxSecondaryLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
-		auxSecondaryLocation.TextRange = parseSonarTextRange(node)
-		auxSecondaryLocations = append(auxSecondaryLocations, auxSecondaryLocation)
+	if len(results.ScanResultData.Nodes) > 1 {
+		for _, node := range results.ScanResultData.Nodes[1:] {
+			var auxSecondaryLocation wrappers.SonarLocation
+			auxSecondaryLocation.FilePath = node.FileName
+			auxSecondaryLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
+			auxSecondaryLocation.TextRange = parseSonarTextRange(node)
+			auxSecondaryLocations = append(auxSecondaryLocations, auxSecondaryLocation)
+		}
 	}
 	return auxSecondaryLocations
 }
