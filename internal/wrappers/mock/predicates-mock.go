@@ -15,8 +15,8 @@ func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrapp
 	return nil, nil
 }
 
-func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityId(similarityId string, projectID string, scannerType string) (*wrappers.PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
-	fmt.Println("Called 'GetAllPredicatesForSimilarityId' in ResultsPredicatesMockWrapper")
+func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarityId, projectID, scannerType string) (*wrappers.PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+	fmt.Println("Called 'GetAllPredicatesForSimilarityID' in ResultsPredicatesMockWrapper")
 
 	totalCount := 1
 

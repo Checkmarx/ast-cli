@@ -44,5 +44,5 @@ type PredicatesCollectionResponseModel struct {
 
 type ResultsPredicatesWrapper interface {
 	PredicateSeverityAndState(predicate *PredicateRequest) (*resultsHelpers.WebError, error)
-	GetAllPredicatesForSimilarityId(similarityId string, projectID string, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error)
+	GetAllPredicatesForSimilarityID(similarityId string, projectID string, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error)
 }

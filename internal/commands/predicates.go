@@ -106,7 +106,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			return errors.Errorf("%s", "Multiple project-ids are not allowed.")
 		}
 
-		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityId(similarityId, projectId, scanType)
+		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityId, projectId, scanType)
 
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed getting the predicate.")
@@ -136,7 +136,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 
 		if strings.EqualFold(strings.TrimSpace(scanType), KICS) {
-			scanType = "" //API Endpoint for Kics doesnt require scantype.
+			scanType = "" // API Endpoint for Kics doesnt require scantype.
 		}
 
 		predicate := &wrappers.PredicateRequest{

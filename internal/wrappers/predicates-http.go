@@ -27,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityId(similarityId, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityId, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
 
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
