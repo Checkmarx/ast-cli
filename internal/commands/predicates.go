@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"strings"
+	"time"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -8,8 +11,6 @@ import (
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 const (

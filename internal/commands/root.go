@@ -109,7 +109,7 @@ func NewAstCLI(
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand()
 	configCmd := util.NewConfigCommand()
-	triageCmd :=NewResultsPredicatesCommand(resultsPredicatesWrapper)
+	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,

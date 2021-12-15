@@ -2,9 +2,10 @@ package mock
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
-	"time"
 )
 
 type ResultsPredicatesMockWrapper struct {

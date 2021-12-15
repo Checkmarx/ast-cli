@@ -27,20 +27,20 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityId, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
 
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
-	var triageApiPath = ""
+	var triageAPIPath = ""
 	if strings.EqualFold(strings.TrimSpace(scannerType), KICS) {
-		triageApiPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), SAST) {
-		triageApiPath = viper.GetString(params.SastResultsPredicatesPathKey)
+		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	}
-	fmt.Println("Fetching the predicate history for SimilarityId : " + similarityId)
-	r.SetPath(triageApiPath)
+	fmt.Println("Fetching the predicate history for SimilarityId : " + similarityID)
+	r.SetPath(triageAPIPath)
 
-	var request = "/" + similarityId + "?project-ids=" + projectID
+	var request = "/" + similarityID + "?project-ids=" + projectID
 	PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
 	resp, err := SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout)
 	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
@@ -64,16 +64,16 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err
 	}
 
-	triageApiPath := ""
+	triageAPIPath := ""
 	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), SAST) {
-		triageApiPath = viper.GetString(params.SastResultsPredicatesPathKey)
+		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	} else {
-		triageApiPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	}
-	PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageApiPath))
+	PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
 	PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBytes)))
 
-	r.SetPath(triageApiPath)
+	r.SetPath(triageAPIPath)
 
 	resp, err2 := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
