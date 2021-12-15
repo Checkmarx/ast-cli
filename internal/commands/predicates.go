@@ -50,11 +50,11 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 		RunE: runTriageShow(resultsPredicatesWrapper),
 	}
 
-	triageShowCmd.PersistentFlags().String(params.SimilarityIdFlag, "", "Similarity ID")
+	triageShowCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageShowCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
 	triageShowCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
-	markFlagAsRequired(triageShowCmd, params.SimilarityIdFlag)
+	markFlagAsRequired(triageShowCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ScanTypeFlag)
 
@@ -74,14 +74,14 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 		RunE: runTriageUpdate(resultsPredicatesWrapper),
 	}
 
-	triageUpdateCmd.PersistentFlags().String(params.SimilarityIdFlag, "", "Similarity ID")
+	triageUpdateCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageUpdateCmd.PersistentFlags().String(params.SeverityFlag, "", "Severity")
 	triageUpdateCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
 	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "State")
 	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment.")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
-	markFlagAsRequired(triageUpdateCmd, params.SimilarityIdFlag)
+	markFlagAsRequired(triageUpdateCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.SeverityFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.StateFlag)
@@ -98,7 +98,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		var errorModel *resultsHelpers.WebError
 		var err error
 
-		similarityId, _ := cmd.Flags().GetString(params.SimilarityIdFlag)
+		similarityId, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		projectId, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 
@@ -129,7 +129,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		similarityId, _ := cmd.Flags().GetString(params.SimilarityIdFlag)
+		similarityId, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		projectId, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
