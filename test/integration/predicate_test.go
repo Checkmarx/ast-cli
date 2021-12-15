@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -19,38 +20,20 @@ import (
 // - KICS : Update Status for a given similarity id
 // - SAST : Update Status for a given similarity id
 
-//func TestKicsGetPredicatesForSimilarityId(t *testing.T) {
-//	//assertRequiredParameter(t, "Project name is required", "triage", "show")
-//
-//	_, projectId := getRootScan(t)
-//	similarityId := "4fb227cd0a8f6af8e8646679411e8ec7cd14f17f8a2f1c33515fb3a450f3e050"
-//	scanType := "kics"
-//	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
-//	outputBuffer := executeCmdNilAssertion(t, "triage", "show",
-//		flag(params.FormatFlag), util.FormatJSON,
-//		flag(params.ProjectIDFlag), projectId,
-//		flag(params.SimilarityIdFlag), similarityId,
-//		flag(params.ScanTypeFlag), scanType)
-//
-//	result := wrappers.PredicatesCollectionResponseModel{}
-//	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
-//
-//	assert.Assert(t, uint(len(result.PredicateHistoryPerProject)) == result.TotalCount, "Should have results")
-//
-//}
+var projectID string
 
-func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
-	//assertRequiredParameter(t, "Project name is required", "triage", "show")
+func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
-	_, projectID := getRootScan(t)
+	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
+
+	_, projectID = getRootScan(t)
 	similarityID := "1826563305"
 	state := "Urgent"
 	severity := "Medium"
 	comment := "Testing CLI Command for triage."
 	scanType := "sast"
 
-	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
-	outputBuffer := executeCmdNilAssertion(t, "triage", "update",
+	outputBufferForStep1 := executeCmdNilAssertion(t, "Issue should be updated.", "triage", "update",
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.StateFlag), state,
@@ -58,27 +41,20 @@ func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
 		flag(params.CommentFlag), comment,
 		flag(params.ScanTypeFlag), scanType)
 
-	_, readingError := io.ReadAll(outputBuffer)
+	_, readingError := io.ReadAll(outputBufferForStep1)
 	assert.NilError(t, readingError, "Reading result should pass")
 
-}
-
-func TestSastGetPredicatesForSimilarityId(t *testing.T) {
-	//assertRequiredParameter(t, "Project name is required", "triage", "show")
-
-	_, projectID := getRootScan(t)
-	similarityID := "1826563305"
-	scanType := "sast"
-	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
-	outputBuffer := executeCmdNilAssertion(t, "triage", "show",
+	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
+	outputBufferForStep2 := executeCmdNilAssertion(t, "Predicates should be fetched.", "triage", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.ScanTypeFlag), scanType)
 
-	result := wrappers.PredicatesCollectionResponseModel{}
-	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+	result := []wrappers.Predicate{}
+	fmt.Println(outputBufferForStep2)
+	_ = unmarshall(t, outputBufferForStep2, &result, "Reading results should pass")
 
-	assert.Assert(t, (len(result.PredicateHistoryPerProject)) == result.TotalCount, "Should have results")
+	assert.Assert(t, (len(result)) == 1, "Should have 1 predicate as the result.")
 
 }

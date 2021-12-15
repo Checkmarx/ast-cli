@@ -30,8 +30,8 @@ func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarity
 		TotalCount: totalCount,
 		PredicateHistoryPerProject: []wrappers.PredicateHistory{
 			{
-				ProjectId:    "MOCK",
-				SimilarityId: "MOCK",
+				ProjectID:    "MOCK",
+				SimilarityID: "MOCK",
 				TotalCount:   1,
 				Predicates: []wrappers.Predicate{
 					mockPredicateItem,

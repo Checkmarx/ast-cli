@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &mock.ScansMockWrapper{}
-	resultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
+	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
 	groupsMockWrapper := &mock.GroupsMockWrapper{}
 	uploadsMockWrapper := &mock.UploadsMockWrapper{}
 	projectsMockWrapper := &mock.ProjectsMockWrapper{}
@@ -30,7 +30,7 @@ func createASTTestCommand() *cobra.Command {
 	authWrapper := &mock.AuthMockWrapper{}
 	logsWrapper := &mock.LogsMockWrapper{}
 	return NewAstCLI(scansMockWrapper,
-		resultsPredicatesWrapper,
+		resultsPredicatesMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
 		resultsMockWrapper,

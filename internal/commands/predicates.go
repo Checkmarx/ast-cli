@@ -167,14 +167,23 @@ type predicateView struct {
 }
 
 func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponseModel) []predicateView {
-	predicatesPerProject := predicatesCollection.PredicateHistoryPerProject[0]
-	predicatesOfSingleProject := predicatesPerProject.Predicates
 
-	views := make([]predicateView, len(predicatesOfSingleProject))
-	for i := 0; i < len(predicatesOfSingleProject); i++ {
-		views[i] = toSinglePredicateView(predicatesOfSingleProject[i])
+	projectPredicatesCollection := predicatesCollection.PredicateHistoryPerProject
+
+	if len(projectPredicatesCollection) > 0 {
+		predicatesPerProject := predicatesCollection.PredicateHistoryPerProject[0]
+		predicatesOfSingleProject := predicatesPerProject.Predicates
+
+		views := make([]predicateView, len(predicatesOfSingleProject))
+		for i := 0; i < len(predicatesOfSingleProject); i++ {
+			views[i] = toSinglePredicateView(predicatesOfSingleProject[i])
+		}
+
+		return views
+	} else {
+		views := make([]predicateView, 0)
+		return views
 	}
-	return views
 }
 
 func toSinglePredicateView(predicate wrappers.Predicate) predicateView {
