@@ -98,7 +98,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		var errorModel *resultsHelpers.WebError
 		var err error
 
-		similarityId, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
+		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		projectId, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 
@@ -107,7 +107,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			return errors.Errorf("%s", "Multiple project-ids are not allowed.")
 		}
 
-		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityId, projectId, scanType)
+		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityID, projectId, scanType)
 
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed getting the predicate.")
@@ -129,8 +129,8 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		similarityId, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
-		projectId, _ := cmd.Flags().GetString(params.ProjectIDFlag)
+		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
+		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
@@ -141,8 +141,8 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		}
 
 		predicate := &wrappers.PredicateRequest{
-			SimilarityId: similarityId,
-			ProjectId:    projectId,
+			SimilarityID: similarityID,
+			ProjectID:    projectID,
 			Severity:     severity,
 			State:        state,
 			Comment:      comment,
@@ -181,8 +181,8 @@ func toSinglePredicateView(predicate wrappers.Predicate) predicateView {
 
 	return predicateView{
 		ID:           predicate.Id,
-		ProjectID:    predicate.ProjectId,
-		SimilarityID: predicate.SimilarityId,
+		ProjectID:    predicate.ProjectID,
+		SimilarityID: predicate.SimilarityID,
 		Severity:     predicate.Severity,
 		State:        predicate.State,
 		Comment:      predicate.Comment,

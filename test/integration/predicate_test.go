@@ -42,8 +42,8 @@ import (
 func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
 	//assertRequiredParameter(t, "Project name is required", "triage", "show")
 
-	_, projectId := getRootScan(t)
-	similarityId := "1826563305"
+	_, projectID := getRootScan(t)
+	similarityID := "1826563305"
 	state := "Urgent"
 	severity := "Medium"
 	comment := "Testing CLI Command for triage."
@@ -51,8 +51,8 @@ func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
 
 	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
 	outputBuffer := executeCmdNilAssertion(t, "triage", "update",
-		flag(params.ProjectIDFlag), projectId,
-		flag(params.SimilarityIDFlag), similarityId,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.StateFlag), state,
 		flag(params.SeverityFlag), severity,
 		flag(params.CommentFlag), comment,
@@ -66,14 +66,14 @@ func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
 func TestSastGetPredicatesForSimilarityId(t *testing.T) {
 	//assertRequiredParameter(t, "Project name is required", "triage", "show")
 
-	_, projectId := getRootScan(t)
-	similarityId := "1826563305"
+	_, projectID := getRootScan(t)
+	similarityID := "1826563305"
 	scanType := "sast"
 	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
 	outputBuffer := executeCmdNilAssertion(t, "triage", "show",
 		flag(params.FormatFlag), util.FormatJSON,
-		flag(params.ProjectIDFlag), projectId,
-		flag(params.SimilarityIDFlag), similarityId,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.ScanTypeFlag), scanType)
 
 	result := wrappers.PredicatesCollectionResponseModel{}

@@ -7,16 +7,16 @@ import (
 )
 
 type BasePredicate struct {
-	SimilarityId string `json:"similarityId"`
-	ProjectId    string `json:"projectId"`
+	SimilarityID string `json:"similarityId"`
+	ProjectID    string `json:"projectId"`
 	State        string `json:"state"`
 	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
 }
 
 type PredicateRequest struct {
-	SimilarityId string `json:"similarityId"`
-	ProjectId    string `json:"projectId"`
+	SimilarityID string `json:"similarityId"`
+	ProjectID    string `json:"projectId"`
 	State        string `json:"state"`
 	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
@@ -31,8 +31,8 @@ type Predicate struct {
 }
 
 type PredicateHistory struct {
-	ProjectId    string      `json:"projectId"`
-	SimilarityId string      `json:"similarityId"`
+	ProjectID    string      `json:"projectId"`
+	SimilarityID string      `json:"similarityId"`
 	Predicates   []Predicate `json:"predicates"`
 	TotalCount   int         `json:"totalCount"`
 }
