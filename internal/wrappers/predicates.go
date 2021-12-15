@@ -25,7 +25,7 @@ type PredicateRequest struct {
 
 type Predicate struct {
 	BasePredicate
-	Id        string    `json:"ID"`
+	ID        string    `json:"ID"`
 	CreatedBy string    `json:"createdBy"`
 	CreatedAt time.Time `json:"createdAt"`
 }

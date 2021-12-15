@@ -22,7 +22,7 @@ func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarity
 	totalCount := 1
 
 	mockPredicateItem := wrappers.Predicate{
-		Id:        "MOCK",
+		ID:        "MOCK",
 		CreatedBy: "MOCK",
 		CreatedAt: time.Now(),
 	}

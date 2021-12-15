@@ -48,7 +48,6 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 		return nil, nil, err
 	}
 	return handleResponseWithBody(resp, err, http.StatusOK)
-
 }
 
 func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {

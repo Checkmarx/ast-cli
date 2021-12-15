@@ -189,7 +189,7 @@ func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponse
 func toSinglePredicateView(predicate wrappers.Predicate) predicateView {
 
 	return predicateView{
-		ID:           predicate.Id,
+		ID:           predicate.ID,
 		ProjectID:    predicate.ProjectID,
 		SimilarityID: predicate.SimilarityID,
 		Severity:     predicate.Severity,

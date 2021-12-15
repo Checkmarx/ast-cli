@@ -13,12 +13,8 @@ import (
 	"gotest.tools/assert"
 )
 
-// - KICS : Get all predicates for a given project and similarity id
+// - SAST : Update Severity, Status and Comment for a given similarity id
 // - SAST : Get all predicates for a given project and similarity id
-// - KICS : Update Severity for a given similarity id
-// - SAST : Update Severity for a given similarity id
-// - KICS : Update Status for a given similarity id
-// - SAST : Update Status for a given similarity id
 
 var projectID string
 
