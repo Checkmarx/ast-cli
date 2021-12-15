@@ -33,7 +33,6 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 
 	triageCmd.AddCommand(triageShowCmd, triageUpdateCmd)
 	return triageCmd
-
 }
 
 func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
@@ -68,7 +67,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 		Long:  "The update command enables the ability to triage the results in CxAST.",
 		Example: heredoc.Doc(
 			`
-			$ cx triage update --similarity-id <SimilarityID> --project-id <ProjectID> --state <TO_VERIFY, NOT_EXPLOITABLE, PROPOSED_NOT_EXPLOITABLE, CONFIRMED, URGENT> --severity <HIGH, MEDIUM, LOW, INFO > --comment <Comment(Optional)>--scan-type <SAST||KICS>
+$ cx triage update --similarity-id <SimilarityID> --project-id <ProjectID> --state <TO_VERIFY, NOT_EXPLOITABLE, PROPOSED_NOT_EXPLOITABLE, CONFIRMED, URGENT> --severity <HIGH, MEDIUM, LOW, INFO > --comment <Comment(Optional)>--scan-type <SAST||KICS>
 		`,
 		),
 		RunE: runTriageUpdate(resultsPredicatesWrapper),
@@ -100,14 +99,17 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
-		projectId, _ := cmd.Flags().GetString(params.ProjectIDFlag)
+		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 
-		projectIDs := strings.Split(projectId, ",")
+		projectIDs := strings.Split(projectID, ",")
 		if len(projectIDs) > 1 {
 			return errors.Errorf("%s", "Multiple project-ids are not allowed.")
 		}
 
-		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityID, projectId, scanType)
+		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(
+			similarityID,
+			projectID,
+			scanType)
 
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed getting the predicate.")
@@ -115,7 +117,11 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", "Failed getting the predicate.", errorModel.Code, errorModel.Message)
+			return errors.Errorf(
+				"%s: CODE: %d, %s",
+				"Failed getting the predicate.",
+				errorModel.Code,
+				errorModel.Message)
 		} else if predicatesCollection != nil {
 			err = printByFormat(cmd, toPredicatesView(*predicatesCollection))
 			if err != nil {
@@ -176,17 +182,16 @@ func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponse
 
 		views := make([]predicateView, len(predicatesOfSingleProject))
 		for i := 0; i < len(predicatesOfSingleProject); i++ {
-			views[i] = toSinglePredicateView(predicatesOfSingleProject[i])
+			views[i] = toSinglePredicateView(&predicatesOfSingleProject[i])
 		}
 
 		return views
-	} else {
-		views := make([]predicateView, 0)
-		return views
 	}
+	views := make([]predicateView, 0)
+	return views
 }
 
-func toSinglePredicateView(predicate wrappers.Predicate) predicateView {
+func toSinglePredicateView(predicate *wrappers.Predicate) predicateView {
 
 	return predicateView{
 		ID:           predicate.ID,

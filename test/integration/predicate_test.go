@@ -29,7 +29,8 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	comment := "Testing CLI Command for triage."
 	scanType := "sast"
 
-	outputBufferForStep1 := executeCmdNilAssertion(t, "Issue should be updated.", "triage", "update",
+	outputBufferForStep1 := executeCmdNilAssertion(
+		t, "Issue should be updated.", "triage", "update",
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.StateFlag), state,
@@ -41,7 +42,8 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	assert.NilError(t, readingError, "Reading result should pass")
 
 	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
-	outputBufferForStep2 := executeCmdNilAssertion(t, "Predicates should be fetched.", "triage", "show",
+	outputBufferForStep2 := executeCmdNilAssertion(
+		t, "Predicates should be fetched.", "triage", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,

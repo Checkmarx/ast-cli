@@ -18,7 +18,22 @@ func TestRunShowTriageCommand(t *testing.T) {
 }
 
 func TestRunUpdateTriageCommand(t *testing.T) {
-	execCmdNilAssertion(t, "triage", "update", "--project-id", "MOCK", "--similarity-id", "MOCK", "--state", "confirmed", "--comment", "Testing commands using mocked values.", "--severity", "low", "--scan-type", "sast")
+	execCmdNilAssertion(
+		t,
+		"triage",
+		"update",
+		"--project-id",
+		"MOCK",
+		"--similarity-id",
+		"MOCK",
+		"--state",
+		"confirmed",
+		"--comment",
+		"Testing commands.",
+		"--severity",
+		"low",
+		"--scan-type",
+		"sast")
 }
 
 func TestRunShowTriageCommandWithNoInput(t *testing.T) {
@@ -29,5 +44,7 @@ func TestRunShowTriageCommandWithNoInput(t *testing.T) {
 func TestRunUpdateTriageCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "triage", "update")
 	fmt.Println(err)
-	assert.Assert(t, err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"severity\", \"similarity-id\", \"state\" not set")
+	assert.Assert(
+		t,
+		err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"severity\", \"similarity-id\", \"state\" not set")
 }

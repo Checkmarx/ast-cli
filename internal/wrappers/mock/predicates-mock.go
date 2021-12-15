@@ -11,12 +11,16 @@ import (
 type ResultsPredicatesMockWrapper struct {
 }
 
-func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest) (*resultsHelpers.WebError, error) {
+func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest) (
+	*resultsHelpers.WebError, error,
+) {
 	fmt.Println("Called 'PredicateSeverityAndState' in ResultsPredicatesMockWrapper")
 	return nil, nil
 }
 
-func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (*wrappers.PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
+	*wrappers.PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
+) {
 	fmt.Println("Called 'GetAllPredicatesForSimilarityID' in ResultsPredicatesMockWrapper")
 
 	totalCount := 1
@@ -39,5 +43,4 @@ func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarity
 			},
 		},
 	}, nil, nil
-
 }

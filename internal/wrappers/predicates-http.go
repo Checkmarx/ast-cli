@@ -27,7 +27,9 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
+	*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
+) {
 
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
@@ -54,7 +56,9 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 	r.path = newPath
 }
 
-func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (*resultsHelpers.WebError, error) {
+func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (
+	*resultsHelpers.WebError, error,
+) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	b := [...]PredicateRequest{*predicate}
 	jsonBytes, err := json.Marshal(b)
@@ -85,8 +89,10 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	return nil, nil
 }
 
-func handleResponseWithBody(resp *http.Response, err error,
-	successStatusCode int) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func handleResponseWithBody(
+	resp *http.Response, err error,
+	successStatusCode int,
+) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
 	if err != nil {
 		return nil, nil, err
 	}
