@@ -30,7 +30,6 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
 	*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
 ) {
-
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
 	var triageAPIPath = ""
@@ -83,6 +82,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	if err2 != nil {
 		return nil, err2
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		fmt.Println("Predicate updated successfully.")
 	}
