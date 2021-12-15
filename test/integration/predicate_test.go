@@ -3,12 +3,13 @@
 package integration
 
 import (
+	"io"
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
-	"io"
-	"testing"
 )
 
 // - KICS : Get all predicates for a given project and similarity id
@@ -51,7 +52,7 @@ func TestSastUpdatePredicatesForSimilarityId(t *testing.T) {
 	// triage show --project-id "c184dbea-ba31-4b6c-bbb3-65be058281e7" --similarity-id "4fb227c3e050" --scan-type "kics"
 	outputBuffer := executeCmdNilAssertion(t, "triage", "update",
 		flag(params.ProjectIDFlag), projectId,
-		flag(params.SimilarityIdFlag), similarityId,
+		flag(params.SimilarityIDFlag), similarityId,
 		flag(params.StateFlag), state,
 		flag(params.SeverityFlag), severity,
 		flag(params.CommentFlag), comment,
@@ -72,7 +73,7 @@ func TestSastGetPredicatesForSimilarityId(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(t, "triage", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ProjectIDFlag), projectId,
-		flag(params.SimilarityIdFlag), similarityId,
+		flag(params.SimilarityIDFlag), similarityId,
 		flag(params.ScanTypeFlag), scanType)
 
 	result := wrappers.PredicatesCollectionResponseModel{}
