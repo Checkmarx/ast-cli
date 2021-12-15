@@ -67,7 +67,13 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 		Long:  "The update command enables the ability to triage the results in CxAST.",
 		Example: heredoc.Doc(
 			`
-$ cx triage update --similarity-id <SimilarityID> --project-id <ProjectID> --state <TO_VERIFY, NOT_EXPLOITABLE, PROPOSED_NOT_EXPLOITABLE, CONFIRMED, URGENT> --severity <HIGH, MEDIUM, LOW, INFO > --comment <Comment(Optional)>--scan-type <SAST||KICS>
+				$ cx triage update 
+				--similarity-id <SimilarityID> 
+				--project-id <ProjectID> 
+				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT> 
+				--severity <HIGH|MEDIUM|LOW|INFO> 
+				--comment <Comment(Optional)> 
+				--scan-type <SAST|KICS>
 		`,
 		),
 		RunE: runTriageUpdate(resultsPredicatesWrapper),
@@ -87,12 +93,10 @@ $ cx triage update --similarity-id <SimilarityID> --project-id <ProjectID> --sta
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
 
 	return triageUpdateCmd
-
 }
 
 func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-
 		var predicatesCollection *wrappers.PredicatesCollectionResponseModel
 		var errorModel *resultsHelpers.WebError
 		var err error
@@ -173,7 +177,6 @@ type predicateView struct {
 }
 
 func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponseModel) []predicateView {
-
 	projectPredicatesCollection := predicatesCollection.PredicateHistoryPerProject
 
 	if len(projectPredicatesCollection) > 0 {
@@ -192,7 +195,6 @@ func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponse
 }
 
 func toSinglePredicateView(predicate *wrappers.Predicate) predicateView {
-
 	return predicateView{
 		ID:           predicate.ID,
 		ProjectID:    predicate.ProjectID,
