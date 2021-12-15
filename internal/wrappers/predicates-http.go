@@ -55,7 +55,6 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 }
 
 func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (*resultsHelpers.WebError, error) {
-
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	b := [...]PredicateRequest{*predicate}
 	jsonBytes, err := json.Marshal(b)
