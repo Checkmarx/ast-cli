@@ -296,40 +296,6 @@ func SendHTTPRequestWithQueryParams(method, path string, params map[string]strin
 	return resp, nil
 }
 
-func SendHTTPRequestWithQueryParamsLocal(method, path string, params map[string]string,
-	body io.Reader, timeout uint) (*http.Response, error) {
-	bodyStr, body := convertReqBodyToString(body)
-	u := fmt.Sprintf("%s/%s", "http://localhost:8080", path)
-	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
-	setAgentName(req)
-	if err != nil {
-		return nil, err
-	}
-	q := req.URL.Query()
-	for k, v := range params {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	err = enrichWithOath2Credentials(req)
-	if err != nil {
-		return nil, err
-	}
-	PrintIfVerbose("Sending API request to: " + u)
-	if len(bodyStr) > 0 {
-		PrintIfVerbose(bodyStr)
-	}
-	var resp *http.Response
-	resp, err = doRequest(client, req)
-	if err != nil {
-		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL)
-	}
-	if resp.StatusCode == http.StatusForbidden {
-		return resp, errors.Errorf("%s", "Provided credentials do not have permissions for this command")
-	}
-	return resp, nil
-}
-
 func getAuthURI() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
 	tenant := viper.GetString(commonParams.TenantKey)

@@ -277,18 +277,12 @@ func ReadResults(
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
-	var localResults *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
 	params[commonParams.ScanIDQueryParam] = scanID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
-	localResults, errorModel, err = resultsWrapper.GetResultPlus(scanID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedListingResults)
-	}
-	resultsModel.Results = append(resultsModel.Results, localResults.Results...)
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if resultsModel != nil {

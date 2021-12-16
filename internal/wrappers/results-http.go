@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -34,42 +33,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = "10000"
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		model := ScanResultsCollection{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return &model, nil, nil
-	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
-	}
-}
-
-func (r *ResultsHTTPWrapper) GetResultPlus(id string) (
-	*ScanResultsCollection,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	// AST has a limit of 10000 results, this makes it get all of them
-	resp, err := SendHTTPRequestWithQueryParamsLocal(http.MethodGet,
-		fmt.Sprintf("results/%s", id), nil, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
