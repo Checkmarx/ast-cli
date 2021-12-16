@@ -33,4 +33,39 @@ dockers:
   - use: docker
     dockerfile: Dockerfile
     image_templates:
-      - "pedrolopesch/ast-cli:latest"
+      - "cxsdlc/ast-cli:latest"
+      - "cxsdlc/ast-cli:{{ .Tag }}"
+      - "checkmarx/ast-cli:latest"
+      - "checkmarx/ast-cli:{{ .Tag }}"
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
+
+brews:
+  - tap:
+      owner: checkmarx
+      name: homebrew-ast-cli
+      token: "{{ .Env.GO_BOT_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/Checkmarx/ast-cli
+    description: CLI for AST
+    license: Apache
+    test: |
+      system "#{bin}/cx version"
+    install: |-
+      bin.install "cx"
+      # Install bash completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s bash")
+      (bash_completion/"cx").write output
+      # Install zsh completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s zsh")
+      (zsh_completion/"_cx").write output
+      # Install fish completion
+      output = Utils.popen_read("#{bin}/cx utils completion -s fish")
+      (fish_completion/"cx.fish").write output
