@@ -399,19 +399,17 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 		for _, result := range results.Results {
 			auxIssue.Severity = severities[result.Severity]
 			auxIssue.Type = vulnerabilitySonar
+			auxIssue.EngineID = result.Type
+			auxIssue.RuleID = result.ID
+			auxIssue.EffortMinutes = 0
 
 			if strings.EqualFold(strings.TrimSpace(result.Type), sastTypeLabel) {
-				auxIssue.EngineID = result.Type
-				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
-				auxIssue.EffortMinutes = 0
 				sonarIssues = append(sonarIssues, auxIssue)
 			}
 
 			if strings.EqualFold(strings.TrimSpace(result.Type), kicsTypeLabel) {
-				auxIssue.EngineID = result.Type
-				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseLocationInfrastructure(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}
