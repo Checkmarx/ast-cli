@@ -387,7 +387,6 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 
 func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
 	var sonarIssues []wrappers.SonarIssues
-	var auxIssue wrappers.SonarIssues
 	// Match cx severity with sonar severity
 	severities := map[string]string{
 		infoCx:   infoSonar,
@@ -397,6 +396,7 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 	}
 	if results != nil {
 		for _, result := range results.Results {
+			var auxIssue wrappers.SonarIssues
 			auxIssue.Severity = severities[result.Severity]
 			auxIssue.Type = vulnerabilitySonar
 			auxIssue.EngineID = result.Type
@@ -420,11 +420,10 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 
 func parseLocationInfrastructure(results *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
-	auxLocation.FilePath = results.ScanResultData.Filename
+	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
 	auxLocation.Message = results.ScanResultData.Value
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.ScanResultData.Line
-	auxTextRange.EndLine = results.ScanResultData.Line + 1
 	auxTextRange.StartColumn = 1
 	auxTextRange.EndColumn = 2
 	auxLocation.TextRange = auxTextRange
@@ -435,7 +434,7 @@ func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocat
 	var auxLocation wrappers.SonarLocation
 	// fill the details in the primary Location
 	if len(results.ScanResultData.Nodes) > 0 {
-		auxLocation.FilePath = results.ScanResultData.Nodes[0].FileName
+		auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Nodes[0].FileName, "/")
 		auxLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
 		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0])
 	}
@@ -448,7 +447,7 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 	if len(results.ScanResultData.Nodes) > 1 {
 		for _, node := range results.ScanResultData.Nodes[1:] {
 			var auxSecondaryLocation wrappers.SonarLocation
-			auxSecondaryLocation.FilePath = node.FileName
+			auxSecondaryLocation.FilePath = strings.TrimLeft(node.FileName, "/")
 			auxSecondaryLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
 			auxSecondaryLocation.TextRange = parseSonarTextRange(node)
 			auxSecondaryLocations = append(auxSecondaryLocations, auxSecondaryLocation)
@@ -460,9 +459,7 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	// Line range must have one line of difference
-	auxTextRange.EndLine = results.Line + 1
-	auxTextRange.StartColumn = results.Column
+	auxTextRange.StartColumn = results.Column - 1
 	auxTextRange.EndColumn = results.Column
 	return auxTextRange
 }
