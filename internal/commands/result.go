@@ -238,7 +238,7 @@ func createReport(format,
 		return exportSarifResults(sarifRpt, results)
 	}
 	if util.IsFormat(format, util.FormatSonar) {
-		sonarRpt := createTargetName(targetFile+sonarTypeLabel, targetPath, "json")
+		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, "json")
 		return exportSonarResults(sonarRpt, results)
 	}
 	if util.IsFormat(format, util.FormatJSON) {
@@ -399,16 +399,17 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 		for _, result := range results.Results {
 			auxIssue.Severity = severities[result.Severity]
 			auxIssue.Type = vulnerabilitySonar
-			// CxSAST result type
-			if result.Type != kicsTypeLabel {
+
+			if strings.EqualFold(strings.TrimSpace(result.Type), sastTypeLabel) {
 				auxIssue.EngineID = result.Type
 				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
 				auxIssue.EffortMinutes = 0
 				sonarIssues = append(sonarIssues, auxIssue)
-				// Infrastructure result type
-			} else {
+			}
+
+			if strings.EqualFold(strings.TrimSpace(result.Type), kicsTypeLabel) {
 				auxIssue.EngineID = result.Type
 				auxIssue.RuleID = result.ID
 				auxIssue.PrimaryLocation = parseLocationInfrastructure(result)
