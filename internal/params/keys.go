@@ -45,4 +45,6 @@ var (
 	SastMetadataMetricsPathKey          = strings.ToLower(SastScanIncMetricsPathEnv)
 	LogsPathKey                         = strings.ToLower(LogsPathEnv)
 	LogsEngineLogPathKey                = strings.ToLower(LogsEngineLogPathEnv)
+	SastResultsPredicatesPathKey        = strings.ToLower(SastResultsPredicatesPathEnv)
+	KicsResultsPredicatesPathKey        = strings.ToLower(KicsResultsPredicatesPathEnv)
 )
