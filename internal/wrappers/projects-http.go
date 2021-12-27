@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	projectsRESTApi "github.com/checkmarxDev/scans/pkg/api/projects/v1/rest"
 )
 
 type ProjectsHTTPWrapper struct {
@@ -22,9 +21,9 @@ func NewHTTPProjectsWrapper(path string) ProjectsWrapper {
 	}
 }
 
-func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
-	*projectsRESTApi.ProjectResponseModel,
-	*projectsRESTApi.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Create(model *Project) (
+	*ProjectResponseModel,
+	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
@@ -39,8 +38,8 @@ func (p *ProjectsHTTPWrapper) Create(model *projectsRESTApi.Project) (
 }
 
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
-	*projectsRESTApi.ProjectsCollectionResponseModel,
-	*projectsRESTApi.ErrorModel, error) {
+	*ProjectsCollectionResponseModel,
+	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	if err != nil {
@@ -51,14 +50,14 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := projectsRESTApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := projectsRESTApi.ProjectsCollectionResponseModel{}
+		model := ProjectsCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
@@ -71,8 +70,8 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 }
 
 func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
-	*projectsRESTApi.ProjectResponseModel,
-	*projectsRESTApi.ErrorModel,
+	*ProjectResponseModel,
+	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, nil, true, clientTimeout)
@@ -82,7 +81,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
-func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *projectsRESTApi.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	var request = "/branches?project-id=" + projectID
@@ -98,7 +97,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := projectsRESTApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseBranches)
@@ -117,7 +116,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 	}
 }
 
-func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true, clientTimeout)
 	if err != nil {
@@ -128,7 +127,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*projectsRESTApi.ErrorMo
 
 func (p *ProjectsHTTPWrapper) Tags() (
 	map[string][]string,
-	*projectsRESTApi.ErrorModel,
+	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", nil, true, clientTimeout)
@@ -142,7 +141,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := projectsRESTApi.ErrorModel{}
+		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseTags)

@@ -1,8 +1,5 @@
 package wrappers
 
-// ScanResultsCollection
-// NOTE: This should be read from scan-results library but that
-// isn't compatible with the mocked data from the results API???
 type ScanResultsCollection struct {
 	Results    []*ScanResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`
