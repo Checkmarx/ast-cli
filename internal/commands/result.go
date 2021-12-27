@@ -10,7 +10,6 @@ import (
 	"text/template"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -278,7 +277,7 @@ func ReadResults(
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
-	var errorModel *resultsHelpers.WebError
+	var errorModel *wrappers.WebError
 	params[commonParams.ScanIDQueryParam] = scanID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 	if err != nil {

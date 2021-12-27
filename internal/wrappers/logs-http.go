@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarxDev/logs/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -37,7 +36,7 @@ func (l *LogsHTTPWrapper) GetLog(scanID, scanType string) (string, error) {
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := &helpers.WebError{}
+		errorModel := &WebError{}
 		err = decoder.Decode(errorModel)
 		if err != nil {
 			return "", errors.Wrapf(err, failedToDecodeLogErr)
