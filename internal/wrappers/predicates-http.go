@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -28,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 }
 
 func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
-	*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
+	*PredicatesCollectionResponseModel, *WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
@@ -56,7 +55,7 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 }
 
 func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (
-	*resultsHelpers.WebError, error,
+	*WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	b := [...]PredicateRequest{*predicate}
@@ -92,7 +91,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 func handleResponseWithBody(
 	resp *http.Response, err error,
 	successStatusCode int,
-) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+) (*PredicatesCollectionResponseModel, *WebError, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,7 +101,7 @@ func handleResponseWithBody(
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := resultsHelpers.WebError{}
+		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responsePredicateParsingFailed(err)
@@ -122,6 +121,6 @@ func handleResponseWithBody(
 	}
 }
 
-func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *WebError, error) {
 	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
 }
