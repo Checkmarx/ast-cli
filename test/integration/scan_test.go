@@ -85,7 +85,7 @@ func TestCancelScan(t *testing.T) {
 	defer deleteScan(t, scanID)
 
 	// cancelling too quickly after creating fails the scan...
-	time.Sleep(30 * time.Second)
+	time.Sleep(40 * time.Second)
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
