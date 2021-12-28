@@ -1024,7 +1024,7 @@ func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, 
 
 	var errorBuilder strings.Builder
 	for key, thresholdLimit := range thresholdMap {
-		currentValue, _ := summaryMap[key]
+		currentValue := summaryMap[key]
 		failed := currentValue >= thresholdLimit
 		logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
 		log.Println(logMessage)
