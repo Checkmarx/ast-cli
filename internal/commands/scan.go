@@ -1011,7 +1011,7 @@ func handleWait(
 
 func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, scanResponseModel *wrappers.ScanResponseModel) error {
 	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
-	if len(strings.TrimSpace(threshold)) == 0 {
+	if strings.TrimSpace(threshold) == "" {
 		return nil
 	}
 
@@ -1057,15 +1057,15 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanId string) (map[string]int, error) {
-	results, err := ReadResults(resultsWrapper, scanId, make(map[string]string))
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID string) (map[string]int, error) {
+	results, err := ReadResults(resultsWrapper, scanID, make(map[string]string))
 	if err != nil {
 		return nil, err
 	}
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
 		key := strings.ToLower(fmt.Sprintf("%s-%s", resultTypes[strings.ToLower(result.Type)], result.Severity))
-		summaryMap[key] += 1
+		summaryMap[key]++
 	}
 	return summaryMap, nil
 }
