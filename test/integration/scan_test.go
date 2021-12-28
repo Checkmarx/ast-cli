@@ -114,6 +114,25 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThreshold(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Threshold sast-low: Limit = 1")
+}
+
 // Create a scan ignoring the exclusion of the .git directory
 // Assert the folder is included in the logs
 func TestScanCreateIgnoreExclusionFolders(t *testing.T) {

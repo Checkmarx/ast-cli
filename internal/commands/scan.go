@@ -1024,15 +1024,13 @@ func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, 
 
 	var errorBuilder strings.Builder
 	for key, thresholdLimit := range thresholdMap {
-		if currentValue, ok := summaryMap[key]; ok {
-			failed := currentValue > thresholdLimit
-			logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
-			log.Println(logMessage)
-			if failed {
-				errorBuilder.WriteString(fmt.Sprintf("%s |", logMessage))
-			}
-		} else {
-			log.Printf(thresholdLog, key, thresholdLimit, "Not found")
+		currentValue, _ := summaryMap[key]
+		failed := currentValue >= thresholdLimit
+		logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
+		log.Println(logMessage)
+
+		if failed {
+			errorBuilder.WriteString(fmt.Sprintf("%s |", logMessage))
 		}
 	}
 
@@ -1050,7 +1048,9 @@ func parseThreshold(threshold string) map[string]int {
 		thresholdLimits := strings.Split(threshold, ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
-			thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+			if len(limit) > 1 {
+				thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+			}
 		}
 	}
 
