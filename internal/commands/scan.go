@@ -1030,7 +1030,7 @@ func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, 
 		log.Println(logMessage)
 
 		if failed {
-			errorBuilder.WriteString(fmt.Sprintf("%s |", logMessage))
+			errorBuilder.WriteString(fmt.Sprintf("%s | ", logMessage))
 		}
 	}
 
