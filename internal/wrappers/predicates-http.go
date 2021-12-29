@@ -37,7 +37,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), SAST) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	}
-	fmt.Println("Fetching the predicate history for SimilarityId : " + similarityID)
+	PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
 	r.SetPath(triageAPIPath)
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
