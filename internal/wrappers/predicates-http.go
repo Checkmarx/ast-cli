@@ -82,10 +82,18 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err2
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return nil, errors.Errorf("Predicate bad request.")
+	case http.StatusOK:
 		fmt.Println("Predicate updated successfully.")
+		return nil, nil
+	case http.StatusNotFound:
+		return nil, errors.Errorf("Predicate not found.")
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
-	return nil, nil
 }
 
 func handleResponseWithBody(

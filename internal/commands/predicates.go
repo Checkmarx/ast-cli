@@ -158,7 +158,10 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 			ScannerType:  scanType,
 		}
 
-		_, _ = resultsPredicatesWrapper.PredicateSeverityAndState(predicate)
+		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
