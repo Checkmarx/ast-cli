@@ -2,8 +2,6 @@ package wrappers
 
 import (
 	"time"
-
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 )
 
 type BasePredicate struct {
@@ -43,8 +41,8 @@ type PredicatesCollectionResponseModel struct {
 }
 
 type ResultsPredicatesWrapper interface {
-	PredicateSeverityAndState(predicate *PredicateRequest) (*resultsHelpers.WebError, error)
+	PredicateSeverityAndState(predicate *PredicateRequest) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,
-	) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error)
+	) (*PredicatesCollectionResponseModel, *WebError, error)
 }

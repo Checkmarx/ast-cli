@@ -76,6 +76,7 @@ const (
 	ProjectTagList           = "project-tags"
 	IncrementalSast          = "sast-incremental"
 	PresetName               = "sast-preset-name"
+	Threshold                = "threshold"
 	KeyValuePairSize         = 2
 	WaitDelayDefault         = 5
 	SimilarityIDFlag         = "similarity-id"
@@ -112,6 +113,16 @@ const (
 	BaseIAMURI             = ""
 	Tenant                 = ""
 	Branch                 = ""
+)
+
+// Results
+const (
+	SastTypeLabel = "sast"
+	SastType      = "sast"
+	KicsTypeLabel = "infrastructure"
+	KicsType      = "kics"
+	ScaTypeLabel  = "dependency"
+	ScaType       = "sca"
 )
 
 // ScaAgent AST Role

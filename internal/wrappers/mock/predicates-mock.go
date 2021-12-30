@@ -5,21 +5,20 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 )
 
 type ResultsPredicatesMockWrapper struct {
 }
 
 func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest) (
-	*resultsHelpers.WebError, error,
+	*wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'PredicateSeverityAndState' in ResultsPredicatesMockWrapper")
 	return nil, nil
 }
 
 func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
-	*wrappers.PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
+	*wrappers.PredicatesCollectionResponseModel, *wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'GetAllPredicatesForSimilarityID' in ResultsPredicatesMockWrapper")
 
