@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/gookit/color v1.4.2
 	github.com/mssola/user_agent v0.5.3
 	github.com/pkg/errors v0.9.1
