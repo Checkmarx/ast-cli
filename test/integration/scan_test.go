@@ -85,7 +85,7 @@ func TestCancelScan(t *testing.T) {
 	defer deleteScan(t, scanID)
 
 	// cancelling too quickly after creating fails the scan...
-	time.Sleep(30 * time.Second)
+	time.Sleep(40 * time.Second)
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
@@ -112,6 +112,25 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 	args = append(args, flag(params.IncludeFilterFlag), "*txt")
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
+}
+
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThreshold(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Threshold sast-low: Limit = 1")
 }
 
 // Create a scan ignoring the exclusion of the .git directory

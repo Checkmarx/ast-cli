@@ -8,7 +8,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -98,7 +97,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		var predicatesCollection *wrappers.PredicatesCollectionResponseModel
-		var errorModel *resultsHelpers.WebError
+		var errorModel *wrappers.WebError
 		var err error
 
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
@@ -159,7 +158,10 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 			ScannerType:  scanType,
 		}
 
-		_, _ = resultsPredicatesWrapper.PredicateSeverityAndState(predicate)
+		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}

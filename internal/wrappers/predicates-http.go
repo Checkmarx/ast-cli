@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
-	resultsHelpers "github.com/checkmarxDev/sast-results/pkg/web/helpers"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -28,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 }
 
 func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
-	*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error,
+	*PredicatesCollectionResponseModel, *WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
@@ -38,7 +37,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), SAST) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	}
-	fmt.Println("Fetching the predicate history for SimilarityId : " + similarityID)
+	PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
 	r.SetPath(triageAPIPath)
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
@@ -56,7 +55,7 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 }
 
 func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (
-	*resultsHelpers.WebError, error,
+	*WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	b := [...]PredicateRequest{*predicate}
@@ -83,16 +82,24 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err2
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return nil, errors.Errorf("Predicate bad request.")
+	case http.StatusOK:
 		fmt.Println("Predicate updated successfully.")
+		return nil, nil
+	case http.StatusNotFound:
+		return nil, errors.Errorf("Predicate not found.")
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
-	return nil, nil
 }
 
 func handleResponseWithBody(
 	resp *http.Response, err error,
 	successStatusCode int,
-) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+) (*PredicatesCollectionResponseModel, *WebError, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,7 +109,7 @@ func handleResponseWithBody(
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := resultsHelpers.WebError{}
+		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
 			return responsePredicateParsingFailed(err)
@@ -122,6 +129,6 @@ func handleResponseWithBody(
 	}
 }
 
-func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *resultsHelpers.WebError, error) {
+func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *WebError, error) {
 	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
 }
