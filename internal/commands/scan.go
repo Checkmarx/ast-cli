@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,12 +33,18 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
+	thresholdLog      = "Threshold %s: Limit = %d, Current = %v"
 	mbBytes           = 1024.0 * 1024.0
 	resolverFilePerm  = 0644
 )
 
 var (
-	scaResolverResultsFile  = ""
+	scaResolverResultsFile = ""
+	resultTypes            = map[string]string{
+		commonParams.SastTypeLabel: commonParams.SastType,
+		commonParams.KicsTypeLabel: commonParams.KicsType,
+		commonParams.ScaTypeLabel:  commonParams.ScaType,
+	}
 	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
@@ -324,6 +331,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ProjectGroupList, "", "List of groups to associate to project")
 	createScanCmd.PersistentFlags().String(commonParams.ProjectTagList, "", "List of tags to associate to project")
+	createScanCmd.PersistentFlags().String(commonParams.Threshold, "", "Local build threshold. Format <engine>-<severity>=<limit>;<severity>=<limit>")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -873,7 +881,15 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			return handleWait(cmd, scanResponseModel, waitDelay, scansWrapper, resultsWrapper)
+			err := handleWait(cmd, scanResponseModel, waitDelay, scansWrapper, resultsWrapper)
+			if err != nil {
+				return err
+			}
+
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -991,6 +1007,67 @@ func handleWait(
 		targetPath,
 		params,
 	)
+}
+
+func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, scanResponseModel *wrappers.ScanResponseModel) error {
+	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
+	if strings.TrimSpace(threshold) == "" {
+		return nil
+	}
+
+	thresholdMap := parseThreshold(threshold)
+
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel.ID)
+	if err != nil {
+		return err
+	}
+
+	var errorBuilder strings.Builder
+	for key, thresholdLimit := range thresholdMap {
+		currentValue := summaryMap[key]
+		failed := currentValue >= thresholdLimit
+		logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
+		log.Println(logMessage)
+
+		if failed {
+			errorBuilder.WriteString(fmt.Sprintf("%s | ", logMessage))
+		}
+	}
+
+	errorMessage := errorBuilder.String()
+	if errorMessage != "" {
+		return errors.Errorf("%s", errorMessage)
+	}
+
+	return nil
+}
+
+func parseThreshold(threshold string) map[string]int {
+	thresholdMap := make(map[string]int)
+	if threshold != "" {
+		thresholdLimits := strings.Split(threshold, ";")
+		for _, limits := range thresholdLimits {
+			limit := strings.Split(limits, "=")
+			if len(limit) > 1 {
+				thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+			}
+		}
+	}
+
+	return thresholdMap
+}
+
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID string) (map[string]int, error) {
+	results, err := ReadResults(resultsWrapper, scanID, make(map[string]string))
+	if err != nil {
+		return nil, err
+	}
+	summaryMap := make(map[string]int)
+	for _, result := range results.Results {
+		key := strings.ToLower(fmt.Sprintf("%s-%s", resultTypes[strings.ToLower(result.Type)], result.Severity))
+		summaryMap[key]++
+	}
+	return summaryMap, nil
 }
 
 func waitForScanCompletion(
