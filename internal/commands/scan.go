@@ -33,7 +33,8 @@ const (
 	failedDeleting    = "Failed deleting a scan"
 	failedCanceling   = "Failed canceling a scan"
 	failedGettingAll  = "Failed listing"
-	thresholdLog      = "Threshold %s: Limit = %d, Current = %v"
+	thresholdLog      = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog   = "Threshold check finished with status %s : %s"
 	mbBytes           = 1024.0 * 1024.0
 	resolverFilePerm  = 0644
 )
@@ -1023,20 +1024,28 @@ func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, 
 	}
 
 	var errorBuilder strings.Builder
+	var messageBuilder strings.Builder
 	for key, thresholdLimit := range thresholdMap {
 		currentValue := summaryMap[key]
 		failed := currentValue >= thresholdLimit
 		logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
-		log.Println(logMessage)
+		PrintIfVerbose(logMessage)
 
 		if failed {
 			errorBuilder.WriteString(fmt.Sprintf("%s | ", logMessage))
+		} else {
+			messageBuilder.WriteString(fmt.Sprintf("%s | ", logMessage))
 		}
 	}
 
 	errorMessage := errorBuilder.String()
 	if errorMessage != "" {
-		return errors.Errorf("%s", errorMessage)
+		return errors.Errorf(thresholdMsgLog, "Failed", errorMessage)
+	}
+
+	successMessage := messageBuilder.String()
+	if successMessage != "" {
+		log.Printf(thresholdMsgLog, "Success", successMessage)
 	}
 
 	return nil
