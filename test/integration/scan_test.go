@@ -130,7 +130,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Threshold sast-low: Limit = 1")
+	assertError(t, err, "Threshold check finished with status Failed")
 }
 
 // Create a scan ignoring the exclusion of the .git directory
