@@ -19,6 +19,7 @@ type ScanResult struct {
 	FirstScanID          string               `json:"firstScanId,omitempty"`
 	PublishedAt          string               `json:"publishedAt,omitempty"`
 	Recommendations      string               `json:"recommendations,omitempty"`
+	Description          string               `json:"description,omitempty"`
 	ScanResultData       ScanResultData       `json:"data,omitempty"`
 	Comments             ResultComments       `json:"comments,omitempty"`
 	VulnerabilityDetails VulnerabilityDetails `json:"vulnerabilityDetails,omitempty"`
@@ -76,7 +77,7 @@ type ScanResultData struct {
 	Nodes        []*ScanResultNode        `json:"nodes"`
 	PackageData  []*ScanResultPackageData `json:"packageData,omitempty"`
 	PackageID    []*ScanResultPackageData `json:"packageId,omitempty"`
-	// Added to support infrastructure results
+	// Added to support kics results
 	Line          uint   `json:"line,omitempty"`
 	Platform      string `json:"platform,omitempty"`
 	IssueType     string `json:"issueType,omitempty"`

@@ -119,9 +119,9 @@ const (
 const (
 	SastTypeLabel = "sast"
 	SastType      = "sast"
-	KicsTypeLabel = "infrastructure"
+	KicsTypeLabel = "kics"
 	KicsType      = "kics"
-	ScaTypeLabel  = "dependency"
+	ScaTypeLabel  = "sca"
 	ScaType       = "sca"
 )
 

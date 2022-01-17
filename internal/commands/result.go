@@ -23,10 +23,7 @@ const (
 	mediumLabel          = "medium"
 	highLabel            = "high"
 	lowLabel             = "low"
-	sastTypeLabel        = "sast"
 	sonarTypeLabel       = "_sonar"
-	kicsTypeLabel        = "infrastructure"
-	scaTypeLabel         = "dependency"
 	directoryPermission  = 0700
 	infoSonar            = "INFO"
 	lowSonar             = "MINOR"
@@ -126,11 +123,11 @@ func SummaryReport(
 }
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
-	if result.Type == sastTypeLabel {
+	if result.Type == commonParams.SastTypeLabel {
 		summary.SastIssues++
-	} else if result.Type == scaTypeLabel {
+	} else if result.Type == commonParams.ScaTypeLabel {
 		summary.ScaIssues++
-	} else if result.Type == kicsTypeLabel {
+	} else if result.Type == commonParams.KicsTypeLabel {
 		summary.KicsIssues++
 	}
 	severity := strings.ToLower(result.Severity)
@@ -226,7 +223,8 @@ func CreateScanReport(
 	return nil
 }
 
-func createReport(format,
+func createReport(
+	format,
 	targetFile,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
@@ -402,14 +400,14 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			auxIssue.RuleID = result.ID
 			auxIssue.EffortMinutes = 0
 
-			if strings.EqualFold(strings.TrimSpace(result.Type), sastTypeLabel) {
+			if strings.EqualFold(strings.TrimSpace(result.Type), commonParams.SastTypeLabel) {
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}
 
-			if strings.EqualFold(strings.TrimSpace(result.Type), kicsTypeLabel) {
-				auxIssue.PrimaryLocation = parseLocationInfrastructure(result)
+			if strings.EqualFold(strings.TrimSpace(result.Type), commonParams.KicsTypeLabel) {
+				auxIssue.PrimaryLocation = parseLocationKics(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}
 		}
@@ -417,7 +415,7 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 	return sonarIssues
 }
 
-func parseLocationInfrastructure(results *wrappers.ScanResult) wrappers.SonarLocation {
+func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
 	auxLocation.Message = results.ScanResultData.Value
