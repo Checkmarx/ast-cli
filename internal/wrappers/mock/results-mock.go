@@ -6,7 +6,11 @@ import (
 
 type ResultsMockWrapper struct{}
 
-func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *wrappers.WebError, error) {
+func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (
+	*wrappers.ScanResultsCollection,
+	*wrappers.WebError,
+	error,
+) {
 	const mock = "MOCK"
 	return &wrappers.ScanResultsCollection{
 		Results: []*wrappers.ScanResult{
@@ -22,7 +26,11 @@ func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (*wrappers.ScanResu
 	}, nil, nil
 }
 
-func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrappers.ScanResultsCollection, *wrappers.WebError, error) {
+func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
+	*wrappers.ScanResultsCollection,
+	*wrappers.WebError,
+	error,
+) {
 	return &wrappers.ScanResultsCollection{
 		TotalCount: 3,
 		Results: []*wrappers.ScanResult{
@@ -47,7 +55,7 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrapper
 				},
 			},
 			{
-				Type:     "dependency",
+				Type:     "sca",
 				Severity: "medium",
 				ScanResultData: wrappers.ScanResultData{
 					QueryID:   12.4,
@@ -69,7 +77,7 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (*wrapper
 				},
 			},
 			{
-				Type:     "infrastructure",
+				Type:     "kics",
 				Severity: "low",
 			},
 		},
