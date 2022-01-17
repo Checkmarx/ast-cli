@@ -40,12 +40,7 @@ const (
 )
 
 var (
-	scaResolverResultsFile = ""
-	resultTypes            = map[string]string{
-		commonParams.SastTypeLabel: commonParams.SastType,
-		commonParams.KicsTypeLabel: commonParams.KicsType,
-		commonParams.ScaTypeLabel:  commonParams.ScaType,
-	}
+	scaResolverResultsFile  = ""
 	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
@@ -110,7 +105,16 @@ func NewScanCommand(
 		[]*cobra.Command{createScanCmd},
 		util.FormatList, util.FormatTable, util.FormatJSON,
 	)
-	scanCmd.AddCommand(createScanCmd, showScanCmd, workflowScanCmd, listScansCmd, deleteScanCmd, cancelScanCmd, tagsCmd, logsCmd)
+	scanCmd.AddCommand(
+		createScanCmd,
+		showScanCmd,
+		workflowScanCmd,
+		listScansCmd,
+		deleteScanCmd,
+		cancelScanCmd,
+		tagsCmd,
+		logsCmd,
+	)
 	return scanCmd
 }
 
@@ -119,9 +123,11 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 		Use:   "logs",
 		Short: "Download scan log for selected scan type",
 		Long:  "Accepts a scan-id and scan type (sast, kics or sca) and downloads the related scan log",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | kics>
-		`),
+		`,
+		),
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
@@ -294,7 +300,12 @@ func scanCreateSubCommand(
 		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, groupsWrapper),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
-	createScanCmd.PersistentFlags().IntP(commonParams.WaitDelayFlag, "", commonParams.WaitDelayDefault, "Polling wait time in seconds")
+	createScanCmd.PersistentFlags().IntP(
+		commonParams.WaitDelayFlag,
+		"",
+		commonParams.WaitDelayDefault,
+		"Polling wait time in seconds",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
@@ -319,20 +330,34 @@ func scanCreateSubCommand(
 	if err != nil {
 		log.Fatal(err)
 	}
-	createScanCmd.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan should be performed.")
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.IncrementalSast,
+		false,
+		"Incremental SAST scan should be performed.",
+	)
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(commonParams.ScaResolverFlag, "", "Resolve SCA project dependencies (default true)")
+	createScanCmd.PersistentFlags().String(
+		commonParams.ScaResolverFlag,
+		"",
+		"Resolve SCA project dependencies (default true)",
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
-	createScanCmd.PersistentFlags().StringP(commonParams.BranchFlag, commonParams.BranchFlagSh,
-		commonParams.Branch, commonParams.BranchFlagUsage)
+	createScanCmd.PersistentFlags().StringP(
+		commonParams.BranchFlag, commonParams.BranchFlagSh,
+		commonParams.Branch, commonParams.BranchFlagUsage,
+	)
 	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ProjectGroupList, "", "List of groups to associate to project")
 	createScanCmd.PersistentFlags().String(commonParams.ProjectTagList, "", "List of tags to associate to project")
-	createScanCmd.PersistentFlags().String(commonParams.Threshold, "", "Local build threshold. Format <engine>-<severity>=<limit>;<severity>=<limit>")
+	createScanCmd.PersistentFlags().String(
+		commonParams.Threshold,
+		"",
+		"Local build threshold. Format <engine>-<severity>=<limit>;<severity>=<limit>",
+	)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -345,10 +370,12 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(projectName string,
+func findProject(
+	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper) (string, error) {
+	groupsWrapper wrappers.GroupsWrapper,
+) (string, error) {
 	params := make(map[string]string)
 	params["name"] = projectName
 	resp, _, err := projectsWrapper.Get(params)
@@ -367,10 +394,12 @@ func findProject(projectName string,
 	return projectID, nil
 }
 
-func createProject(projectName string,
+func createProject(
+	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper) (string, error) {
+	groupsWrapper wrappers.GroupsWrapper,
+) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
@@ -431,11 +460,13 @@ func createTagMap(tagListStr string) map[string]string {
 	return tags
 }
 
-func updateScanRequestValues(input *[]byte,
+func updateScanRequestValues(
+	input *[]byte,
 	cmd *cobra.Command,
 	sourceType string,
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper) error {
+	groupsWrapper wrappers.GroupsWrapper,
+) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -450,7 +481,12 @@ func updateScanRequestValues(input *[]byte,
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	}
 	// We need to convert the project name into an ID
-	projectID, err := findProject(info["project"].(map[string]interface{})["id"].(string), cmd, projectsWrapper, groupsWrapper)
+	projectID, err := findProject(
+		info["project"].(map[string]interface{})["id"].(string),
+		cmd,
+		projectsWrapper,
+		groupsWrapper,
+	)
 	if err != nil {
 		return err
 	}
@@ -1010,7 +1046,11 @@ func handleWait(
 	)
 }
 
-func applyThreshold(cmd *cobra.Command, resultsWrapper wrappers.ResultsWrapper, scanResponseModel *wrappers.ScanResponseModel) error {
+func applyThreshold(
+	cmd *cobra.Command,
+	resultsWrapper wrappers.ResultsWrapper,
+	scanResponseModel *wrappers.ScanResponseModel,
+) error {
 	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
 	if strings.TrimSpace(threshold) == "" {
 		return nil
@@ -1073,7 +1113,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID strin
 	}
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
-		key := strings.ToLower(fmt.Sprintf("%s-%s", resultTypes[strings.ToLower(result.Type)], result.Severity))
+		key := strings.ToLower(fmt.Sprintf("%s-%s", result.Type, result.Severity))
 		summaryMap[key]++
 	}
 	return summaryMap, nil

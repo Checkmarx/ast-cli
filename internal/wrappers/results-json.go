@@ -74,7 +74,7 @@ type ScanResultData struct {
 	ResultHash   string                   `json:"resultHash,omitempty"`
 	LanguageName string                   `json:"languageName,omitempty"`
 	Description  string                   `json:"description,omitempty"`
-	Nodes        []*ScanResultNode        `json:"nodes"`
+	Nodes        []*ScanResultNode        `json:"nodes,omitempty"`
 	PackageData  []*ScanResultPackageData `json:"packageData,omitempty"`
 	PackageID    []*ScanResultPackageData `json:"packageId,omitempty"`
 	// Added to support kics results

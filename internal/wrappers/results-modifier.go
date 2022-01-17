@@ -2,7 +2,8 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/checkmarx/ast-cli/internal/params"
 )
 
 // UnmarshalJSON Function normalizes description to ScanResult
@@ -13,25 +14,23 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	}{
 		Alias: (*Alias)(s),
 	}
+
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	if aux.Description == "" {
-		if aux.ScanResultData.Description != "" {
-			aux.Description = aux.ScanResultData.Description
-			aux.ScanResultData.Description = ""
-		} else if aux.ScanResultData.ExpectedValue != "" && aux.ScanResultData.Value != "" {
-			aux.Description = fmt.Sprintf(
-				"Value: %s<br />Expected Value: %s",
-				aux.ScanResultData.Value,
-				aux.ScanResultData.ExpectedValue,
-			)
-		}
+	if s.Type == "infrastructure" {
+		s.Type = params.KicsType
 	}
 
-	s.Description = aux.Description
-	s.ScanResultData.Description = aux.ScanResultData.Description
+	if s.Type == "dependency" {
+		s.Type = params.ScaType
+	}
+
+	if s.Description == "" && s.ScanResultData.Description != "" {
+		s.Description = s.ScanResultData.Description
+		s.ScanResultData.Description = ""
+	}
 
 	return nil
 }

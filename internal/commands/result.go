@@ -123,11 +123,12 @@ func SummaryReport(
 }
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
-	if result.Type == commonParams.SastTypeLabel {
+	engineType := strings.TrimSpace(result.Type)
+	if engineType == commonParams.SastType {
 		summary.SastIssues++
-	} else if result.Type == commonParams.ScaTypeLabel {
+	} else if engineType == commonParams.ScaType {
 		summary.ScaIssues++
-	} else if result.Type == commonParams.KicsTypeLabel {
+	} else if engineType == commonParams.KicsType {
 		summary.KicsIssues++
 	}
 	severity := strings.ToLower(result.Severity)
@@ -400,13 +401,13 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			auxIssue.RuleID = result.ID
 			auxIssue.EffortMinutes = 0
 
-			if strings.EqualFold(strings.TrimSpace(result.Type), commonParams.SastTypeLabel) {
+			engineType := strings.TrimSpace(result.Type)
+
+			if engineType == commonParams.SastType {
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
 				sonarIssues = append(sonarIssues, auxIssue)
-			}
-
-			if strings.EqualFold(strings.TrimSpace(result.Type), commonParams.KicsTypeLabel) {
+			} else if engineType == commonParams.KicsType {
 				auxIssue.PrimaryLocation = parseLocationKics(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}

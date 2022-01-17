@@ -117,12 +117,9 @@ const (
 
 // Results
 const (
-	SastTypeLabel = "sast"
-	SastType      = "sast"
-	KicsTypeLabel = "kics"
-	KicsType      = "kics"
-	ScaTypeLabel  = "sca"
-	ScaType       = "sca"
+	SastType = "sast"
+	KicsType = "kics"
+	ScaType  = "sca"
 )
 
 // ScaAgent AST Role
