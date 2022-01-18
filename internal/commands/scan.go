@@ -1015,7 +1015,7 @@ func setupProjectHandler(
 func handleWait(
 	cmd *cobra.Command,
 	scanResponseModel *wrappers.ScanResponseModel,
-	waitDelay int,
+	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -1128,7 +1128,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID strin
 
 func waitForScanCompletion(
 	scanResponseModel *wrappers.ScanResponseModel,
-	waitDelay int,
+	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 ) error {
@@ -1144,7 +1144,7 @@ func waitForScanCompletion(
 			break
 		}
 		if timeoutMinutes > 0 && time.Now().After(timeout) {
-			log.Println("Cancelling scan", scanResponseModel.ID)
+			log.Println("Canceling scan", scanResponseModel.ID)
 			errorModel, err := scansWrapper.Cancel(scanResponseModel.ID)
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCanceling)
