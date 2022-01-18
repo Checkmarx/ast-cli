@@ -176,6 +176,31 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 	}
 }
 
+// Test the timeout for a long scan
+func TestScanTimeout(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), SlowRepo,
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "develop",
+		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.TimeoutFlag), "1",
+	}
+
+	cmd, buffer := createRedirectedTestCommand(t)
+	err := execute(cmd, args...)
+
+	assert.Assert(t, err != nil, "scan should time out")
+
+	createdScan := wrappers.ScanResponseModel{}
+	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
+
+	assert.Assert(t, pollScanUntilStatus(t, createdScan.ID, wrappers.ScanCanceled, 120, 15), "Scan should be canceled")
+}
+
 // Generic scan test execution
 // - Get scan with 'scan list' and assert status and IDs
 // - Get scan with 'scan show' and assert the ID
@@ -282,7 +307,8 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 }
 
 func showScan(t *testing.T, scanID string) wrappers.ScanResponseModel {
-	outputBuffer := executeCmdNilAssertion(t, "Getting the scan should pass", "scan", "show",
+	outputBuffer := executeCmdNilAssertion(
+		t, "Getting the scan should pass", "scan", "show",
 		flag(params.FormatFlag), util.FormatJSON,
 		flag(params.ScanIDFlag), scanID,
 	)
