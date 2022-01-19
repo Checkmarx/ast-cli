@@ -14,7 +14,7 @@ import (
 
 const configDirName = "/.checkmarx"
 const obfuscateLimit = 4
-const homeDirectoryPermissions = 0600
+const homeDirectoryPermissions = 0700
 
 func PromptConfiguration() {
 	reader := bufio.NewReader(os.Stdin)
