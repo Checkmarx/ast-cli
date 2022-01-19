@@ -28,7 +28,7 @@ func TestResultListJson(t *testing.T) {
 
 	outputBuffer := executeCmdNilAssertion(t, "Getting results should pass",
 		"result",
-		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole, util.FormatSonar}, ","),
+		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole, util.FormatSonar, util.FormatSummaryJSON}, ","),
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
