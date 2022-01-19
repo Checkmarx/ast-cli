@@ -19,6 +19,7 @@ const (
 	TenantFlagUsage          = "Checkmarx tenant"
 	AsyncFlag                = "async"
 	WaitDelayFlag            = "wait-delay"
+	ScanTimeoutFlag          = "scan-timeout"
 	SourceDirFilterFlag      = "file-filter"
 	SourceDirFilterFlagSh    = "f"
 	IncludeFilterFlag        = "file-include"

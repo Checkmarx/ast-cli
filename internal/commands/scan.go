@@ -306,6 +306,11 @@ func scanCreateSubCommand(
 		commonParams.WaitDelayDefault,
 		"Polling wait time in seconds",
 	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanTimeoutFlag,
+		0,
+		"Cancel the scan and fail after the timeout in minutes",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
@@ -918,7 +923,8 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			err := handleWait(cmd, scanResponseModel, waitDelay, scansWrapper, resultsWrapper)
+			timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1009,11 +1015,12 @@ func setupProjectHandler(
 func handleWait(
 	cmd *cobra.Command,
 	scanResponseModel *wrappers.ScanResponseModel,
-	waitDelay int,
+	waitDelay,
+	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) error {
-	err := waitForScanCompletion(scanResponseModel, waitDelay, scansWrapper)
+	err := waitForScanCompletion(scanResponseModel, waitDelay, timeoutMinutes, scansWrapper)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -1121,10 +1128,12 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID strin
 
 func waitForScanCompletion(
 	scanResponseModel *wrappers.ScanResponseModel,
-	waitDelay int,
+	waitDelay,
+	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 ) error {
-	log.Println("wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
+	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
+	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
 	time.Sleep(time.Duration(waitDelay) * time.Second)
 	for {
 		running, err := isScanRunning(scansWrapper, scanResponseModel.ID)
@@ -1133,6 +1142,17 @@ func waitForScanCompletion(
 		}
 		if !running {
 			break
+		}
+		if timeoutMinutes > 0 && time.Now().After(timeout) {
+			log.Println("Canceling scan", scanResponseModel.ID)
+			errorModel, err := scansWrapper.Cancel(scanResponseModel.ID)
+			if err != nil {
+				return errors.Wrapf(err, "%s\n", failedCanceling)
+			}
+			if errorModel != nil {
+				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+			}
+			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
 		time.Sleep(time.Duration(waitDelay) * time.Second)
 	}
@@ -1273,7 +1293,6 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCanceling)
 			}
-
 			// Checking the response
 			if errorModel != nil {
 				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
