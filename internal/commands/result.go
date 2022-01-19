@@ -61,7 +61,8 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
-	addResultFormatFlag(resultCmd, util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif)
+	addResultFormatFlag(resultCmd,
+		util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif, util.FormatSummaryJSON)
 	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -250,6 +251,10 @@ func createReport(
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		return writeHTMLSummary(summaryRpt, summary)
 	}
+	if util.IsFormat(format, util.FormatSummaryJSON) {
+		summaryRpt := createTargetName(targetFile, targetPath, "json")
+		return exportJSONSummaryResults(summaryRpt, summary)
+	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
 }
@@ -329,6 +334,23 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	var err error
 	var resultsJSON []byte
 	log.Println("Creating JSON Report: ", targetFile)
+	resultsJSON, err = json.Marshal(results)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+	}
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	_ = f.Close()
+	return nil
+}
+
+func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
+	var err error
+	var resultsJSON []byte
+	log.Println("Creating summary JSON Report: ", targetFile)
 	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
