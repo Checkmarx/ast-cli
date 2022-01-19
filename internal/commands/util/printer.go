@@ -17,7 +17,7 @@ const (
 	FormatSarif          = "sarif"
 	FormatSonar          = "sonar"
 	FormatSummary        = "summaryHTML"
-	FormatSummaryJson    = "summaryJSON"
+	FormatSummaryJSON    = "summaryJSON"
 	FormatSummaryConsole = "summaryConsole"
 	FormatList           = "list"
 	FormatTable          = "table"
