@@ -187,7 +187,7 @@ func TestScanTimeout(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "develop",
 		flag(params.FormatFlag), util.FormatJSON,
-		flag(params.TimeoutFlag), "1",
+		flag(params.ScanTimeoutFlag), "1",
 	}
 
 	cmd, buffer := createRedirectedTestCommand(t)

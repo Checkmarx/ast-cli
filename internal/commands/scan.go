@@ -923,7 +923,7 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.TimeoutFlag)
+			timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
