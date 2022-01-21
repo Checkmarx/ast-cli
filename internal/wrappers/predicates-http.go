@@ -42,12 +42,8 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
 	PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
-	resp, err := SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout)
-	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
-	if err != nil {
-		return nil, nil, err
-	}
-	return handleResponseWithBody(resp, err, http.StatusOK)
+
+	return handleResponseWithBody(SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout))
 }
 
 func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
@@ -75,13 +71,16 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 
 	r.SetPath(triageAPIPath)
 
-	resp, err2 := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+
 	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
 
-	if err2 != nil {
-		return nil, err2
-	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -96,16 +95,18 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	}
 }
 
-func handleResponseWithBody(
-	resp *http.Response, err error,
-	successStatusCode int,
-) (*PredicatesCollectionResponseModel, *WebError, error) {
+func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollectionResponseModel, *WebError, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+
 	decoder := json.NewDecoder(resp.Body)
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -115,7 +116,7 @@ func handleResponseWithBody(
 			return responsePredicateParsingFailed(err)
 		}
 		return nil, &errorModel, nil
-	case successStatusCode:
+	case http.StatusOK:
 		model := PredicatesCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
