@@ -1,5 +1,7 @@
+[![Documentation][documentation-shield]][documentation-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
+[![Docker Pulls][docker-shield]][docker-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
@@ -142,6 +144,10 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli?style=flat-square
+[docker-url]:https://hub.docker.com/r/checkmarx/ast-cli
+[documentation-shield]: https://img.shields.io/badge/docs-viewdocs-blue.svg?style=flat-square
+[documentation-url]:https://checkmarx.atlassian.net/wiki/spaces/AST/pages/2967766116/CxAST+Plugins
 [contributors-shield]: https://img.shields.io/github/contributors/Checkmarx/ast-cli.svg?style=flat-square
 [contributors-url]: https://github.com/Checkmarx/ast-cli/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/Checkmarx/ast-cli.svg?style=flat-square
