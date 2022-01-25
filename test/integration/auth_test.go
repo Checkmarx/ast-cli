@@ -12,7 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-  
+
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -78,27 +78,43 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 	assertError(t, err, "Failed to authenticate - please provide an authentication path")
 }
 
-// Register with empty username or password
-func TestAuthRegisterWithEmptyUsernameOrPassword(t *testing.T) {
-	assertRequiredParameter(t, "Please provide username flag",
+// Register with empty username, password or role
+func TestAuthRegisterWithEmptyParameters(t *testing.T) {
+	assertRequiredParameter(
+		t, "Please provide username flag",
 		"auth", "register",
 		flag(params.UsernameFlag), "",
-		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv))
+		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+		flag(params.ClientRolesFlag), "ast-admin,ast-scanner",
+	)
 
-	assertRequiredParameter(t, "Please provide password flag",
+	assertRequiredParameter(
+		t, "Please provide password flag",
 		"auth", "register",
 		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
-		flag(params.PasswordFlag), "")
+		flag(params.PasswordFlag), "",
+		flag(params.ClientRolesFlag), "ast-admin,ast-scanner",
+	)
+
+	assertRequiredParameter(
+		t, "Please provide roles flag",
+		"auth", "register",
+		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
+		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+		flag(params.ClientRolesFlag), "",
+	)
 }
 
 // Register with credentials and validate the obtained id/secret pair
 func TestAuthRegister(t *testing.T) {
 	registerCommand, buffer := createRedirectedTestCommand(t)
 
-	err := execute(registerCommand,
+	err := execute(
+		registerCommand,
 		"auth", "register",
 		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
 		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
 	)
 	assert.NilError(t, err, "Register should pass")
 
@@ -123,7 +139,16 @@ func TestAuthRegister(t *testing.T) {
 
 	validateCommand, buffer := createRedirectedTestCommand(t)
 
-	err = execute(validateCommand, "auth", "validate", flag(params.AccessKeyIDFlag), clientID, flag(params.AccessKeySecretFlag), secret)
+	err = execute(
+		validateCommand,
+		"auth",
+		"validate",
+		flag(params.AccessKeyIDFlag),
+		clientID,
+		flag(params.AccessKeySecretFlag),
+		secret,
+	)
+
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 

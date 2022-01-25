@@ -26,8 +26,10 @@ func (a *AuthHTTPWrapper) SetPath(newPath string) {
 	a.path = newPath
 }
 
-func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, password,
-	adminClientID, adminClientSecret string) (*ErrorMsg, error) {
+func (a *AuthHTTPWrapper) CreateOauth2Client(
+	client *Oath2Client, username, password,
+	adminClientID, adminClientSecret string,
+) (*ErrorMsg, error) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(client)
 	if err != nil {
@@ -39,13 +41,17 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
 	a.SetPath(createClientPath)
 	// send the request
-	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), clientTimeout,
-		username, password, adminClientID, adminClientSecret)
+	res, err := SendHTTPRequestPasswordAuth(
+		http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), clientTimeout,
+		username, password, adminClientID, adminClientSecret,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	switch res.StatusCode {
 	case http.StatusBadRequest:
@@ -58,14 +64,18 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(client *Oath2Client, username, pass
 		return &errorMsg, nil
 	case http.StatusOK:
 		return nil, nil
+	case http.StatusForbidden:
+		return nil, errors.Errorf("User does not have permission for roles %v", client.Roles)
 	default:
 		b, err := ioutil.ReadAll(res.Body)
-		return nil, errors.Errorf("response status code %d body %s", res.StatusCode, func() string {
-			if err != nil {
-				return ""
-			}
-			return string(b)
-		}())
+		return nil, errors.Errorf(
+			"response status code %d body %s", res.StatusCode, func() string {
+				if err != nil {
+					return err.Error()
+				}
+				return string(b)
+			}(),
+		)
 	}
 }
 

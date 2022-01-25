@@ -105,7 +105,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Checkmarx AST CLI Action
-        uses: checkmarxDev/ast-github-action@master
+        uses: checkmarx/ast-github-action@main
         with:
           project_name: astcli-ci
           base_uri: ${{ secrets.BASE_URI }}
