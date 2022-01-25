@@ -101,9 +101,8 @@ func NewScanCommand(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		util.FormatTable, util.FormatList, util.FormatJSON,
 	)
-	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{createScanCmd},
-		util.FormatList, util.FormatTable, util.FormatJSON,
+	addScanInfoFormatFlag(
+		createScanCmd, util.FormatList, util.FormatTable, util.FormatJSON,
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
