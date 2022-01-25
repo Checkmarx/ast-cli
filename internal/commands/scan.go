@@ -343,7 +343,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
-		"Resolve SCA project dependencies (default true)",
+		"Resolve SCA project dependencies",
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
