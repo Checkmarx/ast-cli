@@ -913,7 +913,7 @@ func runCreateScanCommand(
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = printByFormat(cmd, toScanView(scanResponseModel))
+			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}

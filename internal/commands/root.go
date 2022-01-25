@@ -208,3 +208,8 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return util.Print(cmd.OutOrStdout(), view, f)
 }
+
+func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
+	return util.Print(cmd.OutOrStdout(), view, f)
+}
