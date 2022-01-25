@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -17,11 +18,17 @@ func TestAuthNoSub(t *testing.T) {
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
-	args := []string{"auth", "register", "--username", "username", "--password", "password"}
+	args := []string{
+		"auth",
+		"register",
+		"--username",
+		"username",
+		"--password",
+		"password",
+		"--roles",
+		strings.Join(RoleSlice, ","),
+	}
 	execCmdNilAssertion(t, args...)
-
-	// Create Oath2Client with roles
-	execCmdNilAssertion(t, append(args, "--roles", "admin,user")...)
 }
 
 func TestRunCreateOath2ClientCommandInvalid(t *testing.T) {
@@ -29,6 +36,21 @@ func TestRunCreateOath2ClientCommandInvalid(t *testing.T) {
 }
 
 func TestRunCreateOath2ClientCommandNoPassword(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "auth", "register", "--username", "username")
+	err := execCmdNotNilAssertion(
+		t, "auth", "register", "--username", "username", "--roles", strings.Join(RoleSlice, ","),
+	)
 	assert.Equal(t, err.Error(), "failed creating client: Please provide password flag")
+}
+
+func TestRunCreateOath2ClientCommandNoRoles(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"auth",
+		"register",
+		"--username",
+		"username",
+		"--password",
+		"password",
+	)
+	assert.Equal(t, err.Error(), "required flag(s) \"roles\" not set")
 }
