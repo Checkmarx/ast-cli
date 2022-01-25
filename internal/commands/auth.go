@@ -173,7 +173,7 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 }
 
 func validateRoles(roles []string) error {
-	if roles == nil || len(roles) == 0 {
+	if len(roles) == 0 {
 		return errors.Errorf(pleaseProvideFlag, failedCreatingClient, params.ClientRolesFlag)
 	}
 	for _, role := range roles {
