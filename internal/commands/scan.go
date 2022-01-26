@@ -101,9 +101,8 @@ func NewScanCommand(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		util.FormatTable, util.FormatList, util.FormatJSON,
 	)
-	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{createScanCmd},
-		util.FormatList, util.FormatTable, util.FormatJSON,
+	addScanInfoFormatFlag(
+		createScanCmd, util.FormatList, util.FormatTable, util.FormatJSON,
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
@@ -344,7 +343,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
-		"Resolve SCA project dependencies (default true)",
+		"Resolve SCA project dependencies",
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
@@ -914,7 +913,7 @@ func runCreateScanCommand(
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = printByFormat(cmd, toScanView(scanResponseModel))
+			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
 			}
