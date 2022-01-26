@@ -186,7 +186,7 @@ func TestScanTimeout(t *testing.T) {
 		flag(params.SourcesFlag), SlowRepo,
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "develop",
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ScanInfoFormatFlag), util.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
 	}
 
@@ -261,7 +261,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), source,
 		flag(params.ScanTypes), "sast,kics",
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.ScanInfoFormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 	}

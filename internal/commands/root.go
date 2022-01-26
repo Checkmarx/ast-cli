@@ -179,6 +179,11 @@ func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableForma
 		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
 }
 
+func addScanInfoFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(params.ScanInfoFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+}
+
 func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
 	cmd.PersistentFlags().String(params.TargetFormatFlag, defaultFormat,
 		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
@@ -201,5 +206,10 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
+	return util.Print(cmd.OutOrStdout(), view, f)
+}
+
+func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return util.Print(cmd.OutOrStdout(), view, f)
 }

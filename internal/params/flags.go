@@ -37,6 +37,7 @@ const (
 	AccessKeySecretFlagUsage = "The OAuth2 client secret"
 	InsecureFlag             = "insecure"
 	InsecureFlagUsage        = "Ignore TLS certificate validations"
+	ScanInfoFormatFlag       = "scan-info-format"
 	FormatFlag               = "format"
 	FormatFlagUsageFormat    = "Format for the output. One of %s"
 	FilterFlag               = "filter"
