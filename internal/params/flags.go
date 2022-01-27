@@ -105,6 +105,7 @@ const (
 	FromDateQueryParam     = "from-date"
 	ToDateQueryParam       = "to-date"
 	SeverityQueryParam     = "severity"
+	StateQueryParam        = "state"
 	GroupQueryParam        = "group"
 	QueryQueryParam        = "query"
 	NodeIDsQueryParam      = "node-ids"

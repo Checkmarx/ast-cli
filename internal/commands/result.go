@@ -50,6 +50,7 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 			commonParams.GroupQueryParam,
 			commonParams.StatusQueryParam,
 			commonParams.SeverityQueryParam,
+			commonParams.StateQueryParam,
 		}, ",",
 	),
 )
