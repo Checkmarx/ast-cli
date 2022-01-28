@@ -356,7 +356,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.Threshold,
 		"",
-		"Local build threshold. Format <engine>-<severity>=<limit>;<severity>=<limit>",
+		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
