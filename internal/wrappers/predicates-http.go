@@ -30,7 +30,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
-	var triageAPIPath = ""
+	var triageAPIPath string
 	if strings.EqualFold(strings.TrimSpace(scannerType), params.KicsType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.SastType) {
@@ -64,7 +64,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err
 	}
 
-	triageAPIPath := ""
+	var triageAPIPath string
 	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.KicsType) {
