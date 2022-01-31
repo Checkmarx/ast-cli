@@ -784,7 +784,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver string) {
+func runScaResolver(sourceDir, scaResolver string) error {
 	if len(scaResolver) > 0 {
 		log.Println("Using SCA resolver: " + scaResolver)
 		scaFile, err := ioutil.TempFile("", "sca")
@@ -805,7 +805,8 @@ func runScaResolver(sourceDir, scaResolver string) {
 			).Output()
 			PrintIfVerbose(string(out))
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
+				return errors.Errorf("Sca resolver path error")
 			}
 		} else {
 			PrintIfVerbose("Creating 'No Op' resolver file.")
@@ -816,6 +817,7 @@ func runScaResolver(sourceDir, scaResolver string) {
 			}
 		}
 	}
+	return nil
 }
 
 func addScaResults(zipWriter *zip.Writer) error {
@@ -849,7 +851,10 @@ func determineSourceFile(
 	if sourceDir != "" {
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, scaType) {
-			runScaResolver(sourceDir, scaResolver)
+			err = runScaResolver(sourceDir, scaResolver)
+			if err != nil {
+				return "", errors.Wrapf(err, "%s", err)
+			}
 		}
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
 	}

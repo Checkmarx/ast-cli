@@ -69,7 +69,7 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
-	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{})
+	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}, "sast,kics", "nop")
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
@@ -77,6 +77,21 @@ func TestScaResolverArg(t *testing.T) {
 		"Polling should complete when resolver used.",
 	)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+// Test ScaResolver as argument , no existing path to the resolver should fail
+func TestScaResolverArgFailed(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "resolver",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast,kics,sca",
+		flag(params.ScaResolverFlag), "./noexisting/resolver",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Sca resolver path error") // Creating a scan with invalid resolver should fail
 }
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
@@ -251,32 +266,33 @@ func executeScanAssertions(t *testing.T, projectID string, scanID string, tags m
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,kics"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag)))
+	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,kics"), flag(params.AsyncFlag)))
 }
+
 // Create sca scan with resolver
-func createScanScaWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag), "--sca-resolver", "nop"))
+func createScanScaWithResolver(t *testing.T, source string, tags map[string]string, scanTypes string, resolver string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag), flag(params.ScaResolverFlag), resolver))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name), "--sast-incremental"))
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,kics"), "--sast-incremental"))
 }
 
-func getCreateArgs(source string, tags map[string]string) []string {
+func getCreateArgs(source string, tags map[string]string, scanTypes string) []string {
 	projectName := fmt.Sprintf("integration_test_scan_%s", uuid.New().String())
-	return getCreateArgsWithName(source, tags, projectName)
+	return getCreateArgsWithName(source, tags, projectName, scanTypes)
 }
 
-func getCreateArgsWithName(source string, tags map[string]string, projectName string) []string {
+func getCreateArgsWithName(source string, tags map[string]string, projectName string, scanTypes string) []string {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), source,
-		flag(params.ScanTypes), "sast,kics",
+		flag(params.ScanTypes), scanTypes,
 		flag(params.ScanInfoFormatFlag), util.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
