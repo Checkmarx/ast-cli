@@ -69,7 +69,7 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
-	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}) // only sca type
+	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
@@ -259,9 +259,7 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 }
 // Create sca scan with resolver
 func createScanScaWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
-	args :=getCreateArgs(source, tags)
-	args[7]="sca"
-	return executeCreateScan(t, append(args, flag(params.AsyncFlag), "--sca-resolver", "nop"))
+	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag), "--sca-resolver", "nop"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
