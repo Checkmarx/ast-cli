@@ -37,7 +37,7 @@ const (
 	thresholdMsgLog   = "Threshold check finished with status %s : %s"
 	mbBytes           = 1024.0 * 1024.0
 	resolverFilePerm  = 0644
-	scaType = "sca"
+	scaType           = "sca"
 )
 
 var (
@@ -784,15 +784,15 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir string,scaResolver string) {
-	if len( scaResolver) > 0 {
-		log.Println("Using SCA resolver: " +  scaResolver)
+func runScaResolver(sourceDir string, scaResolver string) {
+	if len(scaResolver) > 0 {
+		log.Println("Using SCA resolver: " + scaResolver)
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
 			log.Fatal(err)
 		}
-		if  scaResolver != "nop" {
+		if scaResolver != "nop" {
 			out, err := exec.Command(
 				scaResolver,
 				"offline",
@@ -848,10 +848,10 @@ func determineSourceFile(
 	var preSignedURL string
 	if sourceDir != "" {
 		// Make sure scaResolver only runs in sca type of scans
-		if strings.Contains(actualScanTypes, scaType){
-			runScaResolver(sourceDir,scaResolver)
+		if strings.Contains(actualScanTypes, scaType) {
+			runScaResolver(sourceDir, scaResolver)
 		}
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter,scaResolver)
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -973,8 +973,8 @@ func createScanModel(
 	}
 	// Get sca resolver flag
 	scaResolver, errs := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-	if errs !=nil {
-		scaResolver=""
+	if errs != nil {
+		scaResolver = ""
 	}
 	// Setup the project handler (either git or upload)
 	pHandler, err := setupProjectHandler(
