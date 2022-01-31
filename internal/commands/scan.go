@@ -806,7 +806,7 @@ func runScaResolver(sourceDir, scaResolver string) error {
 			PrintIfVerbose(string(out))
 			if err != nil {
 				log.Print(err)
-				return errors.Errorf("Sca resolver path error")
+				return errors.Errorf("%s",err)
 			}
 		} else {
 			PrintIfVerbose("Creating 'No Op' resolver file.")
@@ -853,7 +853,7 @@ func determineSourceFile(
 		if strings.Contains(actualScanTypes, scaType) {
 			err = runScaResolver(sourceDir, scaResolver)
 			if err != nil {
-				return "", errors.Wrapf(err, "%s", err)
+				return "", errors.Wrapf(err, "ScaResolver error")
 			}
 		}
 		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
