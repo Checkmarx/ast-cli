@@ -599,7 +599,7 @@ func addScaScan() map[string]interface{} {
 	return nil
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter string, scaResolver string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	var err error
 	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
@@ -784,7 +784,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir string, scaResolver string) {
+func runScaResolver(sourceDir, scaResolver string) {
 	if len(scaResolver) > 0 {
 		log.Println("Using SCA resolver: " + scaResolver)
 		scaFile, err := ioutil.TempFile("", "sca")
