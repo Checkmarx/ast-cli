@@ -27,7 +27,6 @@ var Properties = map[string]bool{
 	params.AccessKeySecretConfigKey: true,
 	params.AstAPIKey:                true,
 	params.BranchKey:                true,
-	params.ScaToolKey:               true,
 	params.ClientTimeoutKey:         true,
 }
 

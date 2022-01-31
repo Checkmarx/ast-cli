@@ -28,6 +28,22 @@ type ScanWorkflowResponse struct {
 	Information string    `json:"info"`
 }
 
+// Create a scan with an empty project name
+// Assert the scan fails with correct message
+func TestScanCreateEmptyProjectName(t *testing.T) {
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
+}
+
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
 
@@ -51,9 +67,9 @@ func TestNoWaitScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
-// Test ScaResolver environment variable, this is a nop test
-func TestScaResolverEnv(t *testing.T) {
-	scanID, projectID := createScanNoWaitWithResolver(t, Dir, map[string]string{})
+// Test ScaResolver as argument , this is a nop test
+func TestScaResolverArg(t *testing.T) {
+	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}) // only sca type
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
@@ -241,9 +257,11 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag)))
 }
-
-func createScanNoWaitWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags), flag(params.AsyncFlag), "--sca-resolver", "nop"))
+// Create sca scan with resolver
+func createScanScaWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
+	args :=getCreateArgs(source, tags)
+	args[7]="sca"
+	return executeCreateScan(t, append(args, flag(params.AsyncFlag), "--sca-resolver", "/usr/local/bin/ScaResolver"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {

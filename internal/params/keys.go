@@ -12,7 +12,6 @@ var (
 	BaseAuthURIKey                      = strings.ToLower(BaseAuthURIEnv)
 	ClientTimeoutKey                    = strings.ToLower(ClientTimeoutEnv)
 	AstAPIKey                           = strings.ToLower(AstAPIKeyEnv)
-	ScaToolKey                          = strings.ToLower(ScaToolEnv)
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	GroupsPathKey                       = strings.ToLower(GroupsPathEnv)
 	AgentNameKey                        = strings.ToLower(AgentNameEnv)

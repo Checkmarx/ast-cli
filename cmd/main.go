@@ -38,7 +38,7 @@ func main() {
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPredicatesWrapper,
-		uploadsWrapper,
+ 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
 		authWrapper,
