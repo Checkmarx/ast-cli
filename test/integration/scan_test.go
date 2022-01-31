@@ -91,7 +91,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Sca resolver path error") // Creating a scan with invalid resolver should fail
+	assertError(t, err, "ScaResolver error")
 }
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
