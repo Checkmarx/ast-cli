@@ -841,7 +841,7 @@ func determineSourceFile(
 	sourcesFile,
 	sourceDir,
 	sourceDirFilter,
-	userIncludeFilter string,
+	userIncludeFilter,
 	scaResolver string,
 ) (string, error) {
 	var err error
@@ -1006,7 +1006,7 @@ func setupProjectHandler(
 	sourceDir,
 	sourceDirFilter,
 	userIncludeFilter,
-	scanRepoURL string,
+	scanRepoURL,
 	scaResolver string,
 
 ) (wrappers.UploadProjectHandler, error) {
