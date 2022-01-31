@@ -368,7 +368,6 @@ func scanCreateSubCommand(
 	if err != nil {
 		log.Fatal(err)
 	}
-	//err = viper.BindPFlag(commonParams.ScaToolKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScaResolverFlag))
 	if err != nil {
 		log.Fatal(err)
 	}

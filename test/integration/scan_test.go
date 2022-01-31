@@ -261,7 +261,7 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 func createScanScaWithResolver(t *testing.T, source string, tags map[string]string) (string, string) {
 	args :=getCreateArgs(source, tags)
 	args[7]="sca"
-	return executeCreateScan(t, append(args, flag(params.AsyncFlag), "--sca-resolver", "/usr/local/bin/ScaResolver"))
+	return executeCreateScan(t, append(args, flag(params.AsyncFlag), "--sca-resolver", "nop"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
