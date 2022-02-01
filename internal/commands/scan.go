@@ -340,7 +340,11 @@ func scanCreateSubCommand(
 		"Incremental SAST scan should be performed.",
 	)
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(commonParams.ScaResolverFlag, "", "Resolve SCA project dependencies (Path to SCA Resolver executable.")
+	createScanCmd.PersistentFlags().String(
+		commonParams.ScaResolverFlag,
+		"",
+		"Resolve SCA project dependencies (Path to SCA Resolver executable.",
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
@@ -696,6 +700,9 @@ func handleFile(
 		PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.WithMessage(err, "found dangling symbolic link, aborting")
+			}
 			return err
 		}
 		f, err := zipWriter.Create(baseDir + file.Name())
