@@ -790,7 +790,7 @@ func runScaResolver(sourceDir, scaResolver string) error {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		if scaResolver != "nop" {
 			out, err := exec.Command(
@@ -803,17 +803,16 @@ func runScaResolver(sourceDir, scaResolver string) error {
 				"-r",
 				scaResolverResultsFile,
 			).Output()
-			PrintIfVerbose(string(out))
 			if err != nil {
-				log.Print(err)
 				return errors.Errorf("%s", err)
 			}
+			PrintIfVerbose(string(out))
 		} else {
 			PrintIfVerbose("Creating 'No Op' resolver file.")
 			d1 := []byte("{}")
 			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
 			if err != nil {
-				log.Fatal(err)
+				return errors.Errorf("%s", err)
 			}
 		}
 	}
@@ -913,7 +912,7 @@ func runCreateScanCommand(
 		}
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
-			return err
+			return errors.Errorf("%s",err)
 		}
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {

@@ -86,7 +86,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast,kics,sca",
-		flag(params.ScaResolverFlag), "./noexisting/resolver",
+		flag(params.ScaResolverFlag), "./nonexisting",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
