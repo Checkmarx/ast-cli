@@ -912,7 +912,7 @@ func runCreateScanCommand(
 		}
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
-			return errors.Errorf("%s",err)
+			return errors.Errorf("%s", err)
 		}
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {
