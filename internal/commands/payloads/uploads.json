@@ -1,0 +1,24 @@
+{
+  "project": {
+    "id": "test",
+    "type": "upload",
+    "handler": {
+      "url": ""
+    },
+    "tags": {
+      "test1": "test3"
+    }
+  },
+  "config": [
+    {
+      "type": "sast",
+      "value": {
+        "incremental": "false",
+        "presetName": "Checkmarx Default"
+      }
+    }
+  ],
+  "tags": {
+    "test1": "test3"
+  }
+}

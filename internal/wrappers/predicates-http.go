@@ -1,0 +1,135 @@
+package wrappers
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+const (
+	SAST                    = "sast"
+	KICS                    = "kics"
+	failedToParsePredicates = "Failed to parse predicates response."
+)
+
+type ResultsPredicatesHTTPWrapper struct {
+	path string
+}
+
+func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
+	return &ResultsPredicatesHTTPWrapper{}
+}
+
+func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
+	*PredicatesCollectionResponseModel, *WebError, error,
+) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+
+	var triageAPIPath = ""
+	if strings.EqualFold(strings.TrimSpace(scannerType), KICS) {
+		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scannerType), SAST) {
+		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
+	}
+	PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
+	r.SetPath(triageAPIPath)
+
+	var request = "/" + similarityID + "?project-ids=" + projectID
+	PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
+
+	return handleResponseWithBody(SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout))
+}
+
+func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
+	r.path = newPath
+}
+
+func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (
+	*WebError, error,
+) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+	b := [...]PredicateRequest{*predicate}
+	jsonBytes, err := json.Marshal(b)
+	if err != nil {
+		return nil, err
+	}
+
+	triageAPIPath := ""
+	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), SAST) {
+		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
+	} else {
+		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+	}
+	PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
+	PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBytes)))
+
+	r.SetPath(triageAPIPath)
+
+	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return nil, errors.Errorf("Predicate bad request.")
+	case http.StatusOK:
+		fmt.Println("Predicate updated successfully.")
+		return nil, nil
+	case http.StatusNotFound:
+		return nil, errors.Errorf("Predicate not found.")
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollectionResponseModel, *WebError, error) {
+	if err != nil {
+		return nil, nil, err
+	}
+
+	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+
+	decoder := json.NewDecoder(resp.Body)
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return responsePredicateParsingFailed(err)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := PredicatesCollectionResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return responsePredicateParsingFailed(err)
+		}
+		return &model, nil, nil
+	case http.StatusNotFound:
+		return nil, nil, errors.Errorf("Predicate not found.")
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *WebError, error) {
+	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
+}
