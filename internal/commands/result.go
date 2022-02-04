@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -56,9 +57,34 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
-		Use:   "result",
+		Use:   "results",
 		Short: "Retrieve results",
-		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.atlassian.net/l/c/6NqgVMPM
+			`,
+			),
+		},
+	}
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
+	resultCmd.AddCommand(
+		showResultCmd,
+	)
+	return resultCmd
+}
+
+func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
+	resultCmd := &cobra.Command{
+		Use:   "show",
+		Short: "Show results of a scan",
+		Long:  "The show command enables the ability to show results about a requested scan in CxAST.",
+		Example: heredoc.Doc(
+			`
+			$ cx results show --scan-id <scan Id>
+		`,
+		),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper),
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
 	addResultFormatFlag(resultCmd,
