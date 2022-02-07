@@ -60,6 +60,13 @@ func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
 	}
 }
 
+// Create a project with empty project name should fail
+func TestCreateEmptyProjectName(t *testing.T) {
+
+	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), "")
+	assertError(t, err, "Project name is required")
+}
+
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExisting(t *testing.T) {
 
