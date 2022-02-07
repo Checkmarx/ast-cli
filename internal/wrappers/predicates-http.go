@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	SAST                    = "sast"
-	KICS                    = "kics"
 	failedToParsePredicates = "Failed to parse predicates response."
+	invalidScanType         = "Invalid scan type %s"
 )
 
 type ResultsPredicatesHTTPWrapper struct {
@@ -31,12 +30,17 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
-	var triageAPIPath = ""
-	if strings.EqualFold(strings.TrimSpace(scannerType), KICS) {
+	var triageAPIPath string
+	if strings.EqualFold(strings.TrimSpace(scannerType), params.KicsType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
-	} else if strings.EqualFold(strings.TrimSpace(scannerType), SAST) {
+	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.ScaType) {
+		return &PredicatesCollectionResponseModel{}, nil, nil
+	} else {
+		return nil, nil, errors.Errorf(invalidScanType, scannerType)
 	}
+
 	PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
 	r.SetPath(triageAPIPath)
 
@@ -60,12 +64,15 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err
 	}
 
-	triageAPIPath := ""
-	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), SAST) {
+	var triageAPIPath string
+	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
-	} else {
+	} else if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.KicsType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+	} else {
+		return nil, errors.Errorf(invalidScanType, predicate.ScannerType)
 	}
+
 	PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
 	PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBytes)))
 

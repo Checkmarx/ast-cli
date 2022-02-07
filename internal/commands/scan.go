@@ -906,6 +906,10 @@ func runCreateScanCommand(
 		if branch == "" {
 			return errors.Errorf("%s: Please provide a branch", failedCreating)
 		}
+		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+		if timeoutMinutes < 0 {
+			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
+		}
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -927,7 +931,6 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
