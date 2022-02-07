@@ -22,12 +22,13 @@ const (
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
 
-	assertRequiredParameter(t, "Please provide a scan ID", "result")
+	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
 
 	outputBuffer := executeCmdNilAssertion(t, "Getting results should pass",
-		"result",
+		"results",
+		"show",
 		flag(params.TargetFormatFlag), strings.Join([]string{util.FormatJSON, util.FormatSarif, util.FormatSummary, util.FormatSummaryConsole, util.FormatSonar, util.FormatSummaryJSON}, ","),
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
