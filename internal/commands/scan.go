@@ -609,21 +609,21 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 	}
 	// Close the file
 	if err = zipWriter.Close(); err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	stat, err := outputFile.Stat()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
 	return outputFile.Name(), err
@@ -858,7 +858,10 @@ func determineSourceFile(
 				return "", errors.Wrapf(err, "ScaResolver error")
 			}
 		}
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
+		sourcesFile, err = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
+		if err != nil {
+			return "", err
+		}
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
