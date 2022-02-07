@@ -85,7 +85,7 @@ func TestCancelScan(t *testing.T) {
 	defer deleteScan(t, scanID)
 
 	// cancelling too quickly after creating fails the scan...
-	time.Sleep(40 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
@@ -101,16 +101,15 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast, sca",
+		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile",
+		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
-
-	args = append(args, flag(params.IncludeFilterFlag), "*txt")
+	args[11] = "*js"
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
@@ -142,9 +141,9 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), "../..",
-		flag(params.ScanTypes), "sast, sca",
+		flag(params.ScanTypes), "sast,sca",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.SourceDirFilterFlag), ".git",
+		flag(params.SourceDirFilterFlag), ".git,*.js", // needed one code file or the scan will end with partial code
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
