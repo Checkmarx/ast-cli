@@ -16,6 +16,7 @@ const (
 	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
 	dummyRepo            = "https://www.dummy-repo.com"
 	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
+	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in $PATH"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -115,6 +116,12 @@ func TestCreateScanWrongFormatSource(t *testing.T) {
 func TestCreateScanWithScaResolver(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--sca-resolver", "nop", "-f", "!ScaResolver-win64")...)
+}
+
+func TestCreateScanWithScaResolverFailed(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch", "--sca-resolver", "resolver"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Assert(t, err.Error() == scaPathError)
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
