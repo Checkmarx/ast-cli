@@ -600,11 +600,10 @@ func addScaScan() map[string]interface{} {
 }
 
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
-	var err error
 	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
-		log.Fatal("Cannot source code temp file.", err)
+		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
