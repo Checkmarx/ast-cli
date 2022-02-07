@@ -37,6 +37,7 @@ const (
 	thresholdMsgLog   = "Threshold check finished with status %s : %s"
 	mbBytes           = 1024.0 * 1024.0
 	resolverFilePerm  = 0644
+	scaType           = "sca"
 )
 
 var (
@@ -367,7 +368,6 @@ func scanCreateSubCommand(
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = viper.BindPFlag(commonParams.ScaToolKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScaResolverFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -483,6 +483,8 @@ func updateScanRequestValues(
 	}
 	if newProjectName != "" {
 		info["project"].(map[string]interface{})["id"] = newProjectName
+	} else {
+		return errors.Errorf("Project name is required")
 	}
 	// We need to convert the project name into an ID
 	projectID, err := findProject(
@@ -597,9 +599,9 @@ func addScaScan() map[string]interface{} {
 	return nil
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	var err error
-	scaToolPath := viper.GetString(commonParams.ScaToolKey)
+	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		log.Fatal("Cannot source code temp file.", err)
@@ -785,18 +787,17 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir string) {
-	scaToolPath := viper.GetString(commonParams.ScaToolKey)
-	if len(scaToolPath) > 0 {
-		log.Println("Using SCA resolver: " + scaToolPath)
+func runScaResolver(sourceDir, scaResolver string) error {
+	if len(scaResolver) > 0 {
+		log.Println("Using SCA resolver: " + scaResolver)
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-		if scaToolPath != "nop" {
+		if scaResolver != "nop" {
 			out, err := exec.Command(
-				scaToolPath,
+				scaResolver,
 				"offline",
 				"-s",
 				sourceDir,
@@ -805,19 +806,20 @@ func runScaResolver(sourceDir string) {
 				"-r",
 				scaResolverResultsFile,
 			).Output()
-			PrintIfVerbose(string(out))
 			if err != nil {
-				log.Fatal(err)
+				return errors.Errorf("%s", err)
 			}
+			PrintIfVerbose(string(out))
 		} else {
 			PrintIfVerbose("Creating 'No Op' resolver file.")
 			d1 := []byte("{}")
 			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
 			if err != nil {
-				log.Fatal(err)
+				return errors.Errorf("%s", err)
 			}
 		}
 	}
+	return nil
 }
 
 func addScaResults(zipWriter *zip.Writer) error {
@@ -843,13 +845,20 @@ func determineSourceFile(
 	sourcesFile,
 	sourceDir,
 	sourceDirFilter,
-	userIncludeFilter string,
+	userIncludeFilter,
+	scaResolver string,
 ) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
-		runScaResolver(sourceDir)
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter)
+		// Make sure scaResolver only runs in sca type of scans
+		if strings.Contains(actualScanTypes, scaType) {
+			err = runScaResolver(sourceDir, scaResolver)
+			if err != nil {
+				return "", errors.Wrapf(err, "ScaResolver error")
+			}
+		}
+		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
@@ -904,9 +913,13 @@ func runCreateScanCommand(
 		if branch == "" {
 			return errors.Errorf("%s: Please provide a branch", failedCreating)
 		}
+		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+		if timeoutMinutes < 0 {
+			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
+		}
 		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
-			return err
+			return errors.Errorf("%s", err)
 		}
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {
@@ -925,7 +938,6 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
@@ -969,6 +981,11 @@ func createScanModel(
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
+	// Get sca resolver flag
+	scaResolver, errs := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	if errs != nil {
+		scaResolver = ""
+	}
 	// Setup the project handler (either git or upload)
 	pHandler, err := setupProjectHandler(
 		uploadsWrapper,
@@ -977,6 +994,7 @@ func createScanModel(
 		sourceDirFilter,
 		userIncludeFilter,
 		scanRepoURL,
+		scaResolver,
 	)
 	scanModel.Handler, _ = json.Marshal(pHandler)
 	if err != nil {
@@ -998,7 +1016,9 @@ func setupProjectHandler(
 	sourceDir,
 	sourceDirFilter,
 	userIncludeFilter,
-	scanRepoURL string,
+	scanRepoURL,
+	scaResolver string,
+
 ) (wrappers.UploadProjectHandler, error) {
 	pHandler := wrappers.UploadProjectHandler{}
 	pHandler.Branch = viper.GetString(commonParams.BranchKey)
@@ -1009,6 +1029,7 @@ func setupProjectHandler(
 		sourceDir,
 		sourceDirFilter,
 		userIncludeFilter,
+		scaResolver,
 	)
 	pHandler.RepoURL = scanRepoURL
 	return pHandler, err
