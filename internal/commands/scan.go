@@ -617,7 +617,8 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 		}
 	}
 	// Close the file
-	if err := zipWriter.Close(); err != nil {
+	err = zipWriter.Close()
+	if err != nil {
 		return "", err
 	}
 	stat, err := outputFile.Stat()
