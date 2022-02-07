@@ -231,6 +231,25 @@ func TestScanTimeout(t *testing.T) {
 	assert.Assert(t, pollScanUntilStatus(t, createdScan.ID, wrappers.ScanCanceled, 120, 15), "Scan should be canceled")
 }
 
+func TestBrokenLinkScan(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), util.FormatJSON,
+		flag(params.IncludeFilterFlag), "broken_link.txt",
+	}
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+
+	assertError(t, err, "broken_link.txt")
+}
+
 // Generic scan test execution
 // - Get scan with 'scan list' and assert status and IDs
 // - Get scan with 'scan show' and assert the ID
@@ -273,8 +292,17 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 }
 
 // Create sca scan with resolver
-func createScanScaWithResolver(t *testing.T, source string, tags map[string]string, scanTypes string, resolver string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag), flag(params.ScaResolverFlag), resolver))
+func createScanScaWithResolver(
+	t *testing.T,
+	source string,
+	tags map[string]string,
+	scanTypes string,
+	resolver string,
+) (string, string) {
+	return executeCreateScan(
+		t,
+		append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag), flag(params.ScaResolverFlag), resolver),
+	)
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {

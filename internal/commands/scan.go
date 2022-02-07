@@ -341,7 +341,11 @@ func scanCreateSubCommand(
 		"Incremental SAST scan should be performed.",
 	)
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
-	createScanCmd.PersistentFlags().String(commonParams.ScaResolverFlag, "", "Resolve SCA project dependencies (Path to SCA Resolver executable.")
+	createScanCmd.PersistentFlags().String(
+		commonParams.ScaResolverFlag,
+		"",
+		"Resolve SCA project dependencies (path to SCA Resolver executable).",
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
@@ -596,30 +600,30 @@ func addScaScan() map[string]interface{} {
 }
 
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
-	var err error
 	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
-		log.Fatal("Cannot source code temp file.", err)
+		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
-			log.Fatal(err)
+			return "", err
 		}
 	}
 	// Close the file
-	if err = zipWriter.Close(); err != nil {
-		log.Fatal(err)
+	err = zipWriter.Close()
+	if err != nil {
+		return "", err
 	}
 	stat, err := outputFile.Stat()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
 	return outputFile.Name(), err
@@ -698,6 +702,9 @@ func handleFile(
 		PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.WithMessage(err, "found dangling symbolic link, aborting")
+			}
 			return err
 		}
 		f, err := zipWriter.Create(baseDir + file.Name())
@@ -851,7 +858,10 @@ func determineSourceFile(
 				return "", errors.Wrapf(err, "ScaResolver error")
 			}
 		}
-		sourcesFile, _ = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
+		sourcesFile, err = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
+		if err != nil {
+			return "", err
+		}
 	}
 	if sourcesFile != "" {
 		// Send a request to uploads service
