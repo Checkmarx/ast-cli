@@ -146,7 +146,8 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 			Proxy:       nil,
 			DialContext: ntlmDialContext,
 		},
-		Timeout: time.Duration(timeout) * time.Second}
+		Timeout: time.Duration(timeout) * time.Second,
+	}
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
@@ -216,8 +217,10 @@ func addReqMonitor(req *http.Request) *http.Request {
 	return req
 }
 
-func SendHTTPRequestPasswordAuth(method, path string, body io.Reader, timeout uint,
-	username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
+func SendHTTPRequestPasswordAuth(
+	method, path string, body io.Reader, timeout uint,
+	username, password, adminClientID, adminClientSecret string,
+) (*http.Response, error) {
 	bodyStr, body := convertReqBodyToString(body)
 	u := GetAuthURL(path)
 	req, err := http.NewRequest(method, u, body)
@@ -262,8 +265,10 @@ func GetAuthURL(path string) string {
 	return authURL
 }
 
-func SendHTTPRequestWithQueryParams(method, path string, params map[string]string,
-	body io.Reader, timeout uint) (*http.Response, error) {
+func SendHTTPRequestWithQueryParams(
+	method, path string, params map[string]string,
+	body io.Reader, timeout uint,
+) (*http.Response, error) {
 	bodyStr, body := convertReqBodyToString(body)
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
@@ -339,17 +344,24 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	return nil
 }
 
-func enrichWithPasswordCredentials(request *http.Request, username, password,
-	adminClientID, adminClientSecret string) error {
+func enrichWithPasswordCredentials(
+	request *http.Request, username, password,
+	adminClientID, adminClientSecret string,
+) error {
 	authURI, err := getAuthURI()
 	if err != nil {
 		return err
 	}
 
-	accessToken, err := getNewToken(getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret), authURI)
+	accessToken, err := getNewToken(
+		getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret),
+		authURI,
+	)
 	if err != nil {
-		return errors.Wrap(errors.Wrap(err, "failed to get access token from auth server"),
-			"failed to authenticate")
+		return errors.Wrap(
+			errors.Wrap(err, "failed to get access token from auth server"),
+			"failed to authenticate",
+		)
 	}
 
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
@@ -421,7 +433,9 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	}
 	req = addReqMonitor(req)
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
-	res, err := doRequest(http.DefaultClient, req)
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	client := getClient(clientTimeout)
+	res, err := doRequest(client, req)
 	if err != nil {
 		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
 	}
@@ -473,8 +487,10 @@ func getAPIKeyPayload(astToken string) string {
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	PrintIfVerbose("Using username and password credentials.")
-	return fmt.Sprintf("scope=openid&grant_type=password&username=%s&password=%s"+
-		"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret)
+	return fmt.Sprintf(
+		"scope=openid&grant_type=password&username=%s&password=%s"+
+			"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret,
+	)
 }
 
 func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
