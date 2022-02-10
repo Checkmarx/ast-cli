@@ -86,3 +86,35 @@ func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {
 func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 	_ = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--output-path", "")
 }
+
+func TestResultBflHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "results bfl")
+}
+
+func TestRunGetBflWithMissingOrEmptyScanIdAndQueryId(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "bfl")
+	assert.Equal(t, err.Error(), "required flag(s) \"query-id\", \"scan-id\" not set")
+
+	err = execCmdNotNilAssertion(t, "results", "bfl", "--scan-id", "")
+	assert.Equal(t, err.Error(), "required flag(s) \"query-id\" not set")
+}
+
+func TestRunGetBflWithMultipleScanIdsAndQueryIds(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "bfl", "--scan-id", "MOCK1,MOCK2", "--query-id", "MOCK")
+	assert.Equal(t, err.Error(), "Multiple scan-ids are not allowed.")
+
+	err = execCmdNotNilAssertion(t, "results", "bfl", "--scan-id", "MOCK1", "--query-id", "MOCK1,MOCK2")
+	assert.Equal(t, err.Error(), "Multiple query-ids are not allowed.")
+}
+
+func TestRunGetBFLByScanIdAndQueryId(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "results", "bfl", "--scan-id", "MOCK", "--query-id", "MOCK")
+	assert.NilError(t, err)
+}
+
+func TestRunGetBFLByScanIdAndQueryIdWithFormatJson(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "results", "bfl", "--scan-id", "MOCK", "--query-id", "MOCK", "--format", "JSON")
+	assert.NilError(t, err)
+}

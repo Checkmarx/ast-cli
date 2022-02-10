@@ -1,0 +1,75 @@
+package wrappers
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+)
+
+const (
+	failedToParseBflResponse = "Failed to parse BFL response."
+)
+
+type BflHTTPWrapper struct {
+	path string
+}
+
+func NewBflHTTPWrapper(path string) BflWrapper {
+	return &BflHTTPWrapper{
+		path: path,
+	}
+}
+
+func (r *BflHTTPWrapper) GetBflByScanIdAndQueryId(params map[string]string) (
+	*BFLResponseModel,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	// AST has a limit of 10000 results, this makes it get all of them
+	// params["limit"] = "10000"
+
+	PrintIfVerbose(fmt.Sprintf("Fetching the best fix location for QueryId : %s", params[commonParams.QueryIDQueryParam]))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	return handleBflResponseWithBody(resp, err)
+
+}
+
+func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseModel, *WebError, error) {
+	if err != nil {
+		return nil, nil, err
+	}
+
+	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+
+	decoder := json.NewDecoder(resp.Body)
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseBflResponse)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := BFLResponseModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseBflResponse)
+		}
+		return &model, nil, nil
+	case http.StatusNotFound:
+		return nil, nil, errors.Errorf("Best Fix Location not found.")
+	default:
+		return nil, nil, errors.Errorf("Response status code %d", resp.StatusCode)
+	}
+}

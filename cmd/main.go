@@ -26,6 +26,7 @@ func main() {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
+	bfl := viper.GetString(params.BflPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -36,6 +37,7 @@ func main() {
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	gitHubWrapper := wrappers.NewGitHubWrapper()
+	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -47,6 +49,7 @@ func main() {
 		logsWrapper,
 		groupsWrapper,
 		gitHubWrapper,
+		bflWrapper,
 	)
 
 	err = astCli.Execute()
