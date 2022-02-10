@@ -151,7 +151,6 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 
 func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-
 		var bflResponseModel *wrappers.BFLResponseModel
 		var errorModel *wrappers.WebError
 		var err error
@@ -190,16 +189,13 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 
 		return nil
 	}
-
 }
 
 func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResultNode {
-
 	if (bflResponseModel.TotalCount) > 0 {
 		views := make([]wrappers.ScanResultNode, bflResponseModel.TotalCount)
 
 		for i := 0; i < bflResponseModel.TotalCount; i++ {
-
 			views[i] = wrappers.ScanResultNode{
 				Name:       bflResponseModel.Trees[i].BFL.Name,
 				FileName:   bflResponseModel.Trees[i].BFL.FileName,
@@ -220,11 +216,9 @@ func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResult
 		}
 
 		return views
-
 	}
 	views := make([]wrappers.ScanResultNode, 0)
 	return views
-
 }
 
 func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.ResultSummary, error) {
