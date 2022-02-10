@@ -13,12 +13,12 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 
 	assertRequiredParameter(t, "required flag(s) \"query-id\", \"scan-id\" not set", "results", "bfl")
 	scanID, _ := getRootScan(t)
-	queryId := "17765437696070740537"
+	queryID := "17765437696070740537"
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting BFL should pass.", "results", "bfl",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.QueryIDFlag), queryId,
+		flag(params.QueryIDFlag), queryID,
 		flag(params.FormatFlag), "json")
 
 	bflResult := []wrappers.ScanResultNode{}

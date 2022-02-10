@@ -157,20 +157,20 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		var err error
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
-		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
+		queryID, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 
 		scanIds := strings.Split(scanID, ",")
 		if len(scanIds) > 1 {
 			return errors.Errorf("%s", "Multiple scan-ids are not allowed.")
 		}
-		queryIds := strings.Split(queryId, ",")
+		queryIds := strings.Split(queryID, ",")
 		if len(queryIds) > 1 {
 			return errors.Errorf("%s", "Multiple query-ids are not allowed.")
 		}
 
 		params := make(map[string]string)
 		params[commonParams.ScanIDQueryParam] = scanID
-		params[commonParams.QueryIDQueryParam] = queryId
+		params[commonParams.QueryIDQueryParam] = queryID
 
 		bflResponseModel, errorModel, err = bflWrapper.GetBflByScanIDAndQueryID(params)
 
