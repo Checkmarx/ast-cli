@@ -140,11 +140,11 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 		RunE: runGetBestFixLocationCommand(bflWrapper),
 	}
 	addScanIDFlag(resultBflCmd, "ID to report on.")
-	addQueryIdFlag(resultBflCmd, "Query Id from the result.")
+	addQueryIDFlag(resultBflCmd, "Query Id from the result.")
 	addFormatFlag(resultBflCmd, util.FormatList, util.FormatJSON)
 
 	markFlagAsRequired(resultBflCmd, commonParams.ScanIDFlag)
-	markFlagAsRequired(resultBflCmd, commonParams.QueryIdFlag)
+	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
 
 	return resultBflCmd
 }
@@ -157,7 +157,7 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		var err error
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
-		queryId, _ := cmd.Flags().GetString(commonParams.QueryIdFlag)
+		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 
 		scanIds := strings.Split(scanID, ",")
 		if len(scanIds) > 1 {
@@ -172,7 +172,7 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		params[commonParams.ScanIDQueryParam] = scanID
 		params[commonParams.QueryIDQueryParam] = queryId
 
-		bflResponseModel, errorModel, err = bflWrapper.GetBflByScanIdAndQueryId(params)
+		bflResponseModel, errorModel, err = bflWrapper.GetBflByScanIDAndQueryID(params)
 
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBfl)

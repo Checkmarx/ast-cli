@@ -24,7 +24,7 @@ func NewBflHTTPWrapper(path string) BflWrapper {
 	}
 }
 
-func (r *BflHTTPWrapper) GetBflByScanIdAndQueryId(params map[string]string) (
+func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	*BFLResponseModel,
 	*WebError,
 	error,

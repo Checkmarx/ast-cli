@@ -90,7 +90,7 @@ const (
 	SCMTokenUsage            = "GitHub OAuth token"
 	GitHubURLFlag            = "url"
 	GitHubURLFlagUsage       = "API base URL"
-	QueryIdFlag              = "query-id"
+	QueryIDFlag              = "query-id"
 )
 
 // Parameter values

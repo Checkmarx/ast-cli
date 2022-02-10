@@ -7,7 +7,7 @@ import (
 type BflMockWrapper struct {
 }
 
-func (bfl *BflMockWrapper) GetBflByScanIdAndQueryId(params map[string]string) (
+func (bfl *BflMockWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	*wrappers.BFLResponseModel,
 	*wrappers.WebError,
 	error,

@@ -15,5 +15,5 @@ type BFLTreeModel struct {
 }
 
 type BflWrapper interface {
-	GetBflByScanIdAndQueryId(params map[string]string) (*BFLResponseModel, *WebError, error)
+	GetBflByScanIDAndQueryID(params map[string]string) (*BFLResponseModel, *WebError, error)
 }

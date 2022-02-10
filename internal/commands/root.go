@@ -225,8 +225,8 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(params.ProjectIDFlag, "", helpMsg)
 }
 
-func addQueryIdFlag(cmd *cobra.Command, helpMsg string) {
-	cmd.PersistentFlags().String(params.QueryIdFlag, "", helpMsg)
+func addQueryIDFlag(cmd *cobra.Command, helpMsg string) {
+	cmd.PersistentFlags().String(params.QueryIDFlag, "", helpMsg)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
