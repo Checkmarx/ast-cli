@@ -213,7 +213,6 @@ func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResult
 				// NodeID:      bflResponseModel.Trees[i].BFL.NodeID,
 			}
 		}
-		
 		return views
 	}
 	views := make([]wrappers.ScanResultNode, 0)
