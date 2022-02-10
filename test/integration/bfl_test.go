@@ -23,5 +23,4 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 
 	bflResult := []wrappers.ScanResultNode{}
 	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
-
 }

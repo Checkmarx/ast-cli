@@ -30,13 +30,9 @@ func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	// AST has a limit of 10000 results, this makes it get all of them
-	// params["limit"] = "10000"
-
 	PrintIfVerbose(fmt.Sprintf("Fetching the best fix location for QueryId : %s", params[commonParams.QueryIDQueryParam]))
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	return handleBflResponseWithBody(resp, err)
-
 }
 
 func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseModel, *WebError, error) {
@@ -45,7 +41,6 @@ func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseMode
 	}
 
 	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
-
 	decoder := json.NewDecoder(resp.Body)
 
 	defer func() {
