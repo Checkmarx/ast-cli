@@ -56,7 +56,24 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+// NewResultCommand - Deprecated command
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
+	resultCmd := &cobra.Command{
+		Use:   "result",
+		Short: "Retrieve results",
+		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
+	}
+	addScanIDFlag(resultCmd, "ID to report on.")
+	addResultFormatFlag(resultCmd,
+		util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif, util.FormatSummaryJSON)
+	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
+	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
+	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
+	resultCmd.Deprecated = "please use 'results show' command instead."
+	return resultCmd
+}
+
+func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
 		Short: "Retrieve results",

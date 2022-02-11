@@ -105,6 +105,7 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, logsWrapper, groupsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
+	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand()
@@ -114,6 +115,7 @@ func NewAstCLI(
 	rootCmd.AddCommand(scanCmd,
 		projectCmd,
 		resultCmd,
+		resultsCmd,
 		triageCmd,
 		versionCmd,
 		authCmd,
