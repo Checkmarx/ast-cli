@@ -97,7 +97,7 @@ func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrapp
 	resultsCmd.AddCommand(
 		showResultCmd, bflResultCmd,
 	)
-	return resultCmd
+	return resultsCmd
 }
 
 func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
