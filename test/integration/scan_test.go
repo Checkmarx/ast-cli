@@ -110,7 +110,7 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
-	scanID, projectID := createScanNoWait(t, SlowRepo, map[string]string{})
+	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
@@ -289,6 +289,10 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,kics"), flag(params.AsyncFlag)))
+}
+
+func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast"), flag(params.AsyncFlag)))
 }
 
 // Create sca scan with resolver
