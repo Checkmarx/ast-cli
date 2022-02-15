@@ -17,7 +17,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
 
@@ -96,7 +95,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
-	projectName := fmt.Sprintf("integration_test_incremental_%s", uuid.New().String())
+	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
 	defer deleteProject(t, projectID)
@@ -313,8 +312,12 @@ func createScanIncremental(t *testing.T, source string, name string, tags map[st
 	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,kics"), "--sast-incremental"))
 }
 
+func getProjectNameForScanTests() string {
+	return getProjectNameForTest() + "_for_scan"
+}
+
 func getCreateArgs(source string, tags map[string]string, scanTypes string) []string {
-	projectName := fmt.Sprintf("integration_test_scan_%s", uuid.New().String())
+	projectName := getProjectNameForScanTests()
 	return getCreateArgsWithName(source, tags, projectName, scanTypes)
 }
 
@@ -350,6 +353,7 @@ func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 }
 
 func deleteScan(t *testing.T, scanID string) {
+	log.Println("Deleting the scan with id ", scanID)
 	executeCmdNilAssertion(t, "Deleting a scan should pass", "scan", "delete", flag(params.ScanIDFlag), scanID)
 }
 
