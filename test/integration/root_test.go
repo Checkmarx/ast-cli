@@ -18,9 +18,8 @@ const (
 )
 
 var Tags = map[string]string{
-	"it_test_tag_1": "",
-	"it_test_tag_2": "val",
-	"it_test_tag_3": "",
+	"Galactica":   "",
+	"Integration": "Tests",
 }
 
 var testInstance *testing.T
@@ -54,12 +53,15 @@ func getRootScan(t *testing.T) (string, string) {
 func deleteScanAndProject() {
 	if len(rootScanId) > 0 {
 		deleteScan(testInstance, rootScanId)
+		rootScanId = ""
 	}
 	if len(rootScanProjectId) > 0 {
 		deleteProject(testInstance, rootScanProjectId)
+		rootScanProjectId = ""
 	}
 	if len(rootProjectId) > 0 {
 		deleteProject(testInstance, rootProjectId)
+		rootProjectId = ""
 	}
 }
 
