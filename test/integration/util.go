@@ -58,3 +58,7 @@ func getAllTags(t *testing.T, baseCmd string) map[string][]string {
 func flag(f string) string {
 	return "--" + f
 }
+
+func getProjectNameForTest() string {
+	return "ast-cli-tests"
+}
