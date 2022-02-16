@@ -5,13 +5,13 @@ package integration
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/google/uuid"
 
 	"gotest.tools/assert"
 )
@@ -68,7 +68,7 @@ func TestCreateEmptyProjectName(t *testing.T) {
 }
 
 // Create the same project twice and assert that it fails
-func TestCreateAlreadyExisting(t *testing.T) {
+func TestCreateAlreadyExistingProject(t *testing.T) {
 
 	assertRequiredParameter(t, "Project name is required", "project", "create")
 
@@ -99,7 +99,7 @@ func TestProjectBranches(t *testing.T) {
 }
 
 func createProject(t *testing.T, tags map[string]string) (string, string) {
-	projectName := fmt.Sprintf("integration_test_project_%s", uuid.New().String())
+	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 
 	outBuffer := executeCmdNilAssertion(t, "Creating a project should pass",
@@ -113,13 +113,14 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 	createdProject := wrappers.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 
-	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
-	fmt.Printf("Project ID %s created\n", createdProject.ID)
+	fmt.Println("Response after project is created : ", string(createdProjectJSON))
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
 
 	return createdProject.ID, projectName
 }
 
 func deleteProject(t *testing.T, projectID string) {
+	log.Println("Deleting the project with id ", projectID)
 	executeCmdNilAssertion(t, "Deleting a project should pass", "project", "delete", flag(params.ProjectIDFlag), projectID)
 }
 
