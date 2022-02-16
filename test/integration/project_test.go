@@ -113,8 +113,8 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 	createdProject := wrappers.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 
-	fmt.Println("CREATED PROJECT PAYLOAD IS ", string(createdProjectJSON))
-	fmt.Printf("Project ID %s created\n", createdProject.ID)
+	fmt.Println("Response after project is created : ", string(createdProjectJSON))
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
 
 	return createdProject.ID, projectName
 }

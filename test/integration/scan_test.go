@@ -200,7 +200,6 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 				".Git directory and children should not be excluded",
 			)
 		}
-		fmt.Println("")
 		fmt.Printf("%s \n", line)
 	}
 }
@@ -343,7 +342,8 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 	assert.Assert(t, createdScan.Status != wrappers.ScanFailed && createdScan.Status != wrappers.ScanCanceled)
 
-	log.Printf("Scan ID %s created in test", createdScan.ID)
+	log.Println("Created new project with id: ", createdScan.ProjectID)
+	log.Println("Created new scan with id: ", createdScan.ID)
 
 	return createdScan.ID, createdScan.ProjectID
 }

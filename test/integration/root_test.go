@@ -47,8 +47,6 @@ func getRootScan(t *testing.T) (string, string) {
 	}
 
 	rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
-	log.Println("Created new project with id: ", rootScanProjectId)
-	log.Println("Created new scan with id: ", rootScanId)
 
 	return rootScanId, rootScanProjectId
 }
@@ -74,6 +72,8 @@ func getRootProject(t *testing.T) (string, string) {
 	testInstance = t
 
 	if len(rootProjectId) > 0 {
+		log.Println("Using the projectID: ", rootProjectId)
+		log.Println("Using the projectName: ", rootProjectName)
 		return rootProjectId, rootProjectName
 	}
 
