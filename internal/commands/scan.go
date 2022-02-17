@@ -346,6 +346,11 @@ func scanCreateSubCommand(
 		"",
 		"Resolve SCA project dependencies (path to SCA Resolver executable).",
 	)
+	createScanCmd.PersistentFlags().String(
+		commonParams.ScaResolverParamsFlag,
+		"",
+		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
@@ -787,17 +792,15 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 	if len(scaResolver) > 0 {
-		log.Println("Using SCA resolver: " + scaResolver)
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
 			return err
 		}
 		if scaResolver != "nop" {
-			out, err := exec.Command(
-				scaResolver,
+			args := []string{
 				"offline",
 				"-s",
 				sourceDir,
@@ -805,7 +808,10 @@ func runScaResolver(sourceDir, scaResolver string) error {
 				commonParams.ProjectName,
 				"-r",
 				scaResolverResultsFile,
-			).Output()
+				scaResolverParams,
+			}
+			log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
+			out, err := exec.Command(scaResolver, args...).Output()
 			if err != nil {
 				return errors.Errorf("%s", err)
 			}
@@ -842,18 +848,14 @@ func addScaResults(zipWriter *zip.Writer) error {
 
 func determineSourceFile(
 	uploadsWrapper wrappers.UploadsWrapper,
-	sourcesFile,
-	sourceDir,
-	sourceDirFilter,
-	userIncludeFilter,
-	scaResolver string,
+	sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scaResolver, scaResolverParams string,
 ) (string, error) {
 	var err error
 	var preSignedURL string
 	if sourceDir != "" {
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, scaType) {
-			err = runScaResolver(sourceDir, scaResolver)
+			err = runScaResolver(sourceDir, scaResolver, scaResolverParams)
 			if err != nil {
 				return "", errors.Wrapf(err, "ScaResolver error")
 			}
@@ -984,12 +986,17 @@ func createScanModel(
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
-	// Get sca resolver flag
-	scaResolver, errs := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-	if errs != nil {
-		scaResolver = ""
+	// Get sca resolver flags
+	scaResolverParams, err := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+	if err != nil {
+		scaResolverParams = ""
 	}
-	// Setup the project handler (either git or upload)
+	scaResolver, err := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	if err != nil {
+		scaResolver = ""
+		scaResolverParams = ""
+	}
+	// Set up the project handler (either git or upload)
 	pHandler, err := setupProjectHandler(
 		uploadsWrapper,
 		sourcesFile,
@@ -998,6 +1005,7 @@ func createScanModel(
 		userIncludeFilter,
 		scanRepoURL,
 		scaResolver,
+		scaResolverParams,
 	)
 	scanModel.Handler, _ = json.Marshal(pHandler)
 	if err != nil {
@@ -1015,13 +1023,7 @@ func getUploadType(sourceDir, sourcesFile string) string {
 
 func setupProjectHandler(
 	uploadsWrapper wrappers.UploadsWrapper,
-	sourcesFile,
-	sourceDir,
-	sourceDirFilter,
-	userIncludeFilter,
-	scanRepoURL,
-	scaResolver string,
-
+	sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scanRepoURL, scaResolver, scaResolverParams string,
 ) (wrappers.UploadProjectHandler, error) {
 	pHandler := wrappers.UploadProjectHandler{}
 	pHandler.Branch = viper.GetString(commonParams.BranchKey)
@@ -1033,6 +1035,7 @@ func setupProjectHandler(
 		sourceDirFilter,
 		userIncludeFilter,
 		scaResolver,
+		scaResolverParams,
 	)
 	pHandler.RepoURL = scanRepoURL
 	return pHandler, err
