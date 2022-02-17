@@ -41,6 +41,8 @@ func TestResultListJson(t *testing.T) {
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
 	assertResultFilesCreated(t)
+
+	deleteScanAndProject()
 }
 
 // assert all files were created

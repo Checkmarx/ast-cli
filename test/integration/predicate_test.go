@@ -55,4 +55,6 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	assert.Assert(t, (len(result)) == 1, "Should have 1 predicate as the result.")
 
+	deleteScanAndProject()
+
 }
