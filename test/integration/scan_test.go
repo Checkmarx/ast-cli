@@ -20,6 +20,8 @@ import (
 	"gotest.tools/assert"
 )
 
+const resolver = "./ScaResolver"
+
 // Type for scan workflow response, used to assert the validity of the command's response
 type ScanWorkflowResponse struct {
 	Source      string    `json:"source"`
@@ -68,7 +70,7 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
-	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}, "sast,kics", "nop")
+	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}, "sast,kics", resolver)
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,
@@ -90,6 +92,19 @@ func TestScaResolverArgFailed(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
+	assertError(t, err, "ScaResolver error")
+
+	args = []string{
+		"scan", "create",
+		flag(params.ProjectName), "resolver",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast,kics,sca",
+		flag(params.ScaResolverFlag), resolver,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScaResolverParamsFlag), "-q --invalid-param \"invalid\"",
+	}
+
+	err, _ = executeCommand(t, args...)
 	assertError(t, err, "ScaResolver error")
 }
 
@@ -303,7 +318,14 @@ func createScanScaWithResolver(
 ) (string, string) {
 	return executeCreateScan(
 		t,
-		append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag), flag(params.ScaResolverFlag), resolver),
+		append(
+			getCreateArgs(source, tags, scanTypes),
+			flag(params.AsyncFlag),
+			flag(params.ScaResolverFlag),
+			resolver,
+			flag(params.ScaResolverParamsFlag),
+			"-q",
+		),
 	)
 }
 

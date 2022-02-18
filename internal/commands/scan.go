@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/google/shlex"
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
@@ -36,7 +37,6 @@ const (
 	thresholdLog      = "%s: Limit = %d, Current = %v"
 	thresholdMsgLog   = "Threshold check finished with status %s : %s"
 	mbBytes           = 1024.0 * 1024.0
-	resolverFilePerm  = 0644
 	scaType           = "sca"
 )
 
@@ -799,31 +799,27 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 		if err != nil {
 			return err
 		}
-		if scaResolver != "nop" {
-			args := []string{
-				"offline",
-				"-s",
-				sourceDir,
-				"-n",
-				commonParams.ProjectName,
-				"-r",
-				scaResolverResultsFile,
-				scaResolverParams,
-			}
-			log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-			out, err := exec.Command(scaResolver, args...).Output()
-			if err != nil {
-				return errors.Errorf("%s", err)
-			}
-			PrintIfVerbose(string(out))
-		} else {
-			PrintIfVerbose("Creating 'No Op' resolver file.")
-			d1 := []byte("{}")
-			err := os.WriteFile(scaResolverResultsFile, d1, resolverFilePerm)
-			if err != nil {
-				return errors.Errorf("%s", err)
-			}
+		scaResolverParsedParams, err := shlex.Split(scaResolverParams)
+		if err != nil {
+			return err
 		}
+		args := []string{
+			"offline",
+			"-s",
+			sourceDir,
+			"-n",
+			commonParams.ProjectName,
+			"-r",
+			scaResolverResultsFile,
+		}
+		args = append(args, scaResolverParsedParams...)
+		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
+		out, err := exec.Command(scaResolver, args...).Output()
+		if err != nil {
+			return errors.Errorf("%s", err)
+		}
+		PrintIfVerbose(string(out))
+
 	}
 	return nil
 }
