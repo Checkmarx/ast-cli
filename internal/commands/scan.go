@@ -819,7 +819,6 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 			return errors.Errorf("%s", err)
 		}
 		PrintIfVerbose(string(out))
-
 	}
 	return nil
 }
