@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -16,11 +17,15 @@ const (
 	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
 	dummyRepo            = "https://www.dummy-repo.com"
 	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
-	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in $PATH"
+	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in "
 )
 
 func TestScanHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "scan")
+}
+
+func TestScanCreateHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "scan", "create")
 }
 
 func TestScanNoSub(t *testing.T) {
@@ -151,7 +156,7 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 		"resolver",
 	}
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Assert(t, err.Error() == scaPathError)
+	assert.Assert(t, strings.Contains(err.Error(), scaPathError), err.Error())
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
