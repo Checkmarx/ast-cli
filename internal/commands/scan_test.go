@@ -128,7 +128,7 @@ func TestCreateScanWithScaResolver(t *testing.T) {
 		append(
 			baseArgs,
 			"--sca-resolver",
-			"/tmp/ScaResolver",
+			viper.GetString(resolverEnvVar),
 			"-f",
 			"!ScaResolver",
 			"--sca-resolver-params",

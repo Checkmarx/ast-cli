@@ -17,6 +17,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -70,7 +71,13 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
-	scanID, projectID := createScanScaWithResolver(t, Dir, map[string]string{}, "sast,kics", resolver)
+	scanID, projectID := createScanScaWithResolver(
+		t,
+		Dir,
+		map[string]string{},
+		"sast,kics",
+		viper.GetString(resolverEnvVar),
+	)
 	defer deleteProject(t, projectID)
 	assert.Assert(
 		t,

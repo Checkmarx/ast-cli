@@ -7,15 +7,22 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 	"gotest.tools/assert"
+)
+
+const (
+	resolverEnvVar        = "SCA_RESOLVER"
+	resolverEnvVarDefault = "./ScaResolver"
 )
 
 func TestMain(m *testing.M) {
 	log.Println("Commands tests started")
 	// Run all tests
 	exitVal := m.Run()
+	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 	log.Println("Commands tests done")
 	os.Exit(exitVal)
 }
@@ -29,7 +36,8 @@ func createASTTestCommand() *cobra.Command {
 	resultsMockWrapper := &mock.ResultsMockWrapper{}
 	authWrapper := &mock.AuthMockWrapper{}
 	logsWrapper := &mock.LogsMockWrapper{}
-	return NewAstCLI(scansMockWrapper,
+	return NewAstCLI(
+		scansMockWrapper,
 		resultsPredicatesMockWrapper,
 		uploadsMockWrapper,
 		projectsMockWrapper,
