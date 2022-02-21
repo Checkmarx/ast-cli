@@ -570,10 +570,10 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		var valueMap map[string]interface{}
 		_ = json.Unmarshal([]byte("{}"), &valueMap)
 		valueMap["incremental"] = fmt.Sprintf("%v", newIncremental)
-		if newPresetName == "" {
-			newPresetName = "Checkmarx Default"
+		if newPresetName != "" {
+			valueMap["presetName"] = newPresetName
 		}
-		valueMap["presetName"] = newPresetName
+
 		objArr["value"] = valueMap
 		return objArr
 	}
