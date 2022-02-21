@@ -128,7 +128,7 @@ func TestCreateScanWithScaResolver(t *testing.T) {
 		append(
 			baseArgs,
 			"--sca-resolver",
-			"./ScaResolver",
+			"ScaResolver",
 			"-f",
 			"!ScaResolver",
 			"--sca-resolver-params",
