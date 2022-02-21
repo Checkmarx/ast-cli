@@ -21,7 +21,6 @@ jobs:
         run: |
           sudo chmod +x ./internal/commands/.scripts/up.sh
           ./internal/commands/.scripts/up.sh
-          sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
       - name: Check if total coverage is greater then 80
         shell: bash
         run: |
