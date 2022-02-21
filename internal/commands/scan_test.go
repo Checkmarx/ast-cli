@@ -130,7 +130,7 @@ func TestCreateScanWithScaResolver(t *testing.T) {
 			"--sca-resolver",
 			"./ScaResolver",
 			"-f",
-			"!ScaResolver-win64",
+			"!ScaResolver",
 			"--sca-resolver-params",
 			"-q",
 		)...,
