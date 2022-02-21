@@ -20,7 +20,7 @@ import (
 	"gotest.tools/assert"
 )
 
-const resolver = "ScaResolver"
+const resolver = "/tmp/ScaResolver"
 
 // Type for scan workflow response, used to assert the validity of the command's response
 type ScanWorkflowResponse struct {
