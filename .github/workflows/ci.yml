@@ -19,8 +19,8 @@ jobs:
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
         run: |
-          sudo chmod +x ./internal/commands/.scripts/up.sh \
-          ./internal/commands/.scripts/up.sh \
+          sudo chmod +x ./internal/commands/.scripts/up.sh
+          ./internal/commands/.scripts/up.sh
           sudo -E env "PATH=$PATH" go test ./... -coverprofile cover.out
       - name: Check if total coverage is greater then 80
         shell: bash
