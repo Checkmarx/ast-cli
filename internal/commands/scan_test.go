@@ -218,3 +218,8 @@ func TestCreateScanWithProjectGroup(t *testing.T) {
 	)
 	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]")
 }
+
+func TestScanWorkflowMissingID(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "workflow")
+	assert.Error(t, err, "Please provide a scan ID", err.Error())
+}
