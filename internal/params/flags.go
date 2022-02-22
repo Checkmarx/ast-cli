@@ -31,6 +31,7 @@ const (
 	BranchFlagUsage          = "Branch to scan"
 	MainBranchFlag           = "branch"
 	ScaResolverFlag          = "sca-resolver"
+	ScaResolverParamsFlag    = "sca-resolver-params"
 	AccessKeyIDFlag          = "client-id"
 	AccessKeySecretFlag      = "client-secret"
 	AccessKeyIDFlagUsage     = "The OAuth2 client ID"

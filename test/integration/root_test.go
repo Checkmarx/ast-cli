@@ -6,15 +6,19 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 const (
-	FullScanWait   = 60
-	ScanPollSleep  = 5
-	Dir            = "./data"
-	Zip            = "data/sources.zip"
-	SlowRepo       = "https://github.com/WebGoat/WebGoat"
-	SlowRepoBranch = "develop"
+	FullScanWait          = 60
+	ScanPollSleep         = 5
+	Dir                   = "./data"
+	Zip                   = "data/sources.zip"
+	SlowRepo              = "https://github.com/WebGoat/WebGoat"
+	SlowRepoBranch        = "develop"
+	resolverEnvVar        = "SCA_RESOLVER"
+	resolverEnvVarDefault = "./ScaResolver"
 )
 
 var Tags = map[string]string{
@@ -30,6 +34,7 @@ var rootProjectName string
 
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
+	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 	exitVal := m.Run()
 	deleteScanAndProject()
 	log.Println("CLI integration tests done")
