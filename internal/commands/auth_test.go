@@ -17,6 +17,10 @@ func TestAuthNoSub(t *testing.T) {
 	execCmdNilAssertion(t, "auth")
 }
 
+func TestAuthValidate(t *testing.T) {
+	_ = execCmdNotNilAssertion(t, "auth", "validate")
+}
+
 func TestRunCreateOath2ClientCommand(t *testing.T) {
 	args := []string{
 		"auth",
