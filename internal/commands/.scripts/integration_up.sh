@@ -6,6 +6,10 @@ docker run \
   -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
   datadog/squid
 
+wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+rm -rf ScaResolver-linux64.tar.gz
+
 go test \
   -tags integration \
   -v \

@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -16,11 +17,15 @@ const (
 	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
 	dummyRepo            = "https://www.dummy-repo.com"
 	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
-	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in $PATH"
+	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in "
 )
 
 func TestScanHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "scan")
+}
+
+func TestScanCreateHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "scan", "create")
 }
 
 func TestScanNoSub(t *testing.T) {
@@ -71,7 +76,15 @@ func TestRunGetAllCommandOffsetList(t *testing.T) {
 }
 
 func TestRunGetAllCommandStatusesList(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "list", "--format", "list", "--filter", "statuses=Failed;Completed;Running,limit=500")
+	execCmdNilAssertion(
+		t,
+		"scan",
+		"list",
+		"--format",
+		"list",
+		"--filter",
+		"statuses=Failed;Completed;Running,limit=500",
+	)
 }
 
 func TestRunGetAllCommandFlagNonExist(t *testing.T) {
@@ -115,13 +128,35 @@ func TestCreateScanWrongFormatSource(t *testing.T) {
 
 func TestCreateScanWithScaResolver(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch"}
-	execCmdNilAssertion(t, append(baseArgs, "--sca-resolver", "nop", "-f", "!ScaResolver-win64")...)
+	execCmdNilAssertion(
+		t,
+		append(
+			baseArgs,
+			"--sca-resolver",
+			viper.GetString(resolverEnvVar),
+			"-f",
+			"!ScaResolver",
+			"--sca-resolver-params",
+			"-q",
+		)...,
+	)
 }
 
 func TestCreateScanWithScaResolverFailed(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch", "--sca-resolver", "resolver"}
+	baseArgs := []string{
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		"data",
+		"-b",
+		"dummy_branch",
+		"--sca-resolver",
+		"resolver",
+	}
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Assert(t, err.Error() == scaPathError)
+	assert.Assert(t, strings.Contains(err.Error(), scaPathError), err.Error())
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
@@ -177,7 +212,14 @@ func TestCreateScanBranches(t *testing.T) {
 }
 
 func TestCreateScanWithProjectGroup(t *testing.T) {
-	err := execCmdNotNilAssertion(t,
-		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup")
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup",
+	)
 	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]")
+}
+
+func TestScanWorkflowMissingID(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "workflow")
+	assert.Error(t, err, "Please provide a scan ID", err.Error())
 }
