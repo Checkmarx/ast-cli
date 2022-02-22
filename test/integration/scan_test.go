@@ -21,8 +21,6 @@ import (
 	"gotest.tools/assert"
 )
 
-const resolver = "/tmp/ScaResolver"
-
 // Type for scan workflow response, used to assert the validity of the command's response
 type ScanWorkflowResponse struct {
 	Source      string    `json:"source"`
@@ -106,7 +104,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast,kics,sca",
-		flag(params.ScaResolverFlag), resolver,
+		flag(params.ScaResolverFlag), viper.GetString(resolverEnvVar),
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScaResolverParamsFlag), "-q --invalid-param \"invalid\"",
 	}
