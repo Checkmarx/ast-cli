@@ -48,6 +48,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
+	codebashing := viper.GetString(params.CodeBashingPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -57,10 +58,12 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
+	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPredicatesWrapper,
+		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
@@ -121,7 +124,7 @@ func executeCmdWithTimeOutNilAssertion(t *testing.T, infoMsg string, timeout tim
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	//args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

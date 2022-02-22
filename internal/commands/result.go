@@ -11,6 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/params"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -21,6 +22,7 @@ import (
 
 const (
 	failedListingResults = "Failed listing results"
+	failedListingCodeBashing = "Failed codebashing link"
 	mediumLabel          = "medium"
 	highLabel            = "high"
 	lowLabel             = "low"
@@ -73,7 +75,7 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 	return resultCmd
 }
 
-func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
+func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper, codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
 		Short: "Retrieve results",
@@ -86,8 +88,10 @@ func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrapp
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
+	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	resultCmd.AddCommand(
 		showResultCmd,
+		codeBashingCmd,
 	)
 	return resultCmd
 }
@@ -110,6 +114,29 @@ func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wr
 	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
+	return resultCmd
+}
+
+func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Command {
+	// Create a codeBashing wrapper
+	resultCmd := &cobra.Command{
+		Use:   "codebashing",
+		Short: "Get codebashing lesson link",
+		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability.",
+		Example: heredoc.Doc(
+			`
+			$ cx codebashing --language <string> --vulnerabity-type <string> --cwe-id <string> --format <string>
+		`,
+		),
+		RunE: runGetCodeBashingCommand(codeBashingWrapper),
+	}
+	resultCmd.PersistentFlags().String(params.LanguageFlag, "", "Language")
+	resultCmd.MarkPersistentFlagRequired(params.LanguageFlag)
+	resultCmd.PersistentFlags().String(params.VulnerabilityTypeFlag, "", "Vulnerability Type")
+	resultCmd.MarkPersistentFlagRequired(params.VulnerabilityTypeFlag)
+	resultCmd.PersistentFlags().String(params.CweIdFlag, "", "CWE Id")
+	resultCmd.MarkPersistentFlagRequired(params.CweIdFlag)
+	resultCmd.PersistentFlags().String(params.FormatFlag, "json", "Format")
 	return resultCmd
 }
 
@@ -234,6 +261,31 @@ func runGetResultCommand(
 		return CreateScanReport(resultsWrapper, scanWrapper, scanID, format, targetFile, targetPath, params)
 	}
 }
+
+func runGetCodeBashingCommand(
+	codeBashingWrapper wrappers.CodeBashingWrapper,
+) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		params := make(map[string]string)
+		language,err:=cmd.Flags().GetString(commonParams.LanguageFlag)
+		cwe,err:=cmd.Flags().GetString(commonParams.CweIdFlag)
+		vulType,err:=cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
+		params["results"] = "[{\"lang\": \"" +language+"\", \"cwe_id\":\"CWE-"+cwe+"\", \"cxQueryName\":\""+strings.ReplaceAll(vulType," ","_")+"\"}]"
+		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+		}
+		if errorModel != nil {
+			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+		}
+		err = printByFormat(cmd,*CodeBashingModel)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+		}
+		return nil
+	}
+}
+
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,

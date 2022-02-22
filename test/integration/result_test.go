@@ -59,3 +59,34 @@ func assertResultFilesCreated(t *testing.T) {
 		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
 	}()
 }
+
+func TestCodeBashingParamFailed(t *testing.T) {
+
+	args := []string{
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "'Reflected XSS All Clients'",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "required flag(s) \"cwe-id\" not set")
+}
+
+func TestCodeBashingList(t *testing.T) {
+
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting results should pass",
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.CweIdFlag), "79",)
+
+	codebashing := []wrappers.CodeBashingCollection{}
+
+	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
+
+	assert.Assert(t,codebashing!=nil, "Should exist codebashing link")
+}

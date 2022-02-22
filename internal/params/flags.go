@@ -85,6 +85,9 @@ const (
 	SeverityFlag             = "severity"
 	StateFlag                = "state"
 	CommentFlag              = "comment"
+	LanguageFlag             = "language"
+	VulnerabilityTypeFlag    = "vulnerabity-type"
+	CweIdFlag                = "cwe-id"
 )
 
 // Parameter values

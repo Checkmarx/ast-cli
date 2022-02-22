@@ -22,6 +22,7 @@ const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
+	codeBashingWrapper wrappers.CodeBashingWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -105,7 +106,7 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, logsWrapper, groupsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
-	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper)
+	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper,codeBashingWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand()

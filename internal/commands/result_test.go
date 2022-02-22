@@ -77,3 +77,26 @@ func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {
 func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 	_ = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--output-path", "")
 }
+
+func TestRunGetCodeBashingWithoutLanguage(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "codebashing", "--cwe-id", "79", "--vulnerabity-type", "Reflected XSS All Clients")
+	assert.Equal(t, err.Error(), "required flag(s) \"language\" not set", "Wrong expected error message")
+}
+
+func TestRunGetCodeBashingWithoutVulnerabilityType(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "codebashing", "--cwe-id", "79", "--language", "PHP")
+	assert.Equal(t, err.Error(), "required flag(s) \"vulnerabity-type\" not set", "Wrong expected error message")
+}
+
+func TestRunGetCodeBashingWithoutCweId(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP")
+	assert.Equal(t, err.Error(), "required flag(s) \"cwe-id\" not set", "Wrong expected error message")
+}
+
+func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
+	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP","--cwe-id", "79","--format","json")
+}
+
+func TestRunGetCodeBashingWithFormatTable(t *testing.T) {
+	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP","--cwe-id", "79","--format","table")
+}
