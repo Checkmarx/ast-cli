@@ -1,4 +1,4 @@
-package user_count
+package userCount
 
 import (
 	"strings"
@@ -23,7 +23,7 @@ const (
 	reposFlagUsage = "List of repositories to scan for contributors"
 	orgsFlag       = "orgs"
 	orgsFlagUsage  = "List of organizations to scan for contributors"
-	githubApiURL   = "https://api.github.com"
+	githubAPIURL   = "https://api.github.com"
 	sinceParam     = "since"
 	missingArgs    = "provide at least one repository or organization"
 	missingOrg     = "an organization is required for your repositories"
@@ -45,9 +45,9 @@ func newUserCountGithubCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Comm
 
 	userCountCmd.Flags().StringSliceVar(&repos, reposFlag, []string{}, reposFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&orgs, orgsFlag, []string{}, orgsFlagUsage)
-	userCountCmd.Flags().String(params.GitHubUrlFlag, githubApiURL, params.GitHubUrlFlagUsage)
+	userCountCmd.Flags().String(params.GitHubURLFlag, githubAPIURL, params.GitHubURLFlagUsage)
 
-	_ = viper.BindPFlag(params.GitHubUrlFlag, userCountCmd.Flags().Lookup(params.GitHubUrlFlag))
+	_ = viper.BindPFlag(params.GitHubURLFlag, userCountCmd.Flags().Lookup(params.GitHubURLFlag))
 
 	return userCountCmd
 }

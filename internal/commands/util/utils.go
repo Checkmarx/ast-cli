@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
-	userCount "github.com/checkmarx/ast-cli/internal/commands/util/user-count"
+	"github.com/checkmarx/ast-cli/internal/commands/util/userCount"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )

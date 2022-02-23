@@ -1,4 +1,4 @@
-package user_count
+package userCount
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	userCountFlag         = "user-count"
+	userCountFlag         = "userCount"
 	userCountShort        = "Display SCM contributor counts for the past 90 days"
 	TotalContributorsName = "Total unique contributors"
 )

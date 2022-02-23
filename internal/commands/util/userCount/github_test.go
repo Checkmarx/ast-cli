@@ -1,4 +1,4 @@
-package user_count
+package userCount
 
 import (
 	"strings"

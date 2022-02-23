@@ -5,7 +5,7 @@ package integration
 import (
 	"testing"
 
-	userCount "github.com/checkmarx/ast-cli/internal/commands/util/user-count"
+	"github.com/checkmarx/ast-cli/internal/commands/util/userCount"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -15,7 +15,7 @@ func TestGitHubUserCount(t *testing.T) {
 		t,
 		"msg",
 		"utils",
-		"user-count",
+		"userCount",
 		"github",
 		"--orgs",
 		"checkmarxdev,checkmarx,checkmarx-ltd",

@@ -76,14 +76,14 @@ func (g *GitHubHTTPWrapper) GetRepositories(organization Organization) ([]Reposi
 	return repositories, err
 }
 
-func (g *GitHubHTTPWrapper) GetCommits(repository Repository, params map[string]string) ([]Commit, error) {
+func (g *GitHubHTTPWrapper) GetCommits(repository Repository, queryParams map[string]string) ([]Commit, error) {
 	var err error
 	var commits []Commit
 
 	commitsURL := repository.CommitsURL
 	commitsURL = commitsURL[:strings.Index(commitsURL, "{")]
 
-	err = g.get(commitsURL, &commits, params)
+	err = g.get(commitsURL, &commits, queryParams)
 
 	return commits, err
 }
@@ -110,23 +110,23 @@ func (g *GitHubHTTPWrapper) getRepositoryTemplate() (string, error) {
 
 func (g *GitHubHTTPWrapper) getTemplates() error {
 	var err error
-	var rootApiResponse rootApi
+	var rootAPIResponse rootAPI
 
-	baseURL := viper.GetString(params.GitHubUrlFlag)
-	err = g.get(baseURL, &rootApiResponse, map[string]string{})
+	baseURL := viper.GetString(params.GitHubURLFlag)
+	err = g.get(baseURL, &rootAPIResponse, map[string]string{})
 
-	g.organizationTemplate = rootApiResponse.OrganizationURL
-	g.repositoryTemplate = rootApiResponse.RepositoryURL
+	g.organizationTemplate = rootAPIResponse.OrganizationURL
+	g.repositoryTemplate = rootAPIResponse.RepositoryURL
 
 	return err
 }
 
-func (g *GitHubHTTPWrapper) get(URL string, target interface{}, queryParams map[string]string) error {
+func (g *GitHubHTTPWrapper) get(url string, target interface{}, queryParams map[string]string) error {
 	var err error
 
-	PrintIfVerbose(fmt.Sprintf("Request to %s", URL))
+	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
-	req, err := http.NewRequest(http.MethodGet, URL, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Add(acceptHeader, apiVersion)
 
 	token := viper.GetString(params.SCMTokenFlag)

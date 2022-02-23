@@ -88,8 +88,8 @@ const (
 	CommentFlag              = "comment"
 	SCMTokenFlag             = "token"
 	SCMTokenUsage            = "GitHub OAuth token"
-	GitHubUrlFlag            = "url"
-	GitHubUrlFlagUsage       = "API base URL"
+	GitHubURLFlag            = "url"
+	GitHubURLFlagUsage       = "API base URL"
 )
 
 // Parameter values

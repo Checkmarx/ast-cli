@@ -1,6 +1,6 @@
 package wrappers
 
-type rootApi struct {
+type rootAPI struct {
 	RepositoryURL   string `json:"repository_url"`
 	OrganizationURL string `json:"organization_url"`
 }
@@ -31,5 +31,5 @@ type GitHubWrapper interface {
 	GetOrganization(organizationName string) (Organization, error)
 	GetRepository(organizationName, repositoryName string) (Repository, error)
 	GetRepositories(organization Organization) ([]Repository, error)
-	GetCommits(repository Repository, params map[string]string) ([]Commit, error)
+	GetCommits(repository Repository, queryParams map[string]string) ([]Commit, error)
 }
