@@ -21,22 +21,22 @@ import (
 )
 
 const (
-	failedListingResults = "Failed listing results"
+	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
-	mediumLabel          = "medium"
-	highLabel            = "high"
-	lowLabel             = "low"
-	sonarTypeLabel       = "_sonar"
-	directoryPermission  = 0700
-	infoSonar            = "INFO"
-	lowSonar             = "MINOR"
-	mediumSonar          = "MAJOR"
-	highSonar            = "CRITICAL"
-	vulnerabilitySonar   = "VULNERABILITY"
-	infoCx               = "INFO"
-	lowCx                = "LOW"
-	mediumCx             = "MEDIUM"
-	highCx               = "HIGH"
+	mediumLabel              = "medium"
+	highLabel                = "high"
+	lowLabel                 = "low"
+	sonarTypeLabel           = "_sonar"
+	directoryPermission      = 0700
+	infoSonar                = "INFO"
+	lowSonar                 = "MINOR"
+	mediumSonar              = "MAJOR"
+	highSonar                = "CRITICAL"
+	vulnerabilitySonar       = "VULNERABILITY"
+	infoCx                   = "INFO"
+	lowCx                    = "LOW"
+	mediumCx                 = "MEDIUM"
+	highCx                   = "HIGH"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -267,10 +267,10 @@ func runGetCodeBashingCommand(
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		params := make(map[string]string)
-		language,err:=cmd.Flags().GetString(commonParams.LanguageFlag)
-		cwe,err:=cmd.Flags().GetString(commonParams.CweIdFlag)
-		vulType,err:=cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
-		params["results"] = "[{\"lang\": \"" +language+"\", \"cwe_id\":\"CWE-"+cwe+"\", \"cxQueryName\":\""+strings.ReplaceAll(vulType," ","_")+"\"}]"
+		language, err := cmd.Flags().GetString(commonParams.LanguageFlag)
+		cwe, err := cmd.Flags().GetString(commonParams.CweIdFlag)
+		vulType, err := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
+		params["results"] = "[{\"lang\": \"" + language + "\", \"cwe_id\":\"CWE-" + cwe + "\", \"cxQueryName\":\"" + strings.ReplaceAll(vulType, " ", "_") + "\"}]"
 		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
@@ -278,14 +278,13 @@ func runGetCodeBashingCommand(
 		if errorModel != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
-		err = printByFormat(cmd,*CodeBashingModel)
+		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
 		return nil
 	}
 }
-
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
