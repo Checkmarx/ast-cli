@@ -25,6 +25,7 @@ const (
 	ProxyPortEnv = "PROXY_PORT"
 	ProxyHostEnv = "PROXY_HOST"
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
+	pat          = "PERSONAL_ACCESS_TOKEN"
 )
 
 // Bind environment vars and their defaults to viper
@@ -41,6 +42,7 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
+	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)

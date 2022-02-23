@@ -11,6 +11,7 @@ import (
 )
 
 func TestGitHubUserCount(t *testing.T) {
+	_ = viper.BindEnv("PERSONAL_ACCESS_TOKEN")
 	buffer := executeCmdNilAssertion(
 		t,
 		"msg",
@@ -20,7 +21,7 @@ func TestGitHubUserCount(t *testing.T) {
 		"--orgs",
 		"checkmarxdev,checkmarx,checkmarx-ltd",
 		"--token",
-		viper.GetString("PERSONAL_ACCESS_TOKEN"),
+		viper.GetString(pat),
 		"--format",
 		"json",
 	)
