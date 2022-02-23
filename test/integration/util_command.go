@@ -57,6 +57,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
+	gitHubWrapper := wrappers.NewGitHubWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -67,6 +68,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
+		gitHubWrapper,
 	)
 	return astCli
 }
@@ -110,7 +112,12 @@ func executeCmdNilAssertion(t *testing.T, infoMsg string, args ...string) *bytes
 	return outputBuffer
 }
 
-func executeCmdWithTimeOutNilAssertion(t *testing.T, infoMsg string, timeout time.Duration, args ...string) *bytes.Buffer {
+func executeCmdWithTimeOutNilAssertion(
+	t *testing.T,
+	infoMsg string,
+	timeout time.Duration,
+	args ...string,
+) *bytes.Buffer {
 	cmd, outputBuffer := createRedirectedTestCommand(t)
 	err := executeWithTimeout(cmd, timeout, args...)
 	assert.NilError(t, err, infoMsg)

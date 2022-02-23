@@ -4,28 +4,34 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	userCount "github.com/checkmarx/ast-cli/internal/commands/util/user-count"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand() *cobra.Command {
+func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
 		Long:  "The utils command enables the ability to perform CxAST utility functions.",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx utils env
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/VJGXtw
-			`),
+			`,
+			),
 		},
 	}
 	envCheckCmd := NewEnvCheckCommand()
 
 	completionCmd := NewCompletionCommand()
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd)
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, userCount.NewUserCountCommand(gitHubWrapper))
 
 	return utilsCmd
 }

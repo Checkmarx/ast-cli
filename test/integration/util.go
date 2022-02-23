@@ -3,11 +3,15 @@
 package integration
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
+
+var projectNameRandom = uuid.New().String()
 
 func formatTags(tags map[string]string) string {
 	var tagsStr string
@@ -41,5 +45,5 @@ func flag(f string) string {
 }
 
 func getProjectNameForTest() string {
-	return "ast-cli-tests"
+	return fmt.Sprintf("ast-cli-tests_%s", projectNameRandom)
 }

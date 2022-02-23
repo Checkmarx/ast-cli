@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/google/shlex"
 	"github.com/pkg/errors"
 
@@ -100,10 +100,10 @@ func NewScanCommand(
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		util.FormatTable, util.FormatList, util.FormatJSON,
+		printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
-		createScanCmd, util.FormatList, util.FormatTable, util.FormatJSON,
+		createScanCmd, printer.FormatList, printer.FormatTable, printer.FormatJSON,
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
@@ -357,7 +357,13 @@ func scanCreateSubCommand(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
 		commonParams.Branch, commonParams.BranchFlagUsage,
 	)
-	addResultFormatFlag(createScanCmd, util.FormatSummaryConsole, util.FormatJSON, util.FormatSummary, util.FormatSarif)
+	addResultFormatFlag(
+		createScanCmd,
+		printer.FormatSummaryConsole,
+		printer.FormatJSON,
+		printer.FormatSummary,
+		printer.FormatSarif,
+	)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1050,7 +1056,7 @@ func handleWait(
 		if verboseFlag {
 			log.Println("Printing workflow logs")
 			taskResponseModel, _, _ := scansWrapper.GetWorkflowByID(scanResponseModel.ID)
-			_ = util.Print(cmd.OutOrStdout(), taskResponseModel, util.FormatList)
+			_ = printer.Print(cmd.OutOrStdout(), taskResponseModel, printer.FormatList)
 		}
 		return err
 	}
@@ -1063,8 +1069,8 @@ func handleWait(
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(reportFormats, util.FormatSummaryConsole) {
-		reportFormats += "," + util.FormatSummaryConsole
+	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
+		reportFormats += "," + printer.FormatSummaryConsole
 	}
 	return CreateScanReport(
 		resultsWrapper,

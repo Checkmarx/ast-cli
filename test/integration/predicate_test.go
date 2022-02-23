@@ -7,7 +7,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
@@ -36,7 +36,8 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 		flag(params.StateFlag), state,
 		flag(params.SeverityFlag), severity,
 		flag(params.CommentFlag), comment,
-		flag(params.ScanTypeFlag), scanType)
+		flag(params.ScanTypeFlag), scanType,
+	)
 
 	_, readingError := io.ReadAll(outputBufferForStep1)
 	assert.NilError(t, readingError, "Reading result should pass")
@@ -44,10 +45,11 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
 	outputBufferForStep2 := executeCmdNilAssertion(
 		t, "Predicates should be fetched.", "triage", "show",
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
-		flag(params.ScanTypeFlag), scanType)
+		flag(params.ScanTypeFlag), scanType,
+	)
 
 	result := []wrappers.Predicate{}
 	fmt.Println(outputBufferForStep2)

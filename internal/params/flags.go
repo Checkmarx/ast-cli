@@ -86,6 +86,10 @@ const (
 	SeverityFlag             = "severity"
 	StateFlag                = "state"
 	CommentFlag              = "comment"
+	SCMTokenFlag             = "token"
+	SCMTokenUsage            = "GitHub OAuth token"
+	GitHubUrlFlag            = "url"
+	GitHubUrlFlagUsage       = "API base URL"
 )
 
 // Parameter values
