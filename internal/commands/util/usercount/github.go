@@ -145,7 +145,6 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.Commit, [
 		}
 
 		for _, repository := range repositories {
-
 			commits, err := gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
 			if err != nil {
 				return totalCommits, views, err
