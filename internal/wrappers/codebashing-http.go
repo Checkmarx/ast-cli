@@ -58,6 +58,9 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 		}
 		var decoded []CodeBashingCollection
 		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+		}
 		err = json.Unmarshal(body, &decoded)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)

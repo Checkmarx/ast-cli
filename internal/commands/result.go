@@ -22,6 +22,7 @@ import (
 const (
 	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
+	failedReadingParams      = "Failed reading flag values"
 	mediumLabel              = "medium"
 	highLabel                = "high"
 	lowLabel                 = "low"
@@ -130,17 +131,17 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),
 	}
 	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language")
-	err:=resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
+	err := resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
 	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability Type")
-	err=resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
+	err = resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	resultCmd.PersistentFlags().String(commonParams.CweIdFlag, "", "CWE Id")
-	err=resultCmd.MarkPersistentFlagRequired(commonParams.CweIdFlag)
+	resultCmd.PersistentFlags().String(commonParams.CweIDFlag, "", "CWE Id")
+	err = resultCmd.MarkPersistentFlagRequired(commonParams.CweIDFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -276,8 +277,17 @@ func runGetCodeBashingCommand(
 	return func(cmd *cobra.Command, args []string) error {
 		params := make(map[string]string)
 		language, err := cmd.Flags().GetString(commonParams.LanguageFlag)
-		cwe, err := cmd.Flags().GetString(commonParams.CweIdFlag)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedReadingParams)
+		}
+		cwe, err := cmd.Flags().GetString(commonParams.CweIDFlag)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedReadingParams)
+		}
 		vulType, err := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedReadingParams)
+		}
 		params["results"] = "[{\"lang\": \"" + language + "\", \"cwe_id\":\"CWE-" + cwe + "\", \"cxQueryName\":\"" + strings.ReplaceAll(vulType, " ", "_") + "\"}]"
 		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params)
 		if err != nil {

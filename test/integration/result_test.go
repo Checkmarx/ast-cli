@@ -82,7 +82,7 @@ func TestCodeBashingList(t *testing.T) {
 		"codebashing",
 		flag(params.LanguageFlag), "PHP",
 		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIdFlag), "79",)
+		flag(params.CweIDFlag), "79",)
 
 	codebashing := []wrappers.CodeBashingCollection{}
 
