@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/util/userCount"
+	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +31,7 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 
 	completionCmd := NewCompletionCommand()
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, userCount.NewUserCountCommand(gitHubWrapper))
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, usercount.NewUserCountCommand(gitHubWrapper))
 
 	return utilsCmd
 }

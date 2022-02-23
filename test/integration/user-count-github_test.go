@@ -5,7 +5,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util/userCount"
+	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -15,7 +15,7 @@ func TestGitHubUserCount(t *testing.T) {
 		t,
 		"msg",
 		"utils",
-		"userCount",
+		"usercount",
 		"github",
 		"--orgs",
 		"checkmarxdev,checkmarx,checkmarx-ltd",
@@ -25,11 +25,11 @@ func TestGitHubUserCount(t *testing.T) {
 		"json",
 	)
 
-	var parsedJson []userCount.RepositoryView
+	var parsedJson []usercount.RepositoryView
 	unmarshall(t, buffer, &parsedJson, "Reading unique contributors json should pass")
 
 	totalView := parsedJson[len(parsedJson)-1]
 	assert.Assert(t, len(parsedJson) >= 1)
-	assert.Assert(t, totalView.Name == userCount.TotalContributorsName)
+	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }

@@ -53,7 +53,7 @@ func (g *GitHubHTTPWrapper) GetRepository(organizationName, repositoryName strin
 	var err error
 	var repository Repository
 
-	repositoryURL, err := g.getOrganizationTemplate()
+	repositoryURL, err := g.getRepositoryTemplate()
 	if err != nil {
 		return repository, err
 	}

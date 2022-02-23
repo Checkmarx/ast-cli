@@ -1,4 +1,4 @@
-package userCount
+package usercount
 
 import (
 	"testing"
@@ -17,6 +17,6 @@ func TestNewUserCountCommand(t *testing.T) {
 
 	mockParentCmd.AddCommand(cmd)
 
-	mockParentCmd.SetArgs([]string{"userCount", "-h"})
+	mockParentCmd.SetArgs([]string{"usercount", "-h"})
 	assert.NilError(t, cmd.Execute())
 }
