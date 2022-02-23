@@ -122,9 +122,15 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 }
 
 func (g *GitHubHTTPWrapper) get(url string, target interface{}, queryParams map[string]string) error {
+	var err error
+
 	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
 	req.Header.Add(acceptHeader, apiVersion)
 
 	token := viper.GetString(params.SCMTokenFlag)
