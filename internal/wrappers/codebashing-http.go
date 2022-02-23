@@ -14,10 +14,10 @@ import (
 
 const (
 	failedToParseCodeBashing    = "Failed to parse list results"
-	failedGettingCodeBashingUrl = "Authentication failed, not able to retrieve codebashing base link"
-	tenThousand = "10000"
-	limit = "limit"
-	codeBashingKey = "cb-url"
+	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
+	tenThousand                 = "10000"
+	limit                       = "limit"
+	codeBashingKey              = "cb-url"
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -52,9 +52,9 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		url, err := getCodeBashingUrl(codeBashingKey)
+		url, err := getCodeBashingURL(codeBashingKey)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedGettingCodeBashingUrl)
+			return nil, nil, errors.Wrapf(err, failedGettingCodeBashingURL)
 		}
 		var decoded []CodeBashingCollection
 		body, err := ioutil.ReadAll(resp.Body)
@@ -69,7 +69,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 	}
 }
 
-func getCodeBashingUrl(field string) (*string, error) {
+func getCodeBashingURL(field string) (*string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
 		return nil, err

@@ -94,9 +94,9 @@ func TestRunGetCodeBashingWithoutCweId(t *testing.T) {
 }
 
 func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
-	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP","--cwe-id", "79","--format","json")
+	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP", "--cwe-id", "79", "--format", "json")
 }
 
 func TestRunGetCodeBashingWithFormatTable(t *testing.T) {
-	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP","--cwe-id", "79","--format","table")
+	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP", "--cwe-id", "79", "--format", "table")
 }

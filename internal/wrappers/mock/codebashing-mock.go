@@ -14,7 +14,7 @@ func (r CodeBashingMockWrapper) GetCodeBashingLinks(_ map[string]string) (
 	const mock = "MOCK"
 	collection := &wrappers.CodeBashingCollection{
 		Path:        mock,
-		CweId:       mock,
+		CweID:       mock,
 		Lang:        mock,
 		CxQueryName: mock,
 	}
@@ -29,7 +29,7 @@ func (r ResultsMockWrapper) GetCodeBashingLinks(_ map[string]string) (
 ) {
 	collection := &wrappers.CodeBashingCollection{
 		Path:        "http://example.com/courses/php/lessons/dom_xss",
-		CweId:       "CWE-79",
+		CweID:       "CWE-79",
 		Lang:        "PHP",
 		CxQueryName: "Reflected_XSS_All_Clients",
 	}

@@ -130,11 +130,20 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),
 	}
 	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language")
-	resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
+	err:=resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability Type")
-	resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
+	err=resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	resultCmd.PersistentFlags().String(commonParams.CweIdFlag, "", "CWE Id")
-	resultCmd.MarkPersistentFlagRequired(commonParams.CweIdFlag)
+	err=resultCmd.MarkPersistentFlagRequired(commonParams.CweIdFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	resultCmd.PersistentFlags().String(commonParams.FormatFlag, "json", "Format")
 	return resultCmd
 }
