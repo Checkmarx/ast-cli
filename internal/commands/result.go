@@ -11,7 +11,6 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
-	"github.com/checkmarx/ast-cli/internal/params"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -130,13 +129,13 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		),
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),
 	}
-	resultCmd.PersistentFlags().String(params.LanguageFlag, "", "Language")
-	resultCmd.MarkPersistentFlagRequired(params.LanguageFlag)
-	resultCmd.PersistentFlags().String(params.VulnerabilityTypeFlag, "", "Vulnerability Type")
-	resultCmd.MarkPersistentFlagRequired(params.VulnerabilityTypeFlag)
-	resultCmd.PersistentFlags().String(params.CweIdFlag, "", "CWE Id")
-	resultCmd.MarkPersistentFlagRequired(params.CweIdFlag)
-	resultCmd.PersistentFlags().String(params.FormatFlag, "json", "Format")
+	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language")
+	resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
+	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability Type")
+	resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
+	resultCmd.PersistentFlags().String(commonParams.CweIdFlag, "", "CWE Id")
+	resultCmd.MarkPersistentFlagRequired(commonParams.CweIdFlag)
+	resultCmd.PersistentFlags().String(commonParams.FormatFlag, "json", "Format")
 	return resultCmd
 }
 

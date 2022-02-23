@@ -15,6 +15,9 @@ import (
 const (
 	failedToParseCodeBashing    = "Failed to parse list results"
 	failedGettingCodeBashingUrl = "Authentication failed, not able to retrieve codebashing base link"
+	tenThousand = "10000"
+	limit = "limit"
+	codeBashingKey = "cb-url"
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -33,7 +36,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params["limit"] = "10000"
+	params[limit] = tenThousand
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -49,7 +52,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		url, err := getCodeBashingUrl("cb-url")
+		url, err := getCodeBashingUrl(codeBashingKey)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedGettingCodeBashingUrl)
 		}
