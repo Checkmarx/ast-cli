@@ -60,3 +60,19 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	deleteScanAndProject()
 
 }
+
+func TestSastUpdatePredicateWithInvalidValues(t *testing.T) {
+
+	err, _ := executeCommand(
+		t, "triage", "update",
+		flag(params.ProjectIDFlag), "1234",
+		flag(params.SimilarityIDFlag), "1234",
+		flag(params.StateFlag), "URGENT",
+		flag(params.SeverityFlag), "High",
+		flag(params.CommentFlag), "",
+		flag(params.ScanTypeFlag), "sast",
+	)
+
+	fmt.Println(err)
+	assertError(t, err, "Predicate bad request")
+}
