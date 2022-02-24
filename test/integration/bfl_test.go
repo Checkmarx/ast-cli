@@ -23,4 +23,16 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 
 	bflResult := []wrappers.ScanResultNode{}
 	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
+
+}
+
+func TestRunGetBflWithInvalidScanIDandQueryID(t *testing.T) {
+
+	err, _ := executeCommand(
+		t, "results", "bfl",
+		flag(params.ScanIDFlag), "123456",
+		flag(params.QueryIDFlag), "abcd",
+		flag(params.FormatFlag), "json")
+
+	assertError(t, err, "Failed getting BFL: CODE: 5002, Failed getting BFL")
 }

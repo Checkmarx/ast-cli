@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -30,7 +31,7 @@ func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	PrintIfVerbose(fmt.Sprintf("Fetching the best fix location for QueryId : %s", params[commonParams.QueryIDQueryParam]))
+	log.Printf(fmt.Sprintf("Fetching the best fix location for QueryID: %s", params[commonParams.QueryIDQueryParam]))
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	return handleBflResponseWithBody(resp, err)
 }

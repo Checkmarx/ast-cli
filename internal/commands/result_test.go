@@ -97,6 +97,9 @@ func TestRunGetBflWithMissingOrEmptyScanIdAndQueryId(t *testing.T) {
 
 	err = execCmdNotNilAssertion(t, "results", "bfl", "--scan-id", "")
 	assert.Equal(t, err.Error(), "required flag(s) \"query-id\" not set")
+
+	err = execCmdNotNilAssertion(t, "results", "bfl", "--query-id", "")
+	assert.Equal(t, err.Error(), "required flag(s) \"scan-id\" not set")
 }
 
 func TestRunGetBflWithMultipleScanIdsAndQueryIds(t *testing.T) {
@@ -116,5 +119,11 @@ func TestRunGetBFLByScanIdAndQueryId(t *testing.T) {
 func TestRunGetBFLByScanIdAndQueryIdWithFormatJson(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, "results", "bfl", "--scan-id", "MOCK", "--query-id", "MOCK", "--format", "JSON")
+	assert.NilError(t, err)
+}
+
+func TestRunGetBFLByScanIdAndQueryIdWithFormatList(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "results", "bfl", "--scan-id", "MOCK", "--query-id", "MOCK", "--format", "List")
 	assert.NilError(t, err)
 }
