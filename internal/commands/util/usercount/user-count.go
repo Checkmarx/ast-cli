@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	userCountFlag         = "usercount"
+	userCountFlag         = "user-count"
 	userCountShort        = "Display SCM contributor counts for the past 90 days"
 	TotalContributorsName = "Total unique contributors"
 )

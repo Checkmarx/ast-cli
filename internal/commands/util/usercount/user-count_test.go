@@ -17,6 +17,6 @@ func TestNewUserCountCommand(t *testing.T) {
 
 	mockParentCmd.AddCommand(cmd)
 
-	mockParentCmd.SetArgs([]string{"usercount", "-h"})
+	mockParentCmd.SetArgs([]string{"user-count", "-h"})
 	assert.NilError(t, cmd.Execute())
 }
