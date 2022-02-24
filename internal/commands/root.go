@@ -108,7 +108,7 @@ func NewAstCLI(
 	// Set help func
 	rootCmd.SetHelpFunc(
 		func(command *cobra.Command, args []string) {
-		util.RootHelpFunc(command)
+			util.RootHelpFunc(command)
 		},
 	)
 
