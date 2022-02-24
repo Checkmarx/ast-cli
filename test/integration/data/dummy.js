@@ -1,1 +1,1 @@
-Dummy file to use in integration tests.
+console.log("Dummy file to use in integration tests.")

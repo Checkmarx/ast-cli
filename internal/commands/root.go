@@ -8,6 +8,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 
@@ -28,24 +29,31 @@ func NewAstCLI(
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	gitHubWrapper wrappers.GitHubWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx AST CLI",
 		Long:  "The AST CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx CxAST server.",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx configure
 			$ cx scan create -s . --project-name my_project_name
 			$ cx scan list
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"utils:env": heredoc.Doc(`
+			"utils:env": heredoc.Doc(
+				`
 				See 'cx utils env' for  the list of supported environment variables.
-			`),
-			"command:doc": heredoc.Doc(`
+			`,
+			),
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/MYDCkQ
-			`),
+			`,
+			),
 		},
 	}
 
@@ -97,9 +105,11 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 
 	// Set help func
-	rootCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
-		util.RootHelpFunc(command)
-	})
+	rootCmd.SetHelpFunc(
+		func(command *cobra.Command, args []string) {
+			util.RootHelpFunc(command)
+		},
+	)
 
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, logsWrapper, groupsWrapper)
@@ -108,11 +118,12 @@ func NewAstCLI(
 	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := util.NewUtilsCommand()
+	utilsCmd := util.NewUtilsCommand(gitHubWrapper)
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
-	rootCmd.AddCommand(scanCmd,
+	rootCmd.AddCommand(
+		scanCmd,
 		projectCmd,
 		resultCmd,
 		resultsCmd,
@@ -165,7 +176,8 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 
 		allFilters[filterKeyVal[0]] = strings.Replace(
 			filterKeyVal[1], ";", ",",
-			strings.Count(filterKeyVal[1], ";"))
+			strings.Count(filterKeyVal[1], ";"),
+		)
 	}
 	return allFilters, nil
 }
@@ -177,18 +189,24 @@ func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat st
 }
 
 func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(params.FormatFlag, defaultFormat,
-		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(
+		params.FormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
 }
 
 func addScanInfoFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(params.ScanInfoFormatFlag, defaultFormat,
-		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(
+		params.ScanInfoFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
 }
 
 func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
-	cmd.PersistentFlags().String(params.TargetFormatFlag, defaultFormat,
-		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)))
+	cmd.PersistentFlags().String(
+		params.TargetFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
 }
 
 func markFlagAsRequired(cmd *cobra.Command, flag string) {
@@ -208,10 +226,10 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
-	return util.Print(cmd.OutOrStdout(), view, f)
+	return printer.Print(cmd.OutOrStdout(), view, f)
 }
 
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
-	return util.Print(cmd.OutOrStdout(), view, f)
+	return printer.Print(cmd.OutOrStdout(), view, f)
 }

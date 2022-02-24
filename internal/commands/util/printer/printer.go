@@ -1,4 +1,4 @@
-package util
+package printer
 
 import (
 	"encoding/json"
@@ -22,7 +22,6 @@ const (
 	FormatList           = "list"
 	FormatTable          = "table"
 	FormatHTML           = "html"
-	FormatText           = "text"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
@@ -185,10 +184,12 @@ func newEntity(v reflect.Value) *entity {
 			}
 		}
 	} else {
-		e.Properties = append(e.Properties, property{
-			Key:   "---",
-			Value: fmt.Sprint(v.String()),
-		})
+		e.Properties = append(
+			e.Properties, property{
+				Key:   "---",
+				Value: fmt.Sprint(v.String()),
+			},
+		)
 	}
 
 	return &e

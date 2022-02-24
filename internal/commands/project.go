@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -27,21 +26,30 @@ const (
 )
 
 var (
-	filterProjectsListFlagUsage = fmt.Sprintf("Filter the list of projects. Use ';' as the delimeter for arrays. Available filters are: %s",
-		strings.Join([]string{
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.IDQueryParam,
-			commonParams.IDsQueryParam,
-			commonParams.IDRegexQueryParam,
-			commonParams.TagsKeyQueryParam,
-			commonParams.TagsValueQueryParam}, ","))
-	filterBranchesFlagUsage = fmt.Sprintf("Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
-		strings.Join([]string{
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.BranchNameQueryParam,
-		}, ","))
+	filterProjectsListFlagUsage = fmt.Sprintf(
+		"Filter the list of projects. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.IDQueryParam,
+				commonParams.IDsQueryParam,
+				commonParams.IDRegexQueryParam,
+				commonParams.TagsKeyQueryParam,
+				commonParams.TagsValueQueryParam,
+			}, ",",
+		),
+	)
+	filterBranchesFlagUsage = fmt.Sprintf(
+		"Filter the list of branches. Use ';' as the delimeter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.BranchNameQueryParam,
+			}, ",",
+		),
+	)
 )
 
 func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
@@ -50,9 +58,11 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Short: "Manage projects",
 		Long:  "The project command enables the ability to manage projects in CxAST.",
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/BQDMkQ
-			`),
+			`,
+			),
 		},
 	}
 
@@ -60,13 +70,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Use:   "create",
 		Short: "Creates a new project",
 		Long:  "The project create command enables the ability to create a new project in CxAST.",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project create --project-name <Project Name>
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/hIYhuw
-			`),
+			`,
+			),
 		},
 		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper),
 	}
@@ -78,13 +92,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all projects in the system",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project list --format list
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/Tochuw
-			`),
+			`,
+			),
 		},
 		RunE: runListProjectsCommand(projectsWrapper),
 	}
@@ -93,13 +111,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	showProjectCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a project",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project show --project-id <project_id>
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/agghuw
-			`),
+			`,
+			),
 		},
 		RunE: runGetProjectByIDCommand(projectsWrapper),
 	}
@@ -108,13 +130,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	projectBranchesCmd := &cobra.Command{
 		Use:   "branches",
 		Short: "Show list of branches from a project",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project branches --project-id <project_id>
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/agghuw
-			`),
+			`,
+			),
 		},
 		RunE: runGetBranchesByIDCommand(projectsWrapper),
 	}
@@ -124,13 +150,17 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	deleteProjCmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a project",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project delete --project-id <project_id>
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/UAchuw
-			`),
+			`,
+			),
 		},
 		RunE: runDeleteProjectCommand(projectsWrapper),
 	}
@@ -139,19 +169,27 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Get a list of all available tags",
-		Example: heredoc.Doc(`
+		Example: heredoc.Doc(
+			`
 			$ cx project tags
-		`),
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://checkmarx.atlassian.net/wiki/x/FIghuw
-			`),
+			`,
+			),
 		},
 		RunE: runGetProjectsTagsCommand(projectsWrapper),
 	}
 
-	addFormatFlagToMultipleCommands([]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd}, util.FormatTable,
-		util.FormatJSON, util.FormatList)
+	addFormatFlagToMultipleCommands(
+		[]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd},
+		printer.FormatTable,
+		printer.FormatJSON,
+		printer.FormatList,
+	)
 	projCmd.AddCommand(createProjCmd, projectBranchesCmd, showProjectCmd, listProjectsCmd, deleteProjCmd, tagsCmd)
 	return projCmd
 }
@@ -232,7 +270,8 @@ func findGroupID(groups []wrappers.Group, name string) string {
 
 func runCreateProjectCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper) func(cmd *cobra.Command, args []string) error {
+	groupsWrapper wrappers.GroupsWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
 		var err error
