@@ -12,7 +12,7 @@ import (
 
 const (
 	UcCommand             = "user-count"
-	UcShort               = "Display SCM contributor counts for the past 90 days"
+	UcShort               = "The user-count command enables the ability to count unique contributors from different SCM repositories, for the past 90 days."
 	TotalContributorsName = "Total unique contributors"
 )
 

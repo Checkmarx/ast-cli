@@ -18,7 +18,7 @@ type RepositoryView struct {
 
 const (
 	GithubCommand  = "github"
-	githubShort    = "Display the unique contributor count for GitHub for the past 90 days"
+	githubShort    = "The github command presents the unique contributors for the provided GitHub repositories or organizations."
 	ReposFlag      = "repos"
 	reposFlagUsage = "List of repositories to scan for contributors"
 	OrgsFlag       = "orgs"
