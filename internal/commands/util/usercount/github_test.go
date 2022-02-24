@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
@@ -14,11 +16,11 @@ func TestGitHubUserCountOrgs(t *testing.T) {
 
 	cmd.SetArgs(
 		[]string{
-			"github",
-			"--orgs",
+			GithubCommand,
+			"--" + OrgsFlag,
 			"a,b",
-			"--format",
-			"json",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
 		},
 	)
 
@@ -31,13 +33,13 @@ func TestGitHubUserCountRepos(t *testing.T) {
 
 	cmd.SetArgs(
 		[]string{
-			"github",
-			"--orgs",
+			GithubCommand,
+			"--" + OrgsFlag,
 			"a",
-			"--repos",
+			"--" + ReposFlag,
 			"a,b,c",
-			"--format",
-			"json",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
 		},
 	)
 
@@ -51,9 +53,9 @@ func TestGitHubUserCountMissingArgs(t *testing.T) {
 
 	cmd.SetArgs(
 		[]string{
-			"github",
-			"--format",
-			"json",
+			GithubCommand,
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
 		},
 	)
 
@@ -67,11 +69,11 @@ func TestGitHubUserCountMissingOrgs(t *testing.T) {
 
 	cmd.SetArgs(
 		[]string{
-			"github",
-			"--repos",
+			GithubCommand,
+			"--" + ReposFlag,
 			"repo",
-			"--format",
-			"json",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
 		},
 	)
 
@@ -85,13 +87,13 @@ func TestGitHubUserCountManyOrgs(t *testing.T) {
 
 	cmd.SetArgs(
 		[]string{
-			"github",
-			"--repos",
+			GithubCommand,
+			"--" + ReposFlag,
 			"repo",
-			"--orgs",
+			"--" + OrgsFlag,
 			"a,b,c",
-			"--format",
-			"json",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
 		},
 	)
 

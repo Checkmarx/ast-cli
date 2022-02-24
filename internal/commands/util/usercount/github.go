@@ -17,11 +17,11 @@ type RepositoryView struct {
 }
 
 const (
-	githubCommand  = "github"
+	GithubCommand  = "github"
 	githubShort    = "Display the unique contributor count for GitHub for the past 90 days"
-	reposFlag      = "repos"
+	ReposFlag      = "repos"
 	reposFlagUsage = "List of repositories to scan for contributors"
-	orgsFlag       = "orgs"
+	OrgsFlag       = "orgs"
 	orgsFlagUsage  = "List of organizations to scan for contributors"
 	githubAPIURL   = "https://api.github.com"
 	sinceParam     = "since"
@@ -37,14 +37,14 @@ var (
 
 func newUserCountGithubCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 	userCountCmd := &cobra.Command{
-		Use:     githubCommand,
+		Use:     GithubCommand,
 		Short:   githubShort,
 		PreRunE: preRunGithubUserCount,
 		RunE:    createRunGitHubUserCountFunc(gitHubWrapper),
 	}
 
-	userCountCmd.Flags().StringSliceVar(&repos, reposFlag, []string{}, reposFlagUsage)
-	userCountCmd.Flags().StringSliceVar(&orgs, orgsFlag, []string{}, orgsFlagUsage)
+	userCountCmd.Flags().StringSliceVar(&repos, ReposFlag, []string{}, reposFlagUsage)
+	userCountCmd.Flags().StringSliceVar(&orgs, OrgsFlag, []string{}, orgsFlagUsage)
 	userCountCmd.Flags().String(params.GitHubURLFlag, githubAPIURL, params.GitHubURLFlagUsage)
 
 	_ = viper.BindPFlag(params.GitHubURLFlag, userCountCmd.Flags().Lookup(params.GitHubURLFlag))

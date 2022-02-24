@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	userCountFlag         = "user-count"
-	userCountShort        = "Display SCM contributor counts for the past 90 days"
+	UcCommand             = "user-count"
+	UcShort               = "Display SCM contributor counts for the past 90 days"
 	TotalContributorsName = "Total unique contributors"
 )
 
@@ -35,8 +35,8 @@ var (
 
 func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 	userCountCmd := &cobra.Command{
-		Use:   userCountFlag,
-		Short: userCountShort,
+		Use:   UcCommand,
+		Short: UcShort,
 		Args:  cobra.NoArgs,
 	}
 

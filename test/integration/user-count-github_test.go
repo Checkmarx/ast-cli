@@ -5,7 +5,9 @@ package integration
 import (
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -14,16 +16,16 @@ func TestGitHubUserCount(t *testing.T) {
 	_ = viper.BindEnv("PERSONAL_ACCESS_TOKEN")
 	buffer := executeCmdNilAssertion(
 		t,
-		"msg",
+		"Counting contributors from checkmarxdev should pass",
 		"utils",
-		"user-count",
-		"github",
-		"--orgs",
+		usercount.UcCommand,
+		usercount.GithubCommand,
+		flag(usercount.OrgsFlag),
 		"checkmarxdev",
-		"--token",
+		flag(params.SCMTokenFlag),
 		viper.GetString(pat),
-		"--format",
-		"json",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
 	)
 
 	var parsedJson []usercount.RepositoryView
