@@ -141,7 +141,7 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	}
 	addScanIDFlag(resultBflCmd, "ID to report on.")
 	addQueryIDFlag(resultBflCmd, "Query Id from the result.")
-	addFormatFlag(resultBflCmd, util.FormatList, util.FormatJSON)
+	addFormatFlag(resultBflCmd, printer.FormatList, printer.FormatJSON)
 
 	markFlagAsRequired(resultBflCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
