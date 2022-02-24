@@ -13,7 +13,7 @@ import (
 )
 
 func TestGitHubUserCount(t *testing.T) {
-	_ = viper.BindEnv("PERSONAL_ACCESS_TOKEN")
+	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
