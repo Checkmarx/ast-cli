@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -27,7 +27,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{triageShowCmd},
-		util.FormatList, util.FormatTable, util.FormatJSON,
+		printer.FormatList, printer.FormatTable, printer.FormatJSON,
 	)
 
 	triageCmd.AddCommand(triageShowCmd, triageUpdateCmd)
@@ -112,7 +112,8 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(
 			similarityID,
 			projectID,
-			scanType)
+			scanType,
+		)
 
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed getting the predicate.")
@@ -124,7 +125,8 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 				"%s: CODE: %d, %s",
 				"Failed getting the predicate.",
 				errorModel.Code,
-				errorModel.Message)
+				errorModel.Message,
+			)
 		} else if predicatesCollection != nil {
 			err = printByFormat(cmd, toPredicatesView(*predicatesCollection))
 			if err != nil {

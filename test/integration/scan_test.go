@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -234,7 +234,7 @@ func TestScanTimeout(t *testing.T) {
 		flag(params.SourcesFlag), SlowRepo,
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "develop",
-		flag(params.ScanInfoFormatFlag), util.FormatJSON,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
 	}
 
@@ -258,7 +258,7 @@ func TestBrokenLinkScan(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "main",
-		flag(params.ScanInfoFormatFlag), util.FormatJSON,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.IncludeFilterFlag), "broken_link.txt",
 	}
 
@@ -353,7 +353,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), source,
 		flag(params.ScanTypes), scanTypes,
-		flag(params.ScanInfoFormatFlag), util.FormatJSON,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 	}
@@ -390,7 +390,7 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the scan should pass",
-		"scan", "list", flag(params.FormatFlag), util.FormatJSON, flag(params.FilterFlag), scanFilter,
+		"scan", "list", flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
 	)
 
 	// Read response from buffer
@@ -403,7 +403,7 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 func showScan(t *testing.T, scanID string) wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting the scan should pass", "scan", "show",
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ScanIDFlag), scanID,
 	)
 
@@ -447,7 +447,7 @@ func TestScanWorkflow(t *testing.T) {
 	buffer := executeCmdNilAssertion(
 		t, "Workflow should pass", "scan", "workflow",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FormatFlag), printer.FormatJSON,
 	)
 
 	var workflow []ScanWorkflowResponse
