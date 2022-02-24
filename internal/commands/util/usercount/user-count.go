@@ -17,8 +17,8 @@ const (
 )
 
 var (
-	token, ninetyDaysDate, format string
-	hiddenFlags                   = []string{
+	ninetyDaysDate, format string
+	hiddenFlags            = []string{
 		params.AgentFlag,
 		params.AstAPIKeyFlag,
 		params.BaseAuthURIFlag,
@@ -53,7 +53,7 @@ func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 	userCountCmd.AddCommand(newUserCountGithubCommand(gitHubWrapper))
 
 	for _, cmd := range userCountCmd.Commands() {
-		cmd.Flags().StringVar(&token, params.SCMTokenFlag, "", params.SCMTokenUsage)
+		cmd.Flags().String(params.SCMTokenFlag, "", params.SCMTokenUsage)
 		cmd.Flags().StringVar(
 			&format,
 			params.FormatFlag,

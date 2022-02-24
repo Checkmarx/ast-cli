@@ -75,6 +75,8 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 		var totalCommits []wrappers.Commit
 		var views []RepositoryView
 
+		_ = viper.BindPFlag(params.SCMTokenFlag, cmd.Flags().Lookup(params.SCMTokenFlag))
+
 		if len(repos) > 0 {
 			totalCommits, views, err = collectFromRepos(gitHubWrapper)
 		} else {
