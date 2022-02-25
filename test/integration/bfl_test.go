@@ -11,7 +11,8 @@ import (
 
 func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 
-	assertRequiredParameter(t, "required flag(s) \"query-id\", \"scan-id\" not set", "results", "bfl")
+	expectedMsg := "required flag(s) " + "\"" + params.QueryIDFlag + "\"" + ", " + "\"" + params.ScanIDFlag + "\"" + " not set"
+	assertRequiredParameter(t, expectedMsg, "results", "bfl")
 	scanID, _ := getRootScan(t)
 	queryID := "17765437696070740537"
 
