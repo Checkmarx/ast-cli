@@ -19,6 +19,6 @@ func (g GitHubMockWrapper) GetRepositories(wrappers.Organization) ([]wrappers.Re
 	return []wrappers.Repository{{}}, nil
 }
 
-func (g GitHubMockWrapper) GetCommits(wrappers.Repository, map[string]string) ([]wrappers.Commit, error) {
-	return []wrappers.Commit{}, nil
+func (g GitHubMockWrapper) GetCommits(wrappers.Repository, map[string]string) ([]wrappers.CommitRoot, error) {
+	return []wrappers.CommitRoot{}, nil
 }
