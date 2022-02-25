@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/golang-jwt/jwt"
@@ -17,20 +18,20 @@ const (
 	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
 	tenThousand                 = "10000"
 	limit                       = "limit"
-	codeBashingKey              = "cb-url"
+	incorrectFlags              = "No codebashing link available"
 )
 
 type CodeBashingHTTPWrapper struct {
 	path string
 }
 
-func NewCodeBashingHTTPWrapper(path string) CodeBashingWrapper {
+func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	return &CodeBashingHTTPWrapper{
 		path: path,
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingUrl *string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
@@ -52,10 +53,6 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		url, err := getCodeBashingURL(codeBashingKey)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedGettingCodeBashingURL)
-		}
 		var decoded []CodeBashingCollection
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -65,39 +62,57 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string) (
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
-		decoded[0].Path = *url + decoded[0].Path
+		if len(decoded[0].Path) == 0 {
+			return nil, nil, errors.Errorf(incorrectFlags)
+		}
+		decoded[0].Path = *codeBashingUrl + decoded[0].Path
 		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func getCodeBashingURL(field string) (*string, error) {
-	authURI, err := getAuthURI()
-	if err != nil {
-		return nil, err
-	}
-	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astAPIKey := viper.GetString(commonParams.AstAPIKey)
-	if accessKeyID == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-	} else if accessKeySecret == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
-	}
-	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
-	if err != nil {
-		return nil, err
+func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (*string, error) {
+	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
+	if accessToken == nil {
+		authURI, err := getAuthURI()
+		if err != nil {
+			return nil, err
+		}
+		accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+		accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+		astAPIKey := viper.GetString(commonParams.AstAPIKey)
+		if accessKeyID == "" && astAPIKey == "" {
+			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+		} else if accessKeySecret == "" && astAPIKey == "" {
+			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+		}
+		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
+		if err != nil {
+			return nil, errors.Errorf(failedGettingCodeBashingURL)
+		}
 	}
 	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf(failedGettingCodeBashingURL)
 	}
 	var url = ""
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		url = claims[field].(string)
 	} else {
-		return nil, err
+		return nil, errors.Errorf(failedGettingCodeBashingURL)
 	}
 	return &url, nil
+}
+
+func (r *CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
+	// Marshall entire object to string
+	params := make(map[string]string)
+	viewJSON, err := json.Marshal(apiParams)
+	if err != nil {
+		return nil, err
+	}
+	params["results"] = string(viewJSON)
+	return params, nil
 }

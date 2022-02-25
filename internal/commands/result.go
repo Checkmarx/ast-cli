@@ -37,6 +37,7 @@ const (
 	lowCx                    = "LOW"
 	mediumCx                 = "MEDIUM"
 	highCx                   = "HIGH"
+	codeBashingKey           = "cb-url"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -288,8 +289,18 @@ func runGetCodeBashingCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedReadingParams)
 		}
-		params["results"] = "[{\"lang\": \"" + language + "\", \"cwe_id\":\"CWE-" + cwe + "\", \"cxQueryName\":\"" + strings.ReplaceAll(vulType, " ", "_") + "\"}]"
-		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params)
+		// Build the params with the requested languages
+		params, err = codeBashingWrapper.BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection{{"CWE-" + cwe, language, strings.ReplaceAll(vulType, " ", "_")}})
+		if err != nil {
+			return err
+		}
+		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
+		url, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
+		if err != nil {
+			return err
+		}
+		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
+		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
