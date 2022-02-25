@@ -288,7 +288,6 @@ func runGetCodeBashingCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		params := make(map[string]string)
 		language, err := cmd.Flags().GetString(commonParams.LanguageFlag)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedReadingParams)
@@ -302,7 +301,7 @@ func runGetCodeBashingCommand(
 			return errors.Wrapf(err, "%s", failedReadingParams)
 		}
 		// Build the params with the requested languages
-		params, err = codeBashingWrapper.BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection{{"CWE-" + cwe, language, strings.ReplaceAll(vulType, " ", "_")}})
+		params, err := codeBashingWrapper.BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection{{CweID: "CWE-" + cwe, Language: language, CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
 		if err != nil {
 			return err
 		}

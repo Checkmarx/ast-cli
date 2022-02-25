@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	_ "strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/golang-jwt/jwt"
