@@ -301,7 +301,11 @@ func runGetCodeBashingCommand(
 			return errors.Wrapf(err, "%s", failedReadingParams)
 		}
 		// Build the params with the requested languages
-		params, err := codeBashingWrapper.BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection{{CweID: "CWE-" + cwe, Language: language, CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
+		params, err := codeBashingWrapper.BuildCodeBashingParams(
+			[]wrappers.CodeBashingParamsCollection{{
+				CweID:       "CWE-" + cwe,
+				Language:    language,
+				CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
 		if err != nil {
 			return err
 		}
