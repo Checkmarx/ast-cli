@@ -31,7 +31,7 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingUrl *string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL *string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
@@ -65,7 +65,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		if len(decoded[0].Path) == 0 {
 			return nil, nil, errors.Errorf(incorrectFlags)
 		}
-		decoded[0].Path = *codeBashingUrl + decoded[0].Path
+		decoded[0].Path = *codeBashingURL + decoded[0].Path
 		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
