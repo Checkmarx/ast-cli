@@ -17,6 +17,7 @@ const (
 )
 
 func main() {
+	var err error
 	bindKeysToEnvAndDefault()
 	configuration.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
@@ -36,6 +37,7 @@ func main() {
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
+	gitHubWrapper := wrappers.NewGitHubWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -47,8 +49,10 @@ func main() {
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
+		gitHubWrapper,
 	)
-	err := astCli.Execute()
+
+	err = astCli.Execute()
 	exitIfError(err)
 	os.Exit(successfulExitCode)
 }

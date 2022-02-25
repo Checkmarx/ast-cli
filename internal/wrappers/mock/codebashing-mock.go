@@ -6,33 +6,24 @@ import (
 
 type CodeBashingMockWrapper struct{}
 
-func (r CodeBashingMockWrapper) GetCodeBashingLinks(_ map[string]string) (
-	*[]wrappers.CodeBashingCollection,
-	*wrappers.WebError,
-	error,
-) {
-	const mock = "MOCK"
+func (r CodeBashingMockWrapper) GetCodeBashingLinks(params map[string]string, codeBashingUrl *string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
 	collection := &wrappers.CodeBashingCollection{
-		Path:        mock,
-		CweID:       mock,
-		Lang:        mock,
-		CxQueryName: mock,
+		Path:        "http://example.com/courses/php/lessons/dom_xss",
+		CweID:       "CWE-79",
+		Language:    "PHP",
+		CxQueryName: "Reflected_XSS_All_Clients",
 	}
 	ret := []wrappers.CodeBashingCollection{*collection}
 	return &ret, nil, nil
 }
 
-func (r ResultsMockWrapper) GetCodeBashingLinks(_ map[string]string) (
-	*[]wrappers.CodeBashingCollection,
-	*wrappers.WebError,
-	error,
+func (r CodeBashingMockWrapper) GetCodeBashingURL(field string) (
+	*string, error,
 ) {
-	collection := &wrappers.CodeBashingCollection{
-		Path:        "http://example.com/courses/php/lessons/dom_xss",
-		CweID:       "CWE-79",
-		Lang:        "PHP",
-		CxQueryName: "Reflected_XSS_All_Clients",
-	}
-	ret := []wrappers.CodeBashingCollection{*collection}
-	return &ret, nil, nil
+	field = "MOCK"
+	return &field, nil
+}
+
+func (r CodeBashingMockWrapper) BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection) (map[string]string, error){
+	return nil,nil
 }

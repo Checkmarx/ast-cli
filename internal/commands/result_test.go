@@ -7,9 +7,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"gotest.tools/assert"
-
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 )
 
 const fileName = "cx_result"
@@ -22,35 +21,35 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 
 	// Remove generated sarif file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatSarif))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatSarif))
 }
 
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
 
 	// Remove generated sonar file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatSonar))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatSonar))
 }
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 
 	// Remove generated json file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatJSON))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
 	// Remove generated json file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatJSON))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
 func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryHTML")
 
 	// Remove generated html file
-	os.Remove(fmt.Sprintf("%s.%s", fileName, util.FormatHTML))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatHTML))
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
@@ -63,7 +62,17 @@ func TestRunGetResultsByScanIdWrongFormat(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdWithWrongFilterFormat(t *testing.T) {
-	_ = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif", "--filter", "limit40")
+	_ = execCmdNotNilAssertion(
+		t,
+		"results",
+		"show",
+		"--scan-id",
+		"MOCK",
+		"--report-format",
+		"sarif",
+		"--filter",
+		"limit40",
+	)
 }
 
 func TestRunGetResultsByScanIdWithMissingOrEmptyScanId(t *testing.T) {

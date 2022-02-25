@@ -89,6 +89,10 @@ const (
 	LanguageFlag             = "language"
 	VulnerabilityTypeFlag    = "vulnerabity-type"
 	CweIDFlag                = "cwe-id"
+	SCMTokenFlag             = "token"
+	SCMTokenUsage            = "GitHub OAuth token"
+	GitHubURLFlag            = "url"
+	GitHubURLFlagUsage       = "API base URL"
 )
 
 // Parameter values

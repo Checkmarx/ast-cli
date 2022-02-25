@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -67,8 +67,14 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
-	addResultFormatFlag(resultCmd,
-		util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif, util.FormatSummaryJSON)
+	addResultFormatFlag(
+		resultCmd,
+		printer.FormatJSON,
+		printer.FormatSummary,
+		printer.FormatSummaryConsole,
+		printer.FormatSarif,
+		printer.FormatSummaryJSON,
+	)
 	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -110,8 +116,14 @@ func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wr
 		RunE: runGetResultCommand(resultsWrapper, scanWrapper),
 	}
 	addScanIDFlag(resultCmd, "ID to report on.")
-	addResultFormatFlag(resultCmd,
-		util.FormatJSON, util.FormatSummary, util.FormatSummaryConsole, util.FormatSarif, util.FormatSummaryJSON)
+	addResultFormatFlag(
+		resultCmd,
+		printer.FormatJSON,
+		printer.FormatSummary,
+		printer.FormatSummaryConsole,
+		printer.FormatSarif,
+		printer.FormatSummaryJSON,
+	)
 	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -356,26 +368,26 @@ func createReport(
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
 ) error {
-	if util.IsFormat(format, util.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
 		return exportSarifResults(sarifRpt, results)
 	}
-	if util.IsFormat(format, util.FormatSonar) {
+	if printer.IsFormat(format, printer.FormatSonar) {
 		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, "json")
 		return exportSonarResults(sonarRpt, results)
 	}
-	if util.IsFormat(format, util.FormatJSON) {
+	if printer.IsFormat(format, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, "json")
 		return exportJSONResults(jsonRpt, results)
 	}
-	if util.IsFormat(format, util.FormatSummaryConsole) {
+	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
 	}
-	if util.IsFormat(format, util.FormatSummary) {
+	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		return writeHTMLSummary(summaryRpt, summary)
 	}
-	if util.IsFormat(format, util.FormatSummaryJSON) {
+	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, "json")
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}

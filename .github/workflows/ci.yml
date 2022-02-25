@@ -58,6 +58,7 @@ jobs:
           CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
           CX_APIKEY:  ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.TENANT }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128
           PROXY_USERNAME: ${{ secrets.PROXY_USER }}

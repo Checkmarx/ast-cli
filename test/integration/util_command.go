@@ -25,6 +25,7 @@ const (
 	ProxyPortEnv = "PROXY_PORT"
 	ProxyHostEnv = "PROXY_HOST"
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
+	pat          = "PERSONAL_ACCESS_TOKEN"
 )
 
 // Bind environment vars and their defaults to viper
@@ -41,6 +42,7 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
+	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
@@ -59,6 +61,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
+	gitHubWrapper := wrappers.NewGitHubWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -70,6 +73,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
+		gitHubWrapper,
 	)
 	return astCli
 }
@@ -113,7 +117,12 @@ func executeCmdNilAssertion(t *testing.T, infoMsg string, args ...string) *bytes
 	return outputBuffer
 }
 
-func executeCmdWithTimeOutNilAssertion(t *testing.T, infoMsg string, timeout time.Duration, args ...string) *bytes.Buffer {
+func executeCmdWithTimeOutNilAssertion(
+	t *testing.T,
+	infoMsg string,
+	timeout time.Duration,
+	args ...string,
+) *bytes.Buffer {
 	cmd, outputBuffer := createRedirectedTestCommand(t)
 	err := executeWithTimeout(cmd, timeout, args...)
 	assert.NilError(t, err, infoMsg)

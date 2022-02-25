@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
@@ -63,7 +63,10 @@ func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
 // Create a project with empty project name should fail
 func TestCreateEmptyProjectName(t *testing.T) {
 
-	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), "")
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), "",
+	)
 	assertError(t, err, "Project name is required")
 }
 
@@ -74,20 +77,30 @@ func TestCreateAlreadyExistingProject(t *testing.T) {
 
 	_, projectName := getRootProject(t)
 
-	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag), util.FormatJSON, flag(params.ProjectName), projectName)
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), projectName,
+	)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {
-	err, _ := executeCommand(t, "project", "create", flag(params.FormatFlag),
-		util.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup")
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
+	)
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
 }
 
 // Test list project's branches
 func TestProjectBranches(t *testing.T) {
 
-	assertRequiredParameter(t, "Failed getting branches for project: Please provide a project ID", "project", "branches")
+	assertRequiredParameter(
+		t,
+		"Failed getting branches for project: Please provide a project ID",
+		"project",
+		"branches",
+	)
 
 	projectId, _ := getRootProject(t)
 
@@ -102,9 +115,10 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 
-	outBuffer := executeCmdNilAssertion(t, "Creating a project should pass",
+	outBuffer := executeCmdNilAssertion(
+		t, "Creating a project should pass",
 		"project", "create",
-		flag(params.FormatFlag), util.FormatJSON,
+		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
@@ -121,16 +135,24 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 
 func deleteProject(t *testing.T, projectID string) {
 	log.Println("Deleting the project with id ", projectID)
-	executeCmdNilAssertion(t, "Deleting a project should pass", "project", "delete", flag(params.ProjectIDFlag), projectID)
+	executeCmdNilAssertion(
+		t,
+		"Deleting a project should pass",
+		"project",
+		"delete",
+		flag(params.ProjectIDFlag),
+		projectID,
+	)
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 
-	outputBuffer := executeCmdNilAssertion(t,
+	outputBuffer := executeCmdNilAssertion(
+		t,
 		"Getting the project should pass",
 		"project", "list",
-		flag(params.FormatFlag), util.FormatJSON, flag(params.FilterFlag), idFilter,
+		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
 
 	var projects []wrappers.ProjectResponseModel
@@ -142,8 +164,9 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
 
-	outputBuffer := executeCmdNilAssertion(t, "Getting the project should pass", "project", "show",
-		flag(params.FormatFlag), util.FormatJSON,
+	outputBuffer := executeCmdNilAssertion(
+		t, "Getting the project should pass", "project", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 	)
 
