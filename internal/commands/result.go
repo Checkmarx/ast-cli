@@ -206,11 +206,6 @@ func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResult
 				MethodLine: bflResponseModel.Trees[i].BFL.MethodLine,
 				Method:     bflResponseModel.Trees[i].BFL.Method,
 				DomType:    bflResponseModel.Trees[i].BFL.DomType,
-				// Check and remove the following fields if they are are deprecated.
-				// TypeName:    bflResponseModel.Trees[i].BFL.TypeName,
-				// Definitions: bflResponseModel.Trees[i].BFL.Definitions,
-				// ID:          bflResponseModel.Trees[i].BFL.ID,
-				// NodeID:      bflResponseModel.Trees[i].BFL.NodeID,
 			}
 		}
 		return views
