@@ -62,7 +62,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
-		if len(decoded[0].Path) == 0 {
+		if decoded[0].Path == "" {
 			return nil, nil, errors.Errorf(incorrectFlags)
 		}
 		decoded[0].Path = *codeBashingURL + decoded[0].Path

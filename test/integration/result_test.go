@@ -100,3 +100,17 @@ func TestCodeBashingList(t *testing.T) {
 
 	assert.Assert(t,codebashing!=nil, "Should exist codebashing link")
 }
+
+func TestCodeBashingListEmpty(t *testing.T) {
+
+	args := []string{
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.CweIDFlag), "11",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "No codebashing link available")
+}
