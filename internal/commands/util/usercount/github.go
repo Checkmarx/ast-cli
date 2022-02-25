@@ -1,8 +1,6 @@
 package usercount
 
 import (
-	"strings"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -28,7 +26,7 @@ const (
 	missingArgs    = "provide at least one repository or organization"
 	missingOrg     = "an organization is required for your repositories"
 	tooManyOrgs    = "a single organization should be provided for specific repositories"
-	noReplySuffix  = "@users.noreply.github.com"
+	botType        = "Bot"
 )
 
 var (
@@ -72,8 +70,10 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 	return func(cmd *cobra.Command, args []string) error {
 		var err error
 
-		var totalCommits []wrappers.Commit
+		var totalCommits []wrappers.CommitRoot
 		var views []RepositoryView
+
+		_ = viper.BindPFlag(params.SCMTokenFlag, cmd.Flags().Lookup(params.SCMTokenFlag))
 
 		if len(repos) > 0 {
 			totalCommits, views, err = collectFromRepos(gitHubWrapper)
@@ -100,8 +100,8 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 	}
 }
 
-func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.Commit, []RepositoryView, error) {
-	var totalCommits []wrappers.Commit
+func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, error) {
+	var totalCommits []wrappers.CommitRoot
 	var views []RepositoryView
 	for _, repo := range repos {
 		repository, err := gitHubWrapper.GetRepository(orgs[0], repo)
@@ -129,8 +129,8 @@ func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.Commit, 
 	return totalCommits, views, nil
 }
 
-func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.Commit, []RepositoryView, error) {
-	var totalCommits []wrappers.Commit
+func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, error) {
+	var totalCommits []wrappers.CommitRoot
 	var views []RepositoryView
 
 	for _, org := range orgs {
@@ -166,13 +166,17 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.Commit, [
 	return totalCommits, views, nil
 }
 
-func getUniqueContributors(commits []wrappers.Commit) uint64 {
+func getUniqueContributors(commits []wrappers.CommitRoot) uint64 {
 	var contributors = map[string]bool{}
 	for _, commit := range commits {
-		name := commit.CommitData.Author.Name
-		if !contributors[name] && !strings.HasSuffix(commit.CommitData.Author.Email, noReplySuffix) {
+		name := commit.Commit.CommitAuthor.Name
+		if !contributors[name] && isNotBot(commit) {
 			contributors[name] = true
 		}
 	}
 	return uint64(len(contributors))
+}
+
+func isNotBot(commit wrappers.CommitRoot) bool {
+	return commit.Author == nil || commit.Author.Type != botType
 }

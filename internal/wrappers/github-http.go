@@ -76,9 +76,9 @@ func (g *GitHubHTTPWrapper) GetRepositories(organization Organization) ([]Reposi
 	return repositories, err
 }
 
-func (g *GitHubHTTPWrapper) GetCommits(repository Repository, queryParams map[string]string) ([]Commit, error) {
+func (g *GitHubHTTPWrapper) GetCommits(repository Repository, queryParams map[string]string) ([]CommitRoot, error) {
 	var err error
-	var commits []Commit
+	var commits []CommitRoot
 
 	commitsURL := repository.CommitsURL
 	commitsURL = commitsURL[:strings.Index(commitsURL, "{")]
