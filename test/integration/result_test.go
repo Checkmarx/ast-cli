@@ -155,7 +155,8 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 		flag(params.LanguageFlag), "PHP",
 		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
 		flag(params.CweIDFlag), "11",
-		flag(params.AstAPIKeyFlag), "mock",
+		flag(params.AccessKeySecretFlag), "mock",
+		flag(params.AccessKeyIDFlag), "mock",
 	}
 
 	err, _ := executeCommand(t, args...)
