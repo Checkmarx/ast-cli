@@ -84,8 +84,6 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (*string, error
 		astAPIKey := viper.GetString(commonParams.AstAPIKey)
 		if accessKeyID == "" && astAPIKey == "" {
 			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-		} else if accessKeySecret == "" && astAPIKey == "" {
-			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 		}
 		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 		if err != nil {
