@@ -290,7 +290,7 @@ func runGetCodeBashingCommand(
 	return func(cmd *cobra.Command, args []string) error {
 		language, _ := cmd.Flags().GetString(commonParams.LanguageFlag)
 		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
-		vulType, _:= cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
+		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
 		params, err := codeBashingWrapper.BuildCodeBashingParams(
 			[]wrappers.CodeBashingParamsCollection{{
 				CweID:       "CWE-" + cwe,

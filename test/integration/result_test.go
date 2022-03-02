@@ -75,12 +75,10 @@ func TestCodeBashingParamFailed(t *testing.T) {
 	args := []string{
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "'Reflected XSS All Clients'",
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "required flag(s) \"cwe-id\" not set")
+	assertError(t, err, "required flag(s) \"cwe-id\", \"language\", \"vulnerabity-type\" not set")
 }
 
 func TestCodeBashingList(t *testing.T) {
@@ -92,13 +90,47 @@ func TestCodeBashingList(t *testing.T) {
 		"codebashing",
 		flag(params.LanguageFlag), "PHP",
 		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79",)
+		flag(params.CweIDFlag), "79")
 
 	codebashing := []wrappers.CodeBashingCollection{}
 
 	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
 
-	assert.Assert(t,codebashing!=nil, "Should exist codebashing link")
+	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
+}
+
+func TestCodeBashingListJson(t *testing.T) {
+
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting results should pass",
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.CweIDFlag), "79",
+		flag(params.FormatFlag), "json")
+
+	codebashing := []wrappers.CodeBashingCollection{}
+
+	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
+
+	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
+}
+
+func TestCodeBashingListTable(t *testing.T) {
+
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting results should pass",
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.CweIDFlag), "79",
+		flag(params.FormatFlag), "table")
+
+	assert.Assert(t, outputBuffer != nil, "Should exist codebashing link")
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
