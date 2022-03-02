@@ -82,7 +82,11 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 	return resultCmd
 }
 
-func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper, codeBashingWrapper wrappers.CodeBashingWrapper, bflWrapper wrappers.BflWrapper) *cobra.Command {
+func NewResultsCommand(
+	resultsWrapper wrappers.ResultsWrapper,
+	scanWrapper wrappers.ScansWrapper,
+	codeBashingWrapper wrappers.CodeBashingWrapper,
+	bflWrapper wrappers.BflWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
 		Short: "Retrieve results",
