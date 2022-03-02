@@ -30,6 +30,7 @@ func NewAstCLI(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	gitHubWrapper wrappers.GitHubWrapper,
+	bflWrapper wrappers.BflWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -115,7 +116,7 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, logsWrapper, groupsWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
 	resultCmd := NewResultCommand(resultsWrapper, scansWrapper)
-	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper)
+	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, bflWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand(gitHubWrapper)
@@ -222,6 +223,10 @@ func addScanIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(params.ProjectIDFlag, "", helpMsg)
+}
+
+func addQueryIDFlag(cmd *cobra.Command, helpMsg string) {
+	cmd.PersistentFlags().String(params.QueryIDFlag, "", helpMsg)
 }
 
 func printByFormat(cmd *cobra.Command, view interface{}) error {

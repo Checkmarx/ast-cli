@@ -50,6 +50,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
+	bfl := viper.GetString(params.BflPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -60,6 +61,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	gitHubWrapper := wrappers.NewGitHubWrapper()
+	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -71,6 +73,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		logsWrapper,
 		groupsWrapper,
 		gitHubWrapper,
+		bflWrapper,
 	)
 	return astCli
 }
