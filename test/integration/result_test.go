@@ -157,8 +157,8 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 		flag(params.CweIDFlag), "11",
 		flag(params.AccessKeySecretFlag), "mock",
 		flag(params.AccessKeyIDFlag), "mock",
+		flag(params.AstAPIKeyFlag), "mock",
 	}
-
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
 }
