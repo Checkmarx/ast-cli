@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -15,7 +16,10 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(s),
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil {
+	reader := bytes.NewReader(data)
+	decoder := json.NewDecoder(reader)
+	decoder.UseNumber()
+	if err := decoder.Decode(&aux); err != nil {
 		return err
 	}
 
