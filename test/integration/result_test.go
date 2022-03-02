@@ -146,3 +146,18 @@ func TestCodeBashingListEmpty(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "No codebashing link available")
 }
+
+func TestCodeBashingFailedListingAuth(t *testing.T) {
+
+	args := []string{
+		"results",
+		"codebashing",
+		flag(params.LanguageFlag), "PHP",
+		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.CweIDFlag), "11",
+		flag(params.AstAPIKeyFlag), "mock",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
+}
