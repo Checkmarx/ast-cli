@@ -22,7 +22,6 @@ import (
 const (
 	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
-	failedReadingParams      = "Failed reading flag values"
 	mediumLabel              = "medium"
 	highLabel                = "high"
 	lowLabel                 = "low"
