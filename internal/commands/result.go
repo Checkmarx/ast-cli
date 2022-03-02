@@ -635,7 +635,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	if result.ScanResultData.QueryID == nil {
 		sarifRule.ID = result.ID
 	} else {
-		sarifRule.ID = getRuleID(result.ScanResultData.QueryID)
+		sarifRule.ID = fmt.Sprintf("%v", result.ScanResultData.QueryID)
 	}
 
 	if result.ScanResultData.QueryName != "" {
@@ -654,7 +654,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
-	scanResult.RuleID = getRuleID(result.ScanResultData.QueryID)
+	scanResult.RuleID = fmt.Sprintf("%v", result.ScanResultData.QueryID)
 	scanResult.Message.Text = result.ScanResultData.QueryName
 	scanResult.Locations = []wrappers.SarifLocation{}
 
@@ -677,14 +677,4 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 		return &scanResult
 	}
 	return nil
-}
-
-// getRuleID this method should be unnecessary when AST fixes the queryId field's type
-func getRuleID(queryID interface{}) string {
-	switch queryID.(type) {
-	case float64:
-		return fmt.Sprintf("%0.f", queryID)
-	default:
-		return fmt.Sprintf("%v", queryID)
-	}
 }
