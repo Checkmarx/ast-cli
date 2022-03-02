@@ -93,6 +93,7 @@ const (
 	SCMTokenUsage            = "GitHub OAuth token"
 	GitHubURLFlag            = "url"
 	GitHubURLFlagUsage       = "API base URL"
+	QueryIDFlag              = "query-id"
 )
 
 // Parameter values
@@ -104,6 +105,7 @@ const (
 	OffsetQueryParam       = "offset"
 	ScanIDQueryParam       = "scan-id"
 	ScanIDsQueryParam      = "scan-ids"
+	QueryIDQueryParam      = "query-id"
 	TagsKeyQueryParam      = "tags-keys"
 	TagsValueQueryParam    = "tags-values"
 	StatusesQueryParam     = "statuses"

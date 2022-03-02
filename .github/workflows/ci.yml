@@ -10,7 +10,7 @@ jobs:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
         with:
@@ -40,14 +40,14 @@ jobs:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
         with:
           go-version: 1.17.x
-      - name: Download
+      - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
         shell: bash
@@ -103,11 +103,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
       - name: Checkmarx AST CLI Action
         uses: checkmarx/ast-github-action@main
         with:
-          project_name: astcli-ci
+          project_name: ${{ github.repository }}
           base_uri: ${{ secrets.BASE_URI }}
           cx_tenant: ${{ secrets.TENANT }}
           cx_client_id: ${{ secrets.CLIENT_ID }}
