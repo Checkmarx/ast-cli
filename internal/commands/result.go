@@ -20,22 +20,24 @@ import (
 )
 
 const (
-	failedGettingBfl     = "Failed getting BFL"
-	failedListingResults = "Failed listing results"
-	mediumLabel          = "medium"
-	highLabel            = "high"
-	lowLabel             = "low"
-	sonarTypeLabel       = "_sonar"
-	directoryPermission  = 0700
-	infoSonar            = "INFO"
-	lowSonar             = "MINOR"
-	mediumSonar          = "MAJOR"
-	highSonar            = "CRITICAL"
-	vulnerabilitySonar   = "VULNERABILITY"
-	infoCx               = "INFO"
-	lowCx                = "LOW"
-	mediumCx             = "MEDIUM"
-	highCx               = "HIGH"
+	failedListingResults     = "Failed listing results"
+	failedListingCodeBashing = "Failed codebashing link"
+	mediumLabel              = "medium"
+	highLabel                = "high"
+	lowLabel                 = "low"
+	sonarTypeLabel           = "_sonar"
+	directoryPermission      = 0700
+	infoSonar                = "INFO"
+	lowSonar                 = "MINOR"
+	mediumSonar              = "MAJOR"
+	highSonar                = "CRITICAL"
+	vulnerabilitySonar       = "VULNERABILITY"
+	infoCx                   = "INFO"
+	lowCx                    = "LOW"
+	mediumCx                 = "MEDIUM"
+	highCx                   = "HIGH"
+	codeBashingKey           = "cb-url"
+	failedGettingBfl         = "Failed getting BFL"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -80,8 +82,12 @@ func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappe
 	return resultCmd
 }
 
-func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper, bflWrapper wrappers.BflWrapper) *cobra.Command {
-	resultsCmd := &cobra.Command{
+func NewResultsCommand(
+	resultsWrapper wrappers.ResultsWrapper,
+	scanWrapper wrappers.ScansWrapper,
+	codeBashingWrapper wrappers.CodeBashingWrapper,
+	bflWrapper wrappers.BflWrapper) *cobra.Command {
+	resultCmd := &cobra.Command{
 		Use:   "results",
 		Short: "Retrieve results",
 		Annotations: map[string]string{
@@ -93,11 +99,11 @@ func NewResultsCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrapp
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
+	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
-	resultsCmd.AddCommand(
-		showResultCmd, bflResultCmd,
-	)
-	return resultsCmd
+	resultCmd.AddCommand(
+		showResultCmd, bflResultCmd, codeBashingCmd)
+	return resultCmd
 }
 
 func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -212,6 +218,38 @@ func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResult
 	}
 	views := make([]wrappers.ScanResultNode, 0)
 	return views
+}
+
+func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Command {
+	// Create a codeBashing wrapper
+	resultCmd := &cobra.Command{
+		Use:   "codebashing",
+		Short: "Get codebashing lesson link",
+		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability.",
+		Example: heredoc.Doc(
+			`
+			$ cx results codebashing --language <string> --vulnerabity-type <string> --cwe-id <string> --format <string>
+		`,
+		),
+		RunE: runGetCodeBashingCommand(codeBashingWrapper),
+	}
+	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language of the vulnerability")
+	err := resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability type")
+	err = resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
+	resultCmd.PersistentFlags().String(commonParams.CweIDFlag, "", "CWE ID for the vulnerability")
+	err = resultCmd.MarkPersistentFlagRequired(commonParams.CweIDFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
+	addFormatFlag(resultCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
+	return resultCmd
 }
 
 func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.ResultSummary, error) {
@@ -333,6 +371,42 @@ func runGetResultCommand(
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
 		return CreateScanReport(resultsWrapper, scanWrapper, scanID, format, targetFile, targetPath, params)
+	}
+}
+
+func runGetCodeBashingCommand(
+	codeBashingWrapper wrappers.CodeBashingWrapper,
+) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		language, _ := cmd.Flags().GetString(commonParams.LanguageFlag)
+		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
+		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
+		params, err := codeBashingWrapper.BuildCodeBashingParams(
+			[]wrappers.CodeBashingParamsCollection{{
+				CweID:       "CWE-" + cwe,
+				Language:    language,
+				CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
+		if err != nil {
+			return err
+		}
+		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
+		url, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
+		if err != nil {
+			return err
+		}
+		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+		}
+		if webError != nil {
+			return fmt.Errorf(webError.Message)
+		}
+		err = printByFormat(cmd, *CodeBashingModel)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+		}
+		return nil
 	}
 }
 

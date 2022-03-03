@@ -12,6 +12,7 @@ var EnvVarsBinds = []struct {
 	{BaseAuthURIKey, BaseAuthURIEnv, ""},
 	{AstAPIKey, AstAPIKeyEnv, ""},
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
+	{CodeBashingPathKey, ScansPathEnv, "api/codebashing/lessons"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
 	{GroupsPathKey, GroupsPathEnv, "auth/realms/organization/pip/groups"},

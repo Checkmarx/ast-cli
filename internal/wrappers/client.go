@@ -49,6 +49,7 @@ type ClientCredentialsError struct {
 }
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
+const FailedAccessToken = "Failed to obtain access token"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
@@ -322,26 +323,36 @@ func getAuthURI() (string, error) {
 }
 
 func enrichWithOath2Credentials(request *http.Request) error {
-	authURI, err := getAuthURI()
+	accessToken, err := getAccessToken()
 	if err != nil {
 		return err
 	}
+	request.Header.Add("Authorization", "Bearer "+*accessToken)
+	return nil
+}
+
+func getAccessToken() (*string, error) {
+	authURI, err := getAuthURI()
+	if err != nil {
+		return nil, err
+	}
+	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	if accessKeyID == "" && astAPIKey == "" {
-		return errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 	}
-
-	accessToken, err := getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
-	if err != nil {
-		return err
+	if accessToken == nil {
+		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	request.Header.Add("Authorization", "Bearer "+*accessToken)
-	return nil
+	return accessToken, nil
 }
 
 func enrichWithPasswordCredentials(
