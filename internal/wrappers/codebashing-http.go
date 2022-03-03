@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -15,7 +14,7 @@ import (
 const (
 	failedToParseCodeBashing    = "Failed to parse list results"
 	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
-	tenThousand                 = "10000"
+	limitValue                  = "10000"
 	limit                       = "limit"
 	incorrectFlags              = "No codebashing link available"
 )
@@ -36,7 +35,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params[limit] = tenThousand
+	params[limit] = limitValue
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -61,6 +60,11 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
+		/* Only check for position 0 because at the time we are only sending
+		one queryName and getting as output one codebashing link. But it is
+		possible to easily change it and be able to get multiple codebashing
+		links
+		*/
 		if decoded[0].Path == "" {
 			return nil, nil, errors.Errorf(incorrectFlags)
 		}
@@ -72,23 +76,9 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (*string, error) {
-	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
-	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
-	if accessToken == nil {
-		authURI, err := getAuthURI()
-		if err != nil {
-			return nil, err
-		}
-		accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-		accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-		astAPIKey := viper.GetString(commonParams.AstAPIKey)
-		if accessKeyID == "" && astAPIKey == "" {
-			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-		}
-		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
-		if err != nil {
-			return nil, errors.Errorf(failedGettingCodeBashingURL)
-		}
+	accessToken, err := getAccessToken()
+	if err != nil {
+		return nil, errors.Errorf(failedGettingCodeBashingURL)
 	}
 	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
 	if err != nil {
@@ -103,7 +93,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (*string, error
 	return &url, nil
 }
 
-func (r *CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
+func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
 	// Marshall entire object to string
 	params := make(map[string]string)
 	viewJSON, err := json.Marshal(apiParams)

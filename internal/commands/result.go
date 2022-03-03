@@ -100,12 +100,9 @@ func NewResultsCommand(
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
-	resultCmd.AddCommand(
-		showResultCmd,
-		codeBashingCmd)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd)
+		showResultCmd, bflResultCmd, codeBashingCmd)
 	return resultCmd
 }
 
@@ -231,27 +228,27 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability.",
 		Example: heredoc.Doc(
 			`
-			$ cx codebashing --language <string> --vulnerabity-type <string> --cwe-id <string> --format <string>
+			$ cx results codebashing --language <string> --vulnerabity-type <string> --cwe-id <string> --format <string>
 		`,
 		),
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),
 	}
-	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language")
+	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language of the vulnerability")
 	err := resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability Type")
+	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability type")
 	err = resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	resultCmd.PersistentFlags().String(commonParams.CweIDFlag, "", "CWE Id")
+	resultCmd.PersistentFlags().String(commonParams.CweIDFlag, "", "CWE ID for the vulnerability")
 	err = resultCmd.MarkPersistentFlagRequired(commonParams.CweIDFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
-	resultCmd.PersistentFlags().String(commonParams.FormatFlag, "json", "Format")
+	addFormatFlag(resultCmd, printer.FormatJSON, printer.FormatJSON)
 	return resultCmd
 }
 
@@ -398,11 +395,11 @@ func runGetCodeBashingCommand(
 			return err
 		}
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
-		CodeBashingModel, errorModel, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
-		if errorModel != nil {
+		if webError != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)

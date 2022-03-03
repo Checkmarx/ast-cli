@@ -8,10 +8,26 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"gotest.tools/assert"
 )
 
 const fileName = "cx_result"
+
+const (
+	resultsCommand     = "results"
+	codeBashingCommand = "codebashing"
+	vulnerabilityValue = "Reflected XSS All Clients"
+	languageValue      = "PHP"
+	cweValue           = "79"
+	jsonValue          = "json"
+	tableValue         = "table"
+	listValue          = "list"
+)
+
+func flag(f string) string {
+	return "--" + f
+}
 
 func TestResultHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results")
@@ -88,26 +104,30 @@ func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 }
 
 func TestRunGetCodeBashingWithoutLanguage(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "results", "codebashing", "--cwe-id", "79", "--vulnerabity-type", "Reflected XSS All Clients")
+	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.CweIDFlag), cweValue, flag(params.VulnerabilityTypeFlag), vulnerabilityValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"language\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithoutVulnerabilityType(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "results", "codebashing", "--cwe-id", "79", "--language", "PHP")
+	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.CweIDFlag), cweValue, flag(params.LanguageFlag), languageValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"vulnerabity-type\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithoutCweId(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP")
+	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"cwe-id\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
-	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP", "--cwe-id", "79", "--format", "json")
+	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), jsonValue)
 }
 
 func TestRunGetCodeBashingWithFormatTable(t *testing.T) {
-	execCmdNilAssertion(t, "results", "codebashing", "--vulnerabity-type", "Reflected XSS All Clients", "--language", "PHP", "--cwe-id", "79", "--format", "table")
+	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), tableValue)
+}
+
+func TestRunGetCodeBashingWithFormatList(t *testing.T) {
+	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), listValue)
 }
 
 func TestResultBflHelp(t *testing.T) {
