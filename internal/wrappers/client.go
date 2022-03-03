@@ -332,22 +332,24 @@ func enrichWithOath2Credentials(request *http.Request) error {
 }
 
 func getAccessToken() (*string, error) {
+	authURI, err := getAuthURI()
+	if err != nil {
+		return nil, err
+	}
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
+	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+	if accessKeyID == "" && astAPIKey == "" {
+		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+	} else if accessKeySecret == "" && astAPIKey == "" {
+		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+	}
 	if accessToken == nil {
-		authURI, err := getAuthURI()
-		if err != nil {
-			return nil, err
-		}
-		accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-		accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-		astAPIKey := viper.GetString(commonParams.AstAPIKey)
-		if accessKeyID == "" && astAPIKey == "" {
-			return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-		}
 		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 		if err != nil {
-			return nil, errors.Errorf(FailedAccessToken)
+			return nil, err
 		}
 	}
 	return accessToken, nil
