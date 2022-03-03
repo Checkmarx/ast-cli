@@ -13,6 +13,7 @@ const (
 	AccessKeyIDEnv                      = "CX_CLIENT_ID"
 	AccessKeySecretEnv                  = "CX_CLIENT_SECRET"
 	ScansPathEnv                        = "CX_SCANS_PATH"
+	CodeBashingPathEnv                  = "CX_CODEBASHING_PATH"
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"

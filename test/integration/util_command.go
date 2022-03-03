@@ -44,12 +44,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
+	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
+	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -60,12 +62,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
+	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPredicatesWrapper,
+		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
