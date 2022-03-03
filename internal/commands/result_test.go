@@ -104,30 +104,84 @@ func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 }
 
 func TestRunGetCodeBashingWithoutLanguage(t *testing.T) {
-	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.CweIDFlag), cweValue, flag(params.VulnerabilityTypeFlag), vulnerabilityValue)
+	err := execCmdNotNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.CweIDFlag),
+		cweValue,
+		flag(params.VulnerabilityTypeFlag),
+		vulnerabilityValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"language\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithoutVulnerabilityType(t *testing.T) {
-	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.CweIDFlag), cweValue, flag(params.LanguageFlag), languageValue)
+	err := execCmdNotNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.CweIDFlag),
+		cweValue,
+		flag(params.LanguageFlag),
+		languageValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"vulnerabity-type\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithoutCweId(t *testing.T) {
-	err := execCmdNotNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue)
+	err := execCmdNotNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.VulnerabilityTypeFlag),
+		vulnerabilityValue,
+		flag(params.LanguageFlag),
+		languageValue)
 	assert.Equal(t, err.Error(), "required flag(s) \"cwe-id\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
-	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), jsonValue)
+	execCmdNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.VulnerabilityTypeFlag),
+		vulnerabilityValue,
+		flag(params.LanguageFlag),
+		languageValue,
+		flag(params.CweIDFlag),
+		cweValue,
+		flag(params.FormatFlag),
+		jsonValue)
 }
 
 func TestRunGetCodeBashingWithFormatTable(t *testing.T) {
-	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), tableValue)
+	execCmdNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.VulnerabilityTypeFlag),
+		vulnerabilityValue,
+		flag(params.LanguageFlag),
+		languageValue,
+		flag(params.CweIDFlag),
+		cweValue,
+		flag(params.FormatFlag),
+		tableValue)
 }
 
 func TestRunGetCodeBashingWithFormatList(t *testing.T) {
-	execCmdNilAssertion(t, resultsCommand, codeBashingCommand, flag(params.VulnerabilityTypeFlag), vulnerabilityValue, flag(params.LanguageFlag), languageValue, flag(params.CweIDFlag), cweValue, flag(params.FormatFlag), listValue)
+	execCmdNilAssertion(
+		t,
+		resultsCommand,
+		codeBashingCommand,
+		flag(params.VulnerabilityTypeFlag),
+		vulnerabilityValue,
+		flag(params.LanguageFlag),
+		languageValue,
+		flag(params.CweIDFlag),
+		cweValue,
+		flag(params.FormatFlag),
+		listValue)
 }
 
 func TestResultBflHelp(t *testing.T) {
