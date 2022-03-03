@@ -248,7 +248,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	if err != nil {
 		log.Fatal(err)
 	}
-	addFormatFlag(resultCmd, printer.FormatJSON, printer.FormatJSON)
+	addFormatFlag(resultCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
 	return resultCmd
 }
 
@@ -400,7 +400,7 @@ func runGetCodeBashingCommand(
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
 		if webError != nil {
-			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+			return fmt.Errorf(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {
