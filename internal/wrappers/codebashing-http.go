@@ -16,7 +16,7 @@ const (
 	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
 	limitValue                  = "10000"
 	limit                       = "limit"
-	incorrectFlags              = "No codebashing link available"
+	noCodebashingLinkAvailable  = "No codebashing link available"
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -29,7 +29,7 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL *string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
@@ -66,31 +66,34 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		links
 		*/
 		if decoded[0].Path == "" {
-			return nil, nil, errors.Errorf(incorrectFlags)
+			return nil, nil, errors.Errorf(noCodebashingLinkAvailable)
 		}
-		decoded[0].Path = *codeBashingURL + decoded[0].Path
+		decoded[0].Path = codeBashingURL + decoded[0].Path
 		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (*string, error) {
+func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error) {
 	accessToken, err := getAccessToken()
 	if err != nil {
-		return nil, errors.Errorf(failedGettingCodeBashingURL)
+		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}
 	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
 	if err != nil {
-		return nil, errors.Errorf(failedGettingCodeBashingURL)
+		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}
 	var url = ""
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[field] != nil {
 		url = claims[field].(string)
-	} else {
-		return nil, errors.Errorf(failedGettingCodeBashingURL)
 	}
-	return &url, nil
+
+	if url == "" {
+		return "", errors.Errorf(failedGettingCodeBashingURL)
+	}
+
+	return url, nil
 }
 
 func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
