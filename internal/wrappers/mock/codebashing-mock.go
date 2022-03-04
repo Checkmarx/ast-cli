@@ -6,7 +6,7 @@ import (
 
 type CodeBashingMockWrapper struct{}
 
-func (r CodeBashingMockWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL *string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
+func (r CodeBashingMockWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
 	collection := &wrappers.CodeBashingCollection{
 		Path:        "http://example.com/courses/php/lessons/dom_xss",
 		CweID:       "CWE-79",
@@ -18,10 +18,9 @@ func (r CodeBashingMockWrapper) GetCodeBashingLinks(params map[string]string, co
 }
 
 func (r CodeBashingMockWrapper) GetCodeBashingURL(field string) (
-	*string, error,
+	string, error,
 ) {
-	field = "MOCK"
-	return &field, nil
+	return "MOCK", nil
 }
 
 func (r CodeBashingMockWrapper) BuildCodeBashingParams([]wrappers.CodeBashingParamsCollection) (map[string]string, error) {
