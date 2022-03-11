@@ -3,6 +3,8 @@
 package integration
 
 import (
+	"bufio"
+	"encoding/json"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -29,8 +31,11 @@ func TestGitHubUserCount(t *testing.T) {
 	)
 
 	var parsedJson []usercount.RepositoryView
-	unmarshall(t, buffer, &parsedJson, "Reading unique contributors json should pass")
-
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() {
+		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
+		break
+	}
 	totalView := parsedJson[len(parsedJson)-1]
 	assert.Assert(t, len(parsedJson) >= 1)
 	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)

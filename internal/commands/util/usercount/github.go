@@ -16,7 +16,7 @@ type RepositoryView struct {
 	UniqueContributors uint64 `json:"unique_contributors"`
 }
 type UserView struct {
-	Name               string `json:"name"`
+	Name                       string `json:"name"`
 	UniqueContributorsUsername string `json:"unique_contributors_username"`
 }
 
@@ -103,7 +103,7 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 
 		err = printer.Print(cmd.OutOrStdout(), views, format)
 
-		//Only print user count information if in debug mode
+		// Only print user count information if in debug mode
 		if viper.GetBool(params.DebugFlag) {
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
@@ -144,7 +144,7 @@ func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRo
 			viewsUsers = append(
 				viewsUsers,
 				UserView{
-					Name:               repository.FullName,
+					Name:                       repository.FullName,
 					UniqueContributorsUsername: name,
 				},
 			)
@@ -190,7 +190,7 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 				viewsUsers = append(
 					viewsUsers,
 					UserView{
-						Name:               repository.FullName,
+						Name:                       repository.FullName,
 						UniqueContributorsUsername: name,
 					},
 				)
@@ -200,7 +200,7 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getUniqueContributors(commits []wrappers.CommitRoot) (uint64, map[string]bool) {
+func getUniqueContributors(commits []wrappers.CommitRoot) (contributorSize uint64, contributorsList map[string]bool) {
 	var contributors = map[string]bool{}
 	for _, commit := range commits {
 		name := commit.Commit.CommitAuthor.Name
