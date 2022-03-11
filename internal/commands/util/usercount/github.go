@@ -91,13 +91,13 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 			return err
 		}
 
-		uniqueContributors, _ := getUniqueContributors(totalCommits)
+		uniqueContributorsMap := getUniqueContributors(totalCommits)
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               TotalContributorsName,
-				UniqueContributors: uniqueContributors,
+				UniqueContributors: uint64(len(uniqueContributorsMap)),
 			},
 		)
 
@@ -131,16 +131,16 @@ func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRo
 
 		totalCommits = append(totalCommits, commits...)
 
-		uniqueContributors, uniqueContributorsName := getUniqueContributors(commits)
+		uniqueContributorsMap := getUniqueContributors(commits)
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               repository.FullName,
-				UniqueContributors: uniqueContributors,
+				UniqueContributors: uint64(len(uniqueContributorsMap)),
 			},
 		)
-		for name := range uniqueContributorsName {
+		for name := range uniqueContributorsMap {
 			viewsUsers = append(
 				viewsUsers,
 				UserView{
@@ -177,16 +177,16 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 
 			totalCommits = append(totalCommits, commits...)
 
-			uniqueContributors, uniqueContributorsName := getUniqueContributors(commits)
+			uniqueContributorsMap := getUniqueContributors(commits)
 
 			views = append(
 				views,
 				RepositoryView{
 					Name:               repository.FullName,
-					UniqueContributors: uniqueContributors,
+					UniqueContributors: uint64(len(uniqueContributorsMap)),
 				},
 			)
-			for name := range uniqueContributorsName {
+			for name := range uniqueContributorsMap {
 				viewsUsers = append(
 					viewsUsers,
 					UserView{
@@ -200,7 +200,7 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getUniqueContributors(commits []wrappers.CommitRoot) (contributorSize uint64, contributorsList map[string]bool) {
+func getUniqueContributors(commits []wrappers.CommitRoot) map[string]bool {
 	var contributors = map[string]bool{}
 	for _, commit := range commits {
 		name := commit.Commit.CommitAuthor.Name
@@ -208,7 +208,7 @@ func getUniqueContributors(commits []wrappers.CommitRoot) (contributorSize uint6
 			contributors[name] = true
 		}
 	}
-	return uint64(len(contributors)), contributors
+	return contributors
 }
 
 func isNotBot(commit wrappers.CommitRoot) bool {
