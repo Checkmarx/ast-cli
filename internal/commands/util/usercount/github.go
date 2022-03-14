@@ -1,6 +1,8 @@
 package usercount
 
 import (
+	"log"
+
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -12,6 +14,10 @@ import (
 type RepositoryView struct {
 	Name               string `json:"name"`
 	UniqueContributors uint64 `json:"unique_contributors"`
+}
+type UserView struct {
+	Name                       string `json:"name"`
+	UniqueContributorsUsername string `json:"unique_contributors_username"`
 }
 
 const (
@@ -72,101 +78,129 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 
 		var totalCommits []wrappers.CommitRoot
 		var views []RepositoryView
+		var viewsUsers []UserView
 
 		_ = viper.BindPFlag(params.SCMTokenFlag, cmd.Flags().Lookup(params.SCMTokenFlag))
 
 		if len(repos) > 0 {
-			totalCommits, views, err = collectFromRepos(gitHubWrapper)
+			totalCommits, views, viewsUsers, err = collectFromRepos(gitHubWrapper)
 		} else {
-			totalCommits, views, err = collectFromOrgs(gitHubWrapper)
+			totalCommits, views, viewsUsers, err = collectFromOrgs(gitHubWrapper)
 		}
 		if err != nil {
 			return err
 		}
 
-		uniqueContributors := getUniqueContributors(totalCommits)
+		uniqueContributorsMap := getUniqueContributors(totalCommits)
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               TotalContributorsName,
-				UniqueContributors: uniqueContributors,
+				UniqueContributors: uint64(len(uniqueContributorsMap)),
 			},
 		)
 
 		err = printer.Print(cmd.OutOrStdout(), views, format)
 
+		// Only print user count information if in debug mode
+		if viper.GetBool(params.DebugFlag) {
+			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
+		}
+
+		log.Println("Note: dependabot is not counted but other bots might be considered users.")
+
 		return err
 	}
 }
 
-func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, error) {
+func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, []UserView, error) {
 	var totalCommits []wrappers.CommitRoot
 	var views []RepositoryView
+	var viewsUsers []UserView
 	for _, repo := range repos {
 		repository, err := gitHubWrapper.GetRepository(orgs[0], repo)
 		if err != nil {
-			return totalCommits, views, err
+			return totalCommits, views, viewsUsers, err
 		}
 
 		commits, err := gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
 		if err != nil {
-			return totalCommits, views, err
+			return totalCommits, views, viewsUsers, err
 		}
 
 		totalCommits = append(totalCommits, commits...)
 
-		uniqueContributors := getUniqueContributors(commits)
+		uniqueContributorsMap := getUniqueContributors(commits)
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               repository.FullName,
-				UniqueContributors: uniqueContributors,
+				UniqueContributors: uint64(len(uniqueContributorsMap)),
 			},
 		)
+		for name := range uniqueContributorsMap {
+			viewsUsers = append(
+				viewsUsers,
+				UserView{
+					Name:                       repository.FullName,
+					UniqueContributorsUsername: name,
+				},
+			)
+		}
 	}
-	return totalCommits, views, nil
+	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, error) {
+func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoot, []RepositoryView, []UserView, error) {
 	var totalCommits []wrappers.CommitRoot
 	var views []RepositoryView
+	var viewsUsers []UserView
 
 	for _, org := range orgs {
 		organization, err := gitHubWrapper.GetOrganization(org)
 		if err != nil {
-			return totalCommits, views, err
+			return totalCommits, views, viewsUsers, err
 		}
 
 		repositories, err := gitHubWrapper.GetRepositories(organization)
 		if err != nil {
-			return totalCommits, views, err
+			return totalCommits, views, viewsUsers, err
 		}
 
 		for _, repository := range repositories {
 			commits, err := gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
 			if err != nil {
-				return totalCommits, views, err
+				return totalCommits, views, viewsUsers, err
 			}
 
 			totalCommits = append(totalCommits, commits...)
 
-			uniqueContributors := getUniqueContributors(commits)
+			uniqueContributorsMap := getUniqueContributors(commits)
 
 			views = append(
 				views,
 				RepositoryView{
 					Name:               repository.FullName,
-					UniqueContributors: uniqueContributors,
+					UniqueContributors: uint64(len(uniqueContributorsMap)),
 				},
 			)
+			for name := range uniqueContributorsMap {
+				viewsUsers = append(
+					viewsUsers,
+					UserView{
+						Name:                       repository.FullName,
+						UniqueContributorsUsername: name,
+					},
+				)
+			}
 		}
 	}
-	return totalCommits, views, nil
+	return totalCommits, views, viewsUsers, nil
 }
 
-func getUniqueContributors(commits []wrappers.CommitRoot) uint64 {
+func getUniqueContributors(commits []wrappers.CommitRoot) map[string]bool {
 	var contributors = map[string]bool{}
 	for _, commit := range commits {
 		name := commit.Commit.CommitAuthor.Name
@@ -174,7 +208,7 @@ func getUniqueContributors(commits []wrappers.CommitRoot) uint64 {
 			contributors[name] = true
 		}
 	}
-	return uint64(len(contributors))
+	return contributors
 }
 
 func isNotBot(commit wrappers.CommitRoot) bool {
