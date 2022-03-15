@@ -87,7 +87,7 @@ const (
 	StateFlag                = "state"
 	CommentFlag              = "comment"
 	LanguageFlag             = "language"
-	VulnerabilityTypeFlag    = "vulnerabity-type"
+	VulnerabilityTypeFlag    = "vulnerability-type"
 	CweIDFlag                = "cwe-id"
 	SCMTokenFlag             = "token"
 	SCMTokenUsage            = "GitHub OAuth token"

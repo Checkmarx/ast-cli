@@ -78,7 +78,7 @@ func TestCodeBashingParamFailed(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "required flag(s) \"cwe-id\", \"language\", \"vulnerabity-type\" not set")
+	assertError(t, err, "required flag(s) \"cwe-id\", \"language\", \"vulnerability-type\" not set")
 }
 
 func TestCodeBashingList(t *testing.T) {
