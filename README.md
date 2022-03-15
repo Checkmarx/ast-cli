@@ -1,3 +1,7 @@
+<img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
+<br />
+<div  align="center" >
+
 [![Documentation][documentation-shield]][documentation-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
@@ -6,16 +10,17 @@
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 
+</div>
 
 
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
   <a href="">
-    <img src="./logo.png" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">AST-CLI</h3>
+<h3 align="center">AST CLI</h3>
 
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool.
@@ -32,7 +37,7 @@
 
 
 <!-- TABLE OF CONTENTS -->
-<details open="open">
+<details>
   <summary>Table of Contents</summary>
   <ol>
     <li>
@@ -70,7 +75,7 @@ The CLI tool supports the following actions:
 The CLI also acts as the backbone for all the supported plugins. All the plugins use the CLI tool to initiate scans. This allows minimal updates to the plugins which decreases the need for constant updates and feature requests.
 
 The tool is universal that can manage all the CxAST scan types (CxSAST, CxSCA, KICS, etc.).
-****
+
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -81,9 +86,7 @@ Installing the CLI tool is very simple.
 
 To be able to build the code you should have:
 * Go
- ```
-  You can download and install Go using this link: https://golang.org/doc/install
-```
+You can download and install Go using this link: https://golang.org/doc/install
 
 ### Setting Up
 ### Windows
@@ -142,20 +145,18 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 
 © 2021 Checkmarx Ltd. All Rights Reserved.
 
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli?style=flat-square
+
+[docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
 [docker-url]:https://hub.docker.com/r/checkmarx/ast-cli
-[documentation-shield]: https://img.shields.io/badge/docs-viewdocs-blue.svg?style=flat-square
+[documentation-shield]: https://img.shields.io/badge/docs-viewdocs-blue.svg
 [documentation-url]:https://checkmarx.atlassian.net/wiki/spaces/AST/pages/2967766116/CxAST+Plugins
-[contributors-shield]: https://img.shields.io/github/contributors/Checkmarx/ast-cli.svg?style=flat-square
+[contributors-shield]: https://img.shields.io/github/contributors/Checkmarx/ast-cli.svg
 [contributors-url]: https://github.com/Checkmarx/ast-cli/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Checkmarx/ast-cli.svg?style=flat-square
+[forks-shield]: https://img.shields.io/github/forks/Checkmarx/ast-cli.svg
 [forks-url]: https://github.com/Checkmarx/ast-cli/network/members
-[stars-shield]: https://img.shields.io/github/stars/Checkmarx/ast-cli.svg?style=flat-square
+[stars-shield]: https://img.shields.io/github/stars/Checkmarx/ast-cli.svg
 [stars-url]: https://github.com/Checkmarx/ast-cli/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Checkmarx/ast-cli.svg?style=flat-square
+[issues-shield]: https://img.shields.io/github/issues/Checkmarx/ast-cli.svg
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
-[license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg?style=flat-square
+[license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/master/LICENSE
-[product-screenshot]: images/screenshot.png
