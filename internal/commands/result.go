@@ -228,7 +228,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability.",
 		Example: heredoc.Doc(
 			`
-			$ cx results codebashing --language <string> --vulnerabity-type <string> --cwe-id <string> --format <string>
+			$ cx results codebashing --language <string> --vulnerability-type <string> --cwe-id <string> --format <string>
 		`,
 		),
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),

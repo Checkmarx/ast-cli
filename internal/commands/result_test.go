@@ -124,7 +124,7 @@ func TestRunGetCodeBashingWithoutVulnerabilityType(t *testing.T) {
 		cweValue,
 		flag(params.LanguageFlag),
 		languageValue)
-	assert.Equal(t, err.Error(), "required flag(s) \"vulnerabity-type\" not set", "Wrong expected error message")
+	assert.Equal(t, err.Error(), "required flag(s) \"vulnerability-type\" not set", "Wrong expected error message")
 }
 
 func TestRunGetCodeBashingWithoutCweId(t *testing.T) {

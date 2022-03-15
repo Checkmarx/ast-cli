@@ -17,6 +17,8 @@ const (
 	limitValue                  = "10000"
 	limit                       = "limit"
 	noCodebashingLinkAvailable  = "No codebashing link available"
+	licenseNotFoundExitCode     = 3
+	lessonNotFoundExitCode      = 4
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -47,7 +49,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Wrapf(err, failedToParseCodeBashing))
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
@@ -66,7 +68,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		links
 		*/
 		if decoded[0].Path == "" {
-			return nil, nil, errors.Errorf(noCodebashingLinkAvailable)
+			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
 		decoded[0].Path = codeBashingURL + decoded[0].Path
 		return &decoded, nil, nil
@@ -82,7 +84,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	}
 	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
 	if err != nil {
-		return "", errors.Errorf(failedGettingCodeBashingURL)
+		return "", NewAstError(licenseNotFoundExitCode, errors.Errorf(failedGettingCodeBashingURL))
 	}
 	var url = ""
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[field] != nil {
@@ -90,7 +92,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	}
 
 	if url == "" {
-		return "", errors.Errorf(failedGettingCodeBashingURL)
+		return "", NewAstError(licenseNotFoundExitCode, errors.Errorf(failedGettingCodeBashingURL))
 	}
 
 	return url, nil
