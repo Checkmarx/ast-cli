@@ -90,9 +90,10 @@ const (
 	VulnerabilityTypeFlag    = "vulnerabity-type"
 	CweIDFlag                = "cwe-id"
 	SCMTokenFlag             = "token"
-	SCMTokenUsage            = "GitHub OAuth token"
-	GitHubURLFlag            = "url"
-	GitHubURLFlagUsage       = "API base URL"
+	GithubTokenUsage         = "GitHub OAuth token"
+	AzureTokenUsage          = "Azure OAuth token"
+	UrlFlag                  = "url"
+	UrlFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
 )
 

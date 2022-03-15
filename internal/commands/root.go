@@ -31,6 +31,7 @@ func NewAstCLI(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	gitHubWrapper wrappers.GitHubWrapper,
+	azureWrapper wrappers.AzureWrapper,
 	bflWrapper wrappers.BflWrapper,
 ) *cobra.Command {
 	// Create the root
@@ -120,7 +121,7 @@ func NewAstCLI(
 	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := util.NewUtilsCommand(gitHubWrapper)
+	utilsCmd := util.NewUtilsCommand(gitHubWrapper,azureWrapper)
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 

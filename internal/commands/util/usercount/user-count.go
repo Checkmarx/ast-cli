@@ -33,7 +33,7 @@ var (
 	}
 )
 
-func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
+func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper, azureWrapper wrappers.AzureWrapper) *cobra.Command {
 	userCountCmd := &cobra.Command{
 		Use:   UcCommand,
 		Short: UcShort,
@@ -51,9 +51,9 @@ func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Command {
 	)
 
 	userCountCmd.AddCommand(newUserCountGithubCommand(gitHubWrapper))
+	userCountCmd.AddCommand(newUserCountAzureCommand(azureWrapper))
 
 	for _, cmd := range userCountCmd.Commands() {
-		cmd.Flags().String(params.SCMTokenFlag, "", params.SCMTokenUsage)
 		cmd.Flags().StringVar(
 			&format,
 			params.FormatFlag,
