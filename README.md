@@ -112,8 +112,6 @@ export GOARCH=amd64
 go build -o ./bin/cx-mac ./cmd
 ```
 
-** **
-
 
 ## Usage
 
@@ -127,12 +125,10 @@ We appreciate feedback and contribution to the CLI! Before you get started, plea
 - [Checkmarx contribution guidelines](docs/contributing.md)
 - [Checkmarx Code of Conduct](docs/code_of_conduct.md)
 
-** **
 
 <!-- LICENSE -->
 ## License
 Distributed under the [Apache 2.0](LICENSE). See `LICENSE` for more information.
-
 
 
 <!-- CONTACT -->
@@ -142,6 +138,7 @@ Checkmarx - AST Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli)
 
+Find more integrations from our team [here](https://github.com/Checkmarx/ci-cd-integrations#checkmarx-ast-integrations)
 
 © 2022 Checkmarx Ltd. All Rights Reserved.
 
@@ -159,4 +156,4 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-shield]: https://img.shields.io/github/issues/Checkmarx/ast-cli.svg
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
-[license-url]: https://github.com/Checkmarx/ast-cli/blob/master/LICENSE
+[license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
