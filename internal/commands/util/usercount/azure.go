@@ -1,13 +1,10 @@
 package usercount
 
 import (
-	//"log"
-
 	"log"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	//"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -126,22 +123,25 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azure
 				totalCommits = append(totalCommits, commits)
 				uniqueContributors := getUniqueContributorsAzure(commits)
 
-				views = append(
-					views,
-					RepositoryView{
-						Name:               buildCountPath(org, project, repo),
-						UniqueContributors: uint64(len(uniqueContributors)),
-					},
-				)
-
-				for name := range uniqueContributors {
-					viewsUsers = append(
-						viewsUsers,
-						UserView{
-							Name:                       buildCountPath(org, project, repo),
-							UniqueContributorsUsername: name,
+				// Case there is no organization, project, commits or repos inside the organization
+				if uint64(len(uniqueContributors)) > 0 {
+					views = append(
+						views,
+						RepositoryView{
+							Name:               buildCountPath(org, project, repo),
+							UniqueContributors: uint64(len(uniqueContributors)),
 						},
 					)
+
+					for name := range uniqueContributors {
+						viewsUsers = append(
+							viewsUsers,
+							UserView{
+								Name:                       buildCountPath(org, project, repo),
+								UniqueContributorsUsername: name,
+							},
+						)
+					}
 				}
 			}
 		}

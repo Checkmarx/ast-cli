@@ -23,12 +23,16 @@ type AzureHTTPWrapper struct {
 
 const (
 	azureSearchDate      = "searchCriteria.fromDate"
-	azureApiVersion      = "6.0"
+	azureApiVersion      = "api-version"
+	azureApiVersionValue = "6.0"
 	azureBaseCommitUrl   = "%s%s/%s/_apis/git/repositories/%s/commits"
 	azureBaseReposUrl    = "%s%s/%s/_apis/git/repositories"
 	azureBaseProjectsUrl = "%s%s/_apis/projects"
-	azureLayoutTime      = "2022-01-01"
+	azureTop             = "$top"
+	azureTopValue        = "1000000"
+	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
+	failedAuth           = "Failed Azure Authentication"
 )
 
 func NewAzureWrapper() AzureWrapper {
@@ -44,9 +48,9 @@ func (g *AzureHTTPWrapper) GetCommits(url string, organizationName string, proje
 
 	commitsUrl := fmt.Sprintf(azureBaseCommitUrl, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
-	queryParams[azureApiVersion] = "6.0"
+	queryParams[azureApiVersion] = azureApiVersionValue
 
-	err = g.get(commitsUrl, b64.StdEncoding.EncodeToString([]byte(":"+token)), &repository, queryParams, basicFormat)
+	err = g.get(commitsUrl, encodeToken(token), &repository, queryParams, basicFormat)
 
 	return repository, err
 }
@@ -57,10 +61,10 @@ func (g *AzureHTTPWrapper) GetRepositories(url string, organizationName string, 
 	var queryParams = make(map[string]string)
 
 	reposUrl := fmt.Sprintf(azureBaseReposUrl, url, organizationName, projectName)
-	queryParams["$top"] = "1000000"
-	queryParams[azureApiVersion] = "6.0"
+	queryParams[azureTop] = azureTopValue
+	queryParams[azureApiVersion] = azureApiVersionValue
 
-	err = g.get(reposUrl, b64.StdEncoding.EncodeToString([]byte(":"+token)), &repository, queryParams, basicFormat)
+	err = g.get(reposUrl, encodeToken(token), &repository, queryParams, basicFormat)
 
 	return repository, err
 }
@@ -69,9 +73,12 @@ func (g *AzureHTTPWrapper) GetProjects(url string, organizationName string, toke
 	var err error
 	var project AzureRootProject
 	var queryParams = make(map[string]string)
+
 	reposUrl := fmt.Sprintf(azureBaseProjectsUrl, url, organizationName)
-	queryParams[azureApiVersion] = "6.0"
-	err = g.get(reposUrl, b64.StdEncoding.EncodeToString([]byte(":"+token)), &project, queryParams, basicFormat)
+	queryParams[azureApiVersion] = azureApiVersionValue
+
+	err = g.get(reposUrl, encodeToken(token), &project, queryParams, basicFormat)
+
 	return project, err
 }
 
@@ -107,12 +114,17 @@ func (g *AzureHTTPWrapper) get(url string, token string, target interface{}, que
 		if err != nil {
 			return err
 		}
+		// State sent when expired token
 	case http.StatusNonAuthoritativeInfo:
-		err = errors.New("Failed Authentication")
+		err = errors.New(failedAuth)
 		return err
+		// State sent when no token is provided
 	case http.StatusForbidden:
-		err = errors.New("Failed Authentication")
+		err = errors.New(failedAuth)
 		return err
+	case http.StatusNotFound:
+		// Case the commit/project does not exist in the organization
+		return nil
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -127,4 +139,8 @@ func getThreeMonthsTime() string {
 	today := time.Now()
 	lastThreeMonths := today.AddDate(0, -3, 0).Format(azureLayoutTime)
 	return lastThreeMonths
+}
+
+func encodeToken(token string) string {
+	return b64.StdEncoding.EncodeToString([]byte(":" + token))
 }

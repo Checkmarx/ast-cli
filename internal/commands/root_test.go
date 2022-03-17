@@ -39,6 +39,7 @@ func createASTTestCommand() *cobra.Command {
 	logsWrapper := &mock.LogsMockWrapper{}
 	codeBashingWrapper := &mock.CodeBashingMockWrapper{}
 	gitHubWrapper := &mock.GitHubMockWrapper{}
+	azureWrapper := &mock.AzureMockWrapper{}
 	bflMockWrapper := &mock.BflMockWrapper{}
 
 	return NewAstCLI(
@@ -52,6 +53,7 @@ func createASTTestCommand() *cobra.Command {
 		logsWrapper,
 		groupsMockWrapper,
 		gitHubWrapper,
+		azureWrapper,
 		bflMockWrapper,
 	)
 }
