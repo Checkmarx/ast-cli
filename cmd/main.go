@@ -64,8 +64,14 @@ func main() {
 
 func exitIfError(err error) {
 	if err != nil {
-		log.Println(err)
-		os.Exit(failureExitCode)
+		switch e := err.(type) {
+		case *wrappers.AstError:
+			log.Println(e.Err)
+			os.Exit(e.Code)
+		default:
+			log.Println(e)
+			os.Exit(failureExitCode)
+		}
 	}
 }
 
