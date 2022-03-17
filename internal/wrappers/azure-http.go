@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	//"strings"
 	b64 "encoding/base64"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -41,7 +40,7 @@ func NewAzureWrapper() AzureWrapper {
 	}
 }
 
-func (g *AzureHTTPWrapper) GetCommits(url string, organizationName string, projectName string, repositoryName string, token string) (AzureRootCommit, error) {
+func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, repositoryName, token string) (AzureRootCommit, error) {
 	var err error
 	var repository AzureRootCommit
 	var queryParams = make(map[string]string)
@@ -55,7 +54,7 @@ func (g *AzureHTTPWrapper) GetCommits(url string, organizationName string, proje
 	return repository, err
 }
 
-func (g *AzureHTTPWrapper) GetRepositories(url string, organizationName string, projectName string, token string) (AzureRootRepo, error) {
+func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, token string) (AzureRootRepo, error) {
 	var err error
 	var repository AzureRootRepo
 	var queryParams = make(map[string]string)
@@ -69,7 +68,7 @@ func (g *AzureHTTPWrapper) GetRepositories(url string, organizationName string, 
 	return repository, err
 }
 
-func (g *AzureHTTPWrapper) GetProjects(url string, organizationName string, token string) (AzureRootProject, error) {
+func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (AzureRootProject, error) {
 	var err error
 	var project AzureRootProject
 	var queryParams = make(map[string]string)
@@ -82,7 +81,7 @@ func (g *AzureHTTPWrapper) GetProjects(url string, organizationName string, toke
 	return project, err
 }
 
-func (g *AzureHTTPWrapper) get(url string, token string, target interface{}, queryParams map[string]string, authFormat string) error {
+func (g *AzureHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string, authFormat string) error {
 	var err error
 
 	PrintIfVerbose(fmt.Sprintf("Request to %s", url))

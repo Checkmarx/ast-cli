@@ -252,6 +252,6 @@ func azureIsNotBot(commit wrappers.AzureCommit) bool {
 	return strings.Contains(commit.Author.Name, azureBot)
 }
 
-func buildCountPath(org string, project string, repo string) string {
+func buildCountPath(org, project, repo string) string {
 	return org + "/" + project + "/" + repo
 }
