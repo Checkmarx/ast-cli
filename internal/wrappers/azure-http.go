@@ -16,8 +16,6 @@ import (
 
 type AzureHTTPWrapper struct {
 	client               *http.Client
-	repositoryTemplate   string
-	organizationTemplate string
 }
 
 const (
@@ -45,11 +43,11 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	var repository AzureRootCommit
 	var queryParams = make(map[string]string)
 
-	commitsUrl := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
+	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(commitsUrl, encodeToken(token), &repository, queryParams, basicFormat)
+	err = g.get(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
 
 	return repository, err
 }
@@ -59,11 +57,11 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	var repository AzureRootRepo
 	var queryParams = make(map[string]string)
 
-	reposUrl := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
+	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
 	queryParams[azureTop] = azureTopValue
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(reposUrl, encodeToken(token), &repository, queryParams, basicFormat)
+	err = g.get(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
 
 	return repository, err
 }
@@ -73,10 +71,10 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 	var project AzureRootProject
 	var queryParams = make(map[string]string)
 
-	reposUrl := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
+	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(reposUrl, encodeToken(token), &project, queryParams, basicFormat)
+	err = g.get(reposURL, encodeToken(token), &project, queryParams, basicFormat)
 
 	return project, err
 }
