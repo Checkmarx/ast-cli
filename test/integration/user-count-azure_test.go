@@ -18,9 +18,9 @@ import (
 const (
 	envOrg       = "AZURE_ORG"
 	envToken     = "AZURE_TOKEN"
+	envProject   = "AZURE_PROJECT"
+	envRepos     = "AZURE_REPOS"
 	projectFlag  = "projects"
-	projectValue = "testingCli"
-	repoValue    = "WebGoat"
 )
 
 func TestAzureUserCountOrgs(t *testing.T) {
@@ -62,7 +62,7 @@ func TestAzureUserCountProjects(t *testing.T) {
 		flag(usercount.OrgsFlag),
 		os.Getenv(envOrg),
 		flag(projectFlag),
-		projectValue,
+		os.Getenv(envProject),
 		flag(params.SCMTokenFlag),
 		os.Getenv(envToken),
 		flag(params.FormatFlag),
@@ -92,9 +92,9 @@ func TestAzureUserCountRepos(t *testing.T) {
 		flag(usercount.OrgsFlag),
 		os.Getenv(envOrg),
 		flag(projectFlag),
-		projectValue,
+		os.Getenv(envProject),
 		flag(usercount.ReposFlag),
-		repoValue,
+		os.Getenv(envRepos),
 		flag(params.SCMTokenFlag),
 		os.Getenv(envToken),
 		flag(params.FormatFlag),
@@ -139,7 +139,7 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 		flag(usercount.OrgsFlag),
 		os.Getenv(envOrg),
 		flag(usercount.ReposFlag),
-		repoValue,
+		os.Getenv(envRepos),
 		flag(params.SCMTokenFlag),
 		os.Getenv(envToken),
 		flag(params.FormatFlag),

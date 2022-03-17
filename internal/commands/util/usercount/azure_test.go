@@ -122,3 +122,23 @@ func TestAzureCountMissingProject(t *testing.T) {
 	err := cmd.Execute()
 	assert.Error(t, err, missingProject)
 }
+
+func TestAzureUserCountOrgsUrl(t *testing.T) {
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	assert.Assert(t, cmd != nil, "Azure user count command must exist")
+
+	cmd.SetArgs(
+		[]string{
+			AzureCommand,
+			"--" + OrgsFlag,
+			"a,b",
+			"--" + url,
+			"a",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
+		},
+	)
+
+	err := cmd.Execute()
+	assert.Assert(t, err == nil)
+}
