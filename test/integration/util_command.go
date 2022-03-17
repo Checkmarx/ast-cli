@@ -64,6 +64,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
 	gitHubWrapper := wrappers.NewGitHubWrapper()
+	azureWrapper := wrappers.NewAzureWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
@@ -77,6 +78,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		logsWrapper,
 		groupsWrapper,
 		gitHubWrapper,
+		azureWrapper,
 		bflWrapper,
 	)
 	return astCli

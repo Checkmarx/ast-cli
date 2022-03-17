@@ -112,7 +112,7 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 	var err error
 	var rootAPIResponse rootAPI
 
-	baseURL := viper.GetString(params.GitHubURLFlag)
+	baseURL := viper.GetString(params.URLFlag)
 	err = g.get(baseURL, &rootAPIResponse, map[string]string{})
 
 	g.organizationTemplate = rootAPIResponse.OrganizationURL
