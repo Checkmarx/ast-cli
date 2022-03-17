@@ -15,7 +15,7 @@ import (
 )
 
 type AzureHTTPWrapper struct {
-	client               *http.Client
+	client *http.Client
 }
 
 const (
