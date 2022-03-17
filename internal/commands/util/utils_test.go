@@ -7,6 +7,6 @@ import (
 )
 
 func TestNewUtilsCommand(t *testing.T) {
-	cmd := NewUtilsCommand(nil)
+	cmd := NewUtilsCommand(nil,nil)
 	assert.Assert(t, cmd != nil, "Utils command must exist")
 }
