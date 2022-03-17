@@ -11,7 +11,7 @@ import (
 )
 
 func TestGitHubUserCountOrgs(t *testing.T) {
-	cmd := NewUserCountCommand(mock.GitHubMockWrapper{},nil)
+	cmd := NewUserCountCommand(mock.GitHubMockWrapper{}, nil)
 	assert.Assert(t, cmd != nil, "GitHub user count command must exist")
 
 	cmd.SetArgs(
@@ -28,7 +28,7 @@ func TestGitHubUserCountOrgs(t *testing.T) {
 	assert.Assert(t, err == nil || strings.Contains(err.Error(), "rate"))
 }
 func TestGitHubUserCountRepos(t *testing.T) {
-	cmd := NewUserCountCommand(mock.GitHubMockWrapper{},nil)
+	cmd := NewUserCountCommand(mock.GitHubMockWrapper{}, nil)
 	assert.Assert(t, cmd != nil, "GitHub user count command must exist")
 
 	cmd.SetArgs(
@@ -48,7 +48,7 @@ func TestGitHubUserCountRepos(t *testing.T) {
 }
 
 func TestGitHubUserCountMissingArgs(t *testing.T) {
-	cmd := NewUserCountCommand(mock.GitHubMockWrapper{},nil)
+	cmd := NewUserCountCommand(mock.GitHubMockWrapper{}, nil)
 	assert.Assert(t, cmd != nil, "GitHub user count command must exist")
 
 	cmd.SetArgs(
@@ -64,7 +64,7 @@ func TestGitHubUserCountMissingArgs(t *testing.T) {
 }
 
 func TestGitHubUserCountMissingOrgs(t *testing.T) {
-	cmd := NewUserCountCommand(mock.GitHubMockWrapper{},nil)
+	cmd := NewUserCountCommand(mock.GitHubMockWrapper{}, nil)
 	assert.Assert(t, cmd != nil, "GitHub user count command must exist")
 
 	cmd.SetArgs(
@@ -82,7 +82,7 @@ func TestGitHubUserCountMissingOrgs(t *testing.T) {
 }
 
 func TestGitHubUserCountManyOrgs(t *testing.T) {
-	cmd := NewUserCountCommand(mock.GitHubMockWrapper{},nil)
+	cmd := NewUserCountCommand(mock.GitHubMockWrapper{}, nil)
 	assert.Assert(t, cmd != nil, "GitHub user count command must exist")
 
 	cmd.SetArgs(

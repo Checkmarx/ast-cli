@@ -92,8 +92,8 @@ const (
 	SCMTokenFlag             = "token"
 	GithubTokenUsage         = "GitHub OAuth token"
 	AzureTokenUsage          = "Azure OAuth token"
-	UrlFlag                  = "url"
-	UrlFlagUsage             = "API base URL"
+	URLFlag                  = "url"
+	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
 )
 

@@ -22,11 +22,11 @@ type AzureHTTPWrapper struct {
 
 const (
 	azureSearchDate      = "searchCriteria.fromDate"
-	azureApiVersion      = "api-version"
-	azureApiVersionValue = "6.0"
-	azureBaseCommitUrl   = "%s%s/%s/_apis/git/repositories/%s/commits"
-	azureBaseReposUrl    = "%s%s/%s/_apis/git/repositories"
-	azureBaseProjectsUrl = "%s%s/_apis/projects"
+	azureAPIVersion      = "api-version"
+	azureAPIVersionValue = "6.0"
+	azureBaseCommitURL   = "%s%s/%s/_apis/git/repositories/%s/commits"
+	azureBaseReposURL    = "%s%s/%s/_apis/git/repositories"
+	azureBaseProjectsURL = "%s%s/_apis/projects"
 	azureTop             = "$top"
 	azureTopValue        = "1000000"
 	azureLayoutTime      = "2006-01-02"
@@ -45,9 +45,9 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	var repository AzureRootCommit
 	var queryParams = make(map[string]string)
 
-	commitsUrl := fmt.Sprintf(azureBaseCommitUrl, url, organizationName, projectName, repositoryName)
+	commitsUrl := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
-	queryParams[azureApiVersion] = azureApiVersionValue
+	queryParams[azureAPIVersion] = azureAPIVersionValue
 
 	err = g.get(commitsUrl, encodeToken(token), &repository, queryParams, basicFormat)
 
@@ -59,9 +59,9 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	var repository AzureRootRepo
 	var queryParams = make(map[string]string)
 
-	reposUrl := fmt.Sprintf(azureBaseReposUrl, url, organizationName, projectName)
+	reposUrl := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
 	queryParams[azureTop] = azureTopValue
-	queryParams[azureApiVersion] = azureApiVersionValue
+	queryParams[azureAPIVersion] = azureAPIVersionValue
 
 	err = g.get(reposUrl, encodeToken(token), &repository, queryParams, basicFormat)
 
@@ -73,8 +73,8 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 	var project AzureRootProject
 	var queryParams = make(map[string]string)
 
-	reposUrl := fmt.Sprintf(azureBaseProjectsUrl, url, organizationName)
-	queryParams[azureApiVersion] = azureApiVersionValue
+	reposUrl := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
+	queryParams[azureAPIVersion] = azureAPIVersionValue
 
 	err = g.get(reposUrl, encodeToken(token), &project, queryParams, basicFormat)
 

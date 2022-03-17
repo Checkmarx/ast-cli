@@ -49,9 +49,9 @@ func newUserCountGithubCommand(gitHubWrapper wrappers.GitHubWrapper) *cobra.Comm
 	userCountCmd.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
 	userCountCmd.Flags().StringSliceVar(&repos, ReposFlag, []string{}, reposFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&orgs, OrgsFlag, []string{}, orgsFlagUsage)
-	userCountCmd.Flags().String(params.UrlFlag, githubAPIURL, params.UrlFlagUsage)
+	userCountCmd.Flags().String(params.URLFlag, githubAPIURL, params.URLFlagUsage)
 
-	_ = viper.BindPFlag(params.UrlFlag, userCountCmd.Flags().Lookup(params.UrlFlag))
+	_ = viper.BindPFlag(params.URLFlag, userCountCmd.Flags().Lookup(params.URLFlag))
 
 	return userCountCmd
 }
