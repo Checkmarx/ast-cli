@@ -17,7 +17,7 @@ const (
 	azureShort          = "The azure command presents the unique contributors for the provided Azure repositories or organizations."
 	projectFlag         = "projects"
 	url                 = "url-azure"
-	projectFlagUsage    = "The project to to scan for contributors"
+	projectFlagUsage    = "List of projects to scan for contributors"
 	azureAPIURL         = "https://dev.azure.com/"
 	missingOrganization = "Provide at least one organization"
 	missingProject      = "Provide at least one project"
