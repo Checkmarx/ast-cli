@@ -78,29 +78,12 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 	return func(cmd *cobra.Command, args []string) error {
 		var err error
 
-		var totalCommits []wrappers.GitLabRootCommit
+		var totalCommits []wrappers.GitLabCommit
 		var views []RepositoryView
 		var viewsUsers []UserView
-		var totalContrib uint64 = 0
+		//var totalContrib uint64 = 0
 
 		_ = viper.BindPFlag(params.SCMTokenFlag, cmd.Flags().Lookup(params.SCMTokenFlag))
-
-		// if len(gitLabGroups) > 0 && len(gitLabProjects) > 0 {
-		// 	//collectFromGitLabGroupAndProjects()
-		// 	log.Println("Collecting from GitLab groups and projects...")
-		// 	//	totalCommits, views, viewsUsers, err = collectFromGitLabGroupAndProjects(gitLabWrapper)
-		// } else if len(gitLabGroups) > 0 && len(gitLabProjects) == 0 {
-		// 	//collectFromGitLabGroupOnly()
-		// 	log.Println("Collecting from GitLab groups only...")
-		// 	totalCommits, views, viewsUsers, err = collectFromGitLabGroups(gitLabWrapper)
-		// } else if len(gitLabGroups) == 0 && len(gitLabProjects) > 0 {
-		// 	//collectFromGitLabProjectsOnly()
-		// 	log.Println("Collecting from GitLab projects only...")
-		// 	totalCommits, views, viewsUsers, err = collectFromGitLabProjects(gitLabWrapper)
-		// } else if len(gitLabGroups) == 0 && len(gitLabProjects) == 0 {
-		// 	log.Println("Collecting from User'projects only...")
-		// 	//totalCommits, views, viewsUsers, err = collectFromUser(gitLabWrapper)
-		// }
 
 		if len(gitLabProjects) > 0 {
 			log.Println("Collecting from GitLab projects only...")
@@ -117,15 +100,25 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 			return err
 		}
 
-		for _, commits := range totalCommits {
-			totalContrib += uint64(len(getGitLabUniqueContributors(commits)))
-		}
+		// for _, commits := range totalCommits {
+		// 	totalContrib += uint64(len(getGitLabUniqueContributors(commits)))
+		// }
+
+		// views = append(
+		// 	views,
+		// 	RepositoryView{
+		// 		Name:               TotalContributorsName,
+		// 		UniqueContributors: totalContrib,
+		// 	},
+		// )
+
+		uniqueContributorsMap := getGitLabUniqueContributors(totalCommits)
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               TotalContributorsName,
-				UniqueContributors: totalContrib,
+				UniqueContributors: uint64(len(uniqueContributorsMap)),
 			},
 		)
 
@@ -142,9 +135,9 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 	}
 }
 
-func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabRootCommit, []RepositoryView, []UserView, error) {
+func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabCommit, []RepositoryView, []UserView, error) {
 
-	var totalCommits []wrappers.GitLabRootCommit
+	var totalCommits []wrappers.GitLabCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 
@@ -155,7 +148,7 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers
 			return totalCommits, views, viewsUsers, err
 		}
 
-		totalCommits = append(totalCommits, commits)
+		totalCommits = append(totalCommits, commits...)
 
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
 
@@ -177,8 +170,8 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabRootCommit, []RepositoryView, []UserView, error) {
-	var totalCommits []wrappers.GitLabRootCommit
+func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabCommit, []RepositoryView, []UserView, error) {
+	var totalCommits []wrappers.GitLabCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 
@@ -203,7 +196,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 					return totalCommits, views, viewsUsers, err
 				}
 
-				totalCommits = append(totalCommits, commits)
+				totalCommits = append(totalCommits, commits...)
 
 				uniqueContributorsMap := getGitLabUniqueContributors(commits)
 
@@ -230,8 +223,8 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabRootCommit, []RepositoryView, []UserView, error) {
-	var totalCommits []wrappers.GitLabRootCommit
+func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabCommit, []RepositoryView, []UserView, error) {
+	var totalCommits []wrappers.GitLabCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 
@@ -247,7 +240,7 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabRoo
 			return totalCommits, views, viewsUsers, err
 		}
 
-		totalCommits = append(totalCommits, commits)
+		totalCommits = append(totalCommits, commits...)
 
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
 
@@ -270,11 +263,12 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabRoo
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getGitLabUniqueContributors(commits wrappers.GitLabRootCommit) map[string]bool {
+func getGitLabUniqueContributors(commits []wrappers.GitLabCommit) map[string]bool {
 	var contributors = map[string]bool{}
-	for _, commit := range commits.Commits {
+
+	for _, commit := range commits {
 		name := commit.Name
-		if !contributors[name] && isNotGitLabBot(commit) {
+		if !contributors[name] && !isNotGitLabBot(commit) {
 			contributors[name] = true
 		}
 	}

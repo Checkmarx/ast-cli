@@ -27,9 +27,9 @@ const (
 	gitLabCommitUrl           = "%s/%s/projects/%s/repository/commits"
 	gitLabProjectsUrl         = "%s/%s/projects?membership=true"
 	gitLabGroupSearchUrl      = "%s/%s/groups?all_available=true&search=%s"
-	gitLabGroupProjectsUrl    = "%s/%s/groups/%s/projects"
+	gitLabGroupProjectsUrl    = "%s/%s/groups/%d/projects"
 	gitLabUserUrl             = "%s/%s/user"
-	gitLabUserProjectsUrl     = "%s/%s/users/%s/projects"
+	gitLabUserProjectsUrl     = "%s/%s/users/%d/projects"
 )
 
 func NewGitLabWrapper() GitLabWrapper {
@@ -41,27 +41,26 @@ func NewGitLabWrapper() GitLabWrapper {
 func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) {
 	var err error
 	var gitLabProjectList []GitLabProject
-	var gitLabUsers []GitLabUser
+	var gitLabUser GitLabUser
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
 	getUserUrl := fmt.Sprintf(gitLabUserUrl, gitLabBaseURL, gitLabApiVersion)
 
-	log.Printf("Getting user details : %s", getUserUrl)
-	err = g.get(getUserUrl, &gitLabUsers, map[string]string{})
+	err = g.get(getUserUrl, &gitLabUser, map[string]string{})
+	log.Printf("User found : %s", gitLabUser.Name)
 
-	getUserProjectsUrl := fmt.Sprintf(gitLabUserProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabUsers[0].ID)
-
+	getUserProjectsUrl := fmt.Sprintf(gitLabUserProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabUser.ID)
 	err = g.get(getUserProjectsUrl, &gitLabProjectList, map[string]string{})
 
+	log.Printf("Found %d project(s).", len(gitLabProjectList))
 	return gitLabProjectList, err
 
 }
 
-func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, queryParams map[string]string) (GitLabRootCommit, error) {
+func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, queryParams map[string]string) ([]GitLabCommit, error) {
 	var err error
-	var commits GitLabRootCommit
-	var commits2nd []GitLabCommit
+	var commits []GitLabCommit
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
@@ -69,9 +68,8 @@ func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, qu
 	commitsURL := fmt.Sprintf(gitLabCommitUrl, gitLabBaseURL, gitLabApiVersion, encodedProjectPath)
 
 	log.Printf("Getting commits for project : %s", gitLabProjectPathWithNameSpace)
-	log.Printf("Using the url: %s", commitsURL)
-	err = g.get(commitsURL, &commits2nd, queryParams)
-
+	err = g.get(commitsURL, &commits, queryParams)
+	log.Printf("Found %d commit(s).", len(commits))
 	return commits, err
 }
 
@@ -102,9 +100,9 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroup GitLabGroup, queryPara
 	}
 
 	//groupSearchUrl := fmt.Sprintf(gitLabGroupProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabGroup.ID)
-	log.Printf("Using the url: %s", url)
-	err = g.get(url, &gitLabProjectList, queryParams)
 
+	err = g.get(url, &gitLabProjectList, queryParams)
+	log.Printf("Found %d project(s).", len(gitLabProjectList))
 	return gitLabProjectList, err
 }
 
@@ -116,9 +114,8 @@ func (g *GitLabHTTPWrapper) GetGitLabGroups(groupName string) ([]GitLabGroup, er
 	gitLabGroupUrl := fmt.Sprintf(gitLabGroupSearchUrl, gitLabBaseURL, gitLabApiVersion, groupName)
 
 	log.Printf("Getting the details for group : %s", groupName)
-	log.Printf("Using the url: %s", gitLabGroupUrl)
 	err = g.get(gitLabGroupUrl, &gitLabGroupList, map[string]string{})
-
+	log.Printf("Found %d group(s).", len(gitLabGroupList))
 	return gitLabGroupList, err
 }
 
@@ -152,9 +149,6 @@ func (g *GitLabHTTPWrapper) get(url string, target interface{}, queryParams map[
 		_ = resp.Body.Close()
 	}()
 
-	log.Printf("Response Status : %d", resp.StatusCode)
-	//b, err := io.ReadAll(resp.Body)
-	// log.Printf("Response Body : %s", string(b))
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)

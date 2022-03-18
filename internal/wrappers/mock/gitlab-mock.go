@@ -19,6 +19,6 @@ func (g GitLabMockWrapper) GetGitLabProjects(gitLabGroup wrappers.GitLabGroup, q
 	return []wrappers.GitLabProject{}, nil
 }
 
-func (g GitLabMockWrapper) GetCommits(gitLabProjectId string, queryParams map[string]string) (wrappers.GitLabRootCommit, error) {
-	return wrappers.GitLabRootCommit{}, nil
+func (g GitLabMockWrapper) GetCommits(gitLabProjectId string, queryParams map[string]string) ([]wrappers.GitLabCommit, error) {
+	return []wrappers.GitLabCommit{}, nil
 }
