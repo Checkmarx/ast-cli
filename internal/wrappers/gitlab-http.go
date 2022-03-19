@@ -25,11 +25,11 @@ const (
 	gitLabApiVersion          = "api/v4"
 	gitLabTokenFormat         = "Bearer %s"
 	gitLabCommitUrl           = "%s/%s/projects/%s/repository/commits"
-	gitLabProjectsUrl         = "%s/%s/projects?membership=true"
+	gitLabProjectsUrl         = "%s/%s/projects?per_page=100&membership=true"
 	gitLabGroupSearchUrl      = "%s/%s/groups?all_available=true&search=%s"
-	gitLabGroupProjectsUrl    = "%s/%s/groups/%d/projects"
+	gitLabGroupProjectsUrl    = "%s/%s/groups/%d/projects?per_page=100"
 	gitLabUserUrl             = "%s/%s/user"
-	gitLabUserProjectsUrl     = "%s/%s/users/%d/projects"
+	gitLabUserProjectsUrl     = "%s/%s/users/%d/projects?per_page=100"
 )
 
 func NewGitLabWrapper() GitLabWrapper {
@@ -67,7 +67,7 @@ func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, qu
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
 	commitsURL := fmt.Sprintf(gitLabCommitUrl, gitLabBaseURL, gitLabApiVersion, encodedProjectPath)
 
-	log.Printf("Getting commits for project : %s", gitLabProjectPathWithNameSpace)
+	log.Printf("Getting commits for project: %s", gitLabProjectPathWithNameSpace)
 	err = g.get(commitsURL, &commits, queryParams)
 	log.Printf("Found %d commit(s).", len(commits))
 	return commits, err
@@ -76,30 +76,16 @@ func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, qu
 func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroup GitLabGroup, queryParams map[string]string) ([]GitLabProject, error) {
 	var err error
 	var gitLabProjectList []GitLabProject
-	//var urlSet []string
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
-	// if len(groupList) > 0 {
-	// 	for _, group := range groupList {
-	// 		urlSet = append(urlSet, fmt.Sprintf(gitLabGroupProjectsUrl, gitLabBaseURL, gitLabApiVersion, group.ID))
-	// 	}
-
-	// } else {
-	// 	urlSet = append(urlSet, fmt.Sprintf(gitLabProjectsUrl, gitLabBaseURL, gitLabApiVersion))
-	// }
-
-	// for _, url := range urlSet {
-	// 	err = g.get(url, &gitLabProjectList, queryParams)
-	// }
 	var url string
 	if gitLabGroup == (GitLabGroup{}) {
 		url = fmt.Sprintf(gitLabProjectsUrl, gitLabBaseURL, gitLabApiVersion)
 	} else {
+		log.Printf("Finding the projects for group: %s", gitLabGroup.FullPath)
 		url = fmt.Sprintf(gitLabGroupProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabGroup.ID)
 	}
-
-	//groupSearchUrl := fmt.Sprintf(gitLabGroupProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabGroup.ID)
 
 	err = g.get(url, &gitLabProjectList, queryParams)
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
@@ -113,16 +99,14 @@ func (g *GitLabHTTPWrapper) GetGitLabGroups(groupName string) ([]GitLabGroup, er
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 	gitLabGroupUrl := fmt.Sprintf(gitLabGroupSearchUrl, gitLabBaseURL, gitLabApiVersion, groupName)
 
-	log.Printf("Getting the details for group : %s", groupName)
+	log.Printf("Finding the group(s) with name: %s", groupName)
 	err = g.get(gitLabGroupUrl, &gitLabGroupList, map[string]string{})
-	log.Printf("Found %d group(s).", len(gitLabGroupList))
+	log.Printf("Found %d group(s) containing the provided group name.", len(gitLabGroupList))
 	return gitLabGroupList, err
 }
 
 func (g *GitLabHTTPWrapper) get(url string, target interface{}, queryParams map[string]string) error {
 	var err error
-
-	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -138,7 +122,9 @@ func (g *GitLabHTTPWrapper) get(url string, target interface{}, queryParams map[
 	for k, v := range queryParams {
 		q.Add(k, v)
 	}
+	req.URL.RawQuery = q.Encode()
 
+	PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
 	resp, err := g.client.Do(req)
 
 	if err != nil {

@@ -1,10 +1,10 @@
 package wrappers
 
 type GitLabGroup struct {
-	ID         int    `json:"id,omitempty"`
-	Name       string `json:"name,omitempty"`
-	FullPath   string `json:"full_path,omitempty"`
-	Visibility string `json:"visibility,omitempty"`
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	FullPath   string `json:"full_path"`
+	Visibility string `json:"visibility"`
 }
 
 type GitLabProject struct {
@@ -24,8 +24,8 @@ type GitLabUser struct {
 }
 
 type GitLabCommit struct {
-	Name  string `json:"author_name,omitempty"`
-	Email string `json:"author_email,omitempty"`
+	Name  string `json:"author_name"`
+	Email string `json:"author_email"`
 }
 
 type GitLabWrapper interface {

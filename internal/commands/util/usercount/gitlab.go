@@ -30,10 +30,8 @@ const (
 	gitLabGroupsFlagUsage          = "List of groups (organizations)  to scan for contributors"
 	gitLabAPIURL                   = "https://gitlab.com"
 	gitLabsinceParam               = "since"
-	gitLabMissingArgs              = "Please provide at least one project or group name."
-	gitLabMissingGroup             = "A group is required for your projects"
 	gitLabTooManyGroupsandProjects = "Projects and Groups both cannot be provided at the same time."
-	gitLabBotType                  = "Bot"
+	gitLabBot                      = "bot"
 )
 
 var (
@@ -58,15 +56,6 @@ func newUserCountGitLabCommand(gitLabWrapper wrappers.GitLabWrapper) *cobra.Comm
 }
 
 func preRunGitLabUserCount(*cobra.Command, []string) error {
-	// COmmenting to allow running the command only with the token so as to get User's projects
-	// if len(gitLabProjects) == 0 && len(gitLabGroups) == 0 {
-	// 	return errors.New(gitLabMissingArgs)
-	// }
-
-	// if len(gitLabProjects) > 0 && len(gitLabGroups) == 0 {
-	// 	return errors.New(gitLabMissingOrg)
-	// }
-
 	if len(gitLabProjects) > 0 && len(gitLabGroups) > 0 {
 		return errors.New(gitLabTooManyGroupsandProjects)
 	}
@@ -81,36 +70,23 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 		var totalCommits []wrappers.GitLabCommit
 		var views []RepositoryView
 		var viewsUsers []UserView
-		//var totalContrib uint64 = 0
 
 		_ = viper.BindPFlag(params.SCMTokenFlag, cmd.Flags().Lookup(params.SCMTokenFlag))
 
 		if len(gitLabProjects) > 0 {
-			log.Println("Collecting from GitLab projects only...")
+			log.Println("Collecting the commits from GitLab projects only...")
 			totalCommits, views, viewsUsers, err = collectFromGitLabProjects(gitLabWrapper)
 		} else if len(gitLabGroups) > 0 {
-			log.Println("Collecting from GitLab groups only...")
+			log.Println("Collecting the commits from GitLab groups only...")
 			totalCommits, views, viewsUsers, err = collectFromGitLabGroups(gitLabWrapper)
 		} else {
-			log.Println("Collecting from User'projects only...")
+			log.Println("Collecting the commits from User'projects only...")
 			totalCommits, views, viewsUsers, err = collectFromUser(gitLabWrapper)
 		}
 
 		if err != nil {
 			return err
 		}
-
-		// for _, commits := range totalCommits {
-		// 	totalContrib += uint64(len(getGitLabUniqueContributors(commits)))
-		// }
-
-		// views = append(
-		// 	views,
-		// 	RepositoryView{
-		// 		Name:               TotalContributorsName,
-		// 		UniqueContributors: totalContrib,
-		// 	},
-		// )
 
 		uniqueContributorsMap := getGitLabUniqueContributors(totalCommits)
 
@@ -128,8 +104,6 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 		if viper.GetBool(params.DebugFlag) {
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
-
-		log.Println("Note: dependabot is not counted but other bots might be considered users.")
 
 		return err
 	}
@@ -183,40 +157,43 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 
 		for _, gitLabGroup := range gitLabGroupsFound {
 
-			gitLabProjects, err := gitLabWrapper.GetGitLabProjects(gitLabGroup, map[string]string{})
+			if strings.EqualFold(strings.TrimSpace(gitLabGroupName), gitLabGroup.Name) {
 
-			if err != nil {
-				return totalCommits, views, viewsUsers, err
-			}
+				gitLabProjects, err := gitLabWrapper.GetGitLabProjects(gitLabGroup, map[string]string{})
 
-			for _, gitLabProject := range gitLabProjects {
-
-				commits, err := gitLabWrapper.GetCommits(gitLabProject.PathWithNameSpace, map[string]string{sinceParam: ninetyDaysDate})
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
 
-				totalCommits = append(totalCommits, commits...)
+				for _, gitLabProject := range gitLabProjects {
 
-				uniqueContributorsMap := getGitLabUniqueContributors(commits)
+					commits, err := gitLabWrapper.GetCommits(gitLabProject.PathWithNameSpace, map[string]string{sinceParam: ninetyDaysDate})
+					if err != nil {
+						return totalCommits, views, viewsUsers, err
+					}
 
-				views = append(
-					views,
-					RepositoryView{
-						Name:               gitLabProject.PathWithNameSpace,
-						UniqueContributors: uint64(len(uniqueContributorsMap)),
-					},
-				)
-				for name := range uniqueContributorsMap {
-					viewsUsers = append(
-						viewsUsers,
-						UserView{
-							Name:                       gitLabProject.PathWithNameSpace,
-							UniqueContributorsUsername: name,
+					totalCommits = append(totalCommits, commits...)
+
+					uniqueContributorsMap := getGitLabUniqueContributors(commits)
+
+					views = append(
+						views,
+						RepositoryView{
+							Name:               gitLabProject.PathWithNameSpace,
+							UniqueContributors: uint64(len(uniqueContributorsMap)),
 						},
 					)
-				}
+					for name := range uniqueContributorsMap {
+						viewsUsers = append(
+							viewsUsers,
+							UserView{
+								Name:                       gitLabProject.PathWithNameSpace,
+								UniqueContributorsUsername: name,
+							},
+						)
+					}
 
+				}
 			}
 		}
 	}
@@ -276,5 +253,5 @@ func getGitLabUniqueContributors(commits []wrappers.GitLabCommit) map[string]boo
 }
 
 func isNotGitLabBot(commit wrappers.GitLabCommit) bool {
-	return strings.Contains(commit.Name, "bot")
+	return strings.Contains(commit.Name, gitLabBot)
 }
