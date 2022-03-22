@@ -12,7 +12,7 @@ func TestNewUserCountCommand(t *testing.T) {
 		Use:   "mock",
 		Short: "mock",
 	}
-	cmd := NewUserCountCommand(nil, nil,nil)
+	cmd := NewUserCountCommand(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "User count command must exist")
 
 	mockParentCmd.AddCommand(cmd)

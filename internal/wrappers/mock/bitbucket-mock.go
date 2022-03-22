@@ -8,11 +8,11 @@ type BitBucketMockWrapper struct {
 }
 
 func (g BitBucketMockWrapper) GetWorkspaceUuid(bitBucketURL, workspace, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootWorkspace, error) {
-	return wrappers.BitBucketRootWorkspace{Uuid: "{MOCK UUID}",Name: "MOCK NAME"}, nil
+	return wrappers.BitBucketRootWorkspace{Uuid: "{MOCK UUID}", Name: "MOCK NAME"}, nil
 }
 
 func (g BitBucketMockWrapper) GetRepoUuid(bitBucketURL, workspaceName, repo, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootRepo, error) {
-	return wrappers.BitBucketRootRepo{Uuid: "{MOCK UUID}",Name: "MOCK NAME"}, nil
+	return wrappers.BitBucketRootRepo{Uuid: "{MOCK UUID}", Name: "MOCK NAME"}, nil
 }
 
 func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUuid, repoUuid, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootCommit, error) {
@@ -21,7 +21,7 @@ func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUuid, repoUuid, 
 		author := wrappers.BitBucketAuthor{Name: "MOCK NAME"}
 		commits[0] = wrappers.BitBucketCommit{
 			Author: author,
-			Date: "2021-12-16T10:25:28+00:00",
+			Date:   "2021-12-16T10:25:28+00:00",
 		}
 		return wrappers.BitBucketRootCommit{Commits: commits}, nil
 	}
