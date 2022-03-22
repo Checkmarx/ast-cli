@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper, azureWrapper wrappers.AzureWrapper) *cobra.Command {
+func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper, azureWrapper wrappers.AzureWrapper, bitBucketWrapper wrappers.BitBucketWrapper) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
@@ -31,7 +31,7 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper, azureWrapper wrappers
 
 	completionCmd := NewCompletionCommand()
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper))
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper))
 
 	return utilsCmd
 }

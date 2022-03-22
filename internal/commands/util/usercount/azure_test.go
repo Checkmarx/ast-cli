@@ -10,7 +10,7 @@ import (
 )
 
 func TestAzureUserCountOrgs(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -28,7 +28,7 @@ func TestAzureUserCountOrgs(t *testing.T) {
 }
 
 func TestAzureUserCountRepos(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -50,7 +50,7 @@ func TestAzureUserCountRepos(t *testing.T) {
 }
 
 func TestAzureUserCountProjects(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -70,7 +70,7 @@ func TestAzureUserCountProjects(t *testing.T) {
 }
 
 func TestAzureCountMissingArgs(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -86,7 +86,7 @@ func TestAzureCountMissingArgs(t *testing.T) {
 }
 
 func TestAzureCountMissingOrgs(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -104,7 +104,7 @@ func TestAzureCountMissingOrgs(t *testing.T) {
 }
 
 func TestAzureCountMissingProject(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(
@@ -123,8 +123,30 @@ func TestAzureCountMissingProject(t *testing.T) {
 	assert.Error(t, err, missingProject)
 }
 
+func TestAzureCountMultipleOrgsWithRepo(t *testing.T) {
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
+	assert.Assert(t, cmd != nil, "Azure user count command must exist")
+
+	cmd.SetArgs(
+		[]string{
+			AzureCommand,
+			"--" + OrgsFlag,
+			"a,b",
+			"--" + projectFlag,
+			"a",
+			"--" + ReposFlag,
+			"a,b",
+			"--" + params.FormatFlag,
+			printer.FormatJSON,
+		},
+	)
+
+	err := cmd.Execute()
+	assert.Error(t, err,azureManyOrgsOnRepo )
+}
+
 func TestAzureUserCountOrgsUrl(t *testing.T) {
-	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{})
+	cmd := NewUserCountCommand(nil, mock.AzureMockWrapper{},nil)
 	assert.Assert(t, cmd != nil, "Azure user count command must exist")
 
 	cmd.SetArgs(

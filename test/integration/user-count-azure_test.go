@@ -148,3 +148,25 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 
 	assertError(t, err, "Provide at least one project")
 }
+
+func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		"utils",
+		usercount.UcCommand,
+		usercount.AzureCommand,
+		flag(usercount.OrgsFlag),
+		os.Getenv(envOrg)+",MOCK",
+		flag(projectFlag),
+		os.Getenv(envProject),
+		flag(usercount.ReposFlag),
+		os.Getenv(envRepos),
+		flag(params.SCMTokenFlag),
+		os.Getenv(envToken),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+
+	assertError(t, err, "You must provide a single org for repo counting")
+}
