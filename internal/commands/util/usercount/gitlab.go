@@ -144,9 +144,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 		}
 
 		for _, gitLabGroup := range gitLabGroupsFound {
-
 			if strings.EqualFold(strings.TrimSpace(gitLabGroupName), gitLabGroup.FullPath) {
-
 				gitLabProjects, err := gitLabWrapper.GetGitLabProjects(gitLabGroup, map[string]string{})
 
 				if err != nil {
@@ -154,7 +152,6 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 				}
 
 				for _, gitLabProject := range gitLabProjects {
-
 					commits, err := gitLabWrapper.GetCommits(gitLabProject.PathWithNameSpace, map[string]string{sinceParam: ninetyDaysDate})
 					if err != nil {
 						return totalCommits, views, viewsUsers, err
@@ -180,7 +177,6 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 							},
 						)
 					}
-
 				}
 			}
 		}
