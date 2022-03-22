@@ -157,7 +157,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.G
 
 		for _, gitLabGroup := range gitLabGroupsFound {
 
-			if strings.EqualFold(strings.TrimSpace(gitLabGroupName), gitLabGroup.Name) {
+			if strings.EqualFold(strings.TrimSpace(gitLabGroupName), gitLabGroup.FullPath) {
 
 				gitLabProjects, err := gitLabWrapper.GetGitLabProjects(gitLabGroup, map[string]string{})
 
