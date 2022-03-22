@@ -16,7 +16,7 @@ func TestGitLabUserCountGroups(t *testing.T) {
 	cmd.SetArgs(
 		[]string{
 			GitLabCommand,
-			"--" + gitLabGroupsFlag,
+			"--" + GitLabGroupsFlag,
 			"a,b",
 			"--" + params.FormatFlag,
 			printer.FormatJSON,
@@ -34,7 +34,7 @@ func TestGitLabUserCountProjects(t *testing.T) {
 	cmd.SetArgs(
 		[]string{
 			GitLabCommand,
-			"--" + gitLabProjectsFlag,
+			"--" + GitLabProjectsFlag,
 			"a,b",
 			"--" + params.FormatFlag,
 			printer.FormatJSON,
@@ -52,9 +52,9 @@ func TestGitLabUserCountError(t *testing.T) {
 	cmd.SetArgs(
 		[]string{
 			GitLabCommand,
-			"--" + gitLabGroupsFlag,
+			"--" + GitLabGroupsFlag,
 			"a,b",
-			"--" + gitLabProjectsFlag,
+			"--" + GitLabProjectsFlag,
 			"c,d",
 			"--" + params.FormatFlag,
 			printer.FormatJSON,
