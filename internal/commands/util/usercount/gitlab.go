@@ -70,7 +70,7 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 			log.Println("Collecting the commits from GitLab groups only...")
 			totalCommits, views, viewsUsers, err = collectFromGitLabGroups(gitLabWrapper)
 		} else {
-			log.Println("Collecting the commits from User'projects only...")
+			log.Println("Collecting the commits from User's projects only...")
 			totalCommits, views, viewsUsers, err = collectFromUser(gitLabWrapper)
 		}
 
@@ -195,7 +195,6 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabCom
 	}
 
 	for _, gitLabProjectName := range gitLabProjects {
-
 		commits, err := gitLabWrapper.GetCommits(gitLabProjectName.PathWithNameSpace, map[string]string{sinceParam: ninetyDaysDate})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
