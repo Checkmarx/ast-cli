@@ -14,9 +14,7 @@ import (
 )
 
 type GitLabHTTPWrapper struct {
-	client               *http.Client
-	repositoryTemplate   string
-	organizationTemplate string
+	client *http.Client
 }
 
 const (
@@ -44,17 +42,20 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
-	getUserUrl := fmt.Sprintf(gitLabUserURL, gitLabBaseURL, gitLabAPIVersion)
+	getUserURL := fmt.Sprintf(gitLabUserURL, gitLabBaseURL, gitLabAPIVersion)
 
-	err = g.get(getUserUrl, &gitLabUser, map[string]string{})
+	err = g.get(getUserURL, &gitLabUser, map[string]string{})
 	log.Printf("User found : %s", gitLabUser.Name)
 
-	getUserProjectsUrl := fmt.Sprintf(gitLabUserProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabUser.ID)
-	err = g.get(getUserProjectsUrl, &gitLabProjectList, map[string]string{})
+	if err != nil {
+		return gitLabProjectList, err
+	}
+
+	getUserProjectsURL := fmt.Sprintf(gitLabUserProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabUser.ID)
+	err = g.get(getUserProjectsURL, &gitLabProjectList, map[string]string{})
 
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
 	return gitLabProjectList, err
-
 }
 
 func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, queryParams map[string]string) ([]GitLabCommit, error) {
@@ -96,18 +97,18 @@ func (g *GitLabHTTPWrapper) GetGitLabGroups(groupName string) ([]GitLabGroup, er
 	var gitLabGroupList []GitLabGroup
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
-	gitLabGroupUrl := fmt.Sprintf(gitLabGroupSearchURL, gitLabBaseURL, gitLabAPIVersion, groupName)
+	gitLabGroupURL := fmt.Sprintf(gitLabGroupSearchURL, gitLabBaseURL, gitLabAPIVersion, groupName)
 
 	log.Printf("Finding the group(s) with name: %s", groupName)
-	err = g.get(gitLabGroupUrl, &gitLabGroupList, map[string]string{})
+	err = g.get(gitLabGroupURL, &gitLabGroupList, map[string]string{})
 	log.Printf("Found %d group(s) containing the provided group name.", len(gitLabGroupList))
 	return gitLabGroupList, err
 }
 
-func (g *GitLabHTTPWrapper) get(url string, target interface{}, queryParams map[string]string) error {
+func (g *GitLabHTTPWrapper) get(requestURL string, target interface{}, queryParams map[string]string) error {
 	var err error
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
 		return err
 	}

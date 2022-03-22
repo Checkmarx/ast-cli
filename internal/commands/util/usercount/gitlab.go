@@ -15,9 +15,9 @@ import (
 const (
 	GitLabCommand                  = "gitlab"
 	gitLabShort                    = "The gitlab command presents the unique contributors for the provided GitLab repositories or groups."
-	gitLabProjectsFlag             = "projects"
+	GitLabProjectsFlag             = "projects"
 	gitLabProjectsFlagUsage        = "List of projects(repos) to scan for contributors"
-	gitLabGroupsFlag               = "groups"
+	GitLabGroupsFlag               = "groups"
 	gitLabGroupsFlagUsage          = "List of groups (organizations)  to scan for contributors"
 	gitLabAPIURL                   = "https://gitlab.com"
 	gitLabTooManyGroupsandProjects = "Projects and Groups both cannot be provided at the same time."
@@ -36,8 +36,8 @@ func newUserCountGitLabCommand(gitLabWrapper wrappers.GitLabWrapper) *cobra.Comm
 		RunE:    createRunGitLabUserCountFunc(gitLabWrapper),
 	}
 
-	userCountCmd.Flags().StringSliceVar(&gitLabProjects, gitLabProjectsFlag, []string{}, gitLabProjectsFlagUsage)
-	userCountCmd.Flags().StringSliceVar(&gitLabGroups, gitLabGroupsFlag, []string{}, gitLabGroupsFlagUsage)
+	userCountCmd.Flags().StringSliceVar(&gitLabProjects, GitLabProjectsFlag, []string{}, gitLabProjectsFlagUsage)
+	userCountCmd.Flags().StringSliceVar(&gitLabGroups, GitLabGroupsFlag, []string{}, gitLabGroupsFlagUsage)
 	userCountCmd.Flags().String(params.URLFlag, gitLabAPIURL, params.URLFlagUsage)
 	userCountCmd.Flags().String(params.SCMTokenFlag, "", params.GitLabTokenUsage)
 	_ = viper.BindPFlag(params.URLFlag, userCountCmd.Flags().Lookup(params.URLFlag))
@@ -100,13 +100,11 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 }
 
 func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) ([]wrappers.GitLabCommit, []RepositoryView, []UserView, error) {
-
 	var totalCommits []wrappers.GitLabCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 
 	for _, gitLabProjectName := range gitLabProjects {
-
 		commits, err := gitLabWrapper.GetCommits(gitLabProjectName, map[string]string{sinceParam: ninetyDaysDate})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
