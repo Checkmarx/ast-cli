@@ -62,7 +62,7 @@ func TestGitLabUserCountError(t *testing.T) {
 	)
 
 	err := cmd.Execute()
-	assert.Error(t, err, gitLabTooManyGroupsandProjects)
+	assert.Error(t, err, gitLabTooManyGroupsAndProjects)
 }
 
 func TestGitLabUserCountOnlyToken(t *testing.T) {

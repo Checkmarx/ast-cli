@@ -15,8 +15,7 @@ import (
 )
 
 const (
-	gitLabEnvToken    = "GITLAB_TOKEN"
-	gitLabProjectFlag = "projects"
+	gitLabEnvToken = "GITLAB_TOKEN"
 )
 
 func TestGitLabUserCountOnlyGroup(t *testing.T) {
