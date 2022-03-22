@@ -14,12 +14,12 @@ type BitBucketAuthor struct {
 }
 
 type BitBucketRootWorkspace struct {
-	Uuid string `json:"uuid"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 }
 
 type BitBucketRootRepo struct {
-	Uuid string `json:"uuid"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 }
 
@@ -29,12 +29,12 @@ type BitBucketRootRepoList struct {
 
 type BitBucketRepo struct {
 	Name string `json:"full_name"`
-	Uuid string `json:"uuid"`
+	UUID string `json:"uuid"`
 }
 
 type BitBucketWrapper interface {
-	GetWorkspaceUuid(bitBucketURL, workspace, bitBucketUsername, bitBucketPassword string) (BitBucketRootWorkspace, error)
-	GetRepoUuid(bitBucketURL, workspaceName, repo, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepo, error)
-	GetCommits(bitBucketURL, workspaceUuid, repoUuid, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error)
-	GetRepositories(bitBucketURL, workspaceUuid, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepoList, error)
+	GetworkspaceUUID(bitBucketURL, workspace, bitBucketUsername, bitBucketPassword string) (BitBucketRootWorkspace, error)
+	GetRepoUUID(bitBucketURL, workspaceName, repo, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepo, error)
+	GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error)
+	GetRepositories(bitBucketURL, workspaceUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepoList, error)
 }

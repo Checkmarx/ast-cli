@@ -112,17 +112,17 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 	var viewsUsers []UserView
 	for _, workspace := range BitBucketWorkspaces {
 		// Get the workspace uuid
-		workspaceUuid, err := bitBucketWrapper.GetWorkspaceUuid(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		workspaceUUID, err := bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 		for _, repo := range BitBucketRepos {
 			// Get the repo uuid
-			repoUuid, err := bitBucketWrapper.GetRepoUuid(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
+			repoUuid, err := bitBucketWrapper.GetRepoUUID(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
-			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUuid.Uuid, repoUuid.Uuid, *BitBucketUsername, *BitBucketPassword)
+			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoUuid.UUID, *BitBucketUsername, *BitBucketPassword)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
@@ -160,7 +160,7 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 	var viewsUsers []UserView
 	for _, workspace := range BitBucketWorkspaces {
 		// Get the workspace uuid
-		workspaceUuid, err := bitBucketWrapper.GetWorkspaceUuid(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		workspaceUUID, err := bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
@@ -169,7 +169,7 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 		reposList, err = bitBucketWrapper.GetRepositories(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
 		for _, repo := range reposList.Values {
 			// Get commits for a specific repo
-			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUuid.Uuid, repo.Uuid, *BitBucketUsername, *BitBucketPassword)
+			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repo.UUID, *BitBucketUsername, *BitBucketPassword)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}

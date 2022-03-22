@@ -7,16 +7,16 @@ import (
 type BitBucketMockWrapper struct {
 }
 
-func (g BitBucketMockWrapper) GetWorkspaceUuid(bitBucketURL, workspace, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootWorkspace, error) {
+func (g BitBucketMockWrapper) GetworkspaceUUID(bitBucketURL, workspace, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootWorkspace, error) {
 	return wrappers.BitBucketRootWorkspace{Uuid: "{MOCK UUID}", Name: "MOCK NAME"}, nil
 }
 
-func (g BitBucketMockWrapper) GetRepoUuid(bitBucketURL, workspaceName, repo, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootRepo, error) {
+func (g BitBucketMockWrapper) GetRepoUUID(bitBucketURL, workspaceName, repo, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootRepo, error) {
 	return wrappers.BitBucketRootRepo{Uuid: "{MOCK UUID}", Name: "MOCK NAME"}, nil
 }
 
-func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUuid, repoUuid, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootCommit, error) {
-	if len(workspaceUuid) > 0 {
+func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUuid, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootCommit, error) {
+	if len(workspaceUUID) > 0 {
 		var commits = make([]wrappers.BitBucketCommit, 1)
 		author := wrappers.BitBucketAuthor{Name: "MOCK NAME"}
 		commits[0] = wrappers.BitBucketCommit{
@@ -28,8 +28,8 @@ func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUuid, repoUuid, 
 	return wrappers.BitBucketRootCommit{}, nil
 }
 
-func (g BitBucketMockWrapper) GetRepositories(bitBucketURL, workspaceUuid, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootRepoList, error) {
-	if len(workspaceUuid) > 0 {
+func (g BitBucketMockWrapper) GetRepositories(bitBucketURL, workspaceUUID, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootRepoList, error) {
+	if len(workspaceUUID) > 0 {
 		var repos = make([]wrappers.BitBucketRepo, 1)
 		repos[0] = wrappers.BitBucketRepo{
 			Name: "MOCK REPO",
