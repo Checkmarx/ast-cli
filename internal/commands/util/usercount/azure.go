@@ -22,6 +22,7 @@ const (
 	missingOrganization = "Provide at least one organization"
 	missingProject      = "Provide at least one project"
 	azureBot            = "[bot]"
+	azureManyOrgsOnRepo = "You must provide a single org for repo counting"
 )
 
 var (
@@ -55,6 +56,9 @@ func preRunAzureUserCount(*cobra.Command, []string) error {
 	}
 	if len(AzureRepos) > 0 && len(AzureProject) == 0 {
 		return errors.New(missingProject)
+	}
+	if len(AzureRepos) > 0 && len(AzureOrgs) > 1 {
+		return errors.New(azureManyOrgsOnRepo)
 	}
 	return nil
 }
