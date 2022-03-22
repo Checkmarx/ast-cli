@@ -76,7 +76,6 @@ func createRunBitBucketUserCountFunc(bitBucketWrapper wrappers.BitBucketWrapper)
 		// In case there is the repos flag
 		if len(BitBucketRepos) > 0 {
 			totalCommits, views, viewsUsers, err = collectFromBitBucketRepos(bitBucketWrapper)
-
 		} else {
 			totalCommits, views, viewsUsers, err = collectFromBitBucketWorkspace(bitBucketWrapper)
 		}
