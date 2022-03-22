@@ -22,8 +22,8 @@ const (
 	bitBucketBaseRepoURL      = "%srepositories/%s"
 	bitBucketBaseRepoNameURL  = "%srepositories/%s/%s"
 	bitBucketBaseCommitURL    = "%srepositories/%s/%s/commits"
-	failedBitbucketNotFound   = "No workspace with the provided identifier"
-	failedBitbucketAuth       = "Failed Bitbucket Authentication"
+	failedBitbucketNotFound   = "no workspace with the provided identifier"
+	failedBitbucketAuth       = "failed Bitbucket Authentication"
 )
 
 func NewBitbucketWrapper() BitBucketWrapper {
@@ -32,36 +32,36 @@ func NewBitbucketWrapper() BitBucketWrapper {
 	}
 }
 
-func (g *BitBucketHTTPWrapper) GetWorkspaceUuid(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootWorkspace, error) {
+func (g *BitBucketHTTPWrapper) GetworkspaceUUID(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootWorkspace, error) {
 	var err error
 	var workspace BitBucketRootWorkspace
 	var queryParams = make(map[string]string)
 
 	workspaceURL := fmt.Sprintf(bitBucketBaseWorkspaceURL, bitBucketURL, workspaceName)
 
-	err = g.get(workspaceURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &workspace, queryParams, basicFormat)
+	err = g.get(workspaceURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &workspace, queryParams)
 
 	return workspace, err
 }
 
-func (g *BitBucketHTTPWrapper) GetRepoUuid(bitBucketURL, workspaceName, repoName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepo, error) {
+func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepo, error) {
 	var err error
 	var repo BitBucketRootRepo
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoNameURL, bitBucketURL, workspaceName, repoName)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repo, queryParams, basicFormat)
+	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repo, queryParams)
 
 	return repo, err
 }
 
-func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUuid, repoUuid, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
+func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUuid, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
 	var err error
 	var commits BitBucketRootCommit
 	var queryParams = make(map[string]string)
 
-	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUuid, repoUuid)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &commits, queryParams, basicFormat)
+	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUuid)
+	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &commits, queryParams)
 	// Filter the commits older than three months
 	commits = filterDate(commits)
 	return commits, err
@@ -73,12 +73,12 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repos, queryParams, basicFormat)
+	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repos, queryParams)
 
 	return repos, err
 }
 
-func (g *BitBucketHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string, authFormat string) error {
+func (g *BitBucketHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string) error {
 	var err error
 
 	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
@@ -89,7 +89,7 @@ func (g *BitBucketHTTPWrapper) get(url, token string, target interface{}, queryP
 	}
 
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(authFormat, token))
+		req.Header.Add(authorizationHeader, fmt.Sprintf(basicFormat, token))
 	}
 
 	q := req.URL.Query()
