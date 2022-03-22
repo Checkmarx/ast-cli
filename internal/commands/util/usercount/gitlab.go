@@ -12,15 +12,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type gitLabRepositoryView struct {
-	Name               string `json:"name"`
-	UniqueContributors uint64 `json:"unique_contributors"`
-}
-type gitLabUserView struct {
-	Name                       string `json:"name"`
-	UniqueContributorsUsername string `json:"unique_contributors_username"`
-}
-
 const (
 	GitLabCommand                  = "gitlab"
 	gitLabShort                    = "The gitlab command presents the unique contributors for the provided GitLab repositories or groups."
@@ -29,7 +20,6 @@ const (
 	gitLabGroupsFlag               = "groups"
 	gitLabGroupsFlagUsage          = "List of groups (organizations)  to scan for contributors"
 	gitLabAPIURL                   = "https://gitlab.com"
-	gitLabsinceParam               = "since"
 	gitLabTooManyGroupsandProjects = "Projects and Groups both cannot be provided at the same time."
 	gitLabBot                      = "bot"
 )
@@ -100,7 +90,7 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 
 		err = printer.Print(cmd.OutOrStdout(), views, format)
 
-		//Only print user count information if in debug mode
+		// Only print user count information if in debug mode
 		if viper.GetBool(params.DebugFlag) {
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}

@@ -20,16 +20,15 @@ type GitLabHTTPWrapper struct {
 }
 
 const (
-	gitLabAcceptHeader        = "Accept"
 	gitLabAuthorizationHeader = "Authorization"
-	gitLabApiVersion          = "api/v4"
+	gitLabAPIVersion          = "api/v4"
 	gitLabTokenFormat         = "Bearer %s"
-	gitLabCommitUrl           = "%s/%s/projects/%s/repository/commits"
-	gitLabProjectsUrl         = "%s/%s/projects?per_page=100&membership=true"
-	gitLabGroupSearchUrl      = "%s/%s/groups?all_available=true&search=%s"
-	gitLabGroupProjectsUrl    = "%s/%s/groups/%d/projects?per_page=100"
-	gitLabUserUrl             = "%s/%s/user"
-	gitLabUserProjectsUrl     = "%s/%s/users/%d/projects?per_page=100"
+	gitLabCommitURL           = "%s/%s/projects/%s/repository/commits"
+	gitLabProjectsURL         = "%s/%s/projects?per_page=100&membership=true"
+	gitLabGroupSearchURL      = "%s/%s/groups?all_available=true&search=%s"
+	gitLabGroupProjectsURL    = "%s/%s/groups/%d/projects?per_page=100"
+	gitLabUserURL             = "%s/%s/user"
+	gitLabUserProjectsURL     = "%s/%s/users/%d/projects?per_page=100"
 )
 
 func NewGitLabWrapper() GitLabWrapper {
@@ -45,12 +44,12 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
-	getUserUrl := fmt.Sprintf(gitLabUserUrl, gitLabBaseURL, gitLabApiVersion)
+	getUserUrl := fmt.Sprintf(gitLabUserURL, gitLabBaseURL, gitLabAPIVersion)
 
 	err = g.get(getUserUrl, &gitLabUser, map[string]string{})
 	log.Printf("User found : %s", gitLabUser.Name)
 
-	getUserProjectsUrl := fmt.Sprintf(gitLabUserProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabUser.ID)
+	getUserProjectsUrl := fmt.Sprintf(gitLabUserProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabUser.ID)
 	err = g.get(getUserProjectsUrl, &gitLabProjectList, map[string]string{})
 
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
@@ -65,7 +64,7 @@ func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, qu
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
-	commitsURL := fmt.Sprintf(gitLabCommitUrl, gitLabBaseURL, gitLabApiVersion, encodedProjectPath)
+	commitsURL := fmt.Sprintf(gitLabCommitURL, gitLabBaseURL, gitLabAPIVersion, encodedProjectPath)
 
 	log.Printf("Getting commits for project: %s", gitLabProjectPathWithNameSpace)
 	err = g.get(commitsURL, &commits, queryParams)
@@ -79,15 +78,15 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroup GitLabGroup, queryPara
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
 
-	var url string
+	var projectsURL string
 	if gitLabGroup == (GitLabGroup{}) {
-		url = fmt.Sprintf(gitLabProjectsUrl, gitLabBaseURL, gitLabApiVersion)
+		projectsURL = fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
 	} else {
 		log.Printf("Finding the projects for group: %s", gitLabGroup.FullPath)
-		url = fmt.Sprintf(gitLabGroupProjectsUrl, gitLabBaseURL, gitLabApiVersion, gitLabGroup.ID)
+		projectsURL = fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabGroup.ID)
 	}
 
-	err = g.get(url, &gitLabProjectList, queryParams)
+	err = g.get(projectsURL, &gitLabProjectList, queryParams)
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
 	return gitLabProjectList, err
 }
@@ -97,7 +96,7 @@ func (g *GitLabHTTPWrapper) GetGitLabGroups(groupName string) ([]GitLabGroup, er
 	var gitLabGroupList []GitLabGroup
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
-	gitLabGroupUrl := fmt.Sprintf(gitLabGroupSearchUrl, gitLabBaseURL, gitLabApiVersion, groupName)
+	gitLabGroupUrl := fmt.Sprintf(gitLabGroupSearchURL, gitLabBaseURL, gitLabAPIVersion, groupName)
 
 	log.Printf("Finding the group(s) with name: %s", groupName)
 	err = g.get(gitLabGroupUrl, &gitLabGroupList, map[string]string{})
@@ -115,7 +114,7 @@ func (g *GitLabHTTPWrapper) get(url string, target interface{}, queryParams map[
 
 	token := viper.GetString(params.SCMTokenFlag)
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(gitLabTokenFormat, token))
+		req.Header.Add(gitLabAuthorizationHeader, fmt.Sprintf(gitLabTokenFormat, token))
 	}
 
 	q := req.URL.Query()

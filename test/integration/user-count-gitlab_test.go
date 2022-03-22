@@ -2,6 +2,19 @@
 
 package integration
 
+import (
+	"bufio"
+	"encoding/json"
+	"os"
+	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
+	"gotest.tools/assert"
+)
+
 func TestGitLabUserCount(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
