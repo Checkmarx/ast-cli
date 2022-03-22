@@ -15,7 +15,7 @@ func (g BitBucketMockWrapper) GetRepoUUID(bitBucketURL, workspaceName, repo, bit
 	return wrappers.BitBucketRootRepo{UUID: "{MOCK UUID}", Name: "MOCK NAME"}, nil
 }
 
-func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUuid, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootCommit, error) {
+func (g BitBucketMockWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (wrappers.BitBucketRootCommit, error) {
 	if len(workspaceUUID) > 0 {
 		var commits = make([]wrappers.BitBucketCommit, 1)
 		author := wrappers.BitBucketAuthor{Name: "MOCK NAME"}

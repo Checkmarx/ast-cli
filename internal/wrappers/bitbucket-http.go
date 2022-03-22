@@ -55,12 +55,12 @@ func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName
 	return repo, err
 }
 
-func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUuid, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
+func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
 	var err error
 	var commits BitBucketRootCommit
 	var queryParams = make(map[string]string)
 
-	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUuid)
+	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
 	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &commits, queryParams)
 	// Filter the commits older than three months
 	commits = filterDate(commits)
