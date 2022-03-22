@@ -80,7 +80,9 @@ func createRunBitBucketUserCountFunc(bitBucketWrapper wrappers.BitBucketWrapper)
 		} else {
 			totalCommits, views, viewsUsers, err = collectFromBitBucketWorkspace(bitBucketWrapper)
 		}
-
+		if err != nil {
+			return err
+		}
 		for _, commits := range totalCommits {
 			totalContrib += uint64(len(getUniqueContributorsBitbucket(commits)))
 		}
@@ -118,11 +120,11 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 		}
 		for _, repo := range BitBucketRepos {
 			// Get the repo uuid
-			repoUuid, err := bitBucketWrapper.GetRepoUUID(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
+			repoObject, err := bitBucketWrapper.GetRepoUUID(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
-			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoUuid.UUID, *BitBucketUsername, *BitBucketPassword)
+			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoObject.UUID, *BitBucketUsername, *BitBucketPassword)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
@@ -167,6 +169,9 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 		// Get repos from workspace
 		var reposList wrappers.BitBucketRootRepoList
 		reposList, err = bitBucketWrapper.GetRepositories(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		if err != nil {
+			return totalCommits, views, viewsUsers, err
+		}
 		for _, repo := range reposList.Values {
 			// Get commits for a specific repo
 			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repo.UUID, *BitBucketUsername, *BitBucketPassword)
