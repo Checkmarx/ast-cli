@@ -96,6 +96,7 @@ func (g *BitBucketHTTPWrapper) get(url, token string, target interface{}, queryP
 	for k, v := range queryParams {
 		q.Add(k, v)
 	}
+	req.URL.RawQuery = q.Encode()
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return err
