@@ -90,7 +90,7 @@ const (
 	VulnerabilityTypeFlag    = "vulnerability-type"
 	CweIDFlag                = "cwe-id"
 	SCMTokenFlag             = "token"
-	GithubTokenUsage         = "GitHub OAuth token"
+	GithubTokenUsage         = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	AzureTokenUsage          = "Azure OAuth token"
 	URLFlag                  = "url"
 	URLFlagUsage             = "API base URL"
