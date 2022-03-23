@@ -98,8 +98,7 @@ jobs:
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
-          version: v1.28.1
+          version: v1.45.0
           args: -c .golangci.yml
-          skip-go-installation: true
