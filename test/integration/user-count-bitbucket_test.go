@@ -85,6 +85,39 @@ func TestBitbucketUserCountRepos(t *testing.T) {
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
 
+func TestBitbucketUserCountReposDebug(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	buffer := executeCmdNilAssertion(
+		t,
+		"Counting contributors from checkmarxdev should pass",
+		"utils",
+		usercount.UcCommand,
+		usercount.BitBucketCommand,
+		flag(workspaceFlag),
+		os.Getenv(envWorkspace),
+		flag(usercount.ReposFlag),
+		os.Getenv(envBitBucketRepos),
+		flag(params.UsernameFlag),
+		os.Getenv(envUsername),
+		flag(params.PasswordFlag),
+		os.Getenv(envPassword),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.DebugFlag),
+	)
+
+	var parsedJson []usercount.RepositoryView
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() {
+		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
+		break
+	}
+	totalView := parsedJson[len(parsedJson)-1]
+	assert.Assert(t, len(parsedJson) >= 1)
+	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
+	assert.Assert(t, totalView.UniqueContributors >= 0)
+}
+
 func TestBitbucketCountWorkspaceFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
