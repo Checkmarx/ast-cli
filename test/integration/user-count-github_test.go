@@ -41,3 +41,20 @@ func TestGitHubUserCount(t *testing.T) {
 	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
+
+func TestGitHubUserCountFailed(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		"utils",
+		usercount.UcCommand,
+		usercount.GithubCommand,
+		flag(usercount.OrgsFlag),
+		"",
+		flag(params.SCMTokenFlag),
+		viper.GetString(pat),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+	assertError(t, err, "provide at least one repository or organization")
+}
