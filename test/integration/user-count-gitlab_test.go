@@ -23,7 +23,7 @@ func TestGitLabUserCountOnlyGroup(t *testing.T) {
 		t, "Counting contributors from gitlab group should pass",
 		"utils", usercount.UcCommand,
 		usercount.GitLabCommand,
-		flag(usercount.GitLabGroupsFlag), "gitlab-org",
+		flag(usercount.GitLabGroupsFlag), "gitlab-com/quality",
 		flag(params.SCMTokenFlag), os.Getenv(gitLabEnvToken),
 		flag(params.FormatFlag), printer.FormatJSON,
 	)
@@ -75,7 +75,7 @@ func TestGitLabUserCountBothProjectAndGroup(t *testing.T) {
 	assertError(t, err, "Projects and Groups both cannot be provided at the same time.")
 }
 
-func TestGitLabUserCountNoProjectFound(t *testing.T) {
+func TestGitLabUserCountInvalidProject(t *testing.T) {
 	err, _ := executeCommand(
 		t,
 		"utils", usercount.UcCommand, usercount.GitLabCommand,
@@ -85,4 +85,38 @@ func TestGitLabUserCountNoProjectFound(t *testing.T) {
 	)
 
 	assertError(t, err, "{\"message\":\"404 Project Not Found\"}")
+}
+
+func TestGitLabUserCountInvalidGroup(t *testing.T) {
+	err, _ := executeCommand(
+		t,
+		"utils", usercount.UcCommand, usercount.GitLabCommand,
+		flag(usercount.GitLabGroupsFlag), "/ab12xy!@#",
+		flag(params.SCMTokenFlag), os.Getenv(gitLabEnvToken),
+		flag(params.FormatFlag), printer.FormatJSON,
+	)
+
+	assertError(t, err, "{\"message\":\"404 Group Not Found\"}")
+}
+
+func TestGitLabUserCountBlankGroupValue(t *testing.T) {
+	buffer := executeCmdNilAssertion(
+		t, "Counting contributors from gitlab group should pass",
+		"utils", usercount.UcCommand,
+		usercount.GitLabCommand,
+		flag(usercount.GitLabGroupsFlag), " ",
+		flag(params.SCMTokenFlag), os.Getenv(gitLabEnvToken),
+		flag(params.FormatFlag), printer.FormatJSON,
+	)
+
+	var parsedJson []usercount.RepositoryView
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() {
+		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
+		break
+	}
+	totalView := parsedJson[len(parsedJson)-1]
+	assert.Assert(t, len(parsedJson) >= 1)
+	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
+	assert.Assert(t, totalView.UniqueContributors >= 0)
 }

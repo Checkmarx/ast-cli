@@ -11,14 +11,14 @@ func (g GitLabMockWrapper) GetGitLabProjectsForUser() ([]wrappers.GitLabProject,
 	return []wrappers.GitLabProject{}, nil
 }
 
-func (g GitLabMockWrapper) GetGitLabGroups(groupName string) ([]wrappers.GitLabGroup, error) {
-	return []wrappers.GitLabGroup{}, nil
-}
-
-func (g GitLabMockWrapper) GetGitLabProjects(gitLabGroup wrappers.GitLabGroup, queryParams map[string]string) ([]wrappers.GitLabProject, error) {
+func (g GitLabMockWrapper) GetGitLabProjects(
+	gitLabGroupName string, queryParams map[string]string,
+) ([]wrappers.GitLabProject, error) {
 	return []wrappers.GitLabProject{}, nil
 }
 
-func (g GitLabMockWrapper) GetCommits(gitLabProjectPathWithNameSpace string, queryParams map[string]string) ([]wrappers.GitLabCommit, error) {
+func (g GitLabMockWrapper) GetCommits(
+	gitLabProjectPathWithNameSpace string, queryParams map[string]string,
+) ([]wrappers.GitLabCommit, error) {
 	return []wrappers.GitLabCommit{}, nil
 }

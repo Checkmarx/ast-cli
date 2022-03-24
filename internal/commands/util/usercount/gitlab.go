@@ -22,6 +22,8 @@ const (
 	gitLabAPIURL                   = "https://gitlab.com"
 	gitLabTooManyGroupsAndProjects = "Projects and Groups both cannot be provided at the same time."
 	gitLabBot                      = "bot"
+	repoAccessLevelDisabled        = "disabled"
+	repoAccessLevelPrivate         = "private"
 )
 
 var (
@@ -129,35 +131,33 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 	var viewsUsers []UserView
 
 	for _, gitLabGroupName := range gitLabGroups {
-		gitLabGroupsFound, err := gitLabWrapper.GetGitLabGroups(gitLabGroupName)
+		gitLabProjects, err := gitLabWrapper.GetGitLabProjects(strings.TrimSpace(gitLabGroupName), map[string]string{})
+
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 
-		for _, gitLabGroup := range gitLabGroupsFound {
-			if strings.EqualFold(strings.TrimSpace(gitLabGroupName), gitLabGroup.FullPath) {
-				gitLabProjects, err := gitLabWrapper.GetGitLabProjects(gitLabGroup, map[string]string{})
-
+		for _, gitLabProject := range gitLabProjects {
+			if gitLabProject.EmptyRepo == true || strings.EqualFold(
+				gitLabProject.RepoAccessLevel,
+				repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
+				log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
+			} else {
+				commits, err := gitLabWrapper.GetCommits(
+					gitLabProject.PathWithNameSpace,
+					map[string]string{sinceParam: ninetyDaysDate})
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
 
-				for _, gitLabProject := range gitLabProjects {
-					commits, err := gitLabWrapper.GetCommits(
-						gitLabProject.PathWithNameSpace,
-						map[string]string{sinceParam: ninetyDaysDate})
-					if err != nil {
-						return totalCommits, views, viewsUsers, err
-					}
+				totalCommits = append(totalCommits, commits...)
 
-					totalCommits = append(totalCommits, commits...)
-
-					uniqueContributorsMap := getGitLabUniqueContributors(commits)
-					printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
-				}
+				uniqueContributorsMap := getGitLabUniqueContributors(commits)
+				printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 			}
 		}
 	}
+
 	return totalCommits, views, viewsUsers, nil
 }
 

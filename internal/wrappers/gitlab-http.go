@@ -23,8 +23,7 @@ const (
 	gitLabTokenFormat         = "Bearer %s"
 	gitLabCommitURL           = "%s/%s/projects/%s/repository/commits"
 	gitLabProjectsURL         = "%s/%s/projects?per_page=100&membership=true"
-	gitLabGroupSearchURL      = "%s/%s/groups?all_available=true&search=%s"
-	gitLabGroupProjectsURL    = "%s/%s/groups/%d/projects?per_page=100"
+	gitLabGroupProjectsURL    = "%s/%s/groups/%s/projects?per_page=100"
 	gitLabUserURL             = "%s/%s/user"
 	gitLabUserProjectsURL     = "%s/%s/users/%d/projects?per_page=100"
 )
@@ -58,7 +57,9 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 	return gitLabProjectList, err
 }
 
-func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, queryParams map[string]string) ([]GitLabCommit, error) {
+func (g *GitLabHTTPWrapper) GetCommits(
+	gitLabProjectPathWithNameSpace string, queryParams map[string]string,
+) ([]GitLabCommit, error) {
 	var err error
 	var commits []GitLabCommit
 
@@ -73,36 +74,27 @@ func (g *GitLabHTTPWrapper) GetCommits(gitLabProjectPathWithNameSpace string, qu
 	return commits, err
 }
 
-func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroup GitLabGroup, queryParams map[string]string) ([]GitLabProject, error) {
+func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParams map[string]string) (
+	[]GitLabProject, error,
+) {
 	var err error
 	var gitLabProjectList []GitLabProject
 
 	gitLabBaseURL := viper.GetString(params.URLFlag)
+	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
 	var projectsURL string
-	if gitLabGroup == (GitLabGroup{}) {
+	if len(gitLabGroupName) == 0 {
+		log.Println("Finding the projects for which the user is a member.")
 		projectsURL = fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
 	} else {
-		log.Printf("Finding the projects for group: %s", gitLabGroup.FullPath)
-		projectsURL = fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabGroup.ID)
+		log.Printf("Finding the projects for group: %s", gitLabGroupName)
+		projectsURL = fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, encodedGroupName)
 	}
 
 	err = g.get(projectsURL, &gitLabProjectList, queryParams)
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
 	return gitLabProjectList, err
-}
-
-func (g *GitLabHTTPWrapper) GetGitLabGroups(groupName string) ([]GitLabGroup, error) {
-	var err error
-	var gitLabGroupList []GitLabGroup
-
-	gitLabBaseURL := viper.GetString(params.URLFlag)
-	gitLabGroupURL := fmt.Sprintf(gitLabGroupSearchURL, gitLabBaseURL, gitLabAPIVersion, groupName)
-
-	log.Printf("Finding the group(s) with name: %s", groupName)
-	err = g.get(gitLabGroupURL, &gitLabGroupList, map[string]string{})
-	log.Printf("Found %d group(s) containing the provided group name.", len(gitLabGroupList))
-	return gitLabGroupList, err
 }
 
 func (g *GitLabHTTPWrapper) get(requestURL string, target interface{}, queryParams map[string]string) error {
