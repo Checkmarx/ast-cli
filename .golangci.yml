@@ -66,18 +66,18 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - revive
+    - golint
     - gomnd
     - goprintffuncname
     - gosimple
     - govet
     - ineffassign
-#    - interfacer deprecated
+    - interfacer
     - lll
     - misspell
     - nakedret
     - rowserrcheck
-    - exportloopref
+    - scopelint
     - staticcheck
     - structcheck
     - stylecheck
