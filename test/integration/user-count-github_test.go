@@ -42,6 +42,36 @@ func TestGitHubUserCount(t *testing.T) {
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
 
+func TestGitHubUserCountRepos(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	buffer := executeCmdNilAssertion(
+		t,
+		"Counting contributors from checkmarxdev should pass",
+		"utils",
+		usercount.UcCommand,
+		usercount.GithubCommand,
+		flag(usercount.OrgsFlag),
+		"checkmarxdev",
+		flag(usercount.ReposFlag),
+		"ast-cli-javascript-wrapper",
+		flag(params.SCMTokenFlag),
+		viper.GetString(pat),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+
+	var parsedJson []usercount.RepositoryView
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() {
+		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
+		break
+	}
+	totalView := parsedJson[len(parsedJson)-1]
+	assert.Assert(t, len(parsedJson) >= 1)
+	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
+	assert.Assert(t, totalView.UniqueContributors >= 0)
+}
+
 func TestGitHubUserCountFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
