@@ -117,7 +117,6 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) (
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
 
 		printUniqueContributors(&views, &viewsUsers, gitLabProjectName, uniqueContributorsMap)
-
 	}
 	return totalCommits, views, viewsUsers, nil
 }
@@ -186,7 +185,6 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
 		printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
-
 	}
 
 	return totalCommits, views, viewsUsers, nil
