@@ -40,9 +40,9 @@ func newUserCountGitLabCommand(gitLabWrapper wrappers.GitLabWrapper) *cobra.Comm
 
 	userCountCmd.Flags().StringSliceVar(&gitLabProjects, GitLabProjectsFlag, []string{}, gitLabProjectsFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&gitLabGroups, GitLabGroupsFlag, []string{}, gitLabGroupsFlagUsage)
-	userCountCmd.Flags().String(params.URLFlag, gitLabAPIURL, params.URLFlagUsage)
+	userCountCmd.Flags().String(params.GitLabURLFlag, gitLabAPIURL, params.URLFlagUsage)
 	userCountCmd.Flags().String(params.SCMTokenFlag, "", params.GitLabTokenUsage)
-	_ = viper.BindPFlag(params.URLFlag, userCountCmd.Flags().Lookup(params.URLFlag))
+	_ = viper.BindPFlag(params.GitLabURLFlag, userCountCmd.Flags().Lookup(params.GitLabURLFlag))
 
 	return userCountCmd
 }

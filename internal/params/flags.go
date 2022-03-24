@@ -94,6 +94,7 @@ const (
 	AzureTokenUsage          = "Azure OAuth token"
 	GitLabTokenUsage         = "GitLab OAuth token"
 	URLFlag                  = "url"
+	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
 )

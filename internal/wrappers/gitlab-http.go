@@ -39,7 +39,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 	var gitLabProjectList []GitLabProject
 	var gitLabUser GitLabUser
 
-	gitLabBaseURL := viper.GetString(params.URLFlag)
+	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 
 	getUserURL := fmt.Sprintf(gitLabUserURL, gitLabBaseURL, gitLabAPIVersion)
 
@@ -63,7 +63,7 @@ func (g *GitLabHTTPWrapper) GetCommits(
 	var err error
 	var commits []GitLabCommit
 
-	gitLabBaseURL := viper.GetString(params.URLFlag)
+	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
 	commitsURL := fmt.Sprintf(gitLabCommitURL, gitLabBaseURL, gitLabAPIVersion, encodedProjectPath)
@@ -80,7 +80,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	var err error
 	var gitLabProjectList []GitLabProject
 
-	gitLabBaseURL := viper.GetString(params.URLFlag)
+	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
 	var projectsURL string
