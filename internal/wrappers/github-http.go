@@ -73,14 +73,56 @@ func (g *GitHubHTTPWrapper) GetRepository(organizationName, repositoryName strin
 func (g *GitHubHTTPWrapper) GetRepositories(organization Organization) ([]Repository, error) {
 	repositoriesURL := organization.RepositoriesURL
 
-	return getWithPagination[Repository](g.client, repositoriesURL, map[string]string{})
+	pages, err := getWithPagination(g.client, repositoriesURL, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	castedPages := make([]Repository, 0)
+	for _, e := range pages {
+		marshal, err := json.Marshal(e)
+		if err != nil {
+			return nil, err
+		}
+		holder := Repository{}
+		err = json.Unmarshal(marshal, &holder)
+		if err != nil {
+			return nil, err
+		}
+		castedPages = append(castedPages, holder)
+	}
+
+	return castedPages, nil
 }
 
 func (g *GitHubHTTPWrapper) GetCommits(repository Repository, queryParams map[string]string) ([]CommitRoot, error) {
 	commitsURL := repository.CommitsURL
-	commitsURL = commitsURL[:strings.Index(commitsURL, "{")]
+	index := strings.Index(commitsURL, "{")
+	if index < 0 {
+		return nil, errors.Errorf("Unable to collect commits URL for repository %s", repository.FullName)
+	}
+	commitsURL = commitsURL[:index]
 
-	return getWithPagination[CommitRoot](g.client, commitsURL, queryParams)
+	pages, err := getWithPagination(g.client, commitsURL, queryParams)
+	if err != nil {
+		return nil, err
+	}
+
+	castedPages := make([]CommitRoot, 0)
+	for _, e := range pages {
+		marshal, err := json.Marshal(e)
+		if err != nil {
+			return nil, err
+		}
+		holder := CommitRoot{}
+		err = json.Unmarshal(marshal, &holder)
+		if err != nil {
+			return nil, err
+		}
+		castedPages = append(castedPages, holder)
+	}
+
+	return castedPages, nil
 }
 
 func (g *GitHubHTTPWrapper) getOrganizationTemplate() (string, error) {
@@ -117,18 +159,21 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 }
 
 func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
-	_, err := get(g.client, url, target, map[string]string{})
+	resp, err := get(g.client, url, target, map[string]string{})
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	return err
 }
 
-func getWithPagination[T CommitRoot | Repository](
+func getWithPagination(
 	client *http.Client,
 	url string,
 	queryParams map[string]string,
-) ([]T, error) {
+) ([]interface{}, error) {
 	queryParams[perPageParam] = perPageValue
 
-	var pageCollection = make([]T, 0)
+	var pageCollection = make([]interface{}, 0)
 
 	next, err := collectPage(client, url, queryParams, &pageCollection)
 	if err != nil {
@@ -145,17 +190,22 @@ func getWithPagination[T CommitRoot | Repository](
 	return pageCollection, nil
 }
 
-func collectPage[T CommitRoot | Repository](
+func collectPage(
 	client *http.Client,
 	url string,
 	queryParams map[string]string,
-	pageCollection *[]T,
+	pageCollection *[]interface{},
 ) (string, error) {
-	var holder = make([]T, 0)
+	var holder = make([]interface{}, 0)
 	resp, err := get(client, url, &holder, queryParams)
 	if err != nil {
 		return "", err
 	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	*pageCollection = append(*pageCollection, holder...)
 	next := getNextPageLink(resp)
 	return next, nil
@@ -179,7 +229,7 @@ func getNextPageLink(resp *http.Response) string {
 func get(client *http.Client, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
 	var err error
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
