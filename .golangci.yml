@@ -106,7 +106,6 @@ run:
     - internal/cache
     - internal/renameio
     - internal/robustio
-  go: 1.18
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
