@@ -41,10 +41,10 @@ func newUserCountAzureCommand(azureWrapper wrappers.AzureWrapper) *cobra.Command
 		RunE:    createRunAzureUserCountFunc(azureWrapper),
 	}
 
-	AzureURL = userCountCmd.Flags().String(url, azureAPIURL, params.URLFlagUsage)
-	userCountCmd.PersistentFlags().StringSliceVar(&AzureOrgs, OrgsFlag, []string{}, reposFlagUsage)
+	userCountCmd.PersistentFlags().StringSliceVar(&AzureOrgs, OrgsFlag, []string{}, orgsFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&AzureProject, projectFlag, []string{}, projectFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&AzureRepos, ReposFlag, []string{}, reposFlagUsage)
+	AzureURL = userCountCmd.Flags().String(url, azureAPIURL, params.URLFlagUsage)
 	AzureToken = userCountCmd.Flags().String(params.SCMTokenFlag, "", params.AzureTokenUsage)
 
 	return userCountCmd
