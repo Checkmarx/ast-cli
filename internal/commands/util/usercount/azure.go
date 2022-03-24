@@ -199,11 +199,11 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRo
 	var views []RepositoryView
 	var viewsUsers []UserView
 	// Fetch all the projects within the organization
-	projects, err := azureWrapper.GetProjects(*AzureURL, AzureOrgs[0], *AzureToken)
-	if err != nil {
-		return totalCommits, views, viewsUsers, err
-	}
 	for _, org := range AzureOrgs {
+		projects, err := azureWrapper.GetProjects(*AzureURL, org, *AzureToken)
+		if err != nil {
+			return totalCommits, views, viewsUsers, err
+		}
 		for _, project := range projects.Projects {
 			// Fetch all the repos within the project
 			repos, err := azureWrapper.GetRepositories(*AzureURL, org, project.Name, *AzureToken)
