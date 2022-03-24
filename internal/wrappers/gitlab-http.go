@@ -84,7 +84,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
 	var projectsURL string
-	if len(gitLabGroupName) == 0 {
+	if gitLabGroupName == "" {
 		log.Println("Finding the projects for which the user is a member.")
 		projectsURL = fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
 	} else {
