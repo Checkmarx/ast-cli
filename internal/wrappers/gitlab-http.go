@@ -24,8 +24,6 @@ const (
 	gitLabCommitURL           = "%s/%s/projects/%s/repository/commits"
 	gitLabProjectsURL         = "%s/%s/projects?per_page=100&membership=true"
 	gitLabGroupProjectsURL    = "%s/%s/groups/%s/projects?per_page=100"
-	gitLabUserURL             = "%s/%s/user"
-	gitLabUserProjectsURL     = "%s/%s/users/%d/projects?per_page=100"
 )
 
 func NewGitLabWrapper() GitLabWrapper {
@@ -37,20 +35,9 @@ func NewGitLabWrapper() GitLabWrapper {
 func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) {
 	var err error
 	var gitLabProjectList []GitLabProject
-	var gitLabUser GitLabUser
 
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
-
-	getUserURL := fmt.Sprintf(gitLabUserURL, gitLabBaseURL, gitLabAPIVersion)
-
-	err = g.get(getUserURL, &gitLabUser, map[string]string{})
-	log.Printf("User found : %s", gitLabUser.Name)
-
-	if err != nil {
-		return gitLabProjectList, err
-	}
-
-	getUserProjectsURL := fmt.Sprintf(gitLabUserProjectsURL, gitLabBaseURL, gitLabAPIVersion, gitLabUser.ID)
+	getUserProjectsURL := fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
 	err = g.get(getUserProjectsURL, &gitLabProjectList, map[string]string{})
 
 	log.Printf("Found %d project(s).", len(gitLabProjectList))
@@ -83,14 +70,8 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
-	var projectsURL string
-	if gitLabGroupName == "" {
-		log.Println("Finding the projects for which the user is a member.")
-		projectsURL = fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
-	} else {
-		log.Printf("Finding the projects for group: %s", gitLabGroupName)
-		projectsURL = fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, encodedGroupName)
-	}
+	log.Printf("Finding the projects for group: %s", gitLabGroupName)
+	projectsURL := fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, encodedGroupName)
 
 	err = g.get(projectsURL, &gitLabProjectList, queryParams)
 	log.Printf("Found %d project(s).", len(gitLabProjectList))

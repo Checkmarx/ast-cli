@@ -109,16 +109,18 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) (
 	var viewsUsers []UserView
 
 	for _, gitLabProjectName := range gitLabProjects {
-		commits, err := gitLabWrapper.GetCommits(gitLabProjectName, map[string]string{sinceParam: ninetyDaysDate})
-		if err != nil {
-			return totalCommits, views, viewsUsers, err
+		if strings.TrimSpace(gitLabProjectName) == "" {
+			log.Println("Ignoring the blank value for project name.")
+		} else {
+			commits, err := gitLabWrapper.GetCommits(gitLabProjectName, map[string]string{sinceParam: ninetyDaysDate})
+			if err != nil {
+				return totalCommits, views, viewsUsers, err
+			}
+
+			totalCommits = append(totalCommits, commits...)
+			uniqueContributorsMap := getGitLabUniqueContributors(commits)
+			printUniqueContributors(&views, &viewsUsers, gitLabProjectName, uniqueContributorsMap)
 		}
-
-		totalCommits = append(totalCommits, commits...)
-
-		uniqueContributorsMap := getGitLabUniqueContributors(commits)
-
-		printUniqueContributors(&views, &viewsUsers, gitLabProjectName, uniqueContributorsMap)
 	}
 	return totalCommits, views, viewsUsers, nil
 }
@@ -131,29 +133,37 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 	var viewsUsers []UserView
 
 	for _, gitLabGroupName := range gitLabGroups {
-		gitLabProjects, err := gitLabWrapper.GetGitLabProjects(strings.TrimSpace(gitLabGroupName), map[string]string{})
+		if strings.TrimSpace(gitLabGroupName) == "" {
+			log.Println("Ignoring the blank value for group name.")
+		} else {
+			gitLabProjects, err := gitLabWrapper.GetGitLabProjects(
+				strings.TrimSpace(gitLabGroupName),
+				map[string]string{})
 
-		if err != nil {
-			return totalCommits, views, viewsUsers, err
-		}
+			if err != nil {
+				return totalCommits, views, viewsUsers, err
+			}
 
-		for _, gitLabProject := range gitLabProjects {
-			if gitLabProject.EmptyRepo || strings.EqualFold(
-				gitLabProject.RepoAccessLevel,
-				repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
-				log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
-			} else {
-				commits, err := gitLabWrapper.GetCommits(
-					gitLabProject.PathWithNameSpace,
-					map[string]string{sinceParam: ninetyDaysDate})
-				if err != nil {
-					return totalCommits, views, viewsUsers, err
+			for _, gitLabProject := range gitLabProjects {
+				if gitLabProject.EmptyRepo || strings.EqualFold(
+					gitLabProject.RepoAccessLevel,
+					repoAccessLevelDisabled) || strings.EqualFold(
+					gitLabProject.RepoAccessLevel,
+					repoAccessLevelPrivate) {
+					log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
+				} else {
+					commits, err := gitLabWrapper.GetCommits(
+						gitLabProject.PathWithNameSpace,
+						map[string]string{sinceParam: ninetyDaysDate})
+					if err != nil {
+						return totalCommits, views, viewsUsers, err
+					}
+
+					totalCommits = append(totalCommits, commits...)
+
+					uniqueContributorsMap := getGitLabUniqueContributors(commits)
+					printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 				}
-
-				totalCommits = append(totalCommits, commits...)
-
-				uniqueContributorsMap := getGitLabUniqueContributors(commits)
-				printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 			}
 		}
 	}
@@ -174,19 +184,24 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 	}
 
 	for _, gitLabProject := range gitLabProjects {
-		commits, err := gitLabWrapper.GetCommits(
-			gitLabProject.PathWithNameSpace,
-			map[string]string{sinceParam: ninetyDaysDate})
-		if err != nil {
-			return totalCommits, views, viewsUsers, err
+		if gitLabProject.EmptyRepo || strings.EqualFold(
+			gitLabProject.RepoAccessLevel,
+			repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
+			log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
+		} else {
+			commits, err := gitLabWrapper.GetCommits(
+				gitLabProject.PathWithNameSpace,
+				map[string]string{sinceParam: ninetyDaysDate})
+			if err != nil {
+				return totalCommits, views, viewsUsers, err
+			}
+
+			totalCommits = append(totalCommits, commits...)
+
+			uniqueContributorsMap := getGitLabUniqueContributors(commits)
+			printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 		}
-
-		totalCommits = append(totalCommits, commits...)
-
-		uniqueContributorsMap := getGitLabUniqueContributors(commits)
-		printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 	}
-
 	return totalCommits, views, viewsUsers, nil
 }
 
