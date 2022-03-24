@@ -161,9 +161,9 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 
 func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
 	resp, err := get(g.client, url, target, map[string]string{})
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+
+	defer closeBody(resp)
+
 	return err
 }
 
@@ -198,14 +198,13 @@ func collectPage(
 	pageCollection *[]interface{},
 ) (string, error) {
 	var holder = make([]interface{}, 0)
+
 	resp, err := get(client, url, &holder, queryParams)
 	if err != nil {
 		return "", err
 	}
 
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer closeBody(resp)
 
 	*pageCollection = append(*pageCollection, holder...)
 	next := getNextPageLink(resp)
@@ -256,7 +255,9 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		resp, currentError := client.Do(req)
 		if currentError != nil {
 			count = count + 1
+			PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
 			err = currentError
+			continue
 		}
 
 		switch resp.StatusCode {
@@ -279,4 +280,10 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	}
 
 	return nil, err
+}
+
+func closeBody(resp *http.Response) {
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 }
