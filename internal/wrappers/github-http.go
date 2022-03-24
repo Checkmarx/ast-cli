@@ -267,6 +267,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		case http.StatusOK:
 			currentError = json.NewDecoder(resp.Body).Decode(target)
 			if currentError != nil {
+				PrintIfVerbose(fmt.Sprintf("Error parsing OK body: %s", currentError))
 				return nil, currentError
 			}
 		case http.StatusConflict:
@@ -274,6 +275,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		default:
 			body, currentError := io.ReadAll(resp.Body)
 			if currentError != nil {
+				PrintIfVerbose(currentError.Error())
 				return nil, currentError
 			}
 			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
