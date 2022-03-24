@@ -18,6 +18,27 @@ const (
 	gitLabEnvToken = "GITLAB_TOKEN"
 )
 
+func TestGitLabUserCountOnlyUserProjects(t *testing.T) {
+	buffer := executeCmdNilAssertion(
+		t, "Counting contributors from gitlab user projects should pass",
+		"utils", usercount.UcCommand,
+		usercount.GitLabCommand,
+		flag(params.SCMTokenFlag), os.Getenv(gitLabEnvToken),
+		flag(params.FormatFlag), printer.FormatJSON,
+	)
+
+	var parsedJson []usercount.RepositoryView
+	scanner := bufio.NewScanner(buffer)
+	for scanner.Scan() {
+		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
+		break
+	}
+	totalView := parsedJson[len(parsedJson)-1]
+	assert.Assert(t, len(parsedJson) >= 1)
+	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
+	assert.Assert(t, totalView.UniqueContributors >= 0)
+}
+
 func TestGitLabUserCountOnlyGroup(t *testing.T) {
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab group should pass",
