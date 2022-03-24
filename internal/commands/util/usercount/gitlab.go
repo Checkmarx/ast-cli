@@ -138,7 +138,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 		}
 
 		for _, gitLabProject := range gitLabProjects {
-			if gitLabProject.EmptyRepo == true || strings.EqualFold(
+			if gitLabProject.EmptyRepo || strings.EqualFold(
 				gitLabProject.RepoAccessLevel,
 				repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
 				log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
