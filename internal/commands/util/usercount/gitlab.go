@@ -116,22 +116,8 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) (
 
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
 
-		views = append(
-			views,
-			RepositoryView{
-				Name:               gitLabProjectName,
-				UniqueContributors: uint64(len(uniqueContributorsMap)),
-			},
-		)
-		for name := range uniqueContributorsMap {
-			viewsUsers = append(
-				viewsUsers,
-				UserView{
-					Name:                       gitLabProjectName,
-					UniqueContributorsUsername: name,
-				},
-			)
-		}
+		printUniqueContributors(&views, &viewsUsers, gitLabProjectName, uniqueContributorsMap)
+
 	}
 	return totalCommits, views, viewsUsers, nil
 }
@@ -168,23 +154,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 					totalCommits = append(totalCommits, commits...)
 
 					uniqueContributorsMap := getGitLabUniqueContributors(commits)
-
-					views = append(
-						views,
-						RepositoryView{
-							Name:               gitLabProject.PathWithNameSpace,
-							UniqueContributors: uint64(len(uniqueContributorsMap)),
-						},
-					)
-					for name := range uniqueContributorsMap {
-						viewsUsers = append(
-							viewsUsers,
-							UserView{
-								Name:                       gitLabProject.PathWithNameSpace,
-								UniqueContributorsUsername: name,
-							},
-						)
-					}
+					printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 				}
 			}
 		}
@@ -204,9 +174,9 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 		return totalCommits, views, viewsUsers, err
 	}
 
-	for _, gitLabProjectName := range gitLabProjects {
+	for _, gitLabProject := range gitLabProjects {
 		commits, err := gitLabWrapper.GetCommits(
-			gitLabProjectName.PathWithNameSpace,
+			gitLabProject.PathWithNameSpace,
 			map[string]string{sinceParam: ninetyDaysDate})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
@@ -215,23 +185,8 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 		totalCommits = append(totalCommits, commits...)
 
 		uniqueContributorsMap := getGitLabUniqueContributors(commits)
+		printUniqueContributors(&views, &viewsUsers, gitLabProject.PathWithNameSpace, uniqueContributorsMap)
 
-		views = append(
-			views,
-			RepositoryView{
-				Name:               gitLabProjectName.PathWithNameSpace,
-				UniqueContributors: uint64(len(uniqueContributorsMap)),
-			},
-		)
-		for name := range uniqueContributorsMap {
-			viewsUsers = append(
-				viewsUsers,
-				UserView{
-					Name:                       gitLabProjectName.PathWithNameSpace,
-					UniqueContributorsUsername: name,
-				},
-			)
-		}
 	}
 
 	return totalCommits, views, viewsUsers, nil
@@ -251,4 +206,27 @@ func getGitLabUniqueContributors(commits []wrappers.GitLabCommit) map[string]boo
 
 func isNotGitLabBot(commit wrappers.GitLabCommit) bool {
 	return strings.Contains(commit.Name, gitLabBot)
+}
+
+func printUniqueContributors(
+	views *[]RepositoryView, viewsUsers *[]UserView, gitLabProjectName string,
+	uniqueContributorsMap map[string]bool,
+) {
+	*views = append(
+		*views,
+		RepositoryView{
+			Name:               gitLabProjectName,
+			UniqueContributors: uint64(len(uniqueContributorsMap)),
+		},
+	)
+
+	for name := range uniqueContributorsMap {
+		*viewsUsers = append(
+			*viewsUsers,
+			UserView{
+				Name:                       gitLabProjectName,
+				UniqueContributorsUsername: name,
+			},
+		)
+	}
 }
