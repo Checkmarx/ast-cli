@@ -21,7 +21,7 @@ const (
 	urlBitbucket                 = "url-bitbucket"
 	bitbucketAPIURL              = "https://api.bitbucket.org/2.0/"
 	usernameFlagUsage            = "Username for Bitbucket authentication"
-	passwordFlagUsage            = "Password for Bitbucket authentication"
+	passwordFlagUsage            = "App password for Bitbucket authentication.Requires read on “Workspace membership“ and “Repositories“ permissions"
 	missingWorkspace             = "Provide at least one workspace"
 	bitbucketManyWorkspaceOnRepo = "You must provide a single workspace for repo counting"
 	bitBucketBot                 = "[bot]"
