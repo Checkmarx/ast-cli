@@ -31,6 +31,7 @@ const (
 	nextRel             = "next"
 	perPageParam        = "per_page"
 	perPageValue        = "100"
+	retryLimit          = 3
 )
 
 func NewGitHubWrapper() GitHubWrapper {
@@ -228,51 +229,54 @@ func getNextPageLink(resp *http.Response) string {
 
 func get(client *http.Client, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
 	var err error
+	var count uint8
 
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
+	for count < retryLimit {
+		var currentError error
 
-	req.Header.Add(acceptHeader, apiVersion)
-
-	token := viper.GetString(params.SCMTokenFlag)
-	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(tokenFormat, token))
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-
-	PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		err = json.NewDecoder(resp.Body).Decode(target)
-		if err != nil {
-			return nil, err
+		req, currentError := http.NewRequest(http.MethodGet, url, http.NoBody)
+		if currentError != nil {
+			return nil, currentError
 		}
-	case http.StatusConflict:
-		return nil, nil
-	default:
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
+
+		req.Header.Add(acceptHeader, apiVersion)
+
+		token := viper.GetString(params.SCMTokenFlag)
+		if len(token) > 0 {
+			req.Header.Add(authorizationHeader, fmt.Sprintf(tokenFormat, token))
 		}
-		message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
-		return nil, errors.New(message)
+
+		q := req.URL.Query()
+		for k, v := range queryParams {
+			q.Add(k, v)
+		}
+		req.URL.RawQuery = q.Encode()
+
+		PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
+		resp, currentError := client.Do(req)
+		if currentError != nil {
+			count = count + 1
+			err = currentError
+		}
+
+		switch resp.StatusCode {
+		case http.StatusOK:
+			currentError = json.NewDecoder(resp.Body).Decode(target)
+			if currentError != nil {
+				return nil, currentError
+			}
+		case http.StatusConflict:
+			return nil, nil
+		default:
+			body, currentError := io.ReadAll(resp.Body)
+			if currentError != nil {
+				return nil, currentError
+			}
+			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
+			return nil, errors.New(message)
+		}
+		return resp, nil
 	}
 
-	return resp, nil
+	return nil, err
 }
