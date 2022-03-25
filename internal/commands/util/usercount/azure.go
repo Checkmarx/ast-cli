@@ -107,7 +107,7 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 
-		log.Println("Note: dependabot is not counted but other bots might be considered users.")
+		log.Println("Note: dependabot is not counted but other bots might be considered as contributors.")
 
 		return err
 	}

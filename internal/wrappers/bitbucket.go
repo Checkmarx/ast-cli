@@ -2,6 +2,7 @@ package wrappers
 
 type BitBucketRootCommit struct {
 	Commits []BitBucketCommit `json:"values,omitempty"`
+	Next    string            `json:"next"`
 }
 
 type BitBucketCommit struct {
@@ -25,11 +26,17 @@ type BitBucketRootRepo struct {
 
 type BitBucketRootRepoList struct {
 	Values []BitBucketRepo `json:"values"`
+	Next   string          `json:"next"`
 }
 
 type BitBucketRepo struct {
 	Name string `json:"full_name"`
 	UUID string `json:"uuid"`
+}
+
+type BitBucketPage struct {
+	Next    string            `json:"next"`
+	Values interface{} `json:"values,omitempty"`
 }
 
 type BitBucketWrapper interface {

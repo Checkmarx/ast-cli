@@ -41,6 +41,7 @@ func main() {
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	azureWrapper := wrappers.NewAzureWrapper()
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
+	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
@@ -56,6 +57,7 @@ func main() {
 		gitHubWrapper,
 		azureWrapper,
 		bitBucketWrapper,
+		gitLabWrapper,
 		bflWrapper,
 	)
 

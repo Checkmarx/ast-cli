@@ -71,6 +71,7 @@ jobs:
           BITBUCKET_REPOS: ${{ secrets.BITBUCKET_REPOS }}
           BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
           BITBUCKET_PASSWORD: ${{ secrets.BITBUCKET_PASSWORD }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh

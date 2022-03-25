@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -24,6 +25,11 @@ const (
 	bitBucketBaseCommitURL    = "%srepositories/%s/%s/commits"
 	failedBitbucketNotFound   = "no workspace with the provided identifier"
 	failedBitbucketAuth       = "failed Bitbucket Authentication"
+	pageLen                   = "pagelen"
+	pageLenValue              = "100"
+	page                      = "page"
+	commitType                = "commit"
+	repoType                  = "repo"
 )
 
 func NewBitbucketWrapper() BitBucketWrapper {
@@ -61,9 +67,28 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &commits, queryParams)
-	// Filter the commits older than three months
-	commits = filterDate(commits)
+	pages, err := getWithPagination(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	if err != nil {
+		return commits, err
+	}
+	// Go throw each commits in different pages
+	for _, page := range pages {
+		marshal, err := json.Marshal(page)
+		if err != nil {
+			return commits, err
+		}
+		commitHolder := BitBucketRootCommit{}
+		json.Unmarshal(marshal, &commitHolder)
+		for _, pageCommit := range commitHolder.Commits {
+			// Filter the commits older than three months from the commits list
+			if verifyDate(pageCommit) == false {
+				return commits, nil
+			}
+			// Append the commit to the returned commits list
+			commits.Commits = append(commits.Commits, pageCommit)
+		}
+	}
+
 	return commits, err
 }
 
@@ -73,8 +98,23 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repos, queryParams)
-
+	pages, err := getWithPagination(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	if err != nil {
+		return repos, err
+	}
+	// Goes throw each repo in different pages
+	for _, page := range pages {
+		marshal, err := json.Marshal(page)
+		if err != nil {
+			return repos, err
+		}
+		repoHolder := BitBucketRootRepoList{}
+		json.Unmarshal(marshal, &repoHolder)
+		for _, pageCommit := range repoHolder.Values {
+			// Append the commit to the returned commits list
+			repos.Values = append(repos.Values, pageCommit)
+		}
+	}
 	return repos, err
 }
 
@@ -137,22 +177,134 @@ func encodeBitBucketAuth(username, password string) string {
 	return b64.StdEncoding.EncodeToString([]byte(username + ":" + password))
 }
 
-func filterDate(commits BitBucketRootCommit) BitBucketRootCommit {
-	var filteredRootCommits BitBucketRootCommit
-	var filteredCommits []BitBucketCommit
-
+func verifyDate(commit BitBucketCommit) bool {
 	// Get last three months in string and cast it to date
 	threeMonthsString := getThreeMonthsTime()
 	threeMonths, _ := time.Parse(azureLayoutTime, threeMonthsString)
 
-	for _, commit := range commits.Commits {
-		commitDate, _ := time.Parse(time.RFC3339, commit.Date)
-		// Check if the commit date occurs after the last three months
-		if commitDate.After(threeMonths) {
-			filteredCommits = append(filteredCommits, commit)
+	commitDate, _ := time.Parse(time.RFC3339, commit.Date)
+	// Check if the commit date occurs after the last three months
+	if !commitDate.After(threeMonths) {
+		return false
+	}
+	return true
+}
+
+func getWithPagination(
+	client *http.Client,
+	url string,
+	token string,
+	queryParams map[string]string,
+) ([]interface{}, error) {
+
+	var pageCollection = make([]interface{}, 0)
+
+	var currentPage = 1
+	var err error
+	for currentPage != -1 {
+		currentPage, err = collectPage(client, token, url, currentPage, queryParams, &pageCollection, commitType)
+		if err != nil {
+			return nil, err
 		}
 	}
-	// Add the filtered list to the root object
-	filteredRootCommits.Commits = filteredCommits
-	return filteredRootCommits
+	return pageCollection, nil
+}
+
+func collectPage(
+	client *http.Client,
+	token string,
+	url string,
+	currentPage int,
+	queryParams map[string]string,
+	pageCollection *[]interface{},
+	types string,
+) (int, error) {
+	var holder BitBucketPage
+
+	// Set the api page number
+	queryParams[page] = strconv.Itoa(currentPage)
+	// Set the api page length
+	queryParams[pageLen] = pageLenValue
+	_, err := get(client, token, url, &holder, queryParams)
+	if err != nil {
+		return -1, err
+	}
+
+	// Verify if there is a next page
+	if holder.Next != "" {
+		currentPage += 1
+	} else {
+		currentPage = -1
+	}
+
+	*pageCollection = append(*pageCollection, holder)
+	// In case the request is to get commits, verify if we should make next request based on the last commit date
+	if types == commitType {
+		marshal, err := json.Marshal(holder)
+		if err != nil {
+			return -1, err
+		}
+		holder1 := BitBucketRootCommit{}
+		json.Unmarshal(marshal, &holder1)
+		if !verifyDate(holder1.Commits[len(holder1.Commits)-1]) {
+			return -1, nil
+		}
+	}
+
+	return currentPage, nil
+}
+
+func get(client *http.Client, token, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
+	var err error
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(token) > 0 {
+		req.Header.Add(authorizationHeader, fmt.Sprintf(basicFormat, token))
+	}
+
+	q := req.URL.Query()
+	for k, v := range queryParams {
+		q.Add(k, v)
+	}
+
+	req.URL.RawQuery = q.Encode()
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL.String()))
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		err = json.NewDecoder(resp.Body).Decode(target)
+		if err != nil {
+			return nil, err
+		}
+		// State sent when expired token
+	case http.StatusUnauthorized:
+		err = errors.New(failedBitbucketAuth)
+		return nil, err
+		// State sent when no token is provided
+	case http.StatusForbidden:
+		err = errors.New(failedBitbucketAuth)
+		return nil, err
+	case http.StatusNotFound:
+		err = errors.New(failedBitbucketNotFound)
+		return nil, err
+		// Case the commit/project does not exist in the organization
+	default:
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(string(body))
+	}
+	return nil, nil
 }

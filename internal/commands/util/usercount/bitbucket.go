@@ -101,7 +101,7 @@ func createRunBitBucketUserCountFunc(bitBucketWrapper wrappers.BitBucketWrapper)
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 
-		log.Println("Note: dependabot is not counted but other bots might be considered users.")
+		log.Println("Note: dependabot is not counted but other bots might be considered as contributors.")
 
 		return err
 	}
@@ -130,7 +130,7 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 			totalCommits = append(totalCommits, commits)
 			uniqueContributors := getUniqueContributorsBitbucket(commits)
 
-			// Case there is no organization, project, commits or repos inside the organization
+			// Case there is no organization, project, commits or repos inside the workspace
 			if uint64(len(uniqueContributors)) > 0 {
 				views = append(
 					views,
@@ -180,7 +180,7 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 			totalCommits = append(totalCommits, commits)
 			uniqueContributors := getUniqueContributorsBitbucket(commits)
 
-			// Case there is no organization, project, commits or repos inside the organization
+			// Case there is no organization, project, commits or repos inside the workspace
 			if uint64(len(uniqueContributors)) > 0 {
 				views = append(
 					views,

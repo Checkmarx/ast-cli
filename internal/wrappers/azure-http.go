@@ -29,7 +29,7 @@ const (
 	azureTopValue        = "1000000"
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
-	failedAuth           = "Failed Azure Authentication"
+	failedAuth           = "failed Azure Authentication"
 )
 
 func NewAzureWrapper() AzureWrapper {
