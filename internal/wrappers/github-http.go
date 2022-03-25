@@ -254,6 +254,9 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 
 		PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
 		resp, currentError := client.Do(req)
+		if currentError == nil {
+			currentError = req.Context().Err()
+		}
 		if currentError != nil {
 			count++
 			PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
