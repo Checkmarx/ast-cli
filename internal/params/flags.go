@@ -90,9 +90,11 @@ const (
 	VulnerabilityTypeFlag    = "vulnerability-type"
 	CweIDFlag                = "cwe-id"
 	SCMTokenFlag             = "token"
-	GithubTokenUsage         = "GitHub OAuth token"
+	GithubTokenUsage         = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	AzureTokenUsage          = "Azure OAuth token"
+	GitLabTokenUsage         = "GitLab OAuth token"
 	URLFlag                  = "url"
+	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
 )
