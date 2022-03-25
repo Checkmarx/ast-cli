@@ -83,7 +83,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		azureWrapper,
 		bitBucketWrapper,
 		gitLabWrapper,
-		main,
 		bflWrapper,
 	)
 	return astCli
