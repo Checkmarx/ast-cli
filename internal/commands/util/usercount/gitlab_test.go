@@ -10,7 +10,7 @@ import (
 )
 
 func TestGitLabUserCountGroups(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.GitLabMockWrapper{})
+	cmd := NewUserCountCommand(nil, nil, nil, mock.GitLabMockWrapper{})
 	assert.Assert(t, cmd != nil, "GitLab user count command must exist")
 
 	cmd.SetArgs(
@@ -28,7 +28,7 @@ func TestGitLabUserCountGroups(t *testing.T) {
 }
 
 func TestGitLabUserCountProjects(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.GitLabMockWrapper{})
+	cmd := NewUserCountCommand(nil, nil, nil, mock.GitLabMockWrapper{})
 	assert.Assert(t, cmd != nil, "GitLab user count command must exist")
 
 	cmd.SetArgs(
@@ -46,7 +46,7 @@ func TestGitLabUserCountProjects(t *testing.T) {
 }
 
 func TestGitLabUserCountError(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.GitLabMockWrapper{})
+	cmd := NewUserCountCommand(nil, nil, nil, mock.GitLabMockWrapper{})
 	assert.Assert(t, cmd != nil, "GitLab user count command must exist")
 
 	cmd.SetArgs(
@@ -66,7 +66,7 @@ func TestGitLabUserCountError(t *testing.T) {
 }
 
 func TestGitLabUserCountOnlyToken(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.GitLabMockWrapper{})
+	cmd := NewUserCountCommand(nil, nil, nil, mock.GitLabMockWrapper{})
 	assert.Assert(t, cmd != nil, "GitLab user count command must exist")
 
 	cmd.SetArgs(
