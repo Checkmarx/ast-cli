@@ -261,19 +261,21 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 			continue
 		}
 
-		defer closeBody(resp)
-
 		switch resp.StatusCode {
 		case http.StatusOK:
+			PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
 			currentError = json.NewDecoder(resp.Body).Decode(target)
+			closeBody(resp)
 			if currentError != nil {
-				PrintIfVerbose(fmt.Sprintf("Error parsing OK body: %s", currentError))
 				return nil, currentError
 			}
 		case http.StatusConflict:
+			PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
+			closeBody(resp)
 			return nil, nil
 		default:
 			body, currentError := io.ReadAll(resp.Body)
+			closeBody(resp)
 			if currentError != nil {
 				PrintIfVerbose(currentError.Error())
 				return nil, currentError
