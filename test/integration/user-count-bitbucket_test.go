@@ -16,25 +16,27 @@ import (
 )
 
 const (
-	envOrg       = "AZURE_ORG"
-	envToken     = "AZURE_TOKEN"
-	envProject   = "AZURE_PROJECT"
-	envRepos     = "AZURE_REPOS"
-	projectFlag  = "projects"
+	envWorkspace      = "BITBUCKET_WORKSPACE"
+	envBitBucketRepos = "BITBUCKET_REPOS"
+	envUsername       = "BITBUCKET_USERNAME"
+	envPassword       = "BITBUCKET_PASSWORD"
+	workspaceFlag     = "workspaces"
 )
 
-func TestAzureUserCountOrgs(t *testing.T) {
+func TestBitbucketUserCountWorkspace(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(usercount.OrgsFlag),
-		os.Getenv(envOrg),
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		usercount.BitBucketCommand,
+		flag(workspaceFlag),
+		os.Getenv(envWorkspace),
+		flag(params.UsernameFlag),
+		os.Getenv(envUsername),
+		flag(params.PasswordFlag),
+		os.Getenv(envPassword),
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
@@ -51,20 +53,22 @@ func TestAzureUserCountOrgs(t *testing.T) {
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
 
-func TestAzureUserCountProjects(t *testing.T) {
+func TestBitbucketUserCountRepos(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(usercount.OrgsFlag),
-		os.Getenv(envOrg),
-		flag(projectFlag),
-		os.Getenv(envProject),
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		usercount.BitBucketCommand,
+		flag(workspaceFlag),
+		os.Getenv(envWorkspace),
+		flag(usercount.ReposFlag),
+		os.Getenv(envBitBucketRepos),
+		flag(params.UsernameFlag),
+		os.Getenv(envUsername),
+		flag(params.PasswordFlag),
+		os.Getenv(envPassword),
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
@@ -81,24 +85,25 @@ func TestAzureUserCountProjects(t *testing.T) {
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
 
-func TestAzureUserCountRepos(t *testing.T) {
+func TestBitbucketUserCountReposDebug(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(usercount.OrgsFlag),
-		os.Getenv(envOrg),
-		flag(projectFlag),
-		os.Getenv(envProject),
+		usercount.BitBucketCommand,
+		flag(workspaceFlag),
+		os.Getenv(envWorkspace),
 		flag(usercount.ReposFlag),
-		os.Getenv(envRepos),
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		os.Getenv(envBitBucketRepos),
+		flag(params.UsernameFlag),
+		os.Getenv(envUsername),
+		flag(params.PasswordFlag),
+		os.Getenv(envPassword),
 		flag(params.FormatFlag),
 		printer.FormatJSON,
+		flag(params.DebugFlag),
 	)
 
 	var parsedJson []usercount.RepositoryView
@@ -113,60 +118,50 @@ func TestAzureUserCountRepos(t *testing.T) {
 	assert.Assert(t, totalView.UniqueContributors >= 0)
 }
 
-func TestAzureUserCountOrgsFailed(t *testing.T) {
+func TestBitbucketCountWorkspaceFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		usercount.BitBucketCommand,
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
 
-	assertError(t, err, "Provide at least one organization")
+	assertError(t, err, "Provide at least one workspace")
 }
 
-func TestAzureUserCountReposFailed(t *testing.T) {
+func TestBitbucketCountRepoFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(usercount.OrgsFlag),
-		os.Getenv(envOrg),
+		usercount.BitBucketCommand,
 		flag(usercount.ReposFlag),
-		os.Getenv(envRepos),
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		os.Getenv(envBitBucketRepos),
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
 
-	assertError(t, err, "Provide at least one project")
+	assertError(t, err, "Provide at least one workspace")
 }
 
-func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
+func TestBitbucketCountMultipleWorkspaceFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
 		"utils",
 		usercount.UcCommand,
-		usercount.AzureCommand,
-		flag(usercount.OrgsFlag),
-		os.Getenv(envOrg)+",MOCK",
-		flag(projectFlag),
-		os.Getenv(envProject),
+		usercount.BitBucketCommand,
+		flag(workspaceFlag),
+		os.Getenv(envWorkspace)+",MOCK",
 		flag(usercount.ReposFlag),
-		os.Getenv(envRepos),
-		flag(params.SCMTokenFlag),
-		os.Getenv(envToken),
+		os.Getenv(envBitBucketRepos),
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
 
-	assertError(t, err, "You must provide a single org for repo counting")
+	assertError(t, err, "You must provide a single workspace for repo counting")
 }

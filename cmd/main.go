@@ -40,6 +40,7 @@ func main() {
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	azureWrapper := wrappers.NewAzureWrapper()
+	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
@@ -55,6 +56,7 @@ func main() {
 		groupsWrapper,
 		gitHubWrapper,
 		azureWrapper,
+		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
 	)
