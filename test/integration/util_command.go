@@ -66,6 +66,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	azureWrapper := wrappers.NewAzureWrapper()
+	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
 	astCli := commands.NewAstCLI(
@@ -80,6 +81,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		groupsWrapper,
 		gitHubWrapper,
 		azureWrapper,
+		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
 	)

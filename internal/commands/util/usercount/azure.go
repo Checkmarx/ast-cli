@@ -22,6 +22,7 @@ const (
 	missingOrganization = "Provide at least one organization"
 	missingProject      = "Provide at least one project"
 	azureBot            = "[bot]"
+	azureManyOrgsOnRepo = "You must provide a single org for repo counting"
 )
 
 var (
@@ -40,10 +41,10 @@ func newUserCountAzureCommand(azureWrapper wrappers.AzureWrapper) *cobra.Command
 		RunE:    createRunAzureUserCountFunc(azureWrapper),
 	}
 
-	AzureURL = userCountCmd.Flags().String(url, azureAPIURL, params.URLFlagUsage)
-	userCountCmd.PersistentFlags().StringSliceVar(&AzureOrgs, OrgsFlag, []string{}, reposFlagUsage)
+	userCountCmd.PersistentFlags().StringSliceVar(&AzureOrgs, OrgsFlag, []string{}, orgsFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&AzureProject, projectFlag, []string{}, projectFlagUsage)
 	userCountCmd.Flags().StringSliceVar(&AzureRepos, ReposFlag, []string{}, reposFlagUsage)
+	AzureURL = userCountCmd.Flags().String(url, azureAPIURL, params.URLFlagUsage)
 	AzureToken = userCountCmd.Flags().String(params.SCMTokenFlag, "", params.AzureTokenUsage)
 
 	return userCountCmd
@@ -55,6 +56,9 @@ func preRunAzureUserCount(*cobra.Command, []string) error {
 	}
 	if len(AzureRepos) > 0 && len(AzureProject) == 0 {
 		return errors.New(missingProject)
+	}
+	if len(AzureRepos) > 0 && len(AzureOrgs) > 1 {
+		return errors.New(azureManyOrgsOnRepo)
 	}
 	return nil
 }
@@ -103,7 +107,7 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 
-		log.Println("Note: dependabot is not counted but other bots might be considered users.")
+		log.Println(params.BotCount)
 
 		return err
 	}
@@ -195,11 +199,11 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRo
 	var views []RepositoryView
 	var viewsUsers []UserView
 	// Fetch all the projects within the organization
-	projects, err := azureWrapper.GetProjects(*AzureURL, AzureOrgs[0], *AzureToken)
-	if err != nil {
-		return totalCommits, views, viewsUsers, err
-	}
 	for _, org := range AzureOrgs {
+		projects, err := azureWrapper.GetProjects(*AzureURL, org, *AzureToken)
+		if err != nil {
+			return totalCommits, views, viewsUsers, err
+		}
 		for _, project := range projects.Projects {
 			// Fetch all the repos within the project
 			repos, err := azureWrapper.GetRepositories(*AzureURL, org, project.Name, *AzureToken)
