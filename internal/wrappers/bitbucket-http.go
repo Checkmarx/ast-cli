@@ -62,7 +62,6 @@ func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName
 }
 
 func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
-	var err error
 	var commits BitBucketRootCommit
 	var queryParams = make(map[string]string)
 
@@ -71,7 +70,7 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	if err != nil {
 		return commits, err
 	}
-	// Go throw each commits in different pages
+	// Goes throw each commits in different pages
 	for _, page := range pages {
 		marshal, err := json.Marshal(page)
 		if err != nil {
@@ -84,7 +83,7 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 		}
 		for _, pageCommit := range commitHolder.Commits {
 			// Filter the commits older than three months from the commits list
-			if verifyDate(pageCommit) == false {
+			if !verifyDate(pageCommit) {
 				return commits, nil
 			}
 			// Append the commit to the returned commits list
@@ -96,7 +95,6 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 }
 
 func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepoList, error) {
-	var err error
 	var repos BitBucketRootRepoList
 	var queryParams = make(map[string]string)
 
@@ -116,10 +114,7 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 		if err != nil {
 			return repos, err
 		}
-		for _, pageCommit := range repoHolder.Values {
-			// Append the commit to the returned commits list
-			repos.Values = append(repos.Values, pageCommit)
-		}
+		repos.Values = append(repos.Values, repoHolder.Values...)
 	}
 	return repos, err
 }
@@ -190,10 +185,7 @@ func verifyDate(commit BitBucketCommit) bool {
 
 	commitDate, _ := time.Parse(time.RFC3339, commit.Date)
 	// Check if the commit date occurs after the last three months
-	if !commitDate.After(threeMonths) {
-		return false
-	}
-	return true
+	return !(!commitDate.After(threeMonths))
 }
 
 func getWithPaginationBitBucket(
@@ -203,9 +195,7 @@ func getWithPaginationBitBucket(
 	types string,
 	queryParams map[string]string,
 ) ([]interface{}, error) {
-
 	var pageCollection = make([]interface{}, 0)
-
 	var currentPage = 1
 	var err error
 	for currentPage != -1 {

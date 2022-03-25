@@ -13,7 +13,6 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
 	gitLabWrapper wrappers.GitLabWrapper) *cobra.Command {
-
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
