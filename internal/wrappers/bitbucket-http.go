@@ -64,7 +64,6 @@ func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName
 func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
 	var commits BitBucketRootCommit
 	var queryParams = make(map[string]string)
-
 	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
 	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), commitType, queryParams)
 	if err != nil {
@@ -72,9 +71,9 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	}
 	// Goes throw each commits in different pages
 	for _, page := range pages {
-		marshal, err := json.Marshal(page)
-		if err != nil {
-			return commits, err
+		marshal, errM := json.Marshal(page)
+		if errM != nil {
+			return commits, errM
 		}
 		commitHolder := BitBucketRootCommit{}
 		err = json.Unmarshal(marshal, &commitHolder)
@@ -97,7 +96,6 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepoList, error) {
 	var repos BitBucketRootRepoList
 	var queryParams = make(map[string]string)
-
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
 	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), repoType, queryParams)
 	if err != nil {
@@ -105,9 +103,9 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	}
 	// Goes throw each repo in different pages
 	for _, page := range pages {
-		marshal, err := json.Marshal(page)
-		if err != nil {
-			return repos, err
+		marshal, errM := json.Marshal(page)
+		if errM != nil {
+			return repos, errM
 		}
 		repoHolder := BitBucketRootRepoList{}
 		err = json.Unmarshal(marshal, &repoHolder)
@@ -185,7 +183,7 @@ func verifyDate(commit BitBucketCommit) bool {
 
 	commitDate, _ := time.Parse(time.RFC3339, commit.Date)
 	// Check if the commit date occurs after the last three months
-	return !(!commitDate.After(threeMonths))
+	return commitDate.After(threeMonths)
 }
 
 func getWithPaginationBitBucket(
