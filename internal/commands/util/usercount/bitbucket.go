@@ -101,7 +101,7 @@ func createRunBitBucketUserCountFunc(bitBucketWrapper wrappers.BitBucketWrapper)
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 
-		log.Println("Note: dependabot is not counted but other bots might be considered as contributors.")
+		log.Println(params.BotCount)
 
 		return err
 	}

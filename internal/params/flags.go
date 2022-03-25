@@ -93,6 +93,7 @@ const (
 	AzureTokenUsage          = "Azure DevOps personal access token. Requires “Connected server” and “Code“ scope."
 	GithubTokenUsage         = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage         = "GitLab OAuth token"
+	BotCount                 = "Note: dependabot is not counted but other bots might be considered as contributors."
 	URLFlag                  = "url"
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"

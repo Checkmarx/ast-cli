@@ -67,7 +67,7 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
-	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), commitType, queryParams)
 	if err != nil {
 		return commits, err
 	}
@@ -78,7 +78,10 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 			return commits, err
 		}
 		commitHolder := BitBucketRootCommit{}
-		json.Unmarshal(marshal, &commitHolder)
+		err = json.Unmarshal(marshal, &commitHolder)
+		if err != nil {
+			return commits, err
+		}
 		for _, pageCommit := range commitHolder.Commits {
 			// Filter the commits older than three months from the commits list
 			if verifyDate(pageCommit) == false {
@@ -98,7 +101,7 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
-	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), repoType, queryParams)
 	if err != nil {
 		return repos, err
 	}
@@ -109,7 +112,10 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 			return repos, err
 		}
 		repoHolder := BitBucketRootRepoList{}
-		json.Unmarshal(marshal, &repoHolder)
+		err = json.Unmarshal(marshal, &repoHolder)
+		if err != nil {
+			return repos, err
+		}
 		for _, pageCommit := range repoHolder.Values {
 			// Append the commit to the returned commits list
 			repos.Values = append(repos.Values, pageCommit)
@@ -192,8 +198,9 @@ func verifyDate(commit BitBucketCommit) bool {
 
 func getWithPaginationBitBucket(
 	client *http.Client,
-	url string,
-	token string,
+	url,
+	token,
+	types string,
 	queryParams map[string]string,
 ) ([]interface{}, error) {
 
@@ -202,7 +209,7 @@ func getWithPaginationBitBucket(
 	var currentPage = 1
 	var err error
 	for currentPage != -1 {
-		currentPage, err = collectPageBitBucket(client, token, url, currentPage, queryParams, &pageCollection, commitType)
+		currentPage, err = collectPageBitBucket(client, token, url, types, currentPage, queryParams, &pageCollection)
 		if err != nil {
 			return nil, err
 		}
@@ -212,12 +219,12 @@ func getWithPaginationBitBucket(
 
 func collectPageBitBucket(
 	client *http.Client,
-	token string,
-	url string,
+	token,
+	url,
+	types string,
 	currentPage int,
 	queryParams map[string]string,
 	pageCollection *[]interface{},
-	types string,
 ) (int, error) {
 	var holder BitBucketPage
 
@@ -225,14 +232,14 @@ func collectPageBitBucket(
 	queryParams[page] = strconv.Itoa(currentPage)
 	// Set the api page length
 	queryParams[pageLen] = pageLenValue
-	_, err := getBitBucket(client, token, url, &holder, queryParams)
+	err := getBitBucket(client, token, url, &holder, queryParams)
 	if err != nil {
 		return -1, err
 	}
 
 	// Verify if there is a next page
 	if holder.Next != "" {
-		currentPage += 1
+		currentPage++
 	} else {
 		currentPage = -1
 	}
@@ -244,9 +251,12 @@ func collectPageBitBucket(
 		if err != nil {
 			return -1, err
 		}
-		holder1 := BitBucketRootCommit{}
-		json.Unmarshal(marshal, &holder1)
-		if !verifyDate(holder1.Commits[len(holder1.Commits)-1]) {
+		commitHolder := BitBucketRootCommit{}
+		err = json.Unmarshal(marshal, &commitHolder)
+		if err != nil {
+			return -1, err
+		}
+		if !verifyDate(commitHolder.Commits[len(commitHolder.Commits)-1]) {
 			return -1, nil
 		}
 	}
@@ -254,12 +264,12 @@ func collectPageBitBucket(
 	return currentPage, nil
 }
 
-func getBitBucket(client *http.Client, token, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
+func getBitBucket(client *http.Client, token, url string, target interface{}, queryParams map[string]string) error {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(token) > 0 {
 		req.Header.Add(authorizationHeader, fmt.Sprintf(basicFormat, token))
@@ -273,7 +283,7 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	req.URL.RawQuery = q.Encode()
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL.String()))
@@ -285,26 +295,26 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		// State sent when expired token
 	case http.StatusUnauthorized:
 		err = errors.New(failedBitbucketAuth)
-		return nil, err
+		return err
 		// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedBitbucketAuth)
-		return nil, err
+		return err
 	case http.StatusNotFound:
 		err = errors.New(failedBitbucketNotFound)
-		return nil, err
+		return err
 		// Case the commit/project does not exist in the organization
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return nil, errors.New(string(body))
+		return errors.New(string(body))
 	}
-	return nil, nil
+	return nil
 }

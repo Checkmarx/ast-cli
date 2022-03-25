@@ -9,7 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper, azureWrapper wrappers.AzureWrapper, bitBucketWrapper wrappers.BitBucketWrapper, gitLabWrapper wrappers.GitLabWrapper) *cobra.Command {
+func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
+	azureWrapper wrappers.AzureWrapper,
+	bitBucketWrapper wrappers.BitBucketWrapper,
+	gitLabWrapper wrappers.GitLabWrapper) *cobra.Command {
 
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
