@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -40,7 +39,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 	getUserProjectsURL := fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
 	err = g.get(getUserProjectsURL, &gitLabProjectList, map[string]string{})
 
-	log.Printf("Found %d project(s).", len(gitLabProjectList))
+	PrintIfVerbose(fmt.Sprintf("Found %d project(s).", len(gitLabProjectList)))
 	return gitLabProjectList, err
 }
 
@@ -55,9 +54,9 @@ func (g *GitLabHTTPWrapper) GetCommits(
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
 	commitsURL := fmt.Sprintf(gitLabCommitURL, gitLabBaseURL, gitLabAPIVersion, encodedProjectPath)
 
-	log.Printf("Getting commits for project: %s", gitLabProjectPathWithNameSpace)
+	PrintIfVerbose(fmt.Sprintf("Getting commits for project: %s", gitLabProjectPathWithNameSpace))
 	err = g.get(commitsURL, &commits, queryParams)
-	log.Printf("Found %d commit(s).", len(commits))
+	PrintIfVerbose(fmt.Sprintf("Found %d commit(s).", len(commits)))
 	return commits, err
 }
 
@@ -70,11 +69,11 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
-	log.Printf("Finding the projects for group: %s", gitLabGroupName)
+	PrintIfVerbose(fmt.Sprintf("Finding the projects for group: %s", gitLabGroupName))
 	projectsURL := fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, encodedGroupName)
 
 	err = g.get(projectsURL, &gitLabProjectList, queryParams)
-	log.Printf("Found %d project(s).", len(gitLabProjectList))
+	PrintIfVerbose(fmt.Sprintf("Found %d project(s).", len(gitLabProjectList)))
 	return gitLabProjectList, err
 }
 
