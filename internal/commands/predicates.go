@@ -12,10 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	KICS = "kics"
-)
-
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
@@ -146,10 +142,6 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
-
-		if strings.EqualFold(strings.TrimSpace(scanType), KICS) {
-			scanType = "" // API Endpoint for Kics doesnt require scantype.
-		}
 
 		predicate := &wrappers.PredicateRequest{
 			SimilarityID: similarityID,

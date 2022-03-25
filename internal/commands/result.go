@@ -397,7 +397,7 @@ func runGetCodeBashingCommand(
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
 		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedListingCodeBashing)
+			return err
 		}
 		if webError != nil {
 			return fmt.Errorf(webError.Message)
