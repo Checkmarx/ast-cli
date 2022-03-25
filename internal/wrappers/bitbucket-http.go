@@ -67,7 +67,7 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
-	pages, err := getWithPagination(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
 	if err != nil {
 		return commits, err
 	}
@@ -98,7 +98,7 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
-	pages, err := getWithPagination(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
+	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), queryParams)
 	if err != nil {
 		return repos, err
 	}
@@ -190,7 +190,7 @@ func verifyDate(commit BitBucketCommit) bool {
 	return true
 }
 
-func getWithPagination(
+func getWithPaginationBitBucket(
 	client *http.Client,
 	url string,
 	token string,
@@ -202,7 +202,7 @@ func getWithPagination(
 	var currentPage = 1
 	var err error
 	for currentPage != -1 {
-		currentPage, err = collectPage(client, token, url, currentPage, queryParams, &pageCollection, commitType)
+		currentPage, err = collectPageBitBucket(client, token, url, currentPage, queryParams, &pageCollection, commitType)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +210,7 @@ func getWithPagination(
 	return pageCollection, nil
 }
 
-func collectPage(
+func collectPageBitBucket(
 	client *http.Client,
 	token string,
 	url string,
@@ -225,7 +225,7 @@ func collectPage(
 	queryParams[page] = strconv.Itoa(currentPage)
 	// Set the api page length
 	queryParams[pageLen] = pageLenValue
-	_, err := get(client, token, url, &holder, queryParams)
+	_, err := getBitBucket(client, token, url, &holder, queryParams)
 	if err != nil {
 		return -1, err
 	}
@@ -254,7 +254,7 @@ func collectPage(
 	return currentPage, nil
 }
 
-func get(client *http.Client, token, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
+func getBitBucket(client *http.Client, token, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)

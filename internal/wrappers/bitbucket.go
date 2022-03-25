@@ -35,7 +35,7 @@ type BitBucketRepo struct {
 }
 
 type BitBucketPage struct {
-	Next    string            `json:"next"`
+	Next   string      `json:"next"`
 	Values interface{} `json:"values,omitempty"`
 }
 
