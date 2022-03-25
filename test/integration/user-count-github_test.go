@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
@@ -16,9 +17,10 @@ import (
 
 func TestGitHubUserCount(t *testing.T) {
 	_ = viper.BindEnv(pat)
-	buffer := executeCmdNilAssertion(
+	buffer := executeCmdWithTimeOutNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
+		2*time.Minute,
 		"utils",
 		usercount.UcCommand,
 		usercount.GithubCommand,

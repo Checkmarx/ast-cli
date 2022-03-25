@@ -10,6 +10,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"github.com/tomnomnom/linkheader"
 )
 
 type GitHubHTTPWrapper struct {
@@ -26,6 +27,11 @@ const (
 	ownerPlaceholder    = "{owner}"
 	repoPlaceholder     = "{repo}"
 	orgPlaceholder      = "{org}"
+	linkHeaderName      = "Link"
+	nextRel             = "next"
+	perPageParam        = "per_page"
+	perPageValue        = "100"
+	retryLimit          = 3
 )
 
 func NewGitHubWrapper() GitHubWrapper {
@@ -44,7 +50,7 @@ func (g *GitHubHTTPWrapper) GetOrganization(organizationName string) (Organizati
 	}
 	organizationURL := strings.ReplaceAll(organizationTemplate, orgPlaceholder, organizationName)
 
-	err = g.get(organizationURL, &organization, map[string]string{})
+	err = g.get(organizationURL, &organization)
 
 	return organization, err
 }
@@ -60,32 +66,64 @@ func (g *GitHubHTTPWrapper) GetRepository(organizationName, repositoryName strin
 	repositoryURL = strings.ReplaceAll(repositoryURL, ownerPlaceholder, organizationName)
 	repositoryURL = strings.ReplaceAll(repositoryURL, repoPlaceholder, repositoryName)
 
-	err = g.get(repositoryURL, &repository, map[string]string{})
+	err = g.get(repositoryURL, &repository)
 
 	return repository, err
 }
 
 func (g *GitHubHTTPWrapper) GetRepositories(organization Organization) ([]Repository, error) {
-	var err error
-	var repositories []Repository
-
 	repositoriesURL := organization.RepositoriesURL
 
-	err = g.get(repositoriesURL, &repositories, map[string]string{})
+	pages, err := getWithPagination(g.client, repositoriesURL, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
 
-	return repositories, err
+	castedPages := make([]Repository, 0)
+	for _, e := range pages {
+		marshal, err := json.Marshal(e)
+		if err != nil {
+			return nil, err
+		}
+		holder := Repository{}
+		err = json.Unmarshal(marshal, &holder)
+		if err != nil {
+			return nil, err
+		}
+		castedPages = append(castedPages, holder)
+	}
+
+	return castedPages, nil
 }
 
 func (g *GitHubHTTPWrapper) GetCommits(repository Repository, queryParams map[string]string) ([]CommitRoot, error) {
-	var err error
-	var commits []CommitRoot
-
 	commitsURL := repository.CommitsURL
-	commitsURL = commitsURL[:strings.Index(commitsURL, "{")]
+	index := strings.Index(commitsURL, "{")
+	if index < 0 {
+		return nil, errors.Errorf("Unable to collect commits URL for repository %s", repository.FullName)
+	}
+	commitsURL = commitsURL[:index]
 
-	err = g.get(commitsURL, &commits, queryParams)
+	pages, err := getWithPagination(g.client, commitsURL, queryParams)
+	if err != nil {
+		return nil, err
+	}
 
-	return commits, err
+	castedPages := make([]CommitRoot, 0)
+	for _, e := range pages {
+		marshal, err := json.Marshal(e)
+		if err != nil {
+			return nil, err
+		}
+		holder := CommitRoot{}
+		err = json.Unmarshal(marshal, &holder)
+		if err != nil {
+			return nil, err
+		}
+		castedPages = append(castedPages, holder)
+	}
+
+	return castedPages, nil
 }
 
 func (g *GitHubHTTPWrapper) getOrganizationTemplate() (string, error) {
@@ -113,7 +151,7 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 	var rootAPIResponse rootAPI
 
 	baseURL := viper.GetString(params.URLFlag)
-	err = g.get(baseURL, &rootAPIResponse, map[string]string{})
+	err = g.get(baseURL, &rootAPIResponse)
 
 	g.organizationTemplate = rootAPIResponse.OrganizationURL
 	g.repositoryTemplate = rootAPIResponse.RepositoryURL
@@ -121,51 +159,138 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 	return err
 }
 
-func (g *GitHubHTTPWrapper) get(url string, target interface{}, queryParams map[string]string) error {
+func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
+	resp, err := get(g.client, url, target, map[string]string{})
+
+	closeBody(resp)
+
+	return err
+}
+
+func getWithPagination(
+	client *http.Client,
+	url string,
+	queryParams map[string]string,
+) ([]interface{}, error) {
+	queryParams[perPageParam] = perPageValue
+
+	var pageCollection = make([]interface{}, 0)
+
+	next, err := collectPage(client, url, queryParams, &pageCollection)
+	if err != nil {
+		return nil, err
+	}
+
+	for next != "" {
+		next, err = collectPage(client, next, map[string]string{}, &pageCollection)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return pageCollection, nil
+}
+
+func collectPage(
+	client *http.Client,
+	url string,
+	queryParams map[string]string,
+	pageCollection *[]interface{},
+) (string, error) {
+	var holder = make([]interface{}, 0)
+
+	resp, err := get(client, url, &holder, queryParams)
+	if err != nil {
+		return "", err
+	}
+
+	defer closeBody(resp)
+
+	*pageCollection = append(*pageCollection, holder...)
+	next := getNextPageLink(resp)
+
+	return next, nil
+}
+
+func getNextPageLink(resp *http.Response) string {
+	if resp != nil {
+		linkHeader := resp.Header[linkHeaderName]
+		if len(linkHeader) > 0 {
+			links := linkheader.Parse(linkHeader[0])
+			for _, link := range links {
+				if link.Rel == nextRel {
+					return link.URL
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func get(client *http.Client, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
 	var err error
+	var count uint8
 
-	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
+	for count < retryLimit {
+		var currentError error
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return err
+		req, currentError := http.NewRequest(http.MethodGet, url, http.NoBody)
+		if currentError != nil {
+			return nil, currentError
+		}
+
+		req.Header.Add(acceptHeader, apiVersion)
+
+		token := viper.GetString(params.SCMTokenFlag)
+		if len(token) > 0 {
+			req.Header.Add(authorizationHeader, fmt.Sprintf(tokenFormat, token))
+		}
+
+		q := req.URL.Query()
+		for k, v := range queryParams {
+			q.Add(k, v)
+		}
+		req.URL.RawQuery = q.Encode()
+
+		PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
+		resp, currentError := client.Do(req)
+		if currentError != nil {
+			count++
+			PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
+			err = currentError
+			continue
+		}
+
+		switch resp.StatusCode {
+		case http.StatusOK:
+			PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
+			currentError = json.NewDecoder(resp.Body).Decode(target)
+			closeBody(resp)
+			if currentError != nil {
+				return nil, currentError
+			}
+		case http.StatusConflict:
+			PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
+			closeBody(resp)
+			return nil, nil
+		default:
+			body, currentError := io.ReadAll(resp.Body)
+			closeBody(resp)
+			if currentError != nil {
+				PrintIfVerbose(currentError.Error())
+				return nil, currentError
+			}
+			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
+			return nil, errors.New(message)
+		}
+		return resp, nil
 	}
 
-	req.Header.Add(acceptHeader, apiVersion)
+	return nil, err
+}
 
-	token := viper.GetString(params.SCMTokenFlag)
-	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(tokenFormat, token))
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-
-	resp, err := g.client.Do(req)
-
-	if err != nil {
-		return err
-	}
-
-	defer func() {
+func closeBody(resp *http.Response) {
+	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
-	}()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		err = json.NewDecoder(resp.Body).Decode(target)
-		if err != nil {
-			return err
-		}
-	default:
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return errors.New(string(body))
 	}
-
-	return nil
 }
