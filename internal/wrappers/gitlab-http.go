@@ -177,22 +177,22 @@ func getFromGitLab(
 	return nil, err
 }
 
-func (g *GitLabHTTPWrapper) getFromGitLab(url string, target interface{}) error {
-	resp, err := getFromGitLab(g.client, url, target, map[string]string{})
+func (g *GitLabHTTPWrapper) getFromGitLab(requestURL string, target interface{}) error {
+	resp, err := getFromGitLab(g.client, requestURL, target, map[string]string{})
 	closeResponseBody(resp)
 	return err
 }
 
 func fetchWithPagination(
 	client *http.Client,
-	url string,
+	requestURL string,
 	queryParams map[string]string,
 ) ([]interface{}, error) {
 	queryParams[perPageParamGitLab] = perPageValueGitLab
 
 	var pageCollection = make([]interface{}, 0)
 
-	next, err := collectPageForGitLab(client, url, queryParams, &pageCollection)
+	next, err := collectPageForGitLab(client, requestURL, queryParams, &pageCollection)
 	if err != nil {
 		return nil, err
 	}
@@ -208,13 +208,13 @@ func fetchWithPagination(
 
 func collectPageForGitLab(
 	client *http.Client,
-	url string,
+	requestURL string,
 	queryParams map[string]string,
 	pageCollection *[]interface{},
 ) (string, error) {
 	var holder = make([]interface{}, 0)
 
-	resp, err := getFromGitLab(client, url, &holder, queryParams)
+	resp, err := getFromGitLab(client, requestURL, &holder, queryParams)
 	if err != nil {
 		return "", err
 	}
