@@ -22,8 +22,8 @@ const (
 	gitLabAPIVersion          = "api/v4"
 	gitLabTokenFormat         = "Bearer %s"
 	gitLabCommitURL           = "%s/%s/projects/%s/repository/commits"
-	gitLabProjectsURL         = "%s/%s/projects?per_page=100&membership=true"
-	gitLabGroupProjectsURL    = "%s/%s/groups/%s/projects" //?per_page=100"
+	gitLabProjectsURL         = "%s/%s/projects?membership=true"
+	gitLabGroupProjectsURL    = "%s/%s/groups/%s/projects"
 	linkHeaderNameGitLab      = "Link"
 	nextRelGitLab             = "next"
 	perPageParamGitLab        = "per_page"
@@ -39,14 +39,8 @@ func NewGitLabWrapper() GitLabWrapper {
 
 func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) {
 	var err error
-	//var gitLabProjectList []GitLabProject
-
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	getUserProjectsURL := fmt.Sprintf(gitLabProjectsURL, gitLabBaseURL, gitLabAPIVersion)
-	//err = g.get(getUserProjectsURL, &gitLabProjectList, map[string]string{})
-
-	//PrintIfVerbose(fmt.Sprintf("Found %d project(s).", len(gitLabProjectList)))
-	//return gitLabProjectList, err
 
 	pages, err := fetchWithPagination(g.client, getUserProjectsURL, map[string]string{})
 	if err != nil {
@@ -65,7 +59,6 @@ func (g *GitLabHTTPWrapper) GetGitLabProjectsForUser() ([]GitLabProject, error) 
 		}
 		castedPages = append(castedPages, holder)
 	}
-
 	return castedPages, nil
 }
 
@@ -73,17 +66,12 @@ func (g *GitLabHTTPWrapper) GetCommits(
 	gitLabProjectPathWithNameSpace string, queryParams map[string]string,
 ) ([]GitLabCommit, error) {
 	var err error
-	//var commits []GitLabCommit
-
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
 	commitsURL := fmt.Sprintf(gitLabCommitURL, gitLabBaseURL, gitLabAPIVersion, encodedProjectPath)
 
 	PrintIfVerbose(fmt.Sprintf("Getting commits for project: %s", gitLabProjectPathWithNameSpace))
-	//err = g.get(commitsURL, &commits, queryParams)
-	//PrintIfVerbose(fmt.Sprintf("Found %d commit(s).", len(commits)))
-	//return commits, err
 
 	pages, err := fetchWithPagination(g.client, commitsURL, queryParams)
 	if err != nil {
@@ -102,7 +90,6 @@ func (g *GitLabHTTPWrapper) GetCommits(
 		}
 		castedPages = append(castedPages, holder)
 	}
-
 	return castedPages, nil
 }
 
@@ -110,7 +97,6 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	[]GitLabProject, error,
 ) {
 	var err error
-	//var gitLabProjectList []GitLabProject
 
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
@@ -135,12 +121,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 		}
 		castedPages = append(castedPages, holder)
 	}
-
 	return castedPages, nil
-
-	//err = g.get(projectsURL, &gitLabProjectList, queryParams)
-	//PrintIfVerbose(fmt.Sprintf("Found %d project(s).", len(gitLabProjectList)))
-	//return gitLabProjectList, err
 }
 
 func getFromGitLab(
@@ -177,13 +158,13 @@ func getFromGitLab(
 		switch resp.StatusCode {
 		case http.StatusOK:
 			currentError = json.NewDecoder(resp.Body).Decode(target)
-			closeBody(resp)
+			closeResponseBody(resp)
 			if currentError != nil {
 				return nil, currentError
 			}
 		default:
 			body, currentError := io.ReadAll(resp.Body)
-			closeBody(resp)
+			closeResponseBody(resp)
 			if currentError != nil {
 				PrintIfVerbose(currentError.Error())
 				return nil, currentError
@@ -193,15 +174,12 @@ func getFromGitLab(
 		}
 		return resp, nil
 	}
-
 	return nil, err
 }
 
 func (g *GitLabHTTPWrapper) getFromGitLab(url string, target interface{}) error {
-	resp, err := get(g.client, url, target, map[string]string{})
-
+	resp, err := getFromGitLab(g.client, url, target, map[string]string{})
 	closeResponseBody(resp)
-
 	return err
 }
 
@@ -225,7 +203,6 @@ func fetchWithPagination(
 			return nil, err
 		}
 	}
-
 	return pageCollection, nil
 }
 

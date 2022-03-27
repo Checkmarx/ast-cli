@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -152,7 +151,7 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 					repoAccessLevelDisabled) || strings.EqualFold(
 					gitLabProject.RepoAccessLevel,
 					repoAccessLevelPrivate) {
-					commands.PrintIfVerbose(
+					wrappers.PrintIfVerbose(
 						fmt.Sprintf(
 							"Skipping the project %s because of empty repository.",
 							gitLabProject.PathWithNameSpace))
@@ -192,7 +191,7 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 		if gitLabProject.EmptyRepo || strings.EqualFold(
 			gitLabProject.RepoAccessLevel,
 			repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
-			commands.PrintIfVerbose(
+			wrappers.PrintIfVerbose(
 				fmt.Sprintf(
 					"Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace))
 		} else {
