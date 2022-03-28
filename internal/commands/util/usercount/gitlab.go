@@ -1,6 +1,7 @@
 package usercount
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -150,7 +151,10 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 					repoAccessLevelDisabled) || strings.EqualFold(
 					gitLabProject.RepoAccessLevel,
 					repoAccessLevelPrivate) {
-					log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
+					wrappers.PrintIfVerbose(
+						fmt.Sprintf(
+							"Skipping the project %s because of empty repository.",
+							gitLabProject.PathWithNameSpace))
 				} else {
 					commits, err := gitLabWrapper.GetCommits(
 						gitLabProject.PathWithNameSpace,
@@ -187,7 +191,9 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 		if gitLabProject.EmptyRepo || strings.EqualFold(
 			gitLabProject.RepoAccessLevel,
 			repoAccessLevelDisabled) || strings.EqualFold(gitLabProject.RepoAccessLevel, repoAccessLevelPrivate) {
-			log.Printf("Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace)
+			wrappers.PrintIfVerbose(
+				fmt.Sprintf(
+					"Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace))
 		} else {
 			commits, err := gitLabWrapper.GetCommits(
 				gitLabProject.PathWithNameSpace,
