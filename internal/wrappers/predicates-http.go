@@ -98,7 +98,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	case http.StatusNotModified:
 		return nil, errors.Errorf("No changes to update.")
 	case http.StatusForbidden:
-		return nil, errors.Errorf("No permission to update.")
+		return nil, errors.Errorf("No permission to update predicate.")
 	case http.StatusNotFound:
 		return nil, errors.Errorf("Predicate not found.")
 	default:
@@ -135,7 +135,7 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 		}
 		return &model, nil, nil
 	case http.StatusForbidden:
-		return nil, nil, errors.Errorf("No permission to update.")
+		return nil, nil, errors.Errorf("No permission to show predicate.")
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("Predicate not found.")
 	default:

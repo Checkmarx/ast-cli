@@ -112,7 +112,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		)
 
 		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed getting the predicate.")
+			return errors.Wrapf(err, "%s", "Failed getting the predicate")
 		}
 
 		// Checking the response
