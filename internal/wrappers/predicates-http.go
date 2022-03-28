@@ -83,7 +83,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+	PrintIfVerbose(fmt.Sprintf("Response : %s ", resp.Status))
 
 	defer func() {
 		_ = resp.Body.Close()
@@ -95,6 +95,10 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	case http.StatusOK:
 		fmt.Println("Predicate updated successfully.")
 		return nil, nil
+	case http.StatusNotModified:
+		return nil, errors.Errorf("No changes to update.")
+	case http.StatusForbidden:
+		return nil, errors.Errorf("No permission to update.")
 	case http.StatusNotFound:
 		return nil, errors.Errorf("Predicate not found.")
 	default:
@@ -130,6 +134,8 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 			return responsePredicateParsingFailed(err)
 		}
 		return &model, nil, nil
+	case http.StatusForbidden:
+		return nil, nil, errors.Errorf("No permission to update.")
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("Predicate not found.")
 	default:

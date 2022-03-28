@@ -36,6 +36,7 @@ type SarifDriverRule struct {
 
 type SarifScanResult struct {
 	RuleID              string                  `json:"ruleId"`
+	Level               string                  `json:"level"`
 	Message             SarifMessage            `json:"message"`
 	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
 	Locations           []SarifLocation         `json:"locations,omitempty"`

@@ -31,6 +31,9 @@ const (
 	lowSonar                 = "MINOR"
 	mediumSonar              = "MAJOR"
 	highSonar                = "CRITICAL"
+	infoLowSarif             = "note"
+	mediumSarif              = "warning"
+	highSarif                = "error"
 	vulnerabilitySonar       = "VULNERABILITY"
 	infoCx                   = "INFO"
 	lowCx                    = "LOW"
@@ -728,7 +731,15 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
+	// Match cx severity with sarif severity
+	level := map[string]string{
+		infoCx:   infoLowSarif,
+		lowCx:    infoLowSarif,
+		mediumCx: mediumSarif,
+		highCx:   highSarif,
+	}
 	scanResult.RuleID = fmt.Sprintf("%v", result.ScanResultData.QueryID)
+	scanResult.Level = level[result.Severity]
 	scanResult.Message.Text = result.ScanResultData.QueryName
 	scanResult.Locations = []wrappers.SarifLocation{}
 
