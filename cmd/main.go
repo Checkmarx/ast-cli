@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -73,7 +74,7 @@ func exitIfError(err error) {
 			log.Println(e.Err)
 			os.Exit(e.Code)
 		default:
-			log.Println(e)
+			fmt.Println(e)
 			os.Exit(failureExitCode)
 		}
 	}
