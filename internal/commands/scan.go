@@ -38,6 +38,7 @@ const (
 	thresholdMsgLog   = "Threshold check finished with status %s : %s"
 	mbBytes           = 1024.0 * 1024.0
 	scaType           = "sca"
+	notExploitable    = "NOT_EXPLOITABLE"
 )
 
 var (
@@ -1150,8 +1151,10 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID strin
 	}
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
-		key := strings.ToLower(fmt.Sprintf("%s-%s", result.Type, result.Severity))
-		summaryMap[key]++
+		if !strings.EqualFold(result.State, notExploitable) {
+			key := strings.ToLower(fmt.Sprintf("%s-%s", result.Type, result.Severity))
+			summaryMap[key]++
+		}
 	}
 	return summaryMap, nil
 }
