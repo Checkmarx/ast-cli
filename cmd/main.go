@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
@@ -71,7 +70,7 @@ func exitIfError(err error) {
 	if err != nil {
 		switch e := err.(type) {
 		case *wrappers.AstError:
-			log.Println(e.Err)
+			fmt.Println(e.Err)
 			os.Exit(e.Code)
 		default:
 			fmt.Println(e)
