@@ -86,7 +86,8 @@ func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
-	bflWrapper wrappers.BflWrapper) *cobra.Command {
+	bflWrapper wrappers.BflWrapper,
+) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
 		Short: "Retrieve results",
@@ -289,7 +290,6 @@ func SummaryReport(
 		return nil, err
 	}
 	summary.BaseURI = wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
-	summary.TotalIssues = int(results.TotalCount)
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
@@ -308,20 +308,25 @@ func SummaryReport(
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if engineType == commonParams.SastType {
+	if engineType == commonParams.SastType && result.State != notExploitable {
 		summary.SastIssues++
+		summary.TotalIssues++
 	} else if engineType == commonParams.ScaType {
 		summary.ScaIssues++
-	} else if engineType == commonParams.KicsType {
+		summary.TotalIssues++
+	} else if engineType == commonParams.KicsType && result.State != notExploitable {
 		summary.KicsIssues++
+		summary.TotalIssues++
 	}
 	severity := strings.ToLower(result.Severity)
-	if severity == highLabel {
-		summary.HighIssues++
-	} else if severity == lowLabel {
-		summary.LowIssues++
-	} else if severity == mediumLabel {
-		summary.MediumIssues++
+	if result.State != notExploitable {
+		if severity == highLabel {
+			summary.HighIssues++
+		} else if severity == lowLabel {
+			summary.LowIssues++
+		} else if severity == mediumLabel {
+			summary.MediumIssues++
+		}
 	}
 }
 
