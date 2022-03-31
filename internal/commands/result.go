@@ -756,7 +756,6 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	scanResult.Locations = []wrappers.SarifLocation{}
 
 	if len(result.ScanResultData.Nodes) == 0 {
-
 		var scanLocation wrappers.SarifLocation
 		// to use in kics scan type
 		if result.Type == commonParams.KicsType {
