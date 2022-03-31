@@ -715,17 +715,13 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	} else {
 		sarifRule.ID = fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
 	}
+	sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 
-	if result.ScanResultData.QueryName != "" {
-		sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	sarifDescription.Text = result.Description
+	if result.Type == commonParams.KicsType {
+		sarifDescription.Text = result.Description + " Value:" + result.ScanResultData.Value + ". Expected value:" + result.ScanResultData.ExpectedValue
 	}
-	if result.Description != "" {
-		sarifDescription.Text = result.Description
-		if result.Type == commonParams.KicsType {
-			sarifDescription.Text = result.Description + " Value:" + result.ScanResultData.Value + ". Expected value:" + result.ScanResultData.ExpectedValue
-		}
-		sarifRule.FullDescription = sarifDescription
-	}
+	sarifRule.FullDescription = sarifDescription
 
 	sarifRule.HelpURI = wrappers.SarifInformationURI
 
