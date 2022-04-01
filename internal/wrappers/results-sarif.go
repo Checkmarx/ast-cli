@@ -29,13 +29,19 @@ type SarifDriver struct {
 }
 
 type SarifDriverRule struct {
-	ID      string `json:"id"`
-	Name    string `json:"name,omitempty"`
-	HelpURI string `json:"helpUri"`
+	ID              string           `json:"id"`
+	Name            string           `json:"name,omitempty"`
+	HelpURI         string           `json:"helpUri"`
+	FullDescription SarifDescription `json:"fullDescription"`
+}
+
+type SarifDescription struct {
+	Text string `json:"text"`
 }
 
 type SarifScanResult struct {
 	RuleID              string                  `json:"ruleId"`
+	Level               string                  `json:"level"`
 	Message             SarifMessage            `json:"message"`
 	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
 	Locations           []SarifLocation         `json:"locations,omitempty"`
