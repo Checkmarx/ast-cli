@@ -1,6 +1,6 @@
 name: AST Cli Release
 
-on: [ workflow_dispatch ]
+on: [ workflow_dispatch,push ]
 
 jobs:
   build:
