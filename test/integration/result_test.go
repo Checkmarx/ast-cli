@@ -70,6 +70,17 @@ func assertResultFilesCreated(t *testing.T) {
 	}()
 }
 
+func TestResultsShowParamFailed(t *testing.T) {
+
+	args := []string{
+		"results",
+		"show",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed listing results: Please provide a scan ID")
+}
+
 func TestCodeBashingParamFailed(t *testing.T) {
 
 	args := []string{
