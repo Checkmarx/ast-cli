@@ -1,4 +1,4 @@
-name: AST Cli Release Macos Dry
+name: AST Cli Release
 
 on: [ workflow_dispatch ]
 
