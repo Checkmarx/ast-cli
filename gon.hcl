@@ -11,7 +11,7 @@ apple_id {
 }
 
 sign {
-  application_identity = "iPhone Distribution: CHECKMARX LTD (Z68SAQG5BR)"
+  application_identity = "Mac Developer: Galactica Team (M743PYYBKU)"
 }
 
 dmg {
