@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
 )
@@ -23,11 +24,11 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if s.Type == "infrastructure" {
+	if strings.HasPrefix(s.Type, "infrastructure") {
 		s.Type = params.KicsType
 	}
 
-	if s.Type == "dependency" || s.Type == "sca-container" {
+	if strings.HasPrefix(s.Type,"dependency") || strings.HasPrefix(s.Type, "sca-container") {
 		s.Type = params.ScaType
 	}
 
