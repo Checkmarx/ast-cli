@@ -2,7 +2,7 @@
 #
 # The path follows a pattern
 # ./dist/BUILD-ID_TARGET/BINARY-NAME
-source = ["./bin/cx-mac"]
+source = ["./dist/cx-mac_darwin_arm64/cx"]
 bundle_id = "com.checkmarx.cli"
 
 apple_id {
