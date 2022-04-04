@@ -55,9 +55,10 @@ type GitCredentials struct {
 }
 
 type StatusInfo struct {
-	Name    string
-	Status  string
-	Details string
+	Name      string
+	Status    string
+	Details   string `json:"details,omitempty"`
+	ErrorCode int    `json:"errorCode,omitempty"`
 }
 
 type ScanResponseModel struct {
