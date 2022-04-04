@@ -1222,12 +1222,8 @@ func isScanRunning(
 	}
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
-		err = printByScanInfoFormat(cmd, scanResponseModel.StatusDetails)
-		if err != nil {
-			return false, errors.New("Unable to print the details of partial scan.")
-		}
+		_ = printer.Print(cmd.OutOrStdout(), scanResponseModel.StatusDetails, printer.FormatList)
 		reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
-
 		if reportErr != nil {
 			return false, errors.New("Unable to create report for partial scan.")
 		}
