@@ -204,7 +204,7 @@ func addReqMonitor(req *http.Request) *http.Request {
 				if err == nil {
 					log.Print("Completed TLS handshake")
 				} else {
-					log.Print("Error completing TLS handshake")
+					log.Printf("%s, %s", "Error completing TLS handshake", err)
 				}
 			},
 			GotFirstResponseByte: func() {
