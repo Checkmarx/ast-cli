@@ -91,8 +91,8 @@ func TestScaResolverArgFailed(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast,kics,sca",
 		flag(params.ScaResolverFlag), "./nonexisting",
+		flag(params.ScanTypes), "sast,kics,sca",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -103,8 +103,8 @@ func TestScaResolverArgFailed(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast,kics,sca",
 		flag(params.ScaResolverFlag), viper.GetString(resolverEnvVar),
+		flag(params.ScanTypes), "sast,kics,sca",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScaResolverParamsFlag), "-q --invalid-param \"invalid\"",
 	}
@@ -476,4 +476,36 @@ func TestScanLogsKICS(t *testing.T) {
 		flag(params.ScanIDFlag), scanID,
 		flag(params.ScanTypeFlag), "kics",
 	)
+}
+
+func TestPartialScanWithWrongPreset(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.PresetName), "Checkmarx Invalid",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "scan completed partially")
+}
+
+func TestFailedScanWithWrongPreset(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Invalid",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "scan did not complete successfully")
 }
