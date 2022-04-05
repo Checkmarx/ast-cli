@@ -31,6 +31,9 @@ const (
 	lowSonar                 = "MINOR"
 	mediumSonar              = "MAJOR"
 	highSonar                = "CRITICAL"
+	infoLowSarif             = "note"
+	mediumSarif              = "warning"
+	highSarif                = "error"
 	vulnerabilitySonar       = "VULNERABILITY"
 	infoCx                   = "INFO"
 	lowCx                    = "LOW"
@@ -38,6 +41,8 @@ const (
 	highCx                   = "HIGH"
 	codeBashingKey           = "cb-url"
 	failedGettingBfl         = "Failed getting BFL"
+	notAvailableString       = "N/A"
+	notAvailableNumber       = -1
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -261,6 +266,23 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanInfo != nil {
+		sastIssues := 0
+		scaIssues := 0
+		kicsIssues := 0
+		if len(scanInfo.StatusDetails) > 0 {
+			for _, statusDetailItem := range scanInfo.StatusDetails {
+				if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
+					if statusDetailItem.Name == commonParams.SastType {
+						sastIssues = notAvailableNumber
+					} else if statusDetailItem.Name == commonParams.ScaType {
+						scaIssues = notAvailableNumber
+					} else if statusDetailItem.Name == commonParams.KicsType {
+						kicsIssues = notAvailableNumber
+					}
+				}
+			}
+		}
+
 		return &wrappers.ResultSummary{
 			ScanID:       scanInfo.ID,
 			Status:       string(scanInfo.Status),
@@ -271,9 +293,9 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 			HighIssues:   0,
 			MediumIssues: 0,
 			LowIssues:    0,
-			SastIssues:   0,
-			KicsIssues:   0,
-			ScaIssues:    0,
+			SastIssues:   sastIssues,
+			KicsIssues:   kicsIssues,
+			ScaIssues:    scaIssues,
 			Tags:         scanInfo.Tags,
 		}, nil
 	}
@@ -302,6 +324,8 @@ func SummaryReport(
 	} else if summary.LowIssues > 0 {
 		summary.RiskStyle = lowLabel
 		summary.RiskMsg = "Low Risk"
+	} else if summary.TotalIssues == 0 {
+		summary.RiskMsg = "No Risk"
 	}
 	return summary, nil
 }
@@ -346,6 +370,7 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	fmt.Println("")
+	fmt.Println("      *************** Scan Summary ***************")
 	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
 	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
 	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
@@ -355,10 +380,23 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
 	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
 
-	fmt.Printf("        Kics Issues: %d\n", summary.KicsIssues)
-	fmt.Printf("      CxSAST Issues: %d\n", summary.SastIssues)
-	fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
-
+	if summary.KicsIssues == notAvailableNumber {
+		fmt.Printf("        Kics Issues: %s\n", notAvailableString)
+	} else {
+		fmt.Printf("        Kics Issues: %d\n", summary.KicsIssues)
+	}
+	if summary.SastIssues == notAvailableNumber {
+		fmt.Printf("      CxSAST Issues: %s\n", notAvailableString)
+	} else {
+		fmt.Printf("      CxSAST Issues: %d\n", summary.SastIssues)
+	}
+	if summary.ScaIssues == notAvailableNumber {
+		fmt.Printf("       CxSCA Issues: %s\n", notAvailableString)
+	} else {
+		fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
+	}
+	fmt.Print("      *********************************************")
+	fmt.Println("")
 	return nil
 }
 
@@ -473,10 +511,12 @@ func createReport(
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
+		convertNotAvailableNumberToZero(summary)
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, "json")
+		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
@@ -710,16 +750,20 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
-
+	var sarifDescription wrappers.SarifDescription
+	sarifDescription.Text = "No description available"
 	if result.ScanResultData.QueryID == nil {
-		sarifRule.ID = result.ID
+		sarifRule.ID = fmt.Sprintf("%s (%s)", result.ID, result.Type)
 	} else {
-		sarifRule.ID = fmt.Sprintf("%v", result.ScanResultData.QueryID)
+		sarifRule.ID = fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
 	}
+	sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 
-	if result.ScanResultData.QueryName != "" {
-		sarifRule.Name = result.ScanResultData.QueryName
+	sarifDescription.Text = result.Description
+	if result.Type == commonParams.KicsType {
+		sarifDescription.Text = result.Description + " Value:" + result.ScanResultData.Value + ". Expected value:" + result.ScanResultData.ExpectedValue
 	}
+	sarifRule.FullDescription = sarifDescription
 
 	sarifRule.HelpURI = wrappers.SarifInformationURI
 
@@ -733,27 +777,68 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
-	scanResult.RuleID = fmt.Sprintf("%v", result.ScanResultData.QueryID)
-	scanResult.Message.Text = result.ScanResultData.QueryName
+	// Match cx severity with sarif severity
+	level := map[string]string{
+		infoCx:   infoLowSarif,
+		lowCx:    infoLowSarif,
+		mediumCx: mediumSarif,
+		highCx:   highSarif,
+	}
+	if result.ScanResultData.QueryID == nil {
+		scanResult.RuleID = fmt.Sprintf("%v (%s)", result.ID, result.Type)
+	} else {
+		scanResult.RuleID = fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
+	}
+	scanResult.Level = level[result.Severity]
+	scanResult.Message.Text = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 	scanResult.Locations = []wrappers.SarifLocation{}
 
-	for _, node := range result.ScanResultData.Nodes {
+	if len(result.ScanResultData.Nodes) == 0 {
 		var scanLocation wrappers.SarifLocation
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
-		if node.Line <= 0 {
-			continue
+		// to use in kics scan type
+		if result.Type == commonParams.KicsType {
+			// Need to remove the first / in kics filename in order to correct in sarif
+			scanLocation.PhysicalLocation.ArtifactLocation.URI = strings.Replace(
+				result.ScanResultData.Filename,
+				"/",
+				"",
+				1)
+			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+			scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+			scanLocation.PhysicalLocation.Region.StartColumn = 1
+			scanLocation.PhysicalLocation.Region.EndColumn = 2
+			scanResult.Locations = append(scanResult.Locations, scanLocation)
 		}
-		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-		scanLocation.PhysicalLocation.Region.StartLine = node.Line
-		column := node.Column
-		length := node.Length
-		scanLocation.PhysicalLocation.Region.StartColumn = column
-		scanLocation.PhysicalLocation.Region.EndColumn = column + length
+	} else {
+		for _, node := range result.ScanResultData.Nodes {
+			var scanLocation wrappers.SarifLocation
+			scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
+			if node.Line <= 0 {
+				continue
+			}
+			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+			scanLocation.PhysicalLocation.Region.StartLine = node.Line
+			column := node.Column
+			length := node.Length
+			scanLocation.PhysicalLocation.Region.StartColumn = column
+			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 
-		scanResult.Locations = append(scanResult.Locations, scanLocation)
+			scanResult.Locations = append(scanResult.Locations, scanLocation)
+		}
 	}
+
 	if len(scanResult.Locations) > 0 {
 		return &scanResult
 	}
 	return nil
+}
+
+func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
+	if summary.KicsIssues == notAvailableNumber {
+		summary.KicsIssues = 0
+	} else if summary.SastIssues == notAvailableNumber {
+		summary.SastIssues = 0
+	} else if summary.ScaIssues == notAvailableNumber {
+		summary.ScaIssues = 0
+	}
 }
