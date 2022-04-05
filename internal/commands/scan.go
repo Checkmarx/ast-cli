@@ -1051,7 +1051,7 @@ func handleWait(
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) error {
-	err := waitForScanCompletion(scanResponseModel, waitDelay, timeoutMinutes, scansWrapper)
+	err := waitForScanCompletion(scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper, cmd)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -1061,7 +1061,15 @@ func handleWait(
 		}
 		return err
 	}
+	return createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+}
 
+func createReportsAfterScan(
+	cmd *cobra.Command,
+	scanID string,
+	scansWrapper wrappers.ScansWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+) error {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
 	targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
@@ -1076,7 +1084,7 @@ func handleWait(
 	return CreateScanReport(
 		resultsWrapper,
 		scansWrapper,
-		scanResponseModel.ID,
+		scanID,
 		reportFormats,
 		targetFile,
 		targetPath,
@@ -1164,12 +1172,14 @@ func waitForScanCompletion(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+	cmd *cobra.Command,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
 	time.Sleep(time.Duration(waitDelay) * time.Second)
 	for {
-		running, err := isScanRunning(scansWrapper, scanResponseModel.ID)
+		running, err := isScanRunning(scansWrapper, resultsWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
 		}
@@ -1192,7 +1202,9 @@ func waitForScanCompletion(
 	return nil
 }
 
-func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+func isScanRunning(
+	scansWrapper wrappers.ScansWrapper, resultsWrapper wrappers.ResultsWrapper, scanID string, cmd *cobra.Command,
+) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -1203,13 +1215,20 @@ func isScanRunning(scansWrapper wrappers.ScansWrapper, scanID string) (bool, err
 	if errorModel != nil {
 		log.Fatal(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
 	} else if scanResponseModel != nil {
-		if scanResponseModel.Status == "Running" || scanResponseModel.Status == "Queued" {
+		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)
 			return true, nil
 		}
 	}
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
-	if scanResponseModel.Status != "Completed" {
+	if scanResponseModel.Status == wrappers.ScanPartial {
+		_ = printer.Print(cmd.OutOrStdout(), scanResponseModel.StatusDetails, printer.FormatList)
+		reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+		if reportErr != nil {
+			return false, errors.New("unable to create report for partial scan")
+		}
+		return false, errors.New("scan completed partially")
+	} else if scanResponseModel.Status != wrappers.ScanCompleted {
 		return false, errors.New("scan did not complete successfully")
 	}
 	return false, nil
