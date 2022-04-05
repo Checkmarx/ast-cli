@@ -511,10 +511,12 @@ func createReport(
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
+		convertNotAvailableNumberToZero(summary)
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, "json")
+		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
@@ -829,4 +831,14 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 		return &scanResult
 	}
 	return nil
+}
+
+func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
+	if summary.KicsIssues == notAvailableNumber {
+		summary.KicsIssues = 0
+	} else if summary.SastIssues == notAvailableNumber {
+		summary.SastIssues = 0
+	} else if summary.ScaIssues == notAvailableNumber {
+		summary.ScaIssues = 0
+	}
 }
