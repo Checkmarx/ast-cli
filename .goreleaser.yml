@@ -67,7 +67,7 @@ archives:
       - cx-mac
     files:
       - LICENSE
-      - cx.dmg
+      - ./dist/cx-mac_darwin_arm64/cx.dmg
 
 brews:
   - tap:
