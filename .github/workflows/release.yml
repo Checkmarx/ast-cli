@@ -30,6 +30,7 @@ jobs:
       - name: Install docker
         run: |
           brew install docker-machine docker
+          brew install --cask virtualbox
           docker-machine create --driver virtualbox default
           docker-machine env default
       - name: Login to Docker Hub
