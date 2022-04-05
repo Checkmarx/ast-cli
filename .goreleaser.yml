@@ -37,20 +37,20 @@ builds:
       - darwin
     goarch:
       - arm64
-    #    hooks:
-    #      post: gon gon.hcl
+    hooks:
+      post: gon gon.hcl
     ldflags:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-signs:
-  - signature: "cx.dmg"
-    ids: [ "cx-mac" ]
-    cmd: gon
-    args:
-      - gon.hcl
+#signs:
+#  - signature: "cx.dmg"
+#    ids: [ "cx-mac" ]
+#    cmd: gon
+#    args:
+#      - gon.hcl
 
-    artifacts: all
+    #artifacts: all
 
 dockers:
   - use: docker
