@@ -177,6 +177,11 @@ func TestCreateScanWithTags(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--tags", "dummy_tag:sub_dummy_tag")...)
 }
 
+func TestCreateScanWithPresetName(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	execCmdNilAssertion(t, append(baseArgs, "--sast-preset-name", "High and Low")...)
+}
+
 func TestCreateScanExcludeGitFolder(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-f", "!.git")...)
