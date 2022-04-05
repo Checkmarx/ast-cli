@@ -281,7 +281,6 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 					}
 				}
 			}
-
 		}
 
 		return &wrappers.ResultSummary{

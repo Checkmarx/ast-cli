@@ -1225,9 +1225,9 @@ func isScanRunning(
 		_ = printer.Print(cmd.OutOrStdout(), scanResponseModel.StatusDetails, printer.FormatList)
 		reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
 		if reportErr != nil {
-			return false, errors.New("Unable to create report for partial scan.")
+			return false, errors.New("unable to create report for partial scan")
 		}
-		return false, errors.New("Scan completed partially.")
+		return false, errors.New("scan completed partially")
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
 		return false, errors.New("scan did not complete successfully")
 	}
