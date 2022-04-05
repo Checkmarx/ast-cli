@@ -54,7 +54,7 @@ dockers:
       - "checkmarx/ast-cli:{{ .Tag }}"
 
 archives:
-  - id: cx-windows-linux
+  - id: cx-windows-linux-archive
     builds:
       - cx
     replacements:
@@ -62,7 +62,7 @@ archives:
       386: x32
     files:
     - LICENSE
-  - id: cx-mac
+  - id: cx-mac-archive
     builds:
       - cx-mac
     files:
