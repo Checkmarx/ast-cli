@@ -43,14 +43,6 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-#signs:
-#  - signature: "cx.dmg"
-#    ids: [ "cx-mac" ]
-#    cmd: gon
-#    args:
-#      - gon.hcl
-
-    #artifacts: all
 
 dockers:
   - use: docker
@@ -60,15 +52,22 @@ dockers:
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
+
 archives:
-  - format_overrides:
-      - goos: windows
-        format: zip
+  - id: cx-windows-linux
+    builds:
+      - cx
     replacements:
       amd64: x64
       386: x32
     files:
+    - LICENSE
+  - id: cx-mac
+    builds:
+      - cx-mac
+    files:
       - LICENSE
+      - cx.dmg
 
 brews:
   - tap:
