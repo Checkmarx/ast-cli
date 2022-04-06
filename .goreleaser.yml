@@ -10,13 +10,12 @@ builds:
     env:
       - CGO_ENABLED=0
     binary: cx
+    id: cx
     goos:
       - linux
       - windows
-      - darwin
     goarch:
       - amd64
-      - arm64
     ignore:
       - goos: darwin
         goarch: 386
@@ -24,6 +23,38 @@ builds:
         goarm: 7
       - goos: windows
         goarm: 7
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx
+    id: cx-mac-arm
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    hooks:
+      post: gon gonArm.hcl
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx
+    id: cx-mac-amd
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    hooks:
+      post: gon gonAmd.hcl
     ldflags:
       - -s
       - -w
@@ -37,15 +68,28 @@ dockers:
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
+
 archives:
-  - format_overrides:
-      - goos: windows
-        format: zip
+  - id: cx-windows-linux-archive
+    builds:
+      - cx
     replacements:
       amd64: x64
       386: x32
     files:
+    - LICENSE
+  - id: cx-mac-arm-archive
+    builds:
+      - cx-mac-arm
+    files:
       - LICENSE
+      - ./dist/cx-mac-arm_darwin_arm64/cx.dmg
+  - id: cx-mac-amd-archive
+    builds:
+      - cx-mac-amd
+    files:
+      - LICENSE
+      - ./dist/cx-mac-amd_darwin_amd64/cx.dmg
 
 brews:
   - tap:
