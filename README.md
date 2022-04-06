@@ -140,7 +140,7 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 
 Find more integrations from our team [here](https://github.com/Checkmarx/ci-cd-integrations#checkmarx-ast-integrations)
 
-© 2022 Checkmarx Ltd. All Rights Reserved.
+© 2022 Checkmarx Ltd. All Rights Reserved. 
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
