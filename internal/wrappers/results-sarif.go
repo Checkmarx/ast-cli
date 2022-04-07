@@ -33,6 +33,11 @@ type SarifDriverRule struct {
 	Name            string           `json:"name,omitempty"`
 	HelpURI         string           `json:"helpUri"`
 	FullDescription SarifDescription `json:"fullDescription"`
+	Properties      SarifProperties  `json:"properties,omitempty"`
+}
+
+type SarifProperties struct {
+	SecuritySeverity string `json:"security-severity"`
 }
 
 type SarifDescription struct {

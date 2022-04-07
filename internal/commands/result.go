@@ -767,6 +767,17 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 
 	sarifRule.HelpURI = wrappers.SarifInformationURI
 
+	var securities = map[string]string{
+		infoCx:   "3.5",
+		lowCx:    "6.5",
+		mediumCx: "8.5",
+		highCx:   "9.5",
+	}
+	var sarifProperties wrappers.SarifProperties
+	sarifProperties.SecuritySeverity = securities[result.Severity]
+
+	sarifRule.Properties = sarifProperties
+
 	if !ruleIds[sarifRule.ID] {
 		ruleIds[sarifRule.ID] = true
 		return &sarifRule
