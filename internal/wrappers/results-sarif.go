@@ -3,7 +3,7 @@ package wrappers
 var (
 	SarifName           = "Checkmarx AST"
 	SarifVersion        = "1.0"
-	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST/pages/5844861345/CxAST+Documentation"
+	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST"
 )
 
 type SarifResultsCollection struct {
