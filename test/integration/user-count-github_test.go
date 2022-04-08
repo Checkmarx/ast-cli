@@ -19,13 +19,13 @@ func TestGitHubUserCount(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdWithTimeOutNilAssertion(
 		t,
-		"Counting contributors from checkmarxdev should pass",
+		"Counting contributors from checkmarx should pass",
 		2*time.Minute,
 		"utils",
 		usercount.UcCommand,
 		usercount.GithubCommand,
 		flag(usercount.OrgsFlag),
-		"checkmarxdev",
+		"checkmarx",
 		flag(params.SCMTokenFlag),
 		viper.GetString(pat),
 		flag(params.FormatFlag),

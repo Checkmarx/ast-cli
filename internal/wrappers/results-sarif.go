@@ -3,7 +3,7 @@ package wrappers
 var (
 	SarifName           = "Checkmarx AST"
 	SarifVersion        = "1.0"
-	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST/pages/5844861345/CxAST+Documentation"
+	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST"
 )
 
 type SarifResultsCollection struct {
@@ -32,9 +32,23 @@ type SarifDriverRule struct {
 	ID              string           `json:"id"`
 	Name            string           `json:"name,omitempty"`
 	HelpURI         string           `json:"helpUri"`
+	Help            SarifHelp        `json:"help"`
 	FullDescription SarifDescription `json:"fullDescription"`
+	Properties      SarifProperties  `json:"properties,omitempty"`
 }
 
+type SarifProperties struct {
+	SecuritySeverity string   `json:"security-severity"`
+	Name             string   `json:"name"`
+	ID               string   `json:"id"`
+	Description      string   `json:"description"`
+	Tags             []string `json:"tags"`
+}
+
+type SarifHelp struct {
+	Text     string `json:"text"`
+	Markdown string `json:"markdown"`
+}
 type SarifDescription struct {
 	Text string `json:"text"`
 }

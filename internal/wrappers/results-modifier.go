@@ -28,9 +28,13 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		s.Type = params.KicsType
 	}
 
-	if strings.HasPrefix(s.Type, "dependency") || strings.HasPrefix(s.Type, "sca-container") {
+	if strings.HasPrefix(s.Type, "dependency") || strings.HasPrefix(s.Type, "sca-") {
 		s.Type = params.ScaType
 	}
+
+	s.Status = strings.TrimSpace(s.Status)
+	s.State = strings.TrimSpace(s.State)
+	s.Severity = strings.TrimSpace(s.Severity)
 
 	if s.Description == "" && s.ScanResultData.Description != "" {
 		s.Description = s.ScanResultData.Description
