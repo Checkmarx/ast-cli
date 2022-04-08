@@ -64,6 +64,13 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+var securities = map[string]string{
+	infoCx:   "3.5",
+	lowCx:    "6.5",
+	mediumCx: "8.5",
+	highCx:   "9.5",
+}
+
 // NewResultCommand - Deprecated command
 func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	resultCmd := &cobra.Command{
@@ -750,33 +757,12 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
-	var sarifDescription wrappers.SarifDescription
-	sarifDescription.Text = "No description available"
-	if result.ScanResultData.QueryID == nil {
-		sarifRule.ID = fmt.Sprintf("%s (%s)", result.ID, result.Type)
-	} else {
-		sarifRule.ID = fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
-	}
+	sarifRule.ID = findRuleId(result)
 	sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
-
-	sarifDescription.Text = result.Description
-	if result.Type == commonParams.KicsType {
-		sarifDescription.Text = result.Description + " Value:" + result.ScanResultData.Value + ". Expected value:" + result.ScanResultData.ExpectedValue
-	}
-	sarifRule.FullDescription = sarifDescription
-
+	sarifRule.FullDescription = findFullDescription(result)
+	sarifRule.Help = findHelp(result)
 	sarifRule.HelpURI = wrappers.SarifInformationURI
-
-	var securities = map[string]string{
-		infoCx:   "3.5",
-		lowCx:    "6.5",
-		mediumCx: "8.5",
-		highCx:   "9.5",
-	}
-	var sarifProperties wrappers.SarifProperties
-	sarifProperties.SecuritySeverity = securities[result.Severity]
-
-	sarifRule.Properties = sarifProperties
+	sarifRule.Properties = findProperties(result)
 
 	if !ruleIds[sarifRule.ID] {
 		ruleIds[sarifRule.ID] = true
@@ -784,6 +770,57 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	}
 
 	return nil
+}
+
+func findRuleId(result *wrappers.ScanResult) string {
+	if result.ScanResultData.QueryID == nil {
+		return fmt.Sprintf("%s (%s)", result.ID, result.Type)
+	}
+
+	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
+}
+
+func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription {
+	var sarifDescription wrappers.SarifDescription
+	sarifDescription.Text = findDescriptionText(result)
+	return sarifDescription
+}
+
+func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
+	var sarifHelp wrappers.SarifHelp
+	sarifHelp.Text = findDescriptionText(result)
+	sarifHelp.Markdown = findHelpMarkdownText(result)
+
+	return sarifHelp
+}
+
+func findDescriptionText(result *wrappers.ScanResult) string {
+	if result.Type == commonParams.KicsType {
+		return fmt.Sprintf("%s Value: %s Excepted value: %s",
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+	}
+
+	return result.Description
+}
+
+func findHelpMarkdownText(result *wrappers.ScanResult) string {
+	if result.Type == commonParams.KicsType {
+		return fmt.Sprintf("%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+	}
+
+	return result.Description
+}
+
+func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
+	var sarifProperties wrappers.SarifProperties
+	sarifProperties.Id = findRuleId(result)
+	sarifProperties.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	sarifProperties.Description = findDescriptionText(result)
+	sarifProperties.SecuritySeverity = securities[result.Severity]
+	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
+
+	return sarifProperties
 }
 
 func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
@@ -795,11 +832,7 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 		mediumCx: mediumSarif,
 		highCx:   highSarif,
 	}
-	if result.ScanResultData.QueryID == nil {
-		scanResult.RuleID = fmt.Sprintf("%v (%s)", result.ID, result.Type)
-	} else {
-		scanResult.RuleID = fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
-	}
+	scanResult.RuleID = findRuleId(result)
 	scanResult.Level = level[result.Severity]
 	scanResult.Message.Text = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 	scanResult.Locations = []wrappers.SarifLocation{}
