@@ -757,7 +757,7 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
-	sarifRule.ID = findRuleId(result)
+	sarifRule.ID = findRuleID(result)
 	sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 	sarifRule.FullDescription = findFullDescription(result)
 	sarifRule.Help = findHelp(result)
@@ -772,7 +772,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	return nil
 }
 
-func findRuleId(result *wrappers.ScanResult) string {
+func findRuleID(result *wrappers.ScanResult) string {
 	if result.ScanResultData.QueryID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type)
 	}
@@ -814,7 +814,7 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 
 func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	var sarifProperties wrappers.SarifProperties
-	sarifProperties.Id = findRuleId(result)
+	sarifProperties.ID = findRuleID(result)
 	sarifProperties.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
@@ -832,7 +832,7 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 		mediumCx: mediumSarif,
 		highCx:   highSarif,
 	}
-	scanResult.RuleID = findRuleId(result)
+	scanResult.RuleID = findRuleID(result)
 	scanResult.Level = level[result.Severity]
 	scanResult.Message.Text = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 	scanResult.Locations = []wrappers.SarifLocation{}

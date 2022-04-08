@@ -40,7 +40,7 @@ type SarifDriverRule struct {
 type SarifProperties struct {
 	SecuritySeverity string   `json:"security-severity"`
 	Name             string   `json:"name"`
-	Id               string   `json:"id"`
+	ID               string   `json:"id"`
 	Description      string   `json:"description"`
 	Tags             []string `json:"tags"`
 }
