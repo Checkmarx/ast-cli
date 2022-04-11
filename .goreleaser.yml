@@ -70,7 +70,10 @@ dockers:
       - "checkmarx/ast-cli:{{ .Tag }}"
 
 archives:
-  - format_overrides:
+  - id: cx
+    builds:
+      - cx
+    format_overrides:
       - goos: windows
         format: zip
     replacements:
