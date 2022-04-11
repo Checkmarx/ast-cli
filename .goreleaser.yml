@@ -70,6 +70,14 @@ dockers:
       - "checkmarx/ast-cli:{{ .Tag }}"
 
 archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
   - id: cx-windows-linux-archive
     builds:
       - cx
@@ -81,6 +89,8 @@ archives:
   - id: cx-mac-arm-archive
     builds:
       - cx-mac-arm
+    replacements:
+      amd64: x64
     files:
       - LICENSE
       - ./dist/cx-mac-arm_darwin_arm64/cx.dmg
