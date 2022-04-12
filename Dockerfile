@@ -1,6 +1,6 @@
-FROM golang:1.18.1
+FROM golang:alpine
 
-RUN useradd -r -m cxuser
+RUN adduser -S -D cxuser
 USER cxuser
 COPY cx /app/bin/cx
 
