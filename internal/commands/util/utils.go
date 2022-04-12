@@ -43,10 +43,8 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 	return utilsCmd
 }
 
-/**
-Tests if a string exists in the provided array
-*/
-func contains(array []string, val string) bool {
+// Contains Tests if a string exists in the provided array/**
+func Contains(array []string, val string) bool {
 	for _, e := range array {
 		if e == val {
 			return true

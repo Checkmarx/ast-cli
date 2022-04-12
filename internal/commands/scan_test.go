@@ -8,6 +8,7 @@ import (
 
 	"gotest.tools/assert"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/spf13/viper"
 )
 
@@ -263,7 +264,13 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "dummy_key")...)
-	assert.Error(t, err, "open dummy_key: The system cannot find the file specified.", err.Error())
+
+	expectedMessages := []string{
+		"open dummy_key: The system cannot find the file specified.",
+		"open dummy_key: no such file or directory",
+	}
+
+	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateScanWithSSHKey(t *testing.T) {
