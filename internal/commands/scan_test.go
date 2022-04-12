@@ -15,7 +15,8 @@ const (
 	unknownFlag          = "unknown flag: --chibutero"
 	blankSpace           = " "
 	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
-	dummyRepo            = "https://www.dummy-repo.com"
+	dummyRepo            = "https://github.com/dummyuser/dummy_project.git"
+	dummySSHRepo         = "git@github.com:dummyRepo/dummyProject.git"
 	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in "
 )
@@ -227,4 +228,46 @@ func TestCreateScanWithProjectGroup(t *testing.T) {
 func TestScanWorkflowMissingID(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "workflow")
 	assert.Error(t, err, "Please provide a scan ID", err.Error())
+}
+
+func TestCreateScanMissingSSHValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", " ")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+}
+
+func TestCreateScanInvalidSSHSource(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+
+	// zip file with ssh
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--ssh-key", "dummy_key")...)
+	assert.Error(t, err, invalidSSHSource, err.Error())
+
+	// directory with ssh
+	err = execCmdNotNilAssertion(t, append(baseArgs, "-s", "../..", "--ssh-key", "dummy_key")...)
+	assert.Error(t, err, invalidSSHSource, err.Error())
+
+	// http url with ssh
+	err = execCmdNotNilAssertion(t, append(baseArgs, "-s", dummyRepo, "--ssh-key", "dummy_key")...)
+	assert.Error(t, err, invalidSSHSource, err.Error())
+}
+
+func TestCreateScanWrongSSHKeyPath(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "dummy_key")...)
+	assert.Error(t, err, "open dummy_key: The system cannot find the file specified.", err.Error())
+}
+
+func TestCreateScanWithSSHKey(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+
+	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/id_rsa")...)
 }
