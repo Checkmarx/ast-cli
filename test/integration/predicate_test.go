@@ -41,7 +41,7 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	assert.NilError(t, readingError, "Reading result should pass")
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "No changes to update.")
+	assert.NilError(t, err, "Updating the predicate with same values should pass.")
 
 	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
 	outputBufferForStep2 := executeCmdNilAssertion(
