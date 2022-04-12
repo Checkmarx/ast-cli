@@ -283,7 +283,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		updateTagValues(&input, cmd)
+		setupScanTags(&input, cmd)
 		var projModel = wrappers.Project{}
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel

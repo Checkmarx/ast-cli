@@ -98,6 +98,7 @@ const (
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
+	SSHKeyFlag               = "ssh-key"
 )
 
 // Parameter values

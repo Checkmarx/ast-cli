@@ -31,12 +31,14 @@ type Config struct {
 	Value map[string]string `protobuf:"bytes,2,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-type UploadProjectHandler struct {
+type ScanHandler struct {
 	// representative branch
 	Branch string `json:"branch,omitempty"`
 	// representative repository url
 	RepoURL   string `json:"repoUrl"`
 	UploadURL string `json:"uploadUrl"`
+	// Credentials
+	Credentials GitCredentials `json:"credentials"`
 }
 
 type GitProjectHandler struct {
@@ -96,7 +98,7 @@ type ScanProject struct {
 
 type Scan struct {
 	Type    string            `json:"type"`    // [git|upload]
-	Handler json.RawMessage   `json:"handler"` // One of [GitProjectHandler|UploadProjectHandler]
+	Handler json.RawMessage   `json:"handler"` // One of [GitProjectHandler|ScanHandler]
 	Project ScanProject       `json:"project,omitempty"`
 	Config  []Config          `json:"config,omitempty"`
 	Tags    map[string]string `json:"tags,omitempty"`

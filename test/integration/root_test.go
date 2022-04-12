@@ -16,6 +16,7 @@ const (
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"
 	SlowRepo              = "https://github.com/WebGoat/WebGoat"
+	SSHRepo               = "git@github.com:hmmachadocx/hmmachado_dummy_project.git"
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
