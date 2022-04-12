@@ -1,5 +1,7 @@
 FROM golang:1.17.8
 
-COPY cx /app/bin/cx
+RUN useradd -r -m cxuser
+USER cxuser
+COPY /bin/cx /app/bin/cx
 
 ENTRYPOINT ["/app/bin/cx"]
