@@ -1,4 +1,4 @@
-FROM golang:1.17.8
+FROM golang:1.18.0
 
 RUN useradd -r -m cxuser
 USER cxuser
