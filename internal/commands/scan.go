@@ -855,7 +855,6 @@ func getUploadURLFromSource(
 	cmd *cobra.Command,
 	uploadsWrapper wrappers.UploadsWrapper,
 ) (string, error) {
-	var err error
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -867,40 +866,42 @@ func getUploadURLFromSource(
 	}
 
 	if directoryPath != "" {
+		var dirPathErr error
 		// Get sca resolver flags
-		scaResolverParams, err := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
-		if err != nil {
+		scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+		if dirPathErr != nil {
 			scaResolverParams = ""
 		}
-		scaResolver, err := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-		if err != nil {
+		scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+		if dirPathErr != nil {
 			scaResolver = ""
 			scaResolverParams = ""
 		}
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, scaType) {
-			err = runScaResolver(directoryPath, scaResolver, scaResolverParams)
-			if err != nil {
-				return "", errors.Wrapf(err, "ScaResolver error")
+			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
+			if dirPathErr != nil {
+				return "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
-		zipFilePath, err = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
-		if err != nil {
-			return "", err
+		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if dirPathErr != nil {
+			return "", dirPathErr
 		}
 	}
 	if zipFilePath != "" {
+		var zipFilePathErr error
 		// Send a request to uploads service
 		var preSignedURL *string
-		preSignedURL, err = uploadsWrapper.UploadFile(zipFilePath)
-		if err != nil {
-			return "", errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
+		if zipFilePathErr != nil {
+			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 		}
 		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, err
+		return *preSignedURL, zipFilePathErr
 	}
-	return preSignedURL, err
+	return preSignedURL, nil
 }
 
 func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir string, err error) {

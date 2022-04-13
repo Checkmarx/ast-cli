@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const gitURLRegex = "(?:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(.*?)(\\.git)?(\\/?|\\#[-\\d\\w._]+?)$"
+const gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?(\\/?|\\#[-\\d\\w._]+?)$"
 const sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
 
 func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
@@ -62,9 +62,14 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 
 // IsGitURL Check if provided URL is a valid git URL (http or ssh)
 func IsGitURL(url string) bool {
-	isGitURL, _ := regexp.MatchString(gitURLRegex, url)
+	compiledRegex := regexp.MustCompile(gitURLRegex)
+	urlParts := compiledRegex.FindStringSubmatch(url)
 
-	return isGitURL
+	if urlParts == nil || len(urlParts) < 4 {
+		return false
+	}
+
+	return len(urlParts[1]) > 0 && len(urlParts[3]) > 0
 }
 
 // IsSSHURL Check if provided URL is a valid ssh URL
