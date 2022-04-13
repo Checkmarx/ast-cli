@@ -1086,6 +1086,14 @@ func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) erro
 	credentials := wrappers.GitCredentials{}
 
 	credentials.Type = "ssh"
+
+_:
+	fmt.Fprintln(os.Stdout, "================== SSH KEY ====================== A") //nolint:gofmt
+_:
+	fmt.Fprintln(os.Stdout, sshKey)
+_:
+	fmt.Fprintln(os.Stdout, "================================================= ")
+
 	credentials.Value = sshKey
 
 	handler.Credentials = credentials
