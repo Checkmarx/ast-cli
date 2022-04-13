@@ -1,7 +1,9 @@
-FROM golang:alpine
+FROM alpine:latest
 
-RUN adduser -S -D cxuser
-USER cxuser && chown -R cxuser /app
-COPY /bin/cx /app/bin/cx
+RUN apk add --no-cache bash
+RUN adduser --system --disabled-password cxuser
+USER cxuser
+
+COPY cx /app/bin/cx
 
 ENTRYPOINT ["/app/bin/cx"]
