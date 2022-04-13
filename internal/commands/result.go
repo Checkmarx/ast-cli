@@ -377,7 +377,7 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	fmt.Println("")
-	fmt.Println("      *************** Scan Summary ***************")
+	fmt.Println("      ******************** Scan Summary ********************")
 	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
 	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
 	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
@@ -402,7 +402,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	} else {
 		fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
 	}
-	fmt.Print("      *********************************************")
+	fmt.Print("      ******************************************************")
 	fmt.Println("")
 	return nil
 }
