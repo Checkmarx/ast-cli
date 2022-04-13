@@ -516,6 +516,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
 		flag(params.SSHKeyFlag), "data/id_rsa",
+		flag(params.DebugFlag),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 3*time.Minute, args...)
