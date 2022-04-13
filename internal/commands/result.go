@@ -561,6 +561,7 @@ func ReadResults(
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if resultsModel != nil {
+		resultsModel.ScanID = scanID
 		return resultsModel, nil
 	}
 	return nil, nil
