@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?(\\/?|\\#[-\\d\\w._]+?)$"
+const gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
 const sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
 
 func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
