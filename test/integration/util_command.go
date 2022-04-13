@@ -135,10 +135,6 @@ func executeCmdWithTimeOutNilAssertion(
 ) *bytes.Buffer {
 	cmd, outputBuffer := createRedirectedTestCommand(t)
 	err := executeWithTimeout(cmd, timeout, args...)
-
-	if err != nil {
-		fmt.Println(err)
-	}
 	assert.NilError(t, err, infoMsg)
 
 	return outputBuffer

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -508,6 +509,12 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 }
 
 func TestScanCreateWithSSHKey(t *testing.T) {
+	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
+	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
+
+	filename := "ssh-key-file.txt"
+	_ = ioutil.WriteFile(filename, []byte(sshKey), 0644)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -515,9 +522,10 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
-		flag(params.SSHKeyFlag), "data/id_rsa",
-		flag(params.DebugFlag),
+		flag(params.SSHKeyFlag), filename,
 	}
 
-	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 3*time.Minute, args...)
+	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
+
+	_ = os.Remove(filename)
 }
