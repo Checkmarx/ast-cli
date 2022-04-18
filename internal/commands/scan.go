@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -18,6 +19,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/google/shlex"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
@@ -29,19 +31,20 @@ import (
 )
 
 const (
-	failedCreating    = "Failed creating a scan"
-	failedGetting     = "Failed showing a scan"
-	failedGettingTags = "Failed getting tags"
-	failedDeleting    = "Failed deleting a scan"
-	failedCanceling   = "Failed canceling a scan"
-	failedGettingAll  = "Failed listing"
-	thresholdLog      = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog   = "Threshold check finished with status %s : %s"
-	mbBytes           = 1024.0 * 1024.0
-	scaType           = "sca"
-	notExploitable    = "NOT_EXPLOITABLE"
-	git               = "git"
-	invalidSSHSource  = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
+	failedCreating     = "Failed creating a scan"
+	failedGetting      = "Failed showing a scan"
+	failedGettingTags  = "Failed getting tags"
+	failedDeleting     = "Failed deleting a scan"
+	failedCanceling    = "Failed canceling a scan"
+	failedGettingAll   = "Failed listing"
+	thresholdLog       = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog    = "Threshold check finished with status %s : %s"
+	mbBytes            = 1024.0 * 1024.0
+	scaType            = "sca"
+	notExploitable     = "NOT_EXPLOITABLE"
+	git                = "git"
+	invalidSSHSource   = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
+	errorUnzippingFile = "an error occurred while unzipping file. Reason: "
 )
 
 var (
@@ -865,6 +868,15 @@ func getUploadURLFromSource(
 		return "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
+	var errorUnzippingFile error
+	// apply file filters to zip file
+	if (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && len(zipFilePath) > 0 {
+		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
+		if errorUnzippingFile != nil {
+			return "", errorUnzippingFile
+		}
+	}
+
 	if directoryPath != "" {
 		var dirPathErr error
 		// Get sca resolver flags
@@ -902,6 +914,69 @@ func getUploadURLFromSource(
 		return *preSignedURL, zipFilePathErr
 	}
 	return preSignedURL, nil
+}
+
+func UnzipFile(f string) (string, error) {
+	tempDir := os.TempDir() + string(os.PathSeparator) + "cx-unzipped-temp-dir-" + uuid.New().String() + string(os.PathSeparator)
+
+	err := os.Mkdir(tempDir, directoryPermission)
+	if err != nil {
+		return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+	}
+
+	archive, err := zip.OpenReader(f)
+	if err != nil {
+		return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+	}
+	defer func() {
+		_ = archive.Close()
+	}()
+
+	for _, f := range archive.File {
+		filePath := filepath.Join(tempDir, f.Name)
+		PrintIfVerbose("unzipping file " + filePath + "...")
+
+		if !strings.HasPrefix(filePath, filepath.Clean(tempDir)+string(os.PathSeparator)) {
+			return "", errors.New("invalid file path " + filePath)
+		}
+		if f.FileInfo().IsDir() {
+			PrintIfVerbose("creating directory...")
+			err = os.MkdirAll(filePath, os.ModePerm)
+			if err != nil {
+				return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+			}
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+
+		fileInArchive, err := f.Open()
+		if err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+
+		if _, err = io.Copy(dstFile, fileInArchive); err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+
+		err = dstFile.Close()
+		if err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+		err = fileInArchive.Close()
+		if err != nil {
+			return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
+		}
+	}
+
+	return tempDir, nil
 }
 
 func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir string, err error) {
