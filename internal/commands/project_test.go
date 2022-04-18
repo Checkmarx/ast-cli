@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 )
 
 func TestProjectHelp(t *testing.T) {
@@ -100,4 +102,36 @@ func TestRunProjectCreateInvalidGroup(t *testing.T) {
 	err := execCmdNotNilAssertion(t,
 		"project", "create", "--project-name", "invalidprj", "--groups", "invalidgroup")
 	assert.Assert(t, err.Error() == "Failed finding groups: [invalidgroup]")
+}
+
+func TestCreateProjectMissingSSHValue(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", " ")...)
+	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
+}
+
+func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key")...)
+
+	expectedMessages := []string{
+		"open dummy_key: The system cannot find the file specified.",
+		"open dummy_key: no such file or directory",
+	}
+
+	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+}
+
+func TestCreateProjectWithSSHKey(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa")...)
 }

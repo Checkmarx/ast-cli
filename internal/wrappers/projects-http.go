@@ -37,6 +37,25 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
+func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(configuration)
+	if err != nil {
+		return nil, err
+	}
+
+	params := map[string]string{
+		commonParams.ProjectIDFlag: projectID,
+	}
+
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
+}
+
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*ProjectsCollectionResponseModel,
 	*ErrorModel, error) {

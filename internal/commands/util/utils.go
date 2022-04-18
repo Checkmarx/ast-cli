@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/MakeNowJust/heredoc"
@@ -77,4 +78,15 @@ func IsSSHURL(url string) bool {
 	isGitURL, _ := regexp.MatchString(sshURLRegex, url)
 
 	return isGitURL
+}
+
+// ReadFileAsString Read a file and return its content as string
+func ReadFileAsString(path string) (string, error) {
+	content, err := os.ReadFile(path)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(content), nil
 }

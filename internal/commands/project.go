@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"strings"
 	"time"
 
@@ -88,6 +89,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(commonParams.ProjectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
+	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh key")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -299,6 +301,39 @@ func runCreateProjectCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreatingProj)
 		}
+
+		// add ssh key to project when it is provided
+		if cmd.Flags().Changed(commonParams.SSHKeyFlag) {
+			sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
+
+			if strings.TrimSpace(sshKeyPath) == "" {
+				return errors.New("flag needs an argument: --ssh-key")
+			}
+
+			sshKey, sshErr := util.ReadFileAsString(sshKeyPath)
+			if sshErr != nil {
+				return sshErr
+			}
+
+			projectSSHKeyConfiguration := wrappers.ProjectConfiguration{}
+			projectSSHKeyConfiguration.Key = "scan.handler.git.sshKey"
+			projectSSHKeyConfiguration.Name = "sshKey"
+			projectSSHKeyConfiguration.Category = "git"
+			projectSSHKeyConfiguration.OriginLevel = "Project"
+			projectSSHKeyConfiguration.Value = sshKey
+			projectSSHKeyConfiguration.ValueType = "Secret"
+			projectSSHKeyConfiguration.AllowOverride = true
+
+			projectConfigurations := []wrappers.ProjectConfiguration{
+				projectSSHKeyConfiguration,
+			}
+
+			_, sshErr = projectsWrapper.UpdateConfiguration(projResponseModel.ID, projectConfigurations)
+			if sshErr != nil {
+				return sshErr
+			}
+		}
+
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)

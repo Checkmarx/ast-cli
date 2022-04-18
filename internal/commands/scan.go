@@ -1081,7 +1081,7 @@ func setupScanHandler(
 }
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
-	sshKey, err := getSSHKeyValue(sshKeyPath)
+	sshKey, err := util.ReadFileAsString(sshKeyPath)
 
 	credentials := wrappers.GitCredentials{}
 
@@ -1091,16 +1091,6 @@ func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) erro
 	handler.Credentials = credentials
 
 	return err
-}
-
-func getSSHKeyValue(sshKeyPath string) (string, error) {
-	sshKey, err := os.ReadFile(sshKeyPath)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(sshKey), nil
 }
 
 func handleWait(

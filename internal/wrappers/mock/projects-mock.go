@@ -18,6 +18,11 @@ func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
 	}, nil, nil
 }
 
+func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuration []wrappers.ProjectConfiguration) (*wrappers.ErrorModel, error) {
+	fmt.Println("Called Update Configuration for project", projectID, " in ProjectsMockWrapper with the configuration ", configuration)
+	return nil, nil
+}
+
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	*wrappers.ProjectsCollectionResponseModel,
 	*wrappers.ErrorModel,
