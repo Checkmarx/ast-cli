@@ -3,11 +3,11 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"strings"
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -318,7 +318,7 @@ func runCreateProjectCommand(
 			projectSSHKeyConfiguration := wrappers.ProjectConfiguration{}
 			projectSSHKeyConfiguration.Key = "scan.handler.git.sshKey"
 			projectSSHKeyConfiguration.Name = "sshKey"
-			projectSSHKeyConfiguration.Category = "git"
+			projectSSHKeyConfiguration.Category = git
 			projectSSHKeyConfiguration.OriginLevel = "Project"
 			projectSSHKeyConfiguration.Value = sshKey
 			projectSSHKeyConfiguration.ValueType = "Secret"
