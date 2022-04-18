@@ -3,6 +3,7 @@ package wrappers
 type ScanResultsCollection struct {
 	Results    []*ScanResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`
+	ScanID     string        `json:"scanID"`
 }
 
 type ScanResult struct {

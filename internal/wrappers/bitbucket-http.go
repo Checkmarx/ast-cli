@@ -38,34 +38,49 @@ func NewBitbucketWrapper() BitBucketWrapper {
 	}
 }
 
-func (g *BitBucketHTTPWrapper) GetworkspaceUUID(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootWorkspace, error) {
+func (g *BitBucketHTTPWrapper) GetworkspaceUUID(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (
+	BitBucketRootWorkspace, error,
+) {
 	var err error
 	var workspace BitBucketRootWorkspace
 	var queryParams = make(map[string]string)
 
 	workspaceURL := fmt.Sprintf(bitBucketBaseWorkspaceURL, bitBucketURL, workspaceName)
 
-	err = g.get(workspaceURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &workspace, queryParams)
+	err = g.getFromBitBucket(
+		workspaceURL,
+		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
+		&workspace,
+		queryParams)
 
 	return workspace, err
 }
 
-func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepo, error) {
+func (g *BitBucketHTTPWrapper) GetRepoUUID(bitBucketURL, workspaceName, repoName, bitBucketUsername, bitBucketPassword string) (
+	BitBucketRootRepo, error,
+) {
 	var err error
 	var repo BitBucketRootRepo
 	var queryParams = make(map[string]string)
 
 	repoURL := fmt.Sprintf(bitBucketBaseRepoNameURL, bitBucketURL, workspaceName, repoName)
-	err = g.get(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repo, queryParams)
+	err = g.getFromBitBucket(repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), &repo, queryParams)
 
 	return repo, err
 }
 
-func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (BitBucketRootCommit, error) {
+func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID, bitBucketUsername, bitBucketPassword string) (
+	BitBucketRootCommit, error,
+) {
 	var commits BitBucketRootCommit
 	var queryParams = make(map[string]string)
 	repoURL := fmt.Sprintf(bitBucketBaseCommitURL, bitBucketURL, workspaceUUID, repoUUID)
-	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), commitType, queryParams)
+	pages, err := getWithPaginationBitBucket(
+		g.client,
+		repoURL,
+		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
+		commitType,
+		queryParams)
 	if err != nil {
 		return commits, err
 	}
@@ -93,11 +108,18 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 	return commits, err
 }
 
-func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (BitBucketRootRepoList, error) {
+func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitBucketUsername, bitBucketPassword string) (
+	BitBucketRootRepoList, error,
+) {
 	var repos BitBucketRootRepoList
 	var queryParams = make(map[string]string)
 	repoURL := fmt.Sprintf(bitBucketBaseRepoURL, bitBucketURL, workspaceName)
-	pages, err := getWithPaginationBitBucket(g.client, repoURL, encodeBitBucketAuth(bitBucketUsername, bitBucketPassword), repoType, queryParams)
+	pages, err := getWithPaginationBitBucket(
+		g.client,
+		repoURL,
+		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
+		repoType,
+		queryParams)
 	if err != nil {
 		return repos, err
 	}
@@ -117,7 +139,9 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 	return repos, err
 }
 
-func (g *BitBucketHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string) error {
+func (g *BitBucketHTTPWrapper) getFromBitBucket(
+	url, token string, target interface{}, queryParams map[string]string,
+) error {
 	var err error
 
 	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
