@@ -514,6 +514,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 
 	filename := "ssh-key-file.txt"
 	_ = ioutil.WriteFile(filename, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(filename) }()
 
 	_, projectName := getRootProject(t)
 
@@ -526,6 +527,4 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
-
-	_ = os.Remove(filename)
 }
