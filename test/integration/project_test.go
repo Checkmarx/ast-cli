@@ -72,7 +72,6 @@ func TestCreateEmptyProjectName(t *testing.T) {
 
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExistingProject(t *testing.T) {
-
 	assertRequiredParameter(t, "Project name is required", "project", "create")
 
 	_, projectName := getRootProject(t)
@@ -115,6 +114,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 
+	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
 		t, "Creating a project should pass",
 		"project", "create",
@@ -158,6 +158,7 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 	fmt.Println("Listing project for id output buffer", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
+	fmt.Println("Listing project for id projects length: ", len(projects))
 
 	return projects
 }
