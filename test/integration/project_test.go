@@ -135,6 +135,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 
 func deleteProject(t *testing.T, projectID string) {
 	log.Println("Deleting the project with id ", projectID)
+	fmt.Println("Deleting the project with id ", projectID)
 	executeCmdNilAssertion(
 		t,
 		"Deleting a project should pass",
@@ -147,14 +148,14 @@ func deleteProject(t *testing.T, projectID string) {
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
-
+	fmt.Println("Listing project for id ", projectID)
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the project should pass",
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-
+	fmt.Println("Listing project for id output buffer", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 
