@@ -99,6 +99,7 @@ const (
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
 	SSHKeyFlag               = "ssh-key"
+	RepoURLFlag              = "repo-url"
 )
 
 // Parameter values

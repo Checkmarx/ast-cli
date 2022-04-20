@@ -117,10 +117,39 @@ func TestCreateProjectMissingSSHValue(t *testing.T) {
 	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
 }
 
-func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
+func TestCreateProjectMissingRepoURLWithSSHValue(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url")...)
+	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", "")...)
+	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", " ")...)
+	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
+}
+
+func TestCreateProjectMandatoryRepoURLWhenSSHKeyProvided(t *testing.T) {
 	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key")...)
+
+	assert.Error(t, err, mandatoryRepoURLError)
+}
+
+func TestCreateProjectInvalidRepoURLWithSSHKey(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key", "--repo-url", "https://github.com/dummyuser/dummy_project.git")...)
+
+	assert.Error(t, err, invalidRepoURL)
+}
+
+func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
+	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key", "--repo-url", "git@github.com:dummyRepo/dummyProject.git")...)
 
 	expectedMessages := []string{
 		"open dummy_key: The system cannot find the file specified.",
@@ -133,5 +162,5 @@ func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
 func TestCreateProjectWithSSHKey(t *testing.T) {
 	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
 
-	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa")...)
+	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", "git@github.com:dummyRepo/dummyProject.git")...)
 }
