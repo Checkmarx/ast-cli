@@ -5,16 +5,21 @@ package integration
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
 )
+
+const SSHKeyFilePath = "ssh-key-file.txt"
 
 // End-to-end test of project handling.
 // - Create a project
@@ -101,9 +106,9 @@ func TestProjectBranches(t *testing.T) {
 		"branches",
 	)
 
-	projectId, _ := getRootProject(t)
+	projectID, _ := getRootProject(t)
 
-	buffer := executeCmdNilAssertion(t, "Branches should be listed", "project", "branches", "--project-id", projectId)
+	buffer := executeCmdNilAssertion(t, "Branches should be listed", "project", "branches", "--project-id", projectID)
 
 	result, readingError := io.ReadAll(buffer)
 	assert.NilError(t, readingError, "Reading result should pass")
@@ -176,4 +181,35 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
 
 	return project
+}
+
+func TestCreateProjectWithSSHKey(t *testing.T) {
+	projectName := getProjectNameForTest() + "_for_project"
+	tagsStr := formatTags(Tags)
+
+	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
+	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
+
+	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(SSHKeyFilePath) }()
+
+	fmt.Printf("Creating project : %s \n", projectName)
+	outBuffer := executeCmdNilAssertion(
+		t, "Creating a project with ssh key should pass",
+		"project", "create",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "master",
+		flag(params.TagList), tagsStr,
+		flag(params.RepoURLFlag), SSHRepo,
+		flag(params.SSHKeyFlag), SSHKeyFilePath,
+	)
+
+	createdProject := wrappers.ProjectResponseModel{}
+	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+
+	fmt.Println("Response after project is created : ", string(createdProjectJSON))
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
+
+	deleteProject(t, createdProject.ID)
 }

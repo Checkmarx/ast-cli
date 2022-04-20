@@ -27,6 +27,8 @@ const (
 	projOriginLevel       = "Project"
 	repoConfKey           = "scan.handler.git.repository"
 	sshConfKey            = "scan.handler.git.sshKey"
+	mandatoryRepoURLError = "flag --repo-url is mandatory when --ssh-key is provided"
+	invalidRepoURL        = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
 )
 
 var (
@@ -413,13 +415,13 @@ func validateConfiguration(cmd *cobra.Command) error {
 	// 		2. provided repo url needs to be a ssh url
 	if sshKeyDefined {
 		if !repoURLDefined {
-			return errors.New("flag --repo-url is mandatory when --ssh-key is provided")
+			return errors.New(mandatoryRepoURLError)
 		}
 
 		repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
 
 		if !util.IsSSHURL(repoURL) {
-			return errors.New("provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key")
+			return errors.New(invalidRepoURL)
 		}
 	}
 
