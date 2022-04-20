@@ -120,13 +120,13 @@ func TestCreateProjectMissingSSHValue(t *testing.T) {
 func TestCreateProjectMissingRepoURLWithSSHValue(t *testing.T) {
 	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
 
-	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url")...)
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key", "--repo-url")...)
 	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
 
-	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", "")...)
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key", "--repo-url", "")...)
 	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
 
-	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", " ")...)
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key", "dummy_key", "--repo-url", " ")...)
 	assert.Error(t, err, "flag needs an argument: --repo-url", err.Error())
 }
 
@@ -162,5 +162,5 @@ func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
 func TestCreateProjectWithSSHKey(t *testing.T) {
 	baseArgs := []string{"project", "create", "--project-name", "MOCK"}
 
-	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/id_rsa", "--repo-url", "git@github.com:dummyRepo/dummyProject.git")...)
+	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/sources.zip", "--repo-url", "git@github.com:dummyRepo/dummyProject.git")...)
 }
