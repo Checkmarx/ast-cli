@@ -278,3 +278,9 @@ func TestCreateScanWithSSHKey(t *testing.T) {
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/sources.zip")...)
 }
+
+func TestCreateScanFilterZipFile(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+
+	execCmdNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--file-filter", "!.java")...)
+}
