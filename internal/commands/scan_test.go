@@ -276,5 +276,5 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 func TestCreateScanWithSSHKey(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
-	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/id_rsa")...)
+	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/sources.zip")...)
 }
