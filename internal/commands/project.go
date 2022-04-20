@@ -364,14 +364,7 @@ func updateProjectConfigurationIfNeeded(cmd *cobra.Command, projectsWrapper wrap
 	return nil
 }
 
-func getProjectConfiguration(
-	key string,
-	name string,
-	category string,
-	level string,
-	value string,
-	valueType string,
-	allowOverride bool) wrappers.ProjectConfiguration {
+func getProjectConfiguration(key, name, category, level, value, valueType string, allowOverride bool) wrappers.ProjectConfiguration {
 	config := wrappers.ProjectConfiguration{}
 	config.Key = key
 	config.Name = name
