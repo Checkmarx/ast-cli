@@ -548,10 +548,8 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		sastMapConfig["value"] = &sastConfig
 		return sastMapConfig
-	} else {
-		return nil
 	}
-
+	return nil
 }
 
 func addKicsScan(cmd *cobra.Command) map[string]interface{} {
@@ -562,9 +560,8 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
 		kicsMapConfig["value"] = &kicsConfig
 		return kicsMapConfig
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func addScaScan(cmd *cobra.Command) map[string]interface{} {
@@ -575,9 +572,8 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaMapConfig["value"] = &scaConfig
 		return scaMapConfig
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func determineScanTypes(cmd *cobra.Command) {
