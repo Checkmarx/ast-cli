@@ -521,7 +521,6 @@ func updateScanRequestValues(
 		}
 	}
 	sastConfig := addSastScan(cmd)
-	//configArr = append(configArr, sastConfig)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
