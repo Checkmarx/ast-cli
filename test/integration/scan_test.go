@@ -521,10 +521,14 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
 	file, err := ioutil.ReadFile("cx_result.json")
+	if err != nil {
+		return wrappers.ScanResultsCollection{}, err
+	}
 	results := wrappers.ScanResultsCollection{}
 	_ = json.Unmarshal([]byte(file), &results)
-	os.Remove("cx_result.json")
-
+	defer func() {
+		os.Remove("cx_result.json")
+	}()
 	return results, err
 }
 
@@ -537,13 +541,9 @@ func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 	assert.Assert(t, projectId != "", "Project ID should not be empty")
 	results, err := retrieveResultsFromScanId(t, scanId)
 	assert.Assert(t, err == nil, "Results retrieved should not throw an error")
-	javaFilesList := []string{}
 	for _, result := range results.Results {
 		for _, node := range result.ScanResultData.Nodes {
-			if strings.HasSuffix(node.FileName, "java") {
-				javaFilesList = append(javaFilesList, node.FileName)
-			}
+			assert.Assert(t, !strings.HasSuffix(node.FileName, "java"), "File name should not contain java")
 		}
 	}
-	assert.Assert(t, len(javaFilesList) == 0, "No java files should be found")
 }
