@@ -539,38 +539,45 @@ func updateScanRequestValues(
 }
 
 func addSastScan(cmd *cobra.Command) map[string]interface{} {
-	sastMapConfig := make(map[string]interface{})
-	sastConfig := wrappers.SastConfig{}
-	sastMapConfig["type"] = "sast"
 	if scanTypeEnabled("sast") {
+		sastMapConfig := make(map[string]interface{})
+		sastConfig := wrappers.SastConfig{}
+		sastMapConfig["type"] = "sast"
 		sastConfig.Incremental, _ = cmd.Flags().GetBool(commonParams.IncrementalSast)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+		sastMapConfig["value"] = &sastConfig
+		return sastMapConfig
+	} else {
+		return nil
 	}
-	sastMapConfig["value"] = &sastConfig
-	return sastMapConfig
+
 }
 
 func addKicsScan(cmd *cobra.Command) map[string]interface{} {
-	kicsMapConfig := make(map[string]interface{})
-	kicsConfig := wrappers.KicsConfig{}
-	kicsMapConfig["type"] = "kics"
 	if scanTypeEnabled("kics") {
+		kicsMapConfig := make(map[string]interface{})
+		kicsConfig := wrappers.KicsConfig{}
+		kicsMapConfig["type"] = "kics"
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
+		kicsMapConfig["value"] = &kicsConfig
+		return kicsMapConfig
+	} else {
+		return nil
 	}
-	kicsMapConfig["value"] = &kicsConfig
-	return kicsMapConfig
 }
 
 func addScaScan(cmd *cobra.Command) map[string]interface{} {
-	scaMapConfig := make(map[string]interface{})
-	scaConfig := wrappers.ScaConfig{}
-	scaMapConfig["type"] = "sca"
 	if scanTypeEnabled("sca") {
+		scaMapConfig := make(map[string]interface{})
+		scaConfig := wrappers.ScaConfig{}
+		scaMapConfig["type"] = "sca"
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		scaMapConfig["value"] = &scaConfig
+		return scaMapConfig
+	} else {
+		return nil
 	}
-	scaMapConfig["value"] = &scaConfig
-	return scaMapConfig
 }
 
 func determineScanTypes(cmd *cobra.Command) {
