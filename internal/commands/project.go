@@ -238,8 +238,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	var groupsNotFound []string
 	for _, group := range groups {
 		if len(group) > 0 {
-			encodedGroup := encodeSpacesInGroupName(group)
-			groupIds, err := groupsWrapper.Get(encodedGroup)
+			groupIds, err := groupsWrapper.Get(group)
 			if err != nil {
 				return nil, err
 			}
@@ -258,10 +257,6 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	}
 
 	return groupMap, nil
-}
-
-func encodeSpacesInGroupName(group string) string {
-	return strings.Replace(group, " ", "%20", -1)
 }
 
 func findGroupID(groups []wrappers.Group, name string) string {

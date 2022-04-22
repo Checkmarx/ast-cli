@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -32,8 +31,9 @@ func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	tenant := viper.GetString(commonParams.TenantKey)
 	tenantPath := strings.Replace(g.path, "organization", tenant, 1)
-	reportPath := fmt.Sprintf("%s?groupName=%s", tenantPath, groupName)
-	resp, err := SendHTTPRequest(http.MethodGet, reportPath, nil, true, clientTimeout)
+	groupMap := make(map[string]string)
+	groupMap["groupName"] = groupName
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, tenantPath, groupMap, nil, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
