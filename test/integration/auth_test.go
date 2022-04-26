@@ -78,7 +78,7 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 }
 
 // Register with empty username, password or role
-func TestAuthRegisterWithEmptyUsernameParameter(t *testing.T) {
+func TestAuthRegisterWithEmptyParameters(t *testing.T) {
 	assertRequiredParameter(
 		t, "Please provide username flag",
 		"auth", "register",
@@ -116,7 +116,6 @@ func TestAuthRegister(t *testing.T) {
 		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
 	)
 	assert.Error(t, err, "User does not have permission for roles [ast-admin ast-scanner]")
-	// assert.Error(t, err, "failed creating client: Please provide username flag")
 	//assert.NilError(t, err, "Register should pass")
 	//
 	//result, err := io.ReadAll(buffer)
