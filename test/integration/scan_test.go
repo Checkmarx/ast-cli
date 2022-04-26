@@ -521,14 +521,14 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
 	file, err := ioutil.ReadFile("cx_result.json")
+	defer func() {
+		os.Remove("cx_result.json")
+	}()
 	if err != nil {
 		return wrappers.ScanResultsCollection{}, err
 	}
 	results := wrappers.ScanResultsCollection{}
 	_ = json.Unmarshal([]byte(file), &results)
-	defer func() {
-		os.Remove("cx_result.json")
-	}()
 	return results, err
 }
 
