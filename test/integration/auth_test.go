@@ -87,21 +87,21 @@ func TestAuthRegisterWithEmptyUsernameParameter(t *testing.T) {
 		flag(params.ClientRolesFlag), "ast-admin,ast-scanner",
 	)
 
-	//assertRequiredParameter(
-	//	t, "Please provide password flag",
-	//	"auth", "register",
-	//	flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
-	//	flag(params.PasswordFlag), "",
-	//	flag(params.ClientRolesFlag), "ast-admin,ast-scanner",
-	//)
-	//
-	//assertRequiredParameter(
-	//	t, "Please provide roles flag",
-	//	"auth", "register",
-	//	flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
-	//	flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
-	//	flag(params.ClientRolesFlag), "",
-	//)
+	assertRequiredParameter(
+		t, "Please provide password flag",
+		"auth", "register",
+		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
+		flag(params.PasswordFlag), "",
+		flag(params.ClientRolesFlag), "ast-admin,ast-scanner",
+	)
+
+	assertRequiredParameter(
+		t, "Please provide roles flag",
+		"auth", "register",
+		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
+		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
+		flag(params.ClientRolesFlag), "",
+	)
 }
 
 // Register with credentials and validate the obtained id/secret pair
@@ -115,8 +115,8 @@ func TestAuthRegister(t *testing.T) {
 		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
 		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
 	)
-	// assert.Error(t, err, "User does not have permission for roles [ast-admin ast-scanner]")
-	assert.Error(t, err, "failed creating client: Please provide username flag")
+	assert.Error(t, err, "User does not have permission for roles [ast-admin ast-scanner]")
+	// assert.Error(t, err, "failed creating client: Please provide username flag")
 	//assert.NilError(t, err, "Register should pass")
 	//
 	//result, err := io.ReadAll(buffer)
