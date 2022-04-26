@@ -542,7 +542,8 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		sastMapConfig := make(map[string]interface{})
 		sastConfig := wrappers.SastConfig{}
 		sastMapConfig["type"] = "sast"
-		sastConfig.Incremental, _ = cmd.Flags().GetBool(commonParams.IncrementalSast)
+		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		sastMapConfig["value"] = &sastConfig
