@@ -98,6 +98,14 @@ const (
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
+
+	// INDIVIDUAL FILTER	FLAGS
+	SastFilterFlag  = "sast-filter"
+	SastFilterUsage = "SAST filter"
+	KicsFilterFlag  = "kics-filter"
+	KicsFilterUsage = "KICS filter"
+	ScaFilterFlag   = "sca-filter"
+	ScaFilterUsage  = "SCA filter"
 )
 
 // Parameter values
