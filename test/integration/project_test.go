@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"io/ioutil"
 	"log"
@@ -184,7 +185,7 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 }
 
 func TestCreateProjectWithSSHKey(t *testing.T) {
-	projectName := getProjectNameForTest() + "_for_project"
+	projectName := fmt.Sprintf("ast-cli-tests_%s", uuid.New().String()) + "_for_project"
 	tagsStr := formatTags(Tags)
 
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
