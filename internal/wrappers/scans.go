@@ -111,3 +111,20 @@ type ScansWrapper interface {
 	Cancel(scanID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)
 }
+
+type SastConfig struct {
+	Incremental   string `json:"incremental,omitempty"`
+	Filter        string `json:"filter,omitempty"`
+	EngineVerbose string `json:"engineVerbose,omitempty"`
+	LanguageMode  string `json:"languageMode,omitempty"`
+	PresetName    string `json:"presetName,omitempty"`
+}
+
+type KicsConfig struct {
+	Filter    string `json:"filter,omitempty"`
+	Platforms string `json:"platforms,omitempty"`
+}
+
+type ScaConfig struct {
+	Filter string `json:"filter,omitempty"`
+}
