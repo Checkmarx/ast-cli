@@ -231,27 +231,6 @@ func TestScanWorkflowMissingID(t *testing.T) {
 	assert.Error(t, err, "Please provide a scan ID", err.Error())
 }
 
-func TestScanWorkFlowWithSastFilter(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sast-filter", "!*.go"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
-	assert.NilError(t, err)
-}
-
-func TestScanWorkFlowWithKicsFilter(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "kicsFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--kics-filter", "!Dockerfile"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
-	assert.NilError(t, err)
-}
-
-func TestScanWorkFlowWithScaFilter(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "scaFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sca-filter", "!jQuery"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
-	assert.NilError(t, err)
-}
-
 func TestCreateScanMissingSSHValue(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
 
@@ -298,4 +277,25 @@ func TestCreateScanWithSSHKey(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/sources.zip")...)
+}
+
+func TestScanWorkFlowWithSastFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sast-filter", "!*.go"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestScanWorkFlowWithKicsFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "kicsFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--kics-filter", "!Dockerfile"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestScanWorkFlowWithScaFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "scaFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sca-filter", "!jQuery"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
 }
