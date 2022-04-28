@@ -279,8 +279,23 @@ func TestCreateScanWithSSHKey(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/sources.zip")...)
 }
 
-func TestCreateScanFilterZipFile(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+func TestScanWorkFlowWithSastFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sast-filter", "!*.go"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
 
-	execCmdNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--file-filter", "!.java")...)
+func TestScanWorkFlowWithKicsFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "kicsFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--kics-filter", "!Dockerfile"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestScanWorkFlowWithScaFilter(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "scaFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sca-filter", "!jQuery"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
 }

@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -506,6 +507,42 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "scan did not complete successfully")
+}
+
+func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
+	resultsArgs := []string{
+		"results",
+		"show",
+		flag(params.ScanIDFlag),
+		scanId,
+	}
+	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
+	file, err := ioutil.ReadFile("cx_result.json")
+	defer func() {
+		os.Remove("cx_result.json")
+	}()
+	if err != nil {
+		return wrappers.ScanResultsCollection{}, err
+	}
+	results := wrappers.ScanResultsCollection{}
+	_ = json.Unmarshal([]byte(file), &results)
+	return results, err
+}
+
+func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
+	insecurePath := "data/insecure.zip"
+	args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
+	args = append(args, flag(params.SastFilterFlag), "!*.java")
+	scanId, projectId := executeCreateScan(t, args)
+	assert.Assert(t, scanId != "", "Scan ID should not be empty")
+	assert.Assert(t, projectId != "", "Project ID should not be empty")
+	results, err := retrieveResultsFromScanId(t, scanId)
+	assert.Assert(t, err == nil, "Results retrieved should not throw an error")
+	for _, result := range results.Results {
+		for _, node := range result.ScanResultData.Nodes {
+			assert.Assert(t, !strings.HasSuffix(node.FileName, "java"), "File name should not contain java")
+		}
+	}
 }
 
 func TestScanCreateWithSSHKey(t *testing.T) {
