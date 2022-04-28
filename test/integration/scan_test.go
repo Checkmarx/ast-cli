@@ -509,27 +509,6 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 	assertError(t, err, "scan did not complete successfully")
 }
 
-func TestScanCreateWithSSHKey(t *testing.T) {
-	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
-	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
-
-	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
-
-	_, projectName := getRootProject(t)
-
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), SSHRepo,
-		flag(params.BranchFlag), "main",
-		flag(params.SSHKeyFlag), SSHKeyFilePath,
-	}
-
-	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
-
-	_ = os.Remove(SSHKeyFilePath)
-}
-
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
 	resultsArgs := []string{
 		"results",
