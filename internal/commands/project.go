@@ -94,7 +94,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(commonParams.ProjectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
-	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh key")
+	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
 
 	listProjectsCmd := &cobra.Command{

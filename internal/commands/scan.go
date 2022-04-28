@@ -390,7 +390,7 @@ func scanCreateSubCommand(
 		log.Fatal(err)
 	}
 
-	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh key")
+	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 
 	return createScanCmd
 }
