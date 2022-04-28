@@ -361,6 +361,9 @@ func scanCreateSubCommand(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
 		commonParams.Branch, commonParams.BranchFlagUsage,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
+	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
 		printer.FormatSummaryConsole,
@@ -387,7 +390,7 @@ func scanCreateSubCommand(
 		log.Fatal(err)
 	}
 
-	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh key")
+	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 
 	return createScanCmd
 }
@@ -522,21 +525,60 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 	}
-	var sastConfig = addSastScan(cmd)
+	sastConfig := addSastScan(cmd)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig = addKicsScan()
+	var kicsConfig = addKicsScan(cmd)
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan()
+	var scaConfig = addScaScan(cmd)
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
+}
+
+func addSastScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled("sast") {
+		sastMapConfig := make(map[string]interface{})
+		sastConfig := wrappers.SastConfig{}
+		sastMapConfig["type"] = "sast"
+		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
+		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+		sastMapConfig["value"] = &sastConfig
+		return sastMapConfig
+	}
+	return nil
+}
+
+func addKicsScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled("kics") {
+		kicsMapConfig := make(map[string]interface{})
+		kicsConfig := wrappers.KicsConfig{}
+		kicsMapConfig["type"] = "kics"
+		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
+		kicsMapConfig["value"] = &kicsConfig
+		return kicsMapConfig
+	}
+	return nil
+}
+
+func addScaScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled("sca") {
+		scaMapConfig := make(map[string]interface{})
+		scaConfig := wrappers.ScaConfig{}
+		scaMapConfig["type"] = "sca"
+		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		scaMapConfig["value"] = &scaConfig
+		return scaMapConfig
+	}
+	return nil
 }
 
 func validateScanTypes(cmd *cobra.Command) {
@@ -568,50 +610,6 @@ func scanTypeEnabled(scanType string) bool {
 		}
 	}
 	return false
-}
-
-func addSastScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled("sast") {
-		var objArr map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &objArr)
-		newIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
-		newPresetName, _ := cmd.Flags().GetString(commonParams.PresetName)
-		objArr["type"] = "sast"
-		var valueMap map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		valueMap["incremental"] = fmt.Sprintf("%v", newIncremental)
-		if newPresetName != "" {
-			valueMap["presetName"] = newPresetName
-		}
-
-		objArr["value"] = valueMap
-		return objArr
-	}
-	return nil
-}
-
-func addKicsScan() map[string]interface{} {
-	if scanTypeEnabled("kics") {
-		var objArr map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &objArr)
-		objArr["type"] = "kics"
-		var valueMap map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		return objArr
-	}
-	return nil
-}
-
-func addScaScan() map[string]interface{} {
-	if scanTypeEnabled("sca") {
-		var objArr map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &objArr)
-		objArr["type"] = "sca"
-		var valueMap map[string]interface{}
-		_ = json.Unmarshal([]byte("{}"), &valueMap)
-		return objArr
-	}
-	return nil
 }
 
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
