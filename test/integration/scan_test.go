@@ -33,7 +33,6 @@ type ScanWorkflowResponse struct {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
-
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -48,7 +47,6 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-
 	scanID, projectID := createScan(t, Zip, Tags)
 	defer deleteProject(t, projectID)
 
@@ -136,7 +134,7 @@ func TestCancelScan(t *testing.T) {
 	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
-	// cancelling too quickly after creating fails the scan...
+	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
@@ -275,7 +273,7 @@ func TestBrokenLinkScan(t *testing.T) {
 // - Get scan with 'scan show' and assert the ID
 // - Assert all tags exist and are assigned to the scan
 // - Delete the scan and assert it is deleted
-func executeScanAssertions(t *testing.T, projectID string, scanID string, tags map[string]string) {
+func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[string]string) {
 	response := listScanByID(t, scanID)
 
 	assert.Equal(t, len(response), 1, "Total scans should be 1")
@@ -349,7 +347,7 @@ func getCreateArgs(source string, tags map[string]string, scanTypes string) []st
 	return getCreateArgsWithName(source, tags, projectName, scanTypes)
 }
 
-func getCreateArgsWithName(source string, tags map[string]string, projectName string, scanTypes string) []string {
+func getCreateArgsWithName(source string, tags map[string]string, projectName, scanTypes string) []string {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -363,7 +361,6 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName st
 }
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
-
 	buffer := executeScanGetBuffer(t, args)
 
 	createdScan := wrappers.ScanResponseModel{}
@@ -546,4 +543,25 @@ func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 			assert.Assert(t, !strings.HasSuffix(node.FileName, "java"), "File name should not contain java")
 		}
 	}
+}
+
+func TestScanCreateWithSSHKey(t *testing.T) {
+	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
+	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
+
+	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), SSHRepo,
+		flag(params.BranchFlag), "main",
+		flag(params.SSHKeyFlag), SSHKeyFilePath,
+	}
+
+	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
+
+	_ = os.Remove(SSHKeyFilePath)
 }

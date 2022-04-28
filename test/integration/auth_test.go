@@ -116,40 +116,6 @@ func TestAuthRegister(t *testing.T) {
 		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
 	)
 	assert.Error(t, err, "User does not have permission for roles [ast-admin ast-scanner]")
-	//assert.NilError(t, err, "Register should pass")
-	//
-	//result, err := io.ReadAll(buffer)
-	//assert.NilError(t, err, "Reading result should pass")
-	//
-	//lines := strings.Split(string(result), "\n")
-	//
-	//assert.Assert(t, strings.Contains(lines[0], "CX_CLIENT_ID="+clientIDPrefix))
-	//assert.Assert(t, strings.Contains(lines[1], "CX_CLIENT_SECRET="))
-	//
-	//clientID := strings.Split(lines[0], "=")[1]
-	//secret := strings.Split(lines[1], "=")[1]
-	//uuidLen := len(uuid.New().String())
-	//
-	//assert.Assert(t, strings.Contains(clientID, clientIDPrefix))
-	//assert.Assert(t, len(clientID) == len(clientIDPrefix)+uuidLen)
-	//assert.Assert(t, len(secret) == uuidLen)
-	//
-	//_, err = uuid.Parse(secret)
-	//assert.NilError(t, err, "Parsing UUID should pass")
-	//
-	//validateCommand, buffer := createRedirectedTestCommand(t)
-	//
-	//err = execute(
-	//	validateCommand,
-	//	"auth",
-	//	"validate",
-	//	flag(params.AccessKeyIDFlag),
-	//	clientID,
-	//	flag(params.AccessKeySecretFlag),
-	//	secret,
-	//)
-	//
-	//assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 func TestFailProxyAuth(t *testing.T) {

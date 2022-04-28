@@ -62,7 +62,7 @@ func NewCompletionCommand() *cobra.Command {
 		Args: func(cmd *cobra.Command, args []string) error {
 			shellType, _ := cmd.Flags().GetString(shellFlag)
 
-			if shellType == "" || contains(cmd.ValidArgs, shellType) {
+			if shellType == "" || Contains(cmd.ValidArgs, shellType) {
 				return nil
 			}
 
