@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -23,6 +24,11 @@ const (
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
 	failedFindingGroup    = "Failed finding groups"
+	projOriginLevel       = "Project"
+	repoConfKey           = "scan.handler.git.repository"
+	sshConfKey            = "scan.handler.git.sshKey"
+	mandatoryRepoURLError = "flag --repo-url is mandatory when --ssh-key is provided"
+	invalidRepoURL        = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
 )
 
 var (
@@ -88,6 +94,8 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
 	createProjCmd.PersistentFlags().StringP(commonParams.ProjectName, "", "", "Name of project")
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
+	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
+	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -283,7 +291,11 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		updateTagValues(&input, cmd)
+		setupScanTags(&input, cmd)
+		err = validateConfiguration(cmd)
+		if err != nil {
+			return err
+		}
 		var projModel = wrappers.Project{}
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -299,6 +311,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreatingProj)
 		}
+
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
@@ -308,8 +321,104 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
+
+		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
+}
+
+func updateProjectConfigurationIfNeeded(cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, projectID string) error {
+	// Just update project configuration id a repository url is defined
+	if cmd.Flags().Changed(commonParams.RepoURLFlag) {
+		var projectConfigurations []wrappers.ProjectConfiguration
+
+		repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
+
+		urlConf := getProjectConfiguration(repoConfKey, "repository", git, projOriginLevel, repoURL, "String", true)
+
+		projectConfigurations = append(projectConfigurations, urlConf)
+
+		if cmd.Flags().Changed(commonParams.SSHKeyFlag) {
+			sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
+
+			sshKey, sshErr := util.ReadFileAsString(sshKeyPath)
+			if sshErr != nil {
+				return sshErr
+			}
+
+			sshKeyConf := getProjectConfiguration(sshConfKey, "sshKey", git, projOriginLevel, sshKey, "Secret", true)
+
+			projectConfigurations = append(projectConfigurations, sshKeyConf)
+		}
+
+		_, configErr := projectsWrapper.UpdateConfiguration(projectID, projectConfigurations)
+		if configErr != nil {
+			return configErr
+		}
+	}
+
+	return nil
+}
+
+func getProjectConfiguration(key, name, category, level, value, valueType string, allowOverride bool) wrappers.ProjectConfiguration {
+	config := wrappers.ProjectConfiguration{}
+	config.Key = key
+	config.Name = name
+	config.Category = category
+	config.OriginLevel = level
+	config.Value = value
+	config.ValueType = valueType
+	config.AllowOverride = allowOverride
+
+	return config
+}
+
+func validateConfiguration(cmd *cobra.Command) error {
+	var sshKeyDefined bool
+	var repoURLDefined bool
+
+	// Validate if ssh key is empty when provided
+	if cmd.Flags().Changed(commonParams.SSHKeyFlag) {
+		sshKey, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
+
+		if strings.TrimSpace(sshKey) == "" {
+			return errors.New("flag needs an argument: --ssh-key")
+		}
+
+		sshKeyDefined = true
+	}
+
+	// Validate if repo url is empty when provided
+	if cmd.Flags().Changed(commonParams.RepoURLFlag) {
+		repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
+
+		if strings.TrimSpace(repoURL) == "" {
+			return errors.New("flag needs an argument: --repo-url")
+		}
+
+		repoURLDefined = true
+	}
+
+	// If ssh key is defined we have two checks to validate:
+	// 		1. repo url needs to be provided
+	// 		2. provided repo url needs to be a ssh url
+	if sshKeyDefined {
+		if !repoURLDefined {
+			return errors.New(mandatoryRepoURLError)
+		}
+
+		repoURL, _ := cmd.Flags().GetString(commonParams.RepoURLFlag)
+
+		if !util.IsSSHURL(repoURL) {
+			return errors.New(invalidRepoURL)
+		}
+	}
+
+	return nil
 }
 
 func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {

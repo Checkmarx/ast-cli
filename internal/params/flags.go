@@ -98,6 +98,8 @@ const (
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
 	QueryIDFlag              = "query-id"
+	SSHKeyFlag               = "ssh-key"
+	RepoURLFlag              = "repo-url"
 
 	// INDIVIDUAL FILTER	FLAGS
 	SastFilterFlag  = "sast-filter"

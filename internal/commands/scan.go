@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/google/shlex"
 	"github.com/pkg/errors"
@@ -39,6 +40,8 @@ const (
 	mbBytes           = 1024.0 * 1024.0
 	scaType           = "sca"
 	notExploitable    = "NOT_EXPLOITABLE"
+	git               = "git"
+	invalidSSHSource  = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 )
 
 var (
@@ -386,6 +389,9 @@ func scanCreateSubCommand(
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
+
 	return createScanCmd
 }
 
@@ -440,7 +446,7 @@ func createProject(
 	return projectID, err
 }
 
-func updateTagValues(input *[]byte, cmd *cobra.Command) {
+func setupScanTags(input *[]byte, cmd *cobra.Command) {
 	tagListStr, _ := cmd.Flags().GetString(commonParams.TagList)
 	tags := strings.Split(tagListStr, ",")
 	var info map[string]interface{}
@@ -479,17 +485,16 @@ func createTagMap(tagListStr string) map[string]string {
 	return tags
 }
 
-func updateScanRequestValues(
+func setupScanTypeProjectAndConfig(
 	input *[]byte,
 	cmd *cobra.Command,
-	sourceType string,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
-	info["type"] = sourceType
+	info["type"] = getUploadType(cmd)
 	// Handle the project settings
 	if _, ok := info["project"]; !ok {
 		var projectMap map[string]interface{}
@@ -576,14 +581,12 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func determineScanTypes(cmd *cobra.Command) {
+func validateScanTypes(cmd *cobra.Command) {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
 		actualScanTypes = userScanTypes
 	}
-}
 
-func validateScanTypes() {
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, scanType := range scanTypes {
 		isValid := false
@@ -846,64 +849,82 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func determineSourceFile(
+func getUploadURLFromSource(
+	cmd *cobra.Command,
 	uploadsWrapper wrappers.UploadsWrapper,
-	sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scaResolver, scaResolverParams string,
 ) (string, error) {
-	var err error
 	var preSignedURL string
-	if sourceDir != "" {
+
+	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
+	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
+
+	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
+	if err != nil {
+		return "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+	}
+
+	if directoryPath != "" {
+		var dirPathErr error
+		// Get sca resolver flags
+		scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+		if dirPathErr != nil {
+			scaResolverParams = ""
+		}
+		scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+		if dirPathErr != nil {
+			scaResolver = ""
+			scaResolverParams = ""
+		}
+
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, scaType) {
-			err = runScaResolver(sourceDir, scaResolver, scaResolverParams)
-			if err != nil {
-				return "", errors.Wrapf(err, "ScaResolver error")
+			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
+			if dirPathErr != nil {
+				return "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
-		sourcesFile, err = compressFolder(sourceDir, sourceDirFilter, userIncludeFilter, scaResolver)
-		if err != nil {
-			return "", err
+		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if dirPathErr != nil {
+			return "", dirPathErr
 		}
 	}
-	if sourcesFile != "" {
+	if zipFilePath != "" {
+		var zipFilePathErr error
 		// Send a request to uploads service
 		var preSignedURL *string
-		preSignedURL, err = uploadsWrapper.UploadFile(sourcesFile)
-		if err != nil {
-			return "", errors.Wrapf(err, "%s: Failed to upload sources file\n", failedCreating)
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
+		if zipFilePathErr != nil {
+			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 		}
 		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, err
+		return *preSignedURL, zipFilePathErr
 	}
-	return preSignedURL, err
+	return preSignedURL, nil
 }
 
-func determineSourceType(sourcesFile string) (zipFile, sourceDir, scanRepoURL string, err error) {
-	if strings.HasPrefix(sourcesFile, "https://") ||
-		strings.HasPrefix(sourcesFile, "http://") {
-		scanRepoURL = sourcesFile
+func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir string, err error) {
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	sourceTrimmed := strings.TrimSpace(source)
 
-		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
-	} else {
-		info, statErr := os.Stat(sourcesFile)
-		if !os.IsNotExist(statErr) {
-			if filepath.Ext(sourcesFile) == ".zip" {
-				zipFile = sourcesFile
-			} else if info != nil && info.IsDir() {
-				sourceDir = filepath.ToSlash(sourcesFile)
-				if !strings.HasSuffix(sourceDir, "/") {
-					sourceDir += "/"
-				}
-			} else {
-				msg := fmt.Sprintf("Sources input has bad format: %v", sourcesFile)
-				err = errors.New(msg)
+	info, statErr := os.Stat(sourceTrimmed)
+	if !os.IsNotExist(statErr) {
+		if filepath.Ext(sourceTrimmed) == ".zip" {
+			zipFile = sourceTrimmed
+		} else if info != nil && info.IsDir() {
+			sourceDir = filepath.ToSlash(sourceTrimmed)
+			if !strings.HasSuffix(sourceDir, "/") {
+				sourceDir += "/"
 			}
 		} else {
-			msg := fmt.Sprintf("Sources input has bad format: %v", sourcesFile)
+			msg := fmt.Sprintf("Sources input has bad format: %v", sourceTrimmed)
 			err = errors.New(msg)
 		}
+	} else {
+		msg := fmt.Sprintf("Sources input has bad format: %v", sourceTrimmed)
+		err = errors.New(msg)
 	}
-	return zipFile, sourceDir, scanRepoURL, err
+
+	return zipFile, sourceDir, err
 }
 
 func runCreateScanCommand(
@@ -964,81 +985,110 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) (*wrappers.Scan, error) {
-	determineScanTypes(cmd)
-	validateScanTypes()
-	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
-	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
-	sourcesFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-	sourcesFile, sourceDir, scanRepoURL, err := determineSourceType(strings.TrimSpace(sourcesFile))
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
-	}
-	uploadType := getUploadType(sourceDir, sourcesFile)
+	validateScanTypes(cmd)
+
 	var input = []byte("{}")
-	err = updateScanRequestValues(&input, cmd, uploadType, projectsWrapper, groupsWrapper)
+
+	// Define type, project and config in scan model
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper)
 	if err != nil {
 		return nil, err
 	}
-	updateTagValues(&input, cmd)
+
+	// set tags in scan model
+	setupScanTags(&input, cmd)
+
 	scanModel := wrappers.Scan{}
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
-	// Get sca resolver flags
-	scaResolverParams, err := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
-	if err != nil {
-		scaResolverParams = ""
-	}
-	scaResolver, err := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-	if err != nil {
-		scaResolver = ""
-		scaResolverParams = ""
-	}
-	// Set up the project handler (either git or upload)
-	pHandler, err := setupProjectHandler(
-		uploadsWrapper,
-		sourcesFile,
-		sourceDir,
-		sourceDirFilter,
-		userIncludeFilter,
-		scanRepoURL,
-		scaResolver,
-		scaResolverParams,
-	)
-	scanModel.Handler, _ = json.Marshal(pHandler)
+
+	// Set up the scan handler (either git or upload)
+	scanHandler, err := setupScanHandler(cmd, uploadsWrapper)
 	if err != nil {
 		return nil, err
 	}
+
+	scanModel.Handler, _ = json.Marshal(scanHandler)
+
+	uploadType := getUploadType(cmd)
+
+	if uploadType == "git" {
+		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
+	}
+
 	return &scanModel, nil
 }
 
-func getUploadType(sourceDir, sourcesFile string) string {
-	if sourceDir != "" || sourcesFile != "" {
-		return "upload"
+func getUploadType(cmd *cobra.Command) string {
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	sourceTrimmed := strings.TrimSpace(source)
+
+	if util.IsGitURL(sourceTrimmed) {
+		return git
 	}
-	return "git"
+
+	return "upload"
 }
 
-func setupProjectHandler(
+func setupScanHandler(
+	cmd *cobra.Command,
 	uploadsWrapper wrappers.UploadsWrapper,
-	sourcesFile, sourceDir, sourceDirFilter, userIncludeFilter, scanRepoURL, scaResolver, scaResolverParams string,
-) (wrappers.UploadProjectHandler, error) {
-	pHandler := wrappers.UploadProjectHandler{}
-	pHandler.Branch = viper.GetString(commonParams.BranchKey)
+) (wrappers.ScanHandler, error) {
+	scanHandler := wrappers.ScanHandler{}
+	scanHandler.Branch = viper.GetString(commonParams.BranchKey)
+
+	uploadType := getUploadType(cmd)
+
+	if uploadType == git {
+		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+
+		scanHandler.RepoURL = strings.TrimSpace(source)
+	} else {
+		uploadURL, err := getUploadURLFromSource(cmd, uploadsWrapper)
+		if err != nil {
+			return scanHandler, err
+		}
+
+		scanHandler.UploadURL = uploadURL
+	}
+
 	var err error
-	pHandler.UploadURL, err = determineSourceFile(
-		uploadsWrapper,
-		sourcesFile,
-		sourceDir,
-		sourceDirFilter,
-		userIncludeFilter,
-		scaResolver,
-		scaResolverParams,
-	)
-	pHandler.RepoURL = scanRepoURL
-	return pHandler, err
+
+	// Define SSH credentials if flag --ssh-key is provided
+	if cmd.Flags().Changed(commonParams.SSHKeyFlag) {
+		sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
+
+		if strings.TrimSpace(sshKeyPath) == "" {
+			return scanHandler, errors.New("flag needs an argument: --ssh-key")
+		}
+
+		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+		sourceTrimmed := strings.TrimSpace(source)
+
+		if !util.IsSSHURL(sourceTrimmed) {
+			return scanHandler, errors.New(invalidSSHSource)
+		}
+
+		err = defineSSHCredentials(strings.TrimSpace(sshKeyPath), &scanHandler)
+	}
+
+	return scanHandler, err
+}
+
+func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
+	sshKey, err := util.ReadFileAsString(sshKeyPath)
+
+	credentials := wrappers.GitCredentials{}
+
+	credentials.Type = "ssh"
+	credentials.Value = sshKey
+
+	handler.Credentials = credentials
+
+	return err
 }
 
 func handleWait(

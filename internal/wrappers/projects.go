@@ -33,6 +33,16 @@ type ProjectResponseModel struct {
 	ScmRepoID  string            `json:"scmRepoId,omitempty"`
 }
 
+type ProjectConfiguration struct {
+	Key           string `json:"key"`
+	Name          string `json:"name"`
+	Category      string `json:"category"`
+	OriginLevel   string `json:"originLevel"`
+	Value         string `json:"value"`
+	ValueType     string `json:"valuetype"`
+	AllowOverride bool   `json:"allowOverride"`
+}
+
 type ProjectsWrapper interface {
 	Create(model *Project) (*ProjectResponseModel, *ErrorModel, error)
 	Get(params map[string]string) (*ProjectsCollectionResponseModel, *ErrorModel, error)
@@ -40,4 +50,5 @@ type ProjectsWrapper interface {
 	GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error)
 	Delete(projectID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)
+	UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error)
 }

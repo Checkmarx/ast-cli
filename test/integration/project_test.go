@@ -4,17 +4,23 @@ package integration
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"io"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
 )
+
+const SSHKeyFilePath = "ssh-key-file.txt"
 
 // End-to-end test of project handling.
 // - Create a project
@@ -72,7 +78,6 @@ func TestCreateEmptyProjectName(t *testing.T) {
 
 // Create the same project twice and assert that it fails
 func TestCreateAlreadyExistingProject(t *testing.T) {
-
 	assertRequiredParameter(t, "Project name is required", "project", "create")
 
 	_, projectName := getRootProject(t)
@@ -102,9 +107,9 @@ func TestProjectBranches(t *testing.T) {
 		"branches",
 	)
 
-	projectId, _ := getRootProject(t)
+	projectID, _ := getRootProject(t)
 
-	buffer := executeCmdNilAssertion(t, "Branches should be listed", "project", "branches", "--project-id", projectId)
+	buffer := executeCmdNilAssertion(t, "Branches should be listed", "project", "branches", "--project-id", projectID)
 
 	result, readingError := io.ReadAll(buffer)
 	assert.NilError(t, readingError, "Reading result should pass")
@@ -115,6 +120,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 
+	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
 		t, "Creating a project should pass",
 		"project", "create",
@@ -135,6 +141,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 
 func deleteProject(t *testing.T, projectID string) {
 	log.Println("Deleting the project with id ", projectID)
+	fmt.Println("Deleting the project with id ", projectID)
 	executeCmdNilAssertion(
 		t,
 		"Deleting a project should pass",
@@ -147,16 +154,17 @@ func deleteProject(t *testing.T, projectID string) {
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
-
+	fmt.Println("Listing project for id ", projectID)
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the project should pass",
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-
+	fmt.Println("Listing project for id output buffer", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
+	fmt.Println("Listing project for id projects length: ", len(projects))
 
 	return projects
 }
@@ -174,4 +182,35 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
 
 	return project
+}
+
+func TestCreateProjectWithSSHKey(t *testing.T) {
+	projectName := fmt.Sprintf("ast-cli-tests_%s", uuid.New().String()) + "_for_project"
+	tagsStr := formatTags(Tags)
+
+	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
+	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
+
+	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(SSHKeyFilePath) }()
+
+	fmt.Printf("Creating project : %s \n", projectName)
+	outBuffer := executeCmdNilAssertion(
+		t, "Creating a project with ssh key should pass",
+		"project", "create",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "master",
+		flag(params.TagList), tagsStr,
+		flag(params.RepoURLFlag), SSHRepo,
+		flag(params.SSHKeyFlag), SSHKeyFilePath,
+	)
+
+	createdProject := wrappers.ProjectResponseModel{}
+	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+
+	fmt.Println("Response after project is created : ", string(createdProjectJSON))
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
+
+	deleteProject(t, createdProject.ID)
 }

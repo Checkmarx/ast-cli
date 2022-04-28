@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -16,6 +17,7 @@ const (
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"
 	SlowRepo              = "https://github.com/WebGoat/WebGoat"
+	SSHRepo               = "git@github.com:hmmachadocx/hmmachado_dummy_project.git"
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
@@ -77,6 +79,7 @@ func getRootProject(t *testing.T) (string, string) {
 	testInstance = t
 
 	if len(rootProjectId) > 0 {
+		fmt.Printf("Using the projectID: " + rootProjectId)
 		log.Println("Using the projectID: ", rootProjectId)
 		log.Println("Using the projectName: ", rootProjectName)
 		return rootProjectId, rootProjectName
