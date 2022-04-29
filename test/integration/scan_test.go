@@ -571,6 +571,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "main",
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
 	}
