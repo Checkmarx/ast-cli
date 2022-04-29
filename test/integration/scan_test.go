@@ -564,3 +564,16 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
 }
+
+func TestCreateScanFilterZipFile(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.SourceDirFilterFlag), "!*.html",
+	}
+
+	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
+}
