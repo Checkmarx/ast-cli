@@ -550,6 +550,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
 	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
 
@@ -562,6 +563,18 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
+}
 
-	_ = os.Remove(SSHKeyFilePath)
+func TestCreateScanFilterZipFile(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "main",
+		flag(params.SourcesFlag), Zip,
+		flag(params.SourceDirFilterFlag), "!*.html",
+	}
+
+	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
 }
