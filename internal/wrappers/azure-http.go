@@ -109,7 +109,7 @@ func (g *AzureHTTPWrapper) get(url, token string, target interface{}, queryParam
 		_ = resp.Body.Close()
 	}()
 
-	logger.PrintResponse(resp)
+	logger.PrintResponse(resp, true)
 
 	switch resp.StatusCode {
 	case http.StatusOK:

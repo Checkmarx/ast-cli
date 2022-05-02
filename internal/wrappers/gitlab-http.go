@@ -158,7 +158,7 @@ func getFromGitLab(
 			continue
 		}
 
-		logger.PrintResponse(resp)
+		logger.PrintResponse(resp, true)
 
 		switch resp.StatusCode {
 		case http.StatusOK:

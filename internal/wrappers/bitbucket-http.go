@@ -304,7 +304,7 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 		_ = resp.Body.Close()
 	}()
 
-	logger.PrintResponse(resp)
+	logger.PrintResponse(resp, true)
 
 	switch resp.StatusCode {
 	case http.StatusOK:

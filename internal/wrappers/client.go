@@ -395,7 +395,7 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	client := getClient(clientTimeout)
 
-	res, err := doRequest(client, req)
+	res, err := doPrivateRequest(client, req)
 	if err != nil {
 		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
 	}
@@ -453,7 +453,15 @@ func getPasswordCredentialsPayload(username, password, adminClientID, adminClien
 	)
 }
 
+func doPrivateRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+	return request(client, req, false)
+}
+
 func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
+	return request(client, req, true)
+}
+
+func request(client *http.Client, req *http.Request, responseBody bool) (*http.Response, error) {
 	var err error
 	var resp *http.Response
 	retryLimit := int(viper.GetUint(commonParams.RetryFlag))
@@ -465,7 +473,7 @@ func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 			try+tryPrintOffset, retryLimit+retryLimitPrintOffset))
 		resp, err = client.Do(req)
 		if resp != nil && err == nil {
-			logger.PrintResponse(resp)
+			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))

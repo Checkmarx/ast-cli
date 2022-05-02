@@ -134,11 +134,13 @@ func runRegister(authWrapper wrappers.AuthWrapper) func(cmd *cobra.Command, args
 		if username == "" {
 			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, params.UsernameFlag)
 		}
+		viper.Set(params.UsernameFlag, username)
 
 		password, _ := cmd.Flags().GetString(params.PasswordFlag)
 		if password == "" {
 			return errors.Errorf(pleaseProvideFlag, failedCreatingClient, params.PasswordFlag)
 		}
+		viper.Set(params.PasswordFlag, password)
 
 		roles, _ := cmd.Flags().GetStringSlice(params.ClientRolesFlag)
 		err := validateRoles(roles)

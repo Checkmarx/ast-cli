@@ -262,7 +262,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 			continue
 		}
 
-		logger.PrintResponse(resp)
+		logger.PrintResponse(resp, true)
 
 		switch resp.StatusCode {
 		case http.StatusOK:
