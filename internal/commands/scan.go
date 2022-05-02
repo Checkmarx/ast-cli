@@ -1159,7 +1159,7 @@ func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) erro
 	if err != nil {
 		return err
 	}
-	viper.Set(commonParams.SshValue, sshKey)
+	viper.Set(commonParams.SSHValue, sshKey)
 
 	credentials := wrappers.GitCredentials{}
 

@@ -14,7 +14,7 @@ import (
 
 var sanitizeFlags = []string{
 	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
-	params.AstToken, params.SshValue,
+	params.AstToken, params.SSHValue,
 	params.SCMTokenFlag,
 }
 
@@ -46,16 +46,16 @@ func PrintResponse(r *http.Response) {
 	PrintIfVerbose(string(requestDump))
 }
 
-func sanitizeLogs(log string) string {
-	if strings.Contains(log, "access_token") && strings.Contains(log, "token_type") {
+func sanitizeLogs(msg string) string {
+	if strings.Contains(msg, "access_token") && strings.Contains(msg, "token_type") {
 		return ""
 	}
 
 	for _, flag := range sanitizeFlags {
 		value := viper.GetString(flag)
 		if len(value) > 0 {
-			log = strings.ReplaceAll(log, value, "***")
+			msg = strings.ReplaceAll(msg, value, "***")
 		}
 	}
-	return log
+	return msg
 }

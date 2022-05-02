@@ -101,7 +101,7 @@ const (
 	SSHKeyFlag               = "ssh-key"
 	RepoURLFlag              = "repo-url"
 	AstToken                 = "ast-token"
-	SshValue                 = "ssh-value"
+	SSHValue                 = "ssh-value"
 	SastFilterFlag           = "sast-filter"
 	SastFilterUsage          = "SAST filter"
 	KicsFilterFlag           = "kics-filter"

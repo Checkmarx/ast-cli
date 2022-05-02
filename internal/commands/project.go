@@ -351,7 +351,7 @@ func updateProjectConfigurationIfNeeded(cmd *cobra.Command, projectsWrapper wrap
 				return sshErr
 			}
 
-			viper.Set(commonParams.SshValue, sshKey)
+			viper.Set(commonParams.SSHValue, sshKey)
 
 			sshKeyConf := getProjectConfiguration(sshConfKey, "sshKey", git, projOriginLevel, sshKey, "Secret", true)
 
