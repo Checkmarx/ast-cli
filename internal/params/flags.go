@@ -100,14 +100,14 @@ const (
 	QueryIDFlag              = "query-id"
 	SSHKeyFlag               = "ssh-key"
 	RepoURLFlag              = "repo-url"
-
-	// INDIVIDUAL FILTER	FLAGS
-	SastFilterFlag  = "sast-filter"
-	SastFilterUsage = "SAST filter"
-	KicsFilterFlag  = "kics-filter"
-	KicsFilterUsage = "KICS filter"
-	ScaFilterFlag   = "sca-filter"
-	ScaFilterUsage  = "SCA filter"
+	AstToken                 = "ast-token"
+	SshValue                 = "ssh-value"
+	SastFilterFlag           = "sast-filter"
+	SastFilterUsage          = "SAST filter"
+	KicsFilterFlag           = "kics-filter"
+	KicsFilterUsage          = "KICS filter"
+	ScaFilterFlag            = "sca-filter"
+	ScaFilterUsage           = "SCA filter"
 )
 
 // Parameter values

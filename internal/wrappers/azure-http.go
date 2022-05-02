@@ -9,6 +9,7 @@ import (
 
 	b64 "encoding/base64"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -82,8 +83,6 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 func (g *AzureHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string, authFormat string) error {
 	var err error
 
-	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
-
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -99,13 +98,19 @@ func (g *AzureHTTPWrapper) get(url, token string, target interface{}, queryParam
 	}
 	req.URL.RawQuery = q.Encode()
 	resp, err := g.client.Do(req)
+
 	if err != nil {
 		return err
 	}
 
+	logger.PrintRequest(req)
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	logger.PrintResponse(resp)
+
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)

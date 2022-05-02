@@ -9,8 +9,9 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
 
@@ -306,7 +307,7 @@ func runCreateProjectCommand(
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
-		PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
+		logger.PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreatingProj)
@@ -349,6 +350,8 @@ func updateProjectConfigurationIfNeeded(cmd *cobra.Command, projectsWrapper wrap
 			if sshErr != nil {
 				return sshErr
 			}
+
+			viper.Set(commonParams.SshValue, sshKey)
 
 			sshKeyConf := getProjectConfiguration(sshConfKey, "sshKey", git, projOriginLevel, sshKey, "Secret", true)
 
@@ -435,6 +438,8 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
+		//
+
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -71,7 +72,7 @@ func (g *GitLabHTTPWrapper) GetCommits(
 	encodedProjectPath := url.QueryEscape(gitLabProjectPathWithNameSpace)
 	commitsURL := fmt.Sprintf(gitLabCommitURL, gitLabBaseURL, gitLabAPIVersion, encodedProjectPath)
 
-	PrintIfVerbose(fmt.Sprintf("Getting commits for project: %s", gitLabProjectPathWithNameSpace))
+	logger.PrintIfVerbose(fmt.Sprintf("Getting commits for project: %s", gitLabProjectPathWithNameSpace))
 
 	pages, err := fetchWithPagination(g.client, commitsURL, queryParams)
 	if err != nil {
@@ -101,7 +102,7 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 	gitLabBaseURL := viper.GetString(params.GitLabURLFlag)
 	encodedGroupName := url.QueryEscape(gitLabGroupName)
 
-	PrintIfVerbose(fmt.Sprintf("Finding the projects for group: %s", gitLabGroupName))
+	logger.PrintIfVerbose(fmt.Sprintf("Finding the projects for group: %s", gitLabGroupName))
 	projectsURL := fmt.Sprintf(gitLabGroupProjectsURL, gitLabBaseURL, gitLabAPIVersion, encodedGroupName)
 
 	pages, err := fetchWithPagination(g.client, projectsURL, queryParams)
@@ -146,14 +147,18 @@ func getFromGitLab(
 			q.Add(k, v)
 		}
 		req.URL.RawQuery = q.Encode()
-		PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
+
+		logger.PrintRequest(req)
+
 		resp, currentError := client.Do(req)
 		if currentError != nil {
 			count++
-			PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
+			logger.PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
 			err = currentError
 			continue
 		}
+
+		logger.PrintResponse(resp)
 
 		switch resp.StatusCode {
 		case http.StatusOK:
@@ -166,7 +171,7 @@ func getFromGitLab(
 			body, currentError := io.ReadAll(resp.Body)
 			closeResponseBody(resp)
 			if currentError != nil {
-				PrintIfVerbose(currentError.Error())
+				logger.PrintIfVerbose(currentError.Error())
 				return nil, currentError
 			}
 			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))

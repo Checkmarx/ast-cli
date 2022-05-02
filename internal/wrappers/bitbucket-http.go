@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
@@ -144,7 +145,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 ) error {
 	var err error
 
-	PrintIfVerbose(fmt.Sprintf("Request to %s", url))
+	logger.PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -297,12 +298,14 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	if err != nil {
 		return err
 	}
-
-	PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL.String()))
+	logger.PrintRequest(req)
 
 	defer func() {
 		_ = resp.Body.Close()
 	}()
+
+	logger.PrintResponse(resp)
+
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
