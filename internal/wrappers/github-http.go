@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -252,32 +253,34 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		}
 		req.URL.RawQuery = q.Encode()
 
-		PrintIfVerbose(fmt.Sprintf("Request to %s", req.URL))
+		logger.PrintRequest(req)
 		resp, currentError := client.Do(req)
 		if currentError != nil {
 			count++
-			PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
+			logger.PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
 			err = currentError
 			continue
 		}
 
+		logger.PrintResponse(resp, true)
+
 		switch resp.StatusCode {
 		case http.StatusOK:
-			PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
+			logger.PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
 			currentError = json.NewDecoder(resp.Body).Decode(target)
 			closeBody(resp)
 			if currentError != nil {
 				return nil, currentError
 			}
 		case http.StatusConflict:
-			PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
+			logger.PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
 			closeBody(resp)
 			return nil, nil
 		default:
 			body, currentError := io.ReadAll(resp.Body)
 			closeBody(resp)
 			if currentError != nil {
-				PrintIfVerbose(currentError.Error())
+				logger.PrintIfVerbose(currentError.Error())
 				return nil, currentError
 			}
 			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
