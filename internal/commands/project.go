@@ -438,7 +438,6 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
-		//
 
 		// Checking the response
 		if errorModel != nil {
