@@ -1,6 +1,11 @@
 name: Checkmarx AST Scan
 
-on: [ pull_request, workflow_dispatch ]
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   cx-scan:
