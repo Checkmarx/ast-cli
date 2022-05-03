@@ -31,7 +31,6 @@
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
     ·
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Request Feature</a>
-  </p>
 </p>
 
 

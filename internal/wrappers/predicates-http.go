@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -41,11 +42,11 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 		return nil, nil, errors.Errorf(invalidScanType, scannerType)
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
+	logger.PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
 	r.SetPath(triageAPIPath)
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
-	PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
+	logger.PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
 
 	return handleResponseWithBody(SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout))
 }
@@ -73,8 +74,8 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, errors.Errorf(invalidScanType, predicate.ScannerType)
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
-	PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBytes)))
+	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
+	logger.PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBytes)))
 
 	r.SetPath(triageAPIPath)
 
@@ -83,7 +84,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		return nil, err
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Response : %s ", resp.Status))
+	logger.PrintIfVerbose(fmt.Sprintf("Response : %s ", resp.Status))
 
 	defer func() {
 		_ = resp.Body.Close()
@@ -111,7 +112,7 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 		return nil, nil, err
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+	logger.PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
 
 	decoder := json.NewDecoder(resp.Body)
 

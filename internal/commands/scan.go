@@ -18,6 +18,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -641,7 +642,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	if err != nil {
 		return "", err
 	}
-	PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
 	return outputFile.Name(), err
 }
 
@@ -667,13 +668,13 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	}
 	for _, file := range files {
 		if file.IsDir() {
-			PrintIfVerbose("Directory: " + file.Name())
+			logger.PrintIfVerbose("Directory: " + file.Name())
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
 			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
-			PrintIfVerbose("Included: " + fileName)
+			logger.PrintIfVerbose("Included: " + fileName)
 			dat, _ := ioutil.ReadFile(fileName)
 
 			f, _ := zipWriter.Create(baseDir + file.Name())
@@ -715,7 +716,7 @@ func handleFile(
 ) error {
 	fileName := parentDir + file.Name()
 	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
-		PrintIfVerbose("Included: " + fileName)
+		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -732,7 +733,7 @@ func handleFile(
 			return err
 		}
 	} else {
-		PrintIfVerbose("Excluded: " + fileName)
+		logger.PrintIfVerbose("Excluded: " + fileName)
 	}
 	return nil
 }
@@ -747,7 +748,7 @@ func handleDir(
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
-		PrintIfVerbose("The folder " + file.Name() + " is being included")
+		logger.PrintIfVerbose("The folder " + file.Name() + " is being included")
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
@@ -760,7 +761,7 @@ func handleDir(
 				return err
 			}
 			if match {
-				PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
+				logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
 				return nil
 			}
 		}
@@ -770,7 +771,7 @@ func handleDir(
 }
 
 func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (newParent, newBase string) {
-	PrintIfVerbose("Directory: " + parentDir + file.Name())
+	logger.PrintIfVerbose("Directory: " + parentDir + file.Name())
 	newParent = parentDir + file.Name() + "/"
 	newBase = baseDir + file.Name() + "/"
 	return newParent, newBase
@@ -829,13 +830,13 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
-		PrintIfVerbose(string(out))
+		logger.PrintIfVerbose(string(out))
 	}
 	return nil
 }
 
 func addScaResults(zipWriter *zip.Writer) error {
-	PrintIfVerbose("Included SCA Results: " + ".cxsca-results.json")
+	logger.PrintIfVerbose("Included SCA Results: " + ".cxsca-results.json")
 	dat, err := ioutil.ReadFile(scaResolverResultsFile)
 	_ = os.Remove(scaResolverResultsFile)
 	if err != nil {
@@ -908,7 +909,7 @@ func getUploadURLFromSource(
 		if zipFilePathErr != nil {
 			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 		}
-		PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
+		logger.PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
 		return *preSignedURL, zipFilePathErr
 	}
 	return preSignedURL, nil
@@ -932,13 +933,13 @@ func UnzipFile(f string) (string, error) {
 
 	for _, f := range archive.File {
 		filePath := filepath.Join(tempDir, f.Name)
-		PrintIfVerbose("unzipping file " + filePath + "...")
+		logger.PrintIfVerbose("unzipping file " + filePath + "...")
 
 		if !strings.HasPrefix(filePath, filepath.Clean(tempDir)+string(os.PathSeparator)) {
 			return "", errors.New("invalid file path " + filePath)
 		}
 		if f.FileInfo().IsDir() {
-			PrintIfVerbose("creating directory...")
+			logger.PrintIfVerbose("creating directory...")
 			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
 				return "", errors.Errorf("%s %s", errorUnzippingFile, err.Error())
@@ -1155,6 +1156,10 @@ func setupScanHandler(
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
 	sshKey, err := util.ReadFileAsString(sshKeyPath)
+	if err != nil {
+		return err
+	}
+	viper.Set(commonParams.SSHValue, sshKey)
 
 	credentials := wrappers.GitCredentials{}
 
@@ -1163,7 +1168,7 @@ func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) erro
 
 	handler.Credentials = credentials
 
-	return err
+	return nil
 }
 
 func handleWait(
@@ -1238,7 +1243,7 @@ func applyThreshold(
 		currentValue := summaryMap[key]
 		failed := currentValue >= thresholdLimit
 		logMessage := fmt.Sprintf(thresholdLog, key, thresholdLimit, currentValue)
-		PrintIfVerbose(logMessage)
+		logger.PrintIfVerbose(logMessage)
 
 		if failed {
 			errorBuilder.WriteString(fmt.Sprintf("%s | ", logMessage))
