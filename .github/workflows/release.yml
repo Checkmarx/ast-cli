@@ -31,7 +31,7 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
       - name: Install docker
-        uses: docker-practice/actions-setup-docker@master
+        uses: docker-practice/actions-setup-docker@1.0.9
         with:
           docker_version: "20.10"
           docker_channel: stable
