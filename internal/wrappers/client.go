@@ -232,9 +232,23 @@ func GetAuthURL(path string) string {
 	return authURL
 }
 
+func SendPrivateHTTPRequestWithQueryParams(
+	method, path string, params map[string]string,
+	body io.Reader, timeout uint,
+) (*http.Response, error) {
+	return HTTPRequestWithQueryParams(method, path, params, body, timeout, false)
+}
+
 func SendHTTPRequestWithQueryParams(
 	method, path string, params map[string]string,
 	body io.Reader, timeout uint,
+) (*http.Response, error) {
+	return HTTPRequestWithQueryParams(method, path, params, body, timeout, true)
+}
+
+func HTTPRequestWithQueryParams(
+	method, path string, params map[string]string,
+	body io.Reader, timeout uint, printBody bool,
 ) (*http.Response, error) {
 	u := GetURL(path)
 	req, err := http.NewRequest(method, u, body)
@@ -253,7 +267,7 @@ func SendHTTPRequestWithQueryParams(
 		return nil, err
 	}
 	var resp *http.Response
-	resp, err = doRequest(client, req)
+	resp, err = request(client, req, printBody)
 	if err != nil {
 		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL.RequestURI())
 	}
