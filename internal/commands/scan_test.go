@@ -13,13 +13,26 @@ import (
 )
 
 const (
-	unknownFlag          = "unknown flag: --chibutero"
-	blankSpace           = " "
-	errorMissingBranch   = "Failed creating a scan: Please provide a branch"
-	dummyRepo            = "https://github.com/dummyuser/dummy_project.git"
-	dummySSHRepo         = "git@github.com:dummyRepo/dummyProject.git"
-	errorSourceBadFormat = "Failed creating a scan: Input in bad format: Sources input has bad format: "
-	scaPathError         = "ScaResolver error: exec: \"resolver\": executable file not found in "
+	unknownFlag                   = "unknown flag: --chibutero"
+	blankSpace                    = " "
+	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
+	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
+	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
+	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
+	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
+	fileSourceFlag                = "--file-sources"
+	fileSourceValue               = "data/Dockerfile"
+	fileSourceIncorrectValue      = "data/source.zip"
+	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
+	fileSourceError               = "flag needs an argument: --file-sources"
+	engineFlag                    = "--engine"
+	engineValue                   = "docker"
+	engineError                   = "flag needs an argument: --engine"
+	additionalParamsFlag          = "--additional-params"
+	additionalParamsValue         = "-v"
+	additionalParamsError         = "flag needs an argument: --additional-params"
+	scanCommand                   = "scan"
+	kicsRealtimeCommand           = "kics-realtime"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -304,4 +317,49 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--file-filter", "!.java")...)
+}
+
+func TestCreateRealtimeKics(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestCreateRealtimeKicsMissingFile(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, fileSourceError, err.Error())
+}
+
+func TestCreateRealtimeKicsInvalidFile(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceIncorrectValue}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, fileSourceIncorrectValueError, err.Error())
+}
+
+func TestCreateRealtimeKicsWithEngine(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, engineValue}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestCreateRealtimeKicsMissingEngine(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, engineError, err.Error())
+}
+
+func TestCreateRealtimeKicsWithAdditionalParams(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, engineValue, additionalParamsFlag, additionalParamsValue}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestCreateRealtimeKicsMissingAdditionalParams(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, additionalParamsFlag}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, additionalParamsError, err.Error())
 }
