@@ -57,9 +57,12 @@ const (
 	containerScanPath               = "/path"
 	containerScanOutputFlag         = "-o"
 	containerScanOutput             = "/path"
+	containerScanFormatFlag         = "--report-formats"
+	containerScanFormatOutput       = "json"
 	noResultsError                  = "No results available"
 	kicsExitCode                    = "exit status 40"
 	containerStarting               = "Starting kics container"
+	containerFormatInfo             = "The report format and output path cannot be override."
 	containerRemoving               = "Removing kics container"
 	containerFolderRemoving         = "Removing folder in temp"
 	containerCreateFolderError      = "Error creating temporary directory"
@@ -175,7 +178,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 	realtimeScanCmd.PersistentFlags().
 		StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
 			"Additional scan options supported by kics. "+
-				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f. Do not change the --report-formats flag!")
+				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeFile, "", "Path to input file for kics realtime scanner")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeEngine, "docker", "Name in the $PATH for the container engine to run kics. Example:podman.")
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
@@ -1713,12 +1716,15 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, aditionalParamet
 		containerScanPath,
 		containerScanOutputFlag,
 		containerScanOutput,
+		containerScanFormatFlag,
+		containerScanFormatOutput,
 	}
 	// join the additional parameters
 	if len(aditionalParameters) > 0 {
 		kicsRunArgs = append(kicsRunArgs, aditionalParameters...)
 	}
 	logger.PrintIfVerbose(containerStarting)
+	logger.PrintIfVerbose(containerFormatInfo)
 	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
 	out, err := exec.Command(kicsCmd, kicsRunArgs...).CombinedOutput()
 	logger.PrintIfVerbose(string(out))
