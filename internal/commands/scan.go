@@ -175,7 +175,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 	realtimeScanCmd.PersistentFlags().
 		StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
 			"Additional scan options supported by kics. "+
-				"Should follow comma separated format. For example : --additional-params -v,--exclude-results,fec62a97d569662093dbb9739360942f. Do not change the --report-formats flag!")
+				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f. Do not change the --report-formats flag!")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeFile, "", "Path to input file for kics realtime scanner")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeEngine, "docker", "Name in the $PATH for the container engine to run kics. Example:podman.")
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
