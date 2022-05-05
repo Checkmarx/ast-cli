@@ -172,7 +172,10 @@ func scanRealtimeSubCommand() *cobra.Command {
 		},
 		RunE: runKicksRealtime(),
 	}
-	realtimeScanCmd.PersistentFlags().StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{}, "Additional scan options supported by kics. Should follow comma separated format. For example : --additional-params -v,--exclude-results,fec62a97d569662093dbb9739360942f. Do not change the --report-formats flag!")
+	realtimeScanCmd.PersistentFlags().
+		StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
+			"Additional scan options supported by kics. "+
+				"Should follow comma separated format. For example : --additional-params -v,--exclude-results,fec62a97d569662093dbb9739360942f. Do not change the --report-formats flag!")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeFile, "", "Path to input file for kics realtime scanner")
 	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeEngine, "docker", "Name in the $PATH for the container engine to run kics. Example:podman.")
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
@@ -969,7 +972,7 @@ func getUploadURLFromSource(
 }
 
 func UnzipFile(f string) (string, error) {
-	tempDir := os.TempDir() + string(os.PathSeparator) + "cx-unzipped-temp-dir-" + uuid.New().String() + string(os.PathSeparator)
+	tempDir := filepath.Join(os.TempDir(), "cx-unzipped-temp-dir-") + uuid.New().String() + string(os.PathSeparator)
 
 	err := os.Mkdir(tempDir, directoryPermission)
 	if err != nil {
@@ -1641,8 +1644,8 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	}
 }
 
-func createKicsScanEnv(cmd *cobra.Command) (string, string, error) {
-	kicsDir, err := ioutil.TempDir("", containerTempDirPattern)
+func createKicsScanEnv(cmd *cobra.Command) (volumeMap, kicsDir string, err error) {
+	kicsDir, err = ioutil.TempDir("", containerTempDirPattern)
 	if err != nil {
 		return "", "", errors.New(containerCreateFolderError)
 	}
@@ -1663,7 +1666,7 @@ func createKicsScanEnv(cmd *cobra.Command) (string, string, error) {
 	if err != nil {
 		return "", "", errors.New(containerWriteFolderError)
 	}
-	volumeMap := fmt.Sprintf(containerVolumeFormat, kicsDir)
+	volumeMap = fmt.Sprintf(containerVolumeFormat, kicsDir)
 	return volumeMap, kicsDir, nil
 }
 
@@ -1689,7 +1692,10 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 		return resultsModel, err
 	}
 	// Unmarshal into the object KicsResultsCollection
-	json.Unmarshal(byteValue, &resultsModel)
+	err = json.Unmarshal(byteValue, &resultsModel)
+	if err != nil {
+		return wrappers.KicsResultsCollection{}, err
+	}
 	return resultsModel, nil
 }
 
@@ -1731,7 +1737,6 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, aditionalParamet
 			return errors.Errorf("%s", errs)
 		}
 		fmt.Println(string(resultsJSON))
-
 	} else {
 		return errors.Errorf("%s", noResultsError)
 	}
