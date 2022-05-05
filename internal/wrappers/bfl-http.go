@@ -41,7 +41,6 @@ func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseMode
 		return nil, nil, err
 	}
 
-	PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
 	decoder := json.NewDecoder(resp.Body)
 
 	defer func() {

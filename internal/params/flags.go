@@ -103,6 +103,8 @@ const (
 	QueryIDFlag                  = "query-id"
 	SSHKeyFlag                   = "ssh-key"
 	RepoURLFlag                  = "repo-url"
+	AstToken                     = "ast-token"
+	SSHValue                     = "ssh-value"
 
 	// INDIVIDUAL FILTER	FLAGS
 	SastFilterFlag  = "sast-filter"

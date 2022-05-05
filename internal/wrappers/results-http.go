@@ -32,7 +32,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = "10000"
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
