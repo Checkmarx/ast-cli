@@ -1756,6 +1756,6 @@ func removeKicsScan(cmd *cobra.Command, tempDir string) error {
 		return errors.Errorf("%s", err)
 	}
 	logger.PrintIfVerbose(containerFolderRemoving)
-	defer os.RemoveAll(tempDir)
+	os.RemoveAll(tempDir)
 	return nil
 }
