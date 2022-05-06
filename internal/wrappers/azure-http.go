@@ -22,7 +22,7 @@ type AzureHTTPWrapper struct {
 const (
 	azureSearchDate      = "searchCriteria.fromDate"
 	azureAPIVersion      = "api-version"
-	azureAPIVersionValue = "6.0"
+	azureAPIVersionValue = "5.0"
 	azureBaseCommitURL   = "%s%s/%s/_apis/git/repositories/%s/commits"
 	azureBaseReposURL    = "%s%s/%s/_apis/git/repositories"
 	azureBaseProjectsURL = "%s%s/_apis/projects"
@@ -39,7 +39,10 @@ func NewAzureWrapper() AzureWrapper {
 	}
 }
 
-func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, repositoryName, token string) (AzureRootCommit, error) {
+func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, repositoryName, token string) (
+	AzureRootCommit,
+	error,
+) {
 	var err error
 	var repository AzureRootCommit
 	var queryParams = make(map[string]string)
@@ -80,7 +83,12 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 	return project, err
 }
 
-func (g *AzureHTTPWrapper) get(url, token string, target interface{}, queryParams map[string]string, authFormat string) error {
+func (g *AzureHTTPWrapper) get(
+	url, token string,
+	target interface{},
+	queryParams map[string]string,
+	authFormat string,
+) error {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
