@@ -304,6 +304,8 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 			KicsIssues:   kicsIssues,
 			ScaIssues:    scaIssues,
 			Tags:         scanInfo.Tags,
+			ProjectName:  scanInfo.ProjectName,
+			BranchName:   scanInfo.Branch,
 		}, nil
 	}
 	return nil, err
@@ -376,35 +378,43 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
-	fmt.Println("")
-	fmt.Println("      ******************** Scan Summary ********************")
-	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
+	DEFAULT_PADDING_SIZE := -14
+	fmt.Printf("Created At: %s\n\n", summary.CreatedAt)
+	fmt.Printf("            Project Name: %s                        \n", summary.ProjectName)
+	fmt.Printf("            Scan ID: %s                             \n", summary.ScanID)
+	fmt.Printf("            Results Summary: %s                     \n", summary.RiskStyle)
+	fmt.Printf("            Risk Level: %s																									 \n", summary.RiskMsg)
+	fmt.Printf("            -----------------------------------     \n")
+	fmt.Printf("            Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("            -----------------------------------     \n")
+	fmt.Printf("            |             High: %*d|     \n", DEFAULT_PADDING_SIZE, summary.HighIssues)
+	fmt.Printf("            |           Medium: %*d|     \n", DEFAULT_PADDING_SIZE, summary.MediumIssues)
+	fmt.Printf("            |              Low: %*d|     \n", DEFAULT_PADDING_SIZE, summary.LowIssues)
+	fmt.Printf("            -----------------------------------     \n")
 
 	if summary.KicsIssues == notAvailableNumber {
-		fmt.Printf("        Kics Issues: %s\n", notAvailableString)
+		fmt.Printf("            |             KICS: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
 	} else {
-		fmt.Printf("        Kics Issues: %d\n", summary.KicsIssues)
+		fmt.Printf("            |             KICS: %*d|     \n", DEFAULT_PADDING_SIZE, summary.KicsIssues)
 	}
 	if summary.SastIssues == notAvailableNumber {
-		fmt.Printf("      CxSAST Issues: %s\n", notAvailableString)
+		fmt.Printf("            |             SAST: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
 	} else {
-		fmt.Printf("      CxSAST Issues: %d\n", summary.SastIssues)
+		fmt.Printf("            |             SAST: %*d|     \n", DEFAULT_PADDING_SIZE, summary.SastIssues)
 	}
 	if summary.ScaIssues == notAvailableNumber {
-		fmt.Printf("       CxSCA Issues: %s\n", notAvailableString)
+		fmt.Printf("            |              SCA: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
 	} else {
-		fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
+		fmt.Printf("            |              SCA: %*d|     \n", DEFAULT_PADDING_SIZE, summary.ScaIssues)
 	}
-	fmt.Print("      ******************************************************")
-	fmt.Println("")
+	fmt.Printf("            Checkmarx AST - Scan Summary & Details:\n")
+	fmt.Printf("            %s\n", generateScanSummaryURL(summary))
 	return nil
+}
+
+func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
+	summaryURL := fmt.Sprintf(strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1), summary.ScanID, summary.BranchName)
+	return summaryURL
 }
 
 func runGetResultCommand(

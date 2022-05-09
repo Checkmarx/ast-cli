@@ -80,6 +80,8 @@ type ScanResponseModel struct {
 	Engines         []string          `json:"engines"`
 	SourceType      string            `json:"sourceType"`
 	SourceOrigin    string            `json:"sourceOrigin"`
+	SastIncremental bool              `json:"sastIncremental"`
+	Timeout         int               `json:"timeout"`
 }
 
 type ScansCollectionResponseModel struct {
