@@ -1031,7 +1031,6 @@ func runCreateScanCommand(
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			// TODO: NEED TO CHANGE AND HAVE THE PROJECT NAME INSTEAD OF PROJECT ID. ADD TIMEOUT AND INCREMENT SCAN INFORMATION
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {

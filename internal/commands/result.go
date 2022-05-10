@@ -410,7 +410,6 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	}
 	fmt.Printf("              -----------------------------------     \n")
 	fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
-	// fmt.Printf("            %s\n", generateScanSummaryURL(summary))
 	return nil
 }
 
