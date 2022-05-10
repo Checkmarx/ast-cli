@@ -1560,7 +1560,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		origin = name + " " + version
 	}
 
-	if scan.SastIncremental == true {
+	if scan.SastIncremental {
 		scanType = "Incremental"
 	} else {
 		scanType = "Full"
