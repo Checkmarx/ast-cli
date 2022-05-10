@@ -43,6 +43,7 @@ const (
 	failedGettingBfl         = "Failed getting BFL"
 	notAvailableString       = "N/A"
 	notAvailableNumber       = -1
+	defaultPaddingSize       = -14
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -378,37 +379,38 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
-	DEFAULT_PADDING_SIZE := -14
-	fmt.Printf("Created At: %s\n\n", summary.CreatedAt)
-	fmt.Printf("            Project Name: %s                        \n", summary.ProjectName)
-	fmt.Printf("            Scan ID: %s                             \n", summary.ScanID)
-	fmt.Printf("            Results Summary: %s                     \n", summary.RiskStyle)
-	fmt.Printf("            Risk Level: %s																									 \n", summary.RiskMsg)
-	fmt.Printf("            -----------------------------------     \n")
-	fmt.Printf("            Total Results: %d                       \n", summary.TotalIssues)
-	fmt.Printf("            -----------------------------------     \n")
-	fmt.Printf("            |             High: %*d|     \n", DEFAULT_PADDING_SIZE, summary.HighIssues)
-	fmt.Printf("            |           Medium: %*d|     \n", DEFAULT_PADDING_SIZE, summary.MediumIssues)
-	fmt.Printf("            |              Low: %*d|     \n", DEFAULT_PADDING_SIZE, summary.LowIssues)
-	fmt.Printf("            -----------------------------------     \n")
+	fmt.Printf("            Scan Summary:                     \n")
+	fmt.Printf("              Created At: %s\n", summary.CreatedAt)
+	fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
+	fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
+	fmt.Printf("            Results Summary:                     \n")
+	fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
+	fmt.Printf("              -----------------------------------     \n")
+	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              -----------------------------------     \n")
+	fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
+	fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
+	fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+	fmt.Printf("              -----------------------------------     \n")
 
 	if summary.KicsIssues == notAvailableNumber {
-		fmt.Printf("            |             KICS: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
+		fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
 	} else {
-		fmt.Printf("            |             KICS: %*d|     \n", DEFAULT_PADDING_SIZE, summary.KicsIssues)
+		fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
 	}
 	if summary.SastIssues == notAvailableNumber {
-		fmt.Printf("            |             SAST: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
+		fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 	} else {
-		fmt.Printf("            |             SAST: %*d|     \n", DEFAULT_PADDING_SIZE, summary.SastIssues)
+		fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
 	}
 	if summary.ScaIssues == notAvailableNumber {
-		fmt.Printf("            |              SCA: %*s|     \n", DEFAULT_PADDING_SIZE, notAvailableString)
+		fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
 	} else {
-		fmt.Printf("            |              SCA: %*d|     \n", DEFAULT_PADDING_SIZE, summary.ScaIssues)
+		fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 	}
-	fmt.Printf("            Checkmarx AST - Scan Summary & Details:\n")
-	fmt.Printf("            %s\n", generateScanSummaryURL(summary))
+	fmt.Printf("              -----------------------------------     \n")
+	fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
+	// fmt.Printf("            %s\n", generateScanSummaryURL(summary))
 	return nil
 }
 
