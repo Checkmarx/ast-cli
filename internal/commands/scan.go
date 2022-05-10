@@ -1702,7 +1702,7 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 	return resultsModel, nil
 }
 
-func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, aditionalParameters []string) error {
+func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParameters []string) error {
 	var errs error
 	kicsRunArgs := []string{
 		containerRun,
@@ -1720,8 +1720,8 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, aditionalParamet
 		containerScanFormatOutput,
 	}
 	// join the additional parameters
-	if len(aditionalParameters) > 0 {
-		kicsRunArgs = append(kicsRunArgs, aditionalParameters...)
+	if len(additionalParameters) > 0 {
+		kicsRunArgs = append(kicsRunArgs, additionalParameters...)
 	}
 	logger.PrintIfVerbose(containerStarting)
 	logger.PrintIfVerbose(containerFormatInfo)
