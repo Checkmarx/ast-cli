@@ -1058,7 +1058,8 @@ func runCreateScanCommand(
 
 func enrichScanResponseModel(cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel) *wrappers.ScanResponseModel {
 	scanResponseModel.ProjectName, _ = cmd.Flags().GetString(commonParams.ProjectName)
-	scanResponseModel.SastIncremental, _ = cmd.Flags().GetBool(commonParams.IncrementalSast)
+	incrementalSast, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+	scanResponseModel.SastIncremental = strconv.FormatBool(incrementalSast)
 	scanResponseModel.Timeout, _ = cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 	return scanResponseModel
 }
@@ -1560,7 +1561,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		origin = name + " " + version
 	}
 
-	if scan.SastIncremental {
+	if strings.EqualFold("true", scan.SastIncremental) {
 		scanType = "Incremental"
 	} else {
 		scanType = "Full"
