@@ -9,7 +9,7 @@ type KicsResultsCollection struct {
 
 type KicsQueries struct {
 	QueryName   string      `json:"query_name"`
-	QueryId     string      `json:"query_id"`
+	QueryID     string      `json:"query_id"`
 	Severity    string      `json:"severity"`
 	Platform    string      `json:"platform"`
 	Category    string      `json:"category"`
@@ -20,7 +20,7 @@ type KicsQueries struct {
 
 type KicsFiles struct {
 	Filename      string `json:"file_name"`
-	SimilarityId  string `json:"similarity_id"`
+	SimilarityID  string `json:"similarity_id"`
 	Line          uint   `json:"line"`
 	IssueType     string `json:"issue_type"`
 	SearchKey     string `json:"search_key"`
