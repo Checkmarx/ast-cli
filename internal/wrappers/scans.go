@@ -81,7 +81,7 @@ type ScanResponseModel struct {
 	SourceType      string            `json:"sourceType"`
 	SourceOrigin    string            `json:"sourceOrigin"`
 	SastIncremental string            `json:"sastIncremental"`
-	Timeout         int               `json:"timeout"`
+	Timeout         string            `json:"timeout"`
 }
 
 type ScansCollectionResponseModel struct {

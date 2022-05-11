@@ -1060,7 +1060,8 @@ func enrichScanResponseModel(cmd *cobra.Command, scanResponseModel *wrappers.Sca
 	scanResponseModel.ProjectName, _ = cmd.Flags().GetString(commonParams.ProjectName)
 	incrementalSast, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 	scanResponseModel.SastIncremental = strconv.FormatBool(incrementalSast)
-	scanResponseModel.Timeout, _ = cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+	timeoutVal, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+	scanResponseModel.Timeout = strconv.Itoa(timeoutVal)
 	return scanResponseModel
 }
 
@@ -1567,8 +1568,10 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		scanType = "Full"
 	}
 
-	if scan.Timeout > 0 {
-		scanTimeOut = fmt.Sprintf("%d %s", scan.Timeout, "mins")
+	intValForTimeout, err := strconv.Atoi(scan.Timeout)
+
+	if err == nil && intValForTimeout > 0 {
+		scanTimeOut = fmt.Sprintf("%s %s", scan.Timeout, "mins")
 	} else {
 		scanTimeOut = "NONE"
 	}
