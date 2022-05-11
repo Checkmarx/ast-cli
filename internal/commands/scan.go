@@ -1532,6 +1532,7 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 
 type scanView struct {
 	ID              string `format:"name:Scan ID"`
+	ProjectID       string `format:"name:Project ID"`
 	ProjectName     string `format:"name:Project Name"`
 	Status          string
 	CreatedAt       time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
@@ -1582,6 +1583,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		CreatedAt:       scan.CreatedAt,
 		UpdatedAt:       scan.UpdatedAt,
 		ProjectName:     scan.ProjectName,
+		ProjectID:       scan.ProjectID,
 		Branch:          scan.Branch,
 		Tags:            scan.Tags,
 		SastIncremental: scanType,
