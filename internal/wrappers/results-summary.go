@@ -18,6 +18,8 @@ type ResultSummary struct {
 	ProjectID    string
 	BaseURI      string
 	Tags         map[string]string
+	ProjectName  string
+	BranchName   string
 }
 
 const SummaryTemplate = `
