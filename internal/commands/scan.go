@@ -49,7 +49,7 @@ const (
 	containerRun                    = "run"
 	containerVolumeFlag             = "-v"
 	containerNameFlag               = "--name"
-	containerRemove                 = "rm"
+	containerRemove                 = "--rm"
 	containerName                   = "cli-kics-realtime"
 	containerImage                  = "checkmarx/kics:latest"
 	containerScan                   = "scan"
@@ -1590,18 +1590,14 @@ func runKicksRealtime() func(*cobra.Command, []string) error {
 		// Run kics container
 		err = runKicsScan(cmd, volumeMap, tempDir, aditionalParameters)
 		if err != nil {
-			errs := removeKicsScan(cmd, tempDir)
-			if errs != nil {
-				return errors.Errorf("%s", errs)
-			}
+			// Removing temporary dir
+			logger.PrintIfVerbose(containerFolderRemoving)
+			os.RemoveAll(tempDir)
 			return errors.Errorf("%s", err)
 		}
-
-		// Remove all kics container trace : temp file and container
-		err = removeKicsScan(cmd, tempDir)
-		if err != nil {
-			return errors.Errorf("%s", err)
-		}
+		// Removing temporary dir
+		logger.PrintIfVerbose(containerFolderRemoving)
+		os.RemoveAll(tempDir)
 		return nil
 	}
 }
@@ -1706,6 +1702,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	var errs error
 	kicsRunArgs := []string{
 		containerRun,
+		containerRemove,
 		containerVolumeFlag,
 		volumeMap,
 		containerNameFlag,
@@ -1746,22 +1743,5 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	} else {
 		return errors.Errorf("%s", noResultsError)
 	}
-	return nil
-}
-
-func removeKicsScan(cmd *cobra.Command, tempDir string) error {
-	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
-	kicsDeleteArgs := []string{
-		containerRemove,
-		containerName,
-	}
-	logger.PrintIfVerbose(containerRemoving)
-	_, err := exec.Command(kicsCmd, kicsDeleteArgs...).CombinedOutput()
-	if err != nil {
-		println("qio")
-		return errors.Errorf("%s", err)
-	}
-	logger.PrintIfVerbose(containerFolderRemoving)
-	os.RemoveAll(tempDir)
 	return nil
 }
