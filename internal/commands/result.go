@@ -71,29 +71,6 @@ var securities = map[string]string{
 	highCx:   "9.5",
 }
 
-// NewResultCommand - Deprecated command
-func NewResultCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
-	resultCmd := &cobra.Command{
-		Use:   "result",
-		Short: "Retrieve results",
-		RunE:  runGetResultCommand(resultsWrapper, scanWrapper),
-	}
-	addScanIDFlag(resultCmd, "ID to report on.")
-	addResultFormatFlag(
-		resultCmd,
-		printer.FormatJSON,
-		printer.FormatSummary,
-		printer.FormatSummaryConsole,
-		printer.FormatSarif,
-		printer.FormatSummaryJSON,
-	)
-	resultCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
-	resultCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
-	resultCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
-	resultCmd.Deprecated = "please use 'results show' command instead."
-	return resultCmd
-}
-
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
