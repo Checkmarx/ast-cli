@@ -63,7 +63,6 @@ const (
 	kicsExitCode                    = "exit status 40"
 	containerStarting               = "Starting kics container"
 	containerFormatInfo             = "The report format and output path cannot be overridden."
-	containerRemoving               = "Removing kics container"
 	containerFolderRemoving         = "Removing folder in temp"
 	containerCreateFolderError      = "Error creating temporary directory"
 	containerWriteFolderError       = " Error writing file-sources to temporary directory"
