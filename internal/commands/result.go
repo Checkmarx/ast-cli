@@ -44,6 +44,8 @@ const (
 	notAvailableString       = "N/A"
 	notAvailableNumber       = -1
 	defaultPaddingSize       = -14
+	timeFormat               = "2006-01-02 15:04:05"
+	asyncMessage             = "Scan triggered in asynchronous mode. Click more details to get the full status."
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -341,9 +343,9 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	}
 }
 
-func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
+func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary, isAsync bool) error {
 	log.Println("Creating Summary Report: ", targetFile)
-	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate)
+	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(isAsync))
 	if err == nil {
 		f, err := os.Create(targetFile)
 		if err == nil {
@@ -482,6 +484,76 @@ func CreateScanReport(
 	return nil
 }
 
+func CreateNoResultsReport(cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel) error {
+	targetFile, targetPath, reportFormats := extractCmdCommandsForFileOutput(cmd)
+	log.Println("Creating no results report file: ", targetFile)
+	log.Println("Creating the file at path: ", targetPath)
+	noResults := generateNoResultSummaryStruct(scanResponseModel)
+	reportList := strings.Split(reportFormats, ",")
+	for _, reportType := range reportList {
+		err := createIndividualNoResultReport(reportType, targetFile, targetPath, noResults)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createIndividualNoResultReport(reportType string, targetFile string, targetPath string, noResults *wrappers.ResultSummary) error {
+	if printer.IsFormat(reportType, printer.FormatSummary) {
+		summaryRpt := createTargetName(targetFile, targetPath, "html")
+		err := writeHTMLSummary(summaryRpt, noResults, true)
+		if err != nil {
+			return err
+		}
+	}
+
+	if printer.IsFormat(reportType, printer.FormatSummaryConsole) {
+		err := writeNoResultsConsoleSummary(noResults)
+		if err != nil {
+			return err
+		}
+	}
+
+	if printer.IsFormat(reportType, printer.FormatJSON) {
+		summaryRpt := createTargetName(targetFile, targetPath, "json")
+		err := exportJSONSummaryResults(summaryRpt, noResults)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func extractCmdCommandsForFileOutput(cmd *cobra.Command) (string, string, string) {
+	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
+	targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
+	reportFormats, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
+	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
+		reportFormats += "," + printer.FormatSummaryConsole
+	}
+	return targetFile, targetPath, reportFormats
+}
+
+func writeNoResultsConsoleSummary(noResults *wrappers.ResultSummary) error {
+	fmt.Printf("Scan executed in aynchronous mode. Hence, no results generated.\n")
+	fmt.Printf("For more information: %s", noResults.BaseURI)
+	return nil
+}
+
+func createBaseURIDetails(projectID string) string {
+	return wrappers.GetURL(fmt.Sprintf("projects/%s/overview", projectID))
+}
+
+func generateNoResultSummaryStruct(scanResponseModel *wrappers.ScanResponseModel) *wrappers.ResultSummary {
+	return &wrappers.ResultSummary{
+		ScanID:       scanResponseModel.ID,
+		CreatedAt:    scanResponseModel.CreatedAt.Local().Format(timeFormat),
+		BaseURI:      createBaseURIDetails(scanResponseModel.ProjectID),
+		AsyncMessage: asyncMessage,
+	}
+}
+
 func createReport(
 	format,
 	targetFile,
@@ -507,7 +579,7 @@ func createReport(
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		convertNotAvailableNumberToZero(summary)
-		return writeHTMLSummary(summaryRpt, summary)
+		return writeHTMLSummary(summaryRpt, summary, false) // setting async to false in case of non-async flow
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, "json")

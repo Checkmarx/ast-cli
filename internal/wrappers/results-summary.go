@@ -20,9 +20,11 @@ type ResultSummary struct {
 	Tags         map[string]string
 	ProjectName  string
 	BranchName   string
+	AsyncMessage string
 }
 
-const SummaryTemplate = `
+func SummaryTemplate(async bool) string {
+	var result string = `
 {{define "SummaryTemplate"}}
 <!DOCTYPE html>
 <html lang="en">
@@ -319,8 +321,8 @@ const SummaryTemplate = `
             padding: 16px 20px;
             width: 24.5%;
         }
-        .cx-demo { 
-            color: red;
+        .cx-details { 
+            color: black;
             align-items: center;
             text-align: center;
             margin-bottom: 10px;
@@ -394,8 +396,9 @@ const SummaryTemplate = `
                 </div>
             </div>
 
-        </div>
-        <div class="top-row">
+        </div>`
+	if !async {
+		result = result + `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
@@ -444,9 +447,20 @@ const SummaryTemplate = `
                     </div>
                 </div>
             </div>
-        </div>
+        </div>`
+	} else {
+		result = result +
+			`<div class="cx-info">
+            <div class="data">
+                <div class="cx-details">{{.AsyncMessage}}</div>
+            </div>
+        </div>`
 
+	}
+	result = result + `
     </div>
 </body>
 {{end}}
 `
+	return result
+}

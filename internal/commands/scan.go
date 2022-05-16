@@ -1050,6 +1050,11 @@ func runCreateScanCommand(
 			if err != nil {
 				return err
 			}
+		} else {
+			err := CreateNoResultsReport(cmd, scanResponseModel)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

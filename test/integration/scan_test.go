@@ -578,3 +578,28 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 
 	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
 }
+
+func TestAsynCreateScan(t *testing.T) {
+	args := []string{
+		flag(params.AsyncFlag),
+		flag(params.TargetFormatFlag), "summaryHTML",
+	}
+	scanID, projectID := executeCreateScan(t, append(getCreateArgs(Dir, map[string]string{}, "sast,kics"), args...))
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+	defer deleteProject(t, projectID)
+	file, err := ioutil.ReadFile("cx_result.html")
+	defer func() {
+		os.Remove("cx_result.html")
+	}()
+	if err != nil {
+		t.Errorf("Error reading file: %v", err)
+	}
+	contents := string(file)
+	assert.Assert(t, contents != "", "Contents should not be empty")
+	assert.Assert(
+		t,
+		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
+		"Polling should complete",
+	)
+}
