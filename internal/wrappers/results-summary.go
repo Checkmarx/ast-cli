@@ -398,7 +398,7 @@ func SummaryTemplate(async bool) string {
 
         </div>`
 	if !async {
-		result = result + `<div class="top-row">
+		result += `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
@@ -449,7 +449,7 @@ func SummaryTemplate(async bool) string {
             </div>
         </div>`
 	} else {
-		result = result +
+		result +=
 			`<div class="cx-info">
             <div class="data">
                 <div class="cx-details">{{.AsyncMessage}}</div>
@@ -457,7 +457,7 @@ func SummaryTemplate(async bool) string {
         </div>`
 
 	}
-	result = result + `
+	result += `
     </div>
 </body>
 {{end}}
