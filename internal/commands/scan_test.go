@@ -311,13 +311,11 @@ func TestAsyncScanWithFile(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--report-format", "summaryHTML", "-s", dummyRepo, "--async"}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
 	_, readError := os.ReadFile("cx_result.html")
 	assert.NilError(t, readError)
 	defer func() {
 		err := os.Remove("cx_result.html")
-		if err != nil {
-			return
-		}
+		assert.NilError(t, err)
 	}()
-	assert.NilError(t, err)
 }
