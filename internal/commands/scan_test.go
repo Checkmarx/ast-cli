@@ -313,9 +313,9 @@ func TestAsyncScanWithFile(t *testing.T) {
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 	_, readError := os.ReadFile("cx_result.html")
-	assert.NilError(t, readError)
 	defer func() {
 		err := os.Remove("cx_result.html")
 		assert.NilError(t, err)
 	}()
+	assert.NilError(t, readError)
 }
