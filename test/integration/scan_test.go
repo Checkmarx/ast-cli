@@ -587,7 +587,6 @@ func TestAsynCreateScan(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, append(getCreateArgs(Dir, map[string]string{}, "sast,kics"), args...))
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	defer deleteProject(t, projectID)
 	file, err := ioutil.ReadFile("cx_result.html")
 	defer func() {
 		os.Remove("cx_result.html")
@@ -597,9 +596,6 @@ func TestAsynCreateScan(t *testing.T) {
 	}
 	contents := string(file)
 	assert.Assert(t, contents != "", "Contents should not be empty")
-	assert.Assert(
-		t,
-		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
-		"Polling should complete",
-	)
+	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
+
 }
