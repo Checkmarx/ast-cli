@@ -499,7 +499,7 @@ func CreateNoResultsReport(cmd *cobra.Command, scanResponseModel *wrappers.ScanR
 	return nil
 }
 
-func createIndividualNoResultReport(reportType string, targetFile string, targetPath string, noResults *wrappers.ResultSummary) error {
+func createIndividualNoResultReport(reportType, targetFile, targetPath string, noResults *wrappers.ResultSummary) error {
 	if printer.IsFormat(reportType, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		err := writeHTMLSummary(summaryRpt, noResults, true)

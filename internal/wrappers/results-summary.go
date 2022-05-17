@@ -23,9 +23,7 @@ type ResultSummary struct {
 	AsyncMessage string
 }
 
-func SummaryTemplate(async bool) string {
-	var result string = `
-{{define "SummaryTemplate"}}
+const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -397,8 +395,8 @@ func SummaryTemplate(async bool) string {
             </div>
 
         </div>`
-	if !async {
-		result += `<div class="top-row">
+
+const nonAsyncSummary = `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
@@ -448,19 +446,25 @@ func SummaryTemplate(async bool) string {
                 </div>
             </div>
         </div>`
-	} else {
-		result +=
-			`<div class="cx-info">
+
+const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
                 <div class="cx-details">{{.AsyncMessage}}</div>
             </div>
         </div>`
 
-	}
-	result += `
-    </div>
+const summaryTemplateFooter = `</div>
 </body>
 {{end}}
 `
+
+func SummaryTemplate(async bool) string {
+	result := summaryTemplateHeader
+	if !async {
+		result += nonAsyncSummary
+	} else {
+		result += asyncSummaryTemplate
+	}
+	result += summaryTemplateFooter
 	return result
 }
