@@ -525,7 +525,7 @@ func createIndividualNoResultReport(reportType, targetFile, targetPath string, n
 	return nil
 }
 
-func extractCmdCommandsForFileOutput(cmd *cobra.Command) (targetFile string, targetPath string, reportFormats string) {
+func extractCmdCommandsForFileOutput(cmd *cobra.Command) (targetFile, targetPath, reportFormats string) {
 	targetFile, _ = cmd.Flags().GetString(commonParams.TargetFlag)
 	targetPath, _ = cmd.Flags().GetString(commonParams.TargetPathFlag)
 	reportFormats, _ = cmd.Flags().GetString(commonParams.TargetFormatFlag)
