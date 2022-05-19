@@ -1,26 +1,26 @@
 package wrappers
 
 type ResultSummary struct {
-	TotalIssues  int
-	HighIssues   int
-	MediumIssues int
-	LowIssues    int
-	SastIssues   int
-	KicsIssues   int
-	ScaIssues    int
-	RiskStyle    string
-	RiskMsg      string
-	Status       string
-	ScanID       string
-	ScanDate     string
-	ScanTime     string
-	CreatedAt    string
-	ProjectID    string
-	BaseURI      string
-	Tags         map[string]string
-	ProjectName  string
-	BranchName   string
-	AsyncMessage string
+	TotalIssues     int
+	HighIssues      int
+	MediumIssues    int
+	LowIssues       int
+	SastIssues      int
+	KicsIssues      int
+	ScaIssues       int
+	RiskStyle       string
+	RiskMsg         string
+	Status          string
+	ScanID          string
+	ScanDate        string
+	ScanTime        string
+	CreatedAt       string
+	ProjectID       string
+	BaseURI         string
+	Tags            map[string]string
+	ProjectName     string
+	BranchName      string
+	ScanInfoMessage string
 }
 
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
@@ -449,7 +449,7 @@ const nonAsyncSummary = `<div class="top-row">
 
 const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
-                <div class="cx-details">{{.AsyncMessage}}</div>
+                <div class="cx-details">{{.ScanInfoMessage}}</div>
             </div>
         </div>`
 
@@ -458,9 +458,9 @@ const summaryTemplateFooter = `</div>
 {{end}}
 `
 
-func SummaryTemplate(async bool) string {
+func SummaryTemplate(summaryMessage string) string {
 	result := summaryTemplateHeader
-	if !async {
+	if summaryMessage == "" {
 		result += nonAsyncSummary
 	} else {
 		result += asyncSummaryTemplate

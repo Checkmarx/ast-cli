@@ -1050,11 +1050,10 @@ func runCreateScanCommand(
 			if err != nil {
 				return err
 			}
-		} else {
-			err := CreateNoResultsReport(cmd, scanResponseModel)
-			if err != nil {
-				return err
-			}
+		}
+		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -1204,7 +1203,7 @@ func handleWait(
 		}
 		return err
 	}
-	return createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+	return nil
 }
 
 func createReportsAfterScan(

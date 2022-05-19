@@ -45,7 +45,7 @@ const (
 	notAvailableNumber       = -1
 	defaultPaddingSize       = -14
 	timeFormat               = "2006-01-02 15:04:05"
-	asyncMessage             = "Scan triggered in asynchronous mode. Click more details to get the full status."
+	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -343,9 +343,9 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	}
 }
 
-func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary, isAsync bool) error {
+func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Summary Report: ", targetFile)
-	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(isAsync))
+	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(summary.ScanInfoMessage))
 	if err == nil {
 		f, err := os.Create(targetFile)
 		if err == nil {
@@ -358,37 +358,42 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary, isAsyn
 }
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
-	fmt.Printf("            Scan Summary:                     \n")
-	fmt.Printf("              Created At: %s\n", summary.CreatedAt)
-	fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
-	fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
-	fmt.Printf("            Results Summary:                     \n")
-	fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
-	fmt.Printf("              -----------------------------------     \n")
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-	fmt.Printf("              -----------------------------------     \n")
-	fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
-	fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
-	fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
-	fmt.Printf("              -----------------------------------     \n")
+	if summary.ScanInfoMessage == "" {
+		fmt.Printf("            Scan Summary:                     \n")
+		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
+		fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
+		fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
+		fmt.Printf("            Results Summary:                     \n")
+		fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
+		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
+		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              -----------------------------------     \n")
 
-	if summary.KicsIssues == notAvailableNumber {
-		fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+		if summary.KicsIssues == notAvailableNumber {
+			fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+		}
+		if summary.SastIssues == notAvailableNumber {
+			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+		}
+		if summary.ScaIssues == notAvailableNumber {
+			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
+		}
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
 	} else {
-		fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+		fmt.Printf("Scan executed in aynchronous mode or still running. Hence, no results generated.\n")
+		fmt.Printf("For more information: %s", summary.BaseURI)
 	}
-	if summary.SastIssues == notAvailableNumber {
-		fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
-	} else {
-		fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
-	}
-	if summary.ScaIssues == notAvailableNumber {
-		fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
-	} else {
-		fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
-	}
-	fmt.Printf("              -----------------------------------     \n")
-	fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
 	return nil
 }
 
@@ -484,76 +489,6 @@ func CreateScanReport(
 	return nil
 }
 
-func CreateNoResultsReport(cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel) error {
-	targetFile, targetPath, reportFormats := extractCmdCommandsForFileOutput(cmd)
-	log.Println("Creating no results report file: ", targetFile)
-	log.Println("Creating the file at path: ", targetPath)
-	noResults := generateNoResultSummaryStruct(scanResponseModel)
-	reportList := strings.Split(reportFormats, ",")
-	for _, reportType := range reportList {
-		err := createIndividualNoResultReport(reportType, targetFile, targetPath, noResults)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func createIndividualNoResultReport(reportType, targetFile, targetPath string, noResults *wrappers.ResultSummary) error {
-	if printer.IsFormat(reportType, printer.FormatSummary) {
-		summaryRpt := createTargetName(targetFile, targetPath, "html")
-		err := writeHTMLSummary(summaryRpt, noResults, true)
-		if err != nil {
-			return err
-		}
-	}
-
-	if printer.IsFormat(reportType, printer.FormatSummaryConsole) {
-		err := writeNoResultsConsoleSummary(noResults)
-		if err != nil {
-			return err
-		}
-	}
-
-	if printer.IsFormat(reportType, printer.FormatJSON) {
-		summaryRpt := createTargetName(targetFile, targetPath, "json")
-		err := exportJSONSummaryResults(summaryRpt, noResults)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func extractCmdCommandsForFileOutput(cmd *cobra.Command) (targetFile, targetPath, reportFormats string) {
-	targetFile, _ = cmd.Flags().GetString(commonParams.TargetFlag)
-	targetPath, _ = cmd.Flags().GetString(commonParams.TargetPathFlag)
-	reportFormats, _ = cmd.Flags().GetString(commonParams.TargetFormatFlag)
-	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
-		reportFormats += "," + printer.FormatSummaryConsole
-	}
-	return targetFile, targetPath, reportFormats
-}
-
-func writeNoResultsConsoleSummary(noResults *wrappers.ResultSummary) error {
-	fmt.Printf("Scan executed in aynchronous mode. Hence, no results generated.\n")
-	fmt.Printf("For more information: %s", noResults.BaseURI)
-	return nil
-}
-
-func createBaseURIDetails(projectID string) string {
-	return wrappers.GetURL(fmt.Sprintf("projects/%s/overview", projectID))
-}
-
-func generateNoResultSummaryStruct(scanResponseModel *wrappers.ScanResponseModel) *wrappers.ResultSummary {
-	return &wrappers.ResultSummary{
-		ScanID:       scanResponseModel.ID,
-		CreatedAt:    scanResponseModel.CreatedAt.Local().Format(timeFormat),
-		BaseURI:      createBaseURIDetails(scanResponseModel.ProjectID),
-		AsyncMessage: asyncMessage,
-	}
-}
-
 func createReport(
 	format,
 	targetFile,
@@ -561,6 +496,10 @@ func createReport(
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
 ) error {
+	if !strings.EqualFold(summary.Status, "Completed") && !strings.EqualFold(summary.Status, "Partial") && !strings.EqualFold(summary.Status, "Failed") {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
+
 	if printer.IsFormat(format, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
 		return exportSarifResults(sarifRpt, results)
@@ -579,7 +518,7 @@ func createReport(
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
 		convertNotAvailableNumberToZero(summary)
-		return writeHTMLSummary(summaryRpt, summary, false) // setting async to false in case of non-async flow
+		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, "json")
