@@ -44,7 +44,6 @@ const (
 	notAvailableString       = "N/A"
 	notAvailableNumber       = -1
 	defaultPaddingSize       = -14
-	timeFormat               = "2006-01-02 15:04:05"
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 )
 
