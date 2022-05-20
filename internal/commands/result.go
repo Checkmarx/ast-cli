@@ -344,7 +344,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Summary Report: ", targetFile)
-	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(summary.ScanInfoMessage))
+	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(isScanPending(summary.Status)))
 	if err == nil {
 		f, err := os.Create(targetFile)
 		if err == nil {
@@ -357,7 +357,7 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
-	if summary.ScanInfoMessage == "" {
+	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
 		fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
@@ -488,6 +488,14 @@ func CreateScanReport(
 	return nil
 }
 
+func isScanPending(scanStatus string) bool {
+	if !strings.EqualFold(scanStatus, "Completed") && !strings.EqualFold(scanStatus, "Partial") && !strings.EqualFold(scanStatus, "Failed") {
+		return false
+	} else {
+		return true
+	}
+}
+
 func createReport(
 	format,
 	targetFile,
@@ -495,7 +503,7 @@ func createReport(
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
 ) error {
-	if !strings.EqualFold(summary.Status, "Completed") && !strings.EqualFold(summary.Status, "Partial") && !strings.EqualFold(summary.Status, "Failed") {
+	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
 	}
 

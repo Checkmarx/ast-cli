@@ -458,9 +458,9 @@ const summaryTemplateFooter = `</div>
 {{end}}
 `
 
-func SummaryTemplate(summaryMessage string) string {
+func SummaryTemplate(isScanPending bool) string {
 	result := summaryTemplateHeader
-	if summaryMessage == "" {
+	if !isScanPending {
 		result += nonAsyncSummary
 	} else {
 		result += asyncSummaryTemplate
