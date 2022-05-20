@@ -489,11 +489,11 @@ func CreateScanReport(
 }
 
 func isScanPending(scanStatus string) bool {
+	scanPendingStatus := true
 	if !strings.EqualFold(scanStatus, "Completed") && !strings.EqualFold(scanStatus, "Partial") && !strings.EqualFold(scanStatus, "Failed") {
-		return false
-	} else {
-		return true
+		scanPendingStatus = false
 	}
+	return scanPendingStatus
 }
 
 func createReport(
