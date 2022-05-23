@@ -105,6 +105,7 @@ const (
 	RepoURLFlag                  = "repo-url"
 	AstToken                     = "ast-token"
 	SSHValue                     = "ssh-value"
+	KicsContainerNameKey         = "kics-container-name"
 
 	// INDIVIDUAL FILTER	FLAGS
 	SastFilterFlag  = "sast-filter"

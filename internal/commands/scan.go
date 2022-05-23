@@ -61,6 +61,7 @@ const (
 	containerScanFormatOutput       = "json"
 	noResultsError                  = "No results available"
 	kicsExitCode                    = "exit status 40"
+	kicsExitCodeNoResults           = "exit status 50"
 	containerStarting               = "Starting kics container"
 	containerFormatInfo             = "The report format and output path cannot be overridden."
 	containerFolderRemoving         = "Removing folder in temp"
@@ -1705,7 +1706,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		containerVolumeFlag,
 		volumeMap,
 		containerNameFlag,
-		containerName,
+		viper.GetString(commonParams.KicsContainerNameKey),
 		containerImage,
 		containerScan,
 		containerScanPathFlag,
@@ -1727,7 +1728,9 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
 	definitely an incorrect behavior but the following check gets past it.
 	*/
-	if err != nil && kicsExitCode == err.Error() {
+
+	// This case is when kics successfully executes returning the expected error code
+	if kicsExitCode == err.Error() {
 		var resultsModel wrappers.KicsResultsCollection
 		resultsModel, errs = readKicsResultsFile(tempDir)
 		if errs != nil {
@@ -1740,7 +1743,13 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		}
 		fmt.Println(string(resultsJSON))
 	} else {
-		return errors.Errorf("%s", noResultsError)
+		// Case kics returns the noResults error code
+		if kicsExitCodeNoResults == err.Error() {
+			return errors.Errorf("%s", noResultsError)
+		} else { // Need this to get correct error message when the container execution actually fails
+			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
+		}
 	}
+
 	return nil
 }
