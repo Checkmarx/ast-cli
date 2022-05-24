@@ -20,6 +20,7 @@ const (
 	successfulExitCode      = 0
 	failureExitCode         = 1
 	kicsContainerPrefixName = "cli-kics-realtime-"
+	killCommand             = "kill"
 )
 
 func main() {
@@ -102,26 +103,27 @@ func exitListener() {
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
 		syscall.SIGTERM)
+	go signalHandler(signalChanel)
+}
 
-	go func() {
-		kicsRunArgs := []string{
-			"kill",
-			viper.GetString(params.KicsContainerNameKey),
-		}
-		for {
-			s := <-signalChanel
-			switch s {
-			case syscall.SIGTERM:
-				out, err := exec.Command("docker", kicsRunArgs...).CombinedOutput()
-				logger.PrintIfVerbose(string(out))
-				if err != nil {
-					os.Exit(failureExitCode)
-				}
-				os.Exit(successfulExitCode)
-
-			default:
+func signalHandler(signalChanel chan os.Signal) {
+	kicsRunArgs := []string{
+		killCommand,
+		viper.GetString(params.KicsContainerNameKey),
+	}
+	for {
+		s := <-signalChanel
+		switch s {
+		case syscall.SIGTERM:
+			out, err := exec.Command("docker", kicsRunArgs...).CombinedOutput()
+			logger.PrintIfVerbose(string(out))
+			if err != nil {
 				os.Exit(failureExitCode)
 			}
+			os.Exit(successfulExitCode)
+		// Should not get here since we only listen to SIGTERM, kept for safety
+		default:
+			os.Exit(failureExitCode)
 		}
-	}()
+	}
 }
