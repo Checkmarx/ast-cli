@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"os/signal"
+	"syscall"
+
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -9,10 +14,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
-	"os"
-	"os/exec"
-	"os/signal"
-	"syscall"
 )
 
 const (
@@ -49,8 +50,8 @@ func main() {
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 
-	kicsContainerId := uuid.New()
-	viper.Set(params.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerId.String())
+	kicsContainerID := uuid.New()
+	viper.Set(params.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerID.String())
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -100,7 +101,7 @@ func bindKeysToEnvAndDefault() {
 func exitListener() {
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
-		syscall.SIGKILL)
+		syscall.SIGTERM)
 
 	go func() {
 		kicsRunArgs := []string{
@@ -110,18 +111,16 @@ func exitListener() {
 		for {
 			s := <-signalChanel
 			switch s {
-			case syscall.SIGKILL:
+			case syscall.SIGTERM:
 				out, err := exec.Command("docker", kicsRunArgs...).CombinedOutput()
 				logger.PrintIfVerbose(string(out))
 				if err != nil {
 					os.Exit(failureExitCode)
 				}
 				os.Exit(successfulExitCode)
-				break
 
 			default:
 				os.Exit(failureExitCode)
-				break
 			}
 		}
 	}()

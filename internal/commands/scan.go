@@ -50,7 +50,6 @@ const (
 	containerVolumeFlag             = "-v"
 	containerNameFlag               = "--name"
 	containerRemove                 = "--rm"
-	containerName                   = "cli-kics-realtime"
 	containerImage                  = "checkmarx/kics:latest"
 	containerScan                   = "scan"
 	containerScanPathFlag           = "-p"
@@ -1746,9 +1745,8 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		// Case kics returns the noResults error code
 		if kicsExitCodeNoResults == err.Error() {
 			return errors.Errorf("%s", noResultsError)
-		} else { // Need this to get correct error message when the container execution actually fails
-			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
-		}
+		} // Need this to get correct error message when the container execution actually fails
+		return errors.Errorf("Check container engine state. Failed: %s", err.Error())
 	}
 
 	return nil
