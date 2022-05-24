@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -304,4 +305,17 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--file-filter", "!.java")...)
+}
+
+func TestAsyncScanWithFile(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--report-format", "summaryHTML", "-s", dummyRepo, "--async"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+	_, readError := os.ReadFile("cx_result.html")
+	defer func() {
+		err := os.Remove("cx_result.html")
+		assert.NilError(t, err)
+	}()
+	assert.NilError(t, readError)
 }

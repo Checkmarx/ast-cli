@@ -1041,7 +1041,7 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
+			err = handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1050,6 +1050,10 @@ func runCreateScanCommand(
 			if err != nil {
 				return err
 			}
+		}
+		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+		if err != nil {
+			return err
 		}
 
 		return nil
@@ -1199,7 +1203,7 @@ func handleWait(
 		}
 		return err
 	}
-	return createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+	return nil
 }
 
 func createReportsAfterScan(
