@@ -1743,7 +1743,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		fmt.Println(string(resultsJSON))
 	} else {
 		// Case kics returns the noResults error code
-		if  err != nil && kicsExitCodeNoResults == err.Error() {
+		if err != nil && kicsExitCodeNoResults == err.Error() {
 			return errors.Errorf("%s", noResultsError)
 		} // Need this to get correct error message when the container execution actually fails
 		if err != nil && kicsExitCodeNoResults != err.Error() {
