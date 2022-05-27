@@ -65,10 +65,10 @@ const (
 	containerFormatInfo             = "The report format and output path cannot be overridden."
 	containerFolderRemoving         = "Removing folder in temp"
 	containerCreateFolderError      = "Error creating temporary directory"
-	containerWriteFolderError       = " Error writing file-sources to temporary directory"
-	containerFileSourceMissing      = "--file-sources is required for kics-realtime command"
+	containerWriteFolderError       = " Error writing file to temporary directory"
+	containerFileSourceMissing      = "--file is required for kics-realtime command"
 	containerFileSourceIncompatible = ". Provided file is not supported by kics"
-	containerFileSourceError        = " Error reading file-sources"
+	containerFileSourceError        = " Error reading file"
 	containerResultsFileFormat      = "%s/results.json"
 	containerVolumeFormat           = "%s:/path"
 	containerTempDirPattern         = "kics"
@@ -163,7 +163,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan kics-realtime --file-sources <file-sources> --additional-params <additional-params> --engine <engine>
+			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
 		`,
 		),
 		Annotations: map[string]string{
@@ -1729,7 +1729,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	*/
 
 	// This case is when kics successfully executes returning the expected error code
-	if kicsExitCode == err.Error() {
+	if err != nil && kicsExitCode == err.Error() {
 		var resultsModel wrappers.KicsResultsCollection
 		resultsModel, errs = readKicsResultsFile(tempDir)
 		if errs != nil {
@@ -1743,10 +1743,13 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		fmt.Println(string(resultsJSON))
 	} else {
 		// Case kics returns the noResults error code
-		if kicsExitCodeNoResults == err.Error() {
+		if  err != nil && kicsExitCodeNoResults == err.Error() {
 			return errors.Errorf("%s", noResultsError)
 		} // Need this to get correct error message when the container execution actually fails
-		return errors.Errorf("Check container engine state. Failed: %s", err.Error())
+		if err != nil && kicsExitCodeNoResults != err.Error() {
+			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
+		}
+		return errors.Errorf("Check input file. Scan failed.")
 	}
 
 	return nil

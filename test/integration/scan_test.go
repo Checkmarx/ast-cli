@@ -24,12 +24,12 @@ import (
 )
 
 const (
-	fileSourceFlag                = "--file-sources"
+	fileSourceFlag                = "--file"
 	fileSourceValue               = "data/Dockerfile"
 	fileSourceValueVul            = "data/mock.dockerfile"
 	fileSourceIncorrectValue      = "data/source.zip"
 	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
-	fileSourceError               = "flag needs an argument: --file-sources"
+	fileSourceError               = "flag needs an argument: --file"
 	engineFlag                    = "--engine"
 	engineValue                   = "docker"
 	engineError                   = "flag needs an argument: --engine"
@@ -620,7 +620,7 @@ func TestRunKicsScanWithoutFileSources(t *testing.T) {
 		scanCommand, kicsRealtimeCommand,
 	}
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "required flag(s) \"file-sources\" not set")
+	assertError(t, err, "required flag(s) \"file\" not set")
 }
 
 func TestRunKicsScanWithEngine(t *testing.T) {

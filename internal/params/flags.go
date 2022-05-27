@@ -73,7 +73,7 @@ const (
 	ProjectName                  = "project-name"
 	ScanTypes                    = "scan-types"
 	ScanTypeFlag                 = "scan-type"
-	KicsRealtimeFile             = "file-sources"
+	KicsRealtimeFile             = "file"
 	KicsRealtimeEngine           = "engine"
 	KicsRealtimeAdditionalParams = "additional-params"
 	TagList                      = "tags"
