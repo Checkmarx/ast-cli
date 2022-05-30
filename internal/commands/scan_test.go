@@ -21,6 +21,7 @@ const (
 	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
 	fileSourceFlag                = "--file"
+	fileSourceValueEmpty          = "data/empty.Dockerfile"
 	fileSourceValue               = "data/Dockerfile"
 	fileSourceIncorrectValue      = "data/source.zip"
 	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
@@ -33,6 +34,7 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
+	scanFailed                    = "Check input file. Scan failed."
 )
 
 func TestScanHelp(t *testing.T) {
@@ -362,4 +364,10 @@ func TestCreateRealtimeKicsMissingAdditionalParams(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, additionalParamsFlag}
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Error(t, err, additionalParamsError, err.Error())
+}
+
+func TestCreateRealtimeKicsFailedScan(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValueEmpty}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, scanFailed, err.Error())
 }
