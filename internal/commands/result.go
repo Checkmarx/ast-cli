@@ -43,6 +43,8 @@ const (
 	failedGettingBfl         = "Failed getting BFL"
 	notAvailableString       = "N/A"
 	notAvailableNumber       = -1
+	defaultPaddingSize       = -14
+	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -281,6 +283,8 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 			KicsIssues:   kicsIssues,
 			ScaIssues:    scaIssues,
 			Tags:         scanInfo.Tags,
+			ProjectName:  scanInfo.ProjectName,
+			BranchName:   scanInfo.Branch,
 		}, nil
 	}
 	return nil, err
@@ -340,7 +344,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Summary Report: ", targetFile)
-	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate)
+	summaryTemp, err := template.New("summaryTemplate").Parse(wrappers.SummaryTemplate(isScanPending(summary.Status)))
 	if err == nil {
 		f, err := os.Create(targetFile)
 		if err == nil {
@@ -353,35 +357,48 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
-	fmt.Println("")
-	fmt.Println("      ******************** Scan Summary ********************")
-	fmt.Printf("         Created At: %s\n", summary.CreatedAt)
-	fmt.Printf("               Risk: %s\n", summary.RiskMsg)
-	fmt.Printf("         Project ID: %s\n", summary.ProjectID)
-	fmt.Printf("            Scan ID: %s\n", summary.ScanID)
-	fmt.Printf("       Total Issues: %d\n", summary.TotalIssues)
-	fmt.Printf("        High Issues: %d\n", summary.HighIssues)
-	fmt.Printf("      Medium Issues: %d\n", summary.MediumIssues)
-	fmt.Printf("         Low Issues: %d\n", summary.LowIssues)
+	if !isScanPending(summary.Status) {
+		fmt.Printf("            Scan Summary:                     \n")
+		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
+		fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
+		fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
+		fmt.Printf("            Results Summary:                     \n")
+		fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
+		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
+		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              -----------------------------------     \n")
 
-	if summary.KicsIssues == notAvailableNumber {
-		fmt.Printf("        Kics Issues: %s\n", notAvailableString)
+		if summary.KicsIssues == notAvailableNumber {
+			fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+		}
+		if summary.SastIssues == notAvailableNumber {
+			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+		}
+		if summary.ScaIssues == notAvailableNumber {
+			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
+		} else {
+			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
+		}
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
 	} else {
-		fmt.Printf("        Kics Issues: %d\n", summary.KicsIssues)
+		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
+		fmt.Printf("For more information: %s", summary.BaseURI)
 	}
-	if summary.SastIssues == notAvailableNumber {
-		fmt.Printf("      CxSAST Issues: %s\n", notAvailableString)
-	} else {
-		fmt.Printf("      CxSAST Issues: %d\n", summary.SastIssues)
-	}
-	if summary.ScaIssues == notAvailableNumber {
-		fmt.Printf("       CxSCA Issues: %s\n", notAvailableString)
-	} else {
-		fmt.Printf("       CxSCA Issues: %d\n", summary.ScaIssues)
-	}
-	fmt.Print("      ******************************************************")
-	fmt.Println("")
 	return nil
+}
+
+func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
+	summaryURL := fmt.Sprintf(strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1), summary.ScanID, summary.BranchName)
+	return summaryURL
 }
 
 func runGetResultCommand(
@@ -471,6 +488,10 @@ func CreateScanReport(
 	return nil
 }
 
+func isScanPending(scanStatus string) bool {
+	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(scanStatus, "Partial") || strings.EqualFold(scanStatus, "Failed"))
+}
+
 func createReport(
 	format,
 	targetFile,
@@ -478,6 +499,10 @@ func createReport(
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
 ) error {
+	if isScanPending(summary.Status) {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
+
 	if printer.IsFormat(format, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
 		return exportSarifResults(sarifRpt, results)

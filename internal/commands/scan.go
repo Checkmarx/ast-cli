@@ -1089,6 +1089,7 @@ func runCreateScanCommand(
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
+			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s\n", failedCreating)
@@ -1098,7 +1099,7 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			err := handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
+			err = handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1108,9 +1109,22 @@ func runCreateScanCommand(
 				return err
 			}
 		}
+		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
+}
+
+func enrichScanResponseModel(cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel) *wrappers.ScanResponseModel {
+	scanResponseModel.ProjectName, _ = cmd.Flags().GetString(commonParams.ProjectName)
+	incrementalSast, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+	scanResponseModel.SastIncremental = strconv.FormatBool(incrementalSast)
+	timeoutVal, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+	scanResponseModel.Timeout = strconv.Itoa(timeoutVal)
+	return scanResponseModel
 }
 
 func createScanModel(
@@ -1247,7 +1261,7 @@ func handleWait(
 		}
 		return err
 	}
-	return createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+	return nil
 }
 
 func createReportsAfterScan(
@@ -1602,15 +1616,18 @@ func runKicksRealtime() func(*cobra.Command, []string) error {
 }
 
 type scanView struct {
-	ID        string `format:"name:Scan ID"`
-	ProjectID string `format:"name:Project ID"`
-	Status    string
-	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
-	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
-	Branch    string
-	Tags      map[string]string
-	Initiator string
-	Origin    string
+	ID              string `format:"name:Scan ID"`
+	ProjectID       string `format:"name:Project ID"`
+	ProjectName     string `format:"name:Project Name"`
+	Status          string
+	CreatedAt       time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+	UpdatedAt       time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	Branch          string
+	Tags            map[string]string
+	SastIncremental string `format:"name:Type"`
+	Timeout         string
+	Initiator       string
+	Origin          string
 }
 
 func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
@@ -1623,22 +1640,41 @@ func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
 
 func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	var origin string
+	var scanType string
+	var scanTimeOut string
 	if scan.UserAgent != "" {
 		ua := user_agent.New(scan.UserAgent)
 		name, version := ua.Browser()
 		origin = name + " " + version
 	}
 
+	if strings.EqualFold("true", scan.SastIncremental) {
+		scanType = "Incremental"
+	} else {
+		scanType = "Full"
+	}
+
+	intValForTimeout, err := strconv.Atoi(scan.Timeout)
+
+	if err == nil && intValForTimeout > 0 {
+		scanTimeOut = fmt.Sprintf("%s %s", scan.Timeout, "mins")
+	} else {
+		scanTimeOut = "NONE"
+	}
+
 	return &scanView{
-		ID:        scan.ID,
-		Status:    string(scan.Status),
-		CreatedAt: scan.CreatedAt,
-		UpdatedAt: scan.UpdatedAt,
-		ProjectID: scan.ProjectID,
-		Branch:    scan.Branch,
-		Tags:      scan.Tags,
-		Initiator: scan.Initiator,
-		Origin:    origin,
+		ID:              scan.ID,
+		Status:          string(scan.Status),
+		CreatedAt:       scan.CreatedAt,
+		UpdatedAt:       scan.UpdatedAt,
+		ProjectName:     scan.ProjectName,
+		ProjectID:       scan.ProjectID,
+		Branch:          scan.Branch,
+		Tags:            scan.Tags,
+		SastIncremental: scanType,
+		Timeout:         scanTimeOut,
+		Initiator:       scan.Initiator,
+		Origin:          origin,
 	}
 }
 

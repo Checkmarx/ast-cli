@@ -1,27 +1,29 @@
 package wrappers
 
 type ResultSummary struct {
-	TotalIssues  int
-	HighIssues   int
-	MediumIssues int
-	LowIssues    int
-	SastIssues   int
-	KicsIssues   int
-	ScaIssues    int
-	RiskStyle    string
-	RiskMsg      string
-	Status       string
-	ScanID       string
-	ScanDate     string
-	ScanTime     string
-	CreatedAt    string
-	ProjectID    string
-	BaseURI      string
-	Tags         map[string]string
+	TotalIssues     int
+	HighIssues      int
+	MediumIssues    int
+	LowIssues       int
+	SastIssues      int
+	KicsIssues      int
+	ScaIssues       int
+	RiskStyle       string
+	RiskMsg         string
+	Status          string
+	ScanID          string
+	ScanDate        string
+	ScanTime        string
+	CreatedAt       string
+	ProjectID       string
+	BaseURI         string
+	Tags            map[string]string
+	ProjectName     string
+	BranchName      string
+	ScanInfoMessage string
 }
 
-const SummaryTemplate = `
-{{define "SummaryTemplate"}}
+const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -317,8 +319,8 @@ const SummaryTemplate = `
             padding: 16px 20px;
             width: 24.5%;
         }
-        .cx-demo { 
-            color: red;
+        .cx-details { 
+            color: black;
             align-items: center;
             text-align: center;
             margin-bottom: 10px;
@@ -392,8 +394,9 @@ const SummaryTemplate = `
                 </div>
             </div>
 
-        </div>
-        <div class="top-row">
+        </div>`
+
+const nonAsyncSummary = `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
@@ -442,9 +445,26 @@ const SummaryTemplate = `
                     </div>
                 </div>
             </div>
-        </div>
+        </div>`
 
-    </div>
+const asyncSummaryTemplate = `<div class="cx-info">
+            <div class="data">
+                <div class="cx-details">{{.ScanInfoMessage}}</div>
+            </div>
+        </div>`
+
+const summaryTemplateFooter = `</div>
 </body>
 {{end}}
 `
+
+func SummaryTemplate(isScanPending bool) string {
+	result := summaryTemplateHeader
+	if !isScanPending {
+		result += nonAsyncSummary
+	} else {
+		result += asyncSummaryTemplate
+	}
+	result += summaryTemplateFooter
+	return result
+}
