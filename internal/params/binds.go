@@ -22,6 +22,7 @@ var EnvVarsBinds = []struct {
 	{KicsResultsPathKey, KicsResultsPathEnv, "api/kics-results"},
 	{KicsResultsPredicatesPathKey, KicsResultsPredicatesPathEnv, "api/kics-results-predicates"},
 	{BflPathKey, BflPathEnv, "api/bfl"},
+	{PRDecorationPathKey, PRDecorationPathEnv, "api/flow-publisher/pr/github"},
 	{UploadsPathKey, UploadsPathEnv, "api/uploads"},
 	{SastRmPathKey, SastRmPathEnv, "api/sast-rm"},
 	{AstWebAppHealthCheckPathKey, AstWebAppHealthCheckPathEnv, "#/projects"},

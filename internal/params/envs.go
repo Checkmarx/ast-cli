@@ -23,6 +23,7 @@ const (
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
 	KicsResultsPredicatesPathEnv        = "CX_KICS_RESULTS_PREDICATES_PATH"
 	BflPathEnv                          = "CX_BFL_PATH"
+	PRDecorationPathEnv                 = "CX_PR_DECO_PATH"
 	SastRmPathEnv                       = "CX_SAST_RM_PATH"
 	UploadsPathEnv                      = "CX_UPLOADS_PATH"
 	TokenExpirySecondsEnv               = "CX_TOKEN_EXPIRY_SECONDS"

@@ -108,6 +108,9 @@ const (
 	KicsFilterUsage          = "KICS filter"
 	ScaFilterFlag            = "sca-filter"
 	ScaFilterUsage           = "SCA filter"
+	NamespaceFlag            = "namespace"
+	RepoNameFlag             = "repo-name"
+	PRNumberFlag             = "pr-number"
 )
 
 // Parameter values
