@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
@@ -12,15 +13,13 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
 const (
-	successfulExitCode      = 0
-	failureExitCode         = 1
-	kicsContainerPrefixName = "cli-kics-realtime-"
-	killCommand             = "kill"
+	successfulExitCode = 0
+	failureExitCode    = 1
+	killCommand        = "kill"
 )
 
 func main() {
@@ -50,9 +49,6 @@ func main() {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
-
-	kicsContainerID := uuid.New()
-	viper.Set(params.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerID.String())
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -115,10 +111,14 @@ func signalHandler(signalChanel chan os.Signal) {
 		s := <-signalChanel
 		switch s {
 		case syscall.SIGTERM:
-			out, err := exec.Command("docker", kicsRunArgs...).CombinedOutput()
+			out, err := exec.Command("docker", "ps").CombinedOutput()
 			logger.PrintIfVerbose(string(out))
-			if err != nil {
-				os.Exit(failureExitCode)
+			if strings.Contains(string(out), viper.GetString(params.KicsContainerNameKey)) {
+				out, err = exec.Command("docker", kicsRunArgs...).CombinedOutput()
+				logger.PrintIfVerbose(string(out))
+				if err != nil {
+					os.Exit(failureExitCode)
+				}
 			}
 			os.Exit(successfulExitCode)
 		// Should not get here since we only listen to SIGTERM, kept for safety

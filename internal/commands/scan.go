@@ -72,6 +72,7 @@ const (
 	containerResultsFileFormat      = "%s/results.json"
 	containerVolumeFormat           = "%s:/path"
 	containerTempDirPattern         = "kics"
+	kicsContainerPrefixName         = "cli-kics-realtime-"
 )
 
 var (
@@ -157,6 +158,8 @@ func NewScanCommand(
 }
 
 func scanRealtimeSubCommand() *cobra.Command {
+	kicsContainerID := uuid.New()
+	viper.Set(commonParams.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerID.String())
 	realtimeScanCmd := &cobra.Command{
 		Use:   "kics-realtime",
 		Short: "Create and run kics scan",
