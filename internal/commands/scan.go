@@ -32,20 +32,47 @@ import (
 )
 
 const (
-	failedCreating     = "Failed creating a scan"
-	failedGetting      = "Failed showing a scan"
-	failedGettingTags  = "Failed getting tags"
-	failedDeleting     = "Failed deleting a scan"
-	failedCanceling    = "Failed canceling a scan"
-	failedGettingAll   = "Failed listing"
-	thresholdLog       = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog    = "Threshold check finished with status %s : %s"
-	mbBytes            = 1024.0 * 1024.0
-	scaType            = "sca"
-	notExploitable     = "NOT_EXPLOITABLE"
-	git                = "git"
-	invalidSSHSource   = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
-	errorUnzippingFile = "an error occurred while unzipping file. Reason: "
+	failedCreating                  = "Failed creating a scan"
+	failedGetting                   = "Failed showing a scan"
+	failedGettingTags               = "Failed getting tags"
+	failedDeleting                  = "Failed deleting a scan"
+	failedCanceling                 = "Failed canceling a scan"
+	failedGettingAll                = "Failed listing"
+	thresholdLog                    = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog                 = "Threshold check finished with status %s : %s"
+	mbBytes                         = 1024.0 * 1024.0
+	scaType                         = "sca"
+	notExploitable                  = "NOT_EXPLOITABLE"
+	git                             = "git"
+	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
+	errorUnzippingFile              = "an error occurred while unzipping file. Reason: "
+	containerRun                    = "run"
+	containerVolumeFlag             = "-v"
+	containerNameFlag               = "--name"
+	containerRemove                 = "--rm"
+	containerImage                  = "checkmarx/kics:latest"
+	containerScan                   = "scan"
+	containerScanPathFlag           = "-p"
+	containerScanPath               = "/path"
+	containerScanOutputFlag         = "-o"
+	containerScanOutput             = "/path"
+	containerScanFormatFlag         = "--report-formats"
+	containerScanFormatOutput       = "json"
+	noResultsError                  = "No results available"
+	kicsExitCode                    = "exit status 40"
+	kicsExitCodeNoResults           = "exit status 50"
+	containerStarting               = "Starting kics container"
+	containerFormatInfo             = "The report format and output path cannot be overridden."
+	containerFolderRemoving         = "Removing folder in temp"
+	containerCreateFolderError      = "Error creating temporary directory"
+	containerWriteFolderError       = " Error writing file to temporary directory"
+	containerFileSourceMissing      = "--file is required for kics-realtime command"
+	containerFileSourceIncompatible = ". Provided file is not supported by kics"
+	containerFileSourceError        = " Error reading file"
+	containerResultsFileFormat      = "%s/results.json"
+	containerVolumeFormat           = "%s:/path"
+	containerTempDirPattern         = "kics"
+	kicsContainerPrefixName         = "cli-kics-realtime-"
 )
 
 var (
@@ -67,6 +94,7 @@ var (
 			}, ",",
 		),
 	)
+	aditionalParameters []string
 )
 
 func NewScanCommand(
@@ -106,6 +134,8 @@ func NewScanCommand(
 
 	logsCmd := scanLogsSubCommand(logsWrapper)
 
+	kicsRealtimeCmd := scanRealtimeSubCommand()
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -122,8 +152,39 @@ func NewScanCommand(
 		cancelScanCmd,
 		tagsCmd,
 		logsCmd,
+		kicsRealtimeCmd,
 	)
 	return scanCmd
+}
+
+func scanRealtimeSubCommand() *cobra.Command {
+	kicsContainerID := uuid.New()
+	viper.Set(commonParams.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerID.String())
+	realtimeScanCmd := &cobra.Command{
+		Use:   "kics-realtime",
+		Short: "Create and run kics scan",
+		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`	
+			`,
+			),
+		},
+		RunE: runKicksRealtime(),
+	}
+	realtimeScanCmd.PersistentFlags().
+		StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
+			"Additional scan options supported by kics. "+
+				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f")
+	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeFile, "", "Path to input file for kics realtime scanner")
+	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeEngine, "docker", "Name in the $PATH for the container engine to run kics. Example:podman.")
+	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
+	return realtimeScanCmd
 }
 
 func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
@@ -916,7 +977,7 @@ func getUploadURLFromSource(
 }
 
 func UnzipFile(f string) (string, error) {
-	tempDir := os.TempDir() + string(os.PathSeparator) + "cx-unzipped-temp-dir-" + uuid.New().String() + string(os.PathSeparator)
+	tempDir := filepath.Join(os.TempDir(), "cx-unzipped-temp-dir-") + uuid.New().String() + string(os.PathSeparator)
 
 	err := os.Mkdir(tempDir, directoryPermission)
 	if err != nil {
@@ -1534,6 +1595,29 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	}
 }
 
+func runKicksRealtime() func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		// Create temp location and add it to container volumes
+		volumeMap, tempDir, err := createKicsScanEnv(cmd)
+		if err != nil {
+			return errors.Errorf("%s", err)
+		}
+
+		// Run kics container
+		err = runKicsScan(cmd, volumeMap, tempDir, aditionalParameters)
+		if err != nil {
+			// Removing temporary dir
+			logger.PrintIfVerbose(containerFolderRemoving)
+			os.RemoveAll(tempDir)
+			return errors.Errorf("%s", err)
+		}
+		// Removing temporary dir
+		logger.PrintIfVerbose(containerFolderRemoving)
+		os.RemoveAll(tempDir)
+		return nil
+	}
+}
+
 type scanView struct {
 	ID              string `format:"name:Scan ID"`
 	ProjectID       string `format:"name:Project ID"`
@@ -1595,4 +1679,117 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		Initiator:       scan.Initiator,
 		Origin:          origin,
 	}
+}
+
+func createKicsScanEnv(cmd *cobra.Command) (volumeMap, kicsDir string, err error) {
+	kicsDir, err = ioutil.TempDir("", containerTempDirPattern)
+	if err != nil {
+		return "", "", errors.New(containerCreateFolderError)
+	}
+	kicsFilePath, _ := cmd.Flags().GetString(commonParams.KicsRealtimeFile)
+	if len(kicsFilePath) < 1 {
+		return "", "", errors.New(containerFileSourceMissing)
+	}
+	if !contains(commonParams.KicsBaseFilters, kicsFilePath) {
+		return "", "", errors.New(kicsFilePath + containerFileSourceIncompatible)
+	}
+	kicsFile, err := ioutil.ReadFile(kicsFilePath)
+	if err != nil {
+		return "", "", errors.New(containerFileSourceError)
+	}
+	_, file := filepath.Split(kicsFilePath)
+	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
+	err = ioutil.WriteFile(destinationFile, kicsFile, 0666)
+	if err != nil {
+		return "", "", errors.New(containerWriteFolderError)
+	}
+	volumeMap = fmt.Sprintf(containerVolumeFormat, kicsDir)
+	return volumeMap, kicsDir, nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if strings.Contains(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error) {
+	// Open and read the file from the temp folder
+	var resultsModel wrappers.KicsResultsCollection
+	resultsFile := fmt.Sprintf(containerResultsFileFormat, tempDir)
+	jsonFile, err := os.Open(resultsFile)
+	if err != nil {
+		return resultsModel, err
+	}
+	byteValue, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return resultsModel, err
+	}
+	// Unmarshal into the object KicsResultsCollection
+	err = json.Unmarshal(byteValue, &resultsModel)
+	if err != nil {
+		return wrappers.KicsResultsCollection{}, err
+	}
+	return resultsModel, nil
+}
+
+func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParameters []string) error {
+	var errs error
+	kicsRunArgs := []string{
+		containerRun,
+		containerRemove,
+		containerVolumeFlag,
+		volumeMap,
+		containerNameFlag,
+		viper.GetString(commonParams.KicsContainerNameKey),
+		containerImage,
+		containerScan,
+		containerScanPathFlag,
+		containerScanPath,
+		containerScanOutputFlag,
+		containerScanOutput,
+		containerScanFormatFlag,
+		containerScanFormatOutput,
+	}
+	// join the additional parameters
+	if len(additionalParameters) > 0 {
+		kicsRunArgs = append(kicsRunArgs, additionalParameters...)
+	}
+	logger.PrintIfVerbose(containerStarting)
+	logger.PrintIfVerbose(containerFormatInfo)
+	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
+	out, err := exec.Command(kicsCmd, kicsRunArgs...).CombinedOutput()
+	logger.PrintIfVerbose(string(out))
+	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
+	definitely an incorrect behavior but the following check gets past it.
+	*/
+
+	// This case is when kics successfully executes returning the expected error code
+	if err != nil && kicsExitCode == err.Error() {
+		var resultsModel wrappers.KicsResultsCollection
+		resultsModel, errs = readKicsResultsFile(tempDir)
+		if errs != nil {
+			return errors.Errorf("%s", errs)
+		}
+		var resultsJSON []byte
+		resultsJSON, errs = json.Marshal(resultsModel)
+		if errs != nil {
+			return errors.Errorf("%s", errs)
+		}
+		fmt.Println(string(resultsJSON))
+	} else {
+		// Case kics returns the noResults error code
+		if err != nil && kicsExitCodeNoResults == err.Error() {
+			return errors.Errorf("%s", noResultsError)
+		} // Need this to get correct error message when the container execution actually fails
+		if err != nil && kicsExitCodeNoResults != err.Error() {
+			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
+		}
+		return errors.Errorf("Check input file. Scan failed.")
+	}
+
+	return nil
 }

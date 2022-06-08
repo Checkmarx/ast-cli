@@ -3,8 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -14,6 +19,7 @@ import (
 const (
 	successfulExitCode = 0
 	failureExitCode    = 1
+	killCommand        = "kill"
 )
 
 func main() {
@@ -60,7 +66,7 @@ func main() {
 		gitLabWrapper,
 		bflWrapper,
 	)
-
+	exitListener()
 	err = astCli.Execute()
 	exitIfError(err)
 	os.Exit(successfulExitCode)
@@ -86,5 +92,41 @@ func bindKeysToEnvAndDefault() {
 			exitIfError(err)
 		}
 		viper.SetDefault(b.Key, b.Default)
+	}
+}
+
+func exitListener() {
+	signalChanel := make(chan os.Signal, 1)
+	signal.Notify(signalChanel,
+		syscall.SIGTERM)
+	go signalHandler(signalChanel)
+}
+
+func signalHandler(signalChanel chan os.Signal) {
+	kicsRunArgs := []string{
+		killCommand,
+		viper.GetString(params.KicsContainerNameKey),
+	}
+	for {
+		s := <-signalChanel
+		switch s {
+		case syscall.SIGTERM:
+			out, err := exec.Command("docker", "ps").CombinedOutput()
+			if err != nil {
+				os.Exit(failureExitCode)
+			}
+			logger.PrintIfVerbose(string(out))
+			if strings.Contains(string(out), viper.GetString(params.KicsContainerNameKey)) {
+				out, err = exec.Command("docker", kicsRunArgs...).CombinedOutput()
+				logger.PrintIfVerbose(string(out))
+				if err != nil {
+					os.Exit(failureExitCode)
+				}
+			}
+			os.Exit(successfulExitCode)
+		// Should not get here since we only listen to SIGTERM, kept for safety
+		default:
+			os.Exit(failureExitCode)
+		}
 	}
 }
