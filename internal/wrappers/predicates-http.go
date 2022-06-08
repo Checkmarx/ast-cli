@@ -42,7 +42,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 		return nil, nil, errors.Errorf(invalidScanType, scannerType)
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityId : %s", similarityID))
+	logger.PrintIfVerbose(fmt.Sprintf("Fetching the predicate history for SimilarityID : %s", similarityID))
 	r.SetPath(triageAPIPath)
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
