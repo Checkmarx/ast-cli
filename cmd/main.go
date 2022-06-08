@@ -112,6 +112,9 @@ func signalHandler(signalChanel chan os.Signal) {
 		switch s {
 		case syscall.SIGTERM:
 			out, err := exec.Command("docker", "ps").CombinedOutput()
+			if err != nil {
+				os.Exit(failureExitCode)
+			}
 			logger.PrintIfVerbose(string(out))
 			if strings.Contains(string(out), viper.GetString(params.KicsContainerNameKey)) {
 				out, err = exec.Command("docker", kicsRunArgs...).CombinedOutput()
