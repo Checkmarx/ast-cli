@@ -1,0 +1,73 @@
+name: goreleaser-scheduled
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.changes.outputs.changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check for changes
+        id: changes
+        run: |
+          CHANGES=$(git log --oneline $(git describe --tags --match 'nightly' --abbrev=0)..HEAD)
+          echo $CHANGES
+          if [[ -n ${CHANGES} ]]; then
+            echo "has changes"
+            echo "::set-output name=changes::0"
+          else
+            echo "no changes"
+            echo "::set-output name=changes::1"
+          fi
+  goreleaser:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.changes == 0 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.17.1'
+      - name: Delete release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          delete_release: true
+          tag_name: nightly
+      - name: Delete local tag
+        run: |
+            git tag -d nightly
+      - name: Tag
+        run: |
+          echo "NEXT_VERSION=nightly" >> $GITHUB_ENV
+          tag=nightly
+          message='nightly'
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git tag -a "${tag}" -m "${message}"
+          git push origin "${tag}"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3.0.0
+        with:
+          version: v0.179.0
+          args: release --rm-dist --debug --config=".goreleaser-nightly.yml" --skip-validate
+        env:
+          GORELEASER_CURRENT_TAG: nightly
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - name: Display assets
+        run: |
+          ls -l /home/runner/work/ast-cli-fork
