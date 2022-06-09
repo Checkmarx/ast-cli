@@ -60,3 +60,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Teams notification
+          uses: toko-bifrost/ms-teams-deploy-card@master
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            webhook-uri: ${{ secrets.TEAMS_WEBHOOK_URI }}
+            custom-facts: |
+              - name: Release :
+                #value: ${{ steps.latest_release.outputs.html_url }}
+                value: "link to release or notes, harcoded because i did not considered go releaser ... maybe in this metadata variable from output"
+            custom-actions: |
+              - name: View CI Logs
+                value: https://github.com/Checkmarx/ast-cli/actions/runs/${{ github.run_id }}"
+              - name: View HEAD Commit
+                value: https://github.com/Checkmarx/ast-cli/commit/${{ github.sha }}
