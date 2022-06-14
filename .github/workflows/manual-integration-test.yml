@@ -65,6 +65,7 @@ jobs:
           CX_BASE_AUTH_URI: ${{ github.event.inputs.baseAuthUri }}
           CX_AST_USERNAME: ${{ github.event.inputs.username }}
           CX_TENANT: ${{ github.event.inputs.tenant }}
+          CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128
@@ -73,6 +74,10 @@ jobs:
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_REPOS: ${{ secrets.AZURE_REPOS }}
           AZURE_TOKEN: ${{ secrets.AZURE_TOKEN }}
+          BITBUCKET_WORKSPACE: ${{ secrets.BITBUCKET_WORKSPACE }}
+          BITBUCKET_REPOS: ${{ secrets.BITBUCKET_REPOS }}
+          BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
+          BITBUCKET_PASSWORD: ${{ secrets.BITBUCKET_PASSWORD }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
