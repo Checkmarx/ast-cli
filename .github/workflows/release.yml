@@ -53,9 +53,9 @@ jobs:
         run: |
           rm default.profraw
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2.6.1
+        uses: goreleaser/goreleaser-action@v3
         with:
-          version: v1.0.0
+          version: latest
           args: release --rm-dist --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
