@@ -63,7 +63,7 @@ jobs:
 
       - name: Get latest relase notes
         run: |
-          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/ast-azure-plugin/releases/releases/latest | jq -r '.body' )"
+          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/ast-cli/releases/releases/latest | jq -r '.body' )"
           echo 'BODY_RELEASE='$body_release >> $GITHUB_ENV
       - name: Teams notification
         uses: toko-bifrost/ms-teams-deploy-card@master
@@ -75,4 +75,4 @@ jobs:
               value: "${{ env.BODY_RELEASE }}"
           custom-actions: |
             - name: Details
-              value: https://github.com/Checkmarx/ast-azure-plugin/releases/tag/${{ env.RELEASE_VERSION }}
+              value: https://github.com/Checkmarx/ast-cli/releases/tag/${{ env.RELEASE_VERSION }}
