@@ -1,5 +1,5 @@
 # gonArm.hcl
-source = ["./dist/cx-mac-amd_darwin_amd64/cx"]
+source = ["./dist/cx-mac-universal_darwin_all/cx"]
 bundle_id = "com.checkmarx.cli"
 
 apple_id {
@@ -12,6 +12,6 @@ sign {
 }
 
 dmg {
-  output_path = "./dist/cx-mac-amd_darwin_amd64/cx.dmg"
+  output_path = "./dist/cx-mac-universal_darwin_all/cx.dmg"
   volume_name = "cx"
 }
