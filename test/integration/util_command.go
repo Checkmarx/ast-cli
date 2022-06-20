@@ -53,6 +53,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
+	prPath := viper.GetString(params.PRDecorationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -68,6 +69,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	azureWrapper := wrappers.NewAzureWrapper()
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
+	prWrapper := wrappers.NewHTTPPRWrapper(prPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -84,6 +86,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
+		prWrapper,
 	)
 	return astCli
 }

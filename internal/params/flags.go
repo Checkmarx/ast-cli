@@ -111,6 +111,7 @@ const (
 	NamespaceFlag            = "namespace"
 	RepoNameFlag             = "repo-name"
 	PRNumberFlag             = "pr-number"
+	ScmTokenRef              = "scmToken"
 )
 
 // Parameter values

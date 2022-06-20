@@ -50,4 +50,5 @@ var EnvVarsBinds = []struct {
 	{AstRoleKey, AstRoleEnv, ScaAgent},
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 	{ClientTimeoutKey, ClientTimeoutEnv, "5"},
+	{SCMTokenKey, SCMTokenEnv, ""},
 }

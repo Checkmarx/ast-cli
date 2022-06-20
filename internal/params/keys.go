@@ -48,4 +48,5 @@ var (
 	LogsEngineLogPathKey                = strings.ToLower(LogsEngineLogPathEnv)
 	SastResultsPredicatesPathKey        = strings.ToLower(SastResultsPredicatesPathEnv)
 	KicsResultsPredicatesPathKey        = strings.ToLower(KicsResultsPredicatesPathEnv)
+	SCMTokenKey                         = strings.ToLower(SCMTokenEnv)
 )

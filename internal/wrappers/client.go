@@ -306,6 +306,31 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	return nil
 }
 
+func SendHTTPRequestWithJsonContentType(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+	fullURL := GetURL(path)
+	req, err := http.NewRequest(method, fullURL, body)
+	client := getClient(timeout)
+	setAgentName(req)
+	req.Header.Add("Content-Type", "application/json")
+	if err != nil {
+		return nil, err
+	}
+	if auth {
+		err = enrichWithOath2Credentials(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	req = addReqMonitor(req)
+	var resp *http.Response
+	resp, err = doRequest(client, req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func getAccessToken() (*string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
