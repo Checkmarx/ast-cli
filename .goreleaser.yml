@@ -27,34 +27,17 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
     binary: cx
-    id: cx-mac-arm
-    goos:
-      - darwin
-    goarch:
-      - arm64
-    hooks:
-      post: gon gonArm.hcl
-    ldflags:
-      - -s
-      - -w
-      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-
-  - main: ./cmd/main.go
-    env:
-      - CGO_ENABLED=0
-    binary: cx
-    id: cx-mac-amd
+    id: cx-mac-universal
     goos:
       - darwin
     goarch:
       - amd64
-    hooks:
-      post: gon gonAmd.hcl
+      - arm
+      - arm64
     ldflags:
       - -s
       - -w
@@ -81,20 +64,20 @@ archives:
       386: x32
     files:
       - LICENSE
-  - id: cx-mac-arm-archive
+  - id: cx-mac-universal
     builds:
-      - cx-mac-arm
+      - cx-mac-universal
     files:
       - LICENSE
-      - ./dist/cx-mac-arm_darwin_arm64/cx.dmg
-  - id: cx-mac-amd-archive
-    builds:
-      - cx-mac-amd
-    replacements:
-      amd64: x64
-    files:
-      - LICENSE
-      - ./dist/cx-mac-amd_darwin_amd64/cx.dmg
+      - ./dist/cx-mac-universal_darwin_all/cx.dmg
+    name_template: "{{ .ProjectName }}_{{ .Version }}_darwin_x64"
+
+universal_binaries:
+  - id: cx-mac-universal
+    replace: true
+    name_template: "cx"
+    hooks:
+      post: gon gonMac.hcl
 
 brews:
   - tap:
