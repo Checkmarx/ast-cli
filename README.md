@@ -91,7 +91,7 @@ You can download and install Go using this link: https://golang.org/doc/install
 ### Windows
 ``` powershell
 setx GOOS=windows 
-setx GOARCH=am
+setx GOARCH=amd64
 go build -o ./bin/cx.exe ./cmd
 ```
 
