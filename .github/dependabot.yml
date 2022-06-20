@@ -7,8 +7,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    reviewers:
+      - "Checkmarx/ast-galactica-team"
   # Maintain dependencies for Gomod
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
+    reviewers:
+      - "Checkmarx/ast-galactica-team"
