@@ -92,9 +92,13 @@ archives:
       - cx-mac-amd
     replacements:
       amd64: x64
+      all: x64
     files:
       - LICENSE
       - ./dist/cx-mac-amd_darwin_amd64/cx.dmg
+
+universal_binaries:
+  - replace: true
 
 brews:
   - tap:
