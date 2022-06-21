@@ -1046,16 +1046,21 @@ func runCreateScanCommand(
 				return err
 			}
 
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+			if err != nil {
+				return err
+			}
+
 			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
 			if err != nil {
 				return err
 			}
+		} else {
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+			if err != nil {
+				return err
+			}
 		}
-		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}
 }
