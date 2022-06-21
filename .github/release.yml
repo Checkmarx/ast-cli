@@ -5,7 +5,7 @@ changelog:
     labels:
       - ignore
   categories:
-    - title: Bug fixes 🐛
+    - title: Bug Fixes 🐛
       labels:
         - bug
         - bugs
@@ -15,7 +15,7 @@ changelog:
       labels:
         - feature
         - features
-    - title: Dependencies updates 🛠
+    - title: Dependencies Updates 🛠
       labels:
         - dependencies
         - dependency
