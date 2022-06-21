@@ -23,6 +23,23 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	fileSourceFlag                = "--file"
+	fileSourceValue               = "data/Dockerfile"
+	fileSourceValueVul            = "data/mock.dockerfile"
+	fileSourceIncorrectValue      = "data/source.zip"
+	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
+	fileSourceError               = "flag needs an argument: --file"
+	engineFlag                    = "--engine"
+	engineValue                   = "docker"
+	engineError                   = "flag needs an argument: --engine"
+	additionalParamsFlag          = "--additional-params"
+	additionalParamsValue         = "-v"
+	additionalParamsError         = "flag needs an argument: --additional-params"
+	scanCommand                   = "scan"
+	kicsRealtimeCommand           = "kics-realtime"
+)
+
 // Type for scan workflow response, used to assert the validity of the command's response
 type ScanWorkflowResponse struct {
 	Source      string    `json:"source"`
@@ -579,23 +596,48 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
 }
 
-func TestAsynCreateScan(t *testing.T) {
-	args := []string{
-		flag(params.AsyncFlag),
-		flag(params.TargetFormatFlag), "summaryHTML",
-	}
-	scanID, projectID := executeCreateScan(t, append(getCreateArgs(Dir, map[string]string{}, "sast,kics"), args...))
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	file, err := ioutil.ReadFile("cx_result.html")
-	defer func() {
-		os.Remove("cx_result.html")
-	}()
-	if err != nil {
-		t.Errorf("Error reading file: %v", err)
-	}
-	contents := string(file)
-	assert.Assert(t, contents != "", "Contents should not be empty")
-	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
+func TestRunKicsScan(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Runing KICS real-time command should pass",
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValueVul)
 
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunKicsScanWithouResults(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Runing KICS real-time command should pass",
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValue)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunKicsScanWithoutFileSources(t *testing.T) {
+	args := []string{
+		scanCommand, kicsRealtimeCommand,
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "required flag(s) \"file\" not set")
+}
+
+func TestRunKicsScanWithEngine(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Runing KICS real-time with engine command should pass",
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+		flag(params.KicsRealtimeEngine),engineValue,)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunKicsScanWithAdditionalParams(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Runing KICS real-time with additional params command should pass",
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+		flag(params.KicsRealtimeEngine),engineValue,
+		flag(params.KicsRealtimeAdditionalParams),additionalParamsValue)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }

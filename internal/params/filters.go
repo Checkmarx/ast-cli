@@ -125,6 +125,18 @@ var BaseFilters = []string{
 	"Dockerfile",
 }
 
+var KicsBaseFilters = []string{
+	".tf",
+	".yaml",
+	".yml",
+	".json",
+	".auto.tfvars",
+	".terraform.tfvars",
+	"Dockerfile",
+	".proto",
+	".dockerfile",
+}
+
 var DisabledExclusions = map[string]bool{
 	".git": true,
 }
