@@ -62,30 +62,30 @@ jobs:
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Get latest relase notes
-          id: release
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          run: |
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
             body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/tiagobcx/bamboo_test/releases/latest | jq -r '.body' )"
             body_release="${body_release//$'\n'/'%0A'}"
             echo "::set-output name=body_release::$body_release"
 
       - name: Converts Markdown to HTML
-          id: convert
-          uses: lifepal/markdown-to-html@v1.1
-          with:
-            text: "${{ steps.release.outputs.body_release }}"
+        id: convert
+        uses: lifepal/markdown-to-html@v1.1
+        with:
+          text: "${{ steps.release.outputs.body_release }}"
 
       - name: Clean html
-          id: clean
-          run: |
-            clean="$(echo "${{ steps.convert.outputs.html }}" | awk '{gsub(/id=.[a-z]+/,"");print}' | tr -d '\n')"
-            echo "$clean"
-            echo "::set-output name=clean::$clean"
+        id: clean
+        run: |
+          clean="$(echo "${{ steps.convert.outputs.html }}" | awk '{gsub(/id=.[a-z]+/,"");print}' | tr -d '\n')"
+          echo "$clean"
+          echo "::set-output name=clean::$clean"
 
       - name: Send a Notification
-          id: notify
-          uses: thechetantalwar/teams-notify@v2
-          with:
-            teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
-            message: "${{ steps.clean.outputs.clean }}"
+        id: notify
+        uses: thechetantalwar/teams-notify@v2
+        with:
+          teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
+          message: "${{ steps.clean.outputs.clean }}"
