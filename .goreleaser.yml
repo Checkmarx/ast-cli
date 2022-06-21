@@ -1,8 +1,6 @@
 project_name: ast-cli
 
 release:
-  draft: true
-  prerelease: auto
   name_template: "AST CLI {{.Version}}"
 
 builds:
