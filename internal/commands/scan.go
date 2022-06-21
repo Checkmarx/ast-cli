@@ -58,7 +58,6 @@ const (
 	containerScanOutput             = "/path"
 	containerScanFormatFlag         = "--report-formats"
 	containerScanFormatOutput       = "json"
-	noResultsError                  = "No results available"
 	kicsExitCode                    = "exit status 40"
 	kicsExitCodeNoResults           = "exit status 50"
 	containerStarting               = "Starting kics container"
