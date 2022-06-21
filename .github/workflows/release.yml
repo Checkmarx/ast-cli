@@ -72,7 +72,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/tiagobcx/bamboo_test/releases/latest | jq -r '.body' )"
+          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/Checkmarx/ast-cli/releases/latest | jq -r '.body' )"
           body_release="${body_release//$'\n'/'%0A'}"
           echo "::set-output name=body_release::$body_release"
 
