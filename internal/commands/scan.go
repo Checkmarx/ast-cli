@@ -58,7 +58,6 @@ const (
 	containerScanOutput             = "/path"
 	containerScanFormatFlag         = "--report-formats"
 	containerScanFormatOutput       = "json"
-	noResultsError                  = "No results available"
 	kicsExitCode                    = "exit status 40"
 	kicsExitCodeNoResults           = "exit status 50"
 	containerStarting               = "Starting kics container"
@@ -1783,7 +1782,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	} else {
 		// Case kics returns the noResults error code
 		if err != nil && kicsExitCodeNoResults == err.Error() {
-			return errors.Errorf("%s", noResultsError)
+			return nil
 		} // Need this to get correct error message when the container execution actually fails
 		if err != nil && kicsExitCodeNoResults != err.Error() {
 			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
