@@ -3,75 +3,56 @@
 package integration
 
 import (
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 	"testing"
 )
 
-func TestPrDecorationMissingScanID(t *testing.T) {
-	args := []string{
-		"utils",
-		"pr",
-	}
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "failed creating PR Decoration: Please provide scan-id flag")
-}
-
-func TestPrDecorationMissingNamespaceFlag(t *testing.T) {
-	args := []string{
-		"utils",
-		"pr",
-		"--scan-id",
-		"4e6dd120-c126-484e-91d9-161a8e4f2bb1",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "failed creating PR Decoration: Please provide namespace flag")
-}
-
-func TestPrDecorationMissingPRNumberFlag(t *testing.T) {
-	args := []string{
-		"utils",
-		"pr",
-		"--scan-id",
-		"4e6dd120-c126-484e-91d9-161a8e4f2bb1",
-		"--namespace",
-		"jay-nanduri",
-		"--repo-name",
-		"testGHAction",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "failed creating PR Decoration: Please provide pr-number flag")
-}
-
-func TestPrDecorationMissingRepoFlag(t *testing.T) {
-	args := []string{
-		"utils",
-		"pr",
-		"--scan-id",
-		"4e6dd120-c126-484e-91d9-161a8e4f2bb1",
-		"--namespace",
-		"jay-nanduri",
-		"--pr-number",
-		"1",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "failed creating PR Decoration: Please provide repo-name flag")
-}
-
 func TestPRDecorationSuccessCase(t *testing.T) {
+	_ = viper.BindEnv(params.SCMTokenKey)
+	_ = viper.BindEnv(params.CxScanKey)
+	_ = viper.BindEnv(params.OrgNamespaceKey)
+	_ = viper.BindEnv(params.OrgRepoNameKey)
+	_ = viper.BindEnv(params.PRNumberKey)
+
 	args := []string{
 		"utils",
 		"pr",
-		"--scan-id",
-		"4e6dd120-c126-484e-91d9-161a8e4f2bb1",
-		"--namespace",
-		"jay-nanduri",
-		"--pr-number",
-		"1",
-		"--repo-name",
-		"testGHAction",
+		flag(params.ScanIDFlag),
+		viper.GetString(params.CxScanKey),
+		flag(params.SCMTokenFlag),
+		viper.GetString(params.SCMTokenKey),
+		flag(params.NamespaceFlag),
+		viper.GetString(params.OrgNamespaceKey),
+		flag(params.PRNumberFlag),
+		viper.GetString(params.PRNumberKey),
+		flag(params.RepoNameFlag),
+		viper.GetString(params.OrgRepoNameKey),
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Response status code 201")
+}
+
+func TestPRDecorationFailure(t *testing.T) {
+	_ = viper.BindEnv(params.SCMTokenKey)
+	_ = viper.BindEnv(params.OrgNamespaceKey)
+	_ = viper.BindEnv(params.OrgRepoNameKey)
+	_ = viper.BindEnv(params.PRNumberKey)
+
+	args := []string{
+		"utils",
+		"pr",
+		flag(params.ScanIDFlag),
+		"",
+		flag(params.SCMTokenFlag),
+		viper.GetString(params.SCMTokenKey),
+		flag(params.NamespaceFlag),
+		viper.GetString(params.OrgNamespaceKey),
+		flag(params.PRNumberFlag),
+		viper.GetString(params.PRNumberKey),
+		flag(params.RepoNameFlag),
+		viper.GetString(params.OrgRepoNameKey),
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Value of scan-id is invalid")
 }

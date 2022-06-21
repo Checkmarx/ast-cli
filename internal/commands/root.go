@@ -81,6 +81,11 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryFlag, params.RetryDefault, params.RetryUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
+	rootCmd.PersistentFlags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
+	rootCmd.PersistentFlags().String(params.NamespaceFlag, "", params.NamespaceFlagUsage)
+	rootCmd.PersistentFlags().String(params.RepoNameFlag, "", params.RepoNameFlagUsage)
+	rootCmd.PersistentFlags().String(params.PRNumberFlag, "", params.PRNumberFlagUsage)
+	rootCmd.PersistentFlags().String(params.ScanIDFlag, "", params.ScanIDFlagUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
@@ -105,7 +110,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(params.BaseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(params.AstAPIKeyFlag))
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
-	_ = viper.BindPFlag(params.SCMTokenKey, rootCmd.PersistentFlags().Lookup(params.ScmTokenRef))
+	_ = viper.BindPFlag(params.SCMTokenKey, rootCmd.PersistentFlags().Lookup(params.SCMTokenFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))

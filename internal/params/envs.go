@@ -47,4 +47,8 @@ const (
 	LogsPathEnv                         = "CX_LOGS_PATH"
 	LogsEngineLogPathEnv                = "CX_LOGS_ENGINE_LOG_PATH"
 	SCMTokenEnv                         = "CX_SCM_TOKEN"
+	OrgNamespaceEnv                     = "CX_GH_NAMESPACE"
+	OrgRepoNameEnv                      = "CX_GH_REPONAME"
+	PRNumberEnv                         = "CX_PR_NUMBER"
+	CxScanID                            = "CX_SCAN_ID"
 )

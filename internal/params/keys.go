@@ -49,4 +49,8 @@ var (
 	SastResultsPredicatesPathKey        = strings.ToLower(SastResultsPredicatesPathEnv)
 	KicsResultsPredicatesPathKey        = strings.ToLower(KicsResultsPredicatesPathEnv)
 	SCMTokenKey                         = strings.ToLower(SCMTokenEnv)
+	OrgNamespaceKey                     = strings.ToLower(OrgNamespaceEnv)
+	OrgRepoNameKey                      = strings.ToLower(OrgRepoNameEnv)
+	PRNumberKey                         = strings.ToLower(PRNumberEnv)
+	CxScanKey                           = strings.ToLower(CxScanID)
 )

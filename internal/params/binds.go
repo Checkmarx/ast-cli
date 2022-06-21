@@ -51,4 +51,8 @@ var EnvVarsBinds = []struct {
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 	{ClientTimeoutKey, ClientTimeoutEnv, "5"},
 	{SCMTokenKey, SCMTokenEnv, ""},
+	{OrgNamespaceKey, OrgNamespaceEnv, ""},
+	{OrgRepoNameKey, OrgRepoNameEnv, ""},
+	{PRNumberKey, PRNumberEnv, ""},
+	{CxScanKey, CxScanID, ""},
 }
