@@ -606,13 +606,11 @@ func TestRunKicsScan(t *testing.T) {
 }
 
 func TestRunKicsScanWithouResults(t *testing.T) {
-	args := []string{
+	outputBuffer := executeCmdNilAssertion(
+		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValue,
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "No results available")
+		flag(params.KicsRealtimeFile), fileSourceValue)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
 func TestRunKicsScanWithoutFileSources(t *testing.T) {
