@@ -99,3 +99,6 @@ brews:
       # Install fish completion
       output = Utils.popen_read("#{bin}/cx utils completion -s fish")
       (fish_completion/"cx.fish").write output
+
+changelog:
+  use: github-native
