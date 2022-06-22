@@ -2,23 +2,20 @@ package util
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"strconv"
 
-	"github.com/checkmarx/ast-cli/internal/params"
-
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
-	failedCreatingPRDecoration = "failed creating PR Decoration"
-	pleaseProvideFlag          = "%s: Please provide %s flag"
-	invalidFlag                = "Value of %s is invalid"
+	invalidFlag = "Value of %s is invalid"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
@@ -130,7 +127,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		if errorModel != nil {
-			errors.Errorf("Failed creating PR Decoration")
+			return errors.Errorf("Failed creating PR Decoration")
 		}
 
 		if prResponse != nil {

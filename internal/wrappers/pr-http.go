@@ -36,7 +36,7 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 		log.Println("Failed to marshal request")
 	}
 	log.Printf("Sending PR decoration request for scanID: %s\n", model.ScanID)
-	resp, err := SendHTTPRequestWithJsonContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	return handlePRResponseWithBody(resp, err)
 }
 

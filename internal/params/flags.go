@@ -28,7 +28,7 @@ const (
 	BranchFlag                   = "branch"
 	BranchFlagSh                 = "b"
 	ScanIDFlag                   = "scan-id"
-  ScanIDFlagUsage              = "Cx unique scan-id for the scan created in AST"
+	ScanIDFlagUsage              = "Cx unique scan-id for the scan created in AST"
 	BranchFlagUsage              = "Branch to scan"
 	MainBranchFlag               = "branch"
 	ScaResolverFlag              = "sca-resolver"
@@ -115,15 +115,14 @@ const (
 	KicsFilterUsage = "KICS filter"
 	ScaFilterFlag   = "sca-filter"
 	ScaFilterUsage  = "SCA filter"
-  
-  // PR decoration flags
-  NamespaceFlag            = "namespace"
-	NamespaceFlagUsage       = "Github namespace is required to post the comments"
-	RepoNameFlag             = "repo-name"
-	RepoNameFlagUsage        = "Github repository details"
-	PRNumberFlag             = "pr-number"
-	PRNumberFlagUsage        = "Pull Request number for posting notifications and comments"
 
+	// PR decoration flags
+	NamespaceFlag      = "namespace"
+	NamespaceFlagUsage = "Github namespace is required to post the comments"
+	RepoNameFlag       = "repo-name"
+	RepoNameFlagUsage  = "Github repository details"
+	PRNumberFlag       = "pr-number"
+	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
 )
 
 // Parameter values

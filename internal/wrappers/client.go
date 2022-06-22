@@ -306,7 +306,7 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	return nil
 }
 
-func SendHTTPRequestWithJsonContentType(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
 	fullURL := GetURL(path)
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)

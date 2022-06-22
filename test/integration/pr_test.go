@@ -3,9 +3,10 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
-	"testing"
 )
 
 func TestPRDecorationSuccessCase(t *testing.T) {
