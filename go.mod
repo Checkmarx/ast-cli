@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
-	github.com/gookit/color v1.5.0
+	github.com/gookit/color v1.5.1
 	github.com/mssola/user_agent v0.5.3
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.4.0
@@ -36,5 +36,5 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
