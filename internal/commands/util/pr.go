@@ -135,6 +135,5 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		return nil
-
 	}
 }

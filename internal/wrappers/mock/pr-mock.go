@@ -12,7 +12,6 @@ func (pr *PRMockWrapper) PostPRDecoration(model *wrappers.PRModel) (
 	*wrappers.WebError,
 	error,
 ) {
-
 	return &wrappers.PRResponseModel{
 		Message: "PR comment created successfully.",
 	}, nil, nil
