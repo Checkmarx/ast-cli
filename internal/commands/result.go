@@ -908,10 +908,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection) *wrappers.ScanResultsCollection {
 	var currentId string
 	for _, result := range resultsModel.Results {
-		if result.Type=="sca" {
+		if result.Type == "sca" {
 			currentId = result.ScanResultData.PackageIdentifier
 			for _, packages := range *scaPackageModel {
-				if packages.Id == currentId{
+				if packages.Id == currentId {
 					result.ScanResultData.ScaPackageCollection = &packages
 				}
 			}

@@ -15,14 +15,14 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	path string
+	path           string
 	scaPackagePath string
 }
 
 func NewHTTPResultsWrapper(path, scaPackagePath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		path: path,
-		scaPackagePath:scaPackagePath,
+		path:           path,
+		scaPackagePath: scaPackagePath,
 	}
 }
 
@@ -70,7 +70,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = "10000"
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.scaPackagePath + params[commonParams.ScanIDQueryParam] + "/packages", params, nil, clientTimeout)
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/packages", params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
