@@ -573,7 +573,7 @@ func ReadResults(
 		if errorModel != nil {
 			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
-		//
+		// Enrich sca results
 		if scaPackageModel != nil {
 			resultsModel.ScanID = scanID
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
