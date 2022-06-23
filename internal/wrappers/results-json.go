@@ -83,7 +83,7 @@ type ScanResultData struct {
 	PackageData          []*ScanResultPackageData `json:"packageData,omitempty"`
 	PackageID            []*ScanResultPackageData `json:"packageId,omitempty"`
 	PackageIdentifier    string                   `json:"packageIdentifier,omitempty"`
-	ScaPackageCollection *ScaPackageCollection    `json:"scaPackageCollection,omitempty"`
+	ScaPackageCollection *ScaPackageCollection    `json:"scaPackageData,omitempty"`
 	// Added to support kics results
 	Line          uint   `json:"line,omitempty"`
 	Platform      string `json:"platform,omitempty"`
