@@ -115,7 +115,7 @@ func TestAuthRegister(t *testing.T) {
 		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
 		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
 	)
-	assert.Error(t, err, "User does not have permission for roles [ast-admin ast-scanner]")
+	assert.Assert(t, err == nil)
 }
 
 func TestFailProxyAuth(t *testing.T) {
