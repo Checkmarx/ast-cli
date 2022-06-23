@@ -579,7 +579,6 @@ func ReadResults(
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
 			return resultsModel, nil
 		}
-
 	}
 	return nil, nil
 }
@@ -906,13 +905,15 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 }
 
 func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection) *wrappers.ScanResultsCollection {
-	var currentId string
+	var currentID string
 	for _, result := range resultsModel.Results {
-		if result.Type == "sca" {
-			currentId = result.ScanResultData.PackageIdentifier
+		if result.Type == scaType {
+			currentID = result.ScanResultData.PackageIdentifier
 			for _, packages := range *scaPackageModel {
-				if packages.Id == currentId {
-					result.ScanResultData.ScaPackageCollection = &packages
+				currentPackage := packages
+				if packages.ID == currentID {
+					result.ScanResultData.ScaPackageCollection = &currentPackage
+					break
 				}
 			}
 		}
