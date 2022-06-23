@@ -6,6 +6,11 @@ import (
 
 type ResultsMockWrapper struct{}
 
+func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]string) (*[]wrappers.ScaPackageCollection, *wrappers.WebError, error) {
+	var scaPackage []wrappers.ScaPackageCollection
+	return &scaPackage, nil, nil
+}
+
 func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (
 	*wrappers.ScanResultsCollection,
 	*wrappers.WebError,
