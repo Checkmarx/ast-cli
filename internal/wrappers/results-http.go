@@ -16,11 +16,13 @@ const (
 
 type ResultsHTTPWrapper struct {
 	path string
+	scaPackagePath string
 }
 
-func NewHTTPResultsWrapper(path string) ResultsWrapper {
+func NewHTTPResultsWrapper(path, scaPackagePath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
 		path: path,
+		scaPackagePath:scaPackagePath,
 	}
 }
 
@@ -50,6 +52,42 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := ScanResultsCollection{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+		}
+		return &model, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]string) (
+	*[]ScaPackageCollection,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	// AST has a limit of 10000 results, this makes it get all of them
+	params["limit"] = "10000"
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.scaPackagePath + params[commonParams.ScanIDQueryParam] + "/packages", params, nil, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		var model []ScaPackageCollection
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)

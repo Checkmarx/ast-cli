@@ -554,17 +554,32 @@ func ReadResults(
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
+	var scaPackageModel *[]wrappers.ScaPackageCollection
 	var errorModel *wrappers.WebError
+
 	params[commonParams.ScanIDQueryParam] = scanID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if resultsModel != nil {
-		resultsModel.ScanID = scanID
-		return resultsModel, nil
+		scaPackageModel, errorModel, err = resultsWrapper.GetAllResultsPackageByScanID(params)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		//
+		if scaPackageModel != nil {
+			resultsModel.ScanID = scanID
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
+			return resultsModel, nil
+		}
+
 	}
 	return nil, nil
 }
@@ -888,4 +903,19 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	} else if summary.ScaIssues == notAvailableNumber {
 		summary.ScaIssues = 0
 	}
+}
+
+func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection) *wrappers.ScanResultsCollection {
+	var currentId string
+	for _, result := range resultsModel.Results {
+		if result.Type=="sca" {
+			currentId = result.ScanResultData.PackageIdentifier
+			for _, packages := range *scaPackageModel {
+				if packages.Id == currentId{
+					result.ScanResultData.ScaPackageCollection = &packages
+				}
+			}
+		}
+	}
+	return resultsModel
 }

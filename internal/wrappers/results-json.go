@@ -39,11 +39,15 @@ type VulnerabilityDetails struct {
 }
 
 type VulnerabilityCVSS struct {
-	Version          int    `json:"version,omitempty"`
-	AttackVector     string `json:"attackVector,omitempty"`
-	Availability     string `json:"availability,omitempty"`
-	Confidentiality  string `json:"confidentiality,omitempty"`
-	AttackComplexity string `json:"attackComplexity,omitempty"`
+	Version            int    `json:"version,omitempty"`
+	AttackVector       string `json:"attackVector,omitempty"`
+	Availability       string `json:"availability,omitempty"`
+	Confidentiality    string `json:"confidentiality,omitempty"`
+	AttackComplexity   string `json:"attackComplexity,omitempty"`
+	IntegrityImpact    string `json:"integrityImpact,omitempty"`
+	Scope              string `json:"scope,omitempty"`
+	PrivilegesRequired string `json:"privilegesRequired,omitempty"`
+	UserInteraction    string `json:"userInteraction,omitempty"`
 }
 
 type ScanResultNode struct {
@@ -69,15 +73,17 @@ type ScanResultPackageData struct {
 }
 
 type ScanResultData struct {
-	QueryID      interface{}              `json:"queryId,omitempty"`
-	QueryName    string                   `json:"queryName,omitempty"`
-	Group        string                   `json:"group,omitempty"`
-	ResultHash   string                   `json:"resultHash,omitempty"`
-	LanguageName string                   `json:"languageName,omitempty"`
-	Description  string                   `json:"description,omitempty"`
-	Nodes        []*ScanResultNode        `json:"nodes,omitempty"`
-	PackageData  []*ScanResultPackageData `json:"packageData,omitempty"`
-	PackageID    []*ScanResultPackageData `json:"packageId,omitempty"`
+	QueryID              interface{}              `json:"queryId,omitempty"`
+	QueryName            string                   `json:"queryName,omitempty"`
+	Group                string                   `json:"group,omitempty"`
+	ResultHash           string                   `json:"resultHash,omitempty"`
+	LanguageName         string                   `json:"languageName,omitempty"`
+	Description          string                   `json:"description,omitempty"`
+	Nodes                []*ScanResultNode        `json:"nodes,omitempty"`
+	PackageData          []*ScanResultPackageData `json:"packageData,omitempty"`
+	PackageID            []*ScanResultPackageData `json:"packageId,omitempty"`
+	PackageIdentifier    string                   `json:"packageIdentifier,omitempty"`
+	ScaPackageCollection *ScaPackageCollection	   `json:"scaPackageCollection,omitempty"`
 	// Added to support kics results
 	Line          uint   `json:"line,omitempty"`
 	Platform      string `json:"platform,omitempty"`
