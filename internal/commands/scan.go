@@ -73,7 +73,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
+	actualScanTypes         = "sast,kics,sca,apisec"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -101,6 +101,7 @@ func NewScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	riskOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -115,7 +116,13 @@ func NewScanCommand(
 		},
 	}
 
-	createScanCmd := scanCreateSubCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, groupsWrapper)
+	createScanCmd := scanCreateSubCommand(
+		scansWrapper,
+		uploadsWrapper,
+		resultsWrapper,
+		projectsWrapper,
+		groupsWrapper,
+		riskOverviewWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper)
 
@@ -354,6 +361,7 @@ func scanCreateSubCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -371,7 +379,13 @@ func scanCreateSubCommand(
 			`,
 			),
 		},
-		RunE: runCreateScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, groupsWrapper),
+		RunE: runCreateScanCommand(
+			scansWrapper,
+			uploadsWrapper,
+			resultsWrapper,
+			projectsWrapper,
+			groupsWrapper,
+			risksOverviewWrapper),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(
@@ -425,7 +439,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca, apisec)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -608,6 +622,10 @@ func setupScanTypeProjectAndConfig(
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
+	var apiSecConfig = addApiSecScan(cmd)
+	if apiSecConfig != nil {
+		configArr = append(configArr, apiSecConfig)
+	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
@@ -653,6 +671,15 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
+func addApiSecScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.ApiSecType) {
+		apiSecMapConfig := make(map[string]interface{})
+		apiSecMapConfig["type"] = commonParams.ApiSecType
+		return apiSecMapConfig
+	}
+	return nil
+}
+
 func validateScanTypes(cmd *cobra.Command) {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
@@ -666,7 +693,15 @@ func validateScanTypes(cmd *cobra.Command) {
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
 			isValid = true
+		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.ApiSecType) {
+			if scanTypeEnabled(commonParams.SastType) {
+				isValid = true
+			} else {
+				log.Println("Error: scan-type 'apisec' only works when  scan-type 'sast' is also provided.")
+				os.Exit(1)
+			}
 		}
+
 		if !isValid {
 			log.Println(fmt.Sprintf("Error: unknown scan type: %s", scanType))
 			os.Exit(1)
@@ -1077,6 +1112,7 @@ func runCreateScanCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		branch := viper.GetString(commonParams.BranchKey)
@@ -1109,7 +1145,14 @@ func runCreateScanCommand(
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-			err = handleWait(cmd, scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper)
+			err = handleWait(
+				cmd,
+				scanResponseModel,
+				waitDelay,
+				timeoutMinutes,
+				scansWrapper,
+				resultsWrapper,
+				risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1124,10 +1167,10 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
-			if err != nil {
-				return err
-			}
+		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+		if err != nil {
+			return err
+		}
 		}
 
 		return nil
@@ -1268,8 +1311,16 @@ func handleWait(
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
-	err := waitForScanCompletion(scanResponseModel, waitDelay, timeoutMinutes, scansWrapper, resultsWrapper, cmd)
+	err := waitForScanCompletion(
+		scanResponseModel,
+		waitDelay,
+		timeoutMinutes,
+		scansWrapper,
+		resultsWrapper,
+		risksOverviewWrapper,
+		cmd)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -1287,6 +1338,7 @@ func createReportsAfterScan(
 	scanID string,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1301,6 +1353,7 @@ func createReportsAfterScan(
 	}
 	return CreateScanReport(
 		resultsWrapper,
+		risksOverviewWrapper,
 		scansWrapper,
 		scanID,
 		reportFormats,
@@ -1391,13 +1444,14 @@ func waitForScanCompletion(
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	cmd *cobra.Command,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
 	time.Sleep(time.Duration(waitDelay) * time.Second)
 	for {
-		running, err := isScanRunning(scansWrapper, resultsWrapper, scanResponseModel.ID, cmd)
+		running, err := isScanRunning(scansWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
 		}
@@ -1421,7 +1475,8 @@ func waitForScanCompletion(
 }
 
 func isScanRunning(
-	scansWrapper wrappers.ScansWrapper, resultsWrapper wrappers.ResultsWrapper, scanID string, cmd *cobra.Command,
+	scansWrapper wrappers.ScansWrapper, resultsWrapper wrappers.ResultsWrapper,
+	risksOverViewWrapper wrappers.RisksOverviewWrapper, scanID string, cmd *cobra.Command,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -1441,7 +1496,12 @@ func isScanRunning(
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
 		_ = printer.Print(cmd.OutOrStdout(), scanResponseModel.StatusDetails, printer.FormatList)
-		reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+		reportErr := createReportsAfterScan(
+			cmd,
+			scanResponseModel.ID,
+			scansWrapper,
+			resultsWrapper,
+			risksOverViewWrapper)
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}

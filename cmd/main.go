@@ -31,6 +31,7 @@ func main() {
 	logs := viper.GetString(params.LogsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
+	risksOverview := viper.GetString(params.RisksOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
@@ -42,6 +43,7 @@ func main() {
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -59,6 +61,7 @@ func main() {
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
+		risksOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
@@ -100,7 +103,8 @@ func bindKeysToEnvAndDefault() {
 
 func exitListener() {
 	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
+	signal.Notify(
+		signalChanel,
 		syscall.SIGTERM)
 	go signalHandler(signalChanel)
 }

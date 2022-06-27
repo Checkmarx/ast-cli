@@ -155,9 +155,10 @@ const (
 
 // Results
 const (
-	SastType = "sast"
-	KicsType = "kics"
-	ScaType  = "sca"
+	SastType   = "sast"
+	KicsType   = "kics"
+	ScaType    = "sca"
+	ApiSecType = "apisec"
 )
 
 // ScaAgent AST Role

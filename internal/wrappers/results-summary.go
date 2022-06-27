@@ -8,6 +8,7 @@ type ResultSummary struct {
 	SastIssues      int
 	KicsIssues      int
 	ScaIssues       int
+	ApiSecurity     ApiSecResult
 	RiskStyle       string
 	RiskMsg         string
 	Status          string
@@ -23,6 +24,12 @@ type ResultSummary struct {
 	ScanInfoMessage string
 }
 
+type ApiSecResult struct {
+	APICount        int   `json:"api_count"`
+	TotalRisksCount int   `json:"total_risks_count"`
+	Risks           []int `json:"risks"`
+}
+
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 <!DOCTYPE html>
 <html lang="en">
@@ -32,7 +39,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
     <meta http-equiv="Content-Language" content="en-us">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Checkmarx test report</title>
+    <title>Checkmarx Scan Report</title>
     <style type="text/css">
         * {
             box-sizing: border-box;
@@ -62,6 +69,10 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
         .bg-sca {
             background-color: #0fcdc2 !important;
+        }
+
+		.bg-api-sec {
+            background-color: #bdbdbd !important;
         }
 
         .header-row .cx-info .data .calendar-svg {
@@ -141,7 +152,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
 
         .top-row .element {
-            margin: 0 3rem 6rem;
+            margin: 0 3rem 2rem;
         }
 
         .top-row .risk-level-tile .value {
@@ -237,6 +248,40 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             justify-content: space-evenly;
             padding: 20px;
             width: 100%;
+        }
+
+		.second-row {
+            -ms-flex-pack: justify;
+            -webkit-box-pack: justify;
+            align-items: normal;
+            display: flex;
+            justify-content: space-evenly;
+            padding: 20px;
+            width: 100%;
+			height: 100px;
+        }
+
+		.second-row .element {
+            -ms-flex-direction: column;
+            -ms-flex-pack: justify;
+            -webkit-box-direction: normal;
+            -webkit-box-orient: vertical;
+            -webkit-box-pack: justify;
+            -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            color: #565360;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100px;
+            padding: 16px 20px;
+            width: 24.5%;
+			margin: 0 3rem 2rem;
+			position: fixed;
+    		right: 40px;
+			
         }
 
         .bar-chart .progress .progress-bar.bg-danger {
@@ -434,18 +479,29 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
+                    <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
+                        <div class="severity-engines-text bg-api-sec"></div>
+                    </div>
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
                         <div class="progress">
                             <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
                             <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
-														<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
+							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
+							<div class="progress-bar bg-api-sec value">{{.ApiSecurity.TotalRisksCount}}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>`
+            </div>
+        </div><hr>
+		<div class="second-row">
+				<div class="element">
+                	<div class="total">Detected APIs</div>
+ 					<div class="total">{{.ApiSecurity.APICount}}</div>
+                </div>
+		</div>`
 
 const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
