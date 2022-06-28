@@ -622,7 +622,7 @@ func setupScanTypeProjectAndConfig(
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
-	var apiSecConfig = addAPISecScan(cmd)
+	var apiSecConfig = addAPISecScan()
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
@@ -671,7 +671,7 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
+func addAPISecScan() map[string]interface{} {
 	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecType) {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecMapConfig["type"] = commonParams.APISecType

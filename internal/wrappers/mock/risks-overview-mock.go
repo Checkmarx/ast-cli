@@ -9,7 +9,6 @@ func (r RisksOverviewMockWrapper) GetAllAPISecRisksByScanID(scanID string) (
 	*wrappers.WebError,
 	error,
 ) {
-	const mock = "MOCK"
 	return &wrappers.APISecResult{
 		APICount:        0,
 		TotalRisksCount: 0,
