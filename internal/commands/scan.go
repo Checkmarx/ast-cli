@@ -622,7 +622,7 @@ func setupScanTypeProjectAndConfig(
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
-	var apiSecConfig = addApiSecScan(cmd)
+	var apiSecConfig = addAPISecScan(cmd)
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
@@ -671,10 +671,10 @@ func addScaScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addApiSecScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.ApiSecType) {
+func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecType) {
 		apiSecMapConfig := make(map[string]interface{})
-		apiSecMapConfig["type"] = commonParams.ApiSecType
+		apiSecMapConfig["type"] = commonParams.APISecType
 		return apiSecMapConfig
 	}
 	return nil
@@ -693,7 +693,7 @@ func validateScanTypes(cmd *cobra.Command) {
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
 			isValid = true
-		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.ApiSecType) {
+		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecType) {
 			if scanTypeEnabled(commonParams.SastType) {
 				isValid = true
 			} else {

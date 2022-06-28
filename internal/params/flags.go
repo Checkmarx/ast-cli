@@ -158,7 +158,7 @@ const (
 	SastType   = "sast"
 	KicsType   = "kics"
 	ScaType    = "sca"
-	ApiSecType = "apisec"
+	APISecType = "apisec"
 )
 
 // ScaAgent AST Role

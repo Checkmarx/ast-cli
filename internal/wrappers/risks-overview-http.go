@@ -20,8 +20,8 @@ func NewHTTPRisksOverviewWrapper(path string) RisksOverviewWrapper {
 	}
 }
 
-func (r *RisksOverviewHTTPWrapper) GetAllApiSecRisksByScanID(scanID string) (
-	*ApiSecResult,
+func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
+	*APISecResult,
 	*WebError,
 	error,
 ) {
@@ -44,7 +44,7 @@ func (r *RisksOverviewHTTPWrapper) GetAllApiSecRisksByScanID(scanID string) (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := ApiSecResult{}
+		model := APISecResult{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)

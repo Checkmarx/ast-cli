@@ -298,14 +298,14 @@ func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.R
 func SummaryReport(
 	scanWrapper wrappers.ScansWrapper,
 	results *wrappers.ScanResultsCollection,
-	apiSecRisks *wrappers.ApiSecResult,
+	apiSecRisks *wrappers.APISecResult,
 	scanID string,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := getScanInfo(scanWrapper, scanID)
 	if err != nil {
 		return nil, err
 	}
-	summary.ApiSecurity = *apiSecRisks
+	summary.APISecurity = *apiSecRisks
 	summary.BaseURI = wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
 	for _, result := range results.Results {
 		countResult(summary, result)
@@ -376,7 +376,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf(
 			"              API Security - Total Detected APIs: %d                       \n",
-			summary.ApiSecurity.APICount)
+			summary.APISecurity.APICount)
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
@@ -395,7 +395,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
 			fmt.Printf(
 				"              |               APIS WITH RISK: %d |     \n",
-				summary.ApiSecurity.TotalRisksCount)
+				summary.APISecurity.TotalRisksCount)
 		}
 		if summary.ScaIssues == notAvailableNumber {
 			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
@@ -501,14 +501,17 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	apiSecRisks, err := getResultsForApiSecScanner(risksOverviewWrapper, scanID)
+	apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scanID)
+	if err != nil {
+		return err
+	}
 	summary, err := SummaryReport(scanWrapper, results, apiSecRisks, scanID)
 	if err != nil {
 		return err
 	}
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, targetFile, targetPath, results, summary, apiSecRisks)
+		err = createReport(reportType, targetFile, targetPath, results, summary)
 		if err != nil {
 			return err
 		}
@@ -516,14 +519,14 @@ func CreateScanReport(
 	return nil
 }
 
-func getResultsForApiSecScanner(
+func getResultsForAPISecScanner(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanID string,
-) (results *wrappers.ApiSecResult, err error) {
-	var apiSecResultsModel *wrappers.ApiSecResult
+) (results *wrappers.APISecResult, err error) {
+	var apiSecResultsModel *wrappers.APISecResult
 	var errorModel *wrappers.WebError
 
-	apiSecResultsModel, errorModel, err = risksOverviewWrapper.GetAllApiSecRisksByScanID(scanID)
+	apiSecResultsModel, errorModel, err = risksOverviewWrapper.GetAllAPISecRisksByScanID(scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
@@ -533,7 +536,6 @@ func getResultsForApiSecScanner(
 		return apiSecResultsModel, nil
 	}
 	return nil, nil
-
 }
 
 func isScanPending(scanStatus string) bool {
@@ -548,7 +550,6 @@ func createReport(
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
-	apiSecRisks *wrappers.ApiSecResult,
 ) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage

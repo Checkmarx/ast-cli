@@ -8,7 +8,7 @@ type ResultSummary struct {
 	SastIssues      int
 	KicsIssues      int
 	ScaIssues       int
-	ApiSecurity     ApiSecResult
+	APISecurity     APISecResult
 	RiskStyle       string
 	RiskMsg         string
 	Status          string
@@ -24,7 +24,7 @@ type ResultSummary struct {
 	ScanInfoMessage string
 }
 
-type ApiSecResult struct {
+type APISecResult struct {
 	APICount        int   `json:"api_count"`
 	TotalRisksCount int   `json:"total_risks_count"`
 	Risks           []int `json:"risks"`
@@ -489,7 +489,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
                             <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
 							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
-							<div class="progress-bar bg-api-sec value">{{.ApiSecurity.TotalRisksCount}}</div>
+							<div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
                         </div>
                     </div>
                 </div>
@@ -499,7 +499,7 @@ const nonAsyncSummary = `<div class="top-row">
 		<div class="second-row">
 				<div class="element">
                 	<div class="total">Detected APIs</div>
- 					<div class="total">{{.ApiSecurity.APICount}}</div>
+ 					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
 		</div>`
 

@@ -1,5 +1,5 @@
 package wrappers
 
 type RisksOverviewWrapper interface {
-	GetAllApiSecRisksByScanID(scanID string) (*ApiSecResult, *WebError, error)
+	GetAllAPISecRisksByScanID(scanID string) (*APISecResult, *WebError, error)
 }
