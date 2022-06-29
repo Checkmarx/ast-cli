@@ -641,11 +641,3 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
-
-func TestRetryMechanism(t *testing.T) {
-	response, error := wrappers.SendHTTPRequestByFullURL("GET", "http://127.0.0.1:5000/retry", nil, false, params.RetryDelayDefault)
-	if error != nil {
-		log.Default().Print(error)
-	}
-	log.Default().Println(response)
-}
