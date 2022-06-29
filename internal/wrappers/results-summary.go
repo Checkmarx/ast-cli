@@ -180,15 +180,15 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             color: #fcfdff;
         }
 
-				.top-row .risk-level-tile.medium {
-					background-color: #f9ae4d;
-					color: #fcfdff;
+		.top-row .risk-level-tile.medium {
+			background-color: #f9ae4d;
+			color: #fcfdff;
         }
 
-				.top-row .risk-level-tile.low {
-					background-color: #bdbdbd;
-					color: #fcfdff;
-				}
+		.top-row .risk-level-tile.low {
+			background-color: #bdbdbd;
+			color: #fcfdff;
+		}
 
         .chart .total {
             font-size: 24px;
@@ -281,7 +281,6 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 			margin: 0 3rem 2rem;
 			position: fixed;
     		right: 40px;
-			
         }
 
         .bar-chart .progress .progress-bar.bg-danger {

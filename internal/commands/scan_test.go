@@ -180,6 +180,7 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "kics")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
+	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,apisec")...)
 }
 
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
