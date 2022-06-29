@@ -626,7 +626,7 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,)
+		flag(params.KicsRealtimeEngine), engineValue)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -636,8 +636,16 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,
-		flag(params.KicsRealtimeAdditionalParams),additionalParamsValue)
+		flag(params.KicsRealtimeEngine), engineValue,
+		flag(params.KicsRealtimeAdditionalParams), additionalParamsValue)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRetryMechanism(t *testing.T) {
+	response, error := wrappers.SendHTTPRequestByFullURL("GET", "http://127.0.0.1:5000/retry", nil, false, params.RetryDelayDefault)
+	if error != nil {
+		log.Default().Print(error)
+	}
+	log.Default().Println(response)
 }
