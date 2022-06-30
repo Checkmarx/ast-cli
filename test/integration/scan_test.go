@@ -152,11 +152,11 @@ func TestCancelScan(t *testing.T) {
 	defer deleteProject(t, projectID)
 
 	// canceling too quickly after creating fails the scan...
-	time.Sleep(60 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanFailed, 60, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 60, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
