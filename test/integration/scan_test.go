@@ -147,13 +147,7 @@ func TestIncrementalScan(t *testing.T) {
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
-	// canceling too quickly after creating fails the scan...
-	time.Sleep(30 * time.Second)
 
-	defer cancelScan(t, scanID)
-	// canceling too quickly after creating fails the scan...
-
-	time.Sleep(30 * time.Second)
 	defer deleteScan(t, scanID)
 	defer deleteProject(t, projectID)
 
@@ -162,7 +156,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 60, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -399,11 +393,6 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
-}
-
-func cancelScan(t *testing.T, scanID string) {
-	log.Println("Cancelling the scan with id ", scanID)
-	executeCmdNilAssertion(t, "Cancelling a scan should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 }
 
 func deleteScan(t *testing.T, scanID string) {
