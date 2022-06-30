@@ -148,8 +148,10 @@ func TestIncrementalScan(t *testing.T) {
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
-	defer deleteProject(t, projectID)
+	defer cancelScan(t, scanID)
+
 	defer deleteScan(t, scanID)
+	defer deleteProject(t, projectID)
 
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
@@ -393,6 +395,11 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
+}
+
+func cancelScan(t *testing.T, scanID string) {
+	log.Println("Cancelling the scan with id ", scanID)
+	executeCmdNilAssertion(t, "Cancelling a scan should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 }
 
 func deleteScan(t *testing.T, scanID string) {
