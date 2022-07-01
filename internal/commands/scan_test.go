@@ -34,7 +34,6 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
-	scanFailed                    = "Check input file. Scan failed."
 )
 
 func TestScanHelp(t *testing.T) {

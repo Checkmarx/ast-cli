@@ -219,8 +219,8 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
-	_, err := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
-	assert.NilError(t, err, "Report file should exist for extension "+e)
+	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
 // Create a scan ignoring the exclusion of the .git directory
