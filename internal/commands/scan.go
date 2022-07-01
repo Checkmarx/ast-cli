@@ -94,6 +94,7 @@ var (
 		),
 	)
 	aditionalParameters []string
+	kicsErrorCodes      = []string{"50", "40", "30", "20"}
 )
 
 func NewScanCommand(
@@ -1771,29 +1772,31 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
 	definitely an incorrect behavior but the following check gets past it.
 	*/
+	if err == nil {
+		// no results
+		return nil
+	}
 
-	// This case is when kics successfully executes returning the expected error code
-	if err != nil && kicsExitCode == err.Error() {
-		var resultsModel wrappers.KicsResultsCollection
-		resultsModel, errs = readKicsResultsFile(tempDir)
-		if errs != nil {
-			return errors.Errorf("%s", errs)
-		}
-		var resultsJSON []byte
-		resultsJSON, errs = json.Marshal(resultsModel)
-		if errs != nil {
-			return errors.Errorf("%s", errs)
-		}
-		fmt.Println(string(resultsJSON))
-	} else {
-		// Case kics returns the noResults error code
-		if err != nil && kicsExitCodeNoResults == err.Error() {
+	if err != nil {
+		errorMessage := err.Error()
+		extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
+
+		if contains(kicsErrorCodes, extractedErrorCode) {
+			var resultsModel wrappers.KicsResultsCollection
+			resultsModel, errs = readKicsResultsFile(tempDir)
+			if errs != nil {
+				return errors.Errorf("%s", errs)
+			}
+			var resultsJSON []byte
+			resultsJSON, errs = json.Marshal(resultsModel)
+			if errs != nil {
+				return errors.Errorf("%s", errs)
+			}
+			fmt.Println(string(resultsJSON))
 			return nil
-		} // Need this to get correct error message when the container execution actually fails
-		if err != nil && kicsExitCodeNoResults != err.Error() {
-			return errors.Errorf("Check container engine state. Failed: %s", err.Error())
 		}
-		return errors.Errorf("Check input file. Scan failed.")
+
+		return errors.Errorf("Check container engine state. Failed: %s", err.Error())
 	}
 
 	return nil
