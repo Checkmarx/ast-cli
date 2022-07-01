@@ -369,5 +369,5 @@ func TestCreateRealtimeKicsMissingAdditionalParams(t *testing.T) {
 func TestCreateRealtimeKicsFailedScan(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValueEmpty}
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Error(t, err, scanFailed, err.Error())
+	assert.NilError(t, err)
 }

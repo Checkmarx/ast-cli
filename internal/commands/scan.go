@@ -58,8 +58,6 @@ const (
 	containerScanOutput             = "/path"
 	containerScanFormatFlag         = "--report-formats"
 	containerScanFormatOutput       = "json"
-	kicsExitCode                    = "exit status 40"
-	kicsExitCodeNoResults           = "exit status 50"
 	containerStarting               = "Starting kics container"
 	containerFormatInfo             = "The report format and output path cannot be overridden."
 	containerFolderRemoving         = "Removing folder in temp"
@@ -1796,7 +1794,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			return nil
 		}
 
-		return errors.Errorf("Check container engine state. Failed: %s", err.Error())
+		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
 
 	return nil
