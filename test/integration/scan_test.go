@@ -148,8 +148,8 @@ func TestIncrementalScan(t *testing.T) {
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
-	defer deleteScan(t, scanID)
 	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
 
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
