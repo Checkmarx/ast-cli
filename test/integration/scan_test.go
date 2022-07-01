@@ -156,7 +156,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 90, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -600,7 +600,8 @@ func TestRunKicsScan(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValueVul)
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -609,7 +610,8 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValue)
+		flag(params.KicsRealtimeFile), fileSourceValue,
+	)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
@@ -626,7 +628,8 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,)
+		flag(params.KicsRealtimeEngine), engineValue,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -636,8 +639,9 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,
-		flag(params.KicsRealtimeAdditionalParams),additionalParamsValue)
+		flag(params.KicsRealtimeEngine), engineValue,
+		flag(params.KicsRealtimeAdditionalParams), additionalParamsValue,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }

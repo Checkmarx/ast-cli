@@ -11,7 +11,7 @@ const (
 	RetryDefault                 = 3
 	RetryUsage                   = "Retry requests to AST on connection failure"
 	RetryDelayFlag               = "retry-delay"
-	RetryDelayDefault            = 3
+	RetryDelayDefault            = 20
 	RetryDelayUsage              = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                  = "file-source"
 	SourcesFlagSh                = "s"
