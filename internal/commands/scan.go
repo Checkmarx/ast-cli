@@ -1157,7 +1157,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1167,10 +1167,10 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-		err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
-		if err != nil {
-			return err
-		}
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
