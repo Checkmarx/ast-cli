@@ -192,6 +192,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
 	}
 
 	err, _ := executeCommand(t, args...)
