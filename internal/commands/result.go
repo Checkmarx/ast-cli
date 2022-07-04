@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -363,7 +364,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
 		fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
 		fmt.Printf("            Results Summary:                     \n")
-		fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
+		fmt.Printf(
+			"              Risk Level: %s																									 \n",
+			summary.RiskMsg)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
@@ -397,7 +400,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
-	summaryURL := fmt.Sprintf(strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1), summary.ScanID, summary.BranchName)
+	summaryURL := fmt.Sprintf(
+		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
+		summary.ScanID, url.QueryEscape(summary.BranchName))
 	return summaryURL
 }
 
@@ -434,12 +439,12 @@ func runGetCodeBashingCommand(
 			return err
 		}
 		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
-		url, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
+		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
 		}
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
-		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, codeBashingURL)
 		if err != nil {
 			return err
 		}
@@ -489,7 +494,9 @@ func CreateScanReport(
 }
 
 func isScanPending(scanStatus string) bool {
-	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(scanStatus, "Partial") || strings.EqualFold(scanStatus, "Failed"))
+	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(
+		scanStatus,
+		"Partial") || strings.EqualFold(scanStatus, "Failed"))
 }
 
 func createReport(
@@ -799,7 +806,8 @@ func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 
 func findDescriptionText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
-		return fmt.Sprintf("%s Value: %s Excepted value: %s",
+		return fmt.Sprintf(
+			"%s Value: %s Excepted value: %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
 	}
 
@@ -808,7 +816,8 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 
 func findHelpMarkdownText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
-		return fmt.Sprintf("%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
+		return fmt.Sprintf(
+			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
 	}
 
