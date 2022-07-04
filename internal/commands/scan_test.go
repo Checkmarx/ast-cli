@@ -34,7 +34,6 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
-	scanFailed                    = "Check input file. Scan failed."
 )
 
 func TestScanHelp(t *testing.T) {
@@ -368,6 +367,7 @@ func TestCreateRealtimeKicsMissingAdditionalParams(t *testing.T) {
 
 func TestCreateRealtimeKicsFailedScan(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValueEmpty}
-	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Error(t, err, scanFailed, err.Error())
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
 }
