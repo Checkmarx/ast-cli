@@ -199,6 +199,31 @@ func TestScanCreateWithThreshold(t *testing.T) {
 	assertError(t, err, "Threshold check finished with status Failed")
 }
 
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "json",
+		flag(params.TargetPathFlag), "/tmp/",
+		flag(params.TargetFlag), "results",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Threshold check finished with status Failed")
+
+	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.NilError(t, fileError, "Report file should exist for extension")
+}
+
 // Create a scan ignoring the exclusion of the .git directory
 // Assert the folder is included in the logs
 func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
