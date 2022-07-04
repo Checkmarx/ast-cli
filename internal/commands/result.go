@@ -912,6 +912,7 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
+					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
 				}

@@ -2,6 +2,7 @@ package wrappers
 
 type ScaPackageCollection struct {
 	ID                  string             `json:"id,omitempty"`
+	FixLink             string             `json:"fixLink,omitempty"`
 	Locations           []*string          `json:"locations,omitempty"`
 	DependencyPathArray [][]DependencyPath `json:"dependencyPaths,omitempty"`
 	Outdated            bool               `json:"outdated,omitempty"`
