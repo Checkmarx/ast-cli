@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -397,7 +398,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
-	summaryURL := fmt.Sprintf(strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1), summary.ScanID, summary.BranchName)
+	summaryURL := fmt.Sprintf(
+		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
+		summary.ScanID, url.QueryEscape(summary.BranchName))
 	return summaryURL
 }
 
