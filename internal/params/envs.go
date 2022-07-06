@@ -45,4 +45,5 @@ const (
 	SastScanIncMetricsPathEnv           = "CX_SAST_SCAN_INC_METRICS_PATH"
 	LogsPathEnv                         = "CX_LOGS_PATH"
 	LogsEngineLogPathEnv                = "CX_LOGS_ENGINE_LOG_PATH"
+	DescriptionsPathEnv                 = "CX_DESCRIPTIONS_PATH"
 )

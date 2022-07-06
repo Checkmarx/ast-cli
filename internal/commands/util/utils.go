@@ -17,7 +17,8 @@ const sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*
 func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	gitLabWrapper wrappers.GitLabWrapper) *cobra.Command {
+	gitLabWrapper wrappers.GitLabWrapper,
+	learnMoreWrapper wrappers.LearnMoreWrapper) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
@@ -39,7 +40,9 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 
 	completionCmd := NewCompletionCommand()
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper))
+	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
+
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, learnMoreCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper))
 
 	return utilsCmd
 }

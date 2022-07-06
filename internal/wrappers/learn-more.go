@@ -1,7 +1,7 @@
 package wrappers
 
 type LearnMoreResponseModel struct {
-	QueryId                uint64         `json:"queryId"`
+	QueryId                string         `json:"queryId"`
 	QueryName              string         `json:"queryName"`
 	QueryDescriptionId     string         `json:"queryDescriptionId"`
 	ResultDescription      string         `json:"resultDescription"'`
@@ -18,5 +18,5 @@ type sampleObject struct {
 }
 
 type LearnMoreWrapper interface {
-	GetLearnMoreDetails(string) (*LearnMoreResponseModel, *WebError, error)
+	GetLearnMoreDetails(map[string]string) (*[]LearnMoreResponseModel, *WebError, error)
 }
