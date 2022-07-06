@@ -1767,6 +1767,8 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	*/
 
 	// This case is when kics successfully executes returning the expected error code
+	test:=err.Error()
+	println(test)
 	if err != nil && kicsExitCode == err.Error() {
 		var resultsModel wrappers.KicsResultsCollection
 		resultsModel, errs = readKicsResultsFile(tempDir)

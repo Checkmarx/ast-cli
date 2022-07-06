@@ -904,14 +904,30 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
+
 func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection) *wrappers.ScanResultsCollection {
 	var currentID string
+	locationsByID := make(map[string][]*string)
+	// Create map to be used to populate locations for each package path
+	for _, result := range resultsModel.Results {
+		if result.Type == scaType {
+			currentID = result.ScanResultData.PackageIdentifier
+			for _, packages := range *scaPackageModel {
+				currentPackage := packages
+				locationsByID[packages.ID]=currentPackage.Locations
+			}
+		}
+	}
+
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
 			currentID = result.ScanResultData.PackageIdentifier
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
+					for index, dependencyPath := range currentPackage.DependencyPathArray{
+						currentPackage.DependencyPathArray[index][0].Locations = locationsByID[dependencyPath[0].ID]
+					}
 					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break

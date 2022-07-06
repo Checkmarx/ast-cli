@@ -9,9 +9,10 @@ type ScaPackageCollection struct {
 }
 
 type DependencyPath struct {
-	ID            string `json:"id,omitempty"`
-	Name          string `json:"name,omitempty"`
-	Version       string `json:"version,omitempty"`
-	IsResolved    bool   `json:"isResolved,omitempty"`
-	IsDevelopment bool   `json:"isDevelopment,omitempty"`
+	ID            string    `json:"id,omitempty"`
+	Name          string    `json:"name,omitempty"`
+	Version       string    `json:"version,omitempty"`
+	IsResolved    bool      `json:"isResolved,omitempty"`
+	IsDevelopment bool      `json:"isDevelopment,omitempty"`
+	Locations     []*string `json:"locations,omitempty"`
 }
