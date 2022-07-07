@@ -1,7 +1,6 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -12,17 +11,28 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"log"
-	"os"
-	"path/filepath"
 )
 
 const (
-	invalidFlag               = "Value of %s is invalid"
-	directoryPermission       = 0700
-	failedGettingDescriptions = "Failed getting the descriptions"
-	defaultFileName           = "cx_descriptions"
-	defaultFilePath           = "./"
+	invalidFlag = "Value of %s is invalid"
 )
+
+type sampleObjectView struct {
+	ProgLanguage string `json:"progLanguage"`
+	Code         string `json:"code"`
+	Title        string `json:"title"`
+}
+
+type LearnMoreResponseView struct {
+	QueryId                string             `json:"queryId"`
+	QueryName              string             `json:"queryName"`
+	QueryDescriptionId     string             `json:"queryDescriptionId"`
+	ResultDescription      string             `json:"resultDescription"'`
+	Risk                   string             `json:"risk"`
+	Cause                  string             `json:"cause"`
+	GeneralRecommendations string             `json:"generalRecommendations"`
+	Samples                []sampleObjectView `json:"samples"`
+}
 
 func NewLearnMoreCommand(wrapper wrappers.LearnMoreWrapper) *cobra.Command {
 	cmd := &cobra.Command{
@@ -43,10 +53,11 @@ func NewLearnMoreCommand(wrapper wrappers.LearnMoreWrapper) *cobra.Command {
 		RunE: runLearnMoreCmd(wrapper),
 	}
 	cmd.PersistentFlags().String(params.QueryIDFlag, "", "Query ID is needed")
-	cmd.PersistentFlags().String(params.TargetFormatFlag, "", "Default report format is summaryConsole")
-	cmd.PersistentFlags().String(params.TargetPathFlag, "", "Default output path is current directory")
-	cmd.PersistentFlags().String(params.TargetFlag, "", "Default report name")
-	markFlagAsRequired(cmd, params.QueryIDFlag)
+	cmd.PersistentFlags().String(params.FormatFlag, "", "Output in json/list/table format")
+	err := cmd.MarkPersistentFlagRequired(params.QueryIDFlag)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return cmd
 }
 
@@ -70,7 +81,20 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 
 		if LearnMoreResponse != nil {
 			logger.PrintIfVerbose(fmt.Sprintf("Response from wrapper: %s", LearnMoreResponse))
-			createReport(LearnMoreResponse, cmd)
+			format, _ := cmd.Flags().GetString(params.FormatFlag)
+			if format != "" {
+				learnMoreResponseView := toLearnMoreResponseView(LearnMoreResponse)
+				err := printer.Print(cmd.OutOrStdout(), learnMoreResponseView, format)
+				if err != nil {
+					return err
+				}
+			} else {
+				//err := writeSummaryConsole(LearnMoreResponse)
+				err := printSummaryConsole(LearnMoreResponse)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		return nil
@@ -78,39 +102,36 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 
 }
 
-func createReport(response *[]wrappers.LearnMoreResponseModel, cmd *cobra.Command) error {
-	targetFile, _ := cmd.Flags().GetString(params.TargetFlag)
-	if targetFile == "" {
-		targetFile = defaultFileName
+func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{} {
+	var learnMoreResponseView []*LearnMoreResponseView
+	for _, resp := range *response {
+		learnMoreResponseView = append(learnMoreResponseView, &LearnMoreResponseView{
+			QueryId:                resp.QueryId,
+			QueryName:              resp.QueryName,
+			QueryDescriptionId:     resp.QueryDescriptionId,
+			ResultDescription:      resp.ResultDescription,
+			Risk:                   resp.Risk,
+			Cause:                  resp.Cause,
+			GeneralRecommendations: resp.GeneralRecommendations,
+			Samples:                addSampleResponses(resp.Samples),
+		})
 	}
-	targetPath, _ := cmd.Flags().GetString(params.TargetPathFlag)
-	if targetPath == "" {
-		targetPath = defaultFilePath
-	}
-	format, _ := cmd.Flags().GetString(params.TargetFormatFlag)
-	return createDescriptionsReport(targetFile, targetPath, format, response)
-
+	return learnMoreResponseView
 }
 
-func createDescriptionsReport(file string, path string, format string, response *[]wrappers.LearnMoreResponseModel) error {
-	if path != "" {
-		err := createDirectory(path)
-		if err != nil {
-			return err
-		}
+func addSampleResponses(samples []wrappers.SampleObject) []sampleObjectView {
+	var sampleObjectViews []sampleObjectView
+	for _, sample := range samples {
+		sampleObjectViews = append(sampleObjectViews, sampleObjectView{
+			ProgLanguage: sample.ProgLanguage,
+			Code:         sample.Code,
+			Title:        sample.Title,
+		})
 	}
-	err := writeSummaryConsole(response)
-	if err != nil {
-		return err
-	}
-	if printer.IsFormat(format, printer.FormatJSON) {
-		jsonRpt := createTargetName(file, path, "json")
-		return exportJSONResults(jsonRpt, response)
-	}
-	return nil
+	return sampleObjectViews
 }
 
-func writeSummaryConsole(response *[]wrappers.LearnMoreResponseModel) error {
+func writeSummaryConsole(response *[]*wrappers.LearnMoreResponse) error {
 	for index, resp := range *response {
 		color.Bold.Printf("%d) %s:\n", index+1, resp.QueryName)
 		color.Bold.Printf("Risk: \n")
@@ -134,42 +155,26 @@ func writeSummaryConsole(response *[]wrappers.LearnMoreResponseModel) error {
 	return nil
 }
 
-func markFlagAsRequired(cmd *cobra.Command, flag string) {
-	err := cmd.MarkPersistentFlagRequired(flag)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func createDirectory(targetPath string) error {
-	if _, err := os.Stat(targetPath); os.IsNotExist(err) {
-		log.Printf("\nOutput path not found: %s\n", targetPath)
-		log.Printf("Creating directory: %s\n", targetPath)
-		err = os.Mkdir(targetPath, directoryPermission)
-		if err != nil {
-			return err
+func printSummaryConsole(response *[]*wrappers.LearnMoreResponse) error {
+	for index, resp := range *response {
+		fmt.Printf("%d) %s:\n", index+1, resp.QueryName)
+		fmt.Printf("Risk: \n")
+		fmt.Printf("What might happen? \n")
+		fmt.Printf("%s \n\n", resp.Risk)
+		fmt.Printf("Cause: \n")
+		fmt.Printf("How does it happen? \n")
+		fmt.Printf("%s \n\n", resp.Cause)
+		fmt.Printf("General Recommendations: \n")
+		fmt.Printf("How to avoid it?")
+		fmt.Printf("\n")
+		fmt.Printf("%s \n\n", resp.GeneralRecommendations)
+		fmt.Printf("Code samples: \n")
+		for sampleIndex, sample := range resp.Samples {
+			fmt.Printf("%d) %s:\n", sampleIndex+1, sample.Title)
+			fmt.Printf("Programming Language: %s ", sample.ProgLanguage)
+			fmt.Printf("\n")
+			fmt.Printf("%s \n\n", sample.Code)
 		}
 	}
-	return nil
-}
-
-func createTargetName(targetFile, targetPath, targetType string) string {
-	return filepath.Join(targetPath, targetFile+"."+targetType)
-}
-
-func exportJSONResults(targetFile string, results *[]wrappers.LearnMoreResponseModel) error {
-	var err error
-	var resultsJSON []byte
-	log.Println("Creating JSON Report: ", targetFile)
-	resultsJSON, err = json.Marshal(results)
-	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize descriptions response ", failedGettingDescriptions)
-	}
-	f, err := os.Create(targetFile)
-	if err != nil {
-		return errors.Wrapf(err, "%s: failed to create descriptions target file  ", failedGettingDescriptions)
-	}
-	_, _ = fmt.Fprintln(f, string(resultsJSON))
-	_ = f.Close()
 	return nil
 }

@@ -1,6 +1,6 @@
 package wrappers
 
-type LearnMoreResponseModel struct {
+type LearnMoreResponse struct {
 	QueryId                string         `json:"queryId"`
 	QueryName              string         `json:"queryName"`
 	QueryDescriptionId     string         `json:"queryDescriptionId"`
@@ -8,15 +8,15 @@ type LearnMoreResponseModel struct {
 	Risk                   string         `json:"risk"`
 	Cause                  string         `json:"cause"`
 	GeneralRecommendations string         `json:"generalRecommendations"`
-	Samples                []sampleObject `json:"samples"`
+	Samples                []SampleObject `json:"samples"`
 }
 
-type sampleObject struct {
+type SampleObject struct {
 	ProgLanguage string `json:"progLanguage"`
 	Code         string `json:"code"`
 	Title        string `json:"title"`
 }
 
 type LearnMoreWrapper interface {
-	GetLearnMoreDetails(map[string]string) (*[]LearnMoreResponseModel, *WebError, error)
+	GetLearnMoreDetails(map[string]string) (*[]*LearnMoreResponse, *WebError, error)
 }

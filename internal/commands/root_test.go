@@ -43,6 +43,7 @@ func createASTTestCommand() *cobra.Command {
 	bitBucketWrapper := &mock.BitBucketMockWrapper{}
 	gitLabWrapper := &mock.GitLabMockWrapper{}
 	bflMockWrapper := &mock.BflMockWrapper{}
+	learnMoreMockWrapper := &mock.LearnMoreMockWrapper{}
 
 	return NewAstCLI(
 		scansMockWrapper,
@@ -59,6 +60,7 @@ func createASTTestCommand() *cobra.Command {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflMockWrapper,
+		learnMoreMockWrapper,
 	)
 }
 

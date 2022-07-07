@@ -24,7 +24,7 @@ func NewHTTPLearnMoreWrapper(path string) *LearnMoreHTTPWrapper {
 }
 
 func (r *LearnMoreHTTPWrapper) GetLearnMoreDetails(params map[string]string) (
-	*[]LearnMoreResponseModel,
+	*[]*LearnMoreResponse,
 	*WebError,
 	error,
 ) {
@@ -34,7 +34,7 @@ func (r *LearnMoreHTTPWrapper) GetLearnMoreDetails(params map[string]string) (
 	return handleResponse(resp, err, params[commonParams.QueryIDQueryParam])
 }
 
-func handleResponse(resp *http.Response, err error, queryId string) (*[]LearnMoreResponseModel, *WebError, error) {
+func handleResponse(resp *http.Response, err error, queryId string) (*[]*LearnMoreResponse, *WebError, error) {
 	if err != nil {
 		return nil, nil, err
 	}
@@ -54,7 +54,7 @@ func handleResponse(resp *http.Response, err error, queryId string) (*[]LearnMor
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		var model []LearnMoreResponseModel
+		model := []*LearnMoreResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, fmt.Sprintf(failedToGetDescriptions, queryId))
