@@ -156,7 +156,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 90, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -197,6 +197,31 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
+}
+
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "json",
+		flag(params.TargetPathFlag), "/tmp/",
+		flag(params.TargetFlag), "results",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Threshold check finished with status Failed")
+
+	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
 // Create a scan ignoring the exclusion of the .git directory
@@ -600,7 +625,8 @@ func TestRunKicsScan(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValueVul)
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -609,7 +635,8 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValue)
+		flag(params.KicsRealtimeFile), fileSourceValue,
+	)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
@@ -626,7 +653,8 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,)
+		flag(params.KicsRealtimeEngine), engineValue,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -636,8 +664,9 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,
-		flag(params.KicsRealtimeAdditionalParams),additionalParamsValue)
+		flag(params.KicsRealtimeEngine), engineValue,
+		flag(params.KicsRealtimeAdditionalParams), additionalParamsValue,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
