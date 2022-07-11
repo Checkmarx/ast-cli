@@ -633,6 +633,7 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 		kicsConfig := wrappers.KicsConfig{}
 		kicsMapConfig["type"] = commonParams.KicsType
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
+		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
 		kicsMapConfig["value"] = &kicsConfig
 		return kicsMapConfig
 	}
