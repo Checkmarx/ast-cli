@@ -41,7 +41,6 @@ const (
 	thresholdLog                    = "%s: Limit = %d, Current = %v"
 	thresholdMsgLog                 = "Threshold check finished with status %s : %s"
 	mbBytes                         = 1024.0 * 1024.0
-	scaType                         = "sca"
 	notExploitable                  = "NOT_EXPLOITABLE"
 	git                             = "git"
 	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
@@ -176,11 +175,18 @@ func scanRealtimeSubCommand() *cobra.Command {
 		RunE: runKicksRealtime(),
 	}
 	realtimeScanCmd.PersistentFlags().
-		StringSliceVar(&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
+		StringSliceVar(
+			&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
 			"Additional scan options supported by kics. "+
 				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f")
-	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeFile, "", "Path to input file for kics realtime scanner")
-	realtimeScanCmd.PersistentFlags().String(commonParams.KicsRealtimeEngine, "docker", "Name in the $PATH for the container engine to run kics. Example:podman.")
+	realtimeScanCmd.PersistentFlags().String(
+		commonParams.KicsRealtimeFile,
+		"",
+		"Path to input file for kics realtime scanner")
+	realtimeScanCmd.PersistentFlags().String(
+		commonParams.KicsRealtimeEngine,
+		"docker",
+		"Name in the $PATH for the container engine to run kics. Example:podman.")
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
 	return realtimeScanCmd
 }
@@ -426,6 +432,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -606,10 +613,10 @@ func setupScanTypeProjectAndConfig(
 }
 
 func addSastScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled("sast") {
+	if scanTypeEnabled(commonParams.SastType) {
 		sastMapConfig := make(map[string]interface{})
 		sastConfig := wrappers.SastConfig{}
-		sastMapConfig["type"] = "sast"
+		sastMapConfig["type"] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
@@ -621,11 +628,12 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addKicsScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled("kics") {
+	if scanTypeEnabled(commonParams.KicsType) {
 		kicsMapConfig := make(map[string]interface{})
 		kicsConfig := wrappers.KicsConfig{}
-		kicsMapConfig["type"] = "kics"
+		kicsMapConfig["type"] = commonParams.KicsType
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
+		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
 		kicsMapConfig["value"] = &kicsConfig
 		return kicsMapConfig
 	}
@@ -633,10 +641,10 @@ func addKicsScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addScaScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled("sca") {
+	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
-		scaMapConfig["type"] = "sca"
+		scaMapConfig["type"] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaMapConfig["value"] = &scaConfig
 		return scaMapConfig
@@ -653,9 +661,9 @@ func validateScanTypes(cmd *cobra.Command) {
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, scanType := range scanTypes {
 		isValid := false
-		if strings.EqualFold(strings.TrimSpace(scanType), "sast") ||
-			strings.EqualFold(strings.TrimSpace(scanType), "kics") ||
-			strings.EqualFold(strings.TrimSpace(scanType), "sca") {
+		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.SastType) ||
+			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
+			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
 			isValid = true
 		}
 		if !isValid {
@@ -949,7 +957,7 @@ func getUploadURLFromSource(
 		}
 
 		// Make sure scaResolver only runs in sca type of scans
-		if strings.Contains(actualScanTypes, scaType) {
+		if strings.Contains(actualScanTypes, commonParams.ScaType) {
 			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
 			if dirPathErr != nil {
 				return "", errors.Wrapf(dirPathErr, "ScaResolver error")
@@ -1125,7 +1133,9 @@ func runCreateScanCommand(
 	}
 }
 
-func enrichScanResponseModel(cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel) *wrappers.ScanResponseModel {
+func enrichScanResponseModel(
+	cmd *cobra.Command, scanResponseModel *wrappers.ScanResponseModel,
+) *wrappers.ScanResponseModel {
 	scanResponseModel.ProjectName, _ = cmd.Flags().GetString(commonParams.ProjectName)
 	incrementalSast, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 	scanResponseModel.SastIncremental = strconv.FormatBool(incrementalSast)
