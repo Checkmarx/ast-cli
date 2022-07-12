@@ -15,13 +15,34 @@ func TestNewUserCountCommand(t *testing.T) {
 	}
 
 	mock := mock.AzureMockWrapper{}
-	mock.GetCommits("", "", "", "", "")
-	mock.GetCommits("mock", "mock", "mock", "mock", "mock")
-	mock.GetCommits("mock", "mock", "mock", "mock", "mock")
-	mock.GetRepositories("", "", "", "")
-	mock.GetRepositories("mock", "mock", "mock", "mock")
-	mock.GetProjects("", "", "")
-	mock.GetProjects("mock", "mock", "mock")
+	_, err := mock.GetCommits("", "", "", "", "")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetCommits("mock", "mock", "mock", "mock", "mock")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetCommits("mock", "mock", "mock", "mock", "mock")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetRepositories("", "", "", "")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetRepositories("mock", "mock", "mock", "mock")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetProjects("", "", "")
+	if err != nil {
+		return
+	}
+	_, err = mock.GetProjects("mock", "mock", "mock")
+	if err != nil {
+		return
+	}
 	cmd := NewUserCountCommand(nil, nil, nil, nil)
 	assert.Assert(t, cmd != nil, "User count command must exist")
 
