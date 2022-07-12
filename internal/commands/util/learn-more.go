@@ -6,7 +6,6 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -80,7 +79,6 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 		}
 
 		if LearnMoreResponse != nil {
-			logger.PrintIfVerbose(fmt.Sprintf("Response from wrapper: %v", LearnMoreResponse))
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
 			if format != "" {
 				learnMoreResponseView := toLearnMoreResponseView(LearnMoreResponse)
@@ -95,7 +93,6 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 				}
 			}
 		}
-
 		return nil
 	}
 }

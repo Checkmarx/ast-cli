@@ -32,3 +32,8 @@ func TestLearnMoreMockMissingQueryId(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "utils", "learn-more")
 	assert.Assert(t, err.Error() == "required flag(s) \"query-id\" not set")
 }
+
+func TestLearnMoreMockQueryIdInvalidFormat(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "utils", "learn-more", "--query-id", "MOCK", "--format", "MOCK")
+	assert.Assert(t, err.Error() == "Invalid format MOCK")
+}
