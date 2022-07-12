@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
@@ -13,7 +12,8 @@ import (
 )
 
 const (
-	invalidFlag = "Value of %s is invalid"
+	invalidFlag   = "Value of %s is invalid"
+	defaultFormat = "list"
 )
 
 type sampleObjectView struct {
@@ -80,17 +80,13 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 
 		if LearnMoreResponse != nil {
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
-			if format != "" {
-				learnMoreResponseView := toLearnMoreResponseView(LearnMoreResponse)
-				err := printer.Print(cmd.OutOrStdout(), learnMoreResponseView, format)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := printSummaryConsole(LearnMoreResponse)
-				if err != nil {
-					return err
-				}
+			learnMoreResponseView := toLearnMoreResponseView(LearnMoreResponse)
+			if format == "" {
+				format = defaultFormat
+			}
+			err := printer.Print(cmd.OutOrStdout(), learnMoreResponseView, format)
+			if err != nil {
+				return err
 			}
 		}
 		return nil
@@ -124,28 +120,4 @@ func addSampleResponses(samples []wrappers.SampleObject) []sampleObjectView {
 		})
 	}
 	return sampleObjectViews
-}
-
-func printSummaryConsole(response *[]*wrappers.LearnMoreResponse) error {
-	for index, resp := range *response {
-		fmt.Printf("%d) %s:\n", index+1, resp.QueryName)
-		fmt.Printf("Risk: \n")
-		fmt.Printf("What might happen? \n")
-		fmt.Printf("%s \n\n", resp.Risk)
-		fmt.Printf("Cause: \n")
-		fmt.Printf("How does it happen? \n")
-		fmt.Printf("%s \n\n", resp.Cause)
-		fmt.Printf("General Recommendations: \n")
-		fmt.Printf("How to avoid it?")
-		fmt.Printf("\n")
-		fmt.Printf("%s \n\n", resp.GeneralRecommendations)
-		fmt.Printf("Code samples: \n")
-		for sampleIndex, sample := range resp.Samples {
-			fmt.Printf("%d) %s:\n", sampleIndex+1, sample.Title)
-			fmt.Printf("Programming Language: %s ", sample.ProgLanguage)
-			fmt.Printf("\n")
-			fmt.Printf("%s \n\n", sample.Code)
-		}
-	}
-	return nil
 }
