@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"testing"
 
 	"gotest.tools/assert"
@@ -36,4 +37,9 @@ func TestLearnMoreMockMissingQueryId(t *testing.T) {
 func TestLearnMoreMockQueryIdInvalidFormat(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "utils", "learn-more", "--query-id", "MOCK", "--format", "MOCK")
 	assert.Assert(t, err.Error() == "Invalid format MOCK")
+}
+
+func TestCommand(t *testing.T) {
+	cmd := util.NewLearnMoreCommand(nil)
+	assert.Assert(t, cmd != nil, "Learnmore command must exist")
 }
