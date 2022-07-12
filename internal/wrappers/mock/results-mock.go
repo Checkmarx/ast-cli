@@ -7,28 +7,25 @@ import (
 type ResultsMockWrapper struct{}
 
 func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]string) (*[]wrappers.ScaPackageCollection, *wrappers.WebError, error) {
-	var scaPackage []wrappers.ScaPackageCollection
-	return &scaPackage, nil, nil
-}
+	const mock = "mock"
+	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
 
-func (r ResultsMockWrapper) GetByScanID(_ map[string]string) (
-	*wrappers.ScanResultsCollection,
-	*wrappers.WebError,
-	error,
-) {
-	const mock = "MOCK"
-	return &wrappers.ScanResultsCollection{
-		Results: []*wrappers.ScanResult{
-			{
-				ID:           mock,
-				FirstScanID:  mock,
-				FirstFoundAt: mock,
-				FoundAt:      mock,
-				Status:       mock,
-			},
-		},
-		TotalCount: 1,
-	}, nil, nil
+	dependencyArray[0][0] = dependencyPath
+	var scaPackages = []wrappers.ScaPackageCollection{{
+		ID:                  mock,
+		FixLink:             mock,
+		Locations:           nil,
+		DependencyPathArray: dependencyArray,
+		Outdated:            false,
+	}, {
+		ID:                  mock,
+		FixLink:             mock,
+		Locations:           nil,
+		DependencyPathArray: dependencyArray,
+		Outdated:            false,
+	}}
+	return &scaPackages, nil, nil
 }
 
 func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
@@ -36,6 +33,9 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
 	*wrappers.WebError,
 	error,
 ) {
+	const mock = "mock"
+	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
 	return &wrappers.ScanResultsCollection{
 		TotalCount: 3,
 		Results: []*wrappers.ScanResult{
@@ -63,8 +63,16 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
 				Type:     "sca",
 				Severity: "medium",
 				ScanResultData: wrappers.ScanResultData{
-					QueryID:   12.4,
-					QueryName: "mock-query-name",
+					ScaPackageCollection: &wrappers.ScaPackageCollection{
+						ID:                  "mock",
+						FixLink:             "mock",
+						Locations:           nil,
+						DependencyPathArray: dependencyArray,
+						Outdated:            false,
+					},
+					PackageIdentifier: "mock",
+					QueryID:           12.4,
+					QueryName:         "mock-query-name",
 					Nodes: []*wrappers.ScanResultNode{
 						{
 							FileName: "dummy-file-name",
