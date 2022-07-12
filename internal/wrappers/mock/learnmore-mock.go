@@ -9,9 +9,9 @@ func (l LearnMoreMockWrapper) GetLearnMoreDetails(m map[string]string) (*[]*wrap
 	const mock = "MOCK"
 	return &[]*wrappers.LearnMoreResponse{
 		{
-			QueryId:                mock,
+			QueryID:                mock,
 			QueryName:              mock,
-			QueryDescriptionId:     mock,
+			QueryDescriptionID:     mock,
 			ResultDescription:      mock,
 			Risk:                   mock,
 			Cause:                  mock,

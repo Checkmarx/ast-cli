@@ -27,7 +27,7 @@ type LearnMoreResponseView struct {
 	QueryID                string             `json:"queryId"`
 	QueryName              string             `json:"queryName"`
 	QueryDescriptionID     string             `json:"queryDescriptionId"`
-	ResultDescription      string             `json:"resultDescription"'`
+	ResultDescription      string             `json:"resultDescription"`
 	Risk                   string             `json:"risk"`
 	Cause                  string             `json:"cause"`
 	GeneralRecommendations string             `json:"generalRecommendations"`
@@ -80,7 +80,7 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 		}
 
 		if LearnMoreResponse != nil {
-			logger.PrintIfVerbose(fmt.Sprintf("Response from wrapper: %s", LearnMoreResponse))
+			logger.PrintIfVerbose(fmt.Sprintf("Response from wrapper: %v", LearnMoreResponse))
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
 			if format != "" {
 				learnMoreResponseView := toLearnMoreResponseView(LearnMoreResponse)
@@ -104,9 +104,9 @@ func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{
 	var learnMoreResponseView []*LearnMoreResponseView
 	for _, resp := range *response {
 		learnMoreResponseView = append(learnMoreResponseView, &LearnMoreResponseView{
-			QueryID:                resp.QueryId,
+			QueryID:                resp.QueryID,
 			QueryName:              resp.QueryName,
-			QueryDescriptionID:     resp.QueryDescriptionId,
+			QueryDescriptionID:     resp.QueryDescriptionID,
 			ResultDescription:      resp.ResultDescription,
 			Risk:                   resp.Risk,
 			Cause:                  resp.Cause,

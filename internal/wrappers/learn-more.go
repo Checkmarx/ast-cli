@@ -1,10 +1,10 @@
 package wrappers
 
 type LearnMoreResponse struct {
-	QueryId                string         `json:"queryId"`
+	QueryID                string         `json:"queryId"`
 	QueryName              string         `json:"queryName"`
-	QueryDescriptionId     string         `json:"queryDescriptionId"`
-	ResultDescription      string         `json:"resultDescription"'`
+	QueryDescriptionID     string         `json:"queryDescriptionId"`
+	ResultDescription      string         `json:"resultDescription"`
 	Risk                   string         `json:"risk"`
 	Cause                  string         `json:"cause"`
 	GeneralRecommendations string         `json:"generalRecommendations"`
