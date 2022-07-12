@@ -24,11 +24,27 @@ func TestGetLearnMoreInformationFailureMissingQueryId(t *testing.T) {
 	assertError(t, err, "required flag(s) \"query-id\" not set")
 }
 
-func TestGetLearnMoreInformationSuccessCase(t *testing.T) {
+func TestGetLearnMoreInformationSuccessCaseJson(t *testing.T) {
 	_ = viper.BindEnv("QUERY_ID")
+	queryID := viper.GetString("QUERY_ID")
+	if queryID == "" {
+		queryID = "1234"
+	}
 	err, _ := executeCommand(
 		t, "utils", "learn-more",
-		flag(params.QueryIDFlag), viper.GetString("QUERY_ID"),
+		flag(params.QueryIDFlag), queryID,
 		flag(params.FormatFlag), "json")
+	assert.NilError(t, err, "Must not fail")
+}
+
+func TestGetLearnMoreInformationSuccessCaseConsole(t *testing.T) {
+	_ = viper.BindEnv("QUERY_ID")
+	queryID := viper.GetString("QUERY_ID")
+	if queryID == "" {
+		queryID = "1234"
+	}
+	err, _ := executeCommand(
+		t, "utils", "learn-more",
+		flag(params.QueryIDFlag), queryID)
 	assert.NilError(t, err, "Must not fail")
 }

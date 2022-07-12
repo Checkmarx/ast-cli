@@ -7,7 +7,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/gookit/color"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"log"
@@ -129,30 +128,6 @@ func addSampleResponses(samples []wrappers.SampleObject) []sampleObjectView {
 		})
 	}
 	return sampleObjectViews
-}
-
-func writeSummaryConsole(response *[]*wrappers.LearnMoreResponse) error {
-	for index, resp := range *response {
-		color.Bold.Printf("%d) %s:\n", index+1, resp.QueryName)
-		color.Bold.Printf("Risk: \n")
-		color.Bold.Printf("What might happen? \n")
-		color.BgDefault.Printf("%s \n\n", resp.Risk)
-		color.Bold.Printf("Cause: \n")
-		color.Bold.Printf("How does it happen? \n")
-		color.BgDefault.Printf("%s \n\n", resp.Cause)
-		color.Bold.Printf("General Recommendations: \n")
-		color.Bold.Printf("How to avoid it?")
-		color.BgDefault.Printf("\n")
-		color.BgDefault.Printf("%s \n\n", resp.GeneralRecommendations)
-		color.Bold.Printf("Code samples: \n")
-		for sampleIndex, sample := range resp.Samples {
-			color.Bold.Printf("%d) %s:\n", sampleIndex+1, sample.Title)
-			color.Bold.Printf("Programming Language: %s ", sample.ProgLanguage)
-			color.BgDefault.Printf("\n")
-			color.BgDefault.Printf("%s \n\n", sample.Code)
-		}
-	}
-	return nil
 }
 
 func printSummaryConsole(response *[]*wrappers.LearnMoreResponse) error {
