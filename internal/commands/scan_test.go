@@ -307,6 +307,13 @@ func TestScanWorkFlowWithKicsFilter(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestScanWorkFlowWithKicsPlatforms(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "kicsPlatformsMock", "-b", "dummy_branch", "-s", dummyRepo, "--kics-platforms", "Dockerfile"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
 func TestScanWorkFlowWithScaFilter(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "scaFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--sca-filter", "!jQuery"}
 	cmd := createASTTestCommand()
