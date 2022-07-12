@@ -11,3 +11,10 @@ func TestRootHelpFunc(t *testing.T) {
 	cmd.SetArgs([]string{"show "})
 	RootHelpFunc(cmd)
 }
+
+func TestHelp(t *testing.T) {
+	cmd := NewConfigCommand()
+	cmd.Long = ""
+	cmd.SetArgs([]string{"scan "})
+	RootHelpFunc(cmd)
+}
