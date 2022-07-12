@@ -3,8 +3,9 @@
 package commands
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestLearnMoreHelp(t *testing.T) {

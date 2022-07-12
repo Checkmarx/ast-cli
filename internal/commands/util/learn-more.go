@@ -2,6 +2,8 @@ package util
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -9,7 +11,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 const (
@@ -23,9 +24,9 @@ type sampleObjectView struct {
 }
 
 type LearnMoreResponseView struct {
-	QueryId                string             `json:"queryId"`
+	QueryID                string             `json:"queryId"`
 	QueryName              string             `json:"queryName"`
-	QueryDescriptionId     string             `json:"queryDescriptionId"`
+	QueryDescriptionID     string             `json:"queryDescriptionId"`
 	ResultDescription      string             `json:"resultDescription"'`
 	Risk                   string             `json:"risk"`
 	Cause                  string             `json:"cause"`
@@ -88,7 +89,6 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 					return err
 				}
 			} else {
-				//err := writeSummaryConsole(LearnMoreResponse)
 				err := printSummaryConsole(LearnMoreResponse)
 				if err != nil {
 					return err
@@ -98,16 +98,15 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 
 		return nil
 	}
-
 }
 
 func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{} {
 	var learnMoreResponseView []*LearnMoreResponseView
 	for _, resp := range *response {
 		learnMoreResponseView = append(learnMoreResponseView, &LearnMoreResponseView{
-			QueryId:                resp.QueryId,
+			QueryID:                resp.QueryId,
 			QueryName:              resp.QueryName,
-			QueryDescriptionId:     resp.QueryDescriptionId,
+			QueryDescriptionID:     resp.QueryDescriptionId,
 			ResultDescription:      resp.ResultDescription,
 			Risk:                   resp.Risk,
 			Cause:                  resp.Cause,
