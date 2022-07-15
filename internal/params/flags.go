@@ -109,8 +109,10 @@ const (
 	AstToken                     = "ast-token"
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
+	KicsPlatformsFlag            = "kics-platforms"
+	KicsPlatformsFlagUsage       = "KICS Platform Flag"
 
-	// INDIVIDUAL FILTER	FLAGS
+	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
 	KicsFilterFlag  = "kics-filter"
