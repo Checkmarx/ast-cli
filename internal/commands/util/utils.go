@@ -40,9 +40,11 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 
 	completionCmd := NewCompletionCommand()
 
+	remediationCmd := NewRemediationCommand()
+
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, learnMoreCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper))
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, learnMoreCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper), remediationCmd)
 
 	return utilsCmd
 }
