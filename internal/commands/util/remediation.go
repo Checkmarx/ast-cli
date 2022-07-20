@@ -1,19 +1,50 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/remediation"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 const (
-	npmPackageFilename = "package.json"
-	permission         = 0644
+	npmPackageFilename        = "package.json"
+	permission                = 0644
+	containerStarting         = "Starting kics container"
+	filesContainerLocation    = "/files/"
+	filesContainerVolume      = ":/files"
+	resultsContainerLocation  = "/kics/"
+	containerRemove           = "--rm"
+	containerImage            = "checkmarx/kics:latest"
+	containerNameFlag         = "--name"
+	remediateCommand          = "remediate"
+	resultsFlag               = "--results"
+	volumeFlag                = "-v"
+	containerRun              = "run"
+	allRemediationsApplied    = "All remediations available were applied"
+	someRemediationsApplied   = "Some remediations available were not applied or there are errors in the results file.Please check kics logs"
+	directoryError            = "Failed creating temporary directory for kics remediation command"
+	containerWriteFolderError = " Error writing file to temporary directory"
+	kicsVerboseFlag           = "-v"
+	kicsIncludeIdsFlag        = "--include-ids"
+	containerName             = "cli-remediate-kics"
+)
+
+var (
+	kicsSimilarityFilter []string
+	kicsErrorCodes       = []string{"70"}
 )
 
 func NewRemediationCommand() *cobra.Command {
@@ -35,17 +66,18 @@ func NewRemediationCommand() *cobra.Command {
 		},
 	}
 	scaRemediationCmd := RemediationScaCommand()
-	remediationCmd.AddCommand(scaRemediationCmd)
+	kicsRemediationCmd := RemediationKicsCommand()
+	remediationCmd.AddCommand(scaRemediationCmd, kicsRemediationCmd)
 	return remediationCmd
 }
 
 func RemediationScaCommand() *cobra.Command {
-	completionCmd := &cobra.Command{
+	scaRemediateCmd := &cobra.Command{
 		Use:   "sca",
 		Short: "Remediate sca vulnerabilities",
 		Long: `To remediate package files vulnerabilities detected by the sca engine
 	`,
-		RunE: runRemediationCmd(),
+		RunE: runRemediationScaCmd(),
 		Example: heredoc.Doc(
 			`
 			$ cx utils remediation sca --package <package> --package-file <package-file> --package-version <package-version>
@@ -58,16 +90,51 @@ func RemediationScaCommand() *cobra.Command {
 			),
 		},
 	}
-	completionCmd.PersistentFlags().String(commonParams.RemediationFile, "", "Path to input package file to remediate the package version")
-	completionCmd.PersistentFlags().String(commonParams.RemediationPackage, "", "Name of the package to be replaced")
-	completionCmd.PersistentFlags().String(commonParams.RemediationPackageVersion, "", "Version of the package to be replaced")
-	_ = completionCmd.MarkPersistentFlagRequired(commonParams.RemediationFile)
-	_ = completionCmd.MarkPersistentFlagRequired(commonParams.RemediationPackage)
-	_ = completionCmd.MarkPersistentFlagRequired(commonParams.RemediationPackageVersion)
-	return completionCmd
+	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationFile, "", "Path to input package file to remediate the package version")
+	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationPackage, "", "Name of the package to be replaced")
+	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationPackageVersion, "", "Version of the package to be replaced")
+	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationFile)
+	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationPackage)
+	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationPackageVersion)
+	return scaRemediateCmd
 }
 
-func runRemediationCmd() func(cmd *cobra.Command, args []string) error {
+func RemediationKicsCommand() *cobra.Command {
+	kicsRemediateCmd := &cobra.Command{
+		Use:   "kics",
+		Short: "Remediate kics vulnerabilities",
+		Long: `To remediate package files vulnerabilities detected by the sca engine
+	`,
+		RunE: runRemediationKicsCmd(),
+		Example: heredoc.Doc(
+			`
+			$ cx utils remediation kics --results-file <results-file>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`	
+			`,
+			),
+		},
+	}
+	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsRemediationFile, "", "Path to the kics scan results file. It is used to identify and remediate the kics vulnerabilities")
+	kicsRemediateCmd.PersistentFlags().
+		StringSliceVar(
+			&kicsSimilarityFilter, commonParams.KicsSimilarityFilter, []string{},
+			"Which similarity ids should be remediated : --similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
+				"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8")
+	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsProjectFile, "", "Absolute path to the folder that contains the file(s) to be remediated")
+	kicsRemediateCmd.PersistentFlags().String(
+		commonParams.KicsRealtimeEngine,
+		"docker",
+		"Name in the $PATH for the container engine to run kics. Example:podman.")
+	_ = kicsRemediateCmd.MarkPersistentFlagRequired(commonParams.KicsRemediationFile)
+	_ = kicsRemediateCmd.MarkPersistentFlagRequired(commonParams.KicsProjectFile)
+	return kicsRemediateCmd
+}
+
+func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		// Check if input file is supported
 		filePath, _ := cmd.Flags().GetString(commonParams.RemediationFile)
@@ -119,4 +186,141 @@ func isPackageFileSupported(filename string) bool {
 		r = true
 	}
 	return r
+}
+
+func runRemediationKicsCmd() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		// Create temp location, add it to container volumes and copy the results inside it
+		volumeMap, tempDir, err := createKicsRemediateEnv(cmd)
+		if err != nil {
+			return errors.Errorf("%s", err)
+		}
+		// Run kics container
+		err = runKicsRemediation(cmd, volumeMap, tempDir)
+		if err != nil {
+			return errors.Errorf("%s", err)
+		}
+		return nil
+	}
+}
+
+func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
+	kicsFilesPath, _ := cmd.Flags().GetString(commonParams.KicsProjectFile)
+	kicsResultsPath, _ := cmd.Flags().GetString(commonParams.KicsRemediationFile)
+	_, file := filepath.Split(kicsResultsPath)
+	kicsRunArgs := []string{
+		containerRun,
+		containerRemove,
+		volumeFlag,
+		volumeMap,
+		volumeFlag,
+		kicsFilesPath + filesContainerVolume,
+		containerNameFlag,
+		containerName,
+		containerImage,
+		remediateCommand,
+		resultsFlag,
+		resultsContainerLocation + file,
+		kicsVerboseFlag,
+	}
+	if len(kicsSimilarityFilter) > 0 {
+		kicsRunArgs = append(kicsRunArgs, kicsIncludeIdsFlag)
+		kicsRunArgs = append(kicsRunArgs, kicsSimilarityFilter...)
+	}
+	logger.PrintIfVerbose(containerStarting)
+	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
+	out, err := exec.Command(kicsCmd, kicsRunArgs...).CombinedOutput()
+	logger.PrintIfVerbose(string(out))
+	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
+	definitely an incorrect behavior but the following check gets past it.
+	*/
+	if err == nil {
+		logger.PrintIfVerbose(allRemediationsApplied)
+		fmt.Println(buildRemediationSummary(string(out)))
+		return nil
+	}
+	if err != nil {
+		errorMessage := err.Error()
+		extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
+		if contains(kicsErrorCodes, extractedErrorCode) {
+			logger.PrintIfVerbose(someRemediationsApplied)
+			fmt.Println(buildRemediationSummary(string(out)))
+		} else {
+			return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
+		}
+	}
+	os.RemoveAll(tempDir)
+	return nil
+}
+
+func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err error) {
+	kicsDir, err = ioutil.TempDir("", "kics")
+	if err != nil {
+		return "", "", errors.New(directoryError)
+	}
+	kicsResultsPath, _ := cmd.Flags().GetString(commonParams.KicsRemediationFile)
+	kicsFile, err := ioutil.ReadFile(kicsResultsPath)
+	// transform the file_name attribute to match container location
+	kicsFile, err = filenameMatcher(kicsFile)
+	if err != nil {
+		return "", "", err
+	}
+	_, file := filepath.Split(kicsResultsPath)
+	if file == "" {
+		return "", "", errors.New(" No results file was provided")
+	}
+	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
+	err = ioutil.WriteFile(destinationFile, kicsFile, 0666)
+	if err != nil {
+		return "", "", errors.New(containerWriteFolderError)
+	}
+	volume = fmt.Sprintf("%s:/kics", kicsDir)
+	return volume, kicsDir, nil
+}
+
+func filenameMatcher(kicsFile []byte) (kicsFileUpdated []byte, err error) {
+	model := wrappers.KicsResultsCollection{}
+	err = json.Unmarshal(kicsFile, &model)
+	if err != nil {
+		return nil, err
+	}
+	for indexResults, result := range model.Results {
+		for indexLocations, location := range result.Locations {
+			file := filepath.Base(location.Filename)
+			model.Results[indexResults].Locations[indexLocations].Filename = filesContainerLocation + file
+		}
+	}
+	kicsFileUpdated, err = json.Marshal(model)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	return kicsFileUpdated, nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if strings.Contains(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func buildRemediationSummary(out string) (summary string) {
+	model := wrappers.KicsRemediationSummary{}
+	s := strings.Split(out, "\n")
+	// Always comes in the -3 position of the kics output
+	availableFixCount := strings.Split(s[len(s)-3], ":")
+	if len(availableFixCount) > 0 {
+		intAvailableFixCount, _ := strconv.Atoi(strings.ReplaceAll(availableFixCount[1], " ", ""))
+		model.AvailableRemediation = intAvailableFixCount
+	}
+	// Always comes in the -2 position of the kics output
+	appliedFixCount := strings.Split(s[len(s)-2], ":")
+	if len(appliedFixCount) > 0 {
+		intAppliedFixCount, _ := strconv.Atoi(strings.ReplaceAll(appliedFixCount[1], " ", ""))
+		model.AppliedRemediation = intAppliedFixCount
+	}
+	summaryByte, _ := json.Marshal(model)
+	return string(summaryByte)
 }
