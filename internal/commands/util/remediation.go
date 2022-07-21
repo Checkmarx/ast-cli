@@ -284,10 +284,9 @@ func filenameMatcher(kicsFile []byte) (kicsFileUpdated []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	resultsPointer := &model.Results
-	for indexResults, result := range *resultsPointer {
-		for indexLocations, location := range result.Locations {
-			file := filepath.Base(location.Filename)
+	for indexResults := range model.Results {
+		for indexLocations := range model.Results[indexResults].Locations {
+			file := filepath.Base(model.Results[indexResults].Locations[indexLocations].Filename)
 			model.Results[indexResults].Locations[indexLocations].Filename = filesContainerLocation + file
 		}
 	}
