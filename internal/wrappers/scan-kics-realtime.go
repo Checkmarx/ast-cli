@@ -19,15 +19,17 @@ type KicsQueries struct {
 }
 
 type KicsFiles struct {
-	Filename      string `json:"file_name"`
-	SimilarityID  string `json:"similarity_id"`
-	Line          uint   `json:"line"`
-	IssueType     string `json:"issue_type"`
-	SearchKey     string `json:"search_key"`
-	SearchLine    uint   `json:"search_line"`
-	SearchValue   string `json:"search_value"`
-	ExpectedValue string `json:"expected_value"`
-	ActualValue   string `json:"actual_value"`
+	Filename        string `json:"file_name"`
+	SimilarityID    string `json:"similarity_id"`
+	Line            uint   `json:"line"`
+	IssueType       string `json:"issue_type"`
+	SearchKey       string `json:"search_key"`
+	SearchLine      uint   `json:"search_line"`
+	SearchValue     string `json:"search_value"`
+	ExpectedValue   string `json:"expected_value"`
+	ActualValue     string `json:"actual_value"`
+	Remediation     string `json:"remediation"`
+	RemediationType string `json:"remediation_type"`
 }
 
 type KicsSummary struct {
@@ -35,4 +37,9 @@ type KicsSummary struct {
 	Info   uint `json:"INFO"`
 	Low    uint `json:"LOW"`
 	Medium uint `json:"MEDIUM"`
+}
+
+type KicsRemediationSummary struct {
+	AvailableRemediation int `json:"available_remediation_count"`
+	AppliedRemediation   int `json:"applied_remediation_count"`
 }

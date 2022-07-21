@@ -449,7 +449,7 @@ func runGetCodeBashingCommand(
 			return err
 		}
 		if webError != nil {
-			return fmt.Errorf(webError.Message)
+			return errors.New(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {

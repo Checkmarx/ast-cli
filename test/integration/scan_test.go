@@ -170,7 +170,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js,!*json",
+		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js,!*json,!*tf",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
