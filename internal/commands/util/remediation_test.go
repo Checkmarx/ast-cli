@@ -1,6 +1,7 @@
 package util
 
 import (
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/assert"
@@ -15,27 +16,64 @@ const (
 	packageValueNotFound        = "copyfile"
 	packageVersionFlag          = "--package-version"
 	packageVersionValue         = "200"
+	resultsFileFlag             = "--results-file"
+	resultFileValue             = "../data/results.json"
+	invalidResultFileValue      = "../"
+	kicsFileFlag                = "--kics-files"
+	kicsFileValue               = "../data/"
+	engineFlag                  = "--engine"
+	engineValue                 = "docker"
+	similarityIDFlag            = "--similarity-ids"
+	similarityIDValue           = "b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047"
 )
 
-func TestNewRemediationCommandCommand(t *testing.T) {
+func TestNewRemediationCommand(t *testing.T) {
 	cmd := NewRemediationCommand()
 	assert.Assert(t, cmd != nil, "Remediation command must exist")
 }
 
-func TestRemediationScaCommandCommand(t *testing.T) {
+func TestRemediationScaCommand(t *testing.T) {
 	cmd := RemediationScaCommand()
 	err := executeTestCommand(cmd, packageFileFlag, packageFileValue, packageFlag, packageValue, packageVersionFlag, packageVersionValue)
 	assert.Assert(t, err == nil, "Remediation command must pass")
 }
 
-func TestRemediationScaCommandCommandUnsupported(t *testing.T) {
+func TestRemediationScaCommandUnsupported(t *testing.T) {
 	cmd := RemediationScaCommand()
 	err := executeTestCommand(cmd, packageFileFlag, packageFileValueUnsupported, packageFlag, packageValue, packageVersionFlag, packageVersionValue)
 	assert.Assert(t, err != nil, "Unsuported package manager file")
 }
 
-func TestRemediationScaCommandCommandPackageNotFound(t *testing.T) {
+func TestRemediationScaCommandPackageNotFound(t *testing.T) {
 	cmd := RemediationScaCommand()
 	err := executeTestCommand(cmd, packageFileFlag, packageFileValue, packageFlag, packageValueNotFound, packageVersionFlag, packageVersionValue)
 	assert.Assert(t, err != nil, "Package not found")
+}
+
+func TestRemediationKicsCommand(t *testing.T) {
+	cmd := RemediationKicsCommand()
+	abs, _ := filepath.Abs(kicsFileValue)
+	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs)
+	assert.Assert(t, err == nil, "Remediation command must pass")
+}
+
+func TestRemediationKicsCommandInvalidResults(t *testing.T) {
+	cmd := RemediationKicsCommand()
+	abs, _ := filepath.Abs(kicsFileValue)
+	err := executeTestCommand(cmd, resultsFileFlag, invalidResultFileValue, kicsFileFlag, abs)
+	assert.Assert(t, err != nil, "No results file was provided")
+}
+
+func TestRemediationKicsCommandEngineFlag(t *testing.T) {
+	cmd := RemediationKicsCommand()
+	abs, _ := filepath.Abs(kicsFileValue)
+	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, engineValue)
+	assert.Assert(t, err == nil, "Remediation command must pass")
+}
+
+func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {
+	cmd := RemediationKicsCommand()
+	abs, _ := filepath.Abs(kicsFileValue)
+	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, similarityIDFlag, similarityIDValue)
+	assert.Assert(t, err == nil, "Remediation command must pass")
 }
