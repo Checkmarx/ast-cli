@@ -103,7 +103,7 @@ func RemediationKicsCommand() *cobra.Command {
 	kicsRemediateCmd := &cobra.Command{
 		Use:   "kics",
 		Short: "Remediate kics vulnerabilities",
-		Long: `To remediate package files vulnerabilities detected by the sca engine
+		Long: `To remediate package files vulnerabilities detected by the kics engine
 	`,
 		RunE: runRemediationKicsCmd(),
 		Example: heredoc.Doc(
