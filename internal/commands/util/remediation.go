@@ -259,15 +259,15 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 		return "", "", errors.New(directoryError)
 	}
 	kicsResultsPath, _ := cmd.Flags().GetString(commonParams.KicsRemediationFile)
+	_, file := filepath.Split(kicsResultsPath)
+	if file == "" {
+		return "", "", errors.New(" No results file was provided")
+	}
 	kicsFile, err := ioutil.ReadFile(kicsResultsPath)
 	// transform the file_name attribute to match container location
 	kicsFile, err = filenameMatcher(kicsFile)
 	if err != nil {
 		return "", "", err
-	}
-	_, file := filepath.Split(kicsResultsPath)
-	if file == "" {
-		return "", "", errors.New(" No results file was provided")
 	}
 	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
 	err = ioutil.WriteFile(destinationFile, kicsFile, 0666)

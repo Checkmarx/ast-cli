@@ -29,6 +29,7 @@ const (
 	similarityIDFlag            = "similarity-ids"
 	kicsEngine                  = "engine"
 	similarityIDValue           = "9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8"
+	resultFileInvalidValue      = "./"
 )
 
 func TestScaRemediation(t *testing.T) {
@@ -125,7 +126,7 @@ func TestKicsRemediationInvalidResults(t *testing.T) {
 		flag(kicsFileFlag),
 		abs,
 		flag(resultsFileFlag),
-		kicsFileValue,
+		resultFileInvalidValue,
 		flag(similarityIDFlag),
 		similarityIDValue,
 	}
