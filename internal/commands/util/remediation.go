@@ -60,7 +60,7 @@ func NewRemediationCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`https://checkmarx.atlassian.net/l/cp/1DfB0seH	
 			`,
 			),
 		},
@@ -85,7 +85,7 @@ func RemediationScaCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`	https://checkmarx.atlassian.net/l/cp/tydFqUhE
 			`,
 			),
 		},
@@ -108,12 +108,12 @@ func RemediationKicsCommand() *cobra.Command {
 		RunE: runRemediationKicsCmd(),
 		Example: heredoc.Doc(
 			`
-			$ cx utils remediation kics --results-file <results-file>
+			$ cx utils remediation kics --results-file <results-file> --kics-files <kics-files>
 		`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`	https://checkmarx.atlassian.net/l/cp/weaVA203
 			`,
 			),
 		},
@@ -122,7 +122,7 @@ func RemediationKicsCommand() *cobra.Command {
 	kicsRemediateCmd.PersistentFlags().
 		StringSliceVar(
 			&kicsSimilarityFilter, commonParams.KicsSimilarityFilter, []string{},
-			"Which similarity ids should be remediated : --similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
+			"List with the similarity ids that should be remediated : --similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
 				"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8")
 	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsProjectFile, "", "Absolute path to the folder that contains the file(s) to be remediated")
 	kicsRemediateCmd.PersistentFlags().String(
