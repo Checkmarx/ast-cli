@@ -264,6 +264,9 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 		return "", "", errors.New(" No results file was provided")
 	}
 	kicsFile, err := ioutil.ReadFile(kicsResultsPath)
+	if err != nil {
+		return "", "", err
+	}
 	// transform the file_name attribute to match container location
 	kicsFile, err = filenameMatcher(kicsFile)
 	if err != nil {
