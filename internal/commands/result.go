@@ -940,7 +940,6 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 						currentPackage.DependencyPathArray[index][0].Locations = locationsByID[dependencyPath[0].ID]
 					}
 					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
-					//currentPackage.BestPackageLink = "https://devhub.checkmarx.com/packages/" + result.VulnerabilityDetails.CveName + "/"
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
 				}
