@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -930,6 +931,8 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
 			currentID = result.ScanResultData.PackageIdentifier
+			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, 1)
+			result.VulnerabilityDetails.CvssScore = roundedScore
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
@@ -937,6 +940,7 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 						currentPackage.DependencyPathArray[index][0].Locations = locationsByID[dependencyPath[0].ID]
 					}
 					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
+					//currentPackage.BestPackageLink = "https://devhub.checkmarx.com/packages/" + result.VulnerabilityDetails.CveName + "/"
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
 				}
