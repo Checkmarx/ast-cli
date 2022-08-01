@@ -931,7 +931,8 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
 			currentID = result.ScanResultData.PackageIdentifier
-			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, 1)
+			const precision = 1
+			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
 			result.VulnerabilityDetails.CvssScore = roundedScore
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
