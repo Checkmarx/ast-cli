@@ -40,10 +40,11 @@ const (
 	kicsVerboseFlag           = "-v"
 	kicsIncludeIdsFlag        = "--include-ids"
 	containerName             = "cli-remediate-kics"
+	separator                 = ","
 )
 
 var (
-	kicsSimilarityFilter *string
+	kicsSimilarityFilter []string
 	kicsErrorCodes       = []string{"70"}
 )
 
@@ -119,9 +120,11 @@ func RemediationKicsCommand() *cobra.Command {
 		},
 	}
 	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsRemediationFile, "", "Path to the kics scan results file. It is used to identify and remediate the kics vulnerabilities")
-	kicsSimilarityFilter = kicsRemediateCmd.PersistentFlags().String(commonParams.KicsSimilarityFilter, "", "List with the similarity ids that should be remediated : "+
-		"--similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
-		"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8")
+	kicsRemediateCmd.PersistentFlags().
+		StringSliceVar(
+			&kicsSimilarityFilter, commonParams.KicsSimilarityFilter, []string{},
+			"List with the similarity ids that should be remediated : --similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
+				"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8")
 	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsProjectFile, "", "Absolute path to the folder that contains the file(s) to be remediated")
 	kicsRemediateCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeEngine,
@@ -221,8 +224,10 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 		resultsContainerLocation + file,
 		kicsVerboseFlag,
 	}
-	if *kicsSimilarityFilter != "" {
-		kicsRunArgs = append(append(kicsRunArgs, kicsIncludeIdsFlag), *kicsSimilarityFilter)
+	if len(kicsSimilarityFilter) > 0 {
+		kicsRunArgs = append(kicsRunArgs, kicsIncludeIdsFlag)
+		kicsSimilarityFilterString := strings.Join(kicsSimilarityFilter, separator)
+		kicsRunArgs = append(kicsRunArgs, kicsSimilarityFilterString)
 	}
 	logger.PrintIfVerbose(containerStarting)
 	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
