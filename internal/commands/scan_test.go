@@ -28,6 +28,7 @@ const (
 	fileSourceError               = "flag needs an argument: --file"
 	engineFlag                    = "--engine"
 	engineValue                   = "docker"
+	invalidEngineValue            = "podman"
 	engineError                   = "flag needs an argument: --engine"
 	additionalParamsFlag          = "--additional-params"
 	additionalParamsValue         = "-v"
@@ -351,6 +352,12 @@ func TestCreateRealtimeKicsWithEngine(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestCreateRealtimeKicsInvalidEngine(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, invalidEngineValue}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, invalidEngineMessage, err.Error())
 }
 
 func TestCreateRealtimeKicsMissingEngine(t *testing.T) {

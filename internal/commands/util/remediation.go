@@ -41,6 +41,8 @@ const (
 	kicsIncludeIdsFlag        = "--include-ids"
 	containerName             = "cli-remediate-kics"
 	separator                 = ","
+	invalidEngineError        = "executable file not found in $PATH"
+	invalidEngineMessage      = "Please verify if engine is installed and running"
 )
 
 var (
@@ -247,6 +249,9 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 		if contains(kicsErrorCodes, extractedErrorCode) {
 			logger.PrintIfVerbose(someRemediationsApplied)
 			fmt.Println(buildRemediationSummary(string(out)))
+		}
+		if strings.Contains(errorMessage, invalidEngineError) {
+			return errors.Errorf(invalidEngineMessage)
 		} else {
 			return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 		}

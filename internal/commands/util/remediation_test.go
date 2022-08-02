@@ -24,7 +24,8 @@ const (
 	engineFlag                  = "--engine"
 	engineValue                 = "docker"
 	similarityIDFlag            = "--similarity-ids"
-	similarityIDValue           = "b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047"
+	similarityIDValue           = "b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8"
+	invalidEngineValue          = "podman"
 )
 
 func TestNewRemediationCommand(t *testing.T) {
@@ -69,6 +70,13 @@ func TestRemediationKicsCommandEngineFlag(t *testing.T) {
 	abs, _ := filepath.Abs(kicsFileValue)
 	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, engineValue)
 	assert.Assert(t, err == nil, "Remediation command must pass")
+}
+
+func TestRemediationKicsCommandInvalidEngine(t *testing.T) {
+	cmd := RemediationKicsCommand()
+	abs, _ := filepath.Abs(kicsFileValue)
+	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, invalidEngineValue)
+	assert.Assert(t, err != nil, "Please verify if engine is installed and running")
 }
 
 func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {

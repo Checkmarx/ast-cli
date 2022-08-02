@@ -152,3 +152,21 @@ func TestKicsRemediationEngineFlag(t *testing.T) {
 		engineValue,
 	)
 }
+
+func TestKicsRemediationInvalidEngine(t *testing.T) {
+	abs, _ := filepath.Abs(kicsFileValue)
+	args := []string{
+		utilsCommand,
+		remediationCommand,
+		kicsCommand,
+		flag(kicsFileFlag),
+		abs,
+		flag(resultsFileFlag),
+		resultFileValue,
+		flag(kicsEngine),
+		invalidEngineValue,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Please verify if engine is installed and running")
+}

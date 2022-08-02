@@ -38,6 +38,7 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
+	invalidEngineValue            = "podman"
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -657,6 +658,16 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+	args := []string{
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+		flag(params.KicsRealtimeEngine), invalidEngineValue,
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Please verify if engine is installed and running")
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {
