@@ -38,7 +38,7 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
-	invalidEngineValue            = "podman"
+	invalidEngineValue            = "invalidEngine"
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response

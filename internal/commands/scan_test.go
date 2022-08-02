@@ -28,7 +28,7 @@ const (
 	fileSourceError               = "flag needs an argument: --file"
 	engineFlag                    = "--engine"
 	engineValue                   = "docker"
-	invalidEngineValue            = "podman"
+	invalidEngineValue            = "invalidengine"
 	engineError                   = "flag needs an argument: --engine"
 	additionalParamsFlag          = "--additional-params"
 	additionalParamsValue         = "-v"
