@@ -258,7 +258,6 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
 	return nil
-
 }
 
 func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err error) {
