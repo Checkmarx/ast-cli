@@ -246,18 +246,19 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 	if err != nil {
 		errorMessage := err.Error()
 		extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
+		os.RemoveAll(tempDir)
 		if contains(kicsErrorCodes, extractedErrorCode) {
 			logger.PrintIfVerbose(someRemediationsApplied)
 			fmt.Println(buildRemediationSummary(string(out)))
+			return nil
 		}
 		if strings.Contains(errorMessage, invalidEngineError) {
 			return errors.Errorf(invalidEngineMessage)
-		} else {
-			return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 		}
+		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
-	os.RemoveAll(tempDir)
 	return nil
+
 }
 
 func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err error) {
