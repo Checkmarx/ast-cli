@@ -53,7 +53,7 @@ jobs:
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
-          CX_BASE_AUTH_URI: ${{ secrets.BASE_AUTH_URI }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
           CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
           CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
           CX_APIKEY:  ${{ secrets.CX_APIKEY }}
