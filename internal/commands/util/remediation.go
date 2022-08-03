@@ -40,6 +40,7 @@ const (
 	kicsVerboseFlag           = "-v"
 	kicsIncludeIdsFlag        = "--include-ids"
 	containerName             = "cli-remediate-kics"
+	separator                 = ","
 )
 
 var (
@@ -225,7 +226,8 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 	}
 	if len(kicsSimilarityFilter) > 0 {
 		kicsRunArgs = append(kicsRunArgs, kicsIncludeIdsFlag)
-		kicsRunArgs = append(kicsRunArgs, kicsSimilarityFilter...)
+		kicsSimilarityFilterString := strings.Join(kicsSimilarityFilter, separator)
+		kicsRunArgs = append(kicsRunArgs, kicsSimilarityFilterString)
 	}
 	logger.PrintIfVerbose(containerStarting)
 	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
