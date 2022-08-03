@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -930,6 +931,9 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
 			currentID = result.ScanResultData.PackageIdentifier
+			const precision = 1
+			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+			result.VulnerabilityDetails.CvssScore = roundedScore
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
