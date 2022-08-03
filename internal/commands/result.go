@@ -920,7 +920,9 @@ func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPack
 	locationsByID := make(map[string][]*string)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
-		if result.Type == scaType {
+		if !(result.Type == scaType) {
+			continue
+		} else {
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				locationsByID[packages.ID] = currentPackage.Locations
