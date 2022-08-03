@@ -1807,6 +1807,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			return nil
 		}
 		if strings.Contains(errorMessage, invalidEngineError) {
+			logger.PrintIfVerbose(errorMessage)
 			return errors.Errorf(invalidEngineMessage)
 		}
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)

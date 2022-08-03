@@ -253,6 +253,7 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 			return nil
 		}
 		if strings.Contains(errorMessage, invalidEngineError) {
+			logger.PrintIfVerbose(errorMessage)
 			return errors.Errorf(invalidEngineMessage)
 		}
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
