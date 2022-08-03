@@ -54,6 +54,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
+	learnMore := viper.GetString(params.DescriptionsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -69,6 +70,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	azureWrapper := wrappers.NewAzureWrapper()
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
+	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -85,6 +87,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
+		learnMoreWrapper,
 	)
 	return astCli
 }
@@ -144,7 +147,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	// args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

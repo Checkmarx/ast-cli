@@ -169,6 +169,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`	
+			https://checkmarx.atlassian.net/l/c/GddHidUN
 			`,
 			),
 		},
