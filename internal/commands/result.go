@@ -97,7 +97,8 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd)
+		showResultCmd, bflResultCmd, codeBashingCmd,
+	)
 	return resultCmd
 }
 
@@ -368,7 +369,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("            Results Summary:                     \n")
 		fmt.Printf(
 			"              Risk Level: %s																									 \n",
-			summary.RiskMsg)
+			summary.RiskMsg,
+		)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
@@ -404,7 +406,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 	summaryURL := fmt.Sprintf(
 		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
-		summary.ScanID, url.QueryEscape(summary.BranchName))
+		summary.ScanID, url.QueryEscape(summary.BranchName),
+	)
 	return summaryURL
 }
 
@@ -433,10 +436,14 @@ func runGetCodeBashingCommand(
 		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
 		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
 		params, err := codeBashingWrapper.BuildCodeBashingParams(
-			[]wrappers.CodeBashingParamsCollection{{
-				CweID:       "CWE-" + cwe,
-				Language:    language,
-				CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
+			[]wrappers.CodeBashingParamsCollection{
+				{
+					CweID:       "CWE-" + cwe,
+					Language:    language,
+					CxQueryName: strings.ReplaceAll(vulType, " ", "_"),
+				},
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -498,7 +505,8 @@ func CreateScanReport(
 func isScanPending(scanStatus string) bool {
 	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(
 		scanStatus,
-		"Partial") || strings.EqualFold(scanStatus, "Failed"))
+		"Partial",
+	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
 func createReport(
@@ -584,10 +592,10 @@ func ReadResults(
 		}
 		// Enrich sca results
 		if scaPackageModel != nil {
-			resultsModel.ScanID = scanID
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
-			return resultsModel, nil
 		}
+		resultsModel.ScanID = scanID
+		return resultsModel, nil
 	}
 	return nil, nil
 }
@@ -824,7 +832,8 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
 		return fmt.Sprintf(
 			"%s Value: %s Excepted value: %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -834,7 +843,8 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
 		return fmt.Sprintf(
 			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -874,7 +884,8 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 				result.ScanResultData.Filename,
 				"/",
 				"",
-				1)
+				1,
+			)
 			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 			scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 			scanLocation.PhysicalLocation.Region.StartColumn = 1
@@ -915,7 +926,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
-func addPackageInformation(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection) *wrappers.ScanResultsCollection {
+func addPackageInformation(
+	resultsModel *wrappers.ScanResultsCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+) *wrappers.ScanResultsCollection {
 	var currentID string
 	locationsByID := make(map[string][]*string)
 	// Create map to be used to populate locations for each package path
