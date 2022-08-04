@@ -667,7 +667,7 @@ func TestRunKicsScanWithInvalidEngine(t *testing.T) {
 		flag(params.KicsRealtimeEngine), invalidEngineValue,
 	}
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Please verify if engine is installed and running")
+	assertError(t, err, invalidEngineMessage)
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {

@@ -76,7 +76,7 @@ func TestRemediationKicsCommandInvalidEngine(t *testing.T) {
 	cmd := RemediationKicsCommand()
 	abs, _ := filepath.Abs(kicsFileValue)
 	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, invalidEngineValue)
-	assert.Assert(t, err != nil, "Please verify if engine is installed and running")
+	assert.Assert(t, err != nil, invalidEngineMessage)
 }
 
 func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {
