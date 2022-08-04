@@ -938,10 +938,10 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	}
 
 	var errorUnzippingFile error
-	// apply file filters to zip file
-	unzip := false
-	if (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && len(zipFilePath) > 0 {
-		unzip = true
+
+	userProvidedZip := len(zipFilePath) > 0
+	unzip := (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && userProvidedZip
+	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
 			return "", errorUnzippingFile, ""
@@ -994,7 +994,11 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating), ""
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
-		return *preSignedURL, zipFilePathErr, zipFilePath
+		if unzip || !userProvidedZip {
+			return *preSignedURL, zipFilePathErr, zipFilePath
+		} else {
+			return *preSignedURL, zipFilePathErr, ""
+		}
 	}
 	return preSignedURL, nil, zipFilePath
 }
