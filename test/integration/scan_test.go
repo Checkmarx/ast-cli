@@ -672,8 +672,8 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
-	_ = viper.BindEnv("CX_API_KEY")
-	apiKey := viper.GetString("CX_API_KEY")
+	_ = viper.BindEnv("CX_APIKEY")
+	apiKey := viper.GetString("CX_APIKEY")
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Scan create with API key and no tenant should pass",
