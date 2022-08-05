@@ -49,6 +49,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const FailedAccessToken = "Failed to obtain access token"
+const BaseAuthUrlSuffix = "protocol/openid-connect/token"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
@@ -326,8 +327,8 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 		return "", errors.Errorf(fmt.Sprintf("jwt token decode error: %s", err.Error()))
 	}
 	claims := token.Claims.(jwt.MapClaims)
-	authURI := claims["iss"].(string)
-	authURI = fmt.Sprintf("%s/%s", authURI, "protocol/openid-connect/token")
+	authURI := claims["aud"].(string)
+	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthUrlSuffix)
 	return authURI, nil
 }
 
