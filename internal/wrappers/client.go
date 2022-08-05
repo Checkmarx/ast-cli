@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,6 +13,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const FailedAccessToken = "Failed to obtain access token"
-const BaseAuthUrlSuffix = "protocol/openid-connect/token"
+const BaseAuthURLSuffix = "protocol/openid-connect/token"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
@@ -328,7 +329,7 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 	}
 	claims := token.Claims.(jwt.MapClaims)
 	authURI := claims["aud"].(string)
-	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthUrlSuffix)
+	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	return authURI, nil
 }
 
