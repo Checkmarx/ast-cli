@@ -344,7 +344,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,kics,sca"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,kics"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -403,7 +403,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName, s
 }
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
-	buffer := executeScanGetBuffer(t, args)
+	buffer := executeScanGetBuffer(t, append(args, flag(params.ProjectGroupList), "test_group"))
 
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
