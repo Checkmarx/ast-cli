@@ -684,6 +684,7 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.ScanTypes), "sast",
 		flag(params.DebugFlag),
+		flag(params.AsyncFlag),
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")

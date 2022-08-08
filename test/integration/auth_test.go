@@ -22,6 +22,7 @@ const (
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
+	authValidateFailure             = "invalid character '<' looking for beginning of value"
 )
 
 // Test validate with credentials used in test env
@@ -52,7 +53,6 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 	avoidCachedToken()
 
 	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "invalid-base-uri")
-	// assertError(t, err, "404 Provided Tenant Name is invalid \n")
 	assert.NilError(t, err)
 }
 
@@ -64,8 +64,7 @@ func TestAuthValidateWrongAPIKey(t *testing.T) {
 	avoidCachedToken()
 
 	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey")
-	// assertError(t, err, "400 Provided credentials are invalid")
-	assertError(t, err, "invalid character '<' looking for beginning of value")
+	assertError(t, err, authValidateFailure)
 }
 
 func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
@@ -76,7 +75,6 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 	viper.SetDefault("cx_ast_authentication_path", "")
 
 	err := execute(validateCommand, "auth", "validate")
-	// assertError(t, err, "Failed to authenticate - please provide an authentication path")
 	assert.NilError(t, err)
 }
 
