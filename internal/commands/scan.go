@@ -926,7 +926,7 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (string, error, string) {
+func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (string, string, error) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -934,7 +934,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s: Input in bad format", failedCreating), ""
+		return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	var errorUnzippingFile error
@@ -944,7 +944,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
-			return "", errorUnzippingFile, ""
+			return "", "", errorUnzippingFile
 		}
 	}
 
@@ -968,21 +968,21 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				if unzip {
 					dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
 					if dirRemovalErr != nil {
-						return "", dirRemovalErr, ""
+						return "", "", dirRemovalErr
 					}
 				}
-				return "", errors.Wrapf(dirPathErr, "ScaResolver error"), ""
+				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
 		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
 			if dirRemovalErr != nil {
-				return "", dirRemovalErr, ""
+				return "", "", dirRemovalErr
 			}
 		}
 		if dirPathErr != nil {
-			return "", dirPathErr, ""
+			return "", "", dirPathErr
 		}
 	}
 	if zipFilePath != "" {
@@ -991,16 +991,15 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		var preSignedURL *string
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
 		if zipFilePathErr != nil {
-			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating), ""
+			return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
 		if unzip || !userProvidedZip {
-			return *preSignedURL, zipFilePathErr, zipFilePath
-		} else {
-			return *preSignedURL, zipFilePathErr, ""
+			return *preSignedURL, zipFilePath, zipFilePathErr
 		}
+		return *preSignedURL, "", zipFilePathErr
 	}
-	return preSignedURL, nil, zipFilePath
+	return preSignedURL, zipFilePath, nil
 }
 
 func UnzipFile(f string) (string, error) {
@@ -1107,7 +1106,7 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, err, zipFilePath := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
+		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1172,7 +1171,7 @@ func createScanModel(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-) (*wrappers.Scan, error, string) {
+) (*wrappers.Scan, string, error) {
 	validateScanTypes(cmd)
 
 	var input = []byte("{}")
@@ -1180,7 +1179,7 @@ func createScanModel(
 	// Define type, project and config in scan model
 	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper)
 	if err != nil {
-		return nil, err, ""
+		return nil, "", err
 	}
 
 	// set tags in scan model
@@ -1190,13 +1189,13 @@ func createScanModel(
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating), ""
+		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	// Set up the scan handler (either git or upload)
-	scanHandler, err, zipFilePath := setupScanHandler(cmd, uploadsWrapper)
+	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper)
 	if err != nil {
-		return nil, err, zipFilePath
+		return nil, zipFilePath, err
 	}
 
 	scanModel.Handler, _ = json.Marshal(scanHandler)
@@ -1207,7 +1206,7 @@ func createScanModel(
 		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	}
 
-	return &scanModel, nil, zipFilePath
+	return &scanModel, zipFilePath, nil
 }
 
 func getUploadType(cmd *cobra.Command) string {
@@ -1223,8 +1222,8 @@ func getUploadType(cmd *cobra.Command) string {
 
 func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
 	wrappers.ScanHandler,
-	error,
 	string,
+	error,
 ) {
 	zipFilePath := ""
 	scanHandler := wrappers.ScanHandler{}
@@ -1239,9 +1238,9 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 	} else {
 		var err error
 		var uploadURL string
-		uploadURL, err, zipFilePath = getUploadURLFromSource(cmd, uploadsWrapper)
+		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper)
 		if err != nil {
-			return scanHandler, err, zipFilePath
+			return scanHandler, zipFilePath, err
 		}
 
 		scanHandler.UploadURL = uploadURL
@@ -1254,20 +1253,20 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 		sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
 
 		if strings.TrimSpace(sshKeyPath) == "" {
-			return scanHandler, errors.New("flag needs an argument: --ssh-key"), ""
+			return scanHandler, "", errors.New("flag needs an argument: --ssh-key")
 		}
 
 		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		sourceTrimmed := strings.TrimSpace(source)
 
 		if !util.IsSSHURL(sourceTrimmed) {
-			return scanHandler, errors.New(invalidSSHSource), ""
+			return scanHandler, "", errors.New(invalidSSHSource)
 		}
 
 		err = defineSSHCredentials(strings.TrimSpace(sshKeyPath), &scanHandler)
 	}
 
-	return scanHandler, err, zipFilePath
+	return scanHandler, zipFilePath, err
 }
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
@@ -1857,7 +1856,7 @@ func cleanUpTempZip(zipFilePath string) {
 						zipRemoveErr,
 					),
 				)
-				tries = tries - 1
+				tries--
 				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
