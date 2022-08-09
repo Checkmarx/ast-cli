@@ -979,28 +979,35 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 	}
 	if zipFilePath != "" {
-		var zipFilePathErr error
-		// Send a request to uploads service
-		var preSignedURL *string
-		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
-		if zipFilePathErr != nil {
-			return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
-		}
-		logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
-		if unzip || !userProvidedZip {
-			return *preSignedURL, zipFilePath, zipFilePathErr
-		}
-		return *preSignedURL, "", zipFilePathErr
+		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
 	return preSignedURL, zipFilePath, nil
 }
 
-func getScaResolverFlags(cmd *cobra.Command, dirPathErr error) (string, string) {
-	scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip bool, userProvidedZip bool) (
+	url, zipPath string,
+	err error,
+) {
+	var zipFilePathErr error
+	// Send a request to uploads service
+	var preSignedURL *string
+	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
+	if zipFilePathErr != nil {
+		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
+	if unzip || !userProvidedZip {
+		return *preSignedURL, zipFilePath, zipFilePathErr
+	}
+	return *preSignedURL, "", zipFilePathErr
+}
+
+func getScaResolverFlags(cmd *cobra.Command, dirPathErr error) (scaResolverParams, scaResolver string) {
+	scaResolverParams, dirPathErr = cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
 	if dirPathErr != nil {
 		scaResolverParams = ""
 	}
-	scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	scaResolver, dirPathErr = cmd.Flags().GetString(commonParams.ScaResolverFlag)
 	if dirPathErr != nil {
 		scaResolver = ""
 		scaResolverParams = ""
