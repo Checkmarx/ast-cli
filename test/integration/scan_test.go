@@ -668,3 +668,22 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
+
+func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
+	_ = viper.BindEnv("CX_APIKEY")
+	apiKey := viper.GetString("CX_APIKEY")
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key and no tenant should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "./data/sources.zip",
+		flag(params.BranchFlag), "main",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.ScanTypes), "sast",
+		flag(params.DebugFlag),
+		flag(params.AsyncFlag),
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
