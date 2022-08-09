@@ -926,7 +926,11 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (string, string, error) {
+func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
+	url string,
+	zipFilePath string,
+	err error,
+) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
