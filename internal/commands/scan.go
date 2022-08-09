@@ -927,8 +927,7 @@ func addScaResults(zipWriter *zip.Writer) error {
 }
 
 func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
-	url string,
-	zipFilePath string,
+	url, zipFilePath string,
 	err error,
 ) {
 	var preSignedURL string
