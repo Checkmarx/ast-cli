@@ -954,7 +954,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	if directoryPath != "" {
 		var dirPathErr error
 
-		scaResolverParams, scaResolver := getScaResolverFlags(cmd, dirPathErr)
+		scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
@@ -984,7 +984,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip bool, userProvidedZip bool) (
+func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool) (
 	url, zipPath string,
 	err error,
 ) {
@@ -1002,8 +1002,8 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	return *preSignedURL, "", zipFilePathErr
 }
 
-func getScaResolverFlags(cmd *cobra.Command, dirPathErr error) (scaResolverParams, scaResolver string) {
-	scaResolverParams, dirPathErr = cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+func getScaResolverFlags(cmd *cobra.Command) (scaResolverParams, scaResolver string) {
+	scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
 	if dirPathErr != nil {
 		scaResolverParams = ""
 	}
