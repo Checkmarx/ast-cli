@@ -953,30 +953,20 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	if directoryPath != "" {
 		var dirPathErr error
-		// Get sca resolver flags
-		scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
-		if dirPathErr != nil {
-			scaResolverParams = ""
-		}
-		scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-		if dirPathErr != nil {
-			scaResolver = ""
-			scaResolverParams = ""
-		}
+
+		scaResolverParams, scaResolver := getScaResolverFlags(cmd, dirPathErr)
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
 			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
 			if dirPathErr != nil {
 				if unzip {
-					dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
-					if dirRemovalErr != nil {
-						return "", "", dirRemovalErr
-					}
+					_ = cleanTempUnzipDirectory(directoryPath)
 				}
 				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
+
 		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
@@ -1003,6 +993,19 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		return *preSignedURL, "", zipFilePathErr
 	}
 	return preSignedURL, zipFilePath, nil
+}
+
+func getScaResolverFlags(cmd *cobra.Command, dirPathErr error) (string, string) {
+	scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+	if dirPathErr != nil {
+		scaResolverParams = ""
+	}
+	scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	if dirPathErr != nil {
+		scaResolver = ""
+		scaResolverParams = ""
+	}
+	return scaResolverParams, scaResolver
 }
 
 func UnzipFile(f string) (string, error) {
