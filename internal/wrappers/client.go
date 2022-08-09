@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt"
+
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -48,6 +50,9 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const FailedAccessToken = "Failed to obtain access token"
+const BaseAuthURLSuffix = "protocol/openid-connect/token"
+
+const audienceClaimKey = "aud"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
@@ -277,14 +282,25 @@ func HTTPRequestWithQueryParams(
 	return resp, nil
 }
 
-func getAuthURI() (string, error) {
-	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
-	tenant := viper.GetString(commonParams.TenantKey)
-	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
-	if authPath == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "authentication path"))
+func getClaimsFromToken(tokenString string) (*jwt.Token, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		return nil, err
 	}
-	authURI := GetAuthURL(authPath)
+	return token, err
+}
+
+func getAuthURI() (string, error) {
+	var authURI string
+	apiKey := viper.GetString(commonParams.AstAPIKey)
+
+	if len(apiKey) > 0 {
+		logger.PrintIfVerbose("Using API Key to extract Auth URI")
+		authURI, _ = extractAuthURIFromAPIKey(apiKey)
+	} else {
+		logger.PrintIfVerbose("Using configuration and parameters to prepare Auth URI")
+		authURI, _ = extractAuthURIFromConfig()
+	}
 	authURL, err := url.Parse(authURI)
 	if err != nil {
 		return "", errors.Wrap(err, "authentication URI is not in a correct format")
@@ -294,6 +310,28 @@ func getAuthURI() (string, error) {
 		authURI = GetURL("/" + strings.TrimLeft(authURI, "/"))
 	}
 
+	return authURI, nil
+}
+
+func extractAuthURIFromConfig() (string, error) {
+	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
+	tenant := viper.GetString(commonParams.TenantKey)
+	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
+	if authPath == "" {
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "authentication path"))
+	}
+	authURI := GetAuthURL(authPath)
+	return authURI, nil
+}
+
+func extractAuthURIFromAPIKey(key string) (string, error) {
+	token, err := getClaimsFromToken(key)
+	if err != nil {
+		return "", errors.Errorf(fmt.Sprintf("jwt token decode error: %s", err.Error()))
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	authURI := claims[audienceClaimKey].(string)
+	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	return authURI, nil
 }
 
