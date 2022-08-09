@@ -1860,7 +1860,7 @@ func cleanUpTempZip(zipFilePath string) {
 				tries = tries - 1
 				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
 			} else {
-				logger.Print("Removed temporary zip")
+				logger.PrintIfVerbose("Removed temporary zip")
 				break
 			}
 		}
