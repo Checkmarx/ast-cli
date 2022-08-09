@@ -403,7 +403,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName, s
 }
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
-	buffer := executeScanGetBuffer(t, append(args, flag(params.ProjectGroupList), TestGroup))
+	buffer := executeScanGetBuffer(t, args)
 
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")

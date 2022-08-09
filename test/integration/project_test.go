@@ -129,7 +129,6 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
-		flag(params.GroupList), TestGroup,
 	)
 
 	createdProject := wrappers.ProjectResponseModel{}
