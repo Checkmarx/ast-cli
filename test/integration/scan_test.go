@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,20 +25,12 @@ import (
 )
 
 const (
-	fileSourceFlag                = "--file"
-	fileSourceValue               = "data/Dockerfile"
-	fileSourceValueVul            = "data/mock.dockerfile"
-	fileSourceIncorrectValue      = "data/source.zip"
-	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
-	fileSourceError               = "flag needs an argument: --file"
-	engineFlag                    = "--engine"
-	engineValue                   = "docker"
-	engineError                   = "flag needs an argument: --engine"
-	additionalParamsFlag          = "--additional-params"
-	additionalParamsValue         = "-v"
-	additionalParamsError         = "flag needs an argument: --additional-params"
-	scanCommand                   = "scan"
-	kicsRealtimeCommand           = "kics-realtime"
+	fileSourceValue       = "data/Dockerfile"
+	fileSourceValueVul    = "data/mock.dockerfile"
+	engineValue           = "docker"
+	additionalParamsValue = "-v"
+	scanCommand           = "scan"
+	kicsRealtimeCommand   = "kics-realtime"
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -68,6 +61,11 @@ func TestScansE2E(t *testing.T) {
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
 // Perform a nowait scan and poll status until completed

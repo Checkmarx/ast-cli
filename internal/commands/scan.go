@@ -69,6 +69,8 @@ const (
 	containerVolumeFormat           = "%s:/path"
 	containerTempDirPattern         = "kics"
 	kicsContainerPrefixName         = "cli-kics-realtime-"
+	cleanupMaxRetries               = 3
+	cleanupRetryWaitSeconds         = 15
 )
 
 var (
@@ -179,15 +181,18 @@ func scanRealtimeSubCommand() *cobra.Command {
 		StringSliceVar(
 			&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
 			"Additional scan options supported by kics. "+
-				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f")
+				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f",
+		)
 	realtimeScanCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeFile,
 		"",
-		"Path to input file for kics realtime scanner")
+		"Path to input file for kics realtime scanner",
+	)
 	realtimeScanCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeEngine,
 		"docker",
-		"Name in the $PATH for the container engine to run kics. Example:podman.")
+		"Name in the $PATH for the container engine to run kics. Example:podman.",
+	)
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
 	return realtimeScanCmd
 }
@@ -921,10 +926,10 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(
-	cmd *cobra.Command,
-	uploadsWrapper wrappers.UploadsWrapper,
-) (string, error) {
+func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
+	url, zipFilePath string,
+	err error,
+) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -932,55 +937,82 @@ func getUploadURLFromSource(
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	var errorUnzippingFile error
-	// apply file filters to zip file
-	if (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && len(zipFilePath) > 0 {
+
+	userProvidedZip := len(zipFilePath) > 0
+	unzip := (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && userProvidedZip
+	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
-			return "", errorUnzippingFile
+			return "", "", errorUnzippingFile
 		}
 	}
 
 	if directoryPath != "" {
 		var dirPathErr error
-		// Get sca resolver flags
-		scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
-		if dirPathErr != nil {
-			scaResolverParams = ""
-		}
-		scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-		if dirPathErr != nil {
-			scaResolver = ""
-			scaResolverParams = ""
-		}
+
+		scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
 			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
 			if dirPathErr != nil {
-				return "", errors.Wrapf(dirPathErr, "ScaResolver error")
+				if unzip {
+					_ = cleanTempUnzipDirectory(directoryPath)
+				}
+				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
+
 		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if unzip {
+			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
+			if dirRemovalErr != nil {
+				return "", "", dirRemovalErr
+			}
+		}
 		if dirPathErr != nil {
-			return "", dirPathErr
+			return "", "", dirPathErr
 		}
 	}
 	if zipFilePath != "" {
-		var zipFilePathErr error
-		// Send a request to uploads service
-		var preSignedURL *string
-		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
-		if zipFilePathErr != nil {
-			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
-		}
-		logger.PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, zipFilePathErr
+		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
-	return preSignedURL, nil
+	return preSignedURL, zipFilePath, nil
+}
+
+func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool) (
+	url, zipPath string,
+	err error,
+) {
+	var zipFilePathErr error
+	// Send a request to uploads service
+	var preSignedURL *string
+	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
+	if zipFilePathErr != nil {
+		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
+	if unzip || !userProvidedZip {
+		return *preSignedURL, zipFilePath, zipFilePathErr
+	}
+	return *preSignedURL, "", zipFilePathErr
+}
+
+func getScaResolverFlags(cmd *cobra.Command) (scaResolverParams, scaResolver string) {
+	scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+	if dirPathErr != nil {
+		scaResolverParams = ""
+	}
+	scaResolver, dirPathErr = cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	if dirPathErr != nil {
+		scaResolver = ""
+		scaResolverParams = ""
+	}
+	return scaResolverParams, scaResolver
 }
 
 func UnzipFile(f string) (string, error) {
@@ -1087,7 +1119,7 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
+		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1130,6 +1162,8 @@ func runCreateScanCommand(
 			}
 		}
 
+		cleanUpTempZip(zipFilePath)
+
 		return nil
 	}
 }
@@ -1150,7 +1184,7 @@ func createScanModel(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-) (*wrappers.Scan, error) {
+) (*wrappers.Scan, string, error) {
 	validateScanTypes(cmd)
 
 	var input = []byte("{}")
@@ -1158,7 +1192,7 @@ func createScanModel(
 	// Define type, project and config in scan model
 	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// set tags in scan model
@@ -1168,13 +1202,13 @@ func createScanModel(
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	// Set up the scan handler (either git or upload)
-	scanHandler, err := setupScanHandler(cmd, uploadsWrapper)
+	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper)
 	if err != nil {
-		return nil, err
+		return nil, zipFilePath, err
 	}
 
 	scanModel.Handler, _ = json.Marshal(scanHandler)
@@ -1185,7 +1219,7 @@ func createScanModel(
 		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	}
 
-	return &scanModel, nil
+	return &scanModel, zipFilePath, nil
 }
 
 func getUploadType(cmd *cobra.Command) string {
@@ -1199,10 +1233,12 @@ func getUploadType(cmd *cobra.Command) string {
 	return "upload"
 }
 
-func setupScanHandler(
-	cmd *cobra.Command,
-	uploadsWrapper wrappers.UploadsWrapper,
-) (wrappers.ScanHandler, error) {
+func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
+	wrappers.ScanHandler,
+	string,
+	error,
+) {
+	zipFilePath := ""
 	scanHandler := wrappers.ScanHandler{}
 	scanHandler.Branch = viper.GetString(commonParams.BranchKey)
 
@@ -1213,9 +1249,11 @@ func setupScanHandler(
 
 		scanHandler.RepoURL = strings.TrimSpace(source)
 	} else {
-		uploadURL, err := getUploadURLFromSource(cmd, uploadsWrapper)
+		var err error
+		var uploadURL string
+		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper)
 		if err != nil {
-			return scanHandler, err
+			return scanHandler, zipFilePath, err
 		}
 
 		scanHandler.UploadURL = uploadURL
@@ -1228,20 +1266,20 @@ func setupScanHandler(
 		sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
 
 		if strings.TrimSpace(sshKeyPath) == "" {
-			return scanHandler, errors.New("flag needs an argument: --ssh-key")
+			return scanHandler, "", errors.New("flag needs an argument: --ssh-key")
 		}
 
 		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		sourceTrimmed := strings.TrimSpace(source)
 
 		if !util.IsSSHURL(sourceTrimmed) {
-			return scanHandler, errors.New(invalidSSHSource)
+			return scanHandler, "", errors.New(invalidSSHSource)
 		}
 
 		err = defineSSHCredentials(strings.TrimSpace(sshKeyPath), &scanHandler)
 	}
 
-	return scanHandler, err
+	return scanHandler, zipFilePath, err
 }
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
@@ -1809,4 +1847,39 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	}
 
 	return nil
+}
+
+func cleanTempUnzipDirectory(directoryPath string) error {
+	logger.PrintIfVerbose("Cleaning up temporary directory: " + directoryPath)
+	return os.RemoveAll(directoryPath)
+}
+
+func cleanUpTempZip(zipFilePath string) {
+	if zipFilePath != "" {
+		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
+		tries := cleanupMaxRetries
+		for tries > 0 {
+			zipRemoveErr := os.Remove(zipFilePath)
+			if zipRemoveErr != nil {
+				logger.PrintIfVerbose(
+					fmt.Sprintf(
+						"Failed to remove temporary zip: %d in %d: %v",
+						cleanupMaxRetries-tries,
+						cleanupMaxRetries,
+						zipRemoveErr,
+					),
+				)
+				tries--
+				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+			} else {
+				logger.PrintIfVerbose("Removed temporary zip")
+				break
+			}
+		}
+		if tries == 0 {
+			logger.PrintIfVerbose("Failed to remove temporary zip " + zipFilePath)
+		}
+	} else {
+		logger.PrintIfVerbose("No temporary zip to clean")
+	}
 }
