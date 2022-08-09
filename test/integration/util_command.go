@@ -26,6 +26,7 @@ const (
 	ProxyHostEnv = "PROXY_HOST"
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
 	pat          = "PERSONAL_ACCESS_TOKEN"
+	TestGroup    = "test_group"
 )
 
 // Bind environment vars and their defaults to viper
@@ -61,7 +62,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results,scaPackage)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -147,7 +148,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	// args = appendProxyArgs(args)
+	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

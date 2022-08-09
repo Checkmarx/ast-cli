@@ -4,13 +4,14 @@ package integration
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -128,6 +129,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
+		flag(params.GroupList), TestGroup,
 	)
 
 	createdProject := wrappers.ProjectResponseModel{}
