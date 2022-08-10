@@ -57,7 +57,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := createScan(t, Zip, Tags)
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,kics,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -215,7 +215,8 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 		flag(params.TargetFlag), "results",
 	}
 
-	err, _ := executeCommand(t, args...)
+	cmd := createASTIntegrationTestCommand(t)
+	err := executeWithTimeout(cmd, 2*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
 	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))

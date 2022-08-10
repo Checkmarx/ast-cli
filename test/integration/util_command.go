@@ -26,6 +26,7 @@ const (
 	ProxyHostEnv = "PROXY_HOST"
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
 	pat          = "PERSONAL_ACCESS_TOKEN"
+	TestGroup    = "test_group"
 )
 
 // Bind environment vars and their defaults to viper
@@ -49,6 +50,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
+	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
@@ -60,7 +62,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
