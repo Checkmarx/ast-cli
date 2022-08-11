@@ -30,6 +30,7 @@ const (
 	kicsEngine                  = "engine"
 	similarityIDValue           = "9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8"
 	resultFileInvalidValue      = "./"
+	invalidEngineMessage        = "Please verify if engine is installed and running"
 )
 
 func TestScaRemediation(t *testing.T) {
@@ -151,4 +152,22 @@ func TestKicsRemediationEngineFlag(t *testing.T) {
 		flag(kicsEngine),
 		engineValue,
 	)
+}
+
+func TestKicsRemediationInvalidEngine(t *testing.T) {
+	abs, _ := filepath.Abs(kicsFileValue)
+	args := []string{
+		utilsCommand,
+		remediationCommand,
+		kicsCommand,
+		flag(kicsFileFlag),
+		abs,
+		flag(resultsFileFlag),
+		resultFileValue,
+		flag(kicsEngine),
+		invalidEngineValue,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, invalidEngineMessage)
 }
