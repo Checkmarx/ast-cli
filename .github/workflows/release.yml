@@ -38,10 +38,14 @@ jobs:
           brew install mitchellh/gon/gon
       - name: Install and start docker
         run: |
+          echo "Installing docker with brew"
           brew install --cask docker
+          echo "Installing privileged components"
           sudo /Applications/Docker.app/Contents/MacOS/Docker --unattended --install-privileged-components
+          echo "Starting docker"
           open -a /Applications/Docker.app --args --unattended --accept-license
-          while ! /Applications/Docker.app/Contents/Resources/bin/docker info &>/dev/null; do sleep 1; done
+          echo "Waiting for docker to start"
+          while ! /Applications/Docker.app/Contents/Resources/bin/docker info; do sleep 10; done
       - name: Test docker
         run: |
           docker version
