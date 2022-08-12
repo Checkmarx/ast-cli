@@ -39,7 +39,7 @@ jobs:
       - name: Install and start docker
         run: |
           echo "Installing docker with brew"
-          brew install --cask docker@82475
+          brew install docker
           echo "Installing privileged components"
           sudo /Applications/Docker.app/Contents/MacOS/Docker --unattended --install-privileged-components
           echo "Starting docker"
