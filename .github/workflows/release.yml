@@ -38,6 +38,9 @@ jobs:
           brew install mitchellh/gon/gon
       - name: Install and start docker
         uses: docker-practice/actions-setup-docker@master
+      - name: Cleanup docker installation
+        run: |
+          rm docker.rb
       - name: Test docker
         run: |
           docker version
