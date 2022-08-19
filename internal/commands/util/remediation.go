@@ -83,7 +83,7 @@ func RemediationScaCommand() *cobra.Command {
 		RunE: runRemediationScaCmd(),
 		Example: heredoc.Doc(
 			`
-			$ cx utils remediation sca --package <package> --package-file <package-file> --package-version <package-version>
+			$ cx utils remediation sca --package <package> --package-files <package-files> --package-version <package-version>
 		`,
 		),
 		Annotations: map[string]string{
