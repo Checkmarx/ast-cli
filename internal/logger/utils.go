@@ -28,7 +28,7 @@ func Print(msg string) {
 }
 
 func Printf(msg string, args ...interface{}) {
-	log.Print(fmt.Sprintf(msg, args))
+	log.Print(fmt.Sprintf(msg, args...))
 }
 
 func PrintIfVerbose(msg string) {

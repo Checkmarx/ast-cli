@@ -11,8 +11,8 @@ func (r PackageContentJSON) Parser() (string, error) {
 	// Needs to be a generic interface to read the entire file
 	var decoded interface{}
 	var err error
-	var found = false
-	var foundInDev = false
+	var found bool
+	var foundInDev bool
 	var outString []byte
 	err = json.Unmarshal([]byte(r.FileContent), &decoded)
 	if err != nil {

@@ -167,9 +167,9 @@ func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error {
 		for _, filePath := range filePaths {
 			if IsPackageFileSupported(filePath) {
 				// read file to string
-				fileContent, err := readPackageFile(filePath)
-				if err != nil {
-					return err
+				fileContent, fileErr := readPackageFile(filePath)
+				if fileErr != nil {
+					return fileErr
 				}
 				// Call the parser for each specific package manager
 				p := remediation.PackageContentJSON{
@@ -177,14 +177,14 @@ func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error {
 					PackageIdentifier: packageName,
 					PackageVersion:    packageVersion,
 				}
-				parserOutput, err := p.Parser()
-				if err != nil {
-					return err
+				parserOutput, fileErr := p.Parser()
+				if fileErr != nil {
+					return fileErr
 				}
 				// write to file with replaced package version
-				err = writePackageFile(filePath, parserOutput)
-				if err != nil {
-					return err
+				fileErr = writePackageFile(filePath, parserOutput)
+				if fileErr != nil {
+					return fileErr
 				}
 			} else {
 				logger.Printf("Unsupported package manager file: %s", filePath)
