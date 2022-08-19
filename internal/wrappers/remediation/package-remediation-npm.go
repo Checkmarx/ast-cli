@@ -22,7 +22,6 @@ func (r PackageContentJSON) Parser() (string, error) {
 		decoded.(map[string]interface{})["dependencies"],
 		r,
 	)
-
 	foundInDev, decoded.(map[string]interface{})["devDependencies"] = replace(
 		decoded.(map[string]interface{})["devDependencies"],
 		r,
@@ -37,9 +36,12 @@ func (r PackageContentJSON) Parser() (string, error) {
 	return string(outString), nil
 }
 
-func replace(dependencies interface{}, r PackageContentJSON) (bool, map[string]interface{}) {
+func replace(dependencies interface{}, r PackageContentJSON) (
+	dependencyFound bool,
+	dependencyMap map[string]interface{},
+) {
 	var found = false
-	dependencyMap := dependencies.(map[string]interface{})
+	dependencyMap = dependencies.(map[string]interface{})
 	for key, element := range dependencyMap {
 		if key == r.PackageIdentifier {
 			logger.PrintIfVerbose("Found package " + key + " with version " + element.(string) + ", replacing it with " + r.PackageVersion + ".")
