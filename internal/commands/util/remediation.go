@@ -93,10 +93,18 @@ func RemediationScaCommand() *cobra.Command {
 			),
 		},
 	}
-	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationFile, "", "Path to input package file to remediate the package version")
+	scaRemediateCmd.PersistentFlags().StringSlice(
+		commonParams.RemediationFiles,
+		[]string{},
+		"Path to input package files to remediate the package version",
+	)
 	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationPackage, "", "Name of the package to be replaced")
-	scaRemediateCmd.PersistentFlags().String(commonParams.RemediationPackageVersion, "", "Version of the package to be replaced")
-	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationFile)
+	scaRemediateCmd.PersistentFlags().String(
+		commonParams.RemediationPackageVersion,
+		"",
+		"Version of the package to be replaced",
+	)
+	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationFiles)
 	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationPackage)
 	_ = scaRemediateCmd.MarkPersistentFlagRequired(commonParams.RemediationPackageVersion)
 	return scaRemediateCmd
@@ -121,17 +129,29 @@ func RemediationKicsCommand() *cobra.Command {
 			),
 		},
 	}
-	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsRemediationFile, "", "Path to the kics scan results file. It is used to identify and remediate the kics vulnerabilities")
+	kicsRemediateCmd.PersistentFlags().String(
+		commonParams.KicsRemediationFile,
+		"",
+		"Path to the kics scan results file. It is used to identify and remediate the kics vulnerabilities",
+	)
 	kicsRemediateCmd.PersistentFlags().
 		StringSliceVar(
-			&kicsSimilarityFilter, commonParams.KicsSimilarityFilter, []string{},
+			&kicsSimilarityFilter,
+			commonParams.KicsSimilarityFilter,
+			[]string{},
 			"List with the similarity ids that should be remediated : --similarity-ids b42a19486a8e18324a9b2c06147b1c49feb3ba39a0e4aeafec5665e60f98d047,"+
-				"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8")
-	kicsRemediateCmd.PersistentFlags().String(commonParams.KicsProjectFile, "", "Absolute path to the folder that contains the file(s) to be remediated")
+				"9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8",
+		)
+	kicsRemediateCmd.PersistentFlags().String(
+		commonParams.KicsProjectFile,
+		"",
+		"Absolute path to the folder that contains the file(s) to be remediated",
+	)
 	kicsRemediateCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeEngine,
 		"docker",
-		"Name in the $PATH for the container engine to run kics. Example:podman.")
+		"Name in the $PATH for the container engine to run kics. Example:podman.",
+	)
 	_ = kicsRemediateCmd.MarkPersistentFlagRequired(commonParams.KicsRemediationFile)
 	_ = kicsRemediateCmd.MarkPersistentFlagRequired(commonParams.KicsProjectFile)
 	return kicsRemediateCmd
@@ -140,30 +160,38 @@ func RemediationKicsCommand() *cobra.Command {
 func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		// Check if input file is supported
-		filePath, _ := cmd.Flags().GetString(commonParams.RemediationFile)
+		filePaths, _ := cmd.Flags().GetStringSlice(commonParams.RemediationFiles)
 		packageName, _ := cmd.Flags().GetString(commonParams.RemediationPackage)
 		packageVersion, _ := cmd.Flags().GetString(commonParams.RemediationPackageVersion)
-		if isPackageFileSupported(filePath) {
-			// read file to string
-			fileContent, err := readPackageFile(filePath)
-			if err != nil {
-				return err
+		var err error
+		for _, filePath := range filePaths {
+			if IsPackageFileSupported(filePath) {
+				// read file to string
+				fileContent, err := readPackageFile(filePath)
+				if err != nil {
+					return err
+				}
+				// Call the parser for each specific package manager
+				p := remediation.PackageContentJSON{
+					FileContent:       fileContent,
+					PackageIdentifier: packageName,
+					PackageVersion:    packageVersion,
+				}
+				parserOutput, err := p.Parser()
+				if err != nil {
+					return err
+				}
+				// write to file with replaced package version
+				err = writePackageFile(filePath, parserOutput)
+				if err != nil {
+					return err
+				}
+			} else {
+				logger.Printf("Unsupported package manager file: %s", filePath)
+				err = errors.Errorf("Unsupported package manager file")
 			}
-			// Call the parser for each specific package manager
-			p := remediation.PackageContentJSON{FileContent: fileContent, PackageIdentifier: packageName, PackageVersion: packageVersion}
-			parserOutput, err := p.Parser()
-			if err != nil {
-				return err
-			}
-			// write to file with replaced package version
-			err = writePackageFile(filePath, parserOutput)
-			if err != nil {
-				return err
-			}
-		} else {
-			return errors.Errorf("Unsupported package manager file")
 		}
-		return nil
+		return err
 	}
 }
 
@@ -183,12 +211,8 @@ func writePackageFile(filename, output string) error {
 	return nil
 }
 
-func isPackageFileSupported(filename string) bool {
-	var r = false
-	if strings.Contains(filename, npmPackageFilename) {
-		r = true
-	}
-	return r
+func IsPackageFileSupported(filename string) bool {
+	return strings.Contains(filename, npmPackageFilename)
 }
 
 func runRemediationKicsCmd() func(cmd *cobra.Command, args []string) error {
