@@ -18,6 +18,7 @@ const (
 	AgentNameEnv                        = "CX_AGENT_NAME"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
+	ScaPackagePathEnv                   = "CX_SCA_PACKAGE_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
@@ -51,4 +52,5 @@ const (
 	OrgRepoNameEnv                      = "CX_GH_REPONAME"
 	PRNumberEnv                         = "CX_PR_NUMBER"
 	CxScanID                            = "CX_SCAN_ID"
+	DescriptionsPathEnv                 = "CX_DESCRIPTIONS_PATH"
 )

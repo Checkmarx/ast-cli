@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,20 +25,13 @@ import (
 )
 
 const (
-	fileSourceFlag                = "--file"
-	fileSourceValue               = "data/Dockerfile"
-	fileSourceValueVul            = "data/mock.dockerfile"
-	fileSourceIncorrectValue      = "data/source.zip"
-	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
-	fileSourceError               = "flag needs an argument: --file"
-	engineFlag                    = "--engine"
-	engineValue                   = "docker"
-	engineError                   = "flag needs an argument: --engine"
-	additionalParamsFlag          = "--additional-params"
-	additionalParamsValue         = "-v"
-	additionalParamsError         = "flag needs an argument: --additional-params"
-	scanCommand                   = "scan"
-	kicsRealtimeCommand           = "kics-realtime"
+	fileSourceValue       = "data/Dockerfile"
+	fileSourceValueVul    = "data/mock.dockerfile"
+	engineValue           = "docker"
+	additionalParamsValue = "-v"
+	scanCommand           = "scan"
+	kicsRealtimeCommand   = "kics-realtime"
+	invalidEngineValue    = "invalidEngine"
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -64,10 +58,15 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := createScan(t, Zip, Tags)
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,kics,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
 // Perform a nowait scan and poll status until completed
@@ -156,7 +155,7 @@ func TestCancelScan(t *testing.T) {
 
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
-	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 20, 5), "Scan should be canceled")
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 90, 5), "Scan should be canceled")
 }
 
 // Create a scan with the sources from the integration package, excluding go files and including zips
@@ -170,7 +169,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js",
+		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js,!*json,!*tf",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -197,6 +196,32 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
+}
+
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "json",
+		flag(params.TargetPathFlag), "/tmp/",
+		flag(params.TargetFlag), "results",
+	}
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := executeWithTimeout(cmd, 2*time.Minute, args...)
+	assertError(t, err, "Threshold check finished with status Failed")
+
+	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
 // Create a scan ignoring the exclusion of the .git directory
@@ -600,7 +625,8 @@ func TestRunKicsScan(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValueVul)
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
@@ -609,7 +635,8 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
-		flag(params.KicsRealtimeFile), fileSourceValue)
+		flag(params.KicsRealtimeFile), fileSourceValue,
+	)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
@@ -626,9 +653,20 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,)
+		flag(params.KicsRealtimeEngine), engineValue,
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+	args := []string{
+		scanCommand, kicsRealtimeCommand,
+		flag(params.KicsRealtimeFile), fileSourceValueVul,
+		flag(params.KicsRealtimeEngine), invalidEngineValue,
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, invalidEngineMessage)
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {
@@ -636,8 +674,28 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
-		flag(params.KicsRealtimeEngine),engineValue,
-		flag(params.KicsRealtimeAdditionalParams),additionalParamsValue)
+		flag(params.KicsRealtimeEngine), engineValue,
+		flag(params.KicsRealtimeAdditionalParams), additionalParamsValue,
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
+	_ = viper.BindEnv("CX_APIKEY")
+	apiKey := viper.GetString("CX_APIKEY")
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key and no tenant should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "./data/sources.zip",
+		flag(params.BranchFlag), "main",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.ScanTypes), "sast",
+		flag(params.DebugFlag),
+		flag(params.AsyncFlag),
+	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }

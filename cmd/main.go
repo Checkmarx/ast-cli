@@ -31,17 +31,19 @@ func main() {
 	logs := viper.GetString(params.LogsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
+	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
 	prPath := viper.GetString(params.PRDecorationPathKey)
+	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -51,6 +53,7 @@ func main() {
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	prWrapper := wrappers.NewHTTPPRWrapper(prPath)
+	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -68,6 +71,7 @@ func main() {
 		gitLabWrapper,
 		bflWrapper,
 		prWrapper,
+		learnMoreWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

@@ -18,7 +18,8 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
-	prWrapper wrappers.PRWrapper) *cobra.Command {
+	prWrapper wrappers.PRWrapper,
+	learnMoreWrapper wrappers.LearnMoreWrapper) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
@@ -42,7 +43,11 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 
 	prDecorationCmd := NewPRDecorationCommand(prWrapper)
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper), prDecorationCmd)
+	remediationCmd := NewRemediationCommand()
+
+	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
+
+	utilsCmd.AddCommand(completionCmd, envCheckCmd, learnMoreCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper), prDecorationCmd, remediationCmd)
 
 	return utilsCmd
 }

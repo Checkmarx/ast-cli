@@ -37,11 +37,10 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
       - name: Install and start docker
+        uses: docker-practice/actions-setup-docker@master
+      - name: Cleanup docker installation
         run: |
-          brew install --cask docker
-          sudo /Applications/Docker.app/Contents/MacOS/Docker --unattended --install-privileged-components
-          open -a /Applications/Docker.app --args --unattended --accept-license
-          while ! /Applications/Docker.app/Contents/Resources/bin/docker info &>/dev/null; do sleep 1; done
+          rm docker.rb
       - name: Test docker
         run: |
           docker version

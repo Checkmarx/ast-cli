@@ -4,13 +4,14 @@ package integration
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -193,6 +194,31 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 
 	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
 	defer func() { _ = os.Remove(SSHKeyFilePath) }()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(
+		cmd,
+		"project", "create",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "master",
+		flag(params.TagList), tagsStr,
+		flag(params.RepoURLFlag), SSHRepo,
+		flag(params.SSHKeyFlag), "",
+	)
+	assert.Assert(t, err != nil)
+
+	err = execute(
+		cmd,
+		"project", "create",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "master",
+		flag(params.TagList), tagsStr,
+		flag(params.RepoURLFlag), "",
+		flag(params.SSHKeyFlag), SSHKeyFilePath,
+	)
+	assert.Assert(t, err != nil)
 
 	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(

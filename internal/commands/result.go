@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -45,6 +47,7 @@ const (
 	notAvailableNumber       = -1
 	defaultPaddingSize       = -14
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
+	scaType                  = "sca"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -94,7 +97,8 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd)
+		showResultCmd, bflResultCmd, codeBashingCmd,
+	)
 	return resultCmd
 }
 
@@ -363,7 +367,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              Project Name: %s                        \n", summary.ProjectName)
 		fmt.Printf("              Scan ID: %s                             \n\n", summary.ScanID)
 		fmt.Printf("            Results Summary:                     \n")
-		fmt.Printf("              Risk Level: %s																									 \n", summary.RiskMsg)
+		fmt.Printf(
+			"              Risk Level: %s																									 \n",
+			summary.RiskMsg,
+		)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
@@ -397,7 +404,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
-	summaryURL := fmt.Sprintf(strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1), summary.ScanID, summary.BranchName)
+	summaryURL := fmt.Sprintf(
+		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
+		summary.ScanID, url.QueryEscape(summary.BranchName),
+	)
 	return summaryURL
 }
 
@@ -426,25 +436,29 @@ func runGetCodeBashingCommand(
 		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
 		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
 		params, err := codeBashingWrapper.BuildCodeBashingParams(
-			[]wrappers.CodeBashingParamsCollection{{
-				CweID:       "CWE-" + cwe,
-				Language:    language,
-				CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
+			[]wrappers.CodeBashingParamsCollection{
+				{
+					CweID:       "CWE-" + cwe,
+					Language:    language,
+					CxQueryName: strings.ReplaceAll(vulType, " ", "_"),
+				},
+			},
+		)
 		if err != nil {
 			return err
 		}
 		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
-		url, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
+		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
 		}
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
-		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, url)
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, codeBashingURL)
 		if err != nil {
 			return err
 		}
 		if webError != nil {
-			return fmt.Errorf(webError.Message)
+			return errors.New(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {
@@ -489,7 +503,10 @@ func CreateScanReport(
 }
 
 func isScanPending(scanStatus string) bool {
-	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(scanStatus, "Partial") || strings.EqualFold(scanStatus, "Failed"))
+	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(
+		scanStatus,
+		"Partial",
+	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
 func createReport(
@@ -554,15 +571,29 @@ func ReadResults(
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
+	var scaPackageModel *[]wrappers.ScaPackageCollection
 	var errorModel *wrappers.WebError
+
 	params[commonParams.ScanIDQueryParam] = scanID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if resultsModel != nil {
+		scaPackageModel, errorModel, err = resultsWrapper.GetAllResultsPackageByScanID(params)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		// Enrich sca results
+		if scaPackageModel != nil {
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
+		}
 		resultsModel.ScanID = scanID
 		return resultsModel, nil
 	}
@@ -799,8 +830,10 @@ func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 
 func findDescriptionText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
-		return fmt.Sprintf("%s Value: %s Excepted value: %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+		return fmt.Sprintf(
+			"%s Value: %s Excepted value: %s",
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -808,8 +841,10 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 
 func findHelpMarkdownText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
-		return fmt.Sprintf("%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+		return fmt.Sprintf(
+			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -849,7 +884,8 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 				result.ScanResultData.Filename,
 				"/",
 				"",
-				1)
+				1,
+			)
 			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 			scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 			scanLocation.PhysicalLocation.Region.StartColumn = 1
@@ -888,4 +924,50 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	} else if summary.ScaIssues == notAvailableNumber {
 		summary.ScaIssues = 0
 	}
+}
+
+func addPackageInformation(
+	resultsModel *wrappers.ScanResultsCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+) *wrappers.ScanResultsCollection {
+	var currentID string
+	locationsByID := make(map[string][]*string)
+	// Create map to be used to populate locations for each package path
+	for _, result := range resultsModel.Results {
+		if result.Type == scaType {
+			for _, packages := range *scaPackageModel {
+				currentPackage := packages
+				locationsByID[packages.ID] = currentPackage.Locations
+			}
+		}
+	}
+
+	for _, result := range resultsModel.Results {
+		if !(result.Type == scaType) {
+			continue
+		} else {
+			currentID = result.ScanResultData.PackageIdentifier
+			const precision = 1
+			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+			result.VulnerabilityDetails.CvssScore = roundedScore
+			for _, packages := range *scaPackageModel {
+				currentPackage := packages
+				if packages.ID == currentID {
+					for _, dependencyPath := range currentPackage.DependencyPathArray {
+						head := &dependencyPath[0]
+						head.Locations = locationsByID[head.ID]
+						head.SupportsQuickFix = len(dependencyPath) == 1
+						for _, location := range locationsByID[head.ID] {
+							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+						}
+						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
+					}
+					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
+					result.ScanResultData.ScaPackageCollection = &currentPackage
+					break
+				}
+			}
+		}
+	}
+	return resultsModel
 }

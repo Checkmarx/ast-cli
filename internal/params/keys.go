@@ -53,4 +53,6 @@ var (
 	OrgRepoNameKey                      = strings.ToLower(OrgRepoNameEnv)
 	PRNumberKey                         = strings.ToLower(PRNumberEnv)
 	CxScanKey                           = strings.ToLower(CxScanID)
+	ScaPackagePathKey                   = strings.ToLower(ScaPackagePathEnv)
+	DescriptionsPathKey                 = strings.ToLower(DescriptionsPathEnv)
 )
