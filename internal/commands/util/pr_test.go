@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/assert"
@@ -11,5 +12,5 @@ func TestNewPRDecorationCommandMustExist(t *testing.T) {
 	assert.Assert(t, cmd != nil, "PR decoration command must exist")
 
 	err := cmd.Execute()
-	assert.Error(t, err, "failed creating PR Decoration: Please provide scan-id flag")
+	assert.Error(t, err, fmt.Sprintf(invalidFlag, "scan-id"))
 }
