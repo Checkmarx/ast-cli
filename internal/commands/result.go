@@ -953,8 +953,14 @@ func addPackageInformation(
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
-					for index, dependencyPath := range currentPackage.DependencyPathArray {
-						currentPackage.DependencyPathArray[index][0].Locations = locationsByID[dependencyPath[0].ID]
+					for _, dependencyPath := range currentPackage.DependencyPathArray {
+						head := &dependencyPath[0]
+						head.Locations = locationsByID[head.ID]
+						head.SupportsQuickFix = len(dependencyPath) == 1
+						for _, location := range locationsByID[head.ID] {
+							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+						}
+						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
 					}
 					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-detail/" + result.VulnerabilityDetails.CveName
 					result.ScanResultData.ScaPackageCollection = &currentPackage
