@@ -26,7 +26,6 @@ const (
 	ProxyHostEnv = "PROXY_HOST"
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
 	pat          = "PERSONAL_ACCESS_TOKEN"
-	TestGroup    = "test_group"
 )
 
 // Bind environment vars and their defaults to viper
@@ -90,8 +89,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
-		learnMoreWrapper,
 		prWrapper,
+		learnMoreWrapper,
 	)
 	return astCli
 }

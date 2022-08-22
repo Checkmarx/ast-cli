@@ -14,10 +14,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	invalidFlag = "Value of %s is invalid"
-)
-
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pr",
@@ -74,27 +70,32 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		scanID := viper.GetString(params.CxScanKey)
 		if scanID == "" {
 			return errors.Errorf(
-				invalidFlag, params.ScanIDFlag)
+				invalidFlag, params.ScanIDFlag,
+			)
 		}
 		scmToken := viper.GetString(params.SCMTokenKey)
 		if scmToken == "" {
 			return errors.Errorf(
-				invalidFlag, params.SCMTokenFlag)
+				invalidFlag, params.SCMTokenFlag,
+			)
 		}
 		namespace := viper.GetString(params.OrgNamespaceKey)
 		if namespace == "" {
 			return errors.Errorf(
-				invalidFlag, params.NamespaceFlag)
+				invalidFlag, params.NamespaceFlag,
+			)
 		}
 		repoName := viper.GetString(params.OrgRepoNameKey)
 		if repoName == "" {
 			return errors.Errorf(
-				invalidFlag, params.RepoNameFlag)
+				invalidFlag, params.RepoNameFlag,
+			)
 		}
 		prNumberString := viper.GetString(params.PRNumberKey)
 		if prNumberString == "" {
 			return errors.Errorf(
-				invalidFlag, params.PRNumberFlag)
+				invalidFlag, params.PRNumberFlag,
+			)
 		}
 		prNumber, err := strconv.Atoi(prNumberString)
 
