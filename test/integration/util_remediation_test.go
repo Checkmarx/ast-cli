@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
@@ -14,13 +15,10 @@ const (
 	remediationCommand          = "remediation"
 	scaCommand                  = "sca"
 	kicsCommand                 = "kics"
-	packageFileFlag             = "package-file"
 	packageFileValue            = "data/package.json"
 	packageFileValueUnsupported = "data/package.jso"
-	packageFlag                 = "package"
 	packageValue                = "copyfiles"
 	packageValueNotFound        = "copyfile"
-	packageVersionFlag          = "package-version"
 	packageVersionValue         = "200"
 	resultsFileFlag             = "results-file"
 	resultFileValue             = "data/results.json"
@@ -41,11 +39,11 @@ func TestScaRemediation(t *testing.T) {
 		utilsCommand,
 		remediationCommand,
 		scaCommand,
-		flag(packageFileFlag),
+		flag(params.RemediationFiles),
 		packageFileValue,
-		flag(packageFlag),
+		flag(params.RemediationPackage),
 		packageValue,
-		flag(packageVersionFlag),
+		flag(params.RemediationPackageVersion),
 		packageVersionValue,
 	)
 }
@@ -55,11 +53,11 @@ func TestScaRemediationUnsupported(t *testing.T) {
 		utilsCommand,
 		remediationCommand,
 		scaCommand,
-		flag(packageFileFlag),
+		flag(params.RemediationFiles),
 		packageFileValueUnsupported,
-		flag(packageFlag),
+		flag(params.RemediationPackage),
 		packageValue,
-		flag(packageVersionFlag),
+		flag(params.RemediationPackageVersion),
 		packageVersionValue,
 	}
 
@@ -72,11 +70,11 @@ func TestScaRemediationNotFound(t *testing.T) {
 		utilsCommand,
 		remediationCommand,
 		scaCommand,
-		flag(packageFileFlag),
+		flag(params.RemediationFiles),
 		packageFileValue,
-		flag(packageFlag),
+		flag(params.RemediationPackage),
 		packageValueNotFound,
-		flag(packageVersionFlag),
+		flag(params.RemediationPackageVersion),
 		packageVersionValue,
 	}
 

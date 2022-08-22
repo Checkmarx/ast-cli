@@ -76,7 +76,7 @@ const (
 	KicsRealtimeFile             = "file"
 	KicsRealtimeEngine           = "engine"
 	KicsRealtimeAdditionalParams = "additional-params"
-	RemediationFile              = "package-file"
+	RemediationFiles             = "package-files"
 	KicsRemediationFile          = "results-file"
 	KicsProjectFile              = "kics-files"
 	KicsSimilarityFilter         = "similarity-ids"

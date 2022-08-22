@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	packageFileFlag             = "--package-file"
+	packageFileFlag             = "--package-files"
 	packageFileValue            = "../data/package.json"
 	packageFileValueUnsupported = "../data/package.jso"
 	packageFlag                 = "--package"
@@ -35,19 +35,43 @@ func TestNewRemediationCommand(t *testing.T) {
 
 func TestRemediationScaCommand(t *testing.T) {
 	cmd := RemediationScaCommand()
-	err := executeTestCommand(cmd, packageFileFlag, packageFileValue, packageFlag, packageValue, packageVersionFlag, packageVersionValue)
+	err := executeTestCommand(
+		cmd,
+		packageFileFlag,
+		packageFileValue,
+		packageFlag,
+		packageValue,
+		packageVersionFlag,
+		packageVersionValue,
+	)
 	assert.Assert(t, err == nil, "Remediation command must pass")
 }
 
 func TestRemediationScaCommandUnsupported(t *testing.T) {
 	cmd := RemediationScaCommand()
-	err := executeTestCommand(cmd, packageFileFlag, packageFileValueUnsupported, packageFlag, packageValue, packageVersionFlag, packageVersionValue)
+	err := executeTestCommand(
+		cmd,
+		packageFileFlag,
+		packageFileValueUnsupported,
+		packageFlag,
+		packageValue,
+		packageVersionFlag,
+		packageVersionValue,
+	)
 	assert.Assert(t, err != nil, "Unsuported package manager file")
 }
 
 func TestRemediationScaCommandPackageNotFound(t *testing.T) {
 	cmd := RemediationScaCommand()
-	err := executeTestCommand(cmd, packageFileFlag, packageFileValue, packageFlag, packageValueNotFound, packageVersionFlag, packageVersionValue)
+	err := executeTestCommand(
+		cmd,
+		packageFileFlag,
+		packageFileValue,
+		packageFlag,
+		packageValueNotFound,
+		packageVersionFlag,
+		packageVersionValue,
+	)
 	assert.Assert(t, err != nil, "Package not found")
 }
 
@@ -82,6 +106,14 @@ func TestRemediationKicsCommandInvalidEngine(t *testing.T) {
 func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {
 	cmd := RemediationKicsCommand()
 	abs, _ := filepath.Abs(kicsFileValue)
-	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, similarityIDFlag, similarityIDValue)
+	err := executeTestCommand(
+		cmd,
+		resultsFileFlag,
+		resultFileValue,
+		kicsFileFlag,
+		abs,
+		similarityIDFlag,
+		similarityIDValue,
+	)
 	assert.Assert(t, err == nil, "Remediation command must pass")
 }
