@@ -70,11 +70,6 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	s.Column = 0
-	s.Line = 0
-	s.Length = 0
-	s.MethodLine = 0
-
 	s.Column = intValue(aux.Column, column, aux.FileName)
 	s.Line = intValue(aux.Line, line, aux.FileName)
 	s.Length = intValue(aux.Length, length, aux.FileName)
