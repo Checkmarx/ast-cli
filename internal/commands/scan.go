@@ -903,7 +903,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
 		if err != nil {
-			return errors.Errorf("%s", err)
+			return errors.Errorf("%s \n %s", err, out)
 		}
 		logger.PrintIfVerbose(string(out))
 	}
