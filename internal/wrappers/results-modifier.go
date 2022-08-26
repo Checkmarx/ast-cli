@@ -70,15 +70,15 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	s.Column = intValue(aux.Column, column, aux.FileName)
-	s.Line = intValue(aux.Line, line, aux.FileName)
-	s.Length = intValue(aux.Length, length, aux.FileName)
-	s.MethodLine = intValue(aux.MethodLine, methodLine, aux.FileName)
+	s.Column = uintValue(aux.Column, column, aux.FileName)
+	s.Line = uintValue(aux.Line, line, aux.FileName)
+	s.Length = uintValue(aux.Length, length, aux.FileName)
+	s.MethodLine = uintValue(aux.MethodLine, methodLine, aux.FileName)
 
 	return nil
 }
 
-func intValue(value int, name string, filename string) uint {
+func uintValue(value int, name string, filename string) uint {
 	var r uint = 0
 	if value >= 0 {
 		r = uint(value)
