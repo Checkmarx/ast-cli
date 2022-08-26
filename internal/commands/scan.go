@@ -902,10 +902,10 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 		args = append(args, scaResolverParsedParams...)
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
+		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
-		logger.PrintIfVerbose(string(out))
 	}
 	return nil
 }
