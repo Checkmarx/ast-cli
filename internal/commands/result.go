@@ -784,8 +784,11 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	auxTextRange.StartColumn = results.Column - 1
-	auxTextRange.EndColumn = results.Column
+	auxTextRange.StartColumn = results.Column
+	auxTextRange.EndColumn = results.Column + results.Length
+	if auxTextRange.StartColumn == auxTextRange.EndColumn {
+		auxTextRange.EndColumn += 1
+	}
 	return auxTextRange
 }
 
