@@ -749,8 +749,8 @@ func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	auxLocation.Message = results.ScanResultData.Value
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.ScanResultData.Line
-	auxTextRange.StartColumn = 1
-	auxTextRange.EndColumn = 2
+	auxTextRange.StartColumn = 0
+	auxTextRange.EndColumn = 1
 	auxLocation.TextRange = auxTextRange
 	return auxLocation
 }
@@ -784,8 +784,11 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	auxTextRange.StartColumn = results.Column - 1
-	auxTextRange.EndColumn = results.Column
+	auxTextRange.StartColumn = results.Column
+	auxTextRange.EndColumn = results.Column + results.Length
+	if auxTextRange.StartColumn == auxTextRange.EndColumn {
+		auxTextRange.EndColumn++
+	}
 	return auxTextRange
 }
 
