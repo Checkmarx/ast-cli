@@ -787,7 +787,7 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 	auxTextRange.StartColumn = results.Column
 	auxTextRange.EndColumn = results.Column + results.Length
 	if auxTextRange.StartColumn == auxTextRange.EndColumn {
-		auxTextRange.EndColumn += 1
+		auxTextRange.EndColumn++
 	}
 	return auxTextRange
 }
