@@ -78,7 +78,7 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func uintValue(value int, name string, filename string) uint {
+func uintValue(value int, name, filename string) uint {
 	var r uint = 0
 	if value >= 0 {
 		r = uint(value)
