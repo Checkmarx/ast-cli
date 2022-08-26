@@ -10,6 +10,14 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 )
 
+const (
+	message    = "Found negative %v with value %v in file %v"
+	column     = "column"
+	line       = "line"
+	length     = "length"
+	methodLine = "methodLine"
+)
+
 // UnmarshalJSON Function normalizes description to ScanResult
 func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	type Alias ScanResult
@@ -66,30 +74,22 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	s.Line = 0
 	s.Length = 0
 	s.MethodLine = 0
-	message := "Found negative %v with value %v in file %v"
-	if aux.Column >= 0 {
-		s.Column = uint(aux.Column)
-	} else {
-		message = fmt.Sprintf(message, "column", aux.Column, aux.FileName)
-		logger.PrintIfVerbose(message)
-	}
-	if aux.Line >= 0 {
-		s.Line = uint(aux.Line)
-	} else {
-		message = fmt.Sprintf(message, "line", aux.Line, aux.FileName)
-		logger.PrintIfVerbose(message)
-	}
-	if aux.Length >= 0 {
-		s.Length = uint(aux.Length)
-	} else {
-		message = fmt.Sprintf(message, "length", aux.Length, aux.FileName)
-		logger.PrintIfVerbose(message)
-	}
-	if aux.MethodLine >= 0 {
-		s.MethodLine = uint(aux.MethodLine)
-	} else {
-		message = fmt.Sprintf(message, "methodLine", aux.MethodLine, aux.FileName)
-		logger.PrintIfVerbose(message)
-	}
+
+	s.Column = intValue(aux.Column, column, aux.FileName)
+	s.Line = intValue(aux.Line, line, aux.FileName)
+	s.Length = intValue(aux.Length, length, aux.FileName)
+	s.MethodLine = intValue(aux.MethodLine, methodLine, aux.FileName)
+
 	return nil
+}
+
+func intValue(value int, name string, filename string) uint {
+	var r uint = 0
+	if value >= 0 {
+		r = uint(value)
+	} else {
+		messageValue := fmt.Sprintf(message, name, value, filename)
+		logger.PrintIfVerbose(messageValue)
+	}
+	return r
 }
