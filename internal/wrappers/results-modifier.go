@@ -74,6 +74,7 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	s.Line = uintValue(aux.Line, line, aux.FileName)
 	s.Length = uintValue(aux.Length, length, aux.FileName)
 	s.MethodLine = uintValue(aux.MethodLine, methodLine, aux.FileName)
+	s.FileName = aux.FileName
 
 	return nil
 }
