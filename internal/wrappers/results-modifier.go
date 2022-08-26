@@ -3,9 +3,19 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+)
+
+const (
+	message    = "Found negative %v with value %v in file %v"
+	column     = "column"
+	line       = "line"
+	length     = "length"
+	methodLine = "methodLine"
 )
 
 // UnmarshalJSON Function normalizes description to ScanResult
@@ -48,7 +58,11 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	type Alias ScanResultNode
 	aux := &struct {
-		Column int `json:"column"`
+		Column     int    `json:"column"`
+		Line       int    `json:"line"`
+		Length     int    `json:"length"`
+		MethodLine int    `json:"methodLine"`
+		FileName   string `json:"fileName,omitempty"`
 		*Alias
 	}{
 		Alias: (*Alias)(s),
@@ -56,11 +70,22 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-
-	s.Column = 0
-	if aux.Column >= 0 {
-		s.Column = uint(aux.Column)
-	}
+	s.Column = uintValue(aux.Column, column, aux.FileName)
+	s.Line = uintValue(aux.Line, line, aux.FileName)
+	s.Length = uintValue(aux.Length, length, aux.FileName)
+	s.MethodLine = uintValue(aux.MethodLine, methodLine, aux.FileName)
+	s.FileName = aux.FileName
 
 	return nil
+}
+
+func uintValue(value int, name, filename string) uint {
+	var r uint = 0
+	if value >= 0 {
+		r = uint(value)
+	} else {
+		messageValue := fmt.Sprintf(message, name, value, filename)
+		logger.PrintIfVerbose(messageValue)
+	}
+	return r
 }
