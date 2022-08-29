@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
+	"gotest.tools/assert"
 )
 
 const (
@@ -22,6 +23,7 @@ func TestPRDecorationSuccessCase(t *testing.T) {
 	args := []string{
 		"utils",
 		"pr",
+		"github",
 		flag(params.ScanIDFlag),
 		scanID,
 		flag(params.SCMTokenFlag),
@@ -34,13 +36,14 @@ func TestPRDecorationSuccessCase(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Response status code 201")
+	assert.NilError(t, err, "Error should be nil")
 }
 
 func TestPRDecorationFailure(t *testing.T) {
 	args := []string{
 		"utils",
 		"pr",
+		"github",
 		flag(params.ScanIDFlag),
 		"",
 		flag(params.SCMTokenFlag),
@@ -53,5 +56,5 @@ func TestPRDecorationFailure(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Value of scan-id is invalid")
+	assertError(t, err, "Failed creating PR Decoration")
 }
