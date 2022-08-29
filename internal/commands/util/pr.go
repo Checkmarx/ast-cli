@@ -68,15 +68,14 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 
 func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-
-		scanId, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
 		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
 		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
 		prModel := &wrappers.PRModel{
-			ScanID:    scanId,
+			ScanID:    scanID,
 			ScmToken:  scmTokenFlag,
 			Namespace: namespaceFlag,
 			RepoName:  repoNameFlag,
