@@ -13,5 +13,5 @@ type PRModel struct {
 }
 
 type PRWrapper interface {
-	PostPRDecoration(model *PRModel) (*PRResponseModel, *WebError, error)
+	PostPRDecoration(model *PRModel) (string, *WebError, error)
 }

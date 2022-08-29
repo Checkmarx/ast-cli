@@ -3,32 +3,36 @@
 package integration
 
 import (
+	"os"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
 
+const (
+	prGithubToken     = "PR_GITHUB_TOKEN"
+	prGithubNamespace = "PR_GITHUB_NAMESPACE"
+	prGithubNumber    = "PR_GITHUB_NUMBER"
+	prGithubRepoName  = "PR_GITHUB_REPO_NAME"
+)
+
 func TestPRDecorationSuccessCase(t *testing.T) {
-	_ = viper.BindEnv(params.SCMTokenKey)
-	_ = viper.BindEnv(params.CxScanKey)
-	_ = viper.BindEnv(params.OrgNamespaceKey)
-	_ = viper.BindEnv(params.OrgRepoNameKey)
-	_ = viper.BindEnv(params.PRNumberKey)
+	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"utils",
 		"pr",
 		flag(params.ScanIDFlag),
-		viper.GetString(params.CxScanKey),
+		scanID,
 		flag(params.SCMTokenFlag),
-		viper.GetString(params.SCMTokenKey),
+		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
-		viper.GetString(params.OrgNamespaceKey),
+		os.Getenv(prGithubNamespace),
 		flag(params.PRNumberFlag),
-		viper.GetString(params.PRNumberKey),
+		os.Getenv(prGithubNumber),
 		flag(params.RepoNameFlag),
-		viper.GetString(params.OrgRepoNameKey),
+		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Response status code 201")
@@ -46,13 +50,13 @@ func TestPRDecorationFailure(t *testing.T) {
 		flag(params.ScanIDFlag),
 		"",
 		flag(params.SCMTokenFlag),
-		viper.GetString(params.SCMTokenKey),
+		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
-		viper.GetString(params.OrgNamespaceKey),
+		os.Getenv(prGithubNamespace),
 		flag(params.PRNumberFlag),
-		viper.GetString(params.PRNumberKey),
+		os.Getenv(prGithubNumber),
 		flag(params.RepoNameFlag),
-		viper.GetString(params.OrgRepoNameKey),
+		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Value of scan-id is invalid")

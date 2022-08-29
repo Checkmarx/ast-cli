@@ -3,7 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"log"
+	"io"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -26,23 +26,22 @@ func NewHTTPPRWrapper(path string) PRWrapper {
 }
 
 func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
-	*PRResponseModel,
+	string,
 	*WebError,
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
-		log.Println("Failed to marshal request")
+		return "", nil, err
 	}
-	log.Printf("Sending PR decoration request for scanID: %s\n", model.ScanID)
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	return handlePRResponseWithBody(resp, err)
 }
 
-func handlePRResponseWithBody(resp *http.Response, err error) (*PRResponseModel, *WebError, error) {
+func handlePRResponseWithBody(resp *http.Response, err error) (string, *WebError, error) {
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	decoder := json.NewDecoder(resp.Body)
@@ -56,19 +55,18 @@ func handlePRResponseWithBody(resp *http.Response, err error) (*PRResponseModel,
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParsePRDecorationResponse)
+			return "", nil, errors.Wrapf(err, failedToParsePRDecorationResponse)
 		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		model := PRResponseModel{}
-		err = decoder.Decode(&model)
+		return "", &errorModel, nil
+	case http.StatusCreated:
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParsePRDecorationResponse)
+			return "", nil, errors.Wrapf(err, failedToParsePRDecorationResponse)
 		}
-		return &model, nil, nil
+		return string(body), nil, nil
 	case http.StatusNotFound:
-		return nil, nil, errors.Errorf("PR Decoratrion POST not found")
+		return "", nil, errors.Errorf("PR Decoratrion POST not found")
 	default:
-		return nil, nil, errors.Errorf("Response status code %d", resp.StatusCode)
+		return "", nil, errors.Errorf("Response status code %d", resp.StatusCode)
 	}
 }
