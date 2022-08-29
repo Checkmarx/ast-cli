@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -39,11 +38,6 @@ func TestPRDecorationSuccessCase(t *testing.T) {
 }
 
 func TestPRDecorationFailure(t *testing.T) {
-	_ = viper.BindEnv(params.SCMTokenKey)
-	_ = viper.BindEnv(params.OrgNamespaceKey)
-	_ = viper.BindEnv(params.OrgRepoNameKey)
-	_ = viper.BindEnv(params.PRNumberKey)
-
 	args := []string{
 		"utils",
 		"pr",
