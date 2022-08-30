@@ -21,6 +21,7 @@ var (
 	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
 	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
 	BflPathKey                          = strings.ToLower(BflPathEnv)
+	PRDecorationGithubPathKey           = strings.ToLower(PRDecorationGithubPathEnv)
 	UploadsPathKey                      = strings.ToLower(UploadsPathEnv)
 	SastRmPathKey                       = strings.ToLower(SastRmPathEnv)
 	AccessKeyIDConfigKey                = strings.ToLower(AccessKeyIDEnv)

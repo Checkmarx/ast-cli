@@ -11,14 +11,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
-const sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
+const (
+	gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
+	sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
+	invalidFlag = "Value of %s is invalid"
+)
 
-func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
+func NewUtilsCommand(
+	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
-	learnMoreWrapper wrappers.LearnMoreWrapper) *cobra.Command {
+	prWrapper wrappers.PRWrapper,
+	learnMoreWrapper wrappers.LearnMoreWrapper,
+) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
@@ -40,11 +46,20 @@ func NewUtilsCommand(gitHubWrapper wrappers.GitHubWrapper,
 
 	completionCmd := NewCompletionCommand()
 
+	prDecorationCmd := NewPRDecorationCommand(prWrapper)
+
 	remediationCmd := NewRemediationCommand()
 
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
-	utilsCmd.AddCommand(completionCmd, envCheckCmd, learnMoreCmd, usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper), remediationCmd)
+	utilsCmd.AddCommand(
+		completionCmd,
+		envCheckCmd,
+		learnMoreCmd,
+		usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper),
+		prDecorationCmd,
+		remediationCmd,
+	)
 
 	return utilsCmd
 }

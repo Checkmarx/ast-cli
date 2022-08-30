@@ -11,10 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	invalidFlag   = "Value of %s is invalid"
-	defaultFormat = "list"
-)
+const defaultFormat = "list"
 
 type sampleObjectView struct {
 	ProgLanguage string `json:"progLanguage"`
@@ -65,7 +62,8 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 		queryID, _ := cmd.Flags().GetString(params.QueryIDFlag)
 		if queryID == "" {
 			return errors.Errorf(
-				invalidFlag, params.QueryIDFlag)
+				invalidFlag, params.QueryIDFlag,
+			)
 		}
 		pathParams := make(map[string]string)
 		pathParams[params.IDsQueryParam] = queryID
@@ -96,16 +94,18 @@ func runLearnMoreCmd(wrapper wrappers.LearnMoreWrapper) func(cmd *cobra.Command,
 func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{} {
 	var learnMoreResponseView []*LearnMoreResponseView
 	for _, resp := range *response {
-		learnMoreResponseView = append(learnMoreResponseView, &LearnMoreResponseView{
-			QueryID:                resp.QueryID,
-			QueryName:              resp.QueryName,
-			QueryDescriptionID:     resp.QueryDescriptionID,
-			ResultDescription:      resp.ResultDescription,
-			Risk:                   resp.Risk,
-			Cause:                  resp.Cause,
-			GeneralRecommendations: resp.GeneralRecommendations,
-			Samples:                addSampleResponses(resp.Samples),
-		})
+		learnMoreResponseView = append(
+			learnMoreResponseView, &LearnMoreResponseView{
+				QueryID:                resp.QueryID,
+				QueryName:              resp.QueryName,
+				QueryDescriptionID:     resp.QueryDescriptionID,
+				ResultDescription:      resp.ResultDescription,
+				Risk:                   resp.Risk,
+				Cause:                  resp.Cause,
+				GeneralRecommendations: resp.GeneralRecommendations,
+				Samples:                addSampleResponses(resp.Samples),
+			},
+		)
 	}
 	return learnMoreResponseView
 }
@@ -113,11 +113,13 @@ func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{
 func addSampleResponses(samples []wrappers.SampleObject) []sampleObjectView {
 	var sampleObjectViews []sampleObjectView
 	for _, sample := range samples {
-		sampleObjectViews = append(sampleObjectViews, sampleObjectView{
-			ProgLanguage: sample.ProgLanguage,
-			Code:         sample.Code,
-			Title:        sample.Title,
-		})
+		sampleObjectViews = append(
+			sampleObjectViews, sampleObjectView{
+				ProgLanguage: sample.ProgLanguage,
+				Code:         sample.Code,
+				Title:        sample.Title,
+			},
+		)
 	}
 	return sampleObjectViews
 }
