@@ -2,7 +2,6 @@ package util
 
 import (
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -13,6 +12,7 @@ import (
 
 const (
 	failedCreatingPrDecoration = "Failed creating PR Decoration"
+	errorCodeFormat            = "%s: CODE: %d, %s\n"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
@@ -94,7 +94,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		if errorModel != nil {
-			errors.Errorf(commands.ErrorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
+			errors.Errorf(errorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
 		}
 
 		logger.Print(prResponse)
