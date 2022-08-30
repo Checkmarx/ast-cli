@@ -2,12 +2,17 @@ package util
 
 import (
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+const (
+	failedCreatingPrDecoration = "Failed creating PR Decoration"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
@@ -47,7 +52,7 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 		RunE: runPRDecoration(prWrapper),
 	}
 
-	prDecorationGithub.Flags().String(params.ScanIDFlag, "", "Scan ID is needed")
+	prDecorationGithub.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
 	prDecorationGithub.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
 	prDecorationGithub.Flags().String(params.NamespaceFlag, "", params.NamespaceFlagUsage)
 	prDecorationGithub.Flags().String(params.RepoNameFlag, "", params.RepoNameFlagUsage)
@@ -89,7 +94,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		if errorModel != nil {
-			return errors.Errorf("Failed creating PR Decoration")
+			errors.Errorf(commands.ErrorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
 		}
 
 		logger.Print(prResponse)

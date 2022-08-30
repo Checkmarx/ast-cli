@@ -28,7 +28,6 @@ const (
 	BranchFlag                   = "branch"
 	BranchFlagSh                 = "b"
 	ScanIDFlag                   = "scan-id"
-	ScanIDFlagUsage              = "Cx unique scan-id for the scan created in AST"
 	BranchFlagUsage              = "Branch to scan"
 	MainBranchFlag               = "branch"
 	ScaResolverFlag              = "sca-resolver"

@@ -56,5 +56,5 @@ func TestPRDecorationFailure(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed creating PR Decoration")
+	assert.ErrorContains(t, err, "Failed creating PR Decoration")
 }

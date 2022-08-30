@@ -35,7 +35,7 @@ func main() {
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
-	prPath := viper.GetString(params.PRDecorationPathKey)
+	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -52,7 +52,7 @@ func main() {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
-	prWrapper := wrappers.NewHTTPPRWrapper(prPath)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 
 	astCli := commands.NewAstCLI(

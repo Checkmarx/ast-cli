@@ -16,12 +16,12 @@ const (
 )
 
 type PRHTTPWrapper struct {
-	path string
+	githubPath string
 }
 
-func NewHTTPPRWrapper(path string) PRWrapper {
+func NewHTTPPRWrapper(githubPath string) PRWrapper {
 	return &PRHTTPWrapper{
-		path: path,
+		githubPath: githubPath,
 	}
 }
 
@@ -35,7 +35,7 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	if err != nil {
 		return "", nil, err
 	}
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.githubPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	return handlePRResponseWithBody(resp, err)
 }
 
