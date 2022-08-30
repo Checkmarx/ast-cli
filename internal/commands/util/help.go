@@ -58,7 +58,7 @@ func RootHelpFunc(command *cobra.Command) {
 	}
 
 	helpEntries = append(helpEntries, helpEntry{"QUICK START GUIDE",
-		"https://checkmarx.atlassian.net/wiki/x/mIKctw"})
+		"https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html"})
 
 	if _, ok := command.Annotations["utils:env"]; ok {
 		helpEntries = append(helpEntries, helpEntry{"ENVIRONMENT VARIABLES", command.Annotations["utils:env"]})
@@ -66,7 +66,7 @@ func RootHelpFunc(command *cobra.Command) {
 
 	helpEntries = append(helpEntries, helpEntry{"LEARN MORE",
 		heredoc.Doc(`Use 'cx <command> <subcommand> --help' for more information about a command.
-		Read the manual at https://checkmarx.atlassian.net/wiki/x/MYDCkQ`)})
+		Read the manual at https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html`)})
 
 	out := command.OutOrStdout()
 	for _, e := range helpEntries {

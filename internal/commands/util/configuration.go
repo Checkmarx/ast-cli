@@ -56,7 +56,7 @@ func NewConfigCommand() *cobra.Command {
 			),
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+				https://checkmarx.com/resource/documents/en/34965-68630-configure.html
 			`,
 			),
 		},
@@ -83,7 +83,7 @@ func NewConfigCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+				https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html
 			`,
 			),
 		},
@@ -102,7 +102,7 @@ func NewConfigCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/gwQRtw
+				https://checkmarx.com/resource/documents/en/34965-68630-configure.html#UUID-44d2b9af-ae5d-3be9-5e3e-0fda0ab85e05
 			`,
 			),
 		},

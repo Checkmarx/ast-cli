@@ -42,7 +42,7 @@ func NewLearnMoreCommand(wrapper wrappers.LearnMoreWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/VJGXtw
+				https://checkmarx.com/resource/documents/en/34965-68653-utils.html#UUID-815a1110-31ef-7cfb-e640-755fab4fae0d
 			`,
 			),
 		},

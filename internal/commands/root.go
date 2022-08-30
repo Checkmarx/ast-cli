@@ -52,14 +52,9 @@ func NewAstCLI(
 		`,
 		),
 		Annotations: map[string]string{
-			"utils:env": heredoc.Doc(
-				`
-				See 'cx utils env' for  the list of supported environment variables.
-			`,
-			),
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/MYDCkQ
+				https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
 			`,
 			),
 		},

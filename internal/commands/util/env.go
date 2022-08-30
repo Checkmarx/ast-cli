@@ -22,7 +22,7 @@ func NewEnvCheckCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/VJGXtw
+				https://checkmarx.com/resource/documents/en/34965-68653-utils.html#UUID-f7245425-72b9-9854-a60a-a9f37e0173d9
 			`,
 			),
 		},
