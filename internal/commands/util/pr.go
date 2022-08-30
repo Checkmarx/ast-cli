@@ -94,7 +94,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		if errorModel != nil {
-			errors.Errorf(errorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
+			return errors.Errorf(errorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
 		}
 
 		logger.Print(prResponse)
