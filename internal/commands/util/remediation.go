@@ -63,7 +63,7 @@ func NewRemediationCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`https://checkmarx.atlassian.net/l/cp/1DfB0seH	
+				`https://checkmarx.com/resource/documents/en/34965-68653-utils.html
 			`,
 			),
 		},
@@ -88,7 +88,7 @@ func RemediationScaCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	https://checkmarx.atlassian.net/l/cp/tydFqUhE
+				`https://checkmarx.com/resource/documents/en/34965-68653-utils.html#UUID-2bd7b006-76ca-b867-e808-185f8f8de34e
 			`,
 			),
 		},
@@ -124,7 +124,7 @@ func RemediationKicsCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	https://checkmarx.atlassian.net/l/cp/weaVA203
+				`https://checkmarx.com/resource/documents/en/34965-68653-utils.html#UUID-e3b49d46-05fc-eacb-ff10-32e89cda0061
 			`,
 			),
 		},

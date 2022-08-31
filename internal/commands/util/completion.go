@@ -71,11 +71,8 @@ func NewCompletionCommand() *cobra.Command {
 		ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
 		RunE:      runCompletionCmd(),
 		Annotations: map[string]string{
-			"utils:env": heredoc.Doc(`
-				See 'cx utils env' for the list of supported environment variables	
-			`),
 			"command:doc": heredoc.Doc(`
-				https://checkmarx.atlassian.net/wiki/x/iw0huw
+				https://checkmarx.com/resource/documents/en/34965-68653-utils.html#UUID-e086afe1-7bd7-917c-8440-0e965f2e348e
 			`),
 		},
 	}

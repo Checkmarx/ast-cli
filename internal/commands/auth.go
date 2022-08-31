@@ -59,7 +59,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 			),
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html
 			`,
 			),
 		},
@@ -72,7 +72,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html#UUID-c64cdceb-1072-ca20-aa7d-2ba9fd0c4160
 			`,
 			),
 		},
@@ -105,7 +105,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html#UUID-01803060-8f64-8090-c956-2b505b1d4b61
 			`,
 			),
 		},

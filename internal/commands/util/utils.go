@@ -37,7 +37,7 @@ func NewUtilsCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/VJGXtw
+				https://checkmarx.com/resource/documents/en/34965-68653-utils.html
 			`,
 			),
 		},
