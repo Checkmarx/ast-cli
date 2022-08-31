@@ -88,7 +88,7 @@ func NewResultsCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/l/c/6NqgVMPM
+				https://checkmarx.com/resource/documents/en/34965-68640-results.html
 			`,
 			),
 		},

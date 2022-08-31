@@ -25,7 +25,7 @@ func PromptConfiguration() {
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
 	accessAPIKey := viper.GetString(params.AstAPIKey)
 	tenant := viper.GetString(params.TenantKey)
-	fmt.Print("Setup guide: https://checkmarx.atlassian.net/wiki/x/mIKctw \n\n")
+	fmt.Print("Setup guide: https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html\n\n")
 	// Prompt for Base URI
 	fmt.Printf("AST Base URI [%s]: ", baseURI)
 	baseURI, _ = reader.ReadString('\n')

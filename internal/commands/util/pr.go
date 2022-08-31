@@ -45,7 +45,7 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	https://checkmarx.atlassian.net/l/cp/tydFqUhE
+				`https://checkmarx.com/resource/documents/en/34965-68653-utils.html
 			`,
 			),
 		},

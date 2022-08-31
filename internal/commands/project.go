@@ -67,7 +67,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/BQDMkQ
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html
 			`,
 			),
 		},
@@ -85,7 +85,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/hIYhuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-44ecd672-8f1f-32de-6c2e-838b680a0bf4
 			`,
 			),
 		},
@@ -109,7 +109,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/Tochuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-bd2c6c68-081a-e134-b16b-067aba3a8eae
 			`,
 			),
 		},
@@ -128,7 +128,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/agghuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-a5d021d1-2917-4327-a889-b4f1a9d19b6d
 			`,
 			),
 		},
@@ -147,7 +147,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/agghuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html
 			`,
 			),
 		},
@@ -167,7 +167,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/UAchuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-2382b35f-fac9-f169-711b-73570278adb1
 			`,
 			),
 		},
@@ -186,7 +186,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/FIghuw
+				https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-eab37623-899c-e97d-e702-6b1946592986
 			`,
 			),
 		},

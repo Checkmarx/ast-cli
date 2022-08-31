@@ -113,7 +113,7 @@ func NewScanCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/9YuXtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html
 			`,
 			),
 		},
@@ -173,7 +173,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`	
-			https://checkmarx.atlassian.net/l/c/GddHidUN
+			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
 			`,
 			),
 		},
@@ -232,7 +232,7 @@ func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/546Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-d1d53a56-197a-6a16-95e5-c437e6dc060a
 			`,
 			),
 		},
@@ -254,7 +254,7 @@ func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/aY2Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-800f2022-3609-3f40-6f77-9371e54f8b71
 			`,
 			),
 		},
@@ -276,7 +276,7 @@ func scanDeleteSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/-AuYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-851aa940-0454-ec17-4d29-42a2fa1352e0
 			`,
 			),
 		},
@@ -299,7 +299,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/Ug2Ytw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-9a524fb7-0dba-314d-9068-ccea184bc8d9
 			`,
 			),
 		},
@@ -322,7 +322,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/qAyYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-c073d85b-7605-0c89-909c-7d5b9caaec16
 			`,
 			),
 		},
@@ -345,7 +345,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/K46Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-f92335a6-5b1c-e158-7914-2a4e72a2ada5
 			`,
 			),
 		},
@@ -374,7 +374,7 @@ func scanCreateSubCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/WguYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-a0bb20d5-5182-3fb4-3da0-0e263344ffe7
 			`,
 			),
 		},

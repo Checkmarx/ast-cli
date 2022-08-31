@@ -25,7 +25,7 @@
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool.
 <br />
-    <a href="https://checkmarx.atlassian.net/wiki/spaces/AST/pages/2445443121/CLI+Tool"><strong>Explore the docs »</strong></a>
+    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
@@ -114,7 +114,7 @@ go build -o ./bin/cx-mac ./cmd
 
 ## Usage
 
-To see how you can use our tool, please refer to the [Documentation](https://checkmarx.atlassian.net/wiki/spaces/AST/pages/2445443121/CLI+Tool)
+To see how you can use our tool, please refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html)
 
 
 ## Contribution
@@ -145,7 +145,7 @@ Find more integrations from our team [here](https://github.com/Checkmarx/ci-cd-i
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
 [docker-url]:https://hub.docker.com/r/checkmarx/ast-cli
 [documentation-shield]: https://img.shields.io/badge/docs-viewdocs-blue.svg
-[documentation-url]:https://checkmarx.atlassian.net/wiki/spaces/AST/pages/2967766116/CxAST+Plugins
+[documentation-url]:https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
 [contributors-shield]: https://img.shields.io/github/contributors/Checkmarx/ast-cli.svg
 [contributors-url]: https://github.com/Checkmarx/ast-cli/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/Checkmarx/ast-cli.svg
