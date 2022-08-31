@@ -294,13 +294,18 @@ func getAuthURI() (string, error) {
 	var authURI string
 	apiKey := viper.GetString(commonParams.AstAPIKey)
 
+	var err error
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
-		authURI, _ = extractAuthURIFromAPIKey(apiKey)
+		authURI, err = extractAuthURIFromAPIKey(apiKey)
 	} else {
 		logger.PrintIfVerbose("Using configuration and parameters to prepare Auth URI")
-		authURI, _ = extractAuthURIFromConfig()
+		authURI, err = extractAuthURIFromConfig()
 	}
+	if err != nil {
+		return "", err
+	}
+
 	authURL, err := url.Parse(authURI)
 	if err != nil {
 		return "", errors.Wrap(err, "authentication URI is not in a correct format")
@@ -327,7 +332,7 @@ func extractAuthURIFromConfig() (string, error) {
 func extractAuthURIFromAPIKey(key string) (string, error) {
 	token, err := getClaimsFromToken(key)
 	if err != nil {
-		return "", errors.Errorf(fmt.Sprintf("jwt token decode error: %s", err.Error()))
+		return "", errors.Errorf(fmt.Sprintf("Invalid api key: token decoding error: %s", err.Error()))
 	}
 	claims := token.Claims.(jwt.MapClaims)
 	authURI := claims[audienceClaimKey].(string)
@@ -344,7 +349,10 @@ func enrichWithOath2Credentials(request *http.Request) error {
 	return nil
 }
 
-func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (
+	*http.Response,
+	error,
+) {
 	fullURL := GetURL(path)
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
@@ -546,8 +554,12 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	logger.PrintRequest(req)
 	for try := -1; try < retryLimit; try++ {
-		logger.PrintIfVerbose(fmt.Sprintf("Request attempt %d in %d",
-			try+tryPrintOffset, retryLimit+retryLimitPrintOffset))
+		logger.PrintIfVerbose(
+			fmt.Sprintf(
+				"Request attempt %d in %d",
+				try+tryPrintOffset, retryLimit+retryLimitPrintOffset,
+			),
+		)
 		resp, err = client.Do(req)
 		if resp != nil && err == nil {
 			logger.PrintResponse(resp, responseBody)
