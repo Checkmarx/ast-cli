@@ -18,11 +18,9 @@ import (
 )
 
 const (
-	clientIDPrefix                  = "ast-plugins-"
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
-	authValidateFailure             = "invalid character '<' looking for beginning of value"
 )
 
 // Test validate with credentials used in test env
@@ -64,7 +62,7 @@ func TestAuthValidateWrongAPIKey(t *testing.T) {
 	avoidCachedToken()
 
 	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey")
-	assertError(t, err, authValidateFailure)
+	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
 func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {

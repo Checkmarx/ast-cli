@@ -1153,11 +1153,6 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper)
-			if err != nil {
-				return err
-			}
-
 			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
 			if err != nil {
 				return err
@@ -1665,16 +1660,13 @@ func runKicksRealtime() func(*cobra.Command, []string) error {
 
 		// Run kics container
 		err = runKicsScan(cmd, volumeMap, tempDir, aditionalParameters)
-		if err != nil {
-			// Removing temporary dir
-			logger.PrintIfVerbose(containerFolderRemoving)
-			os.RemoveAll(tempDir)
-			return errors.Errorf("%s", err)
-		}
 		// Removing temporary dir
 		logger.PrintIfVerbose(containerFolderRemoving)
-		os.RemoveAll(tempDir)
-		return nil
+		removeErr := os.RemoveAll(tempDir)
+		if removeErr != nil {
+			logger.PrintIfVerbose(removeErr.Error())
+		}
+		return err
 	}
 }
 
