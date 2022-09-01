@@ -3,9 +3,11 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 )
 
@@ -19,6 +21,11 @@ func TestAuthNoSub(t *testing.T) {
 
 func TestAuthValidate(t *testing.T) {
 	_ = execCmdNotNilAssertion(t, "auth", "validate")
+}
+
+func TestAuthValidateInvalidAPIKey(t *testing.T) {
+	err := executeTestCommand(createASTTestCommand(), "auth", "validate", "--apikey", "invalidApiKey")
+	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
