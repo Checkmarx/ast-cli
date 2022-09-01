@@ -25,12 +25,13 @@ import (
 )
 
 const (
-	expiryGraceSeconds    = 10
-	NoTimeout             = 0
-	ntlmProxyToken        = "ntlm"
-	checkmarxURLError     = "Could not reach provided Checkmarx server"
-	tryPrintOffset        = 2
-	retryLimitPrintOffset = 1
+	expiryGraceSeconds      = 10
+	NoTimeout               = 0
+	ntlmProxyToken          = "ntlm"
+	checkmarxURLError       = "Could not reach provided Checkmarx server"
+	ApiKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
+	tryPrintOffset          = 2
+	retryLimitPrintOffset   = 1
 )
 
 type ClientCredentialsInfo struct {
@@ -49,7 +50,6 @@ type ClientCredentialsError struct {
 }
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
-const FailedAccessToken = "Failed to obtain access token"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
 
 const audienceClaimKey = "aud"
@@ -332,7 +332,7 @@ func extractAuthURIFromConfig() (string, error) {
 func extractAuthURIFromAPIKey(key string) (string, error) {
 	token, err := getClaimsFromToken(key)
 	if err != nil {
-		return "", errors.Errorf(fmt.Sprintf("Invalid api key: token decoding error: %s", err.Error()))
+		return "", errors.Errorf(fmt.Sprintf(ApiKeyDecodeErrorFormat, err.Error()))
 	}
 	claims := token.Claims.(jwt.MapClaims)
 	authURI := claims[audienceClaimKey].(string)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -82,7 +83,7 @@ func TestRootVersion(t *testing.T) {
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
 	cmd.SetArgs(args)
-	cmd.SilenceUsage = false
+	cmd.SilenceUsage = true
 	return cmd.Execute()
 }
 
@@ -95,4 +96,9 @@ func execCmdNotNilAssertion(t *testing.T, args ...string) error {
 	err := executeTestCommand(createASTTestCommand(), args...)
 	assert.Assert(t, err != nil)
 	return err
+}
+
+func assertError(t *testing.T, err error, expectedMessage string) {
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
 }
