@@ -29,7 +29,7 @@ const (
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
-	ApiKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
+	APIKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 )
@@ -332,7 +332,7 @@ func extractAuthURIFromConfig() (string, error) {
 func extractAuthURIFromAPIKey(key string) (string, error) {
 	token, err := getClaimsFromToken(key)
 	if err != nil {
-		return "", errors.Errorf(fmt.Sprintf(ApiKeyDecodeErrorFormat, err.Error()))
+		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
 	claims := token.Claims.(jwt.MapClaims)
 	authURI := claims[audienceClaimKey].(string)

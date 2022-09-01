@@ -62,7 +62,7 @@ func TestAuthValidateWrongAPIKey(t *testing.T) {
 	avoidCachedToken()
 
 	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey")
-	assertError(t, err, fmt.Sprintf(wrappers.ApiKeyDecodeErrorFormat, ""))
+	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
 func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {

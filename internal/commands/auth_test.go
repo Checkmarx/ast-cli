@@ -25,7 +25,7 @@ func TestAuthValidate(t *testing.T) {
 
 func TestAuthValidateInvalidAPIKey(t *testing.T) {
 	err := executeTestCommand(createASTTestCommand(), "auth", "validate", "--apikey", "invalidApiKey")
-	assertError(t, err, fmt.Sprintf(wrappers.ApiKeyDecodeErrorFormat, ""))
+	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
