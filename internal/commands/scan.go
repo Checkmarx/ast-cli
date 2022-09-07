@@ -69,11 +69,12 @@ const (
 	containerVolumeFormat           = "%s:/path"
 	containerTempDirPattern         = "kics"
 	kicsContainerPrefixName         = "cli-kics-realtime-"
-	invalidEngineError              = "executable file not found in $PATH"
-	invalidEngineMessage            = "Please verify if engine is installed and running"
-	notRunningEngineError           = "exit status 125"
+	invalidEngineError              = "not found in $PATH"
+	invalidEngineMessage            = "Please verify if engine is installed"
+	notRunningEngineMessage         = "Please verify if engine is running"
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
+	engineNoRunningCode             = 125
 )
 
 var (
@@ -1842,9 +1843,17 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			fmt.Println(string(resultsJSON))
 			return nil
 		}
-		if strings.Contains(errorMessage, invalidEngineError) || strings.Contains(errorMessage, notRunningEngineError) {
-			logger.PrintIfVerbose(errorMessage)
-			return errors.Errorf(invalidEngineMessage)
+		exitError, hasExistError := err.(*exec.ExitError)
+		if hasExistError {
+			if exitError.ExitCode() == engineNoRunningCode {
+				logger.PrintIfVerbose(errorMessage)
+				return errors.Errorf(notRunningEngineMessage)
+			}
+		} else {
+			if strings.Contains(errorMessage, invalidEngineError) {
+				logger.PrintIfVerbose(errorMessage)
+				return errors.Errorf(invalidEngineMessage)
+			}
 		}
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
