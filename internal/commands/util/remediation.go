@@ -42,6 +42,7 @@ const (
 	containerName             = "cli-remediate-kics"
 	separator                 = ","
 	invalidEngineError        = "executable file not found in $PATH"
+	notRunningEngineError     = "exit status 125"
 	invalidEngineMessage      = "Please verify if engine is installed and running"
 )
 
@@ -276,7 +277,7 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 			fmt.Println(buildRemediationSummary(string(out)))
 			return nil
 		}
-		if strings.Contains(errorMessage, invalidEngineError) {
+		if strings.Contains(errorMessage, invalidEngineError) || strings.Contains(errorMessage, notRunningEngineError) {
 			logger.PrintIfVerbose(errorMessage)
 			return errors.Errorf(invalidEngineMessage)
 		}

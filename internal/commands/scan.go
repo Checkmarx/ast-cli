@@ -71,6 +71,7 @@ const (
 	kicsContainerPrefixName         = "cli-kics-realtime-"
 	invalidEngineError              = "executable file not found in $PATH"
 	invalidEngineMessage            = "Please verify if engine is installed and running"
+	notRunningEngineError           = "exit status 125"
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
 )
@@ -1841,7 +1842,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			fmt.Println(string(resultsJSON))
 			return nil
 		}
-		if strings.Contains(errorMessage, invalidEngineError) {
+		if strings.Contains(errorMessage, invalidEngineError) || strings.Contains(errorMessage, notRunningEngineError) {
 			logger.PrintIfVerbose(errorMessage)
 			return errors.Errorf(invalidEngineMessage)
 		}
