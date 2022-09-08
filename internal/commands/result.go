@@ -965,7 +965,11 @@ func addPackageInformation(
 						}
 						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
 					}
-					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
+					if result.VulnerabilityDetails.CveName != "" {
+						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
+					} else {
+						currentPackage.FixLink = ""
+					}
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
 				}

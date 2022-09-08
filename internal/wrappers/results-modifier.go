@@ -80,7 +80,13 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 }
 
 func uintValue(value int, name, filename string) uint {
-	var r uint = 0
+	var r uint
+	// Length must be bigger than 0
+	if name == length {
+		r = 1
+	} else {
+		r = 0
+	}
 	if value >= 0 {
 		r = uint(value)
 	} else {
