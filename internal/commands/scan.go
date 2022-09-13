@@ -459,7 +459,7 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
-	createScanCmd.PersistentFlags().Bool("resubmit", false, "Resubmit")
+	createScanCmd.PersistentFlags().Bool(commonParams.ScanResubmit , false, "Create a scan with the configurations used in the most recent scan in the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {

@@ -32,6 +32,8 @@ const (
 	scanCommand           = "scan"
 	kicsRealtimeCommand   = "kics-realtime"
 	invalidEngineValue    = "invalidEngine"
+	scanList              = "list"
+	projectIDParams = "project-id="
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -431,7 +433,7 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the scan should pass",
-		"scan", "list", flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
+		"scan",scanList, flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
 	)
 
 	// Read response from buffer
@@ -701,12 +703,13 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 }
 
 func TestScanCreateResubmit(t *testing.T) {
-	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, "resubmit-test", "sast")))
-	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, "resubmit-test", ""), "--resubmit"))
+	projectName := getProjectNameForScanTests()
+	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
+	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
 	args := []string{
-		scanCommand, "list",
+		scanCommand, scanList,
 		flag(params.FormatFlag), printer.FormatJSON,
-		flag(params.FilterFlag), "project-id="+projectID,
+		flag(params.FilterFlag), projectIDParams + projectID,
 	}
 	err, outputBuffer := executeCommand(t, args...)
 	scan := []wrappers.ScanResponseModel{}
