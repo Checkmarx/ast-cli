@@ -385,3 +385,7 @@ func TestCreateRealtimeKicsFailedScan(t *testing.T) {
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
+
+func TestCreateScanResubmit(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--resubmit")
+}

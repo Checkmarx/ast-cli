@@ -699,3 +699,19 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
+
+func TestScanCreateResubmit(t *testing.T) {
+	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, "resubmit-test", "sast")))
+	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, "resubmit-test", ""), "--resubmit"))
+	args := []string{
+		scanCommand, "list",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.FilterFlag), "project-id="+projectID,
+	}
+	err, outputBuffer := executeCommand(t, args...)
+	scan := []wrappers.ScanResponseModel{}
+	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
+	engines := strings.Join(scan[0].Engines, ",")
+	log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
+	assert.Assert(t, err == nil && engines == "sast", "")
+}

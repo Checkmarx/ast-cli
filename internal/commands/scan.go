@@ -459,6 +459,7 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
+	createScanCmd.PersistentFlags().Bool("resubmit", false, "Resubmit")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -568,6 +569,7 @@ func setupScanTypeProjectAndConfig(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	scansWrapper wrappers.ScansWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -597,30 +599,76 @@ func setupScanTypeProjectAndConfig(
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
-	if _, ok := info["config"]; !ok {
-		err = json.Unmarshal([]byte("[]"), &configArr)
+	resubmit, _ := cmd.Flags().GetBool("resubmit")
+	if resubmit {
+		logger.PrintIfVerbose("using latest scan configuration due to --resubmit flag")
+		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		// Get the latest scan configuration
+		resubmitConfig, err := getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
 		if err != nil {
 			return err
 		}
-	}
-	sastConfig := addSastScan(cmd)
-	if sastConfig != nil {
-		configArr = append(configArr, sastConfig)
-	}
-	var kicsConfig = addKicsScan(cmd)
-	if kicsConfig != nil {
-		configArr = append(configArr, kicsConfig)
-	}
-	var scaConfig = addScaScan(cmd)
-	if scaConfig != nil {
-		configArr = append(configArr, scaConfig)
+		sastConfig := addSastScan(cmd, resubmitConfig)
+		if sastConfig != nil {
+			configArr = append(configArr, sastConfig)
+		}
+		var kicsConfig = addKicsScan(cmd, resubmitConfig)
+		if kicsConfig != nil {
+			configArr = append(configArr, kicsConfig)
+		}
+		var scaConfig = addScaScan(cmd, resubmitConfig)
+		if scaConfig != nil {
+			configArr = append(configArr, scaConfig)
+		}
+	} else {
+		if _, ok := info["config"]; !ok {
+			err = json.Unmarshal([]byte("[]"), &configArr)
+			if err != nil {
+				return err
+			}
+		}
+		sastConfig := addSastScan(cmd, nil)
+		if sastConfig != nil {
+			configArr = append(configArr, sastConfig)
+		}
+		var kicsConfig = addKicsScan(cmd, nil)
+		if kicsConfig != nil {
+			configArr = append(configArr, kicsConfig)
+		}
+		var scaConfig = addScaScan(cmd, nil)
+		if scaConfig != nil {
+			configArr = append(configArr, scaConfig)
+		}
 	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
 }
 
-func addSastScan(cmd *cobra.Command) map[string]interface{} {
+func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) ([]wrappers.Config, error) {
+	var allScansModel *wrappers.ScansCollectionResponseModel
+	var errorModel *wrappers.ErrorModel
+	var err error
+	params := make(map[string]string)
+	params["project-id"] = projectID
+	allScansModel, errorModel, err = scansWrapper.Get(params)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get %s\n", failedGettingAll)
+	}
+	// Checking the response for errors
+	if errorModel != nil {
+		return nil, errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+	}
+	config := allScansModel.Scans[0].Metadata.Configs
+	engines := allScansModel.Scans[0].Engines
+	// Check if there are no scan types sent using the flags, and use the latest scan engine types
+	if len(userScanTypes) == 0 {
+		actualScanTypes = strings.Join(engines, ",")
+	}
+	return config, nil
+}
+
+func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.SastType) {
 		sastMapConfig := make(map[string]interface{})
 		sastConfig := wrappers.SastConfig{}
@@ -629,31 +677,81 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+		if resubmitConfig != nil {
+			for _, config := range resubmitConfig {
+				if config.Type == commonParams.SastType {
+					resubmitIncremental := config.Value["incremental"]
+					if resubmitIncremental != nil && !incrementalVal {
+						sastConfig.Incremental = resubmitIncremental.(string)
+					}
+					resubmitPreset := config.Value["presetName"]
+					if resubmitPreset != nil && len(sastConfig.PresetName) == 0 {
+						sastConfig.PresetName = resubmitPreset.(string)
+					}
+					resubmitFilter := config.Value["filter"]
+					if resubmitFilter != nil && len(sastConfig.Filter) == 0 {
+						sastConfig.Filter = resubmitFilter.(string)
+					}
+					resubmitEngineVerbose := config.Value["engineVerbose"]
+					if resubmitEngineVerbose != nil {
+						sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+					}
+					resubmitLanguageMode := config.Value["languageMode"]
+					if resubmitLanguageMode != nil {
+						sastConfig.LanguageMode = resubmitLanguageMode.(string)
+					}
+				}
+			}
+		}
 		sastMapConfig["value"] = &sastConfig
 		return sastMapConfig
 	}
 	return nil
 }
 
-func addKicsScan(cmd *cobra.Command) map[string]interface{} {
+func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.KicsType) {
 		kicsMapConfig := make(map[string]interface{})
 		kicsConfig := wrappers.KicsConfig{}
 		kicsMapConfig["type"] = commonParams.KicsType
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
 		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
+		if resubmitConfig != nil {
+			for _, config := range resubmitConfig {
+				if config.Type == commonParams.KicsType {
+					resubmitFilter := config.Value["filter"]
+					if resubmitFilter != nil && len(kicsConfig.Filter) == 0 {
+						kicsConfig.Filter = resubmitFilter.(string)
+					}
+					resubmitPlatforms := config.Value["platforms"]
+					if resubmitPlatforms != nil && len(kicsConfig.Platforms) == 0 {
+						kicsConfig.Platforms = resubmitPlatforms.(string)
+					}
+				}
+			}
+		}
 		kicsMapConfig["value"] = &kicsConfig
 		return kicsMapConfig
 	}
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig["type"] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		if resubmitConfig != nil {
+			for _, config := range resubmitConfig {
+				if config.Type == commonParams.ScaType {
+					resubmitFilter := config.Value["filter"]
+					if resubmitFilter != nil && len(scaConfig.Filter) == 0 {
+						scaConfig.Filter = resubmitFilter.(string)
+					}
+				}
+			}
+		}
 		scaMapConfig["value"] = &scaConfig
 		return scaMapConfig
 	}
@@ -1121,7 +1219,7 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
+		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper, scansWrapper)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1186,13 +1284,14 @@ func createScanModel(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	scansWrapper wrappers.ScansWrapper,
 ) (*wrappers.Scan, string, error) {
 	validateScanTypes(cmd)
 
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1683,6 +1782,7 @@ type scanView struct {
 	Timeout         string
 	Initiator       string
 	Origin          string
+	Engines         []string
 }
 
 func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
@@ -1697,6 +1797,8 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	var origin string
 	var scanType string
 	var scanTimeOut string
+	fmt.Printf("%v", scan.Engines)
+	fmt.Printf("configs:%v", scan.Metadata.Configs)
 	if scan.UserAgent != "" {
 		ua := user_agent.New(scan.UserAgent)
 		name, version := ua.Browser()
@@ -1730,6 +1832,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		Timeout:         scanTimeOut,
 		Initiator:       scan.Initiator,
 		Origin:          origin,
+		Engines:         scan.Engines,
 	}
 }
 
