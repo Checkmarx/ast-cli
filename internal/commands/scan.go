@@ -675,27 +675,28 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		for _, config := range resubmitConfig {
-			if config.Type == commonParams.SastType {
-				resubmitIncremental := config.Value["incremental"]
-				if resubmitIncremental != nil && !incrementalVal {
-					sastConfig.Incremental = resubmitIncremental.(string)
-				}
-				resubmitPreset := config.Value["presetName"]
-				if resubmitPreset != nil && sastConfig.PresetName == "" {
-					sastConfig.PresetName = resubmitPreset.(string)
-				}
-				resubmitFilter := config.Value["filter"]
-				if resubmitFilter != nil && sastConfig.Filter == "" {
-					sastConfig.Filter = resubmitFilter.(string)
-				}
-				resubmitEngineVerbose := config.Value["engineVerbose"]
-				if resubmitEngineVerbose != nil {
-					sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
-				}
-				resubmitLanguageMode := config.Value["languageMode"]
-				if resubmitLanguageMode != nil {
-					sastConfig.LanguageMode = resubmitLanguageMode.(string)
-				}
+			if config.Type != commonParams.SastType {
+				continue
+			}
+			resubmitIncremental := config.Value["incremental"]
+			if resubmitIncremental != nil && !incrementalVal {
+				sastConfig.Incremental = resubmitIncremental.(string)
+			}
+			resubmitPreset := config.Value["presetName"]
+			if resubmitPreset != nil && sastConfig.PresetName == "" {
+				sastConfig.PresetName = resubmitPreset.(string)
+			}
+			resubmitFilter := config.Value["filter"]
+			if resubmitFilter != nil && sastConfig.Filter == "" {
+				sastConfig.Filter = resubmitFilter.(string)
+			}
+			resubmitEngineVerbose := config.Value["engineVerbose"]
+			if resubmitEngineVerbose != nil {
+				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+			}
+			resubmitLanguageMode := config.Value["languageMode"]
+			if resubmitLanguageMode != nil {
+				sastConfig.LanguageMode = resubmitLanguageMode.(string)
 			}
 		}
 		sastMapConfig["value"] = &sastConfig
