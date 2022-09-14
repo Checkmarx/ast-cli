@@ -459,12 +459,9 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.ScanResubmit , false, "Create a scan with the configurations used in the most recent scan in the project")
+	createScanCmd.PersistentFlags().Bool(commonParams.ScanResubmit, false, "Create a scan with the configurations used in the most recent scan in the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
-	if err != nil {
-		log.Fatal(err)
-	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -604,9 +601,9 @@ func setupScanTypeProjectAndConfig(
 		logger.PrintIfVerbose("using latest scan configuration due to --resubmit flag")
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
-		resubmitConfig, err := getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-		if err != nil {
-			return err
+		resubmitConfig, errSubmit := getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
+		if errSubmit != nil {
+			return errSubmit
 		}
 		sastConfig := addSastScan(cmd, resubmitConfig)
 		if sastConfig != nil {
@@ -662,7 +659,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	config := allScansModel.Scans[0].Metadata.Configs
 	engines := allScansModel.Scans[0].Engines
 	// Check if there are no scan types sent using the flags, and use the latest scan engine types
-	if len(userScanTypes) == 0 {
+	if userScanTypes == "" {
 		actualScanTypes = strings.Join(engines, ",")
 	}
 	return config, nil
@@ -677,29 +674,27 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
-		if resubmitConfig != nil {
-			for _, config := range resubmitConfig {
-				if config.Type == commonParams.SastType {
-					resubmitIncremental := config.Value["incremental"]
-					if resubmitIncremental != nil && !incrementalVal {
-						sastConfig.Incremental = resubmitIncremental.(string)
-					}
-					resubmitPreset := config.Value["presetName"]
-					if resubmitPreset != nil && len(sastConfig.PresetName) == 0 {
-						sastConfig.PresetName = resubmitPreset.(string)
-					}
-					resubmitFilter := config.Value["filter"]
-					if resubmitFilter != nil && len(sastConfig.Filter) == 0 {
-						sastConfig.Filter = resubmitFilter.(string)
-					}
-					resubmitEngineVerbose := config.Value["engineVerbose"]
-					if resubmitEngineVerbose != nil {
-						sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
-					}
-					resubmitLanguageMode := config.Value["languageMode"]
-					if resubmitLanguageMode != nil {
-						sastConfig.LanguageMode = resubmitLanguageMode.(string)
-					}
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.SastType {
+				resubmitIncremental := config.Value["incremental"]
+				if resubmitIncremental != nil && !incrementalVal {
+					sastConfig.Incremental = resubmitIncremental.(string)
+				}
+				resubmitPreset := config.Value["presetName"]
+				if resubmitPreset != nil && sastConfig.PresetName == "" {
+					sastConfig.PresetName = resubmitPreset.(string)
+				}
+				resubmitFilter := config.Value["filter"]
+				if resubmitFilter != nil && sastConfig.Filter == "" {
+					sastConfig.Filter = resubmitFilter.(string)
+				}
+				resubmitEngineVerbose := config.Value["engineVerbose"]
+				if resubmitEngineVerbose != nil {
+					sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+				}
+				resubmitLanguageMode := config.Value["languageMode"]
+				if resubmitLanguageMode != nil {
+					sastConfig.LanguageMode = resubmitLanguageMode.(string)
 				}
 			}
 		}
@@ -716,17 +711,15 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		kicsMapConfig["type"] = commonParams.KicsType
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
 		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
-		if resubmitConfig != nil {
-			for _, config := range resubmitConfig {
-				if config.Type == commonParams.KicsType {
-					resubmitFilter := config.Value["filter"]
-					if resubmitFilter != nil && len(kicsConfig.Filter) == 0 {
-						kicsConfig.Filter = resubmitFilter.(string)
-					}
-					resubmitPlatforms := config.Value["platforms"]
-					if resubmitPlatforms != nil && len(kicsConfig.Platforms) == 0 {
-						kicsConfig.Platforms = resubmitPlatforms.(string)
-					}
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.KicsType {
+				resubmitFilter := config.Value["filter"]
+				if resubmitFilter != nil && kicsConfig.Filter == "" {
+					kicsConfig.Filter = resubmitFilter.(string)
+				}
+				resubmitPlatforms := config.Value["platforms"]
+				if resubmitPlatforms != nil && kicsConfig.Platforms == "" {
+					kicsConfig.Platforms = resubmitPlatforms.(string)
 				}
 			}
 		}
@@ -742,13 +735,11 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig["type"] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
-		if resubmitConfig != nil {
-			for _, config := range resubmitConfig {
-				if config.Type == commonParams.ScaType {
-					resubmitFilter := config.Value["filter"]
-					if resubmitFilter != nil && len(scaConfig.Filter) == 0 {
-						scaConfig.Filter = resubmitFilter.(string)
-					}
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.ScaType {
+				resubmitFilter := config.Value["filter"]
+				if resubmitFilter != nil && scaConfig.Filter == "" {
+					scaConfig.Filter = resubmitFilter.(string)
 				}
 			}
 		}

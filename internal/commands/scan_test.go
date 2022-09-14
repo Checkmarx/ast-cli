@@ -391,5 +391,5 @@ func TestCreateScanResubmit(t *testing.T) {
 }
 
 func TestCreateScanResubmitWithScanTypes(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--debug", "--resubmit")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,kics,sca", "--debug", "--resubmit")
 }
