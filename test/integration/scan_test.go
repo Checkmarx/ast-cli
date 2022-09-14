@@ -346,7 +346,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,kics"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
