@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	failedCreatingSummary    = "Failed creating summary"
 	failedGettingScan        = "Failed getting scan"
 	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
@@ -251,7 +252,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 
 func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
 	if scanInfo == nil {
-		return nil, nil
+		return nil, errors.New(failedCreatingSummary)
 	}
 
 	sastIssues := 0
@@ -479,9 +480,9 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	scan, errorModel, error := scanWrapper.GetByID(scanID)
-	if error != nil {
-		return errors.Wrapf(error, "%s", failedGetting)
+	scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
+	if scanErr != nil {
+		return errors.Wrapf(scanErr, "%s", failedGetting)
 	}
 	if errorModel != nil {
 		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
@@ -598,7 +599,10 @@ func ReadResults(
 	return nil, nil
 }
 
-func enrichScaResults(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string, resultsModel *wrappers.ScanResultsCollection) (*wrappers.ScanResultsCollection, error) {
+func enrichScaResults(resultsWrapper wrappers.ResultsWrapper,
+	scan *wrappers.ScanResponseModel,
+	params map[string]string,
+	resultsModel *wrappers.ScanResultsCollection) (*wrappers.ScanResultsCollection, error) {
 	if contains(scan.Engines, scaType) {
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if err != nil {
