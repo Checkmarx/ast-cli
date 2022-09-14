@@ -588,9 +588,9 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		resultsModel, error := enrichScaResults(resultsWrapper, scan, params, resultsModel)
-		if error != nil {
-			return nil, error
+		resultsModel, err := enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		if err != nil {
+			return nil, err
 		}
 
 		resultsModel.ScanID = scan.ID
