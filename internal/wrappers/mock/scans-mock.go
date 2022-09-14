@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
 	"github.com/google/uuid"
@@ -48,8 +49,9 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 	}
 	m.Running = !m.Running
 	return &wrappers.ScanResponseModel{
-		ID:     scanID,
-		Status: status,
+		ID:      scanID,
+		Status:  status,
+		Engines: []string{params.ScaType, params.SastType, params.KicsType},
 	}, nil, nil
 }
 
