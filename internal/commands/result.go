@@ -599,11 +599,13 @@ func ReadResults(
 	return nil, nil
 }
 
-func enrichScaResults(resultsWrapper wrappers.ResultsWrapper,
+func enrichScaResults(
+	resultsWrapper wrappers.ResultsWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
-	resultsModel *wrappers.ScanResultsCollection) (*wrappers.ScanResultsCollection, error) {
-	if contains(scan.Engines, scaType) {
+	resultsModel *wrappers.ScanResultsCollection,
+) (*wrappers.ScanResultsCollection, error) {
+	if util.Contains(scan.Engines, scaType) {
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
