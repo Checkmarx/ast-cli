@@ -305,12 +305,18 @@ func TestBrokenLinkScan(t *testing.T) {
 		flag(params.IncludeFilterFlag), "broken_link.txt",
 	}
 
-	cmd, buffer := createRedirectedTestCommand(t)
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
 
 	assert.NilError(t, err)
 
-	output, err := io.ReadAll(buffer)
+	output, err := io.ReadAll(&buf)
 
 	assert.NilError(t, err)
 
