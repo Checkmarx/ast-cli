@@ -38,7 +38,7 @@ func PrintIfVerbose(msg string) {
 }
 
 func PrintfIfVerbose(msg string, args ...interface{}) {
-	PrintfIfVerbose(fmt.Sprintf(msg, args...))
+	PrintIfVerbose(fmt.Sprintf(msg, args...))
 }
 
 func PrintRequest(r *http.Request) {
