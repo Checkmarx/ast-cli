@@ -33,7 +33,7 @@ const (
 	kicsRealtimeCommand   = "kics-realtime"
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
-	projectIDParams = "project-id="
+	projectIDParams       = "project-id="
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -433,7 +433,7 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the scan should pass",
-		"scan",scanList, flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
+		"scan", scanList, flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
 	)
 
 	// Read response from buffer
