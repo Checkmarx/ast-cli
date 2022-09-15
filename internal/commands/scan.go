@@ -73,6 +73,7 @@ const (
 	invalidEngineMessage            = "Please verify if engine is installed and running"
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
+	DanglingSymlinkError            = "Skipping dangling symbolic link"
 )
 
 var (
@@ -795,7 +796,7 @@ func handleFile(
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
 			if os.IsNotExist(err) {
-				logger.PrintfIfVerbose("Skipping dangling symbolic link: %s: %v", fileName, err)
+				logger.PrintfIfVerbose("%s: %s: %v", DanglingSymlinkError, fileName, err)
 				return nil
 			}
 			return err

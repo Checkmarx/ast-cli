@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -304,10 +305,16 @@ func TestBrokenLinkScan(t *testing.T) {
 		flag(params.IncludeFilterFlag), "broken_link.txt",
 	}
 
-	cmd := createASTIntegrationTestCommand(t)
+	cmd, buffer := createRedirectedTestCommand(t)
 	err := execute(cmd, args...)
 
-	assertError(t, err, "broken_link.txt")
+	assert.NilError(t, err)
+
+	output, err := io.ReadAll(buffer)
+
+	assert.NilError(t, err)
+
+	assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
 }
 
 // Generic scan test execution
@@ -561,7 +568,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
 	file, err := ioutil.ReadFile("cx_result.json")
 	defer func() {
-		os.Remove("cx_result.json")
+		_ = os.Remove("cx_result.json")
 	}()
 	if err != nil {
 		return wrappers.ScanResultsCollection{}, err
