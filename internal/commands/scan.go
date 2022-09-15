@@ -596,26 +596,15 @@ func setupScanTypeProjectAndConfig(
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
-	resubmit, _ := cmd.Flags().GetBool("resubmit")
+	resubmit, _ := cmd.Flags().GetBool(commonParams.ScanResubmit)
+	var resubmitConfig []wrappers.Config
 	if resubmit {
-		logger.PrintIfVerbose("using latest scan configuration due to --resubmit flag")
+		logger.PrintIfVerbose(fmt.Sprintf("using latest scan configuration due to --%s flag", commonParams.ScanResubmit))
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
-		resubmitConfig, errSubmit := getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-		if errSubmit != nil {
-			return errSubmit
-		}
-		sastConfig := addSastScan(cmd, resubmitConfig)
-		if sastConfig != nil {
-			configArr = append(configArr, sastConfig)
-		}
-		var kicsConfig = addKicsScan(cmd, resubmitConfig)
-		if kicsConfig != nil {
-			configArr = append(configArr, kicsConfig)
-		}
-		var scaConfig = addScaScan(cmd, resubmitConfig)
-		if scaConfig != nil {
-			configArr = append(configArr, scaConfig)
+		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
+		if err != nil {
+			return err
 		}
 	} else {
 		if _, ok := info["config"]; !ok {
@@ -624,18 +613,18 @@ func setupScanTypeProjectAndConfig(
 				return err
 			}
 		}
-		sastConfig := addSastScan(cmd, nil)
-		if sastConfig != nil {
-			configArr = append(configArr, sastConfig)
-		}
-		var kicsConfig = addKicsScan(cmd, nil)
-		if kicsConfig != nil {
-			configArr = append(configArr, kicsConfig)
-		}
-		var scaConfig = addScaScan(cmd, nil)
-		if scaConfig != nil {
-			configArr = append(configArr, scaConfig)
-		}
+	}
+	sastConfig := addSastScan(cmd, resubmitConfig)
+	if sastConfig != nil {
+		configArr = append(configArr, sastConfig)
+	}
+	var kicsConfig = addKicsScan(cmd, resubmitConfig)
+	if kicsConfig != nil {
+		configArr = append(configArr, kicsConfig)
+	}
+	var scaConfig = addScaScan(cmd, resubmitConfig)
+	if scaConfig != nil {
+		configArr = append(configArr, scaConfig)
 	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
@@ -1789,8 +1778,6 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	var origin string
 	var scanType string
 	var scanTimeOut string
-	fmt.Printf("%v", scan.Engines)
-	fmt.Printf("configs:%v", scan.Metadata.Configs)
 	if scan.UserAgent != "" {
 		ua := user_agent.New(scan.UserAgent)
 		name, version := ua.Browser()
