@@ -795,7 +795,8 @@ func handleFile(
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
 			if os.IsNotExist(err) {
-				return errors.WithMessage(err, "found dangling symbolic link, aborting")
+				logger.PrintfIfVerbose("Skipping dangling symbolic link: %s: %v", fileName, err)
+				return nil
 			}
 			return err
 		}
