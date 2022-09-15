@@ -27,8 +27,8 @@ type ScanTaskResponseModel struct {
 }
 
 type Config struct {
-	Type  string            `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Value map[string]string `protobuf:"bytes,2,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Value map[string]interface{} `protobuf:"bytes,2,rep,name=value,proto3" json:"value,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 type ScanHandler struct {
@@ -64,24 +64,28 @@ type StatusInfo struct {
 }
 
 type ScanResponseModel struct {
-	ID              string            `json:"id"`
-	Status          ScanStatus        `json:"status"`
-	PositionInQueue *uint             `json:"positionInQueue,omitempty"`
-	StatusDetails   []StatusInfo      `json:"statusDetails,omitempty"`
-	Branch          string            `json:"branch"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	UpdatedAt       time.Time         `json:"updatedAt"`
-	ProjectID       string            `json:"projectId"`
-	ProjectName     string            `json:"projectName"`
-	UserAgent       string            `json:"userAgent"`
-	Initiator       string            `json:"initiator"`
-	Tags            map[string]string `json:"tags"`
-	Metadata        interface{}       `json:"metadata"`
-	Engines         []string          `json:"engines"`
-	SourceType      string            `json:"sourceType"`
-	SourceOrigin    string            `json:"sourceOrigin"`
-	SastIncremental string            `json:"sastIncremental"`
-	Timeout         string            `json:"timeout"`
+	ID              string                    `json:"id"`
+	Status          ScanStatus                `json:"status"`
+	PositionInQueue *uint                     `json:"positionInQueue,omitempty"`
+	StatusDetails   []StatusInfo              `json:"statusDetails,omitempty"`
+	Branch          string                    `json:"branch"`
+	CreatedAt       time.Time                 `json:"createdAt"`
+	UpdatedAt       time.Time                 `json:"updatedAt"`
+	ProjectID       string                    `json:"projectId"`
+	ProjectName     string                    `json:"projectName"`
+	UserAgent       string                    `json:"userAgent"`
+	Initiator       string                    `json:"initiator"`
+	Tags            map[string]string         `json:"tags"`
+	Metadata        ScanResponseModelMetadata `json:"metadata"`
+	Engines         []string                  `json:"engines"`
+	SourceType      string                    `json:"sourceType"`
+	SourceOrigin    string                    `json:"sourceOrigin"`
+	SastIncremental string                    `json:"sastIncremental"`
+	Timeout         string                    `json:"timeout"`
+}
+
+type ScanResponseModelMetadata struct {
+	Configs []Config `json:"configs"`
 }
 
 type ScansCollectionResponseModel struct {
