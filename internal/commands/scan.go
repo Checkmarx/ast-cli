@@ -1364,7 +1364,7 @@ func applyThreshold(
 
 	thresholdMap := parseThreshold(threshold)
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel.ID)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
 	if err != nil {
 		return err
 	}
@@ -1412,8 +1412,8 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID string) (map[string]int, error) {
-	results, err := ReadResults(resultsWrapper, scanID, make(map[string]string))
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (map[string]int, error) {
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
 	if err != nil {
 		return nil, err
 	}

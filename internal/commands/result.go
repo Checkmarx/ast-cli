@@ -22,6 +22,8 @@ import (
 )
 
 const (
+	failedCreatingSummary    = "Failed creating summary"
+	failedGettingScan        = "Failed getting scan"
 	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
 	mediumLabel              = "medium"
@@ -248,58 +250,52 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.ResultSummary, error) {
-	scanInfo, errorModel, err := scansWrapper.GetByID(scanID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedGetting)
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
+	if scanInfo == nil {
+		return nil, errors.New(failedCreatingSummary)
 	}
-	if errorModel != nil {
-		return nil, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
-	} else if scanInfo != nil {
-		sastIssues := 0
-		scaIssues := 0
-		kicsIssues := 0
-		if len(scanInfo.StatusDetails) > 0 {
-			for _, statusDetailItem := range scanInfo.StatusDetails {
-				if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
-					if statusDetailItem.Name == commonParams.SastType {
-						sastIssues = notAvailableNumber
-					} else if statusDetailItem.Name == commonParams.ScaType {
-						scaIssues = notAvailableNumber
-					} else if statusDetailItem.Name == commonParams.KicsType {
-						kicsIssues = notAvailableNumber
-					}
+
+	sastIssues := 0
+	scaIssues := 0
+	kicsIssues := 0
+	if len(scanInfo.StatusDetails) > 0 {
+		for _, statusDetailItem := range scanInfo.StatusDetails {
+			if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
+				if statusDetailItem.Name == commonParams.SastType {
+					sastIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ScaType {
+					scaIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.KicsType {
+					kicsIssues = notAvailableNumber
 				}
 			}
 		}
-
-		return &wrappers.ResultSummary{
-			ScanID:       scanInfo.ID,
-			Status:       string(scanInfo.Status),
-			CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-			ProjectID:    scanInfo.ProjectID,
-			RiskStyle:    "",
-			RiskMsg:      "",
-			HighIssues:   0,
-			MediumIssues: 0,
-			LowIssues:    0,
-			SastIssues:   sastIssues,
-			KicsIssues:   kicsIssues,
-			ScaIssues:    scaIssues,
-			Tags:         scanInfo.Tags,
-			ProjectName:  scanInfo.ProjectName,
-			BranchName:   scanInfo.Branch,
-		}, nil
 	}
-	return nil, err
+
+	return &wrappers.ResultSummary{
+		ScanID:       scanInfo.ID,
+		Status:       string(scanInfo.Status),
+		CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:    scanInfo.ProjectID,
+		RiskStyle:    "",
+		RiskMsg:      "",
+		HighIssues:   0,
+		MediumIssues: 0,
+		LowIssues:    0,
+		SastIssues:   sastIssues,
+		KicsIssues:   kicsIssues,
+		ScaIssues:    scaIssues,
+		Tags:         scanInfo.Tags,
+		ProjectName:  scanInfo.ProjectName,
+		BranchName:   scanInfo.Branch,
+	}, nil
 }
 
 func SummaryReport(
-	scanWrapper wrappers.ScansWrapper,
 	results *wrappers.ScanResultsCollection,
-	scanID string,
+	scan *wrappers.ScanResponseModel,
 ) (*wrappers.ResultSummary, error) {
-	summary, err := getScanInfo(scanWrapper, scanID)
+	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
@@ -484,11 +480,19 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	results, err := ReadResults(resultsWrapper, scanID, params)
+	scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
+	if scanErr != nil {
+		return errors.Wrapf(scanErr, "%s", failedGetting)
+	}
+	if errorModel != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+	}
+
+	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return err
 	}
-	summary, err := SummaryReport(scanWrapper, results, scanID)
+	summary, err := SummaryReport(results, scan)
 	if err != nil {
 		return err
 	}
@@ -567,14 +571,13 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
-	scanID string,
+	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
-	var scaPackageModel *[]wrappers.ScaPackageCollection
 	var errorModel *wrappers.WebError
 
-	params[commonParams.ScanIDQueryParam] = scanID
+	params[commonParams.ScanIDQueryParam] = scan.ID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 
 	if err != nil {
@@ -582,8 +585,28 @@ func ReadResults(
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-	} else if resultsModel != nil {
-		scaPackageModel, errorModel, err = resultsWrapper.GetAllResultsPackageByScanID(params)
+	}
+
+	if resultsModel != nil {
+		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		if err != nil {
+			return nil, err
+		}
+
+		resultsModel.ScanID = scan.ID
+		return resultsModel, nil
+	}
+	return nil, nil
+}
+
+func enrichScaResults(
+	resultsWrapper wrappers.ResultsWrapper,
+	scan *wrappers.ScanResponseModel,
+	params map[string]string,
+	resultsModel *wrappers.ScanResultsCollection,
+) (*wrappers.ScanResultsCollection, error) {
+	if util.Contains(scan.Engines, scaType) {
+		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
@@ -594,10 +617,8 @@ func ReadResults(
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
 		}
-		resultsModel.ScanID = scanID
-		return resultsModel, nil
 	}
-	return nil, nil
+	return resultsModel, nil
 }
 
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
