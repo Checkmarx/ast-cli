@@ -606,14 +606,13 @@ func setupScanTypeProjectAndConfig(
 		if err != nil {
 			return err
 		}
-	} else {
-		if _, ok := info["config"]; !ok {
-			err = json.Unmarshal([]byte("[]"), &configArr)
-			if err != nil {
-				return err
-			}
+	} else if _, ok := info["config"]; !ok {
+		err = json.Unmarshal([]byte("[]"), &configArr)
+		if err != nil {
+			return err
 		}
 	}
+
 	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
