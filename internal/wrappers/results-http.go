@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
@@ -105,6 +106,9 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
 		return &model, nil, nil
+	case http.StatusNotFound: // scan was not triggered with SCA type or SCA scan didn't start yet
+		logger.PrintIfVerbose("SCA packages for enrichment not found")
+		return nil, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
