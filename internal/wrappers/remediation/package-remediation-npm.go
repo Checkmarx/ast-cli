@@ -41,12 +41,14 @@ func replace(dependencies interface{}, r PackageContentJSON) (
 	dependencyMap map[string]interface{},
 ) {
 	var found = false
-	dependencyMap = dependencies.(map[string]interface{})
-	for key, element := range dependencyMap {
-		if key == r.PackageIdentifier {
-			logger.PrintIfVerbose("Found package " + key + " with version " + element.(string) + ", replacing it with " + r.PackageVersion + ".")
-			dependencyMap[key] = r.PackageVersion
-			found = true
+	if dependencies != nil {
+		dependencyMap = dependencies.(map[string]interface{})
+		for key, element := range dependencyMap {
+			if key == r.PackageIdentifier {
+				logger.PrintIfVerbose("Found package " + key + " with version " + element.(string) + ", replacing it with " + r.PackageVersion + ".")
+				dependencyMap[key] = r.PackageVersion
+				found = true
+			}
 		}
 	}
 	return found, dependencyMap
