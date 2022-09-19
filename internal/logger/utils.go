@@ -16,7 +16,7 @@ var sanitizeFlags = []string{
 	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
 	params.UsernameFlag, params.PasswordFlag,
 	params.AstToken, params.SSHValue,
-	params.SCMTokenFlag, params.ProxyFlag,
+	params.SCMTokenFlag, params.ProxyKey,
 }
 
 func Print(msg string) {
