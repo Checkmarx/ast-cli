@@ -100,7 +100,7 @@ func TestRemediationKicsCommandInvalidEngine(t *testing.T) {
 	cmd := RemediationKicsCommand()
 	abs, _ := filepath.Abs(kicsFileValue)
 	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, invalidEngineValue)
-	assert.Assert(t, err != nil, invalidEngineMessage)
+	assert.Assert(t, err != nil, InvalidEngineMessage)
 }
 
 func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {
