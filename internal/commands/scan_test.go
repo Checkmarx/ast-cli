@@ -35,6 +35,7 @@ const (
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
+	InvalidEngineMessage          = "Please verify if engine is installed"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -357,7 +358,7 @@ func TestCreateRealtimeKicsWithEngine(t *testing.T) {
 func TestCreateRealtimeKicsInvalidEngine(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, invalidEngineValue}
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Error(t, err, invalidEngineMessage, err.Error())
+	assert.Error(t, err, InvalidEngineMessage, err.Error())
 }
 
 func TestCreateRealtimeKicsMissingEngine(t *testing.T) {
