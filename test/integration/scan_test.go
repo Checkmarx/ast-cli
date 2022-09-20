@@ -17,7 +17,11 @@ import (
 	"testing"
 	"time"
 
+<<<<<<< HEAD
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+=======
+	"github.com/checkmarx/ast-cli/internal/commands"
+>>>>>>> main
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -33,6 +37,8 @@ const (
 	scanCommand           = "scan"
 	kicsRealtimeCommand   = "kics-realtime"
 	invalidEngineValue    = "invalidEngine"
+	scanList              = "list"
+	projectIDParams       = "project-id="
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -305,10 +311,22 @@ func TestBrokenLinkScan(t *testing.T) {
 		flag(params.IncludeFilterFlag), "broken_link.txt",
 	}
 
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
 
-	assertError(t, err, "broken_link.txt")
+	assert.NilError(t, err)
+
+	output, err := io.ReadAll(&buf)
+
+	assert.NilError(t, err)
+
+	assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
 }
 
 // Generic scan test execution
@@ -432,7 +450,7 @@ func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting the scan should pass",
-		"scan", "list", flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
+		"scan", scanList, flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
 	)
 
 	// Read response from buffer
@@ -562,7 +580,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
 	file, err := ioutil.ReadFile("cx_result.json")
 	defer func() {
-		os.Remove("cx_result.json")
+		_ = os.Remove("cx_result.json")
 	}()
 	if err != nil {
 		return wrappers.ScanResultsCollection{}, err
@@ -700,4 +718,21 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestScanCreateResubmit(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
+	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
+	args := []string{
+		scanCommand, scanList,
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.FilterFlag), projectIDParams + projectID,
+	}
+	err, outputBuffer := executeCommand(t, args...)
+	scan := []wrappers.ScanResponseModel{}
+	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
+	engines := strings.Join(scan[0].Engines, ",")
+	log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
+	assert.Assert(t, err == nil && engines == "sast", "")
 }
