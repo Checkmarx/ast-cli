@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -164,28 +163,28 @@ func addReqMonitor(req *http.Request) *http.Request {
 		trace := &httptrace.ClientTrace{
 			GetConn: func(hostPort string) {
 				startTime = time.Now().UnixNano() / int64(time.Millisecond)
-				log.Print("Starting connection: " + hostPort)
+				logger.Print("Starting connection: " + hostPort)
 			},
 			DNSStart: func(dnsInfo httptrace.DNSStartInfo) {
-				log.Print("DNS looking up host information for: " + dnsInfo.Host)
+				logger.Print("DNS looking up host information for: " + dnsInfo.Host)
 			},
 			DNSDone: func(dnsInfo httptrace.DNSDoneInfo) {
-				log.Print(fmt.Sprintf("DNS found host address(s): %+v\n", dnsInfo.Addrs))
+				logger.Printf("DNS found host address(s): %+v\n", dnsInfo.Addrs)
 			},
 			TLSHandshakeStart: func() {
-				log.Print("Started TLS Handshake")
+				logger.Print("Started TLS Handshake")
 			},
 			TLSHandshakeDone: func(c tls.ConnectionState, err error) {
 				if err == nil {
-					log.Print("Completed TLS handshake")
+					logger.Print("Completed TLS handshake")
 				} else {
-					log.Printf("%s, %s", "Error completing TLS handshake", err)
+					logger.Printf("%s, %s", "Error completing TLS handshake", err)
 				}
 			},
 			GotFirstResponseByte: func() {
 				endTime := time.Now().UnixNano() / int64(time.Millisecond)
 				diff := endTime - startTime
-				log.Printf("Connected completed in: %d (ms)", diff)
+				logger.Printf("Connected completed in: %d (ms)", diff)
 			},
 		}
 		return req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
