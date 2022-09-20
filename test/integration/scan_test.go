@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -667,7 +668,7 @@ func TestRunKicsScanWithInvalidEngine(t *testing.T) {
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err,
-		invalidEngineMessage)
+		util.InvalidEngineMessage)
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {

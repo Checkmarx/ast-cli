@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
@@ -28,7 +29,7 @@ const (
 	kicsEngine                  = "engine"
 	similarityIDValue           = "9574288c118e8c87eea31b6f0b011295a39ec5e70d83fb70e839b8db4a99eba8"
 	resultFileInvalidValue      = "./"
-	invalidEngineMessage        = "Please verify if engine is installed"
+	//invalidEngineMessage        = "Please verify if engine is installed"
 )
 
 func TestScaRemediation(t *testing.T) {
@@ -165,7 +166,6 @@ func TestKicsRemediationInvalidEngine(t *testing.T) {
 		flag(kicsEngine),
 		invalidEngineValue,
 	}
-
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, invalidEngineMessage)
+	assertError(t, err, util.InvalidEngineMessage)
 }

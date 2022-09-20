@@ -70,24 +70,18 @@ func (s *ScanResultNode) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	s.Column = uintValue(aux.Column, column, aux.FileName)
-	s.Line = uintValue(aux.Line, line, aux.FileName)
-	s.Length = uintValue(aux.Length, length, aux.FileName)
-	s.MethodLine = uintValue(aux.MethodLine, methodLine, aux.FileName)
+	s.Column = uintValue(aux.Column, 0, column, aux.FileName)
+	s.Line = uintValue(aux.Line, 0, line, aux.FileName)
+	s.Length = uintValue(aux.Length, 1, length, aux.FileName)
+	s.MethodLine = uintValue(aux.MethodLine, 0, methodLine, aux.FileName)
 	s.FileName = aux.FileName
 
 	return nil
 }
 
-func uintValue(value int, name, filename string) uint {
-	var r uint
-	// Length must be bigger than 0
-	if name == length {
-		r = 1
-	} else {
-		r = 0
-	}
-	if value >= 0 {
+func uintValue(value int, defaultValue int, name, filename string) uint {
+	var r = uint(defaultValue)
+	if value >= defaultValue {
 		r = uint(value)
 	} else {
 		messageValue := fmt.Sprintf(message, name, value, filename)
