@@ -17,11 +17,8 @@ import (
 	"testing"
 	"time"
 
-<<<<<<< HEAD
 	"github.com/checkmarx/ast-cli/internal/commands/util"
-=======
 	"github.com/checkmarx/ast-cli/internal/commands"
->>>>>>> main
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
