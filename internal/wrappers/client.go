@@ -50,6 +50,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
+const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
@@ -130,11 +131,15 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	u := GetURL(path)
-	return SendHTTPRequestByFullURL(method, u, body, auth, timeout)
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	u := GetURL(path, accessToken)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
 }
 
-func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint, accessToken *string) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -142,10 +147,7 @@ func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool,
 		return nil, err
 	}
 	if auth {
-		err = enrichWithOath2Credentials(req)
-		if err != nil {
-			return nil, err
-		}
+		enrichWithOath2Credentials(req, accessToken)
 	}
 
 	req = addReqMonitor(req)
@@ -218,8 +220,19 @@ func SendHTTPRequestPasswordAuth(
 	return resp, nil
 }
 
-func GetURL(path string) string {
-	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+func GetURL(path string, accessToken *string) string {
+	var cleanURL string
+	if accessToken != nil {
+		token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
+		if err != nil {
+			println(err)
+		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[baseURLKey] != nil {
+			cleanURL = strings.TrimSpace(claims[baseURLKey].(string))
+		}
+	} else {
+		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	}
 	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path)
 }
@@ -230,7 +243,7 @@ func GetAuthURL(path string) string {
 	if cleanURL != "" {
 		authURL = fmt.Sprintf("%s/%s", strings.Trim(cleanURL, "/"), path)
 	} else {
-		authURL = GetURL(path)
+		authURL = GetURL(path, nil)
 	}
 	logger.PrintIfVerbose("Auth URL is: " + authURL)
 	return authURL
@@ -254,7 +267,11 @@ func HTTPRequestWithQueryParams(
 	method, path string, params map[string]string,
 	body io.Reader, timeout uint, printBody bool,
 ) (*http.Response, error) {
-	u := GetURL(path)
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	u := GetURL(path, accessToken)
 	req, err := http.NewRequest(method, u, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -266,10 +283,7 @@ func HTTPRequestWithQueryParams(
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	err = enrichWithOath2Credentials(req)
-	if err != nil {
-		return nil, err
-	}
+	enrichWithOath2Credentials(req, accessToken)
 	var resp *http.Response
 	resp, err = request(client, req, printBody)
 	if err != nil {
@@ -311,7 +325,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		authURI = GetURL("/" + strings.TrimLeft(authURI, "/"))
+		authURI = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
 	}
 
 	return authURI, nil
@@ -339,20 +353,19 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 	return authURI, nil
 }
 
-func enrichWithOath2Credentials(request *http.Request) error {
-	accessToken, err := getAccessToken()
-	if err != nil {
-		return err
-	}
+func enrichWithOath2Credentials(request *http.Request, accessToken *string) {
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
-	return nil
 }
 
 func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (
 	*http.Response,
 	error,
 ) {
-	fullURL := GetURL(path)
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	fullURL := GetURL(path, accessToken)
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -361,10 +374,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 		return nil, err
 	}
 	if auth {
-		err = enrichWithOath2Credentials(req)
-		if err != nil {
-			return nil, err
-		}
+		enrichWithOath2Credentials(req, accessToken)
 	}
 
 	req = addReqMonitor(req)
@@ -376,7 +386,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	return resp, nil
 }
 
-func getAccessToken() (*string, error) {
+func GetAccessToken() (*string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
 		return nil, err

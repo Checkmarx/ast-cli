@@ -21,12 +21,19 @@ const (
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
+	missingFlagTogetherError        = "if any flags in the group [client-id client-secret base-uri] are set they must all be set; missing [base-uri]"
 )
 
 // Test validate with credentials used in test env
 func TestAuthValidate(t *testing.T) {
 	err, buffer := executeCommand(t, "auth", "validate")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
+}
+
+// Test validate with credentials from flags
+func TestAuthValidateMissingFlagsTogether(t *testing.T) {
+	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
+	assertError(t, err, missingFlagTogetherError)
 }
 
 // Test validate with credentials from flags

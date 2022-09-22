@@ -117,14 +117,20 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		authWrapper := wrappers.NewAuthHTTPWrapper()
-		authWrapper.SetPath(viper.GetString(params.ScansPathKey))
-		err := authWrapper.ValidateLogin()
-		if err != nil {
-			return errors.Errorf("%s", err)
+		clientID := viper.GetString(params.AccessKeyIDConfigKey)
+		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
+		apiKey := viper.GetString(params.AstAPIKey)
+		if (clientID != "" && clientSecret != "") || apiKey != "" {
+			authWrapper := wrappers.NewAuthHTTPWrapper()
+			authWrapper.SetPath(viper.GetString(params.ScansPathKey))
+			err := authWrapper.ValidateLogin()
+			if err != nil {
+				return errors.Errorf("%s", err)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
+			return nil
 		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
-		return nil
+		return errors.Errorf("Failed to authenticate - please provide client-id, client-secret and base-uri or apikey")
 	}
 }
 
