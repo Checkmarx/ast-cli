@@ -32,6 +32,7 @@ const (
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
+	jwtError                = "Error retreiving URL from jwt token"
 )
 
 type ClientCredentialsInfo struct {
@@ -362,7 +363,7 @@ func extractBaseURLFromToken(accessToken *string) (string, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[baseURLKey] != nil {
 		baseURL = strings.TrimSpace(claims[baseURLKey].(string))
 	} else {
-		return "", errors.Errorf("Error retreiving URL from jwt token")
+		return "", errors.Errorf(jwtError)
 	}
 	return baseURL, nil
 }
