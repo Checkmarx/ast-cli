@@ -21,7 +21,6 @@ const (
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
-	missingFlagTogetherError        = "if any flags in the group [client-id client-secret base-uri] are set they must all be set; missing [base-uri]"
 )
 
 // Test validate with credentials used in test env
@@ -33,16 +32,16 @@ func TestAuthValidate(t *testing.T) {
 // Test validate with credentials from flags
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
 	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
-	assertError(t, err, missingFlagTogetherError)
+	assertError(t, err, wrappers.MissingURI)
 }
 
 // Test validate with credentials from flags
 func TestAuthValidateEmptyFlags(t *testing.T) {
 	err, _ := executeCommand(t, "auth", "validate", "--apikey", "", "--client-id", "")
-	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key ID"))
+	assertError(t, err, commands.FailedAuthError)
 
 	err, _ = executeCommand(t, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
-	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key secret"))
+	assertError(t, err, commands.FailedAuthError)
 }
 
 // Tests with base auth uri

@@ -31,6 +31,7 @@ const (
 	APIKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
+	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
 )
 
 type ClientCredentialsInfo struct {
@@ -135,7 +136,10 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 	if err != nil {
 		return nil, err
 	}
-	u := GetURL(path, accessToken)
+	u, err := GetURL(path, accessToken)
+	if err != nil {
+		return nil, err
+	}
 	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
 }
 
@@ -198,7 +202,10 @@ func SendHTTPRequestPasswordAuth(
 	method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string,
 ) (*http.Response, error) {
-	u := GetAuthURL(path)
+	u, err := GetAuthURL(path)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(method, u, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -220,33 +227,42 @@ func SendHTTPRequestPasswordAuth(
 	return resp, nil
 }
 
-func GetURL(path string, accessToken *string) string {
+func GetURL(path string, accessToken *string) (string, error) {
 	var cleanURL string
+	var err error
+	// In case trying to get the base-url from access token
 	if accessToken != nil {
-		token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
+		cleanURL, err = extractBaseURLFromToken(accessToken)
 		if err != nil {
-			println(err)
+			return "", err
 		}
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[baseURLKey] != nil {
-			cleanURL = strings.TrimSpace(claims[baseURLKey].(string))
-		}
+		// Case we try to get base-auth url without the use of flags and apiKEY or get base-url from flag use and without the use of apiKey
 	} else {
 		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+		if cleanURL == "" {
+			return "", errors.Errorf(MissingURI)
+		}
 	}
 	cleanURL = strings.Trim(cleanURL, "/")
-	return fmt.Sprintf("%s/%s", cleanURL, path)
+	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 
-func GetAuthURL(path string) string {
+func GetAuthURL(path string) (string, error) {
 	var authURL string
+	var err error
 	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+	// case we use base-auth-uri flag
 	if cleanURL != "" {
 		authURL = fmt.Sprintf("%s/%s", strings.Trim(cleanURL, "/"), path)
+		// case we don't use base-auth-uri flag, we try to get the base-uri instead
 	} else {
-		authURL = GetURL(path, nil)
+		authURL, err = GetURL(path, nil)
+		if err != nil {
+			return "", err
+		}
 	}
 	logger.PrintIfVerbose("Auth URL is: " + authURL)
-	return authURL
+	return authURL, nil
 }
 
 func SendPrivateHTTPRequestWithQueryParams(
@@ -271,7 +287,10 @@ func HTTPRequestWithQueryParams(
 	if err != nil {
 		return nil, err
 	}
-	u := GetURL(path, accessToken)
+	u, err := GetURL(path, accessToken)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(method, u, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -325,12 +344,28 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		authURI = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
+		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return authURI, nil
 }
 
+func extractBaseURLFromToken(accessToken *string) (string, error) {
+	var baseURL string
+	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
+	if err != nil {
+		return "", err
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[baseURLKey] != nil {
+		baseURL = strings.TrimSpace(claims[baseURLKey].(string))
+	} else {
+		return "", errors.Errorf("Error retreiving URL from jwt token")
+	}
+	return baseURL, nil
+}
 func extractAuthURIFromConfig() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
 	tenant := viper.GetString(commonParams.TenantKey)
@@ -338,7 +373,10 @@ func extractAuthURIFromConfig() (string, error) {
 	if authPath == "" {
 		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "authentication path"))
 	}
-	authURI := GetAuthURL(authPath)
+	authURI, err := GetAuthURL(authPath)
+	if err != nil {
+		return "", err
+	}
 	return authURI, nil
 }
 
@@ -365,7 +403,10 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	if err != nil {
 		return nil, err
 	}
-	fullURL := GetURL(path, accessToken)
+	fullURL, err := GetURL(path, accessToken)
+	if err != nil {
+		return nil, err
+	}
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -491,7 +532,8 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 
 	res, err := doPrivateRequest(client, req)
 	if err != nil {
-		return nil, errors.Errorf("%s %s", checkmarxURLError, GetAuthURL(""))
+		authURL, _ := GetAuthURL("")
+		return nil, errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
 		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")

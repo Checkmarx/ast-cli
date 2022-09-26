@@ -19,6 +19,7 @@ const (
 	SuccessAuthValidate  = "Successfully authenticated to AST server!"
 	adminClientID        = "ast-app"
 	adminClientSecret    = "1d71c35c-818e-4ee8-8fb1-d6cbf8fe2e2a"
+	FailedAuthError      = "Failed to authenticate - please provide client-id, client-secret and base-uri or apikey"
 )
 
 var (
@@ -130,7 +131,7 @@ func validLogin() func(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
 			return nil
 		}
-		return errors.Errorf("Failed to authenticate - please provide client-id, client-secret and base-uri or apikey")
+		return errors.Errorf(FailedAuthError)
 	}
 }
 

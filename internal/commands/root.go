@@ -88,7 +88,6 @@ func NewAstCLI(
 			os.Exit(0)
 		}
 	}
-
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
@@ -106,8 +105,6 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
-	// Set client-id, client-secret and base-auth-uri as required together so that is possible to retrieve base-uri from jwt token
-	rootCmd.MarkFlagsRequiredTogether(params.AccessKeyIDFlag, params.AccessKeySecretFlag, params.BaseURIFlag)
 
 	// Set help func
 	rootCmd.SetHelpFunc(
