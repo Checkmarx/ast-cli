@@ -31,7 +31,8 @@ func TestAuthValidate(t *testing.T) {
 
 // Test validate with credentials from flags
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
-	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
+	// set base-uri to empty string so that it does not pick up the value from the environment
+	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret","--base-uri","")
 	assertError(t, err, wrappers.MissingURI)
 }
 
