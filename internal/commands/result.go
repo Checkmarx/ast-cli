@@ -299,11 +299,11 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
-	accessToken, err := wrappers.GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	summary.BaseURI, err = wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID), accessToken)
+	//accessToken, err := wrappers.GetAccessToken()
+	//if err != nil {
+	//	return nil, err
+	//}
+	summary.BaseURI = wrappers.GetCleanURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
 	if err != nil {
 		return nil, err
 	}

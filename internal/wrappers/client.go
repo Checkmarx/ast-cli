@@ -228,6 +228,12 @@ func SendHTTPRequestPasswordAuth(
 	return resp, nil
 }
 
+func GetCleanURL(path string) string {
+	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	cleanURL = strings.Trim(cleanURL, "/")
+	return fmt.Sprintf("%s/%s", cleanURL, path)
+}
+
 func GetURL(path string, accessToken *string) (string, error) {
 	var cleanURL string
 	var err error
@@ -367,6 +373,7 @@ func extractBaseURLFromToken(accessToken *string) (string, error) {
 	}
 	return baseURL, nil
 }
+
 func extractAuthURIFromConfig() (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
 	tenant := viper.GetString(commonParams.TenantKey)

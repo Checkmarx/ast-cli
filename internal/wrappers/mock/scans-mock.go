@@ -79,9 +79,9 @@ func (m *ScansMockWrapper) Get(_ map[string]string) (
 func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, *wrappers.ErrorModel, error) {
 	fmt.Println("Called GetByID in ScansMockWrapper")
 	var status wrappers.ScanStatus = "Completed"
-	if m.Running {
-		status = "Running"
-	}
+	//if m.Running {
+	//	status = "Running"
+	//}
 	m.Running = !m.Running
 	return &wrappers.ScanResponseModel{
 		ID:      scanID,
