@@ -25,8 +25,6 @@ const (
 	listValue          = "list"
 )
 
-var apikey = os.Getenv("CX_APIKEY")
-
 func flag(f string) string {
 	return "--" + f
 }
@@ -56,7 +54,7 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON", "--apikey", apikey)
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
 	// Remove generated json file
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
