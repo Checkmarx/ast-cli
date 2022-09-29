@@ -23,6 +23,10 @@ func TestAuthValidate(t *testing.T) {
 	_ = execCmdNotNilAssertion(t, "auth", "validate")
 }
 
+func TestAuthValidateMissingFlagsTogether(t *testing.T) {
+	_ = execCmdNotNilAssertion(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
+}
+
 func TestAuthValidateInvalidAPIKey(t *testing.T) {
 	err := executeTestCommand(createASTTestCommand(), "auth", "validate", "--apikey", "invalidApiKey")
 	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
