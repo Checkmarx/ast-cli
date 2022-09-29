@@ -29,6 +29,11 @@ func TestAuthValidate(t *testing.T) {
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
+func TestAuthValidateClientAndSecret(t *testing.T) {
+	err, buffer := executeCommand(t, "auth", "validate","--apikey","")
+	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
+}
+
 // Test validate with credentials from flags
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
 	// set base-uri to empty string so that it does not pick up the value from the environment
