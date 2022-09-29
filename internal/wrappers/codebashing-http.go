@@ -78,7 +78,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error) {
-	accessToken, err := getAccessToken()
+	accessToken, err := GetAccessToken()
 	if err != nil {
 		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}

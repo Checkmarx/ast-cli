@@ -88,7 +88,6 @@ func NewAstCLI(
 			os.Exit(0)
 		}
 	}
-
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))

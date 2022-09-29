@@ -41,8 +41,11 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
 	}
-
-	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout)
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}

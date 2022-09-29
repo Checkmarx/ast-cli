@@ -29,13 +29,25 @@ func TestAuthValidate(t *testing.T) {
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
+func TestAuthValidateClientAndSecret(t *testing.T) {
+	err, buffer := executeCommand(t, "auth", "validate","--apikey","")
+	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
+}
+
+// Test validate with credentials from flags
+func TestAuthValidateMissingFlagsTogether(t *testing.T) {
+	// set base-uri to empty string so that it does not pick up the value from the environment
+	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret","--base-uri","","--base-auth-uri","","--apikey","")
+	assertError(t, err, wrappers.MissingURI)
+}
+
 // Test validate with credentials from flags
 func TestAuthValidateEmptyFlags(t *testing.T) {
 	err, _ := executeCommand(t, "auth", "validate", "--apikey", "", "--client-id", "")
-	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key ID"))
+	assertError(t, err, commands.FailedAuthError)
 
 	err, _ = executeCommand(t, "auth", "validate", "--client-id", "client_id", "--apikey", "", "--client-secret", "")
-	assertError(t, err, fmt.Sprintf(wrappers.FailedToAuth, "access key secret"))
+	assertError(t, err, commands.FailedAuthError)
 }
 
 // Tests with base auth uri

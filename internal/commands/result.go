@@ -299,7 +299,10 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
-	summary.BaseURI = wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
+	summary.BaseURI = wrappers.GetCleanURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
+	if err != nil {
+		return nil, err
+	}
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
