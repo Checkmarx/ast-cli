@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewTenantCommand(wrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
+func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tenant",
 		Short: "Shows the tenant settings",

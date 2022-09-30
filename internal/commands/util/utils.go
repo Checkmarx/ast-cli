@@ -53,7 +53,7 @@ func NewUtilsCommand(
 
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
-	tenantCmd := NewTenantCommand(tenantWrapper)
+	tenantCmd := NewTenantConfigurationCommand(tenantWrapper)
 
 	utilsCmd.AddCommand(
 		completionCmd,
