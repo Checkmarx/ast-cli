@@ -10,5 +10,10 @@ func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
 	*wrappers.WebError,
 	error,
 ) {
-	return nil, nil, nil
+	return &[]*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+	}, nil, nil
 }
