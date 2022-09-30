@@ -39,7 +39,7 @@ func TestTenantConfigurationInvalidFormat(t *testing.T) {
 	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	cmd.SetArgs([]string{"utils", "tenant", "--format", "MOCK"})
 	err := cmd.Execute()
-	assert.Assert(t, err.Error() == "Invalid format MOCK")
+	assert.Assert(t, err.Error() == mockFormatErrorMessage)
 }
 
 func TestNewTenantConfigurationCommand(t *testing.T) {
