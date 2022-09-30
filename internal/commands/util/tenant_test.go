@@ -8,28 +8,28 @@ import (
 )
 
 func TestTenantConfigurationHelp(t *testing.T) {
-	cmd := NewLearnMoreCommand(nil)
+	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	cmd.SetArgs([]string{"utils", "tenant", "--help"})
 	err := cmd.Execute()
 	assert.Assert(t, err == nil)
 }
 
 func TestTenantConfigurationJsonFormat(t *testing.T) {
-	cmd := NewLearnMoreCommand(mock.LearnMoreMockWrapper{})
+	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	cmd.SetArgs([]string{"utils", "tenant", "--format", "json"})
 	err := cmd.Execute()
 	assert.NilError(t, err, "Tenant configuration command should run with no errors and print to json")
 }
 
 func TestTenantConfigurationListFormat(t *testing.T) {
-	cmd := NewLearnMoreCommand(mock.LearnMoreMockWrapper{})
+	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	cmd.SetArgs([]string{"utils", "tenant", "--format", "list"})
 	err := cmd.Execute()
 	assert.NilError(t, err, "Tenant configuration command should run with no errors and print to list")
 }
 
 func TestTenantConfigurationTableFormat(t *testing.T) {
-	cmd := NewLearnMoreCommand(mock.LearnMoreMockWrapper{})
+	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	cmd.SetArgs([]string{"utils", "tenant", "--format", "table"})
 	err := cmd.Execute()
 	assert.NilError(t, err, "Tenant configuration command should run with no errors and print to table")
@@ -42,7 +42,7 @@ func TestTenantConfigurationInvalidFormat(t *testing.T) {
 	assert.Assert(t, err.Error() == "Invalid format MOCK")
 }
 
-func TestCommand(t *testing.T) {
+func TestNewTenantConfigurationCommand(t *testing.T) {
 	cmd := NewTenantConfigurationCommand(mock.TenantConfigurationMockWrapper{})
 	assert.Assert(t, cmd != nil, "Tenant configuration command must exist")
 }
