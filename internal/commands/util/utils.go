@@ -24,6 +24,7 @@ func NewUtilsCommand(
 	gitLabWrapper wrappers.GitLabWrapper,
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
@@ -52,6 +53,8 @@ func NewUtilsCommand(
 
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
+	tenantCmd := NewTenantCommand(tenantWrapper)
+
 	utilsCmd.AddCommand(
 		completionCmd,
 		envCheckCmd,
@@ -59,6 +62,7 @@ func NewUtilsCommand(
 		usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper),
 		prDecorationCmd,
 		remediationCmd,
+		tenantCmd,
 	)
 
 	return utilsCmd
