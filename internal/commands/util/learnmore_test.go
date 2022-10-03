@@ -56,7 +56,7 @@ func TestLearnMoreMockQueryIdInvalidFormat(t *testing.T) {
 	cmd := NewLearnMoreCommand(mock.LearnMoreMockWrapper{})
 	cmd.SetArgs([]string{"utils", "learn-more", "--query-id", "MOCK", "--format", "MOCK"})
 	err := cmd.Execute()
-	assert.Assert(t, err.Error() == "Invalid format MOCK")
+	assert.Assert(t, err.Error() == mockFormatErrorMessage)
 }
 
 func TestCommand(t *testing.T) {

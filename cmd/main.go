@@ -37,6 +37,7 @@ func main() {
 	bfl := viper.GetString(params.BflPathKey)
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
+	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -54,6 +55,7 @@ func main() {
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
+	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -72,6 +74,7 @@ func main() {
 		bflWrapper,
 		prWrapper,
 		learnMoreWrapper,
+		tenantConfigurationWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
@@ -104,8 +107,10 @@ func bindKeysToEnvAndDefault() {
 
 func exitListener() {
 	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
-		syscall.SIGTERM)
+	signal.Notify(
+		signalChanel,
+		syscall.SIGTERM,
+	)
 	go signalHandler(signalChanel)
 }
 
