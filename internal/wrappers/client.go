@@ -235,20 +235,18 @@ func GetCleanURL(path string) string {
 }
 
 func GetURL(path string, accessToken *string) (string, error) {
-	var cleanURL string
 	var err error
+	var cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
 	// In case trying to get the base-url from access token
-	if accessToken != nil {
+	if accessToken != nil && cleanURL == "" {
 		cleanURL, err = extractBaseURLFromToken(accessToken)
 		if err != nil {
 			return "", err
 		}
 		// Case we try to get base-auth url without the use of flags and apiKEY or get base-url from flag use and without the use of apiKey
-	} else {
-		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
-		if cleanURL == "" {
-			return "", errors.Errorf(MissingURI)
-		}
+	}
+	if cleanURL == "" {
+		return "", errors.Errorf(MissingURI)
 	}
 	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
@@ -332,9 +330,9 @@ func getClaimsFromToken(tokenString string) (*jwt.Token, error) {
 func getAuthURI() (string, error) {
 	var authURI string
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-
+	authURLFlag := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	var err error
-	if len(apiKey) > 0 {
+	if len(apiKey) > 0 && authURLFlag == "" {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
 		authURI, err = extractAuthURIFromAPIKey(apiKey)
 	} else {
