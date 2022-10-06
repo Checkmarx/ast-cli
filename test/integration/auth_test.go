@@ -73,7 +73,7 @@ func TestAuthValidateWrongAPIKey(t *testing.T) {
 	// avoid picking cached token to allow invalid api key to be used
 	avoidCachedToken()
 
-	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey")
+	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey","--base-auth-uri", "" )
 	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
