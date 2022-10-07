@@ -30,14 +30,14 @@ func TestAuthValidate(t *testing.T) {
 }
 
 func TestAuthValidateClientAndSecret(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate","--apikey","")
+	err, buffer := executeCommand(t, "auth", "validate", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 // Test validate with credentials from flags
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
 	// set base-uri to empty string so that it does not pick up the value from the environment
-	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret","--base-uri","","--base-auth-uri","","--apikey","")
+	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret", "--base-uri", "", "--base-auth-uri", "", "--apikey", "")
 	assertError(t, err, wrappers.MissingURI)
 }
 
@@ -57,7 +57,7 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 	avoidCachedToken()
 
 	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables
-	err := execute(validateCommand, "auth", "validate", "--base-auth-uri", "")
+	err := execute(validateCommand, "auth", "validate", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
 	avoidCachedToken()
@@ -73,7 +73,7 @@ func TestAuthValidateWrongAPIKey(t *testing.T) {
 	// avoid picking cached token to allow invalid api key to be used
 	avoidCachedToken()
 
-	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey","--base-auth-uri", "" )
+	err := execute(validateCommand, "auth", "validate", "--apikey", "invalidAPIKey", "--base-auth-uri", "")
 	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
