@@ -330,9 +330,9 @@ func getClaimsFromToken(tokenString string) (*jwt.Token, error) {
 func getAuthURI() (string, error) {
 	var authURI string
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-	authURLFlag := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+	//authURLFlag := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	var err error
-	if len(apiKey) > 0 && authURLFlag == "" {
+	if len(apiKey) > 0  {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
 		authURI, err = extractAuthURIFromAPIKey(apiKey)
 	} else {
@@ -388,11 +388,14 @@ func extractAuthURIFromConfig() (string, error) {
 
 func extractAuthURIFromAPIKey(key string) (string, error) {
 	token, err := getClaimsFromToken(key)
+	authURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	if err != nil {
 		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
-	claims := token.Claims.(jwt.MapClaims)
-	authURI := claims[audienceClaimKey].(string)
+	if authURI!=""{
+		claims := token.Claims.(jwt.MapClaims)
+		authURI = claims[audienceClaimKey].(string)
+	}
 	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	return authURI, nil
 }
