@@ -330,7 +330,6 @@ func getClaimsFromToken(tokenString string) (*jwt.Token, error) {
 func getAuthURI() (string, error) {
 	var authURI string
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-	//authURLFlag := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	var err error
 	if len(apiKey) > 0  {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
