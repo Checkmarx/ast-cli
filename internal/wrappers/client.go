@@ -331,7 +331,7 @@ func getAuthURI() (string, error) {
 	var authURI string
 	apiKey := viper.GetString(commonParams.AstAPIKey)
 	var err error
-	if len(apiKey) > 0  {
+	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
 		authURI, err = extractAuthURIFromAPIKey(apiKey)
 	} else {
@@ -391,7 +391,7 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 	if err != nil {
 		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
-	if authURI!=""{
+	if authURI != "" {
 		claims := token.Claims.(jwt.MapClaims)
 		authURI = claims[audienceClaimKey].(string)
 	}
