@@ -21,6 +21,7 @@ const (
 	AstUsernameEnv                  = "CX_AST_USERNAME"
 	AstPasswordEnv                  = "CX_AST_PASSWORD"
 	defaultSuccessValidationMessage = "Validation should pass"
+	incorrectAuthURL                = "404 Provided Tenant Name is invalid"
 )
 
 // Test validate with credentials used in test env
@@ -63,7 +64,7 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 	avoidCachedToken()
 
 	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "invalid-base-uri")
-	assert.NilError(t, err)
+	assertError(t, err, incorrectAuthURL)
 }
 
 // Test validate authentication with a wrong api key
