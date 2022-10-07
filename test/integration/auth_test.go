@@ -61,6 +61,9 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 	err := execute(validateCommand, "auth", "validate", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
+	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "")
+	assertSuccessAuthentication(t, err, buffer, "")
+
 	avoidCachedToken()
 
 	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "invalid-base-uri")
