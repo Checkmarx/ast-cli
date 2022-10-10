@@ -57,10 +57,10 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 
 	avoidCachedToken()
 
-	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables
 	err := execute(validateCommand, "auth", "validate", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
+	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables
 	err = execute(validateCommand, "auth", "validate", "--base-auth-uri", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
@@ -90,6 +90,12 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 
 	err := execute(validateCommand, "auth", "validate")
 	assert.NilError(t, err)
+}
+
+func TestAuthValidateOnlyAPIKey(t *testing.T) {
+	validateCommand, buffer := createRedirectedTestCommand(t)
+	err := execute(validateCommand, "auth", "validate", "--base-uri", "", "--client-id", "", "--client-secret", "")
+	assertSuccessAuthentication(t, err, buffer, "")
 }
 
 // Register with empty username, password or role
