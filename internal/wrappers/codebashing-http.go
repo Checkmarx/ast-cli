@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -70,7 +71,12 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		if decoded[0].Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
-		decoded[0].Path = codeBashingURL + decoded[0].Path
+
+		decoded[0].Path = fmt.Sprintf("%s%s", codeBashingURL, decoded[0].Path)
+		decoded[0].Path, err = CleanURL(decoded[0].Path)
+		if err != nil {
+			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
+		}
 		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -628,4 +629,14 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+// CleanURL returns a cleaned url removing double slashes
+func CleanURL(uri string) (string, error) {
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return "", err
+	}
+	parsedURL.Path = path.Clean(parsedURL.Path)
+	return parsedURL.String(), err
 }
