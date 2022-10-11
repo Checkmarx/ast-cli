@@ -70,6 +70,17 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 	assertError(t, err, incorrectAuthURL)
 }
 
+// Test validate authentication with empty tenant
+func TestAuthValidateWrongTenantWithBaseAuth(t *testing.T) {
+	validateCommand, _ := createRedirectedTestCommand(t)
+
+	// avoid picking cached token to allow invalid api key to be used
+	avoidCachedToken()
+
+	err := execute(validateCommand, "auth", "validate", "--tenant", "")
+	assertError(t, err, wrappers.MissingTenant)
+}
+
 // Test validate authentication with a wrong api key
 func TestAuthValidateWrongAPIKey(t *testing.T) {
 	validateCommand, _ := createRedirectedTestCommand(t)
@@ -94,7 +105,7 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 
 func TestAuthValidateOnlyAPIKey(t *testing.T) {
 	validateCommand, buffer := createRedirectedTestCommand(t)
-	err := execute(validateCommand, "auth", "validate", "--base-uri", "", "--client-id", "", "--client-secret", "")
+	err := execute(validateCommand, "auth", "validate", "--base-uri","", "--client-id", "", "--client-secret", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 }
 

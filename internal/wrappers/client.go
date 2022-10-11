@@ -32,6 +32,7 @@ const (
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
+	MissingTenant           = "Failed to authenticate - please provide tenant when using base-auth-uri"
 	jwtError                = "Error retreiving URL from jwt token"
 )
 
@@ -52,6 +53,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
+const BaseAuthURLTenantSuffix = "auth/realms"
 const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
@@ -387,18 +389,31 @@ func extractAuthURIFromConfig() (string, error) {
 
 func extractAuthURIFromAPIKey(key string) (string, error) {
 	token, err := getClaimsFromToken(key)
-	authURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	if err != nil {
 		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
-	if authURI == "" {
+	authURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+	tenant := viper.GetString(commonParams.TenantKey)
+	err = checkTenantBaseAuth(authURI, tenant)
+	if err != nil {
+		return "", err
+	}
+	if authURI != "" && tenant != "" {
+		authURI = fmt.Sprintf("%s%s/%s/%s", authURI, BaseAuthURLTenantSuffix, tenant, BaseAuthURLSuffix)
+	} else {
 		claims := token.Claims.(jwt.MapClaims)
 		authURI = claims[audienceClaimKey].(string)
+		authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	}
-	authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	return authURI, nil
 }
 
+func checkTenantBaseAuth(authURI, tenant string) error {
+	if authURI != "" && tenant == "" {
+		return errors.Errorf(MissingTenant)
+	}
+	return nil
+}
 func enrichWithOath2Credentials(request *http.Request, accessToken *string) {
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
 }
