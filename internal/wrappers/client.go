@@ -391,7 +391,7 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 	if err != nil {
 		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
-	if authURI != "" {
+	if len(authURI) == 0 {
 		claims := token.Claims.(jwt.MapClaims)
 		authURI = claims[audienceClaimKey].(string)
 	}
