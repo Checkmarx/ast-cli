@@ -399,7 +399,7 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 		return "", err
 	}
 	if authURI != "" && tenant != "" {
-		authURI = fmt.Sprintf("%s%s/%s/%s", authURI, BaseAuthURLTenantSuffix, tenant, BaseAuthURLSuffix)
+		authURI = fmt.Sprintf("%s/%s/%s/%s", authURI, BaseAuthURLTenantSuffix, tenant, BaseAuthURLSuffix)
 	} else {
 		claims := token.Claims.(jwt.MapClaims)
 		authURI = claims[audienceClaimKey].(string)
