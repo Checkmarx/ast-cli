@@ -105,7 +105,7 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 
 func TestAuthValidateOnlyAPIKey(t *testing.T) {
 	validateCommand, buffer := createRedirectedTestCommand(t)
-	err := execute(validateCommand, "auth", "validate", "--base-uri","", "--client-id", "", "--client-secret", "")
+	err := execute(validateCommand, "auth", "validate", "--base-uri", "", "--client-id", "", "--client-secret", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 }
 
