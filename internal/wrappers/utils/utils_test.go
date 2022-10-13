@@ -41,16 +41,17 @@ func TestCleanURL(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := CleanURL(tt.args.uri)
+		// fix for scopelint
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			got, err := CleanURL(test.args.uri)
 			log.Println(err)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CleanURL() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("CleanURL() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("CleanURL() got = %v, want %v", got, tt.want)
+			if got != test.want {
+				t.Errorf("CleanURL() got = %v, want %v", got, test.want)
 			}
 		})
 	}
