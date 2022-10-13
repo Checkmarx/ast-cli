@@ -5,54 +5,49 @@ import (
 	"testing"
 )
 
-func TestCleanURL(t *testing.T) {
-	type args struct {
-		uri string
+func TestCleanURL_CleansCorrectly(t *testing.T) {
+	uri := "https://codebashing.checkmarx.com/courses/java/////lessons/sql_injection/////"
+	wantErr := false
+	want := "https://codebashing.checkmarx.com/courses/java/lessons/sql_injection"
+	got, err := CleanURL(uri)
+	log.Println("error:", err)
+	if (err != nil) != wantErr {
+		t.Errorf("CleanURL() error = %v, wantErr %v", err, wantErr)
+		return
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "cleans correctly",
-			args: args{
-				uri: "https://codebashing.checkmarx.com/courses/java/////lessons/sql_injection/////",
-			},
-			want:    "https://codebashing.checkmarx.com/courses/java/lessons/sql_injection",
-			wantErr: false,
-		},
-		{
-			name: "invalid URL escape error",
-			args: args{
-				uri: "#)@($_(*#_(*@$_))%(_#@_+#@$)$_$#@_@_##}^^^}!)(()!#@(`SPPSCOK^Ç^Ç`P$_$",
-			},
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name: "cleans correctly",
-			args: args{
-				uri: "http://localhost:42/////test//test",
-			},
-			want:    "http://localhost:42/test/test",
-			wantErr: false,
-		},
+	if got != want {
+		t.Errorf("CleanURL() got = %v, want %v", got, want)
 	}
-	for _, tt := range tests {
-		// fix for scopelint
-		test := tt
-		t.Run(test.name, func(t *testing.T) {
-			got, err := CleanURL(test.args.uri)
-			log.Println(err)
-			if (err != nil) != test.wantErr {
-				t.Errorf("CleanURL() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if got != test.want {
-				t.Errorf("CleanURL() got = %v, want %v", got, test.want)
-			}
-		})
+	log.Println("GOT:", got)
+}
+
+func TestCleanURL_invalid_URL_escape_error(t *testing.T) {
+	uri := "#)@($_(*#_(*@$_))%(_#@_+#@$)$_$#@_@_##}^^^}!)(()!#@(`SPPSCOK^Ç^Ç`P$_$"
+	wantErr := true
+	want := ""
+	got, err := CleanURL(uri)
+	log.Println("error:", err)
+	if (err != nil) != wantErr {
+		t.Errorf("CleanURL() error = %v, wantErr %v", err, wantErr)
+		return
 	}
+	if got != want {
+		t.Errorf("CleanURL() got = %v, want %v", got, want)
+	}
+	log.Println("GOT:", got)
+}
+func TestCleanURL_cleans_correctly2(t *testing.T) {
+	uri := "http://localhost:42/////test//test"
+	wantErr := false
+	want := "http://localhost:42/test/test"
+	got, err := CleanURL(uri)
+	log.Println("error:", err)
+	if (err != nil) != wantErr {
+		t.Errorf("CleanURL() error = %v, wantErr %v", err, wantErr)
+		return
+	}
+	if got != want {
+		t.Errorf("CleanURL() got = %v, want %v", got, want)
+	}
+	log.Println("GOT:", got)
 }
