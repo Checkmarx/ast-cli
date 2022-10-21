@@ -1,6 +1,7 @@
 package usercount
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -65,7 +66,7 @@ func preRunAzureUserCount(*cobra.Command, []string) error {
 
 func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var totalCommits []wrappers.AzureRootCommit
+		var totalCommits []wrappers.AzureCommit
 		var err error
 		var totalContrib uint64 = 0
 		var views []RepositoryView
@@ -88,9 +89,7 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 			return err
 		}
 
-		for _, commits := range totalCommits {
-			totalContrib += uint64(len(getUniqueContributorsAzure(commits)))
-		}
+		totalContrib += uint64(len(getUniqueContributorsAzure(totalCommits)))
 
 		views = append(
 			views,
@@ -113,8 +112,8 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 	}
 }
 
-func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRootCommit, []RepositoryView, []UserView, error) {
-	var totalCommits []wrappers.AzureRootCommit
+func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 	for _, org := range AzureOrgs {
@@ -124,8 +123,8 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azure
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
-				totalCommits = append(totalCommits, commits)
-				uniqueContributors := getUniqueContributorsAzure(commits)
+				totalCommits = append(totalCommits, commits.Commits...)
+				uniqueContributors := getUniqueContributorsAzure(commits.Commits)
 
 				// Case there is no organization, project, commits or repos inside the organization
 				if uint64(len(uniqueContributors)) > 0 {
@@ -137,12 +136,12 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azure
 						},
 					)
 
-					for name := range uniqueContributors {
+					for email, name := range uniqueContributors {
 						viewsUsers = append(
 							viewsUsers,
 							UserView{
 								Name:                       buildCountPath(org, project, repo),
-								UniqueContributorsUsername: name,
+								UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
 							},
 						)
 					}
@@ -153,8 +152,8 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azure
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRootCommit, []RepositoryView, []UserView, error) {
-	var totalCommits []wrappers.AzureRootCommit
+func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 	for _, org := range AzureOrgs {
@@ -170,8 +169,8 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azu
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
-				totalCommits = append(totalCommits, commits)
-				uniqueContributors := getUniqueContributorsAzure(commits)
+				totalCommits = append(totalCommits, commits.Commits...)
+				uniqueContributors := getUniqueContributorsAzure(commits.Commits)
 				views = append(
 					views,
 					RepositoryView{
@@ -179,12 +178,12 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azu
 						UniqueContributors: uint64(len(uniqueContributors)),
 					},
 				)
-				for name := range uniqueContributors {
+				for email, name := range uniqueContributors {
 					viewsUsers = append(
 						viewsUsers,
 						UserView{
 							Name:                       buildCountPath(org, project, repo.Name),
-							UniqueContributorsUsername: name,
+							UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
 						},
 					)
 				}
@@ -194,8 +193,8 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azu
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRootCommit, []RepositoryView, []UserView, error) {
-	var totalCommits []wrappers.AzureRootCommit
+func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
 	// Fetch all the projects within the organization
@@ -216,8 +215,8 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRo
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
-				totalCommits = append(totalCommits, commits)
-				uniqueContributors := getUniqueContributorsAzure(commits)
+				totalCommits = append(totalCommits, commits.Commits...)
+				uniqueContributors := getUniqueContributorsAzure(commits.Commits)
 
 				views = append(
 					views,
@@ -226,12 +225,12 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRo
 						UniqueContributors: uint64(len(uniqueContributors)),
 					},
 				)
-				for name := range uniqueContributors {
+				for email, name := range uniqueContributors {
 					viewsUsers = append(
 						viewsUsers,
 						UserView{
 							Name:                       buildCountPath(org, project.Name, repo.Name),
-							UniqueContributorsUsername: name,
+							UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
 						},
 					)
 				}
@@ -241,12 +240,13 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureRo
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getUniqueContributorsAzure(commits wrappers.AzureRootCommit) map[string]bool {
-	var contributors = map[string]bool{}
-	for _, commit := range commits.Commits {
+func getUniqueContributorsAzure(commits []wrappers.AzureCommit) map[string]string {
+	var contributors = map[string]string{}
+	for _, commit := range commits {
 		name := commit.Author.Name
-		if !contributors[name] && !azureIsNotBot(commit) {
-			contributors[name] = true
+		email := commit.Author.Email
+		if _, ok := contributors[email]; !ok && !azureIsNotBot(commit) {
+			contributors[email] = name
 		}
 	}
 	return contributors
