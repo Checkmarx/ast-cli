@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -49,6 +50,18 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	if s.Description == "" && s.ScanResultData.Description != "" {
 		s.Description = s.ScanResultData.Description
 		s.ScanResultData.Description = ""
+	}
+
+	// Remove all images from description and store it in a new attribute
+	if strings.Contains(s.Description, "![infographic](") {
+		r := regexp.MustCompile("\\!\\[infographic\\][\\s\\S]*?png\\)")
+		matches := r.FindAllString(s.Description, -1)
+		for _, v := range matches {
+			image := strings.TrimRight(strings.TrimLeft(v, "![infographic]"), ")")
+			imageWithNoParentheses := strings.TrimLeft(image, "(")
+			s.DescriptionImages = append(s.DescriptionImages, imageWithNoParentheses)
+			s.Description = strings.ReplaceAll(s.Description, v, "")
+		}
 	}
 
 	return nil
