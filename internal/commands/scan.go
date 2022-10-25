@@ -439,7 +439,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.KicsPlatformsFlag, []string{}, commonParams.KicsPlatformsFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,

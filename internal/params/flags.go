@@ -114,7 +114,7 @@ const (
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
-	KicsPlatformsFlagUsage       = "KICS Platform Flag"
+	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ';' as the delimiter for arrays."
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
