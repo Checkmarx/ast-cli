@@ -1439,6 +1439,7 @@ func applyThreshold(
 		return nil
 	}
 
+	threshold = strings.ReplaceAll(threshold, " ", "")
 	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
