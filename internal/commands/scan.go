@@ -1996,7 +1996,7 @@ func cleanUpTempZip(zipFilePath string) {
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
 	flagValue, _ := cmd.Flags().GetString(inUseFlagKey)
-	if len(flagValue) == 0 {
+	if flagValue == "" {
 		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
 	}
 	return flagValue
