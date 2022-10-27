@@ -116,12 +116,12 @@ const (
 	KicsPlatformsFlag            = "kics-platforms"
 	KicsPlatformsFlagUsage       = "KICS Platform Flag"
 	IacsPlatformsFlag            = "iacs-platforms"
-	IacsPlatformsFlagUsage  = "IaC Security Platform Flag"
+	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
 	KicsFilterFlag  = "kics-filter"
-	IacsFilterFlag = "iacs-filter"
+	IacsFilterFlag  = "iacs-filter"
 	IacsFilterUsage = "IaC Security filter"
 	KicsFilterUsage = "KICS filter"
 	ScaFilterFlag   = "sca-filter"
@@ -172,7 +172,7 @@ const (
 const (
 	SastType = "sast"
 	KicsType = "kics"
-	IacType = "IaC Security"
+	IacType  = "IaC Security"
 	ScaType  = "sca"
 )
 

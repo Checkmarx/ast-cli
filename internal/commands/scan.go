@@ -72,14 +72,14 @@ const (
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
 	DanglingSymlinkError            = "Skipping dangling symbolic link"
-	configFilterKey = "filter"
-	configFilterPlatforms = "platforms"
-	configIncremental = "incremental"
-	configPresetName = "presetName"
-	configEngineVerbose = "engineVerbose"
-	configLanguageMode = "languageMode"
-	resultsMapValue = "value"
-	resultsMapType = "type"
+	configFilterKey                 = "filter"
+	configFilterPlatforms           = "platforms"
+	configIncremental               = "incremental"
+	configPresetName                = "presetName"
+	configEngineVerbose             = "engineVerbose"
+	configLanguageMode              = "languageMode"
+	resultsMapValue                 = "value"
+	resultsMapType                  = "type"
 )
 
 var (
