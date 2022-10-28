@@ -397,21 +397,17 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 }
 
 func Test_parseThresholdSuccess(t *testing.T) {
-	var threshold string
-	var want map[string]int
-	want = make(map[string]int)
+	want := make(map[string]int)
 	want[" kics - low"] = 1
-	threshold = " KICS - LoW=1"
+	threshold := " KICS - LoW=1"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
 
 func Test_parseThresholdParseError(t *testing.T) {
-	var threshold string
-	var want map[string]int
-	want = make(map[string]int)
-	threshold = " KICS - LoW=error"
+	want := make(map[string]int)
+	threshold := " KICS - LoW=error"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
