@@ -172,7 +172,7 @@ const (
 const (
 	SastType = "sast"
 	KicsType = "kics"
-	IacType  = "IaC Security"
+	IacType  = "iacs"
 	ScaType  = "sca"
 )
 
