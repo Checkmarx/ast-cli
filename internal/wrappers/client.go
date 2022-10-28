@@ -238,18 +238,22 @@ func GetCleanURL(path string) string {
 
 func GetURL(path string, accessToken *string) (string, error) {
 	var err error
-	var cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
-	// In case trying to get the base-url from access token
-	if accessToken != nil && cleanURL == "" {
+	var cleanURL string
+	if accessToken != nil {
 		cleanURL, err = extractBaseURLFromToken(accessToken)
 		if err != nil {
 			return "", err
 		}
-		// Case we try to get base-auth url without the use of flags and apiKEY or get base-url from flag use and without the use of apiKey
 	}
+
+	if cleanURL == "" {
+		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	}
+
 	if cleanURL == "" {
 		return "", errors.Errorf(MissingURI)
 	}
+
 	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
@@ -350,7 +354,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
+		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil) //double check this
 		if err != nil {
 			return "", err
 		}
@@ -392,28 +396,24 @@ func extractAuthURIFromAPIKey(key string) (string, error) {
 	if err != nil {
 		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
 	}
-	authURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
-	tenant := viper.GetString(commonParams.TenantKey)
-	err = checkTenantBaseAuth(authURI, tenant)
-	if err != nil {
-		return "", err
-	}
-	if authURI != "" && tenant != "" {
+
+	claims := token.Claims.(jwt.MapClaims)
+	authURI := claims[audienceClaimKey].(string)
+
+	if authURI == "" {
+		authURI = strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+		tenant := viper.GetString(commonParams.TenantKey)
+		if tenant == "" {
+			return "", errors.Errorf(MissingTenant)
+		}
 		authURI = fmt.Sprintf("%s/%s/%s/%s", authURI, BaseAuthURLTenantSuffix, tenant, BaseAuthURLSuffix)
 	} else {
-		claims := token.Claims.(jwt.MapClaims)
-		authURI = claims[audienceClaimKey].(string)
 		authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
 	}
+
 	return authURI, nil
 }
 
-func checkTenantBaseAuth(authURI, tenant string) error {
-	if authURI != "" && tenant == "" {
-		return errors.Errorf(MissingTenant)
-	}
-	return nil
-}
 func enrichWithOath2Credentials(request *http.Request, accessToken *string) {
 	request.Header.Add("Authorization", "Bearer "+*accessToken)
 }
