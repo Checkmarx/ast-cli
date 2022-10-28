@@ -1737,9 +1737,9 @@ func runGetTagsCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Comma
 
 func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		validateScanTypes(cmd)
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
+		scanType = strings.Replace(scanType, commonParams.IacType, commonParams.KicsType, 1)
 		logText, err := logsWrapper.GetLog(scanID, scanType)
 		if err != nil {
 			return err
