@@ -78,7 +78,7 @@ func TestAuthValidateWrongTenantWithBaseAuth(t *testing.T) {
 	avoidCachedToken()
 
 	err := execute(validateCommand, "auth", "validate", "--tenant", "")
-	assertError(t, err, wrappers.MissingTenant)
+	assert.NilError(t, err)
 }
 
 // Test validate authentication with a wrong api key

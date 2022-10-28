@@ -354,7 +354,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURL.Scheme == "" && authURL.Host == "" {
-		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil) //double check this
+		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
 		if err != nil {
 			return "", err
 		}
