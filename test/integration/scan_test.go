@@ -196,6 +196,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -525,7 +526,7 @@ func TestScanLogsSAST(t *testing.T) {
 	)
 }
 
-func TestScanLogsKICS(t *testing.T) {
+func TestScanLogsKICSDeprecated(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	executeCmdNilAssertion(
@@ -533,6 +534,17 @@ func TestScanLogsKICS(t *testing.T) {
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.ScanTypeFlag), "kics",
+	)
+}
+
+func TestScanLogsKICS(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	executeCmdNilAssertion(
+		t, "Getting scan KICS log should pass",
+		"scan", "logs",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "iacs",
 	)
 }
 
