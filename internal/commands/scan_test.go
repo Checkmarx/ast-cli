@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -393,4 +394,25 @@ func TestCreateScanResubmit(t *testing.T) {
 
 func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,kics,sca", "--debug", "--resubmit")
+}
+
+func Test_parseThresholdSuccess(t *testing.T) {
+	var threshold string
+	var want map[string]int
+	want = make(map[string]int)
+	want[" kics - low"] = 1
+	threshold = " KICS - LoW=1"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
+}
+
+func Test_parseThresholdParseError(t *testing.T) {
+	var threshold string
+	var want map[string]int
+	want = make(map[string]int)
+	threshold = " KICS - LoW=error"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
 }
