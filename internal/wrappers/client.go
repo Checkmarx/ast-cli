@@ -580,7 +580,7 @@ func getAuthURI() (string, error) {
 	return fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix), nil
 }
 
-func GetURL(path string, accessToken string) (string, error) {
+func GetURL(path, accessToken string) (string, error) {
 	var err error
 	var cleanURL string
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
