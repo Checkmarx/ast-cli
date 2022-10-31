@@ -290,7 +290,7 @@ func extractAuthURIFromConfig() (string, error) {
 	return baseAuthURI, nil
 }
 
-func addTenantAuthURI(baseAuthUri string) (string, error) {
+func addTenantAuthURI(baseAuthURI string) (string, error) {
 	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
 	tenant := viper.GetString(commonParams.TenantKey)
 
@@ -300,7 +300,7 @@ func addTenantAuthURI(baseAuthUri string) (string, error) {
 
 	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
 
-	return fmt.Sprintf("%s/%s", strings.Trim(baseAuthUri, "/"), authPath), nil
+	return fmt.Sprintf("%s/%s", strings.Trim(baseAuthURI, "/"), authPath), nil
 }
 
 func enrichWithOath2Credentials(request *http.Request, accessToken string) {
