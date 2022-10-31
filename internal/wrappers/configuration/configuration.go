@@ -131,7 +131,7 @@ func LoadConfiguration() {
 func verifyConfigDir(fullPath string) {
 	_, err := os.Stat(fullPath)
 	if err != nil {
-
+		log.Fatal("Cannot file home directory.", fullPath)
 	}
 
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {

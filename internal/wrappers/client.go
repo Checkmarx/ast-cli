@@ -284,10 +284,10 @@ func HTTPRequestWithQueryParams(
 	return resp, nil
 }
 
-func extractAuthURIFromConfig() (string, error) {
+func extractAuthURIFromConfig() string {
 	baseAuthURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 	logger.PrintIfVerbose("Auth URL is: " + baseAuthURI)
-	return baseAuthURI, nil
+	return baseAuthURI
 }
 
 func addTenantAuthURI(baseAuthURI string) (string, error) {
@@ -547,10 +547,7 @@ func getAuthURI() (string, error) {
 
 	if authURI == "" || override {
 		logger.PrintIfVerbose("Using configuration and parameters to prepare Auth URI")
-		authURI, err = extractAuthURIFromConfig()
-		if err != nil {
-			return "", err
-		}
+		authURI = extractAuthURIFromConfig()
 
 		if authURI != "" {
 			authURI, err = addTenantAuthURI(authURI)
@@ -607,7 +604,7 @@ func GetURL(path string, accessToken string) (string, error) {
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 
-func extractFromTokenClaims(accessToken string, claim string) (string, error) {
+func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	var value string
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
