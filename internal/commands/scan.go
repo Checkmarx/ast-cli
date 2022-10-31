@@ -439,7 +439,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.KicsPlatformsFlag, []string{}, commonParams.KicsPlatformsFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -1439,6 +1439,7 @@ func applyThreshold(
 		return nil
 	}
 
+	threshold = strings.ReplaceAll(threshold, " ", "")
 	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
@@ -1481,7 +1482,12 @@ func parseThreshold(threshold string) map[string]int {
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			if len(limit) > 1 {
-				thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+				intLimit, err := strconv.Atoi(limit[1])
+				if err != nil {
+					log.Println("Error parsing threshold limit: ", err)
+				} else {
+					thresholdMap[strings.ToLower(limit[0])] = intLimit
+				}
 			}
 		}
 	}
