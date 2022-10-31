@@ -25,7 +25,7 @@ const (
 func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	labels := map[string]string{
 		params.SastType: params.SastType,
-		params.KicsType: params.IacType,
+		params.KicsType: params.IacLabel,
 		params.ScaType:  params.ScaType,
 	}
 	type Alias ScanResult

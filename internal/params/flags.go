@@ -173,6 +173,7 @@ const (
 	SastType = "sast"
 	KicsType = "kics"
 	IacType  = "iacs"
+	IacLabel = "IaC Security"
 	ScaType  = "sca"
 )
 
