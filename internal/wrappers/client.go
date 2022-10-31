@@ -32,8 +32,8 @@ const (
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
-	MissingTenant           = "Failed to authenticate - please provide tenant when using base-auth-uri"
-	jwtError                = "Error retreiving URL from jwt token"
+	MissingTenant           = "Failed to authenticate - please provide tenant"
+	jwtError                = "Error retrieving URL from jwt token"
 )
 
 type ClientCredentialsInfo struct {
@@ -282,12 +282,6 @@ func HTTPRequestWithQueryParams(
 		return resp, errors.Errorf("%s", "Provided credentials do not have permissions for this command")
 	}
 	return resp, nil
-}
-
-func extractAuthURIFromConfig() string {
-	baseAuthURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
-	logger.PrintIfVerbose("Auth URL is: " + baseAuthURI)
-	return baseAuthURI
 }
 
 func addTenantAuthURI(baseAuthURI string) (string, error) {
@@ -541,7 +535,7 @@ func getAuthURI() (string, error) {
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
 	if len(apiKey) > 0 {
-		logger.PrintIfVerbose("Using API Key to extract Auth URI")
+		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = extractFromTokenClaims(apiKey, audienceClaimKey)
 		if err != nil {
 			return "", err
@@ -549,8 +543,8 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURI == "" || override {
-		logger.PrintIfVerbose("Using configuration and parameters to prepare Auth URI")
-		authURI = extractAuthURIFromConfig()
+		logger.PrintIfVerbose("Base Auth URI - Extract from Base Auth URI flag")
+		authURI = strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
 
 		if authURI != "" {
 			authURI, err = addTenantAuthURI(authURI)
@@ -561,7 +555,7 @@ func getAuthURI() (string, error) {
 	}
 
 	if authURI == "" {
-		logger.PrintIfVerbose("Using configuration and parameters to prepare Base URI")
+		logger.PrintIfVerbose("Base Auth URI - Extract from Base URI")
 		authURI, err = GetURL("", "")
 		if err != nil {
 			return "", err
@@ -580,6 +574,7 @@ func getAuthURI() (string, error) {
 	}
 
 	authURI = strings.Trim(authURI, "/")
+	logger.PrintIfVerbose(fmt.Sprintf("Base Auth URI - %s ", authURI))
 	return fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix), nil
 }
 
@@ -589,6 +584,7 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	if accessToken != "" {
+		logger.PrintIfVerbose("Base URI - Extract from JWT token")
 		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
 		if err != nil {
 			return "", err
@@ -596,6 +592,7 @@ func GetURL(path, accessToken string) (string, error) {
 	}
 
 	if cleanURL == "" || override {
+		logger.PrintIfVerbose("Base URI - Extract from Base URI flag")
 		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
 	}
 
@@ -604,6 +601,8 @@ func GetURL(path, accessToken string) (string, error) {
 	}
 
 	cleanURL = strings.Trim(cleanURL, "/")
+	logger.PrintIfVerbose(fmt.Sprintf("Base URI - %s ", cleanURL))
+
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 
