@@ -80,14 +80,15 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
-	rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
+
+	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		PrintConfiguration()
 		// Need to check the __complete command to allow correct behavior of the autocomplete
-		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
+		if len(args) > 0 && cmd.Name() != params.Help && cmd.Namer() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
