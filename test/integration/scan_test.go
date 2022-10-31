@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -200,6 +200,25 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
+}
+
+// Create a scan with the sources
+// Assert the scan completes
+func TestScanCreateWithThresholdParseError(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=error",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
 }
 
 // Create a scan with the sources
