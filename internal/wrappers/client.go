@@ -28,7 +28,7 @@ const (
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
-	APIKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
+	APIKeyDecodeErrorFormat = "Token decoding error: %s"
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
@@ -543,6 +543,9 @@ func getAuthURI() (string, error) {
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Using API Key to extract Auth URI")
 		authURI, err = extractFromTokenClaims(apiKey, audienceClaimKey)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if authURI == "" || override {
@@ -608,7 +611,7 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	var value string
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
-		return "", err
+		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
 		value = strings.TrimSpace(claims[claim].(string))
