@@ -115,7 +115,7 @@ const (
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
 	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
-  ApikeyOverrideFlag           = "apikey-override"
+	ApikeyOverrideFlag           = "apikey-override"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
