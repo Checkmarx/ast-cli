@@ -115,6 +115,7 @@ const (
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
 	KicsPlatformsFlagUsage       = "KICS Platform Flag"
+	ApikeyOverrideFlag           = "apikey-override"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"

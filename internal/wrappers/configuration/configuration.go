@@ -129,6 +129,11 @@ func LoadConfiguration() {
 }
 
 func verifyConfigDir(fullPath string) {
+	_, err := os.Stat(fullPath)
+	if err != nil {
+
+	}
+
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 		fmt.Println("Creating directory")
 		err = os.Mkdir(fullPath, homeDirectoryPermissions)
