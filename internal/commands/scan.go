@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -72,6 +73,7 @@ const (
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
 	DanglingSymlinkError            = "Skipping dangling symbolic link"
+	maxPollingWaitTime              = 60
 )
 
 var (
@@ -439,7 +441,11 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
-	createScanCmd.PersistentFlags().StringSlice(commonParams.KicsPlatformsFlag, []string{}, commonParams.KicsPlatformsFlagUsage)
+	createScanCmd.PersistentFlags().StringSlice(
+		commonParams.KicsPlatformsFlag,
+		[]string{},
+		commonParams.KicsPlatformsFlagUsage,
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -458,7 +464,11 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.ScanResubmit, false, "Create a scan with the configurations used in the most recent scan in the project")
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.ScanResubmit,
+		false,
+		"Create a scan with the configurations used in the most recent scan in the project",
+	)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -598,7 +608,12 @@ func setupScanTypeProjectAndConfig(
 	resubmit, _ := cmd.Flags().GetBool(commonParams.ScanResubmit)
 	var resubmitConfig []wrappers.Config
 	if resubmit {
-		logger.PrintIfVerbose(fmt.Sprintf("using latest scan configuration due to --%s flag", commonParams.ScanResubmit))
+		logger.PrintIfVerbose(
+			fmt.Sprintf(
+				"using latest scan configuration due to --%s flag",
+				commonParams.ScanResubmit,
+			),
+		)
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
 		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
@@ -629,7 +644,10 @@ func setupScanTypeProjectAndConfig(
 	return err
 }
 
-func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) ([]wrappers.Config, error) {
+func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
+	[]wrappers.Config,
+	error,
+) {
 	var allScansModel *wrappers.ScansCollectionResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -1199,7 +1217,13 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper, scansWrapper)
+		scanModel, zipFilePath, err := createScanModel(
+			cmd,
+			uploadsWrapper,
+			projectsWrapper,
+			groupsWrapper,
+			scansWrapper,
+		)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1495,7 +1519,10 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (map[string]int, error) {
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
+	map[string]int,
+	error,
+) {
 	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
 	if err != nil {
 		return nil, err
@@ -1520,7 +1547,9 @@ func waitForScanCompletion(
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
-	time.Sleep(time.Duration(waitDelay) * time.Second)
+	fixedWait := time.Duration(waitDelay) * time.Second
+	time.Sleep(fixedWait)
+	i := uint64(0)
 	for {
 		running, err := isScanRunning(scansWrapper, resultsWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
@@ -1540,7 +1569,11 @@ func waitForScanCompletion(
 			}
 			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
-		time.Sleep(time.Duration(waitDelay) * time.Second)
+		// TODO improve wait or clarify flag
+		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
+		logger.PrintfIfVerbose("Sleeping %v before polling", fixedWait+variableWait)
+		time.Sleep(fixedWait + variableWait)
+		i++
 	}
 	return nil
 }
@@ -1935,7 +1968,10 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 				return errors.Errorf(util.NotRunningEngineMessage)
 			}
 		} else {
-			if strings.Contains(errorMessage, util.InvalidEngineError) || strings.Contains(errorMessage, util.InvalidEngineErrorWindows) {
+			if strings.Contains(errorMessage, util.InvalidEngineError) || strings.Contains(
+				errorMessage,
+				util.InvalidEngineErrorWindows,
+			) {
 				logger.PrintIfVerbose(errorMessage)
 				return errors.Errorf(util.InvalidEngineMessage)
 			}
