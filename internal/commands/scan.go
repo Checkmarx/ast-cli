@@ -210,16 +210,16 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Download scan log for selected scan type",
-		Long:  "Accepts a scan-id and scan type (sast, iacs or sca) and downloads the related scan log",
+		Long:  "Accepts a scan-id and scan type (sast, iac-security or sca) and downloads the related scan log",
 		Example: heredoc.Doc(
 			`
-			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | iacs>
+			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | iac-security>
 		`,
 		),
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iacs or sca.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security or sca.")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -439,7 +439,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iacs,sca)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -448,13 +448,13 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.IacsFilterFlag, "", commonParams.IacsFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
-	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iacs-filter")
+	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iac-security-filter")
 	if err != nil {
 		return nil
 	}
 	createScanCmd.PersistentFlags().String(commonParams.IacsPlatformsFlag, "", commonParams.IacsPlatformsFlagUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
-	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iacs-platforms")
+	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iac-security-platforms")
 	if err != nil {
 		return nil
 	}
@@ -758,7 +758,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 func validateScanTypes(cmd *cobra.Command) {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
-		// postprocessor to match iacs with kics
+		// postprocessor to match iac-security with kics
 		actualScanTypes = strings.Replace(userScanTypes, commonParams.IacType, commonParams.KicsType, 1)
 	}
 

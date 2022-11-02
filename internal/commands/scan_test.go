@@ -180,7 +180,7 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 func TestCreateScanWithScanTypes(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
-	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iacs")...)
+	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 }
 
@@ -303,7 +303,7 @@ func TestScanWorkFlowWithSastFilter(t *testing.T) {
 }
 
 func TestScanWorkFlowWithKicsFilter(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "kicsFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--iacs-filter", "!Dockerfile"}
+	baseArgs := []string{"scan", "create", "--project-name", "kicsFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--iac-security-filter", "!Dockerfile"}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -317,7 +317,7 @@ func TestScanWorkFlowWithKicsFilterDeprecated(t *testing.T) {
 }
 
 func TestScanWorkFlowWithKicsPlatforms(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "kicsPlatformsMock", "-b", "dummy_branch", "-s", dummyRepo, "--iacs-platforms", "Dockerfile"}
+	baseArgs := []string{"scan", "create", "--project-name", "kicsPlatformsMock", "-b", "dummy_branch", "-s", dummyRepo, "--iac-security-platforms", "Dockerfile"}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -406,5 +406,5 @@ func TestCreateScanResubmit(t *testing.T) {
 }
 
 func TestCreateScanResubmitWithScanTypes(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iacs,sca", "--debug", "--resubmit")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
 }

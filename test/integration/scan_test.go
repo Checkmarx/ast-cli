@@ -62,7 +62,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iacs,sca"))
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -93,7 +93,7 @@ func TestScaResolverArg(t *testing.T) {
 		t,
 		Dir,
 		map[string]string{},
-		"sast,iacs",
+		"sast,iac-security",
 		viper.GetString(resolverEnvVar),
 	)
 	defer deleteProject(t, projectID)
@@ -112,7 +112,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), "./nonexisting",
-		flag(params.ScanTypes), "sast,iacs,sca",
+		flag(params.ScanTypes), "sast,iac-security,sca",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -124,7 +124,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), viper.GetString(resolverEnvVar),
-		flag(params.ScanTypes), "sast,iacs,sca",
+		flag(params.ScanTypes), "sast,iac-security,sca",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScaResolverParamsFlag), "-q --invalid-param \"invalid\"",
 	}
@@ -362,11 +362,11 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,iacs"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,iac-security"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,iacs"), flag(params.AsyncFlag)))
+	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,iac-security"), flag(params.AsyncFlag)))
 }
 
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -395,7 +395,7 @@ func createScanScaWithResolver(
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,iacs"), "--sast-incremental"))
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,iac-security"), "--sast-incremental"))
 }
 
 func getProjectNameForScanTests() string {
@@ -544,7 +544,7 @@ func TestScanLogsKICS(t *testing.T) {
 		t, "Getting scan KICS log should pass",
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypeFlag), "iacs",
+		flag(params.ScanTypeFlag), "iac-security",
 	)
 }
 
