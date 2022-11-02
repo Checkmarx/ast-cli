@@ -636,7 +636,9 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	logger.PrintRequest(req)
 	if req.Body != nil {
 		body, err = ioutil.ReadAll(req.Body)
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
