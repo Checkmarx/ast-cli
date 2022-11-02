@@ -250,9 +250,10 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, []string, error) {
+	var scanTypesEnabled []string
 	if scanInfo == nil {
-		return nil, errors.New(failedCreatingSummary)
+		return nil, scanTypesEnabled, errors.New(failedCreatingSummary)
 	}
 
 	sastIssues := 0
@@ -270,6 +271,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 				}
 			}
 		}
+		scanTypesEnabled = scanInfo.Engines
 	}
 
 	return &wrappers.ResultSummary{
@@ -288,14 +290,14 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 		Tags:         scanInfo.Tags,
 		ProjectName:  scanInfo.ProjectName,
 		BranchName:   scanInfo.Branch,
-	}, nil
+	}, scanTypesEnabled, nil
 }
 
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
 ) (*wrappers.ResultSummary, error) {
-	summary, err := convertScanToResultsSummary(scan)
+	summary, scanTypesEnabled, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
@@ -303,8 +305,9 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
+
 	for _, result := range results.Results {
-		countResult(summary, result)
+		countResult(summary, result, scanTypesEnabled)
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -321,28 +324,39 @@ func SummaryReport(
 	return summary, nil
 }
 
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, scanTypesEnabled []string) {
 	engineType := strings.TrimSpace(result.Type)
-	if engineType == commonParams.SastType && result.State != notExploitable {
-		summary.SastIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.ScaType {
-		summary.ScaIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.KicsType && result.State != notExploitable {
-		summary.KicsIssues++
-		summary.TotalIssues++
-	}
-	severity := strings.ToLower(result.Severity)
-	if result.State != notExploitable {
-		if severity == highLabel {
-			summary.HighIssues++
-		} else if severity == lowLabel {
-			summary.LowIssues++
-		} else if severity == mediumLabel {
-			summary.MediumIssues++
+	if contains(scanTypesEnabled, engineType) {
+		if engineType == commonParams.SastType && result.State != notExploitable {
+			summary.SastIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.ScaType {
+			summary.ScaIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+			summary.KicsIssues++
+			summary.TotalIssues++
+		}
+		severity := strings.ToLower(result.Severity)
+		if result.State != notExploitable {
+			if severity == highLabel {
+				summary.HighIssues++
+			} else if severity == lowLabel {
+				summary.LowIssues++
+			} else if severity == mediumLabel {
+				summary.MediumIssues++
+			}
+		}
+	} else {
+		if engineType == commonParams.SastType && result.State != notExploitable {
+			summary.SastIssues = notAvailableNumber
+		} else if engineType == commonParams.ScaType {
+			summary.ScaIssues = notAvailableNumber
+		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+			summary.KicsIssues = notAvailableNumber
 		}
 	}
+
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
