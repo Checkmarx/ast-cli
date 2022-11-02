@@ -1550,6 +1550,9 @@ func waitForScanCompletion(
 	fixedWait := time.Duration(waitDelay) * time.Second
 	time.Sleep(fixedWait)
 	i := uint64(0)
+	if !cmd.Flags().Changed(commonParams.RetryDelayFlag) {
+		viper.Set(commonParams.RetryDelayFlag, commonParams.RetryDelayPollingDefault)
+	}
 	for {
 		running, err := isScanRunning(scansWrapper, resultsWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
@@ -1569,7 +1572,6 @@ func waitForScanCompletion(
 			}
 			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
-		// TODO improve wait or clarify flag
 		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
 		logger.PrintfIfVerbose("Sleeping %v before polling", fixedWait+variableWait)
 		time.Sleep(fixedWait + variableWait)

@@ -633,11 +633,12 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	var body []byte
 	retryLimit := int(viper.GetUint(commonParams.RetryFlag))
 	retryWaitTimeSeconds := viper.GetUint(commonParams.RetryDelayFlag)
-	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	logger.PrintRequest(req)
 	if req.Body != nil {
-		body, _ = ioutil.ReadAll(req.Body)
+		body, err = ioutil.ReadAll(req.Body)
+		return nil, err
 	}
+	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
 		if body != nil {
 			_ = req.Body.Close()
@@ -649,8 +650,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 				try+tryPrintOffset, retryLimit+retryLimitPrintOffset,
 			),
 		)
-		// TODO improve wait or clarify flag
-		resp, err = getClient(uint(client.Timeout.Seconds()) * uint(try+tryPrintOffset)).Do(req)
+		resp, err = client.Do(req)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
 		}
@@ -659,8 +659,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			return resp, nil
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))
-		// TODO improve wait or clarify flag
-		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second * time.Duration(try+tryPrintOffset))
+		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
 }
