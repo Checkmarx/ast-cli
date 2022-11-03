@@ -65,9 +65,9 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
 		/* Only check for position 0 because at the time we are only sending
-		one queryName and getting as output one codebashing link. But it is
-		possible to easily change it and be able to get multiple codebashing
-		links
+		   one queryName and getting as output one codebashing link. But it is
+		   possible to easily change it and be able to get multiple codebashing
+		   links
 		*/
 		if decoded[0].Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
@@ -89,7 +89,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	if err != nil {
 		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}
-	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
+	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return "", NewAstError(licenseNotFoundExitCode, errors.Errorf(failedGettingCodeBashingURL))
 	}
