@@ -206,6 +206,25 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 // Create a scan with the sources
 // Assert the scan completes
+func TestScanCreateWithThresholdParseError(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=error",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
+
+// Create a scan with the sources
+// Assert the scan completes
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 

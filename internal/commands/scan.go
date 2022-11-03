@@ -439,7 +439,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -1500,7 +1500,12 @@ func parseThreshold(threshold string) map[string]int {
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			if len(limit) > 1 {
-				thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+				intLimit, err := strconv.Atoi(limit[1])
+				if err != nil {
+					log.Println("Error parsing threshold limit: ", err)
+				} else {
+					thresholdMap[strings.ToLower(limit[0])] = intLimit
+				}
 			}
 		}
 	}
@@ -1739,7 +1744,6 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	return func(cmd *cobra.Command, _ []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
-		scanType = strings.Replace(scanType, commonParams.IacType, commonParams.KicsType, 1)
 		logText, err := logsWrapper.GetLog(scanID, scanType)
 		if err != nil {
 			return err

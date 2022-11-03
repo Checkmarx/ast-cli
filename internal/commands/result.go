@@ -53,7 +53,7 @@ const (
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
-	"Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
+	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
 	strings.Join(
 		[]string{
 			commonParams.ScanIDQueryParam,
