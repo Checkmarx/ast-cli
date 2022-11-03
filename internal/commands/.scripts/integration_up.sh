@@ -4,7 +4,7 @@ docker run \
   -p $PROXY_PORT:3128 \
   -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
   -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
-  datadog/squid
+  ubuntu/squid:5.2-22.04_beta
 
 wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
