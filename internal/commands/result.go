@@ -347,16 +347,16 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, s
 				summary.MediumIssues++
 			}
 		}
-	} else {
-		if engineType == commonParams.SastType && result.State != notExploitable {
-			summary.SastIssues = notAvailableNumber
-		} else if engineType == commonParams.ScaType {
-			summary.ScaIssues = notAvailableNumber
-		} else if engineType == commonParams.KicsType && result.State != notExploitable {
-			summary.KicsIssues = notAvailableNumber
-		}
 	}
-
+	if summary.SastIssues == 0 {
+		summary.SastIssues = notAvailableNumber
+	}
+	if summary.ScaIssues == 0 {
+		summary.ScaIssues = notAvailableNumber
+	}
+	if summary.KicsIssues == 0 {
+		summary.KicsIssues = notAvailableNumber
+	}
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
