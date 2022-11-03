@@ -617,5 +617,6 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	} else {
 		return "", errors.Errorf(jwtError)
 	}
+
 	return value, nil
 }
