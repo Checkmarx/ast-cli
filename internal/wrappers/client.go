@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -145,7 +146,13 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
 }
 
-func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint, accessToken string) (*http.Response, error) {
+func SendHTTPRequestByFullURL(
+	method, fullURL string,
+	body io.Reader,
+	auth bool,
+	timeout uint,
+	accessToken string,
+) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
 	client := getClient(timeout)
 	setAgentName(req)
@@ -506,11 +513,22 @@ func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 func request(client *http.Client, req *http.Request, responseBody bool) (*http.Response, error) {
 	var err error
 	var resp *http.Response
+	var body []byte
 	retryLimit := int(viper.GetUint(commonParams.RetryFlag))
 	retryWaitTimeSeconds := viper.GetUint(commonParams.RetryDelayFlag)
-	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	logger.PrintRequest(req)
+	if req.Body != nil {
+		body, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
+		if body != nil {
+			_ = req.Body.Close()
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		}
 		logger.PrintIfVerbose(
 			fmt.Sprintf(
 				"Request attempt %d in %d",
@@ -518,6 +536,9 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			),
 		)
 		resp, err = client.Do(req)
+		if err != nil {
+			logger.PrintIfVerbose(err.Error())
+		}
 		if resp != nil && err == nil {
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
