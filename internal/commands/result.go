@@ -393,9 +393,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
