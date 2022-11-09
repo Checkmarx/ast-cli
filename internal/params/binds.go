@@ -47,11 +47,6 @@ var EnvVarsBinds = []struct {
 	{LogsEngineLogPathKey, LogsEngineLogPathEnv, "/%s/%s"},
 	{AccessKeyIDConfigKey, AccessKeyIDEnv, ""},
 	{AccessKeySecretConfigKey, AccessKeySecretEnv, ""},
-	{
-		AstAuthenticationPathConfigKey,
-		AstAuthenticationPathEnv,
-		"auth/realms/organization",
-	},
 	{TenantKey, TenantEnv, ""},
 	{BranchKey, BranchEnv, ""},
 	{AstRoleKey, AstRoleEnv, ScaAgent},

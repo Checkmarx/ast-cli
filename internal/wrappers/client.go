@@ -54,6 +54,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
+const BaseAuthUrlPrefix = "auth/realms/organization"
 const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
@@ -292,7 +293,7 @@ func HTTPRequestWithQueryParams(
 }
 
 func addTenantAuthURI(baseAuthURI string) (string, error) {
-	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
+	authPath := BaseAuthUrlPrefix
 	tenant := viper.GetString(commonParams.TenantKey)
 
 	if tenant == "" {
