@@ -20,7 +20,7 @@
     <img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">AST CLI</h3>
+<h3 align="center">Checkmarx One CLI</h3>
 
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool.
@@ -48,7 +48,6 @@
    <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
-
 
 
 ## Getting Started
@@ -97,11 +96,11 @@ We appreciate feedback and contribution to the CLI! Before you get started, plea
 Distributed under the [Apache 2.0](LICENSE). See `LICENSE` for more information.
 
 ## CLI Integrations
-Find all AST CLI integrations [here](https://github.com/Checkmarx/ci-cd-integrations#checkmarx-ast-integrations).
+Find all Checkmarx One CLI integrations [here](https://github.com/Checkmarx/ci-cd-integrations#checkmarx-ast-integrations).
 
 
 ## Contact
-Checkmarx - AST Integrations Team
+Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
