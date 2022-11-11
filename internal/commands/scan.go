@@ -1499,12 +1499,14 @@ func parseThreshold(threshold string) map[string]int {
 		thresholdLimits := strings.Split(threshold, ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
+			engineName := limit[0]
+			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
 			if len(limit) > 1 {
 				intLimit, err := strconv.Atoi(limit[1])
 				if err != nil {
 					log.Println("Error parsing threshold limit: ", err)
 				} else {
-					thresholdMap[strings.ToLower(limit[0])] = intLimit
+					thresholdMap[strings.ToLower(engineName)] = intLimit
 				}
 			}
 		}
@@ -1521,7 +1523,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
 		if !strings.EqualFold(result.State, notExploitable) {
-			key := strings.ToLower(fmt.Sprintf("%s-%s", result.Type, result.Severity))
+			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
 	}

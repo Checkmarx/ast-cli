@@ -5,6 +5,7 @@ type ResultSummary struct {
 	HighIssues      int
 	MediumIssues    int
 	LowIssues       int
+	InfoIssues      int
 	SastIssues      int
 	KicsIssues      int
 	ScaIssues       int

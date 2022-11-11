@@ -29,6 +29,7 @@ const (
 	mediumLabel              = "medium"
 	highLabel                = "high"
 	lowLabel                 = "low"
+	infoLabel                = "info"
 	sonarTypeLabel           = "_sonar"
 	directoryPermission      = 0700
 	infoSonar                = "INFO"
@@ -284,6 +285,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 		HighIssues:   0,
 		MediumIssues: 0,
 		LowIssues:    0,
+		InfoIssues:   0,
 		SastIssues:   sastIssues,
 		KicsIssues:   kicsIssues,
 		ScaIssues:    scaIssues,
@@ -345,6 +347,8 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, s
 				summary.LowIssues++
 			} else if severity == mediumLabel {
 				summary.MediumIssues++
+			} else if severity == infoLabel {
+				summary.InfoIssues++
 			}
 		}
 	}
@@ -390,6 +394,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
 		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
 		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
