@@ -12,6 +12,7 @@ const (
 	RetryUsage                   = "Retry requests to AST on connection failure"
 	RetryDelayFlag               = "retry-delay"
 	RetryDelayDefault            = 20
+	RetryDelayPollingDefault     = 60
 	RetryDelayUsage              = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                  = "file-source"
 	SourcesFlagSh                = "s"
@@ -114,7 +115,8 @@ const (
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
-	KicsPlatformsFlagUsage       = "KICS Platform Flag"
+	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
+	ApikeyOverrideFlag           = "apikey-override"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"

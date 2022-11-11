@@ -26,7 +26,6 @@ var (
 	SastRmPathKey                       = strings.ToLower(SastRmPathEnv)
 	AccessKeyIDConfigKey                = strings.ToLower(AccessKeyIDEnv)
 	AccessKeySecretConfigKey            = strings.ToLower(AccessKeySecretEnv)
-	AstAuthenticationPathConfigKey      = strings.ToLower(AstAuthenticationPathEnv)
 	TokenExpirySecondsKey               = strings.ToLower(TokenExpirySecondsEnv)
 	AstRoleKey                          = strings.ToLower(AstRoleEnv)
 	AstWebAppHealthCheckPathKey         = strings.ToLower(AstWebAppHealthCheckPathEnv)

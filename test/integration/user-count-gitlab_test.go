@@ -44,7 +44,7 @@ func TestGitLabUserCountOnlyGroup(t *testing.T) {
 		t, "Counting contributors from gitlab group should pass",
 		"utils", usercount.UcCommand,
 		usercount.GitLabCommand,
-		flag(usercount.GitLabGroupsFlag), "gitlab-com/quality",
+		flag(usercount.GitLabGroupsFlag), "gitlab-org/quality",
 		flag(params.SCMTokenFlag), os.Getenv(gitLabEnvToken),
 		flag(params.FormatFlag), printer.FormatJSON,
 	)

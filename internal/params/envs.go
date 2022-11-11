@@ -28,7 +28,6 @@ const (
 	SastRmPathEnv                       = "CX_SAST_RM_PATH"
 	UploadsPathEnv                      = "CX_UPLOADS_PATH"
 	TokenExpirySecondsEnv               = "CX_TOKEN_EXPIRY_SECONDS"
-	AstAuthenticationPathEnv            = "CX_AST_AUTHENTICATION_PATH"
 	AstRoleEnv                          = "CX_AST_ROLE"
 	AstWebAppHealthCheckPathEnv         = "CX_AST_WEB_APP_HEALTH_CHECK_PATH"
 	AstKeycloakWebAppHealthCheckPathEnv = "CX_AST_KEYCLOAK_WEB_APP_HEALTH_CHECK_PATH"
