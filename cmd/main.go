@@ -51,6 +51,7 @@ func main() {
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	azureWrapper := wrappers.NewAzureWrapper()
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
+	bitBucketServerWrapper := wrappers.NewBitbucketServerWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
@@ -70,6 +71,7 @@ func main() {
 		gitHubWrapper,
 		azureWrapper,
 		bitBucketWrapper,
+		bitBucketServerWrapper,
 		gitLabWrapper,
 		bflWrapper,
 		prWrapper,
