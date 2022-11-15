@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gomarkdown/markdown"
 )
 
 const (
@@ -52,17 +52,8 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		s.ScanResultData.Description = ""
 	}
 
-	// Remove all images from description and store it in a new attribute
-	if strings.Contains(s.Description, "![infographic](") {
-		r := regexp.MustCompile("\\!\\[infographic\\][\\s\\S]*?png\\)")
-		matches := r.FindAllString(s.Description, -1)
-		for _, v := range matches {
-			image := strings.TrimRight(strings.TrimLeft(v, "![infographic]"), ")")
-			imageWithNoParentheses := strings.TrimLeft(image, "(")
-			s.DescriptionImages = append(s.DescriptionImages, imageWithNoParentheses)
-			s.Description = strings.ReplaceAll(s.Description, v, "")
-		}
-	}
+	// Convert markdown description to html description
+	s.DescriptionHTML = string(markdown.ToHTML([]byte(s.Description), nil, nil))
 
 	return nil
 }
