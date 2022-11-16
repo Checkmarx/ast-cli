@@ -195,7 +195,6 @@ func searchRepos(
 	viewsUsers []userView,
 	totalCommits []bitbucketserver.Commit,
 ) ([]bitbucketserver.Commit, []repositoryView, []userView, error) {
-
 	for _, repo := range bitbucketServerRepos {
 		commits, err := bitBucketServerWrapper.GetCommits(
 			*bitbucketServerURL,
