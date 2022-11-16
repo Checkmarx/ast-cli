@@ -30,7 +30,7 @@ const (
 	bitBucketServerCommandName       = "bitbucket-server"
 	bitBucketServerCommandShort      = "The BitBucket Server command presents the unique contributors for the provided Bitbucket Server projects and repositories."
 	bitBucketServerFlagURL           = "server-url"
-	bitBucketServerFlagUrlUsage      = "BitBucket Server instance URL"
+	bitBucketServerFlagURLUsage      = "BitBucket Server instance URL"
 	bitBucketServerFlagProjects      = "projects"
 	bitBucketServerFlagProjectsUsage = "Projects to search for contributors"
 	bitBucketServerFlagRepos         = "repos"
@@ -58,7 +58,7 @@ func NewUserCountBitBucketServerCommand(bitBucketServerWrapper bitbucketserver.W
 		RunE:    createRunBitBucketServerUserCountFunc(bitBucketServerWrapper),
 	}
 
-	bitbucketServerURL = userCountCmd.Flags().String(bitBucketServerFlagURL, "", bitBucketServerFlagUrlUsage)
+	bitbucketServerURL = userCountCmd.Flags().String(bitBucketServerFlagURL, "", bitBucketServerFlagURLUsage)
 	userCountCmd.Flags().StringSliceVar(
 		&bitBucketServerProjects,
 		bitBucketServerFlagProjects,
@@ -265,6 +265,6 @@ func bitBucketServerIsNotBot(commit bitbucketserver.Commit) bool {
 	return strings.Contains(commit.Author.Name, bitBucketServerBot)
 }
 
-func buildCountPathBitBucketServer(project string, repo string) string {
+func buildCountPathBitBucketServer(project, repo string) string {
 	return project + "/" + repo
 }

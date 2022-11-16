@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type BitBucketServerHTTPWrapper struct {
+type HttpWrapper struct {
 	client *http.Client
 }
 
@@ -31,12 +31,12 @@ const (
 )
 
 func NewBitbucketServerWrapper() Wrapper {
-	return &BitBucketServerHTTPWrapper{
+	return &HttpWrapper{
 		client: wrappers.GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
-func (b BitBucketServerHTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) (
+func (b HttpWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) (
 	[]Commit,
 	error,
 ) {
@@ -61,7 +61,7 @@ func (b BitBucketServerHTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlu
 	return acc, nil
 }
 
-func (b BitBucketServerHTTPWrapper) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) (
+func (b HttpWrapper) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) (
 	[]Repo,
 	error,
 ) {
@@ -85,7 +85,7 @@ func (b BitBucketServerHTTPWrapper) GetRepositories(bitBucketURL, projectKey, bi
 	return acc, nil
 }
 
-func (b BitBucketServerHTTPWrapper) GetProjects(bitBucketURL, bitBucketPassword string) (
+func (b HttpWrapper) GetProjects(bitBucketURL, bitBucketPassword string) (
 	[]string,
 	error,
 ) {
