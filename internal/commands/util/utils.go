@@ -8,6 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucket-server"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ func NewUtilsCommand(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	bitBucketServerWrapper wrappers.BitBucketServerWrapper,
+	bitBucketServerWrapper bitbucket_server.BitBucketServerWrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,

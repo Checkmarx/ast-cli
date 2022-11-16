@@ -1,4 +1,4 @@
-package wrappers
+package bitbucket_server
 
 import (
 	"encoding/json"
@@ -7,10 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
 )
 
@@ -19,14 +19,20 @@ type BitBucketServerHTTPWrapper struct {
 }
 
 const (
-	bitBucketServerApiPrefix = "rest/api/1.0/"
-	bitBucketServerProjects  = "projects/%s/"
-	bitBucketServerRepos     = "repos/%s"
+	bitBucketServerProjectsUrl  = "rest/api/1.0/projects/"
+	bitBucketServerReposUrl     = "rest/api/1.0/projects/%s/repos/"
+	bitBucketServerCommitsUrl   = "rest/api/1.0/projects/%s/repos/%s/commits"
+	bitBucketPageLimit          = 100
+	bitBucketServerPageStart    = "start"
+	bitBucketServerPageLimit    = "limit"
+	bitBucketServerAuthError    = "failed Bitbucket Server authentication"
+	bitBucketServerNotFound     = "resource not found: %s"
+	bitBucketServerBearerFormat = "Bearer %s"
 )
 
 func NewBitbucketServerWrapper() BitBucketServerWrapper {
 	return &BitBucketServerHTTPWrapper{
-		client: getClient(viper.GetUint(params.ClientTimeoutKey)),
+		client: wrappers.GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
@@ -34,25 +40,15 @@ func (b BitBucketServerHTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlu
 	[]BitBucketServerCommit,
 	error,
 ) {
-	url := bitBucketURL
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
-	}
-	url += bitBucketServerApiPrefix
-	url += fmt.Sprintf(bitBucketServerProjects, projectKey)
-	url += fmt.Sprintf(bitBucketServerRepos, repoSlug)
-	url += "/commits"
+	url := bitBucketURL + fmt.Sprintf(bitBucketServerCommitsUrl, projectKey, repoSlug)
 
 	var acc []BitBucketServerCommit
 
 	pageHolder := BitBucketServerCommitList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
-	logger.Print(url)
 	for !pageHolder.IsLastPage {
-		logger.Printf("Page start: %v", pageHolder.NextPageStart)
-		queryParams := map[string]string{}
-		queryParams["start"] = strconv.FormatUint(pageHolder.NextPageStart, 10)
+		queryParams := buildQueryParams(pageHolder.NextPageStart)
 
 		err := getBitBucketServer(b.client, bitBucketPassword, url, &pageHolder, queryParams)
 		if err != nil {
@@ -69,25 +65,15 @@ func (b BitBucketServerHTTPWrapper) GetRepositories(bitBucketURL, projectKey, bi
 	[]BitBucketServerRepo,
 	error,
 ) {
-	url := bitBucketURL
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
-	}
-	url += bitBucketServerApiPrefix
-	url += fmt.Sprintf(bitBucketServerProjects, projectKey)
-	url += fmt.Sprintf(bitBucketServerRepos, "")
+	url := bitBucketURL + fmt.Sprintf(bitBucketServerReposUrl, projectKey)
 
 	var acc []BitBucketServerRepo
 
 	pageHolder := BitBucketServerRepoList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
-	logger.Print(url)
 	for !pageHolder.IsLastPage {
-		pageHolder.IsLastPage = true
-		logger.Printf("Page start: %v", pageHolder.NextPageStart)
-		queryParams := map[string]string{}
-		queryParams["start"] = strconv.FormatUint(pageHolder.NextPageStart, 10)
+		queryParams := buildQueryParams(pageHolder.NextPageStart)
 
 		err := getBitBucketServer(b.client, bitBucketPassword, url, &pageHolder, queryParams)
 		if err != nil {
@@ -103,23 +89,15 @@ func (b BitBucketServerHTTPWrapper) GetProjects(bitBucketURL, bitBucketPassword 
 	[]string,
 	error,
 ) {
-	url := bitBucketURL
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
-	}
-	url += bitBucketServerApiPrefix
-	url += "projects/"
+	url := bitBucketURL + bitBucketServerProjectsUrl
 
 	var acc []BitBucketServerProject
 
 	pageHolder := BitBucketServerProjectList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
-	logger.Print(url)
 	for !pageHolder.IsLastPage {
-		logger.Printf("Page start: %v", pageHolder.NextPageStart)
-		queryParams := map[string]string{}
-		queryParams["start"] = strconv.FormatUint(pageHolder.NextPageStart, 10)
+		queryParams := buildQueryParams(pageHolder.NextPageStart)
 
 		err := getBitBucketServer(b.client, bitBucketPassword, url, &pageHolder, queryParams)
 		if err != nil {
@@ -150,7 +128,7 @@ func getBitBucketServer(
 		return err
 	}
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf("Bearer %s", token))
+		req.Header.Add(wrappers.AuthorizationHeader, fmt.Sprintf(bitBucketServerBearerFormat, token))
 	}
 
 	q := req.URL.Query()
@@ -177,16 +155,14 @@ func getBitBucketServer(
 		if err != nil {
 			return err
 		}
-		// State sent when expired token
 	case http.StatusUnauthorized:
-		err = errors.New("failed Bitbucket Authentication")
+		err = errors.New(bitBucketServerAuthError)
 		return err
-		// State sent when no token is provided
 	case http.StatusForbidden:
-		err = errors.New("failed Bitbucket Authentication")
+		err = errors.New(bitBucketServerAuthError)
 		return err
 	case http.StatusNotFound:
-		err = errors.New("no workspace with the provided identifier")
+		err = fmt.Errorf(bitBucketServerNotFound, url)
 		return err
 		// Case the commit/project does not exist in the organization
 	default:
@@ -197,4 +173,11 @@ func getBitBucketServer(
 		return errors.New(string(body))
 	}
 	return nil
+}
+
+func buildQueryParams(nextPageStart int) map[string]string {
+	queryParams := map[string]string{}
+	queryParams[bitBucketServerPageStart] = strconv.Itoa(nextPageStart)
+	queryParams[bitBucketServerPageLimit] = strconv.Itoa(bitBucketPageLimit)
+	return queryParams
 }

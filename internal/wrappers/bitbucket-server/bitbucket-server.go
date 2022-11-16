@@ -1,17 +1,17 @@
-package wrappers
+package bitbucket_server
 
 type BitBucketServerCommitList struct {
 	Commits       []BitBucketServerCommit `json:"values,omitempty"`
 	IsLastPage    bool                    `json:"isLastPage"`
-	Start         uint64                  `json:"start"`
-	NextPageStart uint64                  `json:"nextPageStart"`
-	Limit         uint64                  `json:"limit"`
-	Size          uint64                  `json:"size"`
+	Start         int                     `json:"start"`
+	NextPageStart int                     `json:"nextPageStart"`
+	Limit         int                     `json:"limit"`
+	Size          int                     `json:"size"`
 }
 
 type BitBucketServerCommit struct {
 	Author          BitBucketServerAuthor `json:"author,omitempty"`
-	AuthorTimestamp uint64                `json:"authorTimestamp"`
+	AuthorTimestamp int                   `json:"authorTimestamp"`
 }
 
 type BitBucketServerAuthor struct {
@@ -20,7 +20,7 @@ type BitBucketServerAuthor struct {
 }
 
 type BitBucketServerRepo struct {
-	Id   uint64 `json:"id"`
+	Id   int    `json:"id"`
 	Slug string `json:"slug"`
 	Name string `json:"name"`
 }
@@ -28,25 +28,25 @@ type BitBucketServerRepo struct {
 type BitBucketServerRepoList struct {
 	Repos         []BitBucketServerRepo `json:"values"`
 	IsLastPage    bool                  `json:"isLastPage"`
-	Start         uint64                `json:"start"`
-	NextPageStart uint64                `json:"nextPageStart"`
-	Limit         uint64                `json:"limit"`
-	Size          uint64                `json:"size"`
+	Start         int                   `json:"start"`
+	NextPageStart int                   `json:"nextPageStart"`
+	Limit         int                   `json:"limit"`
+	Size          int                   `json:"size"`
 }
 
 type BitBucketServerProject struct {
 	Key  string `json:"key"`
-	Id   uint64 `json:"id"`
+	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
 
 type BitBucketServerProjectList struct {
 	Projects      []BitBucketServerProject `json:"values"`
 	IsLastPage    bool                     `json:"isLastPage"`
-	Start         uint64                   `json:"start"`
-	NextPageStart uint64                   `json:"nextPageStart"`
-	Limit         uint64                   `json:"limit"`
-	Size          uint64                   `json:"size"`
+	Start         int                      `json:"start"`
+	NextPageStart int                      `json:"nextPageStart"`
+	Limit         int                      `json:"limit"`
+	Size          int                      `json:"size"`
 }
 
 type BitBucketServerWrapper interface {
