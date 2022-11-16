@@ -61,6 +61,7 @@ func createASTTestCommand() *cobra.Command {
 		gitHubWrapper,
 		azureWrapper,
 		bitBucketWrapper,
+		nil,
 		gitLabWrapper,
 		bflMockWrapper,
 		prMockWrapper,

@@ -8,6 +8,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ func NewUtilsCommand(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
+	bitBucketServerWrapper bitbucketserver.Wrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
@@ -59,7 +61,13 @@ func NewUtilsCommand(
 		completionCmd,
 		envCheckCmd,
 		learnMoreCmd,
-		usercount.NewUserCountCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper),
+		usercount.NewUserCountCommand(
+			gitHubWrapper,
+			azureWrapper,
+			bitBucketWrapper,
+			bitBucketServerWrapper,
+			gitLabWrapper,
+		),
 		prDecorationCmd,
 		remediationCmd,
 		tenantCmd,

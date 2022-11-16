@@ -22,7 +22,7 @@ type GitHubHTTPWrapper struct {
 
 const (
 	acceptHeader        = "Accept"
-	authorizationHeader = "Authorization"
+	AuthorizationHeader = "Authorization"
 	apiVersion          = "application/vnd.github.v3+json"
 	tokenFormat         = "token %s"
 	ownerPlaceholder    = "{owner}"
@@ -37,7 +37,7 @@ const (
 
 func NewGitHubWrapper() GitHubWrapper {
 	return &GitHubHTTPWrapper{
-		client: getClient(viper.GetUint(params.ClientTimeoutKey)),
+		client: GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
@@ -244,7 +244,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 
 		token := viper.GetString(params.SCMTokenFlag)
 		if len(token) > 0 {
-			req.Header.Add(authorizationHeader, fmt.Sprintf(tokenFormat, token))
+			req.Header.Add(AuthorizationHeader, fmt.Sprintf(tokenFormat, token))
 		}
 
 		q := req.URL.Query()
