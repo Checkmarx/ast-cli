@@ -35,7 +35,7 @@ const (
 
 func NewAzureWrapper() AzureWrapper {
 	return &AzureHTTPWrapper{
-		client: getClient(viper.GetUint(params.ClientTimeoutKey)),
+		client: GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
@@ -97,7 +97,7 @@ func (g *AzureHTTPWrapper) get(
 	}
 
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(authFormat, token))
+		req.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, token))
 	}
 
 	q := req.URL.Query()

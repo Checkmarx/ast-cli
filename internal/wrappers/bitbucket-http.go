@@ -35,7 +35,7 @@ const (
 
 func NewBitbucketWrapper() BitBucketWrapper {
 	return &BitBucketHTTPWrapper{
-		client: getClient(viper.GetUint(params.ClientTimeoutKey)),
+		client: GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
@@ -52,7 +52,8 @@ func (g *BitBucketHTTPWrapper) GetworkspaceUUID(bitBucketURL, workspaceName, bit
 		workspaceURL,
 		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
 		&workspace,
-		queryParams)
+		queryParams,
+	)
 
 	return workspace, err
 }
@@ -81,7 +82,8 @@ func (g *BitBucketHTTPWrapper) GetCommits(bitBucketURL, workspaceUUID, repoUUID,
 		repoURL,
 		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
 		commitType,
-		queryParams)
+		queryParams,
+	)
 	if err != nil {
 		return commits, err
 	}
@@ -120,7 +122,8 @@ func (g *BitBucketHTTPWrapper) GetRepositories(bitBucketURL, workspaceName, bitB
 		repoURL,
 		encodeBitBucketAuth(bitBucketUsername, bitBucketPassword),
 		repoType,
-		queryParams)
+		queryParams,
+	)
 	if err != nil {
 		return repos, err
 	}
@@ -153,7 +156,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	}
 
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(basicFormat, token))
+		req.Header.Add(AuthorizationHeader, fmt.Sprintf(basicFormat, token))
 	}
 
 	q := req.URL.Query()
@@ -285,7 +288,7 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 		return err
 	}
 	if len(token) > 0 {
-		req.Header.Add(authorizationHeader, fmt.Sprintf(basicFormat, token))
+		req.Header.Add(AuthorizationHeader, fmt.Sprintf(basicFormat, token))
 	}
 
 	q := req.URL.Query()

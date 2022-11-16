@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/commands/util/usercount/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	bitbucketServerWrapper "github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/spf13/cobra"
 )
 
@@ -33,10 +35,13 @@ var (
 	}
 )
 
-func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper,
+func NewUserCountCommand(
+	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	gitLabWrapper wrappers.GitLabWrapper) *cobra.Command {
+	bitBucketServerWrapper bitbucketServerWrapper.Wrapper,
+	gitLabWrapper wrappers.GitLabWrapper,
+) *cobra.Command {
 	userCountCmd := &cobra.Command{
 		Use:   UcCommand,
 		Short: UcShort,
@@ -71,6 +76,8 @@ func NewUserCountCommand(gitHubWrapper wrappers.GitHubWrapper,
 			),
 		)
 	}
+
+	userCountCmd.AddCommand(bitbucketserver.NewUserCountBitBucketServerCommand(bitBucketServerWrapper))
 
 	// subtract ninety days from current date
 	ninetyDaysDate = time.Now().UTC().Add(-90 * 24 * time.Hour).Format(time.RFC3339)

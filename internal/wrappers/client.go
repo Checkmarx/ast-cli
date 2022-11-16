@@ -67,7 +67,7 @@ func setAgentName(req *http.Request) {
 	req.Header.Set("User-Agent", agentStr)
 }
 
-func getClient(timeout uint) *http.Client {
+func GetClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 
@@ -155,7 +155,7 @@ func SendHTTPRequestByFullURL(
 	accessToken string,
 ) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -217,7 +217,7 @@ func SendHTTPRequestPasswordAuth(
 		return nil, err
 	}
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func HTTPRequestWithQueryParams(
 		return nil, err
 	}
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -322,7 +322,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 		return nil, err
 	}
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	req.Header.Add("Content-Type", "application/json")
 	if err != nil {
@@ -442,7 +442,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	req = addReqMonitor(req)
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	client := getClient(clientTimeout)
+	client := GetClient(clientTimeout)
 
 	res, err := doPrivateRequest(client, req)
 	if err != nil {
