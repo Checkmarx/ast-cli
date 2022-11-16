@@ -105,7 +105,6 @@ func createRunBitBucketServerUserCountFunc(bitBucketServerWrapper bitbucketserve
 	args []string,
 ) error {
 	return func(cmd *cobra.Command, args []string) error {
-
 		views, viewsUsers, err := searchBitBucketServer(bitBucketServerWrapper)
 		if err != nil {
 			return err
@@ -132,7 +131,6 @@ func searchBitBucketServer(bitBucketServerWrapper bitbucketserver.Wrapper) (
 	[]userView,
 	error,
 ) {
-
 	if len(bitBucketServerProjects) == 0 {
 		var err error
 		bitBucketServerProjects, err = bitBucketServerWrapper.GetProjects(
@@ -156,7 +154,6 @@ func searchBitBucketServer(bitBucketServerWrapper bitbucketserver.Wrapper) (
 func searchProjects(
 	bitBucketServerWrapper bitbucketserver.Wrapper,
 ) ([]repositoryView, []userView, error) {
-
 	var views []repositoryView
 	var viewsUsers []userView
 	var totalCommits []bitbucketserver.Commit
@@ -173,6 +170,9 @@ func searchProjects(
 			viewsUsers,
 			totalCommits,
 		)
+		if err != nil {
+			return nil, nil, err
+		}
 
 		// if user provided repos, it's only for a single project, so we can wipe the flag value
 		bitbucketServerRepos = []string{}
