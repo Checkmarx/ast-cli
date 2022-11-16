@@ -1,4 +1,4 @@
-package bitbucket_server
+package bitbucketserver
 
 import (
 	"encoding/json"
@@ -19,9 +19,9 @@ type BitBucketServerHTTPWrapper struct {
 }
 
 const (
-	bitBucketServerProjectsUrl  = "rest/api/1.0/projects/"
-	bitBucketServerReposUrl     = "rest/api/1.0/projects/%s/repos/"
-	bitBucketServerCommitsUrl   = "rest/api/1.0/projects/%s/repos/%s/commits"
+	bitBucketServerProjectsURL  = "rest/api/1.0/projects/"
+	bitBucketServerReposURL     = "rest/api/1.0/projects/%s/repos/"
+	bitBucketServerCommitsURL   = "rest/api/1.0/projects/%s/repos/%s/commits"
 	bitBucketPageLimit          = 100
 	bitBucketServerPageStart    = "start"
 	bitBucketServerPageLimit    = "limit"
@@ -30,21 +30,21 @@ const (
 	bitBucketServerBearerFormat = "Bearer %s"
 )
 
-func NewBitbucketServerWrapper() BitBucketServerWrapper {
+func NewBitbucketServerWrapper() Wrapper {
 	return &BitBucketServerHTTPWrapper{
 		client: wrappers.GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
 func (b BitBucketServerHTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) (
-	[]BitBucketServerCommit,
+	[]Commit,
 	error,
 ) {
-	url := bitBucketURL + fmt.Sprintf(bitBucketServerCommitsUrl, projectKey, repoSlug)
+	url := bitBucketURL + fmt.Sprintf(bitBucketServerCommitsURL, projectKey, repoSlug)
 
-	var acc []BitBucketServerCommit
+	var acc []Commit
 
-	pageHolder := BitBucketServerCommitList{}
+	pageHolder := CommitList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {
@@ -62,14 +62,14 @@ func (b BitBucketServerHTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlu
 }
 
 func (b BitBucketServerHTTPWrapper) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) (
-	[]BitBucketServerRepo,
+	[]Repo,
 	error,
 ) {
-	url := bitBucketURL + fmt.Sprintf(bitBucketServerReposUrl, projectKey)
+	url := bitBucketURL + fmt.Sprintf(bitBucketServerReposURL, projectKey)
 
-	var acc []BitBucketServerRepo
+	var acc []Repo
 
-	pageHolder := BitBucketServerRepoList{}
+	pageHolder := RepoList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {
@@ -89,11 +89,11 @@ func (b BitBucketServerHTTPWrapper) GetProjects(bitBucketURL, bitBucketPassword 
 	[]string,
 	error,
 ) {
-	url := bitBucketURL + bitBucketServerProjectsUrl
+	url := bitBucketURL + bitBucketServerProjectsURL
 
-	var acc []BitBucketServerProject
+	var acc []Project
 
-	pageHolder := BitBucketServerProjectList{}
+	pageHolder := ProjectList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {

@@ -11,7 +11,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucket-server"
+	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -35,7 +35,7 @@ func NewAstCLI(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	bitBucketServerWrapper bitbucket_server.BitBucketServerWrapper,
+	bitBucketServerWrapper bitbucketserver.Wrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	bflWrapper wrappers.BflWrapper,
 	prWrapper wrappers.PRWrapper,
