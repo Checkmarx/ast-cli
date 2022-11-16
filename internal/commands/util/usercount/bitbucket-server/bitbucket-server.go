@@ -1,3 +1,7 @@
+//
+// Tests were not added to bitbucket server contributor count as there is no testing instance of bitbucket server available
+//
+
 package bitbucket_server
 
 import (
