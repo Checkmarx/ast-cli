@@ -12,6 +12,7 @@ const (
 	RetryUsage                   = "Retry requests to AST on connection failure"
 	RetryDelayFlag               = "retry-delay"
 	RetryDelayDefault            = 20
+	RetryDelayPollingDefault     = 60
 	RetryDelayUsage              = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                  = "file-source"
 	SourcesFlagSh                = "s"
@@ -73,10 +74,14 @@ const (
 	ProjectName                  = "project-name"
 	ScanTypes                    = "scan-types"
 	ScanTypeFlag                 = "scan-type"
+	ScanResubmit                 = "resubmit"
 	KicsRealtimeFile             = "file"
 	KicsRealtimeEngine           = "engine"
 	KicsRealtimeAdditionalParams = "additional-params"
-	RemediationFile              = "package-file"
+	RemediationFiles             = "package-files"
+	KicsRemediationFile          = "results-file"
+	KicsProjectFile              = "kics-files"
+	KicsSimilarityFilter         = "similarity-ids"
 	RemediationPackage           = "package"
 	RemediationPackageVersion    = "package-version"
 	TagList                      = "tags"
@@ -110,7 +115,8 @@ const (
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
-	KicsPlatformsFlagUsage       = "KICS Platform Flag"
+	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
+	ApikeyOverrideFlag           = "apikey-override"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
@@ -119,6 +125,14 @@ const (
 	KicsFilterUsage = "KICS filter"
 	ScaFilterFlag   = "sca-filter"
 	ScaFilterUsage  = "SCA filter"
+
+	// PR decoration flags
+	NamespaceFlag      = "namespace"
+	NamespaceFlagUsage = "Github namespace is required to post the comments"
+	RepoNameFlag       = "repo-name"
+	RepoNameFlagUsage  = "Github repository details"
+	PRNumberFlag       = "pr-number"
+	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
 )
 
 // Parameter values

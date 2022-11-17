@@ -32,10 +32,13 @@ func main() {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
+	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
+	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -44,6 +47,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -52,7 +56,9 @@ func main() {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
+	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -70,7 +76,9 @@ func main() {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
+		prWrapper,
 		learnMoreWrapper,
+		tenantConfigurationWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
@@ -105,7 +113,8 @@ func exitListener() {
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(
 		signalChanel,
-		syscall.SIGTERM)
+		syscall.SIGTERM,
+	)
 	go signalHandler(signalChanel)
 }
 

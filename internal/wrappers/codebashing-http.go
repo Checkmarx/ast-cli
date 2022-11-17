@@ -2,10 +2,12 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -63,14 +65,19 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
 		/* Only check for position 0 because at the time we are only sending
-		one queryName and getting as output one codebashing link. But it is
-		possible to easily change it and be able to get multiple codebashing
-		links
+		   one queryName and getting as output one codebashing link. But it is
+		   possible to easily change it and be able to get multiple codebashing
+		   links
 		*/
 		if decoded[0].Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
-		decoded[0].Path = codeBashingURL + decoded[0].Path
+
+		decoded[0].Path = fmt.Sprintf("%s%s", codeBashingURL, decoded[0].Path)
+		decoded[0].Path, err = utils.CleanURL(decoded[0].Path)
+		if err != nil {
+			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
+		}
 		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
@@ -78,11 +85,11 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error) {
-	accessToken, err := getAccessToken()
+	accessToken, err := GetAccessToken()
 	if err != nil {
 		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}
-	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
+	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return "", NewAstError(licenseNotFoundExitCode, errors.Errorf(failedGettingCodeBashingURL))
 	}

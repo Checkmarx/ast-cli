@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -69,6 +70,10 @@ const (
 	containerVolumeFormat           = "%s:/path"
 	containerTempDirPattern         = "kics"
 	kicsContainerPrefixName         = "cli-kics-realtime-"
+	cleanupMaxRetries               = 3
+	cleanupRetryWaitSeconds         = 15
+	DanglingSymlinkError            = "Skipping dangling symbolic link"
+	maxPollingWaitTime              = 60
 )
 
 var (
@@ -110,7 +115,7 @@ func NewScanCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/9YuXtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html
 			`,
 			),
 		},
@@ -176,7 +181,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`	
-			https://checkmarx.atlassian.net/l/c/GddHidUN
+			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
 			`,
 			),
 		},
@@ -186,15 +191,18 @@ func scanRealtimeSubCommand() *cobra.Command {
 		StringSliceVar(
 			&aditionalParameters, commonParams.KicsRealtimeAdditionalParams, []string{},
 			"Additional scan options supported by kics. "+
-				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f")
+				"Should follow comma separated format. For example : --additional-params -v, --exclude-results,fec62a97d569662093dbb9739360942f",
+		)
 	realtimeScanCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeFile,
 		"",
-		"Path to input file for kics realtime scanner")
+		"Path to input file for kics realtime scanner",
+	)
 	realtimeScanCmd.PersistentFlags().String(
 		commonParams.KicsRealtimeEngine,
 		"docker",
-		"Name in the $PATH for the container engine to run kics. Example:podman.")
+		"Name in the $PATH for the container engine to run kics. Example:podman.",
+	)
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
 	return realtimeScanCmd
 }
@@ -232,7 +240,7 @@ func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/546Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-d1d53a56-197a-6a16-95e5-c437e6dc060a
 			`,
 			),
 		},
@@ -254,7 +262,7 @@ func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/aY2Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-800f2022-3609-3f40-6f77-9371e54f8b71
 			`,
 			),
 		},
@@ -276,7 +284,7 @@ func scanDeleteSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/-AuYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-851aa940-0454-ec17-4d29-42a2fa1352e0
 			`,
 			),
 		},
@@ -299,7 +307,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/Ug2Ytw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-9a524fb7-0dba-314d-9068-ccea184bc8d9
 			`,
 			),
 		},
@@ -322,7 +330,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/qAyYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-c073d85b-7605-0c89-909c-7d5b9caaec16
 			`,
 			),
 		},
@@ -345,7 +353,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/K46Xtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-f92335a6-5b1c-e158-7914-2a4e72a2ada5
 			`,
 			),
 		},
@@ -375,7 +383,7 @@ func scanCreateSubCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/WguYtw
+				https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-a0bb20d5-5182-3fb4-3da0-0e263344ffe7
 			`,
 			),
 		},
@@ -447,7 +455,11 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
+	createScanCmd.PersistentFlags().StringSlice(
+		commonParams.KicsPlatformsFlag,
+		[]string{},
+		commonParams.KicsPlatformsFlagUsage,
+	)
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -466,11 +478,13 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.ScanResubmit,
+		false,
+		"Create a scan with the configurations used in the most recent scan in the project",
+	)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
-	if err != nil {
-		log.Fatal(err)
-	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -575,6 +589,7 @@ func setupScanTypeProjectAndConfig(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	scansWrapper wrappers.ScansWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -604,21 +619,37 @@ func setupScanTypeProjectAndConfig(
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
-	if _, ok := info["config"]; !ok {
+	resubmit, _ := cmd.Flags().GetBool(commonParams.ScanResubmit)
+	var resubmitConfig []wrappers.Config
+	if resubmit {
+		logger.PrintIfVerbose(
+			fmt.Sprintf(
+				"using latest scan configuration due to --%s flag",
+				commonParams.ScanResubmit,
+			),
+		)
+		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		// Get the latest scan configuration
+		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
+		if err != nil {
+			return err
+		}
+	} else if _, ok := info["config"]; !ok {
 		err = json.Unmarshal([]byte("[]"), &configArr)
 		if err != nil {
 			return err
 		}
 	}
-	sastConfig := addSastScan(cmd)
+
+	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
 		configArr = append(configArr, sastConfig)
 	}
-	var kicsConfig = addKicsScan(cmd)
+	var kicsConfig = addKicsScan(cmd, resubmitConfig)
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd)
+	var scaConfig = addScaScan(cmd, resubmitConfig)
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -631,7 +662,33 @@ func setupScanTypeProjectAndConfig(
 	return err
 }
 
-func addSastScan(cmd *cobra.Command) map[string]interface{} {
+func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
+	[]wrappers.Config,
+	error,
+) {
+	var allScansModel *wrappers.ScansCollectionResponseModel
+	var errorModel *wrappers.ErrorModel
+	var err error
+	params := make(map[string]string)
+	params["project-id"] = projectID
+	allScansModel, errorModel, err = scansWrapper.Get(params)
+	if err != nil {
+		return nil, errors.Wrapf(err, "get %s\n", failedGettingAll)
+	}
+	// Checking the response for errors
+	if errorModel != nil {
+		return nil, errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+	}
+	config := allScansModel.Scans[0].Metadata.Configs
+	engines := allScansModel.Scans[0].Engines
+	// Check if there are no scan types sent using the flags, and use the latest scan engine types
+	if userScanTypes == "" {
+		actualScanTypes = strings.Join(engines, ",")
+	}
+	return config, nil
+}
+
+func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.SastType) {
 		sastMapConfig := make(map[string]interface{})
 		sastConfig := wrappers.SastConfig{}
@@ -640,31 +697,76 @@ func addSastScan(cmd *cobra.Command) map[string]interface{} {
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+		for _, config := range resubmitConfig {
+			if config.Type != commonParams.SastType {
+				continue
+			}
+			resubmitIncremental := config.Value["incremental"]
+			if resubmitIncremental != nil && !incrementalVal {
+				sastConfig.Incremental = resubmitIncremental.(string)
+			}
+			resubmitPreset := config.Value["presetName"]
+			if resubmitPreset != nil && sastConfig.PresetName == "" {
+				sastConfig.PresetName = resubmitPreset.(string)
+			}
+			resubmitFilter := config.Value["filter"]
+			if resubmitFilter != nil && sastConfig.Filter == "" {
+				sastConfig.Filter = resubmitFilter.(string)
+			}
+			resubmitEngineVerbose := config.Value["engineVerbose"]
+			if resubmitEngineVerbose != nil {
+				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+			}
+			resubmitLanguageMode := config.Value["languageMode"]
+			if resubmitLanguageMode != nil {
+				sastConfig.LanguageMode = resubmitLanguageMode.(string)
+			}
+		}
 		sastMapConfig["value"] = &sastConfig
 		return sastMapConfig
 	}
 	return nil
 }
 
-func addKicsScan(cmd *cobra.Command) map[string]interface{} {
+func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.KicsType) {
 		kicsMapConfig := make(map[string]interface{})
 		kicsConfig := wrappers.KicsConfig{}
 		kicsMapConfig["type"] = commonParams.KicsType
 		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
 		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.KicsType {
+				resubmitFilter := config.Value["filter"]
+				if resubmitFilter != nil && kicsConfig.Filter == "" {
+					kicsConfig.Filter = resubmitFilter.(string)
+				}
+				resubmitPlatforms := config.Value["platforms"]
+				if resubmitPlatforms != nil && kicsConfig.Platforms == "" {
+					kicsConfig.Platforms = resubmitPlatforms.(string)
+				}
+			}
+		}
 		kicsMapConfig["value"] = &kicsConfig
 		return kicsMapConfig
 	}
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig["type"] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.ScaType {
+				resubmitFilter := config.Value["filter"]
+				if resubmitFilter != nil && scaConfig.Filter == "" {
+					scaConfig.Filter = resubmitFilter.(string)
+				}
+			}
+		}
 		scaMapConfig["value"] = &scaConfig
 		return scaMapConfig
 	}
@@ -823,7 +925,8 @@ func handleFile(
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
 			if os.IsNotExist(err) {
-				return errors.WithMessage(err, "found dangling symbolic link, aborting")
+				logger.PrintfIfVerbose("%s: %s: %v", DanglingSymlinkError, fileName, err)
+				return nil
 			}
 			return err
 		}
@@ -930,10 +1033,10 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 		args = append(args, scaResolverParsedParams...)
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
+		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
-		logger.PrintIfVerbose(string(out))
 	}
 	return nil
 }
@@ -956,10 +1059,10 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(
-	cmd *cobra.Command,
-	uploadsWrapper wrappers.UploadsWrapper,
-) (string, error) {
+func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
+	url, zipFilePath string,
+	err error,
+) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -967,55 +1070,82 @@ func getUploadURLFromSource(
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	var errorUnzippingFile error
-	// apply file filters to zip file
-	if (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && len(zipFilePath) > 0 {
+
+	userProvidedZip := len(zipFilePath) > 0
+	unzip := (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && userProvidedZip
+	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
-			return "", errorUnzippingFile
+			return "", "", errorUnzippingFile
 		}
 	}
 
 	if directoryPath != "" {
 		var dirPathErr error
-		// Get sca resolver flags
-		scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
-		if dirPathErr != nil {
-			scaResolverParams = ""
-		}
-		scaResolver, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-		if dirPathErr != nil {
-			scaResolver = ""
-			scaResolverParams = ""
-		}
+
+		scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
 			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
 			if dirPathErr != nil {
-				return "", errors.Wrapf(dirPathErr, "ScaResolver error")
+				if unzip {
+					_ = cleanTempUnzipDirectory(directoryPath)
+				}
+				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
 			}
 		}
+
 		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if unzip {
+			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
+			if dirRemovalErr != nil {
+				return "", "", dirRemovalErr
+			}
+		}
 		if dirPathErr != nil {
-			return "", dirPathErr
+			return "", "", dirPathErr
 		}
 	}
 	if zipFilePath != "" {
-		var zipFilePathErr error
-		// Send a request to uploads service
-		var preSignedURL *string
-		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
-		if zipFilePathErr != nil {
-			return "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
-		}
-		logger.PrintIfVerbose(fmt.Sprintf("Uploading file to %s\n", *preSignedURL))
-		return *preSignedURL, zipFilePathErr
+		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
-	return preSignedURL, nil
+	return preSignedURL, zipFilePath, nil
+}
+
+func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool) (
+	url, zipPath string,
+	err error,
+) {
+	var zipFilePathErr error
+	// Send a request to uploads service
+	var preSignedURL *string
+	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath)
+	if zipFilePathErr != nil {
+		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
+	if unzip || !userProvidedZip {
+		return *preSignedURL, zipFilePath, zipFilePathErr
+	}
+	return *preSignedURL, "", zipFilePathErr
+}
+
+func getScaResolverFlags(cmd *cobra.Command) (scaResolverParams, scaResolver string) {
+	scaResolverParams, dirPathErr := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+	if dirPathErr != nil {
+		scaResolverParams = ""
+	}
+	scaResolver, dirPathErr = cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	if dirPathErr != nil {
+		scaResolver = ""
+		scaResolverParams = ""
+	}
+	return scaResolverParams, scaResolver
 }
 
 func UnzipFile(f string) (string, error) {
@@ -1123,7 +1253,13 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper)
+		scanModel, zipFilePath, err := createScanModel(
+			cmd,
+			uploadsWrapper,
+			projectsWrapper,
+			groupsWrapper,
+			scansWrapper,
+		)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1173,6 +1309,8 @@ func runCreateScanCommand(
 			}
 		}
 
+		cleanUpTempZip(zipFilePath)
+
 		return nil
 	}
 }
@@ -1193,15 +1331,16 @@ func createScanModel(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-) (*wrappers.Scan, error) {
+	scansWrapper wrappers.ScansWrapper,
+) (*wrappers.Scan, string, error) {
 	validateScanTypes(cmd)
 
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// set tags in scan model
@@ -1211,13 +1350,13 @@ func createScanModel(
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
 
 	// Set up the scan handler (either git or upload)
-	scanHandler, err := setupScanHandler(cmd, uploadsWrapper)
+	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper)
 	if err != nil {
-		return nil, err
+		return nil, zipFilePath, err
 	}
 
 	scanModel.Handler, _ = json.Marshal(scanHandler)
@@ -1228,7 +1367,7 @@ func createScanModel(
 		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	}
 
-	return &scanModel, nil
+	return &scanModel, zipFilePath, nil
 }
 
 func getUploadType(cmd *cobra.Command) string {
@@ -1242,10 +1381,12 @@ func getUploadType(cmd *cobra.Command) string {
 	return "upload"
 }
 
-func setupScanHandler(
-	cmd *cobra.Command,
-	uploadsWrapper wrappers.UploadsWrapper,
-) (wrappers.ScanHandler, error) {
+func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
+	wrappers.ScanHandler,
+	string,
+	error,
+) {
+	zipFilePath := ""
 	scanHandler := wrappers.ScanHandler{}
 	scanHandler.Branch = viper.GetString(commonParams.BranchKey)
 
@@ -1256,9 +1397,11 @@ func setupScanHandler(
 
 		scanHandler.RepoURL = strings.TrimSpace(source)
 	} else {
-		uploadURL, err := getUploadURLFromSource(cmd, uploadsWrapper)
+		var err error
+		var uploadURL string
+		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper)
 		if err != nil {
-			return scanHandler, err
+			return scanHandler, zipFilePath, err
 		}
 
 		scanHandler.UploadURL = uploadURL
@@ -1271,20 +1414,20 @@ func setupScanHandler(
 		sshKeyPath, _ := cmd.Flags().GetString(commonParams.SSHKeyFlag)
 
 		if strings.TrimSpace(sshKeyPath) == "" {
-			return scanHandler, errors.New("flag needs an argument: --ssh-key")
+			return scanHandler, "", errors.New("flag needs an argument: --ssh-key")
 		}
 
 		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		sourceTrimmed := strings.TrimSpace(source)
 
 		if !util.IsSSHURL(sourceTrimmed) {
-			return scanHandler, errors.New(invalidSSHSource)
+			return scanHandler, "", errors.New(invalidSSHSource)
 		}
 
 		err = defineSSHCredentials(strings.TrimSpace(sshKeyPath), &scanHandler)
 	}
 
-	return scanHandler, err
+	return scanHandler, zipFilePath, err
 }
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {
@@ -1373,9 +1516,10 @@ func applyThreshold(
 		return nil
 	}
 
+	threshold = strings.ReplaceAll(threshold, " ", "")
 	thresholdMap := parseThreshold(threshold)
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel.ID)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
 	if err != nil {
 		return err
 	}
@@ -1415,7 +1559,12 @@ func parseThreshold(threshold string) map[string]int {
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			if len(limit) > 1 {
-				thresholdMap[strings.ToLower(limit[0])], _ = strconv.Atoi(limit[1])
+				intLimit, err := strconv.Atoi(limit[1])
+				if err != nil {
+					log.Println("Error parsing threshold limit: ", err)
+				} else {
+					thresholdMap[strings.ToLower(limit[0])] = intLimit
+				}
 			}
 		}
 	}
@@ -1423,8 +1572,11 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scanID string) (map[string]int, error) {
-	results, err := ReadResults(resultsWrapper, scanID, make(map[string]string))
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
+	map[string]int,
+	error,
+) {
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
 	if err != nil {
 		return nil, err
 	}
@@ -1449,8 +1601,16 @@ func waitForScanCompletion(
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
-	time.Sleep(time.Duration(waitDelay) * time.Second)
+	fixedWait := time.Duration(waitDelay) * time.Second
+	i := uint64(0)
+	if !cmd.Flags().Changed(commonParams.RetryDelayFlag) {
+		viper.Set(commonParams.RetryDelayFlag, commonParams.RetryDelayPollingDefault)
+	}
 	for {
+		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
+		waitDuration := fixedWait + variableWait
+		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
+		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
@@ -1469,7 +1629,7 @@ func waitForScanCompletion(
 			}
 			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
-		time.Sleep(time.Duration(waitDelay) * time.Second)
+		i++
 	}
 	return nil
 }
@@ -1680,16 +1840,13 @@ func runKicksRealtime() func(*cobra.Command, []string) error {
 
 		// Run kics container
 		err = runKicsScan(cmd, volumeMap, tempDir, aditionalParameters)
-		if err != nil {
-			// Removing temporary dir
-			logger.PrintIfVerbose(containerFolderRemoving)
-			os.RemoveAll(tempDir)
-			return errors.Errorf("%s", err)
-		}
 		// Removing temporary dir
 		logger.PrintIfVerbose(containerFolderRemoving)
-		os.RemoveAll(tempDir)
-		return nil
+		removeErr := os.RemoveAll(tempDir)
+		if removeErr != nil {
+			logger.PrintIfVerbose(removeErr.Error())
+		}
+		return err
 	}
 }
 
@@ -1706,6 +1863,7 @@ type scanView struct {
 	Timeout         string
 	Initiator       string
 	Origin          string
+	Engines         []string
 }
 
 func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
@@ -1753,6 +1911,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		Timeout:         scanTimeOut,
 		Initiator:       scan.Initiator,
 		Origin:          origin,
+		Engines:         scan.Engines,
 	}
 }
 
@@ -1864,9 +2023,58 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			fmt.Println(string(resultsJSON))
 			return nil
 		}
-
+		exitError, hasExistError := err.(*exec.ExitError)
+		if hasExistError {
+			if exitError.ExitCode() == util.EngineNoRunningCode {
+				logger.PrintIfVerbose(errorMessage)
+				return errors.Errorf(util.NotRunningEngineMessage)
+			}
+		} else {
+			if strings.Contains(errorMessage, util.InvalidEngineError) || strings.Contains(
+				errorMessage,
+				util.InvalidEngineErrorWindows,
+			) {
+				logger.PrintIfVerbose(errorMessage)
+				return errors.Errorf(util.InvalidEngineMessage)
+			}
+		}
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
 
 	return nil
+}
+
+func cleanTempUnzipDirectory(directoryPath string) error {
+	logger.PrintIfVerbose("Cleaning up temporary directory: " + directoryPath)
+	return os.RemoveAll(directoryPath)
+}
+
+func cleanUpTempZip(zipFilePath string) {
+	if zipFilePath != "" {
+		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
+		tries := cleanupMaxRetries
+		for tries > 0 {
+			zipRemoveErr := os.Remove(zipFilePath)
+			if zipRemoveErr != nil {
+				logger.PrintIfVerbose(
+					fmt.Sprintf(
+						"Failed to remove temporary zip: %d in %d: %v",
+						cleanupMaxRetries-tries,
+						cleanupMaxRetries,
+						zipRemoveErr,
+					),
+				)
+				tries--
+				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+			} else {
+				logger.PrintIfVerbose("Removed temporary zip")
+				break
+			}
+		}
+		if tries == 0 {
+			logger.PrintIfVerbose("Failed to remove temporary zip " + zipFilePath)
+		}
+	} else {
+		logger.PrintIfVerbose("No temporary zip to clean")
+	}
 }

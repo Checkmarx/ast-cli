@@ -19,6 +19,7 @@ const (
 	SuccessAuthValidate  = "Successfully authenticated to AST server!"
 	adminClientID        = "ast-app"
 	adminClientSecret    = "1d71c35c-818e-4ee8-8fb1-d6cbf8fe2e2a"
+	FailedAuthError      = "Failed to authenticate - please provide client-id, client-secret and base-uri or apikey"
 )
 
 var (
@@ -59,7 +60,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 			),
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html
 			`,
 			),
 		},
@@ -72,7 +73,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html#UUID-c64cdceb-1072-ca20-aa7d-2ba9fd0c4160
 			`,
 			),
 		},
@@ -105,7 +106,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/LwF4tQ
+				https://checkmarx.com/resource/documents/en/34965-68627-auth.html#UUID-01803060-8f64-8090-c956-2b505b1d4b61
 			`,
 			),
 		},
@@ -117,14 +118,20 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		authWrapper := wrappers.NewAuthHTTPWrapper()
-		authWrapper.SetPath(viper.GetString(params.ScansPathKey))
-		err := authWrapper.ValidateLogin()
-		if err != nil {
-			return errors.Errorf("%s", err)
+		clientID := viper.GetString(params.AccessKeyIDConfigKey)
+		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
+		apiKey := viper.GetString(params.AstAPIKey)
+		if (clientID != "" && clientSecret != "") || apiKey != "" {
+			authWrapper := wrappers.NewAuthHTTPWrapper()
+			authWrapper.SetPath(viper.GetString(params.ScansPathKey))
+			err := authWrapper.ValidateLogin()
+			if err != nil {
+				return errors.Errorf("%s", err)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
+			return nil
 		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessAuthValidate)
-		return nil
+		return errors.Errorf(FailedAuthError)
 	}
 }
 

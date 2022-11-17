@@ -49,19 +49,22 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
+	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
 	learnMore := viper.GetString(params.DescriptionsPathKey)
+	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
+	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
@@ -72,6 +75,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
+	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -89,7 +94,9 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		bitBucketWrapper,
 		gitLabWrapper,
 		bflWrapper,
+		prWrapper,
 		learnMoreWrapper,
+		tenantConfigurationWrapper,
 	)
 	return astCli
 }
@@ -149,7 +156,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	// args = appendProxyArgs(args)
+	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

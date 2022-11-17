@@ -1,9 +1,9 @@
 package wrappers
 
 var (
-	SarifName           = "Checkmarx AST"
+	SarifName           = "Checkmarx One"
 	SarifVersion        = "1.0"
-	SarifInformationURI = "https://checkmarx.atlassian.net/wiki/spaces/AST"
+	SarifInformationURI = "https://checkmarx.com/resource/documents/en/34965-67042-checkmarx-one.html"
 )
 
 type SarifResultsCollection struct {

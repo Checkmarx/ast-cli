@@ -37,7 +37,9 @@ func NewAstCLI(
 	bitBucketWrapper wrappers.BitBucketWrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	bflWrapper wrappers.BflWrapper,
+	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -52,14 +54,9 @@ func NewAstCLI(
 		`,
 		),
 		Annotations: map[string]string{
-			"utils:env": heredoc.Doc(
-				`
-				See 'cx utils env' for  the list of supported environment variables.
-			`,
-			),
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/wiki/x/MYDCkQ
+				https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
 			`,
 			),
 		},
@@ -83,6 +80,10 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Uint(params.RetryFlag, params.RetryDefault, params.RetryUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
 
+	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
+
+	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
+
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
@@ -93,7 +94,6 @@ func NewAstCLI(
 			os.Exit(0)
 		}
 	}
-
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
@@ -111,6 +111,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
+	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
 
 	// Set help func
 	rootCmd.SetHelpFunc(
@@ -132,7 +133,15 @@ func NewAstCLI(
 	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper, risksOverviewWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
-	utilsCmd := util.NewUtilsCommand(gitHubWrapper, azureWrapper, bitBucketWrapper, gitLabWrapper, learnMoreWrapper)
+	utilsCmd := util.NewUtilsCommand(
+		gitHubWrapper,
+		azureWrapper,
+		bitBucketWrapper,
+		gitLabWrapper,
+		prWrapper,
+		learnMoreWrapper,
+		tenantWrapper,
+	)
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 

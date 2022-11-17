@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -28,12 +29,14 @@ const (
 	fileSourceError               = "flag needs an argument: --file"
 	engineFlag                    = "--engine"
 	engineValue                   = "docker"
+	invalidEngineValue            = "invalidengine"
 	engineError                   = "flag needs an argument: --engine"
 	additionalParamsFlag          = "--additional-params"
 	additionalParamsValue         = "-v"
 	additionalParamsError         = "flag needs an argument: --additional-params"
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
+	InvalidEngineMessage          = "Please verify if engine is installed"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -354,6 +357,12 @@ func TestCreateRealtimeKicsWithEngine(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestCreateRealtimeKicsInvalidEngine(t *testing.T) {
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, invalidEngineValue}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, InvalidEngineMessage, err.Error())
+}
+
 func TestCreateRealtimeKicsMissingEngine(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag}
 	err := execCmdNotNilAssertion(t, baseArgs...)
@@ -378,4 +387,29 @@ func TestCreateRealtimeKicsFailedScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestCreateScanResubmit(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--resubmit")
+}
+
+func TestCreateScanResubmitWithScanTypes(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,kics,sca", "--debug", "--resubmit")
+}
+
+func Test_parseThresholdSuccess(t *testing.T) {
+	want := make(map[string]int)
+	want[" kics - low"] = 1
+	threshold := " KICS - LoW=1"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
+}
+
+func Test_parseThresholdParseError(t *testing.T) {
+	want := make(map[string]int)
+	threshold := " KICS - LoW=error"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
 }

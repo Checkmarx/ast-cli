@@ -16,17 +16,29 @@ var sanitizeFlags = []string{
 	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
 	params.UsernameFlag, params.PasswordFlag,
 	params.AstToken, params.SSHValue,
-	params.SCMTokenFlag,
+	params.SCMTokenFlag, params.ProxyKey,
+}
+
+func Print(msg string) {
+	if utf8.Valid([]byte(msg)) {
+		log.Print(sanitizeLogs(msg))
+	} else {
+		log.Print("Request contains binary data and cannot be printed!")
+	}
+}
+
+func Printf(msg string, args ...interface{}) {
+	Print(fmt.Sprintf(msg, args...))
 }
 
 func PrintIfVerbose(msg string) {
 	if viper.GetBool(params.DebugFlag) {
-		if utf8.Valid([]byte(msg)) {
-			log.Print(sanitizeLogs(msg))
-		} else {
-			log.Print("Request contains binary data and cannot be printed!")
-		}
+		Print(msg)
 	}
+}
+
+func PrintfIfVerbose(msg string, args ...interface{}) {
+	PrintIfVerbose(fmt.Sprintf(msg, args...))
 }
 
 func PrintRequest(r *http.Request) {

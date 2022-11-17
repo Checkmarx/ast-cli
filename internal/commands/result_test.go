@@ -35,7 +35,6 @@ func TestResultHelp(t *testing.T) {
 
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
-
 	// Remove generated sarif file
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatSarif))
 }

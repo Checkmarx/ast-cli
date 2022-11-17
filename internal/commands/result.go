@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -21,6 +22,8 @@ import (
 )
 
 const (
+	failedCreatingSummary    = "Failed creating summary"
+	failedGettingScan        = "Failed getting scan"
 	failedListingResults     = "Failed listing results"
 	failedListingCodeBashing = "Failed codebashing link"
 	mediumLabel              = "medium"
@@ -46,10 +49,11 @@ const (
 	notAvailableNumber       = -1
 	defaultPaddingSize       = -14
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
+	scaType                  = "sca"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
-	"Filter the list of results. Use ';' as the delimeter for arrays. Available filters are: %s",
+	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
 	strings.Join(
 		[]string{
 			commonParams.ScanIDQueryParam,
@@ -87,7 +91,7 @@ func NewResultsCommand(
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.atlassian.net/l/c/6NqgVMPM
+				https://checkmarx.com/resource/documents/en/34965-68640-results.html
 			`,
 			),
 		},
@@ -96,7 +100,8 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd)
+		showResultCmd, bflResultCmd, codeBashingCmd,
+	)
 	return resultCmd
 }
 
@@ -249,59 +254,58 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func getScanInfo(scansWrapper wrappers.ScansWrapper, scanID string) (*wrappers.ResultSummary, error) {
-	scanInfo, errorModel, err := scansWrapper.GetByID(scanID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedGetting)
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
+	if scanInfo == nil {
+		return nil, errors.New(failedCreatingSummary)
 	}
-	if errorModel != nil {
-		return nil, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
-	} else if scanInfo != nil {
-		sastIssues := 0
-		scaIssues := 0
-		kicsIssues := 0
-		if len(scanInfo.StatusDetails) > 0 {
-			for _, statusDetailItem := range scanInfo.StatusDetails {
-				if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
-					if statusDetailItem.Name == commonParams.SastType {
-						sastIssues = notAvailableNumber
-					} else if statusDetailItem.Name == commonParams.ScaType {
-						scaIssues = notAvailableNumber
-					} else if statusDetailItem.Name == commonParams.KicsType {
-						kicsIssues = notAvailableNumber
-					}
+
+	sastIssues := 0
+	scaIssues := 0
+	kicsIssues := 0
+	if len(scanInfo.StatusDetails) > 0 {
+		for _, statusDetailItem := range scanInfo.StatusDetails {
+			if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
+				if statusDetailItem.Name == commonParams.SastType {
+					sastIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ScaType {
+					scaIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.KicsType {
+					kicsIssues = notAvailableNumber
 				}
 			}
 		}
-
-		return &wrappers.ResultSummary{
-			ScanID:       scanInfo.ID,
-			Status:       string(scanInfo.Status),
-			CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-			ProjectID:    scanInfo.ProjectID,
-			RiskStyle:    "",
-			RiskMsg:      "",
-			HighIssues:   0,
-			MediumIssues: 0,
-			LowIssues:    0,
-			SastIssues:   sastIssues,
-			KicsIssues:   kicsIssues,
-			ScaIssues:    scaIssues,
-			Tags:         scanInfo.Tags,
-			ProjectName:  scanInfo.ProjectName,
-			BranchName:   scanInfo.Branch,
-		}, nil
 	}
-	return nil, err
+
+	return &wrappers.ResultSummary{
+		ScanID:       scanInfo.ID,
+		Status:       string(scanInfo.Status),
+		CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:    scanInfo.ProjectID,
+		RiskStyle:    "",
+		RiskMsg:      "",
+		HighIssues:   0,
+		MediumIssues: 0,
+		LowIssues:    0,
+		SastIssues:   sastIssues,
+		KicsIssues:   kicsIssues,
+		ScaIssues:    scaIssues,
+		Tags:         scanInfo.Tags,
+		ProjectName:  scanInfo.ProjectName,
+		BranchName:   scanInfo.Branch,
+	}, nil
 }
 
 func SummaryReport(
-	scanWrapper wrappers.ScansWrapper,
 	results *wrappers.ScanResultsCollection,
+	scan *wrappers.ScanResponseModel,
 	apiSecRisks *wrappers.APISecResult,
 	scanID string,
 ) (*wrappers.ResultSummary, error) {
-	summary, err := getScanInfo(scanWrapper, scanID)
+	summary, err := convertScanToResultsSummary(scan)
+	if err != nil {
+		return nil, err
+	}
+	summary.BaseURI = wrappers.GetCleanURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +376,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("            Results Summary:                     \n")
 		fmt.Printf(
 			"              Risk Level: %s																									 \n",
-			summary.RiskMsg)
+			summary.RiskMsg,
+		)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf(
 			"              API Security - Total Detected APIs: %d                       \n",
@@ -414,7 +419,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 	summaryURL := fmt.Sprintf(
 		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
-		summary.ScanID, url.QueryEscape(summary.BranchName))
+		summary.ScanID, url.QueryEscape(summary.BranchName),
+	)
 	return summaryURL
 }
 
@@ -452,10 +458,14 @@ func runGetCodeBashingCommand(
 		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
 		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
 		params, err := codeBashingWrapper.BuildCodeBashingParams(
-			[]wrappers.CodeBashingParamsCollection{{
-				CweID:       "CWE-" + cwe,
-				Language:    language,
-				CxQueryName: strings.ReplaceAll(vulType, " ", "_")}})
+			[]wrappers.CodeBashingParamsCollection{
+				{
+					CweID:       "CWE-" + cwe,
+					Language:    language,
+					CxQueryName: strings.ReplaceAll(vulType, " ", "_"),
+				},
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -470,7 +480,7 @@ func runGetCodeBashingCommand(
 			return err
 		}
 		if webError != nil {
-			return fmt.Errorf(webError.Message)
+			return errors.New(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {
@@ -497,7 +507,15 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	results, err := ReadResults(resultsWrapper, scanID, params)
+	scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
+	if scanErr != nil {
+		return errors.Wrapf(scanErr, "%s", failedGetting)
+	}
+	if errorModel != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+	}
+
+	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return err
 	}
@@ -541,7 +559,8 @@ func getResultsForAPISecScanner(
 func isScanPending(scanStatus string) bool {
 	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(
 		scanStatus,
-		"Partial") || strings.EqualFold(scanStatus, "Failed"))
+		"Partial",
+	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
 func createReport(
@@ -602,23 +621,54 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
-	scanID string,
+	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
-	params[commonParams.ScanIDQueryParam] = scanID
+
+	params[commonParams.ScanIDQueryParam] = scan.ID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-	} else if resultsModel != nil {
-		resultsModel.ScanID = scanID
+	}
+
+	if resultsModel != nil {
+		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		if err != nil {
+			return nil, err
+		}
+
+		resultsModel.ScanID = scan.ID
 		return resultsModel, nil
 	}
 	return nil, nil
+}
+
+func enrichScaResults(
+	resultsWrapper wrappers.ResultsWrapper,
+	scan *wrappers.ScanResponseModel,
+	params map[string]string,
+	resultsModel *wrappers.ScanResultsCollection,
+) (*wrappers.ScanResultsCollection, error) {
+	if util.Contains(scan.Engines, scaType) {
+		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		// Enrich sca results
+		if scaPackageModel != nil {
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
+		}
+	}
+	return resultsModel, nil
 }
 
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
@@ -770,8 +820,8 @@ func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	auxLocation.Message = results.ScanResultData.Value
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.ScanResultData.Line
-	auxTextRange.StartColumn = 1
-	auxTextRange.EndColumn = 2
+	auxTextRange.StartColumn = 0
+	auxTextRange.EndColumn = 1
 	auxLocation.TextRange = auxTextRange
 	return auxLocation
 }
@@ -805,8 +855,11 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	auxTextRange.StartColumn = results.Column - 1
-	auxTextRange.EndColumn = results.Column
+	auxTextRange.StartColumn = results.Column
+	auxTextRange.EndColumn = results.Column + results.Length
+	if auxTextRange.StartColumn == auxTextRange.EndColumn {
+		auxTextRange.EndColumn++
+	}
 	return auxTextRange
 }
 
@@ -853,7 +906,8 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
 		return fmt.Sprintf(
 			"%s Value: %s Excepted value: %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -863,7 +917,8 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 	if result.Type == commonParams.KicsType {
 		return fmt.Sprintf(
 			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
-			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue)
+			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
+		)
 	}
 
 	return result.Description
@@ -903,7 +958,8 @@ func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
 				result.ScanResultData.Filename,
 				"/",
 				"",
-				1)
+				1,
+			)
 			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 			scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 			scanLocation.PhysicalLocation.Region.StartColumn = 1
@@ -942,4 +998,54 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	} else if summary.ScaIssues == notAvailableNumber {
 		summary.ScaIssues = 0
 	}
+}
+
+func addPackageInformation(
+	resultsModel *wrappers.ScanResultsCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+) *wrappers.ScanResultsCollection {
+	var currentID string
+	locationsByID := make(map[string][]*string)
+	// Create map to be used to populate locations for each package path
+	for _, result := range resultsModel.Results {
+		if result.Type == scaType {
+			for _, packages := range *scaPackageModel {
+				currentPackage := packages
+				locationsByID[packages.ID] = currentPackage.Locations
+			}
+		}
+	}
+
+	for _, result := range resultsModel.Results {
+		if !(result.Type == scaType) {
+			continue
+		} else {
+			currentID = result.ScanResultData.PackageIdentifier
+			const precision = 1
+			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+			result.VulnerabilityDetails.CvssScore = roundedScore
+			for _, packages := range *scaPackageModel {
+				currentPackage := packages
+				if packages.ID == currentID {
+					for _, dependencyPath := range currentPackage.DependencyPathArray {
+						head := &dependencyPath[0]
+						head.Locations = locationsByID[head.ID]
+						head.SupportsQuickFix = len(dependencyPath) == 1
+						for _, location := range locationsByID[head.ID] {
+							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+						}
+						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
+					}
+					if result.VulnerabilityDetails.CveName != "" {
+						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
+					} else {
+						currentPackage.FixLink = ""
+					}
+					result.ScanResultData.ScaPackageCollection = &currentPackage
+					break
+				}
+			}
+		}
+	}
+	return resultsModel
 }
