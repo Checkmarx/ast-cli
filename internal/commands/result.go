@@ -299,7 +299,6 @@ func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
 	apiSecRisks *wrappers.APISecResult,
-	scanID string,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
@@ -310,7 +309,6 @@ func SummaryReport(
 		return nil, err
 	}
 	summary.APISecurity = *apiSecRisks
-	summary.BaseURI = wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
@@ -523,7 +521,7 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	summary, err := SummaryReport(scanWrapper, results, apiSecRisks, scanID)
+	summary, err := SummaryReport(results, scan, apiSecRisks)
 	if err != nil {
 		return err
 	}
