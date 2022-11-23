@@ -456,9 +456,6 @@ func scanCreateSubCommand(
 		return nil
 	}
 
-	if err != nil {
-		return nil
-	}
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.KicsPlatformsFlag,
 		[]string{},
@@ -470,6 +467,9 @@ func scanCreateSubCommand(
 		commonParams.IacsPlatformsFlagUsage,
 	)
 	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iac-security-platforms")
+	if err != nil {
+		return nil
+	}
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
