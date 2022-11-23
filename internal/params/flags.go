@@ -12,6 +12,7 @@ const (
 	RetryUsage                   = "Retry requests to AST on connection failure"
 	RetryDelayFlag               = "retry-delay"
 	RetryDelayDefault            = 20
+	RetryDelayPollingDefault     = 60
 	RetryDelayUsage              = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                  = "file-source"
 	SourcesFlagSh                = "s"
@@ -117,6 +118,7 @@ const (
 	KicsPlatformsFlagUsage       = "KICS Platform Flag"
 	IacsPlatformsFlag            = "iac-security-platforms"
 	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
+	ApikeyOverrideFlag           = "apikey-override"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"

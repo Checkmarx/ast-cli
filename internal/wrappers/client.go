@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -28,12 +29,12 @@ const (
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
-	APIKeyDecodeErrorFormat = "Invalid api key: token decoding error: %s"
+	APIKeyDecodeErrorFormat = "Token decoding error: %s"
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
-	MissingTenant           = "Failed to authenticate - please provide tenant when using base-auth-uri"
-	jwtError                = "Error retreiving URL from jwt token"
+	MissingTenant           = "Failed to authenticate - please provide tenant"
+	jwtError                = "Error retrieving URL from jwt token"
 )
 
 type ClientCredentialsInfo struct {
@@ -53,7 +54,7 @@ type ClientCredentialsError struct {
 
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
-const BaseAuthURLTenantSuffix = "auth/realms"
+const BaseAuthURLPrefix = "auth/realms/organization"
 const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
@@ -66,7 +67,7 @@ func setAgentName(req *http.Request) {
 	req.Header.Set("User-Agent", agentStr)
 }
 
-func getClient(timeout uint) *http.Client {
+func GetClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 
@@ -146,9 +147,15 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
 }
 
-func SendHTTPRequestByFullURL(method, fullURL string, body io.Reader, auth bool, timeout uint, accessToken *string) (*http.Response, error) {
+func SendHTTPRequestByFullURL(
+	method, fullURL string,
+	body io.Reader,
+	auth bool,
+	timeout uint,
+	accessToken string,
+) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -205,12 +212,12 @@ func SendHTTPRequestPasswordAuth(
 	method, path string, body io.Reader, timeout uint,
 	username, password, adminClientID, adminClientSecret string,
 ) (*http.Response, error) {
-	u, err := GetAuthURL(path)
+	u, err := getAuthURI()
 	if err != nil {
 		return nil, err
 	}
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -234,42 +241,6 @@ func GetCleanURL(path string) string {
 	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
 	cleanURL = strings.Trim(cleanURL, "/")
 	return fmt.Sprintf("%s/%s", cleanURL, path)
-}
-
-func GetURL(path string, accessToken *string) (string, error) {
-	var err error
-	var cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
-	// In case trying to get the base-url from access token
-	if accessToken != nil && cleanURL == "" {
-		cleanURL, err = extractBaseURLFromToken(accessToken)
-		if err != nil {
-			return "", err
-		}
-		// Case we try to get base-auth url without the use of flags and apiKEY or get base-url from flag use and without the use of apiKey
-	}
-	if cleanURL == "" {
-		return "", errors.Errorf(MissingURI)
-	}
-	cleanURL = strings.Trim(cleanURL, "/")
-	return fmt.Sprintf("%s/%s", cleanURL, path), nil
-}
-
-func GetAuthURL(path string) (string, error) {
-	var authURL string
-	var err error
-	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
-	// case we use base-auth-uri flag
-	if cleanURL != "" {
-		authURL = fmt.Sprintf("%s/%s", strings.Trim(cleanURL, "/"), path)
-		// case we don't use base-auth-uri flag, we try to get the base-uri instead
-	} else {
-		authURL, err = GetURL(path, nil)
-		if err != nil {
-			return "", err
-		}
-	}
-	logger.PrintIfVerbose("Auth URL is: " + authURL)
-	return authURL, nil
 }
 
 func SendPrivateHTTPRequestWithQueryParams(
@@ -299,7 +270,7 @@ func HTTPRequestWithQueryParams(
 		return nil, err
 	}
 	req, err := http.NewRequest(method, u, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	if err != nil {
 		return nil, err
@@ -321,101 +292,21 @@ func HTTPRequestWithQueryParams(
 	return resp, nil
 }
 
-func getClaimsFromToken(tokenString string) (*jwt.Token, error) {
-	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
-	if err != nil {
-		return nil, err
-	}
-	return token, err
-}
-
-func getAuthURI() (string, error) {
-	var authURI string
-	apiKey := viper.GetString(commonParams.AstAPIKey)
-	var err error
-	if len(apiKey) > 0 {
-		logger.PrintIfVerbose("Using API Key to extract Auth URI")
-		authURI, err = extractAuthURIFromAPIKey(apiKey)
-	} else {
-		logger.PrintIfVerbose("Using configuration and parameters to prepare Auth URI")
-		authURI, err = extractAuthURIFromConfig()
-	}
-	if err != nil {
-		return "", err
-	}
-
-	authURL, err := url.Parse(authURI)
-	if err != nil {
-		return "", errors.Wrap(err, "authentication URI is not in a correct format")
-	}
-
-	if authURL.Scheme == "" && authURL.Host == "" {
-		authURI, err = GetURL("/"+strings.TrimLeft(authURI, "/"), nil)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return authURI, nil
-}
-
-func extractBaseURLFromToken(accessToken *string) (string, error) {
-	var baseURL string
-	token, _, err := new(jwt.Parser).ParseUnverified(*accessToken, jwt.MapClaims{})
-	if err != nil {
-		return "", err
-	}
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[baseURLKey] != nil {
-		baseURL = strings.TrimSpace(claims[baseURLKey].(string))
-	} else {
-		return "", errors.Errorf(jwtError)
-	}
-	return baseURL, nil
-}
-
-func extractAuthURIFromConfig() (string, error) {
-	authPath := viper.GetString(commonParams.AstAuthenticationPathConfigKey)
+func addTenantAuthURI(baseAuthURI string) (string, error) {
+	authPath := BaseAuthURLPrefix
 	tenant := viper.GetString(commonParams.TenantKey)
+
+	if tenant == "" {
+		return "", errors.Errorf(MissingTenant)
+	}
+
 	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
-	if authPath == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "authentication path"))
-	}
-	authURI, err := GetAuthURL(authPath)
-	if err != nil {
-		return "", err
-	}
-	return authURI, nil
+
+	return fmt.Sprintf("%s/%s", strings.Trim(baseAuthURI, "/"), authPath), nil
 }
 
-func extractAuthURIFromAPIKey(key string) (string, error) {
-	token, err := getClaimsFromToken(key)
-	if err != nil {
-		return "", errors.Errorf(fmt.Sprintf(APIKeyDecodeErrorFormat, err.Error()))
-	}
-	authURI := strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
-	tenant := viper.GetString(commonParams.TenantKey)
-	err = checkTenantBaseAuth(authURI, tenant)
-	if err != nil {
-		return "", err
-	}
-	if authURI != "" && tenant != "" {
-		authURI = fmt.Sprintf("%s/%s/%s/%s", authURI, BaseAuthURLTenantSuffix, tenant, BaseAuthURLSuffix)
-	} else {
-		claims := token.Claims.(jwt.MapClaims)
-		authURI = claims[audienceClaimKey].(string)
-		authURI = fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix)
-	}
-	return authURI, nil
-}
-
-func checkTenantBaseAuth(authURI, tenant string) error {
-	if authURI != "" && tenant == "" {
-		return errors.Errorf(MissingTenant)
-	}
-	return nil
-}
-func enrichWithOath2Credentials(request *http.Request, accessToken *string) {
-	request.Header.Add("Authorization", "Bearer "+*accessToken)
+func enrichWithOath2Credentials(request *http.Request, accessToken string) {
+	request.Header.Add("Authorization", "Bearer "+accessToken)
 }
 
 func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (
@@ -431,7 +322,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 		return nil, err
 	}
 	req, err := http.NewRequest(method, fullURL, body)
-	client := getClient(timeout)
+	client := GetClient(timeout)
 	setAgentName(req)
 	req.Header.Add("Content-Type", "application/json")
 	if err != nil {
@@ -450,10 +341,10 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	return resp, nil
 }
 
-func GetAccessToken() (*string, error) {
+func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
@@ -461,14 +352,14 @@ func GetAccessToken() (*string, error) {
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	if accessKeyID == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return nil, errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 	}
-	if accessToken == nil {
+	if accessToken == "" {
 		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 	}
 	return accessToken, nil
@@ -494,18 +385,18 @@ func enrichWithPasswordCredentials(
 		)
 	}
 
-	request.Header.Add("Authorization", "Bearer "+*accessToken)
+	request.Header.Add("Authorization", "Bearer "+accessToken)
 	return nil
 }
 
-func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (*string, error) {
+func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (string, error) {
 	logger.PrintIfVerbose("Fetching API access token.")
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
-	var accessToken *string
-	var err error
-	accessToken = getClientCredentialsFromCache(tokenExpirySeconds)
 
-	if accessToken == nil {
+	var err error
+	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
+
+	if accessToken == "" {
 		// If the token is present the default to that.
 		if astAPKey != "" {
 			accessToken, err = getNewToken(getAPIKeyPayload(astAPKey), authURI)
@@ -514,7 +405,7 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 		}
 
 		if err != nil {
-			return nil, errors.Errorf("%s", err)
+			return "", errors.Errorf("%s", err)
 		}
 
 		writeCredentialsToCache(accessToken)
@@ -523,49 +414,49 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 	return accessToken, nil
 }
 
-func getClientCredentialsFromCache(tokenExpirySeconds int) *string {
+func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
 	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
-		return &cachedAccessToken
+		return cachedAccessToken
 	}
 	logger.PrintIfVerbose("API access token not found in cache!")
-	return nil
+	return ""
 }
 
-func writeCredentialsToCache(accessToken *string) {
+func writeCredentialsToCache(accessToken string) {
 	logger.PrintIfVerbose("Storing API access token to cache.")
-	viper.Set(commonParams.AstToken, *accessToken)
-	cachedAccessToken = *accessToken
+	viper.Set(commonParams.AstToken, accessToken)
+	cachedAccessToken = accessToken
 	cachedAccessTime = time.Now()
 }
 
-func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
+func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	setAgentName(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req = addReqMonitor(req)
 	req.Header.Add("content-type", "application/x-www-form-urlencoded")
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	client := getClient(clientTimeout)
+	client := GetClient(clientTimeout)
 
 	res, err := doPrivateRequest(client, req)
 	if err != nil {
-		authURL, _ := GetAuthURL("")
-		return nil, errors.Errorf("%s %s", checkmarxURLError, authURL)
+		authURL, _ := getAuthURI()
+		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
+		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		return nil, errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
 	}
 
 	body, _ := ioutil.ReadAll(res.Body)
@@ -574,10 +465,10 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 		err = json.Unmarshal(body, &credentialsErr)
 
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		return nil, errors.Errorf("%v %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
+		return "", errors.Errorf("%v %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
 	}
 
 	defer func() {
@@ -587,11 +478,11 @@ func getNewToken(credentialsPayload, authServerURI string) (*string, error) {
 	credentialsInfo := ClientCredentialsInfo{}
 	err = json.Unmarshal(body, &credentialsInfo)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	logger.PrintIfVerbose("Successfully retrieved API token.")
-	return &credentialsInfo.AccessToken, nil
+	return credentialsInfo.AccessToken, nil
 }
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
@@ -623,11 +514,22 @@ func doRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 func request(client *http.Client, req *http.Request, responseBody bool) (*http.Response, error) {
 	var err error
 	var resp *http.Response
+	var body []byte
 	retryLimit := int(viper.GetUint(commonParams.RetryFlag))
 	retryWaitTimeSeconds := viper.GetUint(commonParams.RetryDelayFlag)
-	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	logger.PrintRequest(req)
+	if req.Body != nil {
+		body, err = ioutil.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
+		if body != nil {
+			_ = req.Body.Close()
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		}
 		logger.PrintIfVerbose(
 			fmt.Sprintf(
 				"Request attempt %d in %d",
@@ -635,6 +537,9 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			),
 		)
 		resp, err = client.Do(req)
+		if err != nil {
+			logger.PrintIfVerbose(err.Error())
+		}
 		if resp != nil && err == nil {
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
@@ -643,4 +548,97 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func getAuthURI() (string, error) {
+	var authURI string
+	var err error
+	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
+
+	apiKey := viper.GetString(commonParams.AstAPIKey)
+	if len(apiKey) > 0 {
+		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
+		authURI, err = extractFromTokenClaims(apiKey, audienceClaimKey)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if authURI == "" || override {
+		logger.PrintIfVerbose("Base Auth URI - Extract from Base Auth URI flag")
+		authURI = strings.TrimSpace(viper.GetString(commonParams.BaseAuthURIKey))
+
+		if authURI != "" {
+			authURI, err = addTenantAuthURI(authURI)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	if authURI == "" {
+		logger.PrintIfVerbose("Base Auth URI - Extract from Base URI")
+		authURI, err = GetURL("", "")
+		if err != nil {
+			return "", err
+		}
+
+		if authURI != "" {
+			authURI, err = addTenantAuthURI(authURI)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	authURI = strings.Trim(authURI, "/")
+	logger.PrintIfVerbose(fmt.Sprintf("Base Auth URI - %s ", authURI))
+	return fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix), nil
+}
+
+func GetURL(path, accessToken string) (string, error) {
+	var err error
+	var cleanURL string
+	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
+
+	if accessToken != "" {
+		logger.PrintIfVerbose("Base URI - Extract from JWT token")
+		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if cleanURL == "" || override {
+		logger.PrintIfVerbose("Base URI - Extract from Base URI flag")
+		cleanURL = strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
+	}
+
+	if cleanURL == "" {
+		return "", errors.Errorf(MissingURI)
+	}
+
+	cleanURL = strings.Trim(cleanURL, "/")
+	logger.PrintIfVerbose(fmt.Sprintf("Base URI - %s ", cleanURL))
+
+	return fmt.Sprintf("%s/%s", cleanURL, path), nil
+}
+
+func extractFromTokenClaims(accessToken, claim string) (string, error) {
+	var value string
+	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+	if err != nil {
+		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
+		value = strings.TrimSpace(claims[claim].(string))
+	} else {
+		return "", errors.Errorf(jwtError)
+	}
+
+	return value, nil
 }

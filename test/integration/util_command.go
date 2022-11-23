@@ -89,6 +89,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		gitHubWrapper,
 		azureWrapper,
 		bitBucketWrapper,
+		nil,
 		gitLabWrapper,
 		bflWrapper,
 		prWrapper,

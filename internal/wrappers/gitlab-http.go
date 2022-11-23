@@ -34,7 +34,7 @@ const (
 
 func NewGitLabWrapper() GitLabWrapper {
 	return &GitLabHTTPWrapper{
-		client: getClient(viper.GetUint(params.ClientTimeoutKey)),
+		client: GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 

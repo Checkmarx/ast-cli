@@ -22,6 +22,7 @@ type ScanResult struct {
 	PublishedAt          string               `json:"publishedAt,omitempty"`
 	Recommendations      string               `json:"recommendations,omitempty"`
 	Description          string               `json:"description,omitempty"`
+	DescriptionHTML      string               `json:"descriptionHTML,omitempty"`
 	ScanResultData       ScanResultData       `json:"data,omitempty"`
 	Comments             ResultComments       `json:"comments,omitempty"`
 	VulnerabilityDetails VulnerabilityDetails `json:"vulnerabilityDetails,omitempty"`

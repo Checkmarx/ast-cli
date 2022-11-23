@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -80,6 +81,7 @@ const (
 	configLanguageMode              = "languageMode"
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
+	maxPollingWaitTime              = 60
 )
 
 var (
@@ -448,16 +450,26 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.IacsFilterFlag, "", commonParams.IacsFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+
 	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iac-security-filter")
 	if err != nil {
 		return nil
 	}
-	createScanCmd.PersistentFlags().String(commonParams.IacsPlatformsFlag, "", commonParams.IacsPlatformsFlagUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsPlatformsFlag, "", commonParams.KicsPlatformsFlagUsage)
-	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iac-security-platforms")
+
 	if err != nil {
 		return nil
 	}
+	createScanCmd.PersistentFlags().StringSlice(
+		commonParams.KicsPlatformsFlag,
+		[]string{},
+		commonParams.KicsPlatformsFlagUsage,
+	)
+	createScanCmd.PersistentFlags().StringSlice(
+		commonParams.IacsPlatformsFlag,
+		[]string{},
+		commonParams.IacsPlatformsFlagUsage,
+	)
+	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iac-security-platforms")
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -476,7 +488,11 @@ func scanCreateSubCommand(
 		"",
 		"Local build threshold. Format <engine>-<severity>=<limit>",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.ScanResubmit, false, "Create a scan with the configurations used in the most recent scan in the project")
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.ScanResubmit,
+		false,
+		"Create a scan with the configurations used in the most recent scan in the project",
+	)
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -616,7 +632,12 @@ func setupScanTypeProjectAndConfig(
 	resubmit, _ := cmd.Flags().GetBool(commonParams.ScanResubmit)
 	var resubmitConfig []wrappers.Config
 	if resubmit {
-		logger.PrintIfVerbose(fmt.Sprintf("using latest scan configuration due to --%s flag", commonParams.ScanResubmit))
+		logger.PrintIfVerbose(
+			fmt.Sprintf(
+				"using latest scan configuration due to --%s flag",
+				commonParams.ScanResubmit,
+			),
+		)
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
 		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
@@ -647,7 +668,10 @@ func setupScanTypeProjectAndConfig(
 	return err
 }
 
-func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) ([]wrappers.Config, error) {
+func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
+	[]wrappers.Config,
+	error,
+) {
 	var allScansModel *wrappers.ScansCollectionResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -1218,7 +1242,13 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		scanModel, zipFilePath, err := createScanModel(cmd, uploadsWrapper, projectsWrapper, groupsWrapper, scansWrapper)
+		scanModel, zipFilePath, err := createScanModel(
+			cmd,
+			uploadsWrapper,
+			projectsWrapper,
+			groupsWrapper,
+			scansWrapper,
+		)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1515,7 +1545,10 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (map[string]int, error) {
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
+	map[string]int,
+	error,
+) {
 	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
 	if err != nil {
 		return nil, err
@@ -1540,8 +1573,16 @@ func waitForScanCompletion(
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
-	time.Sleep(time.Duration(waitDelay) * time.Second)
+	fixedWait := time.Duration(waitDelay) * time.Second
+	i := uint64(0)
+	if !cmd.Flags().Changed(commonParams.RetryDelayFlag) {
+		viper.Set(commonParams.RetryDelayFlag, commonParams.RetryDelayPollingDefault)
+	}
 	for {
+		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
+		waitDuration := fixedWait + variableWait
+		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
+		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, resultsWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
@@ -1560,7 +1601,7 @@ func waitForScanCompletion(
 			}
 			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
-		time.Sleep(time.Duration(waitDelay) * time.Second)
+		i++
 	}
 	return nil
 }
@@ -1955,7 +1996,10 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 				return errors.Errorf(util.NotRunningEngineMessage)
 			}
 		} else {
-			if strings.Contains(errorMessage, util.InvalidEngineError) || strings.Contains(errorMessage, util.InvalidEngineErrorWindows) {
+			if strings.Contains(errorMessage, util.InvalidEngineError) || strings.Contains(
+				errorMessage,
+				util.InvalidEngineErrorWindows,
+			) {
 				logger.PrintIfVerbose(errorMessage)
 				return errors.Errorf(util.InvalidEngineMessage)
 			}

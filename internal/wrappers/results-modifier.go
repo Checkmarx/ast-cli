@@ -8,6 +8,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gomarkdown/markdown"
 )
 
 const (
@@ -58,6 +59,9 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		s.Description = s.ScanResultData.Description
 		s.ScanResultData.Description = ""
 	}
+
+	// Convert markdown description to html description
+	s.DescriptionHTML = string(markdown.ToHTML([]byte(s.Description), nil, nil))
 
 	return nil
 }
