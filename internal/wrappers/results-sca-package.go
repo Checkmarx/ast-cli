@@ -8,6 +8,7 @@ type ScaPackageCollection struct {
 	DependencyPathArray [][]DependencyPath `json:"dependencyPaths,omitempty"`
 	Outdated            bool               `json:"outdated,omitempty"`
 	SupportsQuickFix    bool               `json:"supportsQuickFix,omitempty"`
+	IsDirectDependency  bool               `json:"isDirectDependency"`
 }
 
 type DependencyPath struct {
