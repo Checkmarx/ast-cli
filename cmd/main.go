@@ -12,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/viper"
 )
@@ -53,6 +54,7 @@ func main() {
 	gitHubWrapper := wrappers.NewGitHubWrapper()
 	azureWrapper := wrappers.NewAzureWrapper()
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
+	bitBucketServerWrapper := bitbucketserver.NewBitbucketServerWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
@@ -73,6 +75,7 @@ func main() {
 		gitHubWrapper,
 		azureWrapper,
 		bitBucketWrapper,
+		bitBucketServerWrapper,
 		gitLabWrapper,
 		bflWrapper,
 		prWrapper,

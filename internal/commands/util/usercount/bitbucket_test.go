@@ -10,7 +10,7 @@ import (
 )
 
 func TestBitbucketUserCountWorkspace(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil)
+	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil, nil)
 	assert.Assert(t, cmd != nil, "BitBucket user count command must exist")
 
 	cmd.SetArgs(
@@ -28,7 +28,7 @@ func TestBitbucketUserCountWorkspace(t *testing.T) {
 }
 
 func TestBitbucketUserCountRepos(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil)
+	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil, nil)
 	assert.Assert(t, cmd != nil, "BitBucket user count command must exist")
 
 	cmd.SetArgs(
@@ -48,7 +48,7 @@ func TestBitbucketUserCountRepos(t *testing.T) {
 }
 
 func TestBitbucketUserCountWorkspaceFailed(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil)
+	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil, nil)
 	assert.Assert(t, cmd != nil, "BitBucket user count command must exist")
 
 	cmd.SetArgs(
@@ -64,7 +64,7 @@ func TestBitbucketUserCountWorkspaceFailed(t *testing.T) {
 }
 
 func TestBitbucketUserCountRepoFailed(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil)
+	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil, nil)
 	assert.Assert(t, cmd != nil, "BitBucket user count command must exist")
 
 	cmd.SetArgs(
@@ -82,7 +82,7 @@ func TestBitbucketUserCountRepoFailed(t *testing.T) {
 }
 
 func TestBitBucketCountMultipleOrgsWithRepo(t *testing.T) {
-	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil)
+	cmd := NewUserCountCommand(nil, nil, mock.BitBucketMockWrapper{}, nil, nil)
 	assert.Assert(t, cmd != nil, "BitBucket user count command must exist")
 
 	cmd.SetArgs(

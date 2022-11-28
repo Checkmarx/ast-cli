@@ -8,6 +8,7 @@ type ScanResultsCollection struct {
 
 type ScanResult struct {
 	Type                 string               `json:"type,omitempty"`
+	Label                string               `json:"label,omitempty"`
 	ID                   string               `json:"id,omitempty"`
 	SimilarityID         string               `json:"similarityId,omitempty"`
 	Status               string               `json:"status,omitempty"`
@@ -21,6 +22,7 @@ type ScanResult struct {
 	PublishedAt          string               `json:"publishedAt,omitempty"`
 	Recommendations      string               `json:"recommendations,omitempty"`
 	Description          string               `json:"description,omitempty"`
+	DescriptionHTML      string               `json:"descriptionHTML,omitempty"`
 	ScanResultData       ScanResultData       `json:"data,omitempty"`
 	Comments             ResultComments       `json:"comments,omitempty"`
 	VulnerabilityDetails VulnerabilityDetails `json:"vulnerabilityDetails,omitempty"`

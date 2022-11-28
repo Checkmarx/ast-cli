@@ -5,6 +5,7 @@ type ResultSummary struct {
 	HighIssues      int
 	MediumIssues    int
 	LowIssues       int
+	InfoIssues      int
 	SastIssues      int
 	KicsIssues      int
 	ScaIssues       int
@@ -472,7 +473,7 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SAST</span>
                         <div class="severity-engines-text bg-sast"></div>
                     </div>
-                    <div class="legend"><span class="engines-legend-dot">KICS</span>
+                    <div class="legend"><span class="engines-legend-dot">IaC Security</span>
                         <div class="severity-engines-text bg-kicks"></div>
                     </div>
                     <div class="legend"><span class="engines-legend-dot">SCA</span>

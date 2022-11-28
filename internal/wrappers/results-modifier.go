@@ -8,18 +8,27 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gomarkdown/markdown"
 )
 
 const (
-	message    = "Found negative %v with value %v in file %v"
-	column     = "column"
-	line       = "line"
-	length     = "length"
-	methodLine = "methodLine"
+	message        = "Found negative %v with value %v in file %v"
+	column         = "column"
+	line           = "line"
+	length         = "length"
+	methodLine     = "methodLine"
+	infrastructure = "infrastructure"
+	dependency     = "dependency"
+	sca            = "sca-"
 )
 
 // UnmarshalJSON Function normalizes description to ScanResult
 func (s *ScanResult) UnmarshalJSON(data []byte) error {
+	labels := map[string]string{
+		params.SastType: params.SastType,
+		params.KicsType: params.IacLabel,
+		params.ScaType:  params.ScaType,
+	}
 	type Alias ScanResult
 	aux := &struct {
 		*Alias
@@ -34,14 +43,14 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if strings.HasPrefix(s.Type, "infrastructure") {
+	if strings.HasPrefix(s.Type, infrastructure) {
 		s.Type = params.KicsType
 	}
-
-	if strings.HasPrefix(s.Type, "dependency") || strings.HasPrefix(s.Type, "sca-") {
+	if strings.HasPrefix(s.Type, dependency) || strings.HasPrefix(s.Type, sca) {
 		s.Type = params.ScaType
 	}
 
+	s.Label = labels[s.Type]
 	s.Status = strings.TrimSpace(s.Status)
 	s.State = strings.TrimSpace(s.State)
 	s.Severity = strings.TrimSpace(s.Severity)
@@ -50,6 +59,9 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 		s.Description = s.ScanResultData.Description
 		s.ScanResultData.Description = ""
 	}
+
+	// Convert markdown description to html description
+	s.DescriptionHTML = string(markdown.ToHTML([]byte(s.Description), nil, nil))
 
 	return nil
 }
