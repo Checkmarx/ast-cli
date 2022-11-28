@@ -73,6 +73,14 @@ const (
 	cleanupMaxRetries               = 3
 	cleanupRetryWaitSeconds         = 15
 	DanglingSymlinkError            = "Skipping dangling symbolic link"
+	configFilterKey                 = "filter"
+	configFilterPlatforms           = "platforms"
+	configIncremental               = "incremental"
+	configPresetName                = "presetName"
+	configEngineVerbose             = "engineVerbose"
+	configLanguageMode              = "languageMode"
+	resultsMapValue                 = "value"
+	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
 )
 
@@ -204,16 +212,16 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Download scan log for selected scan type",
-		Long:  "Accepts a scan-id and scan type (sast, kics or sca) and downloads the related scan log",
+		Long:  "Accepts a scan-id and scan type (sast, iac-security or sca) and downloads the related scan log",
 		Example: heredoc.Doc(
 			`
-			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | kics>
+			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | iac-security>
 		`,
 		),
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, kics or sca.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security or sca.")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -433,19 +441,35 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,kics,sca)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
 		commonParams.Branch, commonParams.BranchFlagUsage,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
+	createScanCmd.PersistentFlags().String(commonParams.IacsFilterFlag, "", commonParams.IacsFilterUsage)
 	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+
+	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iac-security-filter")
+	if err != nil {
+		return nil
+	}
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.KicsPlatformsFlag,
 		[]string{},
 		commonParams.KicsPlatformsFlagUsage,
 	)
+	createScanCmd.PersistentFlags().StringSlice(
+		commonParams.IacsPlatformsFlag,
+		[]string{},
+		commonParams.IacsPlatformsFlagUsage,
+	)
+	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsPlatformsFlag, "please use the replacement flag --iac-security-platforms")
+	if err != nil {
+		return nil
+	}
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
 	addResultFormatFlag(
 		createScanCmd,
@@ -580,7 +604,7 @@ func setupScanTypeProjectAndConfig(
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
-	info["type"] = getUploadType(cmd)
+	info[resultsMapType] = getUploadType(cmd)
 	// Handle the project settings
 	if _, ok := info["project"]; !ok {
 		var projectMap map[string]interface{}
@@ -674,7 +698,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	if scanTypeEnabled(commonParams.SastType) {
 		sastMapConfig := make(map[string]interface{})
 		sastConfig := wrappers.SastConfig{}
-		sastMapConfig["type"] = commonParams.SastType
+		sastMapConfig[resultsMapType] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
@@ -683,28 +707,28 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			if config.Type != commonParams.SastType {
 				continue
 			}
-			resubmitIncremental := config.Value["incremental"]
+			resubmitIncremental := config.Value[configIncremental]
 			if resubmitIncremental != nil && !incrementalVal {
 				sastConfig.Incremental = resubmitIncremental.(string)
 			}
-			resubmitPreset := config.Value["presetName"]
+			resubmitPreset := config.Value[configPresetName]
 			if resubmitPreset != nil && sastConfig.PresetName == "" {
 				sastConfig.PresetName = resubmitPreset.(string)
 			}
-			resubmitFilter := config.Value["filter"]
+			resubmitFilter := config.Value[configFilterKey]
 			if resubmitFilter != nil && sastConfig.Filter == "" {
 				sastConfig.Filter = resubmitFilter.(string)
 			}
-			resubmitEngineVerbose := config.Value["engineVerbose"]
+			resubmitEngineVerbose := config.Value[configEngineVerbose]
 			if resubmitEngineVerbose != nil {
 				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
 			}
-			resubmitLanguageMode := config.Value["languageMode"]
+			resubmitLanguageMode := config.Value[configLanguageMode]
 			if resubmitLanguageMode != nil {
 				sastConfig.LanguageMode = resubmitLanguageMode.(string)
 			}
 		}
-		sastMapConfig["value"] = &sastConfig
+		sastMapConfig[resultsMapValue] = &sastConfig
 		return sastMapConfig
 	}
 	return nil
@@ -714,22 +738,22 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	if scanTypeEnabled(commonParams.KicsType) {
 		kicsMapConfig := make(map[string]interface{})
 		kicsConfig := wrappers.KicsConfig{}
-		kicsMapConfig["type"] = commonParams.KicsType
-		kicsConfig.Filter, _ = cmd.Flags().GetString(commonParams.KicsFilterFlag)
-		kicsConfig.Platforms, _ = cmd.Flags().GetString(commonParams.KicsPlatformsFlag)
+		kicsMapConfig[resultsMapType] = commonParams.KicsType
+		kicsConfig.Filter = deprecatedFlagValue(cmd, commonParams.KicsFilterFlag, commonParams.IacsFilterFlag)
+		kicsConfig.Platforms = deprecatedFlagValue(cmd, commonParams.KicsPlatformsFlag, commonParams.IacsPlatformsFlag)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.KicsType {
-				resubmitFilter := config.Value["filter"]
+				resubmitFilter := config.Value[configFilterKey]
 				if resubmitFilter != nil && kicsConfig.Filter == "" {
 					kicsConfig.Filter = resubmitFilter.(string)
 				}
-				resubmitPlatforms := config.Value["platforms"]
+				resubmitPlatforms := config.Value[configFilterPlatforms]
 				if resubmitPlatforms != nil && kicsConfig.Platforms == "" {
 					kicsConfig.Platforms = resubmitPlatforms.(string)
 				}
 			}
 		}
-		kicsMapConfig["value"] = &kicsConfig
+		kicsMapConfig[resultsMapValue] = &kicsConfig
 		return kicsMapConfig
 	}
 	return nil
@@ -739,17 +763,17 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
-		scaMapConfig["type"] = commonParams.ScaType
+		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
-				resubmitFilter := config.Value["filter"]
+				resubmitFilter := config.Value[configFilterKey]
 				if resubmitFilter != nil && scaConfig.Filter == "" {
 					scaConfig.Filter = resubmitFilter.(string)
 				}
 			}
 		}
-		scaMapConfig["value"] = &scaConfig
+		scaMapConfig[resultsMapValue] = &scaConfig
 		return scaMapConfig
 	}
 	return nil
@@ -758,7 +782,8 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 func validateScanTypes(cmd *cobra.Command) {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
-		actualScanTypes = userScanTypes
+		// postprocessor to match iac-security with kics
+		actualScanTypes = strings.Replace(userScanTypes, commonParams.IacType, commonParams.KicsType, 1)
 	}
 
 	scanTypes := strings.Split(actualScanTypes, ",")
@@ -1463,7 +1488,6 @@ func applyThreshold(
 		return nil
 	}
 
-	threshold = strings.ReplaceAll(threshold, " ", "")
 	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
@@ -1505,12 +1529,14 @@ func parseThreshold(threshold string) map[string]int {
 		thresholdLimits := strings.Split(threshold, ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
+			engineName := limit[0]
+			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
 			if len(limit) > 1 {
 				intLimit, err := strconv.Atoi(limit[1])
 				if err != nil {
 					log.Println("Error parsing threshold limit: ", err)
 				} else {
-					thresholdMap[strings.ToLower(limit[0])] = intLimit
+					thresholdMap[strings.ToLower(engineName)] = intLimit
 				}
 			}
 		}
@@ -1530,7 +1556,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
 		if !strings.EqualFold(result.State, notExploitable) {
-			key := strings.ToLower(fmt.Sprintf("%s-%s", result.Type, result.Severity))
+			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
 	}
@@ -1761,6 +1787,7 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	return func(cmd *cobra.Command, _ []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
+		scanType = strings.Replace(scanType, commonParams.IacType, commonParams.KicsType, 1)
 		logText, err := logsWrapper.GetLog(scanID, scanType)
 		if err != nil {
 			return err
@@ -2017,4 +2044,12 @@ func cleanUpTempZip(zipFilePath string) {
 	} else {
 		logger.PrintIfVerbose("No temporary zip to clean")
 	}
+}
+
+func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
+	flagValue, _ := cmd.Flags().GetString(inUseFlagKey)
+	if flagValue == "" {
+		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
+	}
+	return flagValue
 }

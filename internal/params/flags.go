@@ -115,13 +115,16 @@ const (
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
-	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
+	KicsPlatformsFlagUsage       = "KICS Platform Flag"
+	IacsPlatformsFlag            = "iac-security-platforms"
+	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
 	ApikeyOverrideFlag           = "apikey-override"
-
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
 	KicsFilterFlag  = "kics-filter"
+	IacsFilterFlag  = "iac-security-filter"
+	IacsFilterUsage = "IaC Security filter"
 	KicsFilterUsage = "KICS filter"
 	ScaFilterFlag   = "sca-filter"
 	ScaFilterUsage  = "SCA filter"
@@ -171,6 +174,8 @@ const (
 const (
 	SastType = "sast"
 	KicsType = "kics"
+	IacType  = "iac-security"
+	IacLabel = "IaC Security"
 	ScaType  = "sca"
 )
 
