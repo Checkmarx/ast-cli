@@ -112,7 +112,12 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 	}
 }
 
-func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) (
+	[]wrappers.AzureCommit,
+	[]RepositoryView,
+	[]UserView,
+	error,
+) {
 	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
@@ -152,7 +157,12 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azure
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) (
+	[]wrappers.AzureCommit,
+	[]RepositoryView,
+	[]UserView,
+	error,
+) {
 	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
@@ -193,7 +203,12 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) ([]wrappers.Azu
 	return totalCommits, views, viewsUsers, nil
 }
 
-func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) ([]wrappers.AzureCommit, []RepositoryView, []UserView, error) {
+func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) (
+	[]wrappers.AzureCommit,
+	[]RepositoryView,
+	[]UserView,
+	error,
+) {
 	var totalCommits []wrappers.AzureCommit
 	var views []RepositoryView
 	var viewsUsers []UserView
@@ -244,7 +259,7 @@ func getUniqueContributorsAzure(commits []wrappers.AzureCommit) map[string]strin
 	var contributors = map[string]string{}
 	for _, commit := range commits {
 		name := commit.Author.Name
-		email := commit.Author.Email
+		email := strings.ToLower(commit.Author.Email)
 		if _, ok := contributors[email]; !ok && !azureIsNotBot(commit) {
 			contributors[email] = name
 		}
