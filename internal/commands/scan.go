@@ -1787,6 +1787,7 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	return func(cmd *cobra.Command, _ []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		scanType, _ := cmd.Flags().GetString(commonParams.ScanTypeFlag)
+		scanType = strings.Replace(scanType, commonParams.IacType, commonParams.KicsType, 1)
 		logText, err := logsWrapper.GetLog(scanID, scanType)
 		if err != nil {
 			return err
