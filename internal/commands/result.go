@@ -50,6 +50,8 @@ const (
 	defaultPaddingSize       = -14
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	scaType                  = "sca"
+	directDependencyType     = "Direct Dependency"
+	indirectDependencyType   = "Indirect Dependency"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -993,6 +995,11 @@ func addPackageInformation(
 						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
 					} else {
 						currentPackage.FixLink = ""
+					}
+					if currentPackage.IsDirectDependency {
+						currentPackage.TypeOfDependency = directDependencyType
+					} else {
+						currentPackage.TypeOfDependency = indirectDependencyType
 					}
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
