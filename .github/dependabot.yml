@@ -8,11 +8,11 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
-      - "Checkmarx/ast-galactica-team"
+      - "diogopcx"
   # Maintain dependencies for Gomod
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
     reviewers:
-      - "Checkmarx/ast-galactica-team"
+      - "diogopcx"
