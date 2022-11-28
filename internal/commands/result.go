@@ -29,6 +29,7 @@ const (
 	mediumLabel              = "medium"
 	highLabel                = "high"
 	lowLabel                 = "low"
+	infoLabel                = "info"
 	sonarTypeLabel           = "_sonar"
 	directoryPermission      = 0700
 	infoSonar                = "INFO"
@@ -250,9 +251,10 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, []string, error) {
+	var scanTypesEnabled []string
 	if scanInfo == nil {
-		return nil, errors.New(failedCreatingSummary)
+		return nil, scanTypesEnabled, errors.New(failedCreatingSummary)
 	}
 
 	sastIssues := 0
@@ -270,6 +272,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 				}
 			}
 		}
+		scanTypesEnabled = scanInfo.Engines
 	}
 
 	return &wrappers.ResultSummary{
@@ -282,20 +285,21 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 		HighIssues:   0,
 		MediumIssues: 0,
 		LowIssues:    0,
+		InfoIssues:   0,
 		SastIssues:   sastIssues,
 		KicsIssues:   kicsIssues,
 		ScaIssues:    scaIssues,
 		Tags:         scanInfo.Tags,
 		ProjectName:  scanInfo.ProjectName,
 		BranchName:   scanInfo.Branch,
-	}, nil
+	}, scanTypesEnabled, nil
 }
 
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
 ) (*wrappers.ResultSummary, error) {
-	summary, err := convertScanToResultsSummary(scan)
+	summary, scanTypesEnabled, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
@@ -303,8 +307,9 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
+
 	for _, result := range results.Results {
-		countResult(summary, result)
+		countResult(summary, result, scanTypesEnabled)
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -321,27 +326,40 @@ func SummaryReport(
 	return summary, nil
 }
 
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, scanTypesEnabled []string) {
 	engineType := strings.TrimSpace(result.Type)
-	if engineType == commonParams.SastType && result.State != notExploitable {
-		summary.SastIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.ScaType {
-		summary.ScaIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.KicsType && result.State != notExploitable {
-		summary.KicsIssues++
-		summary.TotalIssues++
-	}
-	severity := strings.ToLower(result.Severity)
-	if result.State != notExploitable {
-		if severity == highLabel {
-			summary.HighIssues++
-		} else if severity == lowLabel {
-			summary.LowIssues++
-		} else if severity == mediumLabel {
-			summary.MediumIssues++
+	if contains(scanTypesEnabled, engineType) {
+		if engineType == commonParams.SastType && result.State != notExploitable {
+			summary.SastIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.ScaType {
+			summary.ScaIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+			summary.KicsIssues++
+			summary.TotalIssues++
 		}
+		severity := strings.ToLower(result.Severity)
+		if result.State != notExploitable {
+			if severity == highLabel {
+				summary.HighIssues++
+			} else if severity == lowLabel {
+				summary.LowIssues++
+			} else if severity == mediumLabel {
+				summary.MediumIssues++
+			} else if severity == infoLabel {
+				summary.InfoIssues++
+			}
+		}
+	}
+	if summary.SastIssues == 0 {
+		summary.SastIssues = notAvailableNumber
+	}
+	if summary.ScaIssues == 0 {
+		summary.ScaIssues = notAvailableNumber
+	}
+	if summary.KicsIssues == 0 {
+		summary.KicsIssues = notAvailableNumber
 	}
 }
 
@@ -376,12 +394,13 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
 		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
 		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
