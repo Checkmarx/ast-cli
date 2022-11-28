@@ -86,7 +86,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca,apisec"
+	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -455,7 +455,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca, apisec)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -798,7 +798,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 }
 
 func addAPISecScan() map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecType) {
+	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecMapConfig["type"] = commonParams.APISecType
 		return apiSecMapConfig
@@ -820,11 +820,11 @@ func validateScanTypes(cmd *cobra.Command) {
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
 			isValid = true
-		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecType) {
+		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
 			if scanTypeEnabled(commonParams.SastType) {
 				isValid = true
 			} else {
-				log.Println("Error: scan-type 'apisec' only works when  scan-type 'sast' is also provided.")
+				log.Println("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
 				os.Exit(1)
 			}
 		}
