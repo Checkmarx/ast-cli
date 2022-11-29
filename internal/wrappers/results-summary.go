@@ -38,7 +38,7 @@ type APISecResult struct {
 	Risks           []int `json:"risks"`
 }
 
-func (r ResultSummary) HasEngine(engine string) bool {
+func (r *ResultSummary) HasEngine(engine string) bool {
 	for _, v := range r.EnginesEnabled {
 		if strings.Contains(engine, v) {
 			return true
@@ -47,7 +47,7 @@ func (r ResultSummary) HasEngine(engine string) bool {
 	return false
 }
 
-func (r ResultSummary) HasApiSecurity() bool {
+func (r *ResultSummary) HasApiSecurity() bool {
 	return r.HasEngine(params.APISecType)
 }
 
