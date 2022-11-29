@@ -632,14 +632,19 @@ func enrichScaResults(
 	if util.Contains(scan.Engines, scaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		// Get additional information to add the type information to the sca results
-		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
-
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
+		// Get additional information to add the type information to the sca results
+		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
 		if errorModel != nil {
 			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Enrich sca results
 		if scaPackageModel != nil {
@@ -978,9 +983,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
-func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection, scaTypeModel *[]wrappers.ScaTypeCollection) (map[string][]*string, map[string]string) {
-	locationsByID := make(map[string][]*string)
-	typesByCVE := make(map[string]string)
+func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]string) {
+	locationsByID = make(map[string][]*string)
+	typesByCVE = make(map[string]string)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
@@ -1001,9 +1007,8 @@ func buildScaType(typesByCVE map[string]string, result *wrappers.ScanResult) str
 	types := typesByCVE[result.ID]
 	if types == "SupplyChain" {
 		return "Supply Chain"
-	} else {
-		return "Vulnerability"
 	}
+	return "Vulnerability"
 }
 
 func addPackageInformation(
