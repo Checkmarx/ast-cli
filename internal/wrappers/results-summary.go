@@ -47,7 +47,7 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 	return false
 }
 
-func (r *ResultSummary) HasApiSecurity() bool {
+func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
 }
 
@@ -499,7 +499,7 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
-                    {{if .HasApiSecurity}}
+                    {{if .HasAPISecurity}}
                         <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
                             <div class="severity-engines-text bg-api-sec"></div>
                         </div>
@@ -511,7 +511,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
                             <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
 							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
-                            {{if .HasApiSecurity}}
+                            {{if .HasAPISecurity}}
 							    <div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
                             {{end}}
                         </div>

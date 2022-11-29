@@ -394,7 +394,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			summary.RiskMsg,
 		)
 		fmt.Printf("              -----------------------------------     \n")
-		if summary.HasApiSecurity() {
+		if summary.HasAPISecurity() {
 			fmt.Printf(
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
@@ -417,7 +417,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
-			if summary.HasApiSecurity() {
+			if summary.HasAPISecurity() {
 				fmt.Printf(
 					"              |               APIS WITH RISK: %d |     \n",
 					summary.APISecurity.TotalRisksCount)
