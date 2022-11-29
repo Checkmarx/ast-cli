@@ -6,6 +6,18 @@ import (
 
 type ResultsMockWrapper struct{}
 
+func (r ResultsMockWrapper) GetAllResultsTypeByScanID(params map[string]string) (*[]wrappers.ScaTypeCollection, *wrappers.WebError, error) {
+	const mock = "mock"
+	var scaTypes = []wrappers.ScaTypeCollection{{
+		ID:   mock,
+		Type: mock,
+	}, {
+		ID:   mock,
+		Type: mock,
+	}}
+	return &scaTypes, nil, nil
+}
+
 func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]string) (*[]wrappers.ScaPackageCollection, *wrappers.WebError, error) {
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
