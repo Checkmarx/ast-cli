@@ -62,7 +62,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,kics,sca"))
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -93,7 +93,7 @@ func TestScaResolverArg(t *testing.T) {
 		t,
 		Dir,
 		map[string]string{},
-		"sast,kics",
+		"sast,iac-security",
 		viper.GetString(resolverEnvVar),
 	)
 	defer deleteProject(t, projectID)
@@ -112,7 +112,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), "./nonexisting",
-		flag(params.ScanTypes), "sast,kics,sca",
+		flag(params.ScanTypes), "sast,iac-security,sca",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -124,7 +124,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 		flag(params.ProjectName), "resolver",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), viper.GetString(resolverEnvVar),
-		flag(params.ScanTypes), "sast,kics,sca",
+		flag(params.ScanTypes), "sast,iac-security,sca",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScaResolverParamsFlag), "-q --invalid-param \"invalid\"",
 	}
@@ -174,6 +174,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.SourceDirFilterFlag), "!*go,!*Dockerfile,!*js,!*json,!*tf",
+		flag(params.IacsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -195,6 +196,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -379,11 +381,11 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,kics"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,iac-security"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,kics"), flag(params.AsyncFlag)))
+	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,iac-security"), flag(params.AsyncFlag)))
 }
 
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -412,7 +414,7 @@ func createScanScaWithResolver(
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,kics"), "--sast-incremental"))
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,iac-security"), "--sast-incremental"))
 }
 
 func getProjectNameForScanTests() string {
@@ -543,7 +545,7 @@ func TestScanLogsSAST(t *testing.T) {
 	)
 }
 
-func TestScanLogsKICS(t *testing.T) {
+func TestScanLogsKICSDeprecated(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	executeCmdNilAssertion(
@@ -551,6 +553,17 @@ func TestScanLogsKICS(t *testing.T) {
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.ScanTypeFlag), "kics",
+	)
+}
+
+func TestScanLogsKICS(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	executeCmdNilAssertion(
+		t, "Getting scan KICS log should pass",
+		"scan", "logs",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "iac-security",
 	)
 }
 

@@ -37,7 +37,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 		Long:  "The show command provides a list of all the predicates in the issue.",
 		Example: heredoc.Doc(
 			`
-			$ cx triage show --similarity-id <SimilarityID> --project-id <ProjectID> --scan-type <SAST||KICS>
+			$ cx triage show --similarity-id <SimilarityID> --project-id <ProjectID> --scan-type <SAST||IAC-SECURITY>
 		`,
 		),
 
@@ -68,7 +68,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT> 
 				--severity <HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
-				--scan-type <SAST|KICS>
+				--scan-type <SAST|IAC-SECURITY>
 		`,
 		),
 		RunE: runTriageUpdate(resultsPredicatesWrapper),
