@@ -1,5 +1,11 @@
 package wrappers
 
+import (
+	"strings"
+
+	"github.com/checkmarx/ast-cli/internal/params"
+)
+
 type ResultSummary struct {
 	TotalIssues     int
 	HighIssues      int
@@ -23,12 +29,26 @@ type ResultSummary struct {
 	ProjectName     string
 	BranchName      string
 	ScanInfoMessage string
+	EnginesEnabled  []string
 }
 
 type APISecResult struct {
 	APICount        int   `json:"api_count"`
 	TotalRisksCount int   `json:"total_risks_count"`
 	Risks           []int `json:"risks"`
+}
+
+func (r ResultSummary) HasEngine(engine string) bool {
+	for _, v := range r.EnginesEnabled {
+		if strings.Contains(engine, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func (r ResultSummary) HasApiSecurity() bool {
+	return r.HasEngine(params.APISecType)
 }
 
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
@@ -479,9 +499,11 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
-                    <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
-                        <div class="severity-engines-text bg-api-sec"></div>
-                    </div>
+                    {{if .HasApiSecurity}}
+                        <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
+                            <div class="severity-engines-text bg-api-sec"></div>
+                        </div>
+                    {{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -489,7 +511,9 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
                             <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
 							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
-							<div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
+                            {{if .HasApiSecurity}}
+							    <div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
+                            {{end}}
                         </div>
                     </div>
                 </div>

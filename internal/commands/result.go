@@ -255,10 +255,9 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, []string, error) {
-	var scanTypesEnabled []string
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
 	if scanInfo == nil {
-		return nil, scanTypesEnabled, errors.New(failedCreatingSummary)
+		return nil, errors.New(failedCreatingSummary)
 	}
 
 	sastIssues := 0
@@ -276,27 +275,27 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 				}
 			}
 		}
-		scanTypesEnabled = scanInfo.Engines
 	}
 
 	return &wrappers.ResultSummary{
-		ScanID:       scanInfo.ID,
-		Status:       string(scanInfo.Status),
-		CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-		ProjectID:    scanInfo.ProjectID,
-		RiskStyle:    "",
-		RiskMsg:      "",
-		HighIssues:   0,
-		MediumIssues: 0,
-		LowIssues:    0,
-		InfoIssues:   0,
-		SastIssues:   sastIssues,
-		KicsIssues:   kicsIssues,
-		ScaIssues:    scaIssues,
-		Tags:         scanInfo.Tags,
-		ProjectName:  scanInfo.ProjectName,
-		BranchName:   scanInfo.Branch,
-	}, scanTypesEnabled, nil
+		ScanID:         scanInfo.ID,
+		Status:         string(scanInfo.Status),
+		CreatedAt:      scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:      scanInfo.ProjectID,
+		RiskStyle:      "",
+		RiskMsg:        "",
+		HighIssues:     0,
+		MediumIssues:   0,
+		LowIssues:      0,
+		InfoIssues:     0,
+		SastIssues:     sastIssues,
+		KicsIssues:     kicsIssues,
+		ScaIssues:      scaIssues,
+		Tags:           scanInfo.Tags,
+		ProjectName:    scanInfo.ProjectName,
+		BranchName:     scanInfo.Branch,
+		EnginesEnabled: scanInfo.Engines,
+	}, nil
 }
 
 func SummaryReport(
@@ -304,7 +303,7 @@ func SummaryReport(
 	scan *wrappers.ScanResponseModel,
 	apiSecRisks *wrappers.APISecResult,
 ) (*wrappers.ResultSummary, error) {
-	summary, scanTypesEnabled, err := convertScanToResultsSummary(scan)
+	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
@@ -313,8 +312,9 @@ func SummaryReport(
 		return nil, err
 	}
 	summary.APISecurity = *apiSecRisks
+
 	for _, result := range results.Results {
-		countResult(summary, result, scanTypesEnabled)
+		countResult(summary, result)
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -331,9 +331,9 @@ func SummaryReport(
 	return summary, nil
 }
 
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, scanTypesEnabled []string) {
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if contains(scanTypesEnabled, engineType) {
+	if contains(summary.EnginesEnabled, engineType) {
 		if engineType == commonParams.SastType && result.State != notExploitable {
 			summary.SastIssues++
 			summary.TotalIssues++
@@ -394,9 +394,12 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			summary.RiskMsg,
 		)
 		fmt.Printf("              -----------------------------------     \n")
-		fmt.Printf(
-			"              API Security - Total Detected APIs: %d                       \n",
-			summary.APISecurity.APICount)
+		if summary.HasApiSecurity() {
+			fmt.Printf(
+				"              API Security - Total Detected APIs: %d                       \n",
+				summary.APISecurity.APICount)
+		}
+
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
@@ -414,9 +417,11 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
-			fmt.Printf(
-				"              |               APIS WITH RISK: %d |     \n",
-				summary.APISecurity.TotalRisksCount)
+			if summary.HasApiSecurity() {
+				fmt.Printf(
+					"              |               APIS WITH RISK: %d |     \n",
+					summary.APISecurity.TotalRisksCount)
+			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
 			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
