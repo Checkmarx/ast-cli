@@ -51,7 +51,7 @@ const (
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	scaType                  = "sca"
 	directDependencyType     = "Direct Dependency"
-	indirectDependencyType   = "Indirect Dependency"
+	indirectDependencyType   = "Transitive Dependency"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
