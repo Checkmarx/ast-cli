@@ -9,7 +9,7 @@ type ScaPackageCollection struct {
 	Outdated            bool               `json:"outdated,omitempty"`
 	SupportsQuickFix    bool               `json:"supportsQuickFix"`
 	IsDirectDependency  bool               `json:"isDirectDependency"`
-	TypeOfDependency	string             `json:"typeOfDependency"`
+	TypeOfDependency    string             `json:"typeOfDependency"`
 }
 
 type DependencyPath struct {
@@ -20,4 +20,9 @@ type DependencyPath struct {
 	IsDevelopment    bool      `json:"isDevelopment,omitempty"`
 	Locations        []*string `json:"locations,omitempty"`
 	SupportsQuickFix bool      `json:"supportsQuickFix,omitempty"`
+}
+
+type ScaTypeCollection struct {
+	ID   string `json:"id,omitempty"`
+	Type string `json:"type,omitempty"`
 }
