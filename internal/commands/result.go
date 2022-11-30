@@ -84,6 +84,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -96,7 +97,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, risksOverviewWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -105,7 +106,10 @@ func NewResultsCommand(
 	return resultCmd
 }
 
-func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
+func resultShowSubCommand(
+	resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show results of a scan",
@@ -115,7 +119,7 @@ func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wr
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, risksOverviewWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -251,10 +255,9 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, []string, error) {
-	var scanTypesEnabled []string
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
 	if scanInfo == nil {
-		return nil, scanTypesEnabled, errors.New(failedCreatingSummary)
+		return nil, errors.New(failedCreatingSummary)
 	}
 
 	sastIssues := 0
@@ -272,34 +275,35 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 				}
 			}
 		}
-		scanTypesEnabled = scanInfo.Engines
 	}
 
 	return &wrappers.ResultSummary{
-		ScanID:       scanInfo.ID,
-		Status:       string(scanInfo.Status),
-		CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-		ProjectID:    scanInfo.ProjectID,
-		RiskStyle:    "",
-		RiskMsg:      "",
-		HighIssues:   0,
-		MediumIssues: 0,
-		LowIssues:    0,
-		InfoIssues:   0,
-		SastIssues:   sastIssues,
-		KicsIssues:   kicsIssues,
-		ScaIssues:    scaIssues,
-		Tags:         scanInfo.Tags,
-		ProjectName:  scanInfo.ProjectName,
-		BranchName:   scanInfo.Branch,
-	}, scanTypesEnabled, nil
+		ScanID:         scanInfo.ID,
+		Status:         string(scanInfo.Status),
+		CreatedAt:      scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:      scanInfo.ProjectID,
+		RiskStyle:      "",
+		RiskMsg:        "",
+		HighIssues:     0,
+		MediumIssues:   0,
+		LowIssues:      0,
+		InfoIssues:     0,
+		SastIssues:     sastIssues,
+		KicsIssues:     kicsIssues,
+		ScaIssues:      scaIssues,
+		Tags:           scanInfo.Tags,
+		ProjectName:    scanInfo.ProjectName,
+		BranchName:     scanInfo.Branch,
+		EnginesEnabled: scanInfo.Engines,
+	}, nil
 }
 
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
+	apiSecRisks *wrappers.APISecResult,
 ) (*wrappers.ResultSummary, error) {
-	summary, scanTypesEnabled, err := convertScanToResultsSummary(scan)
+	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
@@ -307,9 +311,10 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
+	summary.APISecurity = *apiSecRisks
 
 	for _, result := range results.Results {
-		countResult(summary, result, scanTypesEnabled)
+		countResult(summary, result)
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -326,9 +331,9 @@ func SummaryReport(
 	return summary, nil
 }
 
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, scanTypesEnabled []string) {
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if contains(scanTypesEnabled, engineType) {
+	if contains(summary.EnginesEnabled, engineType) {
 		if engineType == commonParams.SastType && result.State != notExploitable {
 			summary.SastIssues++
 			summary.TotalIssues++
@@ -389,6 +394,12 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			summary.RiskMsg,
 		)
 		fmt.Printf("              -----------------------------------     \n")
+		if summary.HasAPISecurity() {
+			fmt.Printf(
+				"              API Security - Total Detected APIs: %d                       \n",
+				summary.APISecurity.APICount)
+		}
+
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
@@ -406,6 +417,11 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+			if summary.HasAPISecurity() {
+				fmt.Printf(
+					"              |               APIS WITH RISK: %d |     \n",
+					summary.APISecurity.TotalRisksCount)
+			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
 			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
@@ -432,6 +448,7 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -442,7 +459,15 @@ func runGetResultCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		return CreateScanReport(resultsWrapper, scanWrapper, scanID, format, targetFile, targetPath, params)
+		return CreateScanReport(
+			resultsWrapper,
+			risksOverviewWrapper,
+			scanWrapper,
+			scanID,
+			format,
+			targetFile,
+			targetPath,
+			params)
 	}
 }
 
@@ -488,6 +513,7 @@ func runGetCodeBashingCommand(
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
 	scanID,
 	reportTypes,
@@ -514,7 +540,11 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	summary, err := SummaryReport(results, scan)
+	apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scanID)
+	if err != nil {
+		return err
+	}
+	summary, err := SummaryReport(results, scan, apiSecRisks)
 	if err != nil {
 		return err
 	}
@@ -526,6 +556,25 @@ func CreateScanReport(
 		}
 	}
 	return nil
+}
+
+func getResultsForAPISecScanner(
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scanID string,
+) (results *wrappers.APISecResult, err error) {
+	var apiSecResultsModel *wrappers.APISecResult
+	var errorModel *wrappers.WebError
+
+	apiSecResultsModel, errorModel, err = risksOverviewWrapper.GetAllAPISecRisksByScanID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	} else if apiSecResultsModel != nil {
+		return apiSecResultsModel, nil
+	}
+	return nil, nil
 }
 
 func isScanPending(scanStatus string) bool {

@@ -17,6 +17,7 @@ var EnvVarsBinds = []struct {
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
 	{GroupsPathKey, GroupsPathEnv, "auth/realms/organization/pip/groups"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
+	{RisksOverviewPathKey, RisksOverviewPathEnv, "api/apisec/static/api/scan/%s/risks-overview"},
 	{ScaPackagePathKey, ScaPackagePathEnv, "api/sca/risk-management/risk-reports/"},
 	{SastResultsPathKey, SastResultsPathEnv, "api/sast-results"},
 	{SastResultsPredicatesPathKey, SastResultsPredicatesPathEnv, "api/sast-results-predicates"},
