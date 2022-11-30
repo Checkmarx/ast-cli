@@ -8,6 +8,7 @@ type ScanResultsCollection struct {
 
 type ScanResult struct {
 	Type                 string               `json:"type,omitempty"`
+	ScaType              string               `json:"scaType,omitempty"`
 	Label                string               `json:"label,omitempty"`
 	ID                   string               `json:"id,omitempty"`
 	SimilarityID         string               `json:"similarityId,omitempty"`

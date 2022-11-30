@@ -51,6 +51,8 @@ const (
 	defaultPaddingSize       = -14
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	scaType                  = "sca"
+	directDependencyType     = "Direct Dependency"
+	indirectDependencyType   = "Transitive Dependency"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -677,16 +679,25 @@ func enrichScaResults(
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if util.Contains(scan.Engines, scaType) {
+		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
-		}
 		if errorModel != nil {
 			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
+		// Get additional information to add the type information to the sca results
+		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
 		// Enrich sca results
 		if scaPackageModel != nil {
-			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
 	}
 	return resultsModel, nil
@@ -1021,12 +1032,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
-func addPackageInformation(
-	resultsModel *wrappers.ScanResultsCollection,
-	scaPackageModel *[]wrappers.ScaPackageCollection,
-) *wrappers.ScanResultsCollection {
-	var currentID string
-	locationsByID := make(map[string][]*string)
+func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]string) {
+	locationsByID = make(map[string][]*string)
+	typesByCVE = make(map[string]string)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
@@ -1034,8 +1043,30 @@ func addPackageInformation(
 				currentPackage := packages
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
+			for _, types := range *scaTypeModel {
+				currentTypes := types
+				typesByCVE[types.ID] = currentTypes.Type
+			}
 		}
 	}
+	return locationsByID, typesByCVE
+}
+
+func buildScaType(typesByCVE map[string]string, result *wrappers.ScanResult) string {
+	types := typesByCVE[result.ID]
+	if types == "SupplyChain" {
+		return "Supply Chain"
+	}
+	return "Vulnerability"
+}
+
+func addPackageInformation(
+	resultsModel *wrappers.ScanResultsCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaTypeModel *[]wrappers.ScaTypeCollection,
+) *wrappers.ScanResultsCollection {
+	var currentID string
+	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
 
 	for _, result := range resultsModel.Results {
 		if !(result.Type == scaType) {
@@ -1045,6 +1076,8 @@ func addPackageInformation(
 			const precision = 1
 			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
 			result.VulnerabilityDetails.CvssScore = roundedScore
+			// Add the sca type
+			result.ScaType = buildScaType(typesByCVE, result)
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
@@ -1061,6 +1094,11 @@ func addPackageInformation(
 						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
 					} else {
 						currentPackage.FixLink = ""
+					}
+					if currentPackage.IsDirectDependency {
+						currentPackage.TypeOfDependency = directDependencyType
+					} else {
+						currentPackage.TypeOfDependency = indirectDependencyType
 					}
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break
