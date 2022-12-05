@@ -50,6 +50,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scaPackage := viper.GetString(params.ScaPackagePathKey)
+	risksOverview := viper.GetString(params.RisksOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
@@ -64,6 +65,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
+	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -83,6 +85,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
+		risksOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,

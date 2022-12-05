@@ -29,6 +29,7 @@ func NewAstCLI(
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
@@ -122,9 +123,16 @@ func NewAstCLI(
 	)
 
 	// Create the CLI command structure
-	scanCmd := NewScanCommand(scansWrapper, uploadsWrapper, resultsWrapper, projectsWrapper, logsWrapper, groupsWrapper)
+	scanCmd := NewScanCommand(
+		scansWrapper,
+		uploadsWrapper,
+		resultsWrapper,
+		projectsWrapper,
+		logsWrapper,
+		groupsWrapper,
+		risksOverviewWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
-	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper)
+	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper, risksOverviewWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand(

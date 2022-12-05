@@ -29,6 +29,7 @@ const (
 	mediumLabel              = "medium"
 	highLabel                = "high"
 	lowLabel                 = "low"
+	infoLabel                = "info"
 	sonarTypeLabel           = "_sonar"
 	directoryPermission      = 0700
 	infoSonar                = "INFO"
@@ -50,6 +51,8 @@ const (
 	defaultPaddingSize       = -14
 	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	scaType                  = "sca"
+	directDependencyType     = "Direct Dependency"
+	indirectDependencyType   = "Transitive Dependency"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -83,6 +86,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -95,7 +99,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, risksOverviewWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -104,7 +108,10 @@ func NewResultsCommand(
 	return resultCmd
 }
 
-func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper) *cobra.Command {
+func resultShowSubCommand(
+	resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show results of a scan",
@@ -114,7 +121,7 @@ func resultShowSubCommand(resultsWrapper wrappers.ResultsWrapper, scanWrapper wr
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, risksOverviewWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -273,27 +280,30 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 	}
 
 	return &wrappers.ResultSummary{
-		ScanID:       scanInfo.ID,
-		Status:       string(scanInfo.Status),
-		CreatedAt:    scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-		ProjectID:    scanInfo.ProjectID,
-		RiskStyle:    "",
-		RiskMsg:      "",
-		HighIssues:   0,
-		MediumIssues: 0,
-		LowIssues:    0,
-		SastIssues:   sastIssues,
-		KicsIssues:   kicsIssues,
-		ScaIssues:    scaIssues,
-		Tags:         scanInfo.Tags,
-		ProjectName:  scanInfo.ProjectName,
-		BranchName:   scanInfo.Branch,
+		ScanID:         scanInfo.ID,
+		Status:         string(scanInfo.Status),
+		CreatedAt:      scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:      scanInfo.ProjectID,
+		RiskStyle:      "",
+		RiskMsg:        "",
+		HighIssues:     0,
+		MediumIssues:   0,
+		LowIssues:      0,
+		InfoIssues:     0,
+		SastIssues:     sastIssues,
+		KicsIssues:     kicsIssues,
+		ScaIssues:      scaIssues,
+		Tags:           scanInfo.Tags,
+		ProjectName:    scanInfo.ProjectName,
+		BranchName:     scanInfo.Branch,
+		EnginesEnabled: scanInfo.Engines,
 	}, nil
 }
 
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
+	apiSecRisks *wrappers.APISecResult,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
@@ -303,6 +313,8 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
+	summary.APISecurity = *apiSecRisks
+
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
@@ -323,25 +335,38 @@ func SummaryReport(
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if engineType == commonParams.SastType && result.State != notExploitable {
-		summary.SastIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.ScaType {
-		summary.ScaIssues++
-		summary.TotalIssues++
-	} else if engineType == commonParams.KicsType && result.State != notExploitable {
-		summary.KicsIssues++
-		summary.TotalIssues++
-	}
-	severity := strings.ToLower(result.Severity)
-	if result.State != notExploitable {
-		if severity == highLabel {
-			summary.HighIssues++
-		} else if severity == lowLabel {
-			summary.LowIssues++
-		} else if severity == mediumLabel {
-			summary.MediumIssues++
+	if contains(summary.EnginesEnabled, engineType) {
+		if engineType == commonParams.SastType && result.State != notExploitable {
+			summary.SastIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.ScaType {
+			summary.ScaIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+			summary.KicsIssues++
+			summary.TotalIssues++
 		}
+		severity := strings.ToLower(result.Severity)
+		if result.State != notExploitable {
+			if severity == highLabel {
+				summary.HighIssues++
+			} else if severity == lowLabel {
+				summary.LowIssues++
+			} else if severity == mediumLabel {
+				summary.MediumIssues++
+			} else if severity == infoLabel {
+				summary.InfoIssues++
+			}
+		}
+	}
+	if summary.SastIssues == 0 {
+		summary.SastIssues = notAvailableNumber
+	}
+	if summary.ScaIssues == 0 {
+		summary.ScaIssues = notAvailableNumber
+	}
+	if summary.KicsIssues == 0 {
+		summary.KicsIssues = notAvailableNumber
 	}
 }
 
@@ -371,22 +396,34 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			summary.RiskMsg,
 		)
 		fmt.Printf("              -----------------------------------     \n")
+		if summary.HasAPISecurity() {
+			fmt.Printf(
+				"              API Security - Total Detected APIs: %d                       \n",
+				summary.APISecurity.APICount)
+		}
+
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
 		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
 		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |             KICS: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             KICS: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
 			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+			if summary.HasAPISecurity() {
+				fmt.Printf(
+					"              |               APIS WITH RISK: %d |     \n",
+					summary.APISecurity.TotalRisksCount)
+			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
 			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
@@ -413,6 +450,7 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -423,7 +461,15 @@ func runGetResultCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		return CreateScanReport(resultsWrapper, scanWrapper, scanID, format, targetFile, targetPath, params)
+		return CreateScanReport(
+			resultsWrapper,
+			risksOverviewWrapper,
+			scanWrapper,
+			scanID,
+			format,
+			targetFile,
+			targetPath,
+			params)
 	}
 }
 
@@ -469,6 +515,7 @@ func runGetCodeBashingCommand(
 
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
 	scanID,
 	reportTypes,
@@ -495,7 +542,11 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	summary, err := SummaryReport(results, scan)
+	apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scanID)
+	if err != nil {
+		return err
+	}
+	summary, err := SummaryReport(results, scan, apiSecRisks)
 	if err != nil {
 		return err
 	}
@@ -507,6 +558,25 @@ func CreateScanReport(
 		}
 	}
 	return nil
+}
+
+func getResultsForAPISecScanner(
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scanID string,
+) (results *wrappers.APISecResult, err error) {
+	var apiSecResultsModel *wrappers.APISecResult
+	var errorModel *wrappers.WebError
+
+	apiSecResultsModel, errorModel, err = risksOverviewWrapper.GetAllAPISecRisksByScanID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	} else if apiSecResultsModel != nil {
+		return apiSecResultsModel, nil
+	}
+	return nil, nil
 }
 
 func isScanPending(scanStatus string) bool {
@@ -609,16 +679,25 @@ func enrichScaResults(
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if util.Contains(scan.Engines, scaType) {
+		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
-		}
 		if errorModel != nil {
 			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
+		// Get additional information to add the type information to the sca results
+		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
+		if errorModel != nil {
+			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
+		}
 		// Enrich sca results
 		if scaPackageModel != nil {
-			resultsModel = addPackageInformation(resultsModel, scaPackageModel)
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
 	}
 	return resultsModel, nil
@@ -953,12 +1032,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
-func addPackageInformation(
-	resultsModel *wrappers.ScanResultsCollection,
-	scaPackageModel *[]wrappers.ScaPackageCollection,
-) *wrappers.ScanResultsCollection {
-	var currentID string
-	locationsByID := make(map[string][]*string)
+func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]string) {
+	locationsByID = make(map[string][]*string)
+	typesByCVE = make(map[string]string)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == scaType {
@@ -966,8 +1043,30 @@ func addPackageInformation(
 				currentPackage := packages
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
+			for _, types := range *scaTypeModel {
+				currentTypes := types
+				typesByCVE[types.ID] = currentTypes.Type
+			}
 		}
 	}
+	return locationsByID, typesByCVE
+}
+
+func buildScaType(typesByCVE map[string]string, result *wrappers.ScanResult) string {
+	types := typesByCVE[result.ID]
+	if types == "SupplyChain" {
+		return "Supply Chain"
+	}
+	return "Vulnerability"
+}
+
+func addPackageInformation(
+	resultsModel *wrappers.ScanResultsCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaTypeModel *[]wrappers.ScaTypeCollection,
+) *wrappers.ScanResultsCollection {
+	var currentID string
+	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
 
 	for _, result := range resultsModel.Results {
 		if !(result.Type == scaType) {
@@ -977,6 +1076,8 @@ func addPackageInformation(
 			const precision = 1
 			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
 			result.VulnerabilityDetails.CvssScore = roundedScore
+			// Add the sca type
+			result.ScaType = buildScaType(typesByCVE, result)
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
@@ -993,6 +1094,11 @@ func addPackageInformation(
 						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
 					} else {
 						currentPackage.FixLink = ""
+					}
+					if currentPackage.IsDirectDependency {
+						currentPackage.TypeOfDependency = directDependencyType
+					} else {
+						currentPackage.TypeOfDependency = indirectDependencyType
 					}
 					result.ScanResultData.ScaPackageCollection = &currentPackage
 					break

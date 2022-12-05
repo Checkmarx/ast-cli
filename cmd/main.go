@@ -33,6 +33,7 @@ func main() {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scaPackage := viper.GetString(params.ScaPackagePathKey)
+	risksOverview := viper.GetString(params.RisksOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
@@ -45,6 +46,7 @@ func main() {
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -66,6 +68,7 @@ func main() {
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
+		risksOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
