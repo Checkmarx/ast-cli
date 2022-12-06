@@ -303,7 +303,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
-	apiSecRisks *wrappers.APISecResult,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
@@ -313,7 +313,15 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
-	summary.APISecurity = *apiSecRisks
+
+	if summary.HasAPISecurity() {
+		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+
+		summary.APISecurity = *apiSecRisks
+	}
 
 	for _, result := range results.Results {
 		countResult(summary, result)
@@ -542,11 +550,8 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scanID)
-	if err != nil {
-		return err
-	}
-	summary, err := SummaryReport(results, scan, apiSecRisks)
+
+	summary, err := SummaryReport(results, scan, risksOverviewWrapper)
 	if err != nil {
 		return err
 	}
