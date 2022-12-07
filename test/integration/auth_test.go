@@ -153,6 +153,8 @@ func TestAuthRegister(t *testing.T) {
 }
 
 func TestFailProxyAuth(t *testing.T) {
+	// 1 min 20 sec
+	t.Parallel()
 	proxyUser := viper.GetString(ProxyUserEnv)
 	proxyPort := viper.GetInt(ProxyPortEnv)
 	proxyHost := viper.GetString(ProxyHostEnv)

@@ -21,7 +21,8 @@ const (
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
-
+	// 38 sec
+	t.Parallel()
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)

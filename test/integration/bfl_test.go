@@ -10,7 +10,8 @@ import (
 )
 
 func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
-
+	// 37 sec
+	t.Parallel()
 	expectedMsg := "required flag(s) " + "\"" + params.QueryIDFlag + "\"" + ", " + "\"" + params.ScanIDFlag + "\"" + " not set"
 	assertRequiredParameter(t, expectedMsg, "results", "bfl")
 	scanID, _ := getRootScan(t)

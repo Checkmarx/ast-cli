@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,6 +29,8 @@ const (
 	pat          = "PERSONAL_ACCESS_TOKEN"
 )
 
+var mutex = sync.Mutex{}
+
 // Bind environment vars and their defaults to viper
 func bindKeysToEnvAndDefault(t *testing.T) {
 	for _, b := range params.EnvVarsBinds {
@@ -41,6 +44,7 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	mutex.Lock()
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
@@ -99,6 +103,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
 	)
+	mutex.Unlock()
 	return astCli
 }
 
@@ -157,7 +162,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	// args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

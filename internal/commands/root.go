@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -20,6 +21,8 @@ import (
 )
 
 const ErrorCodeFormat = "%s: CODE: %d, %s\n"
+
+var mutex sync.Mutex
 
 // NewAstCLI Return an AST CLI root command to execute
 func NewAstCLI(
@@ -44,6 +47,7 @@ func NewAstCLI(
 	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) *cobra.Command {
 	// Create the root
+	mutex.Lock()
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx AST CLI",
@@ -161,6 +165,7 @@ func NewAstCLI(
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
+	mutex.Unlock()
 	return rootCmd
 }
 

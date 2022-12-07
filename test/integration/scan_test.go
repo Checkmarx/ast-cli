@@ -62,6 +62,8 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
+	// 1 min 13 sec
+	t.Parallel()
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
@@ -75,6 +77,8 @@ func TestScansE2E(t *testing.T) {
 
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
+	// 49 sec
+	t.Parallel()
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 
@@ -89,6 +93,8 @@ func TestNoWaitScan(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
+	// 50 sec
+	t.Parallel()
 	scanID, projectID := createScanScaWithResolver(
 		t,
 		Dir,
@@ -135,6 +141,8 @@ func TestScaResolverArgFailed(t *testing.T) {
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
+	// 2 min 01 sec
+	t.Parallel()
 	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
@@ -149,6 +157,8 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
+	//  39 sec
+	t.Parallel()
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
 	defer deleteProject(t, projectID)
@@ -165,6 +175,8 @@ func TestCancelScan(t *testing.T) {
 // Create a scan with the sources from the integration package, excluding go files and including zips
 // Assert the scan completes
 func TestScanCreateIncludeFilter(t *testing.T) {
+	// 43 sec
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -187,6 +199,8 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThreshold(t *testing.T) {
+	// 30 sec
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -207,6 +221,8 @@ func TestScanCreateWithThreshold(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
+	// 36 sec
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -226,6 +242,8 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	// 36 sec
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -252,6 +270,8 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 // Create a scan ignoring the exclusion of the .git directory
 // Assert the folder is included in the logs
 func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
+	// 44 sec
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -293,6 +313,8 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 
 // Test the timeout for a long scan
 func TestScanTimeout(t *testing.T) {
+	// 2 m +
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
