@@ -1,7 +1,7 @@
 project_name: ast-cli
 
 release:
-  name_template: "AST CLI {{.Version}}"
+  name_template: "One CLI {{.Version}}"
 
 builds:
   - main: ./cmd/main.go
@@ -84,7 +84,7 @@ brews:
       token: "{{ .Env.GO_BOT_TOKEN }}"
     folder: Formula
     homepage: https://github.com/Checkmarx/ast-cli
-    description: CLI for AST
+    description: CLI for One
     license: Apache
     test: |
       system "#{bin}/cx version"

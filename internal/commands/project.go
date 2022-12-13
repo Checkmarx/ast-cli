@@ -63,7 +63,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
-		Long:  "The project command enables the ability to manage projects in CxAST.",
+		Long:  "The project command enables the ability to manage projects in CxONE.",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -76,7 +76,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates a new project",
-		Long:  "The project create command enables the ability to create a new project in CxAST.",
+		Long:  "The project create command enables the ability to create a new project in CxONE.",
 		Example: heredoc.Doc(
 			`
 			$ cx project create --project-name <Project Name>

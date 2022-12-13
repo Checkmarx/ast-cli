@@ -1,4 +1,4 @@
-name: Checkmarx AST Scan
+name: Checkmarx ONE Scan
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Checkmarx AST CLI Action
+      - name: Checkmarx ONE CLI Action
         uses: checkmarx/ast-github-action@main
         with:
           base_uri: ${{ secrets.AST_RND_SCANS_BASE_URI }}
