@@ -115,7 +115,7 @@ func resultShowSubCommand(
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show results of a scan",
-		Long:  "The show command enables the ability to show results about a requested scan in CxOne.",
+		Long:  "The show command enables the ability to show results about a requested scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx results show --scan-id <scan Id>

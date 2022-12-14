@@ -1,4 +1,4 @@
-name: One CLI
+name: Checkmarx One CLI
 
 on:
   pull_request:
