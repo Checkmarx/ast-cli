@@ -16,7 +16,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
-		Long:  "The 'triage' command enables the ability to manage results in CxONE.",
+		Long:  "The 'triage' command enables the ability to manage results in CxOne.",
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper)
@@ -59,7 +59,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	triageUpdateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update the state, severity or comment for the given issue",
-		Long:  "The update command enables the ability to triage the results in CxONE.",
+		Long:  "The update command enables the ability to triage the results in CxOne.",
 		Example: heredoc.Doc(
 			`
 				$ cx triage update 

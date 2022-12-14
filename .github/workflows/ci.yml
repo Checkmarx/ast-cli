@@ -1,4 +1,4 @@
-name: ONE CLI
+name: One CLI
 
 on:
   pull_request:
