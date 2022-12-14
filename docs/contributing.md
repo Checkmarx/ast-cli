@@ -1,6 +1,6 @@
-# Contributing to One CLI
+# Contributing to Checkmarx One CLI
 
-Welcome and thank you for considering contributing to the One CLI
+Welcome and thank you for considering contributing to the Checkmarx One CLI
 
 Reading and following these guidelines will help us make the contribution process easy and effective for everyone
 involved. It also communicates that you agree to respect the time of the developers managing and developing these open
@@ -9,7 +9,7 @@ you finalize your pull requests.
 
 ## Quicklinks
 
-- [Contributing to One CLI](#contributing-to-one-cli)
+- [Contributing to Checkmarx One CLI](#contributing-to-checkmarx-one-cli)
     - [Quicklinks](#quicklinks)
     - [Code of Conduct](#code-of-conduct)
     - [Getting Started](#getting-started)

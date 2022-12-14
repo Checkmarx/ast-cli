@@ -21,7 +21,7 @@ import (
 
 const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 
-// NewAstCLI Return an ONE CLI root command to execute
+// NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
@@ -47,7 +47,7 @@ func NewAstCLI(
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx One CLI",
-		Long:  "The One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server.",
+		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server.",
 		Example: heredoc.Doc(
 			`
 			$ cx configure
