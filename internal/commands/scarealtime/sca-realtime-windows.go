@@ -24,6 +24,7 @@ var windowsSCARealTime = ScaRealTime{
 	SCAResolverHashFileName:    "ScaResolver.zip.sha256sum",
 }
 
+// getScaResolver Gets SCA Resolver file path to run SCA Realtime
 func getScaResolver() (string, error) {
 	err := downloadSCAResolverAndHashFileIfNeeded(&windowsSCARealTime)
 	if err != nil {
@@ -33,6 +34,7 @@ func getScaResolver() (string, error) {
 	return windowsSCARealTime.ExecutableFilePath, nil
 }
 
+// unzipOrExtractFiles Extracts SCA Resolver files
 func unzipOrExtractFiles() error {
 	logger.PrintIfVerbose("Unzipping files in:  " + scaResolverWorkingDir)
 	r, err := zip.OpenReader(filepath.Join(scaResolverWorkingDir, windowsSCARealTime.SCAResolverFileName))

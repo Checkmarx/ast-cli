@@ -26,6 +26,7 @@ var linuxSCARealTime = ScaRealTime{
 	SCAResolverHashFileName:    "ScaResolver.tar.gz.sha256sum",
 }
 
+// getScaResolver Gets SCA Resolver file path to run SCA Realtime
 func getScaResolver() (string, error) {
 	err := downloadSCAResolverAndHashFileIfNeeded(&linuxSCARealTime)
 	if err != nil {
@@ -35,6 +36,7 @@ func getScaResolver() (string, error) {
 	return linuxSCARealTime.ExecutableFilePath, nil
 }
 
+// unzipOrExtractFiles Extracts SCA Resolver files
 func unzipOrExtractFiles() error {
 	logger.PrintIfVerbose("Extracting files in: " + scaResolverWorkingDir)
 	gzipStream, err := os.Open(filepath.Join(scaResolverWorkingDir, linuxSCARealTime.SCAResolverFileName))
