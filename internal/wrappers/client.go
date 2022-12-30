@@ -606,11 +606,23 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	if accessToken != "" {
-		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
+		var jwtStruct JWTStruct
+
 		if err != nil {
 			return "", err
 		}
+
+		extractedToken, err := extractFromTokenToInterface(accessToken)
+		if err != nil {
+			return "", errors.Errorf("Error extracting jwt - %v", err)
+		}
+		err = jwtToStruct(extractedToken, &jwtStruct)
+		if err != nil {
+			return "", err
+		}
+
+		logger.PrintIfVerbose("Base URI - Extract from JWT token")
+		cleanURL = strings.TrimSpace(jwtStruct.AstBaseUrl)
 	}
 
 	if cleanURL == "" || override {
@@ -639,6 +651,34 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	} else {
 		return "", errors.Errorf(jwtError)
 	}
-
 	return value, nil
+}
+
+func extractFromTokenToInterface(accessToken string) (interface{}, error) {
+	claims := jwt.MapClaims{}
+	_, _, err := new(jwt.Parser).ParseUnverified(accessToken, claims)
+	if err != nil {
+		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
+	}
+	return claims, nil
+}
+
+func jwtToStruct(extractedToken interface{}, jwtStruct *JWTStruct) error {
+	marshalled, err := json.Marshal(extractedToken)
+	if err != nil {
+		return errors.Errorf("Error encoding jwt struct - %v", err)
+	}
+	err = json.Unmarshal(marshalled, &jwtStruct)
+	if err != nil {
+		return errors.Errorf("Error decoding jwt struct - %v", err)
+	}
+	return nil
+}
+
+func fillMapAllowedEngines(engines []string) map[string]bool {
+	m := make(map[string]bool)
+	for _, value := range engines {
+		m[value] = true
+	}
+	return m
 }
