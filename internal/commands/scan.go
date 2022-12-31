@@ -810,7 +810,7 @@ func addAPISecScan() map[string]interface{} {
 func validateScanTypes(cmd *cobra.Command) {
 	err := getAllowedEngines()
 	if err != nil {
-		fmt.Errorf("error validating scan types: %v", err)
+		errors.Errorf("error validating scan types: %v", err)
 	}
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
@@ -1279,7 +1279,6 @@ func runCreateScanCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		wrappers.GetAccessToken()
 		branch := viper.GetString(commonParams.BranchKey)
 		if branch == "" {
 			return errors.Errorf("%s: Please provide a branch", failedCreating)
@@ -2142,11 +2141,11 @@ func getAllowedEngines() error {
 }
 
 func jwtToStruct(extractedToken interface{}, emptyJWT *wrappers.JWTStruct) error {
-	marshalled, err := json.Marshal(extractedToken)
+	marshaled, err := json.Marshal(extractedToken)
 	if err != nil {
 		return errors.Errorf("Error encoding jwt struct - %v", err)
 	}
-	err = json.Unmarshal(marshalled, &emptyJWT)
+	err = json.Unmarshal(marshaled, &emptyJWT)
 	if err != nil {
 		return errors.Errorf("Error decoding jwt struct - %v", err)
 	}

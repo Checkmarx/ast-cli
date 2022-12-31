@@ -59,18 +59,18 @@ type JWTStruct struct {
 	} `json:"resource_access"`
 	Scope             string        `json:"scope"`
 	Sid               string        `json:"sid"`
-	TenantId          string        `json:"tenant_id"`
+	TenantID          string        `json:"tenant_id"`
 	TenantName        string        `json:"tenant_name"`
 	EmailVerified     bool          `json:"email_verified"`
 	Roles             []string      `json:"roles"`
 	EulaAccepted      bool          `json:"eula-accepted"`
 	Groups            []interface{} `json:"groups"`
 	GroupsNames       []interface{} `json:"groupsNames"`
-	CbUrl             string        `json:"cb-url"`
+	CbURL             string        `json:"cb-url"`
 	PreferredUsername string        `json:"preferred_username"`
 	GivenName         string        `json:"given_name"`
-	AstBaseUrl        string        `json:"ast-base-url"`
-	SfId              string        `json:"sf-id"`
+	AstBaseURL        string        `json:"ast-base-url"`
+	SfID              string        `json:"sf-id"`
 	RolesAst          []string      `json:"roles_ast"`
 	Name              string        `json:"name"`
 	TenantType        string        `json:"tenant-type"`
@@ -86,7 +86,7 @@ type JWTStruct struct {
 			ServiceType                     string   `json:"serviceType"`
 			ActivationDate                  int64    `json:"activationDate"`
 			AllowedEngines                  []string `json:"allowedEngines"`
-			CodeBashingUrl                  string   `json:"codeBashingUrl"`
+			CodeBashingURL                  string   `json:"codeBashingUrl"`
 			ExpirationDate                  int64    `json:"expirationDate"`
 			UnlimitedProjects               bool     `json:"unlimitedProjects"`
 			CodeBashingEnabled              bool     `json:"codeBashingEnabled"`
