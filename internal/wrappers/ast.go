@@ -37,9 +37,6 @@ func NewAstError(code int, err error) *AstError {
 	}
 }
 
-// AllowedEngines used to tidy user allowed engines information
-type AllowedEngines map[string]bool
-
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
 	Exp            int      `json:"exp"`

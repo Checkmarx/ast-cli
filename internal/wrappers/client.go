@@ -61,6 +61,10 @@ const audienceClaimKey = "aud"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
+var JwtStruct JWTStruct
+
+// AllowedEngines used to tidy user allowed engines information
+var AllowedEngines = make(map[string]bool)
 
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
@@ -604,25 +608,12 @@ func GetURL(path, accessToken string) (string, error) {
 	var err error
 	var cleanURL string
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
-
 	if accessToken != "" {
-		var jwtStruct JWTStruct
-
-		if err != nil {
-			return "", err
-		}
-
-		extractedToken, err := extractFromTokenToInterface(accessToken)
-		if err != nil {
-			return "", errors.Errorf("Error extracting jwt - %v", err)
-		}
-		err = jwtToStruct(extractedToken, &jwtStruct)
-		if err != nil {
-			return "", err
-		}
-
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL = strings.TrimSpace(jwtStruct.AstBaseUrl)
+		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	if cleanURL == "" || override {
@@ -654,31 +645,12 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	return value, nil
 }
 
-func extractFromTokenToInterface(accessToken string) (interface{}, error) {
+// ExtractFromTokenToInterface used in scan validation
+func ExtractFromTokenToInterface(accessToken string) (interface{}, error) {
 	claims := jwt.MapClaims{}
 	_, _, err := new(jwt.Parser).ParseUnverified(accessToken, claims)
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
 	return claims, nil
-}
-
-func jwtToStruct(extractedToken interface{}, jwtStruct *JWTStruct) error {
-	marshalled, err := json.Marshal(extractedToken)
-	if err != nil {
-		return errors.Errorf("Error encoding jwt struct - %v", err)
-	}
-	err = json.Unmarshal(marshalled, &jwtStruct)
-	if err != nil {
-		return errors.Errorf("Error decoding jwt struct - %v", err)
-	}
-	return nil
-}
-
-func fillMapAllowedEngines(engines []string) map[string]bool {
-	m := make(map[string]bool)
-	for _, value := range engines {
-		m[value] = true
-	}
-	return m
 }
