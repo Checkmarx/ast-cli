@@ -810,7 +810,8 @@ func addAPISecScan() map[string]interface{} {
 func validateScanTypes(cmd *cobra.Command) {
 	err := getAllowedEngines()
 	if err != nil {
-		errors.Errorf("error validating scan types: %v", err)
+		log.Println(fmt.Sprintf("error validating scan types: %v", err))
+		os.Exit(1)
 	}
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
