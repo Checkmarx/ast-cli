@@ -82,7 +82,7 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
-	engineNotAllowed                = "Error: engine \"%s\" is not allowed for the current user. \nPlease provide some of the allowed engines: %s"
+	engineNotAllowed                = "It looks like you are trying to run a scan without the \"%s\" package license. \nIn order to use this feature, you will need to purchase a license. If you believe you have already purchased a license, please contact our support team for assistance.\nLicensed packages: %s"
 )
 
 var (
@@ -808,24 +808,28 @@ func addAPISecScan() map[string]interface{} {
 }
 
 func validateScanTypes(cmd *cobra.Command) {
-	err := getAllowedEngines()
+	var allowedScanTypes []string
+	err := GetAllowedEngines()
 	if err != nil {
 		log.Println(fmt.Sprintf("error validating scan types: %v", err))
 		os.Exit(1)
+	}
+	scanTypes := strings.Split(actualScanTypes, ",")
+	for _, scanType := range scanTypes {
+		if wrappers.AllowedEngines[scanType] {
+			allowedScanTypes = append(allowedScanTypes, scanType)
+		}
 	}
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
 		// postprocessor to match iac-security with kics
 		actualScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.IacType, commonParams.KicsType, 1)
+		allowedScanTypes = strings.Split(actualScanTypes, ",")
 	}
 
-	scanTypes := strings.Split(actualScanTypes, ",")
-	for _, scanType := range scanTypes {
+	for _, scanType := range allowedScanTypes {
 		isValid := false
-		if !wrappers.AllowedEngines[scanType] {
-			log.Println(fmt.Sprintf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines))
-			os.Exit(1)
-		}
+
 		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.SastType) ||
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
 			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
@@ -841,6 +845,11 @@ func validateScanTypes(cmd *cobra.Command) {
 
 		if !isValid {
 			log.Println(fmt.Sprintf("Error: unknown scan type: %s", scanType))
+			os.Exit(1)
+		}
+
+		if !wrappers.AllowedEngines[scanType] {
+			log.Println(fmt.Sprintf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines))
 			os.Exit(1)
 		}
 	}
@@ -2124,7 +2133,8 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 	return flagValue
 }
 
-func getAllowedEngines() error {
+// GetAllowedEngines TODO: mock to fix tests
+func GetAllowedEngines() error {
 	accessToken, err := wrappers.GetAccessToken()
 	if err != nil {
 		return err
@@ -2137,7 +2147,7 @@ func getAllowedEngines() error {
 	if err != nil {
 		return err
 	}
-	wrappers.AllowedEngines = fillMap(wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
+	wrappers.AllowedEngines = fillBooleanMap(wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
 	return nil
 }
 
@@ -2153,7 +2163,7 @@ func jwtToStruct(extractedToken interface{}, emptyJWT *wrappers.JWTStruct) error
 	return nil
 }
 
-func fillMap(engines []string) map[string]bool {
+func fillBooleanMap(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		m[strings.ToLower(value)] = true
