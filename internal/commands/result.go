@@ -345,12 +345,21 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
 	if contains(summary.EnginesEnabled, engineType) {
 		if engineType == commonParams.SastType && result.State != notExploitable {
+			if summary.SastIssues == notAvailableNumber {
+				summary.SastIssues++
+			}
 			summary.SastIssues++
 			summary.TotalIssues++
 		} else if engineType == commonParams.ScaType {
+			if summary.ScaIssues == notAvailableNumber {
+				summary.ScaIssues++
+			}
 			summary.ScaIssues++
 			summary.TotalIssues++
 		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+			if summary.KicsIssues == notAvailableNumber {
+				summary.KicsIssues++
+			}
 			summary.KicsIssues++
 			summary.TotalIssues++
 		}
