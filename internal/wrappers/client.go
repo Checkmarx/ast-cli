@@ -63,9 +63,6 @@ var cachedAccessToken string
 var cachedAccessTime time.Time
 var JwtStruct JWTStruct
 
-// AllowedEngines used to tidy user allowed engines information
-var AllowedEngines = make(map[string]bool)
-
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)

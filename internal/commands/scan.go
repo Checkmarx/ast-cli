@@ -809,14 +809,14 @@ func addAPISecScan() map[string]interface{} {
 
 func validateScanTypes(cmd *cobra.Command) {
 	var allowedScanTypes []string
-	err := GetAllowedEngines()
+	err, allowedEngines := GetAllowedEngines()
 	if err != nil {
 		log.Println(fmt.Sprintf("error validating scan types: %v", err))
 		os.Exit(1)
 	}
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, scanType := range scanTypes {
-		if wrappers.AllowedEngines[scanType] {
+		if allowedEngines[scanType] {
 			allowedScanTypes = append(allowedScanTypes, scanType)
 		}
 	}
@@ -848,7 +848,7 @@ func validateScanTypes(cmd *cobra.Command) {
 			os.Exit(1)
 		}
 
-		if !wrappers.AllowedEngines[scanType] {
+		if !allowedEngines[scanType] {
 			log.Println(fmt.Sprintf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines))
 			os.Exit(1)
 		}
@@ -2134,21 +2134,21 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 }
 
 // GetAllowedEngines TODO: mock to fix tests
-func GetAllowedEngines() error {
+func GetAllowedEngines() (error, map[string]bool) {
 	accessToken, err := wrappers.GetAccessToken()
 	if err != nil {
-		return err
+		return err, nil
 	}
 	extractedToken, err := wrappers.ExtractFromTokenToInterface(accessToken)
 	if err != nil {
-		return errors.Errorf("Error extracting jwt - %v", err)
+		return errors.Errorf("Error extracting jwt - %v", err), nil
 	}
 	err = jwtToStruct(extractedToken, &wrappers.JwtStruct)
 	if err != nil {
-		return err
+		return err, nil
 	}
-	wrappers.AllowedEngines = fillBooleanMap(wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
-	return nil
+	allowedEngines := fillBooleanMap(wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
+	return nil, allowedEngines
 }
 
 func jwtToStruct(extractedToken interface{}, emptyJWT *wrappers.JWTStruct) error {
