@@ -116,6 +116,7 @@ func NewScanCommand(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -136,7 +137,8 @@ func NewScanCommand(
 		resultsWrapper,
 		projectsWrapper,
 		groupsWrapper,
-		riskOverviewWrapper)
+		riskOverviewWrapper,
+		jwtWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper)
 
@@ -379,6 +381,7 @@ func scanCreateSubCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -402,7 +405,9 @@ func scanCreateSubCommand(
 			resultsWrapper,
 			projectsWrapper,
 			groupsWrapper,
-			risksOverviewWrapper),
+			risksOverviewWrapper,
+			jwtWrapper,
+		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(
@@ -807,9 +812,9 @@ func addAPISecScan() map[string]interface{} {
 	return nil
 }
 
-func validateScanTypes(cmd *cobra.Command) {
+func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) {
 	var allowedScanTypes []string
-	err, allowedEngines := GetAllowedEngines()
+	err, allowedEngines := jwtWrapper.GetAllowedEngines()
 	if err != nil {
 		log.Println(fmt.Sprintf("error validating scan types: %v", err))
 		os.Exit(1)
@@ -1287,6 +1292,7 @@ func runCreateScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		branch := viper.GetString(commonParams.BranchKey)
@@ -1303,6 +1309,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1376,8 +1383,9 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	validateScanTypes(cmd)
+	validateScanTypes(cmd, jwtWrapper)
 
 	var input = []byte("{}")
 
@@ -2131,42 +2139,4 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
 	}
 	return flagValue
-}
-
-// GetAllowedEngines TODO: mock to fix tests
-func GetAllowedEngines() (error, map[string]bool) {
-	accessToken, err := wrappers.GetAccessToken()
-	if err != nil {
-		return err, nil
-	}
-	extractedToken, err := wrappers.ExtractFromTokenToInterface(accessToken)
-	if err != nil {
-		return errors.Errorf("Error extracting jwt - %v", err), nil
-	}
-	err = jwtToStruct(extractedToken, &wrappers.JwtStruct)
-	if err != nil {
-		return err, nil
-	}
-	allowedEngines := fillBooleanMap(wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
-	return nil, allowedEngines
-}
-
-func jwtToStruct(extractedToken interface{}, emptyJWT *wrappers.JWTStruct) error {
-	marshaled, err := json.Marshal(extractedToken)
-	if err != nil {
-		return errors.Errorf("Error encoding jwt struct - %v", err)
-	}
-	err = json.Unmarshal(marshaled, &emptyJWT)
-	if err != nil {
-		return errors.Errorf("Error decoding jwt struct - %v", err)
-	}
-	return nil
-}
-
-func fillBooleanMap(engines []string) map[string]bool {
-	m := make(map[string]bool)
-	for _, value := range engines {
-		m[strings.ToLower(value)] = true
-	}
-	return m
 }

@@ -77,7 +77,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
-
+	jwtWrapper := wrappers.NewJwtWrapper()
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPredicatesWrapper,
@@ -98,6 +98,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		prWrapper,
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
+		jwtWrapper,
 	)
 	return astCli
 }
@@ -157,7 +158,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	//args = appendProxyArgs(args)
+	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

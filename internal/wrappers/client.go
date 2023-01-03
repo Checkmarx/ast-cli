@@ -651,3 +651,41 @@ func ExtractFromTokenToInterface(accessToken string) (interface{}, error) {
 	}
 	return claims, nil
 }
+
+// GetAllowedEngines TODO: mock to fix tests
+func (*JWTStruct) GetAllowedEngines() (error, map[string]bool) {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return err, nil
+	}
+	extractedToken, err := ExtractFromTokenToInterface(accessToken)
+	if err != nil {
+		return errors.Errorf("Error extracting jwt - %v", err), nil
+	}
+	err = jwtToStruct(extractedToken, &JwtStruct)
+	if err != nil {
+		return err, nil
+	}
+	allowedEngines := fillBooleanMap(JwtStruct.AstLicense.LicenseData.AllowedEngines)
+	return nil, allowedEngines
+}
+
+func jwtToStruct(extractedToken interface{}, emptyJWT *JWTStruct) error {
+	marshaled, err := json.Marshal(extractedToken)
+	if err != nil {
+		return errors.Errorf("Error encoding jwt struct - %v", err)
+	}
+	err = json.Unmarshal(marshaled, &emptyJWT)
+	if err != nil {
+		return errors.Errorf("Error decoding jwt struct - %v", err)
+	}
+	return nil
+}
+
+func fillBooleanMap(engines []string) map[string]bool {
+	m := make(map[string]bool)
+	for _, value := range engines {
+		m[strings.ToLower(value)] = true
+	}
+	return m
+}
