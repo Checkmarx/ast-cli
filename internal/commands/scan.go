@@ -82,7 +82,10 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
-	engineNotAllowed                = "It looks like you are trying to run a scan without the \"%s\" package license. \nIn order to use this feature, you will need to purchase a license. If you believe you have already purchased a license, please contact our support team for assistance.\nLicensed packages: %s"
+	engineNotAllowed                = "It looks like you are trying to run a scan without the \"%s\" package license." +
+		"\nIn order to use this feature, you will need to purchase a license." +
+		"\nIf you believe you have already purchased a license, please contact our support team for assistance." +
+		"\nLicensed packages: %s"
 )
 
 var (
