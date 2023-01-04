@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
+	"strings"
 
 	"fmt"
 	"os/exec"
@@ -124,7 +125,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 				Type:        vulnerability.Type,
 				ScaType:     "vulnerability",
 				Description: vulnerability.Description,
-				Severity:    vulnerability.Severity,
+				Severity:    strings.ToUpper(vulnerability.Severity),
 				VulnerabilityDetails: wrappers.VulnerabilityDetails{
 					CweID:     vulnerability.Cve,
 					CvssScore: score,
@@ -149,6 +150,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 					Nodes: []*wrappers.ScanResultNode{{
 						FileName: packageData.FileName,
 					}},
+					PackageIdentifier: packageData.PackageName,
 				},
 			})
 		}
