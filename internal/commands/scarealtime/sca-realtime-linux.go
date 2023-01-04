@@ -15,8 +15,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-const temporaryProjectPathToScan = "../../small-project/"
-
 var linuxSCARealTime = ScaRealTime{
 	ExecutableFilePath:         filepath.Join(scaResolverWorkingDir, "ScaResolver"),
 	HashFilePath:               filepath.Join(scaResolverWorkingDir, "ScaResolver.tar.gz.sha256sum"),

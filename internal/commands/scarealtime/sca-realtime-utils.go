@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type ScaRealTime struct {

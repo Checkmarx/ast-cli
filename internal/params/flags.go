@@ -78,6 +78,8 @@ const (
 	KicsRealtimeFile             = "file"
 	KicsRealtimeEngine           = "engine"
 	KicsRealtimeAdditionalParams = "additional-params"
+	ScaRealtimeProjectDir        = "project-dir"
+	ScaRealtimeProjectDirSh      = "p"
 	RemediationFiles             = "package-files"
 	KicsRemediationFile          = "results-file"
 	KicsProjectFile              = "kics-files"

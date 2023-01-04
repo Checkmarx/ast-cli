@@ -116,6 +116,7 @@ func NewScanCommand(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -154,7 +155,7 @@ func NewScanCommand(
 
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
-	scaRealtimeCmd := scaRealtimeSubCommand()
+	scaRealtimeCmd := scaRealtimeSubCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -219,7 +220,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 	return realtimeScanCmd
 }
 
-func scaRealtimeSubCommand() *cobra.Command {
+func scaRealtimeSubCommand(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) *cobra.Command {
 	scaRealtimeScanCmd := &cobra.Command{
 		Use:   "sca-realtime",
 		Short: "Create and run sca scan",
@@ -238,8 +239,16 @@ func scaRealtimeSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: scarealtime.RunScaRealtime(),
+		RunE: scarealtime.RunScaRealtime(scaRealTimeWrapper),
 	}
+
+	scaRealtimeScanCmd.PersistentFlags().StringP(
+		commonParams.ScaRealtimeProjectDir,
+		commonParams.ScaRealtimeProjectDirSh,
+		"",
+		"Path to the project on which SCA Resolver will run",
+	)
+	markFlagAsRequired(scaRealtimeScanCmd, commonParams.ScaRealtimeProjectDir)
 
 	return scaRealtimeScanCmd
 }
