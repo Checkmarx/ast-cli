@@ -124,6 +124,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 			results = append(results, &wrappers.ScanResult{
 				Type:        vulnerability.Type,
 				ScaType:     "vulnerability",
+				Label:       commonParams.ScaType,
 				Description: vulnerability.Description,
 				Severity:    strings.ToUpper(vulnerability.Severity),
 				VulnerabilityDetails: wrappers.VulnerabilityDetails{
