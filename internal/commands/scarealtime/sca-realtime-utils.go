@@ -41,6 +41,7 @@ func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
 		return err
 	}
 
+	// Unzip or extract SCA Resolver depending on which OS it is running
 	err = UnzipOrExtractFiles()
 	if err != nil {
 		return err
