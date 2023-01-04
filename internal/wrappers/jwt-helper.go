@@ -66,7 +66,7 @@ type JWTStruct struct {
 }
 
 type JWTWrapper interface {
-	GetAllowedEngines() (error, map[string]bool)
+	GetAllowedEngines() (err error, allowedEngines map[string]bool)
 }
 
 func NewJwtWrapper() JWTWrapper {

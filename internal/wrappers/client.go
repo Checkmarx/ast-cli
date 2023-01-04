@@ -652,8 +652,8 @@ func ExtractFromTokenToInterface(accessToken string) (interface{}, error) {
 	return claims, nil
 }
 
-// GetAllowedEngines TODO: mock to fix tests
-func (*JWTStruct) GetAllowedEngines() (error, map[string]bool) {
+// GetAllowedEngines will return a map with user allowed engines
+func (*JWTStruct) GetAllowedEngines() (err error, allowedEngines map[string]bool) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return err, nil
@@ -666,7 +666,7 @@ func (*JWTStruct) GetAllowedEngines() (error, map[string]bool) {
 	if err != nil {
 		return err, nil
 	}
-	allowedEngines := fillBooleanMap(JwtStruct.AstLicense.LicenseData.AllowedEngines)
+	allowedEngines = fillBooleanMap(JwtStruct.AstLicense.LicenseData.AllowedEngines)
 	return nil, allowedEngines
 }
 
