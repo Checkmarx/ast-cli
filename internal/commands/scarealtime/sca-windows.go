@@ -13,29 +13,19 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-var windowsSCARealTime = ScaRealTime{
-	ExecutableFilePath:         filepath.Join(scaResolverWorkingDir, "ScaResolver.exe"),
-	HashFilePath:               filepath.Join(scaResolverWorkingDir, "ScaResolver.zip.sha256sum"),
+var Params = ScaRealTime{
+	ExecutableFilePath:         filepath.Join(ScaResolverWorkingDir, "ScaResolver.exe"),
+	HashFilePath:               filepath.Join(ScaResolverWorkingDir, "ScaResolver.zip.sha256sum"),
 	SCAResolverDownloadURL:     "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-win64.zip",
 	SCAResolverHashDownloadURL: "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-win64.zip.sha256sum",
 	SCAResolverFileName:        "ScaResolver.zip",
 	SCAResolverHashFileName:    "ScaResolver.zip.sha256sum",
 }
 
-// getScaResolver Gets SCA Resolver file path to run SCA Realtime
-func getScaResolver() (string, error) {
-	err := downloadSCAResolverAndHashFileIfNeeded(&windowsSCARealTime)
-	if err != nil {
-		return "", err
-	}
-
-	return windowsSCARealTime.ExecutableFilePath, nil
-}
-
-// unzipOrExtractFiles Extracts SCA Resolver files
-func unzipOrExtractFiles() error {
-	logger.PrintIfVerbose("Unzipping files in:  " + scaResolverWorkingDir)
-	r, err := zip.OpenReader(filepath.Join(scaResolverWorkingDir, windowsSCARealTime.SCAResolverFileName))
+// UnzipOrExtractFiles Extracts SCA Resolver files
+func UnzipOrExtractFiles() error {
+	logger.PrintIfVerbose("Unzipping files in:  " + ScaResolverWorkingDir)
+	r, err := zip.OpenReader(filepath.Join(ScaResolverWorkingDir, Params.SCAResolverFileName))
 	if err != nil {
 		return err
 	}
@@ -57,10 +47,10 @@ func unzipOrExtractFiles() error {
 			}
 		}()
 
-		path := filepath.Join(scaResolverWorkingDir, f.Name)
+		path := filepath.Join(ScaResolverWorkingDir, f.Name)
 
 		// Check for ZipSlip (Directory traversal)
-		if !strings.HasPrefix(path, filepath.Clean(scaResolverWorkingDir)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(path, filepath.Clean(ScaResolverWorkingDir)+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", path)
 		}
 

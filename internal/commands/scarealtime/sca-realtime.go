@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"strconv"
-	"time"
 
 	"fmt"
 	"os/exec"
@@ -16,119 +15,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ScaResultsFile struct {
-	ScanMetadata struct {
-		StartTime     time.Time `json:"StartTime"`
-		ScanPath      string    `json:"ScanPath"`
-		ScanArguments struct {
-			ProjectDownloadURL interface{} `json:"ProjectDownloadUrl"`
-			ScanID             string      `json:"ScanId"`
-			TenantID           string      `json:"TenantId"`
-			ExcludePatterns    struct {
-				Patterns []interface{} `json:"Patterns"`
-			} `json:"ExcludePatterns"`
-			IgnoreDevDependencies               bool        `json:"IgnoreDevDependencies"`
-			ShouldResolveDependenciesLocally    bool        `json:"ShouldResolveDependenciesLocally"`
-			NpmPartialResultsFallbackScriptPath interface{} `json:"NpmPartialResultsFallbackScriptPath"`
-			EnvironmentVariables                struct {
-			} `json:"EnvironmentVariables"`
-			ShouldUseHoistFlagWhenUseLerna              bool `json:"ShouldUseHoistFlagWhenUseLerna"`
-			ShouldResolvePartialResults                 bool `json:"ShouldResolvePartialResults"`
-			ProjectRelativePathsToPythonVersionsMapping struct {
-			} `json:"ProjectRelativePathsToPythonVersionsMapping"`
-			AdditionalScanArguments struct {
-			} `json:"AdditionalScanArguments"`
-			ExtractArchives                []string      `json:"ExtractArchives"`
-			ExtractDepth                   int           `json:"ExtractDepth"`
-			GradleExcludedScopes           []interface{} `json:"GradleExcludedScopes"`
-			GradleIncludedScopes           []interface{} `json:"GradleIncludedScopes"`
-			GradleDevDependenciesScopes    []interface{} `json:"GradleDevDependenciesScopes"`
-			GradleModulesToIgnore          []interface{} `json:"GradleModulesToIgnore"`
-			GradleModulesToInclude         []interface{} `json:"GradleModulesToInclude"`
-			GradlePluginDependenciesScopes []interface{} `json:"GradlePluginDependenciesScopes"`
-			Proxies                        struct {
-			} `json:"Proxies"`
-			NugetCliPath        string      `json:"NugetCliPath"`
-			IvyReportTarget     interface{} `json:"IvyReportTarget"`
-			IvyReportFilesDir   interface{} `json:"IvyReportFilesDir"`
-			EnableContainerScan bool        `json:"EnableContainerScan"`
-		} `json:"ScanArguments"`
-		ScanDiagnostics struct {
-			ShouldResolveDependenciesLocally                  bool    `json:"ShouldResolveDependenciesLocally"`
-			ScopeMilliseconds                                 int     `json:"scopeMilliseconds"`
-			ResolveDependenciesForFilePomXMLScopeMilliseconds int     `json:"ResolveDependenciesForFile[pom.xml].scopeMilliseconds"`
-			ShouldResolvePartialResults                       string  `json:"ShouldResolvePartialResults"`
-			EnvironmentVariables                              string  `json:"EnvironmentVariables"`
-			FolderAnalyzerAnalyzedFilesCount                  float64 `json:"FolderAnalyzer.analyzedFilesCount"`
-			FolderAnalyzerScopeMilliseconds                   int     `json:"FolderAnalyzer.scopeMilliseconds"`
-		} `json:"ScanDiagnostics"`
-	} `json:"ScanMetadata"`
-	AnalyzedFiles []struct {
-		RelativePath string `json:"RelativePath"`
-		Size         int    `json:"Size"`
-		Fingerprints []struct {
-			Type  string `json:"Type"`
-			Value string `json:"Value"`
-		} `json:"Fingerprints"`
-	} `json:"AnalyzedFiles"`
-	DependencyResolutionResults []DependencyResolution `json:"DependencyResolutionResults"`
-	ContainerResolutionResults  struct {
-		ImagePaths []interface{} `json:"ImagePaths"`
-		Layers     struct {
-		} `json:"Layers"`
-	} `json:"ContainerResolutionResults"`
-}
-
-type DependencyResolution struct {
-	Dependencies             []Dependency `json:"Dependencies"`
-	PackageManagerFile       string       `json:"PackageManagerFile"`
-	ResolvingModuleType      string       `json:"ResolvingModuleType"`
-	DependencyResolverStatus string       `json:"DependencyResolverStatus"`
-	Message                  string       `json:"Message"`
-}
-
-type Dependency struct {
-	Children            []ID   `json:"Children"`
-	ID                  ID     `json:"Id"`
-	IsDirect            bool   `json:"IsDirect"`
-	IsDevelopment       bool   `json:"IsDevelopment"`
-	IsPluginDependency  bool   `json:"IsPluginDependency"`
-	IsTestDependency    bool   `json:"IsTestDependency"`
-	PotentialPrivate    bool   `json:"PotentialPrivate"`
-	ResolvingModuleType string `json:"ResolvingModuleType"`
-	AdditionalData      struct {
-		ArtifactID string `json:"ArtifactId"`
-		GroupID    string `json:"GroupId"`
-	} `json:"AdditionalData"`
-	TargetFrameworks []interface{} `json:"TargetFrameworks"`
-}
-
-type ID struct {
-	NodeID  string `json:"NodeId"`
-	Name    string `json:"Name"`
-	Version string `json:"Version"`
-}
-
 // RunScaRealtime Main method responsible to run sca realtime feature
 func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
-		if projectDirPath == "" {
-			return errors.New("missing project path")
-		}
-
 		fmt.Println("Handling SCA Resolver...")
-		scaResolverExecutableFile, err := getScaResolver()
+
+		err := downloadSCAResolverAndHashFileIfNeeded(&Params)
 		if err != nil {
 			return err
 		}
 
-		err = executeSCAResolver(scaResolverExecutableFile, projectDirPath)
+		projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
+		err = executeSCAResolver(projectDirPath)
 		if err != nil {
 			return err
 		}
 
-		err = buildSCAResults(scaRealTimeWrapper)
+		err = getSCAResults(scaRealTimeWrapper)
 		if err != nil {
 			return err
 		}
@@ -138,7 +41,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 }
 
 // executeSCAResolver Executes sca resolver for a specific path
-func executeSCAResolver(executable, projectPath string) error {
+func executeSCAResolver(projectPath string) error {
 	args := []string{
 		"offline",
 		"-s",
@@ -146,11 +49,11 @@ func executeSCAResolver(executable, projectPath string) error {
 		"-n",
 		"dev_sca_realtime_project",
 		"-r",
-		scaResolverWorkingDir + "/cx-sca-realtime-results.json",
+		ScaResolverWorkingDir + "/cx-sca-realtime-results.json",
 	}
 	fmt.Println(fmt.Printf("Running SCA resolver with args: %v", args))
 
-	_, err := exec.Command(executable, args...).Output()
+	_, err := exec.Command(Params.ExecutableFilePath, args...).Output()
 	if err != nil {
 		return err
 	}
@@ -159,8 +62,8 @@ func executeSCAResolver(executable, projectPath string) error {
 	return nil
 }
 
-func buildSCAResults(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
-	file, err := ioutil.ReadFile(scaResolverWorkingDir + "/cx-sca-realtime-results.json")
+func getSCAResults(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
+	file, err := ioutil.ReadFile(ScaResolverWorkingDir + "/cx-sca-realtime-results.json")
 	if err != nil {
 		return err
 	}

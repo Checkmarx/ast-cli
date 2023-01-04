@@ -4,25 +4,17 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-type ScaRealTime struct {
-	ExecutableFilePath         string
-	HashFilePath               string
-	SCAResolverDownloadURL     string
-	SCAResolverHashDownloadURL string
-	SCAResolverFileName        string
-	SCAResolverHashFileName    string
-}
-
-var scaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
+var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
 
 // downloadSCAResolverAndHashFileIfNeeded Downloads SCA Realtime if it is not downloaded yet
 func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
@@ -49,7 +41,7 @@ func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
 		return err
 	}
 
-	err = unzipOrExtractFiles()
+	err = UnzipOrExtractFiles()
 	if err != nil {
 		return err
 	}
@@ -60,7 +52,7 @@ func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
 // createWorkingDirectory Creates a working directory to handle SCA Realtime functionality
 func createWorkingDirectory() error {
 	logger.PrintIfVerbose("Creating temporary directory to handle SCA Realtime...")
-	err := os.MkdirAll(scaResolverWorkingDir, fs.ModePerm)
+	err := os.MkdirAll(ScaResolverWorkingDir, fs.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -149,7 +141,7 @@ func downloadFile(downloadURLPath, fileName string) error {
 
 	responseBody, _ := wrappers.DownloadFile(downloadURLPath)
 
-	scaResolverZipFile, err := os.Create(filepath.Join(scaResolverWorkingDir, fileName))
+	scaResolverZipFile, err := os.Create(filepath.Join(ScaResolverWorkingDir, fileName))
 	if err != nil {
 		fmt.Printf("Error creating SCA resolver zip file: %s", err)
 		return err
