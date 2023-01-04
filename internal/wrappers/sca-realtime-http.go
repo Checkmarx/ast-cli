@@ -3,10 +3,11 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"net/http"
 )
 
 type ScaRealTimeHTTPWrapper struct {
@@ -28,7 +29,7 @@ func (s ScaRealTimeHTTPWrapper) GetScaVulnerabilitiesPackages(scaRequest []ScaDe
 
 	resp, err := SendHTTPRequestByFullURL(http.MethodPost, s.path, bytes.NewReader(jsonBytes), false, clientTimeout, "")
 	if err != nil {
-		return nil, nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
+		return nil, nil, errors.Errorf("Invoking HTTP request to get sca vulnerabilities failed - %s", err.Error())
 	}
 	defer func() {
 		_ = resp.Body.Close()

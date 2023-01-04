@@ -56,7 +56,7 @@ type ScaResultsFile struct {
 		ScanDiagnostics struct {
 			ShouldResolveDependenciesLocally                  bool    `json:"ShouldResolveDependenciesLocally"`
 			ScopeMilliseconds                                 int     `json:"scopeMilliseconds"`
-			ResolveDependenciesForFilePomXmlScopeMilliseconds int     `json:"ResolveDependenciesForFile[pom.xml].scopeMilliseconds"`
+			ResolveDependenciesForFilePomXMLScopeMilliseconds int     `json:"ResolveDependenciesForFile[pom.xml].scopeMilliseconds"`
 			ShouldResolvePartialResults                       string  `json:"ShouldResolvePartialResults"`
 			EnvironmentVariables                              string  `json:"EnvironmentVariables"`
 			FolderAnalyzerAnalyzedFilesCount                  float64 `json:"FolderAnalyzer.analyzedFilesCount"`
@@ -97,8 +97,8 @@ type Dependency struct {
 	PotentialPrivate    bool   `json:"PotentialPrivate"`
 	ResolvingModuleType string `json:"ResolvingModuleType"`
 	AdditionalData      struct {
-		ArtifactId string `json:"ArtifactId"`
-		GroupId    string `json:"GroupId"`
+		ArtifactID string `json:"ArtifactId"`
+		GroupID    string `json:"GroupId"`
 	} `json:"AdditionalData"`
 	TargetFrameworks []interface{} `json:"TargetFrameworks"`
 }
@@ -194,10 +194,6 @@ func buildSCAResults(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
 		for _, value := range dependencyMap {
 			body = append(body, value)
 		}
-
-		//fmt.Printf("Body Length before request: %d\n", len(body))
-		//jsonF, _ := json.Marshal(body)
-		//fmt.Println(string(jsonF))
 
 		model, _, _ := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(body)
 		for _, value := range model {

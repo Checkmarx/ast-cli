@@ -10,10 +10,10 @@ type ScaDependencyBodyRequest struct {
 
 type ScaVulnerabilitiesResponseModel struct {
 	FileName        string
-	PackageName     string          `json:"packageName"`
-	PackageManager  string          `json:"packageManager"`
-	Version         string          `json:"version"`
-	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
+	PackageName     string           `json:"packageName"`
+	PackageManager  string           `json:"packageManager"`
+	Version         string           `json:"version"`
+	Vulnerabilities []*Vulnerability `json:"vulnerabilities"`
 }
 
 type Vulnerability struct {
@@ -48,9 +48,9 @@ type Vulnerability struct {
 	References  []*ScanResultPackageData `json:"references"`
 	Created     time.Time                `json:"created"`
 	Credit      interface{}              `json:"credit"`
-	CreditGuid  interface{}              `json:"creditGuid"`
+	CreditGUID  interface{}              `json:"creditGuid"`
 	Kev         interface{}              `json:"kev"`
-	ExploitDb   interface{}              `json:"exploitDb"`
+	ExploitDB   interface{}              `json:"exploitDb"`
 }
 
 type ScaRealTimeWrapper interface {
