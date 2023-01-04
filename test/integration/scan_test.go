@@ -225,7 +225,6 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 
 // Create a scan with the sources
 // Assert the scan completes
-// TODO: see this test
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 
@@ -801,8 +800,8 @@ func TestUnknownScanType(t *testing.T) {
 	assertError(t, err, "unknown scan type")
 }
 
-// TestApiSecurityWithoutSastScanType must return an error when trying to run api-security scanType without sast
-func TestApiSecurityWithoutSastScanType(t *testing.T) {
+// TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
+func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
