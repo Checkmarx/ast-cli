@@ -16,26 +16,40 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var scaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
+
+const scaResolverProjectName = "cx-cli-sca-realtime-project"
+
 // RunScaRealtime Main method responsible to run sca realtime feature
 func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		fmt.Println("Handling SCA Resolver...")
-
-		err := downloadSCAResolverAndHashFileIfNeeded(&Params)
+		// Validate provided directory
+		projectDirPath, err := validateProvidedProjectDirectory(cmd)
 		if err != nil {
 			return err
 		}
 
-		projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
+		fmt.Println("Handling SCA Resolver...")
+
+		// Handle SCA Resolver. Checks if it already exists and if it is in the latest version
+		err = downloadSCAResolverAndHashFileIfNeeded(&Params)
+		if err != nil {
+			return err
+		}
+
+		// Run SCA Resolver in the provided directory
 		err = executeSCAResolver(projectDirPath)
 		if err != nil {
 			return err
 		}
 
-		err = getSCAResults(scaRealTimeWrapper)
+		// Gets SCA vulnerabilities from SCA APIs
+		err = getSCAVulnerabilities(scaRealTimeWrapper)
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("\nSCA Resolver finished successfully!")
 
 		return nil
 	}
@@ -48,36 +62,34 @@ func executeSCAResolver(projectPath string) error {
 		"-s",
 		projectPath,
 		"-n",
-		"dev_sca_realtime_project",
+		scaResolverProjectName,
 		"-r",
-		ScaResolverWorkingDir + "/cx-sca-realtime-results.json",
+		scaResolverResultsFileNameDir,
 	}
-	fmt.Println(fmt.Printf("Running SCA resolver with args: %v", args))
+
+	fmt.Printf("Running SCA resolver with args: %v \n", args)
 
 	_, err := exec.Command(Params.ExecutableFilePath, args...).Output()
 	if err != nil {
 		return err
 	}
-	fmt.Println("SCA Resolver finished successfully!")
 
 	return nil
 }
 
-func getSCAResults(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
-	file, err := ioutil.ReadFile(ScaResolverWorkingDir + "/cx-sca-realtime-results.json")
+func getSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
+	scaResolverResults, err := readSCAResolverResultsFromFile()
 	if err != nil {
 		return err
 	}
 
-	data := ScaResultsFile{}
-	_ = json.Unmarshal(file, &data)
-
 	var modelResults []wrappers.ScaVulnerabilitiesResponseModel
 
-	for _, f := range data.DependencyResolutionResults {
+	for _, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
+		// We're using a map to avoid adding repeated packages in request body
 		dependencyMap := make(map[string]wrappers.ScaDependencyBodyRequest)
 
-		for _, dependencyResolution := range f.Dependencies {
+		for _, dependencyResolution := range dependencyResolutionResult.Dependencies {
 			dependencyMap[dependencyResolution.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
 				PackageName:    dependencyResolution.ID.Name,
 				Version:        dependencyResolution.ID.Version,
@@ -99,13 +111,23 @@ func getSCAResults(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
 			body = append(body, value)
 		}
 
-		model, _, _ := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(body)
-		for _, value := range model {
-			value.FileName = f.PackageManagerFile
-			modelResults = append(modelResults, value)
+		// We need to call the SCA API for each DependencyResolution so that we can save the file name
+		vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(body)
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message)
+		}
+		if errVulnerabilities != nil {
+			return errVulnerabilities
+		}
+
+		// Add file name for each vulnerability to display in IDEs
+		for _, vulnerability := range vulnerabilitiesResponseModel {
+			vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
+			modelResults = append(modelResults, vulnerability)
 		}
 	}
 
+	// Convert SCA Results to Scan Results to make it easier to display it in IDEs
 	err = convertToScanResults(modelResults)
 	if err != nil {
 		return err
@@ -169,4 +191,30 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 	fmt.Println(string(resultsJSON))
 
 	return nil
+}
+
+func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
+	projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
+	pathExists, err := fileExists(projectDirPath)
+	if err != nil {
+		return "", err
+	}
+
+	if !pathExists {
+		return "", errors.Errorf("Provided path does not exist: %s", projectDirPath)
+	}
+
+	return projectDirPath, nil
+}
+
+func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
+	file, err := ioutil.ReadFile(scaResolverResultsFileNameDir)
+	if err != nil {
+		return ScaResultsFile{}, err
+	}
+
+	data := ScaResultsFile{}
+	_ = json.Unmarshal(file, &data)
+
+	return data, nil
 }

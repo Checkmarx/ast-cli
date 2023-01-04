@@ -19,7 +19,7 @@ var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
 // downloadSCAResolverAndHashFileIfNeeded Downloads SCA Realtime if it is not downloaded yet
 func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
 	if downloadNotNeeded(scaRealTime) {
-		logger.PrintIfVerbose("SCA Resolver already exists and is updated. Skipping download.")
+		logger.PrintIfVerbose("SCA Resolver already exists and is up to date. Skipping download.")
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func downloadNotNeeded(scaRealTime *ScaRealTime) bool {
 		return false
 	}
 
-	logger.PrintIfVerbose("SCA Resolver exists. Checking if it is the latest...")
+	logger.PrintIfVerbose("SCA Resolver exists. Checking if it is the latest version...")
 
 	isSCALastVersion, _ := isLastSCAResolverVersion(scaRealTime.HashFilePath, scaRealTime.SCAResolverHashDownloadURL, scaRealTime.SCAResolverHashFileName)
 
@@ -96,7 +96,7 @@ func isLastSCAResolverVersion(scaResolverHashFilePath, scaResolverHashURL, scaRe
 
 // fileExists Check if a file exists in a specific directory
 func fileExists(path string) (bool, error) {
-	logger.PrintIfVerbose("Checking if SCA Resolver is available...")
+	logger.PrintIfVerbose("Checking if SCA Resolver already exists...")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
