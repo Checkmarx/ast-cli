@@ -225,6 +225,7 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 
 // Create a scan with the sources
 // Assert the scan completes
+// TODO: see this test
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 
@@ -764,4 +765,21 @@ func TestScanCreateResubmit(t *testing.T) {
 	engines := strings.Join(scan[0].Engines, ",")
 	log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
 	assert.Assert(t, err == nil && engines == "sast", "")
+}
+
+// Test ScaResolver as argument , this is a nop test
+func TestScanTypesValidation(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast,api-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "")
 }

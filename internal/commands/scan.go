@@ -194,7 +194,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`
 			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
 			`,
 			),
@@ -815,12 +815,12 @@ func addAPISecScan() map[string]interface{} {
 	return nil
 }
 
-func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) {
+func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
 	var allowedScanTypes []string
 	allowedEngines, err := jwtWrapper.GetAllowedEngines()
 	if err != nil {
-		log.Println(fmt.Sprintf("error validating scan types: %v", err))
-		os.Exit(1)
+		err = errors.Errorf("Error validating scan types: %v", err)
+		return err
 	}
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, scanType := range scanTypes {
@@ -846,21 +846,22 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) {
 			if scanTypeEnabled(commonParams.SastType) {
 				isValid = true
 			} else {
-				log.Println("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-				os.Exit(1)
+				err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
+				return err
 			}
 		}
 
 		if !isValid {
-			log.Println(fmt.Sprintf("Error: unknown scan type: %s", scanType))
-			os.Exit(1)
+			err = errors.Errorf("Error: unknown scan type: %s", scanType)
+			return err
 		}
 
 		if !allowedEngines[scanType] {
-			log.Println(fmt.Sprintf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines))
-			os.Exit(1)
+			err = errors.Errorf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
+			return err
 		}
 	}
+	return nil
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -1388,12 +1389,14 @@ func createScanModel(
 	scansWrapper wrappers.ScansWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	validateScanTypes(cmd, jwtWrapper)
-
+	err := validateScanTypes(cmd, jwtWrapper)
+	if err != nil {
+		return nil, "", err
+	}
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err = setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
