@@ -767,7 +767,7 @@ func TestScanCreateResubmit(t *testing.T) {
 	assert.Assert(t, err == nil && engines == "sast", "")
 }
 
-// Test ScaResolver as argument , this is a nop test
+// TestScanTypesValidation must return an error because the user is not allowed to use some scanType
 func TestScanTypesValidation(t *testing.T) {
 	_, projectName := getRootProject(t)
 
@@ -781,5 +781,39 @@ func TestScanTypesValidation(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "")
+	assertError(t, err, "It looks like you are trying to run a scan without")
+}
+
+// TestUnknownScanType must return an error when trying to run with an unknown scanType
+func TestUnknownScanType(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "unknown",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "unknown scan type")
+}
+
+// TestApiSecurityWithoutSastScanType must return an error when trying to run api-security scanType without sast
+func TestApiSecurityWithoutSastScanType(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "api-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "'api-security' only works when  scan-type 'sast' is also provided")
 }
