@@ -1,4 +1,4 @@
-//go:build linux && darwin
+//go:build linux || darwin
 
 package scarealtime
 
@@ -11,11 +11,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-var linuxSCARealTime = ScaRealTime{
+var linuxMacSCARealTime = ScaRealTime{
 	ExecutableFilePath:         filepath.Join(scaResolverWorkingDir, "ScaResolver"),
 	HashFilePath:               filepath.Join(scaResolverWorkingDir, "ScaResolver.tar.gz.sha256sum"),
 	SCAResolverDownloadURL:     "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz",
@@ -26,18 +27,22 @@ var linuxSCARealTime = ScaRealTime{
 
 // getScaResolver Gets SCA Resolver file path to run SCA Realtime
 func getScaResolver() (string, error) {
-	err := downloadSCAResolverAndHashFileIfNeeded(&linuxSCARealTime)
+	if runtime.GOOS == "darwin" {
+		linuxMacSCARealTime.SCAResolverDownloadURL = "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz"
+		linuxMacSCARealTime.SCAResolverHashDownloadURL = "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz.sha256sum"
+	}
+	err := downloadSCAResolverAndHashFileIfNeeded(&linuxMacSCARealTime)
 	if err != nil {
 		return "", err
 	}
 
-	return linuxSCARealTime.ExecutableFilePath, nil
+	return linuxMacSCARealTime.ExecutableFilePath, nil
 }
 
 // unzipOrExtractFiles Extracts SCA Resolver files
 func unzipOrExtractFiles() error {
 	logger.PrintIfVerbose("Extracting files in: " + scaResolverWorkingDir)
-	gzipStream, err := os.Open(filepath.Join(scaResolverWorkingDir, linuxSCARealTime.SCAResolverFileName))
+	gzipStream, err := os.Open(filepath.Join(scaResolverWorkingDir, linuxMacSCARealTime.SCAResolverFileName))
 	if err != nil {
 		fmt.Println("error")
 	}
