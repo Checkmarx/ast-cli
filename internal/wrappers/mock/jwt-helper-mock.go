@@ -7,11 +7,11 @@ import (
 type JWTMockWrapper struct{}
 
 // GetAllowedEngines mock for tests
-func (*JWTMockWrapper) GetAllowedEngines() (err error, allowedEngines map[string]bool) {
+func (*JWTMockWrapper) GetAllowedEngines() (allowedEngines map[string]bool, err error) {
 	allowedEngines = make(map[string]bool)
 	engines := []string{"sast", "kics", "sca", "api-security"}
 	for _, value := range engines {
 		allowedEngines[strings.ToLower(value)] = true
 	}
-	return nil, allowedEngines
+	return allowedEngines, nil
 }

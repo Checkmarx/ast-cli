@@ -817,7 +817,7 @@ func addAPISecScan() map[string]interface{} {
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) {
 	var allowedScanTypes []string
-	err, allowedEngines := jwtWrapper.GetAllowedEngines()
+	allowedEngines, err := jwtWrapper.GetAllowedEngines()
 	if err != nil {
 		log.Println(fmt.Sprintf("error validating scan types: %v", err))
 		os.Exit(1)

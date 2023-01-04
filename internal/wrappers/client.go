@@ -653,21 +653,21 @@ func ExtractFromTokenToInterface(accessToken string) (interface{}, error) {
 }
 
 // GetAllowedEngines will return a map with user allowed engines
-func (*JWTStruct) GetAllowedEngines() (err error, allowedEngines map[string]bool) {
+func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	extractedToken, err := ExtractFromTokenToInterface(accessToken)
 	if err != nil {
-		return errors.Errorf("Error extracting jwt - %v", err), nil
+		return nil, errors.Errorf("Error extracting jwt - %v", err)
 	}
 	err = jwtToStruct(extractedToken, &JwtStruct)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	allowedEngines = fillBooleanMap(JwtStruct.AstLicense.LicenseData.AllowedEngines)
-	return nil, allowedEngines
+	return allowedEngines, nil
 }
 
 func jwtToStruct(extractedToken interface{}, emptyJWT *JWTStruct) error {
