@@ -61,7 +61,6 @@ const audienceClaimKey = "aud"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
-var JwtStruct JWTStruct
 
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
@@ -640,14 +639,4 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 		return "", errors.Errorf(jwtError)
 	}
 	return value, nil
-}
-
-// ExtractFromTokenToInterface used in scan validation
-func ExtractFromTokenToInterface(accessToken string) (interface{}, error) {
-	claims := jwt.MapClaims{}
-	_, _, err := new(jwt.Parser).ParseUnverified(accessToken, claims)
-	if err != nil {
-		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
-	}
-	return claims, nil
 }

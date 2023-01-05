@@ -90,7 +90,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
+	actualScanTypes         = "sast,kics,sca,api-security"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -822,12 +822,17 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 		err = errors.Errorf("Error validating scan types: %v", err)
 		return err
 	}
+
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, scanType := range scanTypes {
 		if allowedEngines[scanType] {
 			allowedScanTypes = append(allowedScanTypes, scanType)
 		}
 	}
+	// This will force the user default scan types
+	actualScanTypes = strings.Join(allowedScanTypes, ",")
+	userAllowedScanTypesFlags := actualScanTypes
+
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
 		// postprocessor to match iac-security with kics
@@ -857,7 +862,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 		}
 
 		if !allowedEngines[scanType] {
-			err = errors.Errorf(engineNotAllowed, scanType, wrappers.JwtStruct.AstLicense.LicenseData.AllowedEngines)
+			err = errors.Errorf(engineNotAllowed, scanType, userAllowedScanTypesFlags)
 			return err
 		}
 	}

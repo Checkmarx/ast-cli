@@ -1,9 +1,9 @@
 package wrappers
 
 import (
-	"encoding/json"
 	"strings"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
 
@@ -66,10 +66,7 @@ type JWTStruct struct {
 		} `json:"LicenseData"`
 		PackageName string `json:"PackageName"`
 	} `json:"ast-license"`
-	ServiceUsersEnabled bool   `json:"service_users_enabled"`
-	FamilyName          string `json:"family_name"`
-	Email               string `json:"email"`
-	Tenant              string `json:"tenant"`
+	jwt.StandardClaims
 }
 
 type JWTWrapper interface {
@@ -86,28 +83,14 @@ func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error
 	if err != nil {
 		return nil, err
 	}
-	extractedToken, err := ExtractFromTokenToInterface(accessToken)
+
+	jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
 	if err != nil {
 		return nil, errors.Errorf("Error extracting jwt - %v", err)
 	}
-	err = jwtToStruct(extractedToken, &JwtStruct)
-	if err != nil {
-		return nil, err
-	}
-	allowedEngines = fillBooleanMap(JwtStruct.AstLicense.LicenseData.AllowedEngines)
-	return allowedEngines, nil
-}
 
-func jwtToStruct(extractedToken interface{}, emptyJWT *JWTStruct) error {
-	marshaled, err := json.Marshal(extractedToken)
-	if err != nil {
-		return errors.Errorf("Error encoding jwt struct - %v", err)
-	}
-	err = json.Unmarshal(marshaled, &emptyJWT)
-	if err != nil {
-		return errors.Errorf("Error decoding jwt struct - %v", err)
-	}
-	return nil
+	allowedEngines = fillBooleanMap(jwtStruct.AstLicense.LicenseData.AllowedEngines)
+	return allowedEngines, nil
 }
 
 func fillBooleanMap(engines []string) map[string]bool {
@@ -116,4 +99,14 @@ func fillBooleanMap(engines []string) map[string]bool {
 		m[strings.ToLower(value)] = true
 	}
 	return m
+}
+
+// extractFromTokenToJwtStruct used in scan validation
+func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
+	claims := JWTStruct{}
+	_, _, err := new(jwt.Parser).ParseUnverified(accessToken, &claims)
+	if err != nil {
+		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
+	}
+	return &claims, nil
 }
