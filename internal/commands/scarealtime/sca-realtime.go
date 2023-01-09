@@ -31,7 +31,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 			return err
 		}
 
-		fmt.Println("Handling SCA Resolver...")
+		fmt.Println("Running SCA Realtime...")
 
 		// Handle SCA Resolver. Checks if it already exists and if it is in the latest version
 		err = downloadSCAResolverAndHashFileIfNeeded(&Params)
@@ -67,14 +67,14 @@ func executeSCAResolver(projectPath string) error {
 		scaResolverResultsFileNameDir,
 	}
 
-	fmt.Printf("Running SCA resolver with args: %v \n", args)
+	logger.PrintIfVerbose(fmt.Sprintf("Running SCA resolver with args: %v \n", args))
 
 	_, err := exec.Command(Params.ExecutableFilePath, args...).Output()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("SCA Resolver finished successfully!")
+	logger.PrintIfVerbose("SCA Resolver finished successfully!")
 
 	return nil
 }

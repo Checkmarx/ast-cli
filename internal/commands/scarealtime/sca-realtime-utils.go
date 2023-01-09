@@ -18,6 +18,8 @@ var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
 
 // downloadSCAResolverAndHashFileIfNeeded Downloads SCA Realtime if it is not downloaded yet
 func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
+	logger.PrintIfVerbose("Handling SCA Resolver...")
+
 	if downloadNotNeeded(scaRealTime) {
 		logger.PrintIfVerbose("SCA Resolver already exists and is up to date. Skipping download.")
 		return nil
