@@ -42,7 +42,7 @@ func (s ScaRealTimeHTTPWrapper) GetScaVulnerabilitiesPackages(scaRequest []ScaDe
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, nil, errors.Wrapf(err, "failed to get SCA vulnerabilities")
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
@@ -54,6 +54,6 @@ func (s ScaRealTimeHTTPWrapper) GetScaVulnerabilitiesPackages(scaRequest []ScaDe
 
 		return model, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("failed to get SCA vulnerabilities. response status code %d", resp.StatusCode)
 	}
 }

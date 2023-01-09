@@ -11,6 +11,7 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -50,8 +51,6 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 			return err
 		}
 
-		fmt.Println("\nSCA Resolver finished successfully!")
-
 		return nil
 	}
 }
@@ -74,6 +73,8 @@ func executeSCAResolver(projectPath string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("SCA Resolver finished successfully!")
 
 	return nil
 }
@@ -99,7 +100,7 @@ func getSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			}
 			if len(dependencyResolution.Children) > 0 {
 				for _, dependencyChildren := range dependencyResolution.Children {
-					dependencyMap[dependencyResolution.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
+					dependencyMap[dependencyChildren.NodeID] = wrappers.ScaDependencyBodyRequest{
 						PackageName:    dependencyChildren.Name,
 						Version:        dependencyChildren.Version,
 						PackageManager: dependencyResolution.ResolvingModuleType,
@@ -199,6 +200,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 
 // validateProvidedProjectDirectory Checks if the provided directory exists in file system
 func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
+	logger.PrintIfVerbose("Checking if provided project path exists...")
 	projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
 	pathExists, err := fileExists(projectDirPath)
 	if err != nil {

@@ -63,6 +63,7 @@ func createWorkingDirectory() error {
 
 // downloadNotNeeded Checks if SCA Resolver is already available and if there is no need to download a new version
 func downloadNotNeeded(scaRealTime *ScaRealTime) bool {
+	logger.PrintIfVerbose("Checking if SCA Resolver already exists...")
 	executableFileExists, _ := fileExists(scaRealTime.ExecutableFilePath)
 
 	if !executableFileExists {
@@ -97,7 +98,6 @@ func isLastSCAResolverVersion(scaResolverHashFilePath, scaResolverHashURL, scaRe
 
 // fileExists Check if a file exists in a specific directory
 func fileExists(path string) (bool, error) {
-	logger.PrintIfVerbose("Checking if SCA Resolver already exists...")
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
