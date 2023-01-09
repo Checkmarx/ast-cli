@@ -335,6 +335,7 @@ func SummaryReport(
 	if summary.KicsIssues == 0 {
 		summary.KicsIssues = notAvailableNumber
 	}
+
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
