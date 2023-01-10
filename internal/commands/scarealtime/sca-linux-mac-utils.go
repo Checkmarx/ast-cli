@@ -6,12 +6,13 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"io"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
 // UnzipOrExtractFiles Extracts SCA Resolver files
