@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -817,53 +818,38 @@ func addAPISecScan() map[string]interface{} {
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
-	var allowedScanTypes []string
+	var scanTypes []string
 	allowedEngines, err := jwtWrapper.GetAllowedEngines()
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
 		return err
 	}
 
-	scanTypes := strings.Split(actualScanTypes, ",")
-	for _, scanType := range scanTypes {
-		if allowedEngines[scanType] {
-			allowedScanTypes = append(allowedScanTypes, scanType)
-		}
-	}
-	// This will force the user default scan types
-	actualScanTypes = strings.Join(allowedScanTypes, ",")
-	userAllowedScanTypesFlags := actualScanTypes
-
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
 		// postprocessor to match iac-security with kics
 		actualScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.IacType, commonParams.KicsType, 1)
-		allowedScanTypes = strings.Split(actualScanTypes, ",")
+		scanTypes = strings.Split(actualScanTypes, ",")
+	} else {
+		for k, _ := range allowedEngines {
+			scanTypes = append(scanTypes, k)
+		}
+		// This will force the user default scan types
+		actualScanTypes = strings.Join(scanTypes, ",")
+		return nil
 	}
 
-	for _, scanType := range allowedScanTypes {
-		isValid := false
-
-		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.SastType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
-			isValid = true
-		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
-			if scanTypeEnabled(commonParams.SastType) {
-				isValid = true
-			} else {
+	for _, scanType := range scanTypes {
+		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
+			if !scanTypeEnabled(commonParams.SastType) {
 				err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
 				return err
 			}
 		}
 
-		if !isValid {
-			err = errors.Errorf("Error: unknown scan type: %s", scanType)
-			return err
-		}
-
 		if !allowedEngines[scanType] {
-			err = errors.Errorf(engineNotAllowed, scanType, userAllowedScanTypesFlags)
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			err = errors.Errorf(engineNotAllowed, scanType, keys)
 			return err
 		}
 	}
