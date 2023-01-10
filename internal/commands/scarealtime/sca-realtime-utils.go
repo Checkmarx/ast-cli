@@ -7,11 +7,13 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 )
 
 var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
@@ -142,7 +144,13 @@ func downloadSCAResolverHashFile(scaResolverHashURL, scaResolverZipFileNameHash 
 func downloadFile(downloadURLPath, fileName string) error {
 	logger.PrintIfVerbose("Downloading " + fileName + " from: " + downloadURLPath)
 
-	responseBody, _ := wrappers.DownloadFile(downloadURLPath)
+	response, err := wrappers.SendHTTPRequestByFullURL(http.MethodGet, downloadURLPath, nil, false, 0, "")
+	if err != nil {
+		return errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
 
 	scaResolverZipFile, err := os.Create(filepath.Join(ScaResolverWorkingDir, fileName))
 	if err != nil {
@@ -154,7 +162,7 @@ func downloadFile(downloadURLPath, fileName string) error {
 	}()
 
 	// Write the body to file
-	_, err = io.Copy(scaResolverZipFile, responseBody)
+	_, err = io.Copy(scaResolverZipFile, response.Body)
 	if err != nil {
 		fmt.Printf("Error writing the body response to zip file: %s", err)
 		return err
