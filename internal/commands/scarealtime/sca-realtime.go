@@ -92,7 +92,9 @@ func getSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 		// We're using a map to avoid adding repeated packages in request body
 		dependencyMap := make(map[string]wrappers.ScaDependencyBodyRequest)
 
-		for _, dependencyResolution := range dependencyResolutionResult.Dependencies {
+		var dependencyResolutionDependencies = dependencyResolutionResult.Dependencies
+
+		for _, dependencyResolution := range dependencyResolutionDependencies {
 			dependencyMap[dependencyResolution.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
 				PackageName:    dependencyResolution.ID.Name,
 				Version:        dependencyResolution.ID.Version,
