@@ -48,6 +48,7 @@ func createASTTestCommand() *cobra.Command {
 	learnMoreMockWrapper := &mock.LearnMoreMockWrapper{}
 	prMockWrapper := &mock.PRMockWrapper{}
 	tenantConfigurationMockWrapper := &mock.TenantConfigurationMockWrapper{}
+	scaRealtimeMockWrapper := &mock.ScaRealTimeHTTPMockWrapper{}
 
 	return NewAstCLI(
 		scansMockWrapper,
@@ -69,6 +70,7 @@ func createASTTestCommand() *cobra.Command {
 		prMockWrapper,
 		learnMoreMockWrapper,
 		tenantConfigurationMockWrapper,
+		scaRealtimeMockWrapper,
 	)
 }
 
