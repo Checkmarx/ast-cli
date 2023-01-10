@@ -783,26 +783,6 @@ func TestScanTypesValidation(t *testing.T) {
 	assertError(t, err, "It looks like you are trying to run a scan without")
 }
 
-/*
-	Removed for ongoing updates
-// TestUnknownScanType must return an error when trying to run with an unknown scanType
-func TestUnknownScanType(t *testing.T) {
-	_, projectName := getRootProject(t)
-
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "unknown",
-		flag(params.PresetName), "Checkmarx Default",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "unknown scan type")
-}
-*/
-
 // TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 	_, projectName := getRootProject(t)
