@@ -3,6 +3,7 @@ package scarealtime
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
+	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -21,6 +23,43 @@ var scaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-re
 
 const scaResolverProjectName = "cx-cli-sca-realtime-project"
 const bitSize = 32
+
+func NewScaRealtimeCommand(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) *cobra.Command {
+	scaRealtimeScanCmd := &cobra.Command{
+		Use:   "sca-realtime",
+		Short: "Create and run sca scan",
+		Long:  "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver.",
+		// TODO: update example
+		Example: heredoc.Doc(
+			`
+			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
+		`,
+		),
+		// TODO: update documentation link
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`	
+			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
+			`,
+			),
+		},
+		RunE: RunScaRealtime(scaRealTimeWrapper),
+	}
+
+	scaRealtimeScanCmd.PersistentFlags().StringP(
+		commonParams.ScaRealtimeProjectDir,
+		commonParams.ScaRealtimeProjectDirSh,
+		"",
+		"Path to the project on which SCA Resolver will run",
+	)
+
+	err := scaRealtimeScanCmd.MarkPersistentFlagRequired(commonParams.ScaRealtimeProjectDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return scaRealtimeScanCmd
+}
 
 // RunScaRealtime Main method responsible to run sca realtime feature
 func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.Command, []string) error {

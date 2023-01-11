@@ -155,7 +155,7 @@ func NewScanCommand(
 
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
-	scaRealtimeCmd := scaRealtimeSubCommand(scaRealTimeWrapper)
+	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -218,39 +218,6 @@ func scanRealtimeSubCommand() *cobra.Command {
 	)
 	markFlagAsRequired(realtimeScanCmd, commonParams.KicsRealtimeFile)
 	return realtimeScanCmd
-}
-
-func scaRealtimeSubCommand(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) *cobra.Command {
-	scaRealtimeScanCmd := &cobra.Command{
-		Use:   "sca-realtime",
-		Short: "Create and run sca scan",
-		Long:  "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver.",
-		// TODO: update example
-		Example: heredoc.Doc(
-			`
-			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
-		`,
-		),
-		// TODO: update documentation link
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(
-				`	
-			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
-			`,
-			),
-		},
-		RunE: scarealtime.RunScaRealtime(scaRealTimeWrapper),
-	}
-
-	scaRealtimeScanCmd.PersistentFlags().StringP(
-		commonParams.ScaRealtimeProjectDir,
-		commonParams.ScaRealtimeProjectDirSh,
-		"",
-		"Path to the project on which SCA Resolver will run",
-	)
-	markFlagAsRequired(scaRealtimeScanCmd, commonParams.ScaRealtimeProjectDir)
-
-	return scaRealtimeScanCmd
 }
 
 func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
