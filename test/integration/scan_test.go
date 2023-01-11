@@ -68,6 +68,7 @@ func TestScansE2E(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
 	if err != nil {
+
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
@@ -75,6 +76,7 @@ func TestScansE2E(t *testing.T) {
 
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
+
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 

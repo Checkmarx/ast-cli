@@ -831,14 +831,14 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 		actualScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 		scanTypes = strings.Split(actualScanTypes, ",")
 	} else {
-		for k, _ := range allowedEngines {
+		for k := range allowedEngines {
 			scanTypes = append(scanTypes, k)
 		}
+
 		// This will force the user default scan types
 		actualScanTypes = strings.Join(scanTypes, ",")
 		return nil
 	}
-
 	for _, scanType := range scanTypes {
 		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
 			if !scanTypeEnabled(commonParams.SastType) {
@@ -846,7 +846,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 				return err
 			}
 		}
-
 		if !allowedEngines[scanType] {
 			keys := reflect.ValueOf(allowedEngines).MapKeys()
 			err = errors.Errorf(engineNotAllowed, scanType, keys)
