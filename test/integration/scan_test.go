@@ -766,6 +766,23 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 	assert.Error(t, err, "Provided path does not exist: "+projectDirectory+"/missingFolder", "Sca realtime should fail due invalid project directory path")
 }
 
+func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
+
+	downloadURL := realtime.Params.SCAResolverDownloadURL
+	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+
+	realtime.Params.SCAResolverDownloadURL = downloadURL
+	realtime.Params.SCAResolverHashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	err, _ = executeCommand(t, args...)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+
+}
+
 func copyResultsToTempDir() error {
 	// Read all content of src to data, may cause OOM for a large file.
 	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
