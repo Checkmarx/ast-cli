@@ -85,7 +85,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 		}
 
 		// Gets SCA vulnerabilities from SCA APIs
-		err = getSCAVulnerabilities(scaRealTimeWrapper)
+		err = GetSCAVulnerabilities(scaRealTimeWrapper)
 		if err != nil {
 			return err
 		}
@@ -118,8 +118,8 @@ func executeSCAResolver(projectPath string) error {
 	return nil
 }
 
-// getSCAVulnerabilities Call SCA API to get vulnerabilities from sca resolver results
-func getSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
+// GetSCAVulnerabilities Call SCA API to get vulnerabilities from sca resolver results
+func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error {
 	scaResolverResults, err := readSCAResolverResultsFromFile()
 	if err != nil {
 		return err
