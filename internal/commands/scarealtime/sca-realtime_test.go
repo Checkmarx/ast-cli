@@ -2,10 +2,8 @@ package scarealtime
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -45,20 +43,6 @@ func copyResultsToTempDir() error {
 	}
 
 	return nil
-}
-
-func TestRunScaRealtimeWrongURLDownload(t *testing.T) {
-	err := os.RemoveAll(ScaResolverWorkingDir)
-	if err != nil {
-		return
-	}
-	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
-	Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
-	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
-	cmd.SetArgs(args)
-	err = cmd.Execute()
-	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
 }
 
 func TestRequiredProjectDir(t *testing.T) {

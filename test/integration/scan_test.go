@@ -754,6 +754,13 @@ func TestRunScaRealtimeScan(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestScaRealtimeRequiredProjectDir(t *testing.T) {
+	args := []string{scanCommand, "sca-realtime"}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
+}
+
 func copyResultsToTempDir() error {
 	// Read all content of src to data, may cause OOM for a large file.
 	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
