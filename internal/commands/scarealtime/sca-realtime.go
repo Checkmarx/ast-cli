@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var scaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
+var ScaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
 
 const scaResolverProjectName = "cx-cli-sca-realtime-project"
 const bitSize = 32
@@ -103,7 +103,7 @@ func executeSCAResolver(projectPath string) error {
 		"-n",
 		scaResolverProjectName,
 		"-r",
-		scaResolverResultsFileNameDir,
+		ScaResolverResultsFileNameDir,
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running SCA resolver with args: %v \n", args))
@@ -256,7 +256,7 @@ func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
 
 // readSCAResolverResultsFromFile Get SCA Resolver results from file to build SCA API request body
 func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
-	file, err := ioutil.ReadFile(scaResolverResultsFileNameDir)
+	file, err := ioutil.ReadFile(ScaResolverResultsFileNameDir)
 	if err != nil {
 		return ScaResultsFile{}, err
 	}

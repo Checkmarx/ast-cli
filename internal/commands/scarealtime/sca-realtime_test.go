@@ -23,15 +23,8 @@ func TestRunScaRealtime(t *testing.T) {
 	cmd.SetArgs(args)
 	err := cmd.Execute()
 	assert.NilError(t, err)
-}
 
-func TestRunScaRealtimeWithResults(t *testing.T) {
-	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
-	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
-	cmd.SetArgs(args)
-	err := cmd.Execute()
-	assert.NilError(t, err)
-
+	// Ensure we have results to read
 	err = copyResultsToTempDir()
 	assert.NilError(t, err)
 
@@ -46,7 +39,7 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(ScaResolverWorkingDir+"/cx-sca-realtime-results.json", data, 0644)
+	err = ioutil.WriteFile(ScaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}
