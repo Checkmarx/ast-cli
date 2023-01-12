@@ -13,11 +13,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
+	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -36,6 +38,11 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
+)
+
+var (
+	_, b, _, _       = runtime.Caller(0)
+	projectDirectory = filepath.Dir(b)
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -728,6 +735,38 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunScaRealtimeScan(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Running SCA real-time command should pass",
+		scanCommand, "sca-realtime",
+		"--project-dir", projectDirectory,
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+
+	// Ensure we have results to read
+	err := copyResultsToTempDir()
+	assert.NilError(t, err)
+
+	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper("https://api-sca.checkmarx.net/public/vulnerabilities/packages"))
+	assert.NilError(t, err)
+}
+
+func copyResultsToTempDir() error {
+	// Read all content of src to data, may cause OOM for a large file.
+	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
+	if err != nil {
+		return err
+	}
+	// Write data to dst
+	err = ioutil.WriteFile(realtime.ScaResolverResultsFileNameDir, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
