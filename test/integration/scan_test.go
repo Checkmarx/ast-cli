@@ -738,19 +738,20 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
-	outputBuffer := executeCmdNilAssertion(
-		t, "Running SCA real-time command should pass",
-		scanCommand, "sca-realtime",
-		"--project-dir", projectDirectory,
-	)
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
 
 	// Ensure we have results to read
-	err := copyResultsToTempDir()
+	err = copyResultsToTempDir()
 	assert.NilError(t, err)
 
 	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper())
+	assert.NilError(t, err)
+
+	// Run second time to cover SCA Resolver download not needed code
+	err, _ = executeCommand(t, args...)
 	assert.NilError(t, err)
 }
 
@@ -767,11 +768,14 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+	err := os.RemoveAll(realtime.ScaResolverWorkingDir)
+	assert.NilError(t, err)
+
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
 	downloadURL := realtime.Params.SCAResolverDownloadURL
 	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
-	err, _ := executeCommand(t, args...)
+	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
 
