@@ -780,7 +780,6 @@ func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
-
 }
 
 func copyResultsToTempDir() error {
