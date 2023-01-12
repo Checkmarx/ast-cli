@@ -763,7 +763,7 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 	args = []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory + "/missingFolder"}
 
 	err, _ = executeCommand(t, args...)
-	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
+	assert.Error(t, err, "Provided path does not exist: "+projectDirectory+"/missingFolder", "Sca realtime should fail due invalid project directory path")
 }
 
 func copyResultsToTempDir() error {
