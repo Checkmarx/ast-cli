@@ -83,9 +83,9 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
-	engineNotAllowed                = "It looks like you are trying to run a scan without the \"%s\" package license." +
-		"\nIn order to use this feature, you will need to purchase a license." +
-		"\nIf you believe you have already purchased a license, please contact our support team for assistance." +
+	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
+		"\nTo use this feature, you would need to purchase a license." +
+		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
 )
 
@@ -848,7 +848,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 		}
 		if !allowedEngines[scanType] {
 			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			err = errors.Errorf(engineNotAllowed, scanType, keys)
+			err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 			return err
 		}
 	}
