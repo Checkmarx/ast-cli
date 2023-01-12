@@ -750,14 +750,19 @@ func TestRunScaRealtimeScan(t *testing.T) {
 	err := copyResultsToTempDir()
 	assert.NilError(t, err)
 
-	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper("https://api-sca.checkmarx.net/public/vulnerabilities/packages"))
+	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper())
 	assert.NilError(t, err)
 }
 
-func TestScaRealtimeRequiredProjectDir(t *testing.T) {
+func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 	args := []string{scanCommand, "sca-realtime"}
 
 	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
+
+	args = []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory + "/missingFolder"}
+
+	err, _ = executeCommand(t, args...)
 	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
 }
 

@@ -77,7 +77,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
-	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper("https://api-sca.checkmarx.net/public/vulnerabilities/packages")
+	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,

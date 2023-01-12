@@ -11,12 +11,12 @@ import (
 )
 
 type ScaRealTimeHTTPWrapper struct {
-	path string
+	scaVulnerabilitiesPackagesURL string
 }
 
-func NewHTTPScaRealTimeWrapper(path string) ScaRealTimeWrapper {
+func NewHTTPScaRealTimeWrapper() ScaRealTimeWrapper {
 	return &ScaRealTimeHTTPWrapper{
-		path: path,
+		scaVulnerabilitiesPackagesURL: "https://api-sca.checkmarx.net/public/vulnerabilities/packages",
 	}
 }
 
@@ -27,7 +27,7 @@ func (s ScaRealTimeHTTPWrapper) GetScaVulnerabilitiesPackages(scaRequest []ScaDe
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequestByFullURL(http.MethodPost, s.path, bytes.NewReader(jsonBytes), false, clientTimeout, "")
+	resp, err := SendHTTPRequestByFullURL(http.MethodPost, s.scaVulnerabilitiesPackagesURL, bytes.NewReader(jsonBytes), false, clientTimeout, "")
 	if err != nil {
 		return nil, nil, errors.Errorf("Invoking HTTP request to get sca vulnerabilities failed - %s", err.Error())
 	}

@@ -60,7 +60,7 @@ func main() {
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
-	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper("https://api-sca.checkmarx.net/public/vulnerabilities/packages")
+	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
