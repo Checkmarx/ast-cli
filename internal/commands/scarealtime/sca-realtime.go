@@ -29,10 +29,9 @@ func NewScaRealtimeCommand(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) *cobr
 		Use:   "sca-realtime",
 		Short: "Create and run sca scan",
 		Long:  "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver.",
-		// TODO: update example
 		Example: heredoc.Doc(
 			`
-			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
+			$ cx scan sca-realtime --project-dir .
 		`,
 		),
 		// TODO: update documentation link
