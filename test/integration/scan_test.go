@@ -94,6 +94,32 @@ func TestNoWaitScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
+func TestInvalidSource(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TestProject",
+		flag(params.SourcesFlag), "invalidSource",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch"}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+}
+
+func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
+	args := []string{scanCommand, "show", flag(params.ScanIDQueryParam), ""}
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan: Please provide a scan ID"))
+	args = []string{scanCommand, "show", flag(params.ScanIDQueryParam), "invalidScan"}
+	err, _ = executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan:"))
+}
+
+func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
+}
+
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
 	scanID, projectID := createScanScaWithResolver(
