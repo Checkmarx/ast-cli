@@ -90,8 +90,7 @@ const (
 )
 
 var (
-	scaResolverResultsFile = ""
-	// TODO il: replace this hardcoded variable getting it in a dynamic way
+	scaResolverResultsFile  = ""
 	actualScanTypes         = "sast,kics,sca,api-security"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",

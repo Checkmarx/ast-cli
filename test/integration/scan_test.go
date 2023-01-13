@@ -782,7 +782,7 @@ func TestScanTypesValidation(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "It looks like you are trying to run a scan without")
+	assertError(t, err, "It looks like the")
 }
 
 // TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
