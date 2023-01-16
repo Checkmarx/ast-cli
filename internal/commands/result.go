@@ -326,6 +326,15 @@ func SummaryReport(
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
+	if summary.SastIssues == 0 {
+		summary.SastIssues = notAvailableNumber
+	}
+	if summary.ScaIssues == 0 {
+		summary.ScaIssues = notAvailableNumber
+	}
+	if summary.KicsIssues == 0 {
+		summary.KicsIssues = notAvailableNumber
+	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
@@ -366,15 +375,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 				summary.InfoIssues++
 			}
 		}
-	}
-	if summary.SastIssues == 0 {
-		summary.SastIssues = notAvailableNumber
-	}
-	if summary.ScaIssues == 0 {
-		summary.ScaIssues = notAvailableNumber
-	}
-	if summary.KicsIssues == 0 {
-		summary.KicsIssues = notAvailableNumber
 	}
 }
 
