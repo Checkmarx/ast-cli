@@ -60,9 +60,9 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 			return responseScanParsingFailed(err)
 		}
 		// Removing first empty engine slice field
-		if len(model.Engines) > 1 {
-			model.Engines = append(model.Engines[:0], model.Engines[1:]...)
-		}
+		//if len(model.Engines) > 1 {
+		//	model.Engines = append(model.Engines[:0], model.Engines[1:]...)
+		//}
 		return &model, nil, nil
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("scan not found")

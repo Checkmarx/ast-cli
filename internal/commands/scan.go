@@ -91,7 +91,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca,api-security"
+	actualScanTypes         = "sast,kics,sca"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
