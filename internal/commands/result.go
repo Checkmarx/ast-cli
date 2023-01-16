@@ -115,7 +115,7 @@ func resultShowSubCommand(
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show results of a scan",
-		Long:  "The show command enables the ability to show results about a requested scan in CxAST.",
+		Long:  "The show command enables the ability to show results about a requested scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx results show --scan-id <scan Id>
@@ -439,7 +439,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
 		fmt.Printf("              -----------------------------------     \n")
-		fmt.Printf("              Checkmarx AST - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
+		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
 		fmt.Printf("For more information: %s", summary.BaseURI)
