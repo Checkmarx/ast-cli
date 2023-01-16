@@ -59,18 +59,18 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
-//func TestScansE2E(t *testing.T) {
-//	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
-//	defer deleteProject(t, projectID)
-//
-//	executeScanAssertions(t, projectID, scanID, Tags)
-//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-//	if err != nil {
-//
-//		return
-//	}
-//	assert.Equal(t, len(glob), 0, "Zip file not removed")
-//}
+func TestScansE2E(t *testing.T) {
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
+	defer deleteProject(t, projectID)
+
+	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
 
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
@@ -316,36 +316,36 @@ func TestScanTimeout(t *testing.T) {
 	assert.Assert(t, pollScanUntilStatus(t, createdScan.ID, wrappers.ScanCanceled, 120, 15), "Scan should be canceled")
 }
 
-//func TestBrokenLinkScan(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "main",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//		flag(params.IncludeFilterFlag), "broken_link.txt",
-//	}
-//
-//	var buf bytes.Buffer
-//	log.SetOutput(&buf)
-//	defer func() {
-//		log.SetOutput(os.Stderr)
-//	}()
-//
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//
-//	assert.NilError(t, err)
-//
-//	output, err := io.ReadAll(&buf)
-//
-//	assert.NilError(t, err)
-//
-//	assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
-//}
+func TestBrokenLinkScan(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.IncludeFilterFlag), "broken_link.txt",
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+
+	assert.NilError(t, err)
+
+	output, err := io.ReadAll(&buf)
+
+	assert.NilError(t, err)
+
+	assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
+}
 
 // Generic scan test execution
 // - Get scan with 'scan list' and assert status and IDs
@@ -381,7 +381,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,sca,iac-security"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,sca,iac-security,api-security"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -567,20 +567,20 @@ func TestScanLogsKICS(t *testing.T) {
 	)
 }
 
-//func TestPartialScanWithWrongPreset(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.PresetName), "Checkmarx Invalid",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "scan completed partially")
-//}
+func TestPartialScanWithWrongPreset(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.PresetName), "Checkmarx Invalid",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "scan completed partially")
+}
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
 	_, projectName := getRootProject(t)
