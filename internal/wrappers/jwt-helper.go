@@ -3,6 +3,7 @@ package wrappers
 import (
 	"strings"
 
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
@@ -85,13 +86,15 @@ func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error
 	}
 	jwtStruct, _ := extractFromTokenToJwtStruct(accessToken)
 	allowedEngines = fillBooleanMap(jwtStruct.AstLicense.LicenseData.AllowedEngines)
+
 	return allowedEngines, nil
 }
 
 func fillBooleanMap(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
-		m[strings.ToLower(value)] = true
+		engine := strings.Replace(strings.ToLower(value), commonParams.APISecurityLabel, commonParams.APISecurityType, 1)
+		m[strings.ToLower(engine)] = true
 	}
 	return m
 }

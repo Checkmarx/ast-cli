@@ -776,7 +776,7 @@ func TestScanTypesValidation(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast,api-security",
+		flag(params.ScanTypes), "sast,invalid_scan_type",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -793,7 +793,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "api-security",
+		flag(params.ScanTypes), "invalid_scan_type",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -810,7 +810,7 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sca,api-security",
+		flag(params.ScanTypes), "sca,invalid_scan_type",
 		flag(params.AstAPIKeyFlag), "invalidAPIKey",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
