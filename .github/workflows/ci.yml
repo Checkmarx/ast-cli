@@ -1,4 +1,4 @@
-name: AST CLI
+name: Checkmarx One CLI
 
 on:
   pull_request:

@@ -16,7 +16,7 @@ import (
 const (
 	failedCreatingClient = "failed creating client"
 	pleaseProvideFlag    = "%s: Please provide %s flag"
-	SuccessAuthValidate  = "Successfully authenticated to AST server!"
+	SuccessAuthValidate  = "Successfully authenticated to Checkmarx One server!"
 	adminClientID        = "ast-app"
 	adminClientSecret    = "1d71c35c-818e-4ee8-8fb1-d6cbf8fe2e2a"
 	FailedAuthError      = "Failed to authenticate - please provide client-id, client-secret and base-uri or apikey"
@@ -46,7 +46,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		Example: heredoc.Doc(
 			`
 			$ cx auth validate
-			Successfully authenticated to AST server!
+			Successfully authenticated to Checkmarx One server!
 			$ cx auth register -u <Username> -p <Password> --base-uri https://<Keycloak server URI>
 			CX_CLIENT_ID=XX
 			CX_CLIENT_SECRET=XX
@@ -67,7 +67,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	}
 	createClientCmd := &cobra.Command{
 		Use:     "register",
-		Short:   "Register new OAuth2 client for ast",
+		Short:   "Register new OAuth2 client for Checkmarx One",
 		Long:    "Register new OAuth2 client and outputs its generated credentials in the format <key>=<value>",
 		Example: "$ cx auth register -u <Username> -p <Password> -r ast-admin,ast-scanner",
 		Annotations: map[string]string{
@@ -80,11 +80,11 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		RunE: runRegister(authWrapper),
 	}
 	createClientCmd.PersistentFlags().StringP(
-		params.UsernameFlag, params.UsernameSh, "", "Username for Ast user that privileges to "+
+		params.UsernameFlag, params.UsernameSh, "", "Username for Checkmarx One user that privileges to "+
 			"create clients",
 	)
 	createClientCmd.PersistentFlags().StringP(
-		params.PasswordFlag, params.PasswordSh, "", "Password for Ast user that privileges to "+
+		params.PasswordFlag, params.PasswordSh, "", "Password for Checkmarx One user that privileges to "+
 			"create clients",
 	)
 	createClientCmd.PersistentFlags().StringP(
@@ -102,7 +102,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 	validLoginCmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validates authentication",
-		Long:  "Validates if CLI is able to communicate with AST",
+		Long:  "Validates if CLI is able to communicate with Checkmarx One",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`

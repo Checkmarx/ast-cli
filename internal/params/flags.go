@@ -9,7 +9,7 @@ const (
 	DebugUsage                   = "Debug mode with detailed logs"
 	RetryFlag                    = "retry"
 	RetryDefault                 = 3
-	RetryUsage                   = "Retry requests to AST on connection failure"
+	RetryUsage                   = "Retry requests to Checkmarx One on connection failure"
 	RetryDelayFlag               = "retry-delay"
 	RetryDelayDefault            = 20
 	RetryDelayPollingDefault     = 60
@@ -56,7 +56,7 @@ const (
 	BaseAuthURIFlag              = "base-auth-uri"
 	BaseAuthURIFlagUsage         = "The base system IAM URI"
 	AstAPIKeyFlag                = "apikey"
-	AstAPIKeyUsage               = "The API Key to login to AST"
+	AstAPIKeyUsage               = "The API Key to login to Checkmarx One"
 	ClientRolesFlag              = "roles"
 	ClientRolesSh                = "r"
 	ClientDescriptionFlag        = "description"
