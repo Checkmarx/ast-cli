@@ -17,3 +17,5 @@ go test \
   -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
   github.com/checkmarx/ast-cli/test/integration
+
+go tool cover -html=cover.out -o coverage.html
