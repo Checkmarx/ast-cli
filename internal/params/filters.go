@@ -122,7 +122,8 @@ var BaseFilters = []string{
 	"requirements.txt",
 	"requirement.txt",
 	"composer.lock",
-	"Dockerfile",
+	"Dockerfile*",
+	"dock*",
 }
 
 var KicsBaseFilters = []string{
@@ -132,7 +133,7 @@ var KicsBaseFilters = []string{
 	".json",
 	".auto.tfvars",
 	".terraform.tfvars",
-	"Dockerfile",
+	"Dockerfile*",
 	".proto",
 	".dockerfile",
 }
