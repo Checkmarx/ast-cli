@@ -68,6 +68,7 @@ func TestScansE2E(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
 	if err != nil {
+
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
@@ -75,6 +76,7 @@ func TestScansE2E(t *testing.T) {
 
 // Perform a nowait scan and poll status until completed
 func TestNoWaitScan(t *testing.T) {
+
 	scanID, projectID := createScanNoWait(t, Dir, map[string]string{})
 	defer deleteProject(t, projectID)
 
@@ -381,7 +383,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast,iac-security,api-security"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast,sca,iac-security,api-security"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -764,4 +766,56 @@ func TestScanCreateResubmit(t *testing.T) {
 	engines := strings.Join(scan[0].Engines, ",")
 	log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
 	assert.Assert(t, err == nil && engines == "sast", "")
+}
+
+// TestScanTypesValidation must return an error because the user is not allowed to use some scanType
+func TestScanTypesValidation(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast,invalid_scan_type",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "It looks like the")
+}
+
+// TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
+func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "invalid_scan_type",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "'api-security' only works when  scan-type 'sast' is also provided")
+}
+
+// TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
+func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca,invalid_scan_type",
+		flag(params.AstAPIKeyFlag), "invalidAPIKey",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Error validating scan types")
 }

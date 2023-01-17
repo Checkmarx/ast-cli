@@ -59,6 +59,7 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 		if err != nil {
 			return responseScanParsingFailed(err)
 		}
+
 		return &model, nil, nil
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("scan not found")

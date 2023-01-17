@@ -83,6 +83,13 @@ jobs:
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_down.sh
+
+      - name: Coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ runner.os }}-coverage-latest
+          path: coverage.html
+
       - name: Check if total coverage is greater then 80
         shell: bash
         run: |
