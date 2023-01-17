@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
@@ -70,9 +71,7 @@ type JWTStruct struct {
 	jwt.StandardClaims
 }
 
-const (
-	enabledEngines = "sast,sca,api-security,iac-security"
-)
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security"}
 
 type JWTWrapper interface {
 	GetAllowedEngines() (allowedEngines map[string]bool, err error)
@@ -101,7 +100,7 @@ func prepareEngines(engines []string) map[string]bool {
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT
-		if strings.Contains(enabledEngines, strings.ToLower(engine)) {
+		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
 			m[strings.ToLower(engine)] = true
 		}
 	}
