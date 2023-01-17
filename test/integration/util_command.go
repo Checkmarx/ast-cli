@@ -77,7 +77,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
-
+	jwtWrapper := wrappers.NewJwtWrapper()
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPredicatesWrapper,
@@ -98,6 +98,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		prWrapper,
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
+		jwtWrapper,
 	)
 	return astCli
 }

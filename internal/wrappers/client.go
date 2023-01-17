@@ -604,7 +604,6 @@ func GetURL(path, accessToken string) (string, error) {
 	var err error
 	var cleanURL string
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
-
 	if accessToken != "" {
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
 		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
@@ -639,6 +638,5 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	} else {
 		return "", errors.Errorf(jwtError)
 	}
-
 	return value, nil
 }

@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +83,10 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
+	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
+		"\nTo use this feature, you would need to purchase a license." +
+		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
+		"\nLicensed packages: %s"
 )
 
 var (
@@ -115,6 +120,7 @@ func NewScanCommand(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -135,7 +141,8 @@ func NewScanCommand(
 		resultsWrapper,
 		projectsWrapper,
 		groupsWrapper,
-		riskOverviewWrapper)
+		riskOverviewWrapper,
+		jwtWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper)
 
@@ -188,7 +195,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`
 			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
 			`,
 			),
@@ -378,6 +385,7 @@ func scanCreateSubCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -401,7 +409,9 @@ func scanCreateSubCommand(
 			resultsWrapper,
 			projectsWrapper,
 			groupsWrapper,
-			risksOverviewWrapper),
+			risksOverviewWrapper,
+			jwtWrapper,
+		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(
@@ -806,34 +816,41 @@ func addAPISecScan() map[string]interface{} {
 	return nil
 }
 
-func validateScanTypes(cmd *cobra.Command) {
+func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
+	var scanTypes []string
+	allowedEngines, err := jwtWrapper.GetAllowedEngines()
+	if err != nil {
+		err = errors.Errorf("Error validating scan types: %v", err)
+		return err
+	}
+
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
-		// postprocessor to match iac-security with kics
-		actualScanTypes = strings.Replace(userScanTypes, commonParams.IacType, commonParams.KicsType, 1)
-	}
+		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 
-	scanTypes := strings.Split(actualScanTypes, ",")
-	for _, scanType := range scanTypes {
-		isValid := false
-		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.SastType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
-			isValid = true
-		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
-			if scanTypeEnabled(commonParams.SastType) {
-				isValid = true
-			} else {
-				log.Println("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-				os.Exit(1)
+		scanTypes = strings.Split(userScanTypes, ",")
+		for _, scanType := range scanTypes {
+			if !allowedEngines[scanType] {
+				keys := reflect.ValueOf(allowedEngines).MapKeys()
+				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
+				return err
 			}
 		}
-
-		if !isValid {
-			log.Println(fmt.Sprintf("Error: unknown scan type: %s", scanType))
-			os.Exit(1)
+	} else {
+		for k := range allowedEngines {
+			scanTypes = append(scanTypes, k)
 		}
 	}
+
+	actualScanTypes = strings.Join(scanTypes, ",")
+	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
+
+	if scanTypeEnabled(commonParams.APISecurityType) && !scanTypeEnabled(commonParams.SastType) {
+		err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
+		return err
+	}
+
+	return nil
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -1268,6 +1285,7 @@ func runCreateScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		branch := viper.GetString(commonParams.BranchKey)
@@ -1284,6 +1302,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1357,13 +1376,16 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	validateScanTypes(cmd)
-
+	err := validateScanTypes(cmd, jwtWrapper)
+	if err != nil {
+		return nil, "", err
+	}
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err = setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
