@@ -70,6 +70,10 @@ type JWTStruct struct {
 	jwt.StandardClaims
 }
 
+const (
+	enabledEngines = "sast,sca,api-security,iac-security"
+)
+
 type JWTWrapper interface {
 	GetAllowedEngines() (allowedEngines map[string]bool, err error)
 }
@@ -85,16 +89,21 @@ func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error
 		return nil, err
 	}
 	jwtStruct, _ := extractFromTokenToJwtStruct(accessToken)
-	allowedEngines = fillBooleanMap(jwtStruct.AstLicense.LicenseData.AllowedEngines)
+	allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
 
 	return allowedEngines, nil
 }
 
-func fillBooleanMap(engines []string) map[string]bool {
+func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
-		m[strings.ToLower(engine)] = true
+		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
+
+		// Current limitation, CxOne is including non-engines in the JWT
+		if strings.Contains(enabledEngines, strings.ToLower(engine)) {
+			m[strings.ToLower(engine)] = true
+		}
 	}
 	return m
 }

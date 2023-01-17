@@ -826,31 +826,30 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
-		// postprocessor to match iac-security with kics
-		actualScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.IacType, commonParams.KicsType, 1)
-		scanTypes = strings.Split(actualScanTypes, ",")
+		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
+
+		scanTypes = strings.Split(userScanTypes, ",")
+		for _, scanType := range scanTypes {
+			if !allowedEngines[scanType] {
+				keys := reflect.ValueOf(allowedEngines).MapKeys()
+				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
+				return err
+			}
+		}
 	} else {
 		for k := range allowedEngines {
 			scanTypes = append(scanTypes, k)
 		}
+	}
 
-		// This will force the user default scan types
-		actualScanTypes = strings.Join(scanTypes, ",")
-		return nil
+	actualScanTypes = strings.Join(scanTypes, ",")
+	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
+
+	if scanTypeEnabled(commonParams.APISecurityType) && !scanTypeEnabled(commonParams.SastType) {
+		err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
+		return err
 	}
-	for _, scanType := range scanTypes {
-		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
-			if !scanTypeEnabled(commonParams.SastType) {
-				err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-				return err
-			}
-		}
-		if !allowedEngines[scanType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
-			return err
-		}
-	}
+
 	return nil
 }
 
