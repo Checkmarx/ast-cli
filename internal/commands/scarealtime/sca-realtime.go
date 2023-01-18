@@ -153,20 +153,39 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 		for _, value := range dependencyMap {
 			bodyRequest = append(bodyRequest, value)
 		}
-
-		// We need to call the SCA API for each DependencyResolution so that we can save the file name
-		vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(bodyRequest)
-		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message)
-		}
-		if errVulnerabilities != nil {
-			return errVulnerabilities
-		}
-
-		// Add file name for each vulnerability to display in IDEs
-		for _, vulnerability := range vulnerabilitiesResponseModel {
-			vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
-			modelResults = append(modelResults, vulnerability)
+		for len(bodyRequest) > 0 {
+			if len(bodyRequest) >= 50 {
+				first50 := bodyRequest[:50]
+				// We need to call the SCA API for each DependencyResolution so that we can save the file name
+				vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(first50)
+				if errorModel != nil {
+					return errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message)
+				}
+				if errVulnerabilities != nil {
+					return errVulnerabilities
+				}
+				// Add file name for each vulnerability to display in IDEs
+				for _, vulnerability := range vulnerabilitiesResponseModel {
+					vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
+					modelResults = append(modelResults, vulnerability)
+				}
+				bodyRequest = bodyRequest[50:]
+			} else {
+				// We need to call the SCA API for each DependencyResolution so that we can save the file name
+				vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(bodyRequest)
+				if errorModel != nil {
+					return errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message)
+				}
+				if errVulnerabilities != nil {
+					return errVulnerabilities
+				}
+				// Add file name for each vulnerability to display in IDEs
+				for _, vulnerability := range vulnerabilitiesResponseModel {
+					vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
+					modelResults = append(modelResults, vulnerability)
+				}
+				bodyRequest = nil
+			}
 		}
 	}
 
