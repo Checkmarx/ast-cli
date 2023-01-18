@@ -133,7 +133,7 @@ var KicsBaseFilters = []string{
 	".json",
 	".auto.tfvars",
 	".terraform.tfvars",
-	"Dockerfile*",
+	"Dockerfile",
 	".proto",
 	".dockerfile",
 }
