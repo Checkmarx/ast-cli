@@ -114,6 +114,7 @@ var (
 
 func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -137,6 +138,7 @@ func NewScanCommand(
 
 	createScanCmd := scanCreateSubCommand(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
@@ -380,6 +382,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 
 func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -405,6 +408,7 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(
 			scansWrapper,
+			resultsPdfReportsWrapper,
 			uploadsWrapper,
 			resultsWrapper,
 			projectsWrapper,
@@ -1280,6 +1284,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -1331,13 +1336,14 @@ func runCreateScanCommand(
 				waitDelay,
 				timeoutMinutes,
 				scansWrapper,
+				resultsPdfReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
 
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1347,7 +1353,7 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1500,6 +1506,7 @@ func handleWait(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1508,6 +1515,7 @@ func handleWait(
 		waitDelay,
 		timeoutMinutes,
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
 		cmd)
@@ -1527,6 +1535,7 @@ func createReportsAfterScan(
 	cmd *cobra.Command,
 	scanID string,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1545,6 +1554,7 @@ func createReportsAfterScan(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,
 		targetFile,
@@ -1643,6 +1653,7 @@ func waitForScanCompletion(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	cmd *cobra.Command,
@@ -1659,7 +1670,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
+		running, err := isScanRunning(scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
 		}
@@ -1683,8 +1694,12 @@ func waitForScanCompletion(
 }
 
 func isScanRunning(
-	scansWrapper wrappers.ScansWrapper, resultsWrapper wrappers.ResultsWrapper,
-	risksOverViewWrapper wrappers.RisksOverviewWrapper, scanID string, cmd *cobra.Command,
+	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+	risksOverViewWrapper wrappers.RisksOverviewWrapper,
+	scanID string,
+	cmd *cobra.Command,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -1708,6 +1723,7 @@ func isScanRunning(
 			cmd,
 			scanResponseModel.ID,
 			scansWrapper,
+			resultsPdfReportsWrapper,
 			resultsWrapper,
 			risksOverViewWrapper)
 		if reportErr != nil {

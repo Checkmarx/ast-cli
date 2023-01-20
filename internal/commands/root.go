@@ -24,6 +24,7 @@ const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
@@ -126,15 +127,25 @@ func NewAstCLI(
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
 		logsWrapper,
 		groupsWrapper,
 		risksOverviewWrapper,
-		jwtWrapper)
+		jwtWrapper,
+	)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
-	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper, risksOverviewWrapper)
+	resultsCmd := NewResultsCommand(
+		resultsWrapper,
+		scansWrapper,
+		resultsPdfReportsWrapper,
+		codeBashingWrapper,
+		bflWrapper,
+		risksOverviewWrapper,
+	)
+
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand(
