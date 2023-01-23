@@ -135,6 +135,7 @@ func resultShowSubCommand(
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
+		printer.FormatPDF,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -637,46 +638,8 @@ func createReport(
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatPDF) {
-		poolingResp := &wrappers.PdfReportsPoolingResponse{
-			ReportId: "nil",
-			Status:   "nil",
-			Url:      "nil",
-		}
-		var pdfReportsPayload wrappers.PdfReportsPayload
-		//summaryRpt := createTargetName(targetFile, targetPath, "pdf")
-		enginesUpper := strings.ToUpper(strings.Join(summary.EnginesEnabled, ","))
-		summary.EnginesEnabled = strings.Split(enginesUpper, ",")
-
-		pdfReportsPayload.ReportName = "scan-report"
-		pdfReportsPayload.ReportType = "cli"
-		pdfReportsPayload.FileFormat = "pdf"
-		pdfReportsPayload.Data.ScanId = summary.ScanID
-		pdfReportsPayload.Data.ProjectId = summary.ProjectID
-		pdfReportsPayload.Data.BranchName = summary.BranchName
-		pdfReportsPayload.Data.Scanners = summary.EnginesEnabled
-		pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
-
-		pdfReportID, webErr, err := resultsPdfReportsWrapper.GeneratePdfReport(pdfReportsPayload)
-		if err != nil && webErr != nil {
-			return errors.Wrapf(err, "%v", webErr)
-		}
-
-		if webErr == nil {
-			fmt.Println("pdfReportsPayload", pdfReportsPayload)
-			fmt.Println("PDF report - ", *pdfReportID)
-		} else {
-			fmt.Println("webErr", webErr)
-		}
-		fmt.Println("Generating PDF report...")
-		for poolingResp.Status != "completed" {
-			poolingResp, webErr, err = resultsPdfReportsWrapper.PoolingForPdfReport(pdfReportID.ReportId)
-			if err != nil && webErr != nil {
-				return errors.Wrapf(err, "%v", webErr)
-			}
-			time.Sleep(500 * time.Millisecond)
-		}
-		fmt.Println("PDF report pooling - ", *poolingResp)
-		return nil
+		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
+		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
@@ -825,6 +788,44 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	_ = f.Close()
+	return nil
+}
+
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfReportsWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
+	pdfReportsPayload := wrappers.PdfReportsPayload{}
+	poolingResp := &wrappers.PdfReportsPoolingResponse{}
+	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+
+	pdfReportsPayload.ReportName = "scan-report"
+	pdfReportsPayload.ReportType = "cli"
+	pdfReportsPayload.FileFormat = "pdf"
+	pdfReportsPayload.Data.ScanId = summary.ScanID
+	pdfReportsPayload.Data.ProjectId = summary.ProjectID
+	pdfReportsPayload.Data.BranchName = summary.BranchName
+	pdfReportsPayload.Data.Scanners = summary.EnginesEnabled
+	pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
+
+	pdfReportID, webErr, err := pdfWrapper.GeneratePdfReport(pdfReportsPayload)
+	if err != nil || webErr != nil {
+		return errors.Wrapf(err, "%v", webErr)
+	}
+
+	log.Println("Generating PDF report")
+	poolingResp.Status = "started"
+	for poolingResp.Status == "started" {
+		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportId)
+		if err != nil || webErr != nil {
+			return errors.Wrapf(err, "%v", webErr)
+		}
+		time.Sleep(150 * time.Millisecond)
+	}
+	if poolingResp.Status != "completed" {
+		return errors.Errorf("Pooling not completed - Current status: %s", poolingResp.Status)
+	}
+	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportId, summaryRpt)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
+	}
 	return nil
 }
 

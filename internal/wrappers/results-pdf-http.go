@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
@@ -82,7 +85,7 @@ func (r *ResultsPdfReportsHttpWrapper) GeneratePdfReport(payload PdfReportsPaylo
 	}
 }
 
-func (r *ResultsPdfReportsHttpWrapper) PoolingForPdfReport(reportId string) (*PdfReportsPoolingResponse, *WebError, error) {
+func (r *ResultsPdfReportsHttpWrapper) CheckPdfReportStatus(reportId string) (*PdfReportsPoolingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, reportId)
 	params := map[string]string{"returnUrl": "true"}
@@ -102,7 +105,7 @@ func (r *ResultsPdfReportsHttpWrapper) PoolingForPdfReport(reportId string) (*Pd
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while requesting PDF report")
+			return nil, nil, errors.Wrapf(err, "Error requesting PDF report")
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
@@ -115,4 +118,37 @@ func (r *ResultsPdfReportsHttpWrapper) PoolingForPdfReport(reportId string) (*Pd
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func (r *ResultsPdfReportsHttpWrapper) DownloadPdfReport(reportID, targetFile string) error {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	url := fmt.Sprintf("%s/%s/download", r.path, reportID)
+	resp, err := SendHTTPRequest(http.MethodGet, url, nil, true, clientTimeout)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("response status code %d", resp.StatusCode)
+	}
+
+	// Create blank file
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
+	size, err := io.Copy(file, resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to write file %s", targetFile)
+	}
+
+	defer file.Close()
+
+	log.Printf("Downloaded file %s - size %d bytes\n", targetFile, size)
+
+	return nil
 }
