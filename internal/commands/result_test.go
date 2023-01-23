@@ -71,6 +71,12 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 }
 
+func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "pdf")
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+}
+
 func TestRunGetResultsByScanIdWrongFormat(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "invalidFormat")
 	assert.Equal(t, err.Error(), "bad report format invalidFormat", "Wrong expected error message")

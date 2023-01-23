@@ -14,15 +14,13 @@ func (*ResultsPdfWrapper) GeneratePdfReport(_ *wrappers.PdfReportsPayload) (*wra
 }
 
 // CheckPdfReportStatus mock for tests
-
 func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPoolingResponse, *wrappers.WebError, error) {
 	return &wrappers.PdfPoolingResponse{
-		Status: "Ready",
+		Status: "completed",
 	}, nil, nil
 }
 
 // DownloadPdfReport mock for tests
-
 func (*ResultsPdfWrapper) DownloadPdfReport(_, _ string) error {
 	return nil
 }

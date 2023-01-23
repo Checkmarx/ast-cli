@@ -794,9 +794,17 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 }
 
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
+	var summaryEngines []string
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+
+	// the api can't generate a scan different from SAST, SCA or KICS
+	for _, engine := range summary.EnginesEnabled {
+		if engine == "SAST" || engine == "SCA" || engine == "KICS" {
+			summaryEngines = append(summaryEngines, engine)
+		}
+	}
 
 	pdfReportsPayload.ReportName = "scan-report"
 	pdfReportsPayload.ReportType = "cli"
@@ -804,12 +812,15 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
 	pdfReportsPayload.Data.BranchName = summary.BranchName
-	pdfReportsPayload.Data.Scanners = summary.EnginesEnabled
+	pdfReportsPayload.Data.Scanners = summaryEngines
 	pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
 
 	pdfReportID, webErr, err := pdfWrapper.GeneratePdfReport(pdfReportsPayload)
-	if err != nil || webErr != nil {
-		return errors.Wrapf(err, "%v", webErr)
+	if webErr != nil {
+		return errors.Errorf("Error generating PDF report - %s", webErr.Message)
+	}
+	if err != nil {
+		return errors.Errorf("Error generating PDF report - %s", err.Error())
 	}
 
 	log.Println("Generating PDF report")

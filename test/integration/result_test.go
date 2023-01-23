@@ -38,6 +38,7 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryConsole,
 				printer.FormatSonar,
 				printer.FormatSummaryJSON,
+				printer.FormatPDF,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -57,7 +58,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON}
+	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
@@ -80,6 +81,40 @@ func TestResultsShowParamFailed(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Failed listing results: Please provide a scan ID")
 }
+func TestResultsHelper(t *testing.T) {
+
+	args := []string{
+		"results",
+		"show",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed listing results: Please provide a scan ID")
+}
+
+//func TestSomething(t *testing.T) {
+//	scanID, _ := getRootScan(t)
+//
+//	outputBuffer := executeCmdNilAssertion(
+//		t, "Getting results should pass",
+//		"results",
+//		"show",
+//		flag(params.TargetFormatFlag), strings.Join(
+//			[]string{
+//				printer.FormatJSON,
+//				printer.FormatSarif,
+//				printer.FormatSummary,
+//				printer.FormatSummaryConsole,
+//				printer.FormatSonar,
+//				printer.FormatSummaryJSON,
+//				printer.FormatPDF,
+//			}, ",",
+//		),
+//		flag(params.TargetFlag), fileName,
+//		flag(params.ScanIDFlag), scanID,
+//		flag(params.TargetPathFlag), resultsDirectory,
+//	)
+//}
 
 func TestCodeBashingParamFailed(t *testing.T) {
 
