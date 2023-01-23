@@ -55,6 +55,7 @@ const (
 	directDependencyType     = "Direct Dependency"
 	indirectDependencyType   = "Transitive Dependency"
 	startedStatus            = "started"
+	delayValueForPdfReport   = 150
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -818,7 +819,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
-		time.Sleep(150 * time.Millisecond)
+		time.Sleep(delayValueForPdfReport * time.Millisecond)
 	}
 	if poolingResp.Status != "completed" {
 		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)

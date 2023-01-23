@@ -42,7 +42,7 @@ type PdfHTTPWrapper struct {
 	path string
 }
 
-func NewResultsPdfReportsHttpWrapper(path string) ResultsPdfWrapper {
+func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 	return &PdfHTTPWrapper{
 		path: path,
 	}

@@ -61,7 +61,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
-	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHttpWrapper(resultsPdfPath)
+	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)

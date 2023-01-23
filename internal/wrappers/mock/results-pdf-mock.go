@@ -9,7 +9,7 @@ type ResultsPdfWrapper struct{}
 // GeneratePdfReport mock for tests
 func (*ResultsPdfWrapper) GeneratePdfReport(_ *wrappers.PdfReportsPayload) (*wrappers.PdfReportsResponse, *wrappers.WebError, error) {
 	return &wrappers.PdfReportsResponse{
-		ReportID: "reportID",
+		ReportID: "reportId",
 	}, nil, nil
 }
 

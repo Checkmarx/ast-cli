@@ -43,7 +43,7 @@ func main() {
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
-	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHttpWrapper(resultsPdfPath)
+	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
