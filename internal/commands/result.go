@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -636,39 +637,45 @@ func createReport(
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatPDF) {
+		poolingResp := &wrappers.PdfReportsPoolingResponse{
+			ReportId: "nil",
+			Status:   "nil",
+			Url:      "nil",
+		}
+		var pdfReportsPayload wrappers.PdfReportsPayload
 		//summaryRpt := createTargetName(targetFile, targetPath, "pdf")
 		enginesUpper := strings.ToUpper(strings.Join(summary.EnginesEnabled, ","))
 		summary.EnginesEnabled = strings.Split(enginesUpper, ",")
-		payload := wrappers.PdfReportsPayload{
-			ReportName: "scan-report",
-			ReportType: "cli",
-			FileFormat: "pdf",
-			Data: struct {
-				ScanId     string   `json:"scanId" validate:"required"`
-				ProjectId  string   `json:"projectId" validate:"required"`
-				BranchName string   `json:"branchName" validate:"required"`
-				Host       string   `json:"host"`
-				Sections   []string `json:"sections"`
-				Scanners   []string `json:"scanners"`
-				Email      []string `json:"email"`
-			}{
-				ScanId:     summary.ScanID,
-				ProjectId:  summary.ProjectID,
-				BranchName: summary.BranchName,
-				Scanners:   summary.EnginesEnabled,
-			},
-		}
-		got, webErr, err := resultsPdfReportsWrapper.GeneratePdfReport(payload)
+
+		pdfReportsPayload.ReportName = "scan-report"
+		pdfReportsPayload.ReportType = "cli"
+		pdfReportsPayload.FileFormat = "pdf"
+		pdfReportsPayload.Data.ScanId = summary.ScanID
+		pdfReportsPayload.Data.ProjectId = summary.ProjectID
+		pdfReportsPayload.Data.BranchName = summary.BranchName
+		pdfReportsPayload.Data.Scanners = summary.EnginesEnabled
+		pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
+
+		pdfReportID, webErr, err := resultsPdfReportsWrapper.GeneratePdfReport(pdfReportsPayload)
 		if err != nil && webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
 
 		if webErr == nil {
-			fmt.Println("payload", payload)
-			fmt.Println("PDF report - ", *got)
+			fmt.Println("pdfReportsPayload", pdfReportsPayload)
+			fmt.Println("PDF report - ", *pdfReportID)
 		} else {
 			fmt.Println("webErr", webErr)
 		}
+		fmt.Println("Generating PDF report...")
+		for poolingResp.Status != "completed" {
+			poolingResp, webErr, err = resultsPdfReportsWrapper.PoolingForPdfReport(pdfReportID.ReportId)
+			if err != nil && webErr != nil {
+				return errors.Wrapf(err, "%v", webErr)
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		fmt.Println("PDF report pooling - ", *poolingResp)
 		return nil
 	}
 	err := fmt.Errorf("bad report format %s", format)

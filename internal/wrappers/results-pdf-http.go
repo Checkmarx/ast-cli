@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -29,7 +30,11 @@ type PdfReportsPayload struct {
 type PdfReportsResponse struct {
 	ReportId string `json:"reportId"`
 }
-
+type PdfReportsPoolingResponse struct {
+	ReportId string `json:"reportId"`
+	Status   string `json:"status"`
+	Url      string `json:"url"`
+}
 type ResultsPdfReportsHttpWrapper struct {
 	path string
 }
@@ -67,6 +72,41 @@ func (r *ResultsPdfReportsHttpWrapper) GeneratePdfReport(payload PdfReportsPaylo
 		return nil, &errorModel, nil
 	case http.StatusAccepted:
 		model := PdfReportsResponse{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Failed to parse response body")
+		}
+		return &model, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func (r *ResultsPdfReportsHttpWrapper) PoolingForPdfReport(reportId string) (*PdfReportsPoolingResponse, *WebError, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	path := fmt.Sprintf("%s/%s", r.path, reportId)
+	params := map[string]string{"returnUrl": "true"}
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "Error while requesting PDF report")
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := PdfReportsPoolingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to parse response body")
