@@ -54,6 +54,7 @@ const (
 	scaType                  = "sca"
 	directDependencyType     = "Direct Dependency"
 	indirectDependencyType   = "Transitive Dependency"
+	startedStatus            = "started"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -85,7 +86,7 @@ var securities = map[string]string{
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -113,7 +114,7 @@ func NewResultsCommand(
 func resultShowSubCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
@@ -463,7 +464,7 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -532,7 +533,7 @@ func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
 	targetFile,
@@ -605,7 +606,7 @@ func createReport(
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 
 ) error {
 	if isScanPending(summary.Status) {
@@ -791,16 +792,16 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportPdfResults(pdfWrapper wrappers.ResultsPdfReportsWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
-	pdfReportsPayload := wrappers.PdfReportsPayload{}
-	poolingResp := &wrappers.PdfReportsPoolingResponse{}
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
+	pdfReportsPayload := &wrappers.PdfReportsPayload{}
+	poolingResp := &wrappers.PdfPoolingResponse{}
 	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
 
 	pdfReportsPayload.ReportName = "scan-report"
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = "pdf"
-	pdfReportsPayload.Data.ScanId = summary.ScanID
-	pdfReportsPayload.Data.ProjectId = summary.ProjectID
+	pdfReportsPayload.Data.ScanID = summary.ScanID
+	pdfReportsPayload.Data.ProjectID = summary.ProjectID
 	pdfReportsPayload.Data.BranchName = summary.BranchName
 	pdfReportsPayload.Data.Scanners = summary.EnginesEnabled
 	pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
@@ -811,18 +812,18 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfReportsWrapper, summary *wra
 	}
 
 	log.Println("Generating PDF report")
-	poolingResp.Status = "started"
-	for poolingResp.Status == "started" {
-		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportId)
+	poolingResp.Status = startedStatus
+	for poolingResp.Status == startedStatus {
+		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
 		time.Sleep(150 * time.Millisecond)
 	}
 	if poolingResp.Status != "completed" {
-		return errors.Errorf("Pooling not completed - Current status: %s", poolingResp.Status)
+		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
 	}
-	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportId, summaryRpt)
+	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}

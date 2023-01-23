@@ -1,7 +1,7 @@
 package wrappers
 
-type ResultsPdfReportsWrapper interface {
-	GeneratePdfReport(payload PdfReportsPayload) (*PdfReportsResponse, *WebError, error)
-	CheckPdfReportStatus(reportId string) (*PdfReportsPoolingResponse, *WebError, error)
+type ResultsPdfWrapper interface {
+	GeneratePdfReport(payload *PdfReportsPayload) (*PdfReportsResponse, *WebError, error)
+	CheckPdfReportStatus(reportId string) (*PdfPoolingResponse, *WebError, error)
 	DownloadPdfReport(reportID, targetFile string) error
 }

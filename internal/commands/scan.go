@@ -114,7 +114,7 @@ var (
 
 func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -382,7 +382,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 
 func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -1285,7 +1285,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -1507,7 +1507,7 @@ func handleWait(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1536,7 +1536,7 @@ func createReportsAfterScan(
 	cmd *cobra.Command,
 	scanID string,
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1654,7 +1654,7 @@ func waitForScanCompletion(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	cmd *cobra.Command,
@@ -1696,7 +1696,7 @@ func waitForScanCompletion(
 
 func isScanRunning(
 	scansWrapper wrappers.ScansWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfReportsWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
 	scanID string,

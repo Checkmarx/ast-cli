@@ -20,8 +20,8 @@ type PdfReportsPayload struct {
 	ReportType string `json:"reportType" validate:"required"`
 	FileFormat string `json:"fileFormat" validate:"required"`
 	Data       struct {
-		ScanId     string   `json:"scanId" validate:"required"`
-		ProjectId  string   `json:"projectId" validate:"required"`
+		ScanID     string   `json:"scanId" validate:"required"`
+		ProjectID  string   `json:"projectId" validate:"required"`
 		BranchName string   `json:"branchName" validate:"required"`
 		Host       string   `json:"host"`
 		Sections   []string `json:"sections"`
@@ -31,24 +31,24 @@ type PdfReportsPayload struct {
 }
 
 type PdfReportsResponse struct {
-	ReportId string `json:"reportId"`
+	ReportID string `json:"reportId"`
 }
-type PdfReportsPoolingResponse struct {
-	ReportId string `json:"reportId"`
+type PdfPoolingResponse struct {
+	ReportID string `json:"reportId"`
 	Status   string `json:"status"`
-	Url      string `json:"url"`
+	URL      string `json:"url"`
 }
-type ResultsPdfReportsHttpWrapper struct {
+type PdfHTTPWrapper struct {
 	path string
 }
 
-func NewResultsPdfReportsHttpWrapper(path string) ResultsPdfReportsWrapper {
-	return &ResultsPdfReportsHttpWrapper{
+func NewResultsPdfReportsHttpWrapper(path string) ResultsPdfWrapper {
+	return &PdfHTTPWrapper{
 		path: path,
 	}
 }
 
-func (r *ResultsPdfReportsHttpWrapper) GeneratePdfReport(payload PdfReportsPayload) (*PdfReportsResponse, *WebError, error) {
+func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfReportsResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
@@ -85,9 +85,9 @@ func (r *ResultsPdfReportsHttpWrapper) GeneratePdfReport(payload PdfReportsPaylo
 	}
 }
 
-func (r *ResultsPdfReportsHttpWrapper) CheckPdfReportStatus(reportId string) (*PdfReportsPoolingResponse, *WebError, error) {
+func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPoolingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf("%s/%s", r.path, reportId)
+	path := fmt.Sprintf("%s/%s", r.path, reportID)
 	params := map[string]string{"returnUrl": "true"}
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 	if err != nil {
@@ -109,7 +109,7 @@ func (r *ResultsPdfReportsHttpWrapper) CheckPdfReportStatus(reportId string) (*P
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := PdfReportsPoolingResponse{}
+		model := PdfPoolingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "Failed to parse response body")
@@ -120,7 +120,7 @@ func (r *ResultsPdfReportsHttpWrapper) CheckPdfReportStatus(reportId string) (*P
 	}
 }
 
-func (r *ResultsPdfReportsHttpWrapper) DownloadPdfReport(reportID, targetFile string) error {
+func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	url := fmt.Sprintf("%s/%s/download", r.path, reportID)
 	resp, err := SendHTTPRequest(http.MethodGet, url, nil, true, clientTimeout)
@@ -136,7 +136,6 @@ func (r *ResultsPdfReportsHttpWrapper) DownloadPdfReport(reportID, targetFile st
 		return errors.Errorf("response status code %d", resp.StatusCode)
 	}
 
-	// Create blank file
 	file, err := os.Create(targetFile)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create file %s", targetFile)
