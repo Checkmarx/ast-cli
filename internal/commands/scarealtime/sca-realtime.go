@@ -107,7 +107,8 @@ func executeSCAResolver(projectPath string) error {
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running SCA resolver with args: %v \n", args))
 
-	_, err := exec.Command(Params.ExecutableFilePath, args...).Output()
+	out, err := exec.Command(Params.ExecutableFilePath, args...).Output()
+	logger.PrintIfVerbose(string(out))
 	if err != nil {
 		return err
 	}
