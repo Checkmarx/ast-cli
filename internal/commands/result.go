@@ -55,7 +55,10 @@ const (
 	directDependencyType     = "Direct Dependency"
 	indirectDependencyType   = "Transitive Dependency"
 	startedStatus            = "started"
-	delayValueForPdfReport   = 150
+
+	completedStatus = "completed"
+
+	delayValueForPdfReport = 150
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -797,11 +800,14 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	var summaryEngines []string
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
+
 	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
 
-	// the api can't generate a scan different from SAST, SCA or KICS
+	// the api can't generate pdf using a scan different from SAST, SCA or KICS
 	for _, engine := range summary.EnginesEnabled {
-		if engine == "SAST" || engine == "SCA" || engine == "KICS" {
+		if strings.EqualFold(engine, commonParams.SastType) ||
+			strings.EqualFold(engine, commonParams.ScaType) ||
+			strings.EqualFold(engine, commonParams.KicsType) {
 			summaryEngines = append(summaryEngines, engine)
 		}
 	}
@@ -832,7 +838,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		}
 		time.Sleep(delayValueForPdfReport * time.Millisecond)
 	}
-	if poolingResp.Status != "completed" {
+	if poolingResp.Status != completedStatus {
 		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
 	}
 	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)

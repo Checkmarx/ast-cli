@@ -144,10 +144,8 @@ func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to write file %s", targetFile)
 	}
-
 	defer file.Close()
 
-	log.Printf("Downloaded file %s - size %d bytes\n", targetFile, size)
-
+	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
 	return nil
 }

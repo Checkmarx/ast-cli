@@ -81,40 +81,6 @@ func TestResultsShowParamFailed(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Failed listing results: Please provide a scan ID")
 }
-func TestResultsHelper(t *testing.T) {
-
-	args := []string{
-		"results",
-		"show",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed listing results: Please provide a scan ID")
-}
-
-//func TestSomething(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Getting results should pass",
-//		"results",
-//		"show",
-//		flag(params.TargetFormatFlag), strings.Join(
-//			[]string{
-//				printer.FormatJSON,
-//				printer.FormatSarif,
-//				printer.FormatSummary,
-//				printer.FormatSummaryConsole,
-//				printer.FormatSonar,
-//				printer.FormatSummaryJSON,
-//				printer.FormatPDF,
-//			}, ",",
-//		),
-//		flag(params.TargetFlag), fileName,
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.TargetPathFlag), resultsDirectory,
-//	)
-//}
 
 func TestCodeBashingParamFailed(t *testing.T) {
 
