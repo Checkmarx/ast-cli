@@ -26,10 +26,10 @@ func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPoolingRe
 // DownloadPdfReport mock for tests
 func (*ResultsPdfWrapper) DownloadPdfReport(_, targetFile string) error {
 	file, err := os.Create(targetFile)
+	defer file.Close()
+
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create file %s", targetFile)
 	}
-
-	defer file.Close()
 	return nil
 }
