@@ -72,7 +72,6 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
-
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "pdf")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
