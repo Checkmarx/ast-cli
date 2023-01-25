@@ -1,7 +1,10 @@
 package mock
 
 import (
+	"os"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 )
 
 type ResultsPdfWrapper struct{}
@@ -21,6 +24,12 @@ func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPoolingRe
 }
 
 // DownloadPdfReport mock for tests
-func (*ResultsPdfWrapper) DownloadPdfReport(_, _ string) error {
+func (*ResultsPdfWrapper) DownloadPdfReport(_, targetFile string) error {
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
+
+	defer file.Close()
 	return nil
 }
