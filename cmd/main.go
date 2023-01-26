@@ -40,8 +40,10 @@ func main() {
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
+	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -63,6 +65,7 @@ func main() {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	astCli := commands.NewAstCLI(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
