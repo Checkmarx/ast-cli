@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -53,6 +54,11 @@ const (
 	scaType                  = "sca"
 	directDependencyType     = "Direct Dependency"
 	indirectDependencyType   = "Transitive Dependency"
+	startedStatus            = "started"
+
+	completedStatus = "completed"
+
+	delayValueForPdfReport = 150
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -84,6 +90,7 @@ var securities = map[string]string{
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -99,7 +106,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, risksOverviewWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper, risksOverviewWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -109,7 +116,9 @@ func NewResultsCommand(
 }
 
 func resultShowSubCommand(
-	resultsWrapper wrappers.ResultsWrapper, scanWrapper wrappers.ScansWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+	scanWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
@@ -121,7 +130,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, risksOverviewWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper, risksOverviewWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -131,6 +140,7 @@ func resultShowSubCommand(
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
+		printer.FormatPDF,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -458,6 +468,7 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -473,6 +484,7 @@ func runGetResultCommand(
 			resultsWrapper,
 			risksOverviewWrapper,
 			scanWrapper,
+			resultsPdfReportsWrapper,
 			scanID,
 			format,
 			targetFile,
@@ -525,6 +537,7 @@ func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
 	targetFile,
@@ -557,7 +570,7 @@ func CreateScanReport(
 	}
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, targetFile, targetPath, results, summary)
+		err = createReport(reportType, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
 		if err != nil {
 			return err
 		}
@@ -597,6 +610,8 @@ func createReport(
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+
 ) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
@@ -626,6 +641,10 @@ func createReport(
 		summaryRpt := createTargetName(targetFile, targetPath, "json")
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
+	}
+	if printer.IsFormat(format, printer.FormatPDF) {
+		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
+		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
@@ -774,6 +793,58 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	_ = f.Close()
+	return nil
+}
+
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
+	var summaryEngines []string
+	pdfReportsPayload := &wrappers.PdfReportsPayload{}
+	poolingResp := &wrappers.PdfPoolingResponse{}
+
+	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+
+	// the api can't generate pdf using a scan different from SAST, SCA or KICS
+	for _, engine := range summary.EnginesEnabled {
+		if strings.EqualFold(engine, commonParams.SastType) ||
+			strings.EqualFold(engine, commonParams.ScaType) ||
+			strings.EqualFold(engine, commonParams.KicsType) {
+			summaryEngines = append(summaryEngines, engine)
+		}
+	}
+
+	pdfReportsPayload.ReportName = "scan-report"
+	pdfReportsPayload.ReportType = "cli"
+	pdfReportsPayload.FileFormat = "pdf"
+	pdfReportsPayload.Data.ScanID = summary.ScanID
+	pdfReportsPayload.Data.ProjectID = summary.ProjectID
+	pdfReportsPayload.Data.BranchName = summary.BranchName
+	pdfReportsPayload.Data.Scanners = summaryEngines
+	pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
+
+	pdfReportID, webErr, err := pdfWrapper.GeneratePdfReport(pdfReportsPayload)
+	if webErr != nil {
+		return errors.Errorf("Error generating PDF report - %s", webErr.Message)
+	}
+	if err != nil {
+		return errors.Errorf("Error generating PDF report - %s", err.Error())
+	}
+
+	log.Println("Generating PDF report")
+	poolingResp.Status = startedStatus
+	for poolingResp.Status == startedStatus {
+		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
+		if err != nil || webErr != nil {
+			return errors.Wrapf(err, "%v", webErr)
+		}
+		time.Sleep(delayValueForPdfReport * time.Millisecond)
+	}
+	if poolingResp.Status != completedStatus {
+		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
+	}
+	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
+	}
 	return nil
 }
 

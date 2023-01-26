@@ -53,4 +53,5 @@ var EnvVarsBinds = []struct {
 	{AstRoleKey, AstRoleEnv, ScaAgent},
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 	{ClientTimeoutKey, ClientTimeoutEnv, "30"},
+	{ResultsPdfReportPathKey, ResultsPdfReportPathEnv, "api/reports"},
 }

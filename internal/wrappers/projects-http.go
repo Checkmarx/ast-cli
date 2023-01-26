@@ -21,9 +21,7 @@ func NewHTTPProjectsWrapper(path string) ProjectsWrapper {
 	}
 }
 
-func (p *ProjectsHTTPWrapper) Create(model *Project) (
-	*ProjectResponseModel,
-	*ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {

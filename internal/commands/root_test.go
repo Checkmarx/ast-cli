@@ -30,6 +30,7 @@ func TestMain(m *testing.M) {
 
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &mock.ScansMockWrapper{}
+	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
 	scansMockWrapper.Running = true
 	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
 	groupsMockWrapper := &mock.GroupsMockWrapper{}
@@ -52,6 +53,7 @@ func createASTTestCommand() *cobra.Command {
 
 	return NewAstCLI(
 		scansMockWrapper,
+		resultsPdfWrapper,
 		resultsPredicatesMockWrapper,
 		codeBashingWrapper,
 		uploadsMockWrapper,
