@@ -87,7 +87,10 @@ func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error
 	if err != nil {
 		return nil, err
 	}
-	jwtStruct, _ := extractFromTokenToJwtStruct(accessToken)
+	jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
+	if err != nil {
+		return nil, err
+	}
 	allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
 
 	return allowedEngines, nil
