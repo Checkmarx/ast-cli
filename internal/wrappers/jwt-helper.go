@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const astLicenseMapKey = "ast-license"
+
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
 	ID          int    `json:"ID"`
@@ -77,8 +79,8 @@ func prepareEngines(engines []string) map[string]bool {
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
 	value := &JWTStruct{}
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims["ast-license"] != nil {
-		astLicenseClaim := claims["ast-license"]
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[astLicenseMapKey] != nil {
+		astLicenseClaim := claims[astLicenseMapKey]
 		valueBytes, _ := json.Marshal(astLicenseClaim)
 		err = json.Unmarshal(valueBytes, &value)
 		if err != nil {
