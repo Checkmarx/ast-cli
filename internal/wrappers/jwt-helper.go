@@ -20,7 +20,6 @@ type JWTStruct struct {
 	LicenseData struct {
 		AllowedEngines []string `json:"allowedEngines"`
 	} `json:"LicenseData"`
-	//jwt.StandardClaims
 }
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security"}
