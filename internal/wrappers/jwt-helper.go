@@ -1,7 +1,6 @@
 package wrappers
 
 import (
-	"encoding/json"
 	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -10,31 +9,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-const astLicenseMapKey = "ast-license"
+const (
+	astLicenseMapKey     = "ast-license"
+	astLicenseDataMapKey = "LicenseData"
+	astAllowedEnginesKey = "allowedEngines"
+)
 
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
-	ID          int    `json:"ID"`
-	TenantID    string `json:"TenantID"`
-	IsActive    bool   `json:"IsActive"`
-	PackageID   int    `json:"PackageID"`
 	LicenseData struct {
-		Features                        []string `json:"features"`
-		Services                        []string `json:"services"`
-		UsersCount                      int      `json:"usersCount"`
-		ServiceType                     string   `json:"serviceType"`
-		ActivationDate                  int64    `json:"activationDate"`
-		AllowedEngines                  []string `json:"allowedEngines"`
-		CodeBashingURL                  string   `json:"codeBashingUrl"`
-		ExpirationDate                  int64    `json:"expirationDate"`
-		UnlimitedProjects               bool     `json:"unlimitedProjects"`
-		CodeBashingEnabled              bool     `json:"codeBashingEnabled"`
-		MaxConcurrentScans              int      `json:"maxConcurrentScans"`
-		CodeBashingUsersCount           int      `json:"codeBashingUsersCount"`
-		CustomMaxConcurrentScansEnabled bool     `json:"customMaxConcurrentScansEnabled"`
+		AllowedEngines []string `json:"allowedEngines"`
 	} `json:"LicenseData"`
-	PackageName string `json:"PackageName"`
-	jwt.StandardClaims
+	//jwt.StandardClaims
 }
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security"}
@@ -75,20 +61,16 @@ func prepareEngines(engines []string) map[string]bool {
 	return m
 }
 
-// extractFromTokenToJwtStruct used in scan validation
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
 	value := &JWTStruct{}
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[astLicenseMapKey] != nil {
-		astLicenseClaim := claims[astLicenseMapKey]
-		valueBytes, _ := json.Marshal(astLicenseClaim)
-		err = json.Unmarshal(valueBytes, &value)
-		if err != nil {
-			return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
-		}
-	}
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[astLicenseMapKey] != nil {
+		astLicenseClaim := claims[astLicenseMapKey].(map[string]interface{})
+		licenseData := astLicenseClaim[astLicenseDataMapKey].(map[string]interface{})
+		value.LicenseData.AllowedEngines = utils.ToStringArray(licenseData[astAllowedEnginesKey])
 	}
 	return value, nil
 }
