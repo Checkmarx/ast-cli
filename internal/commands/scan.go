@@ -1545,6 +1545,7 @@ func createReportsAfterScan(
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
 	targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
 	reportFormats, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
+	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 	params, err := getFilters(cmd)
 	if err != nil {
 		return err
@@ -1559,6 +1560,7 @@ func createReportsAfterScan(
 		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,
+		formatPdfToEmail,
 		targetFile,
 		targetPath,
 		params,

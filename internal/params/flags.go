@@ -71,6 +71,7 @@ const (
 	TargetFlag                   = "output-name"
 	TargetPathFlag               = "output-path"
 	TargetFormatFlag             = "report-format"
+	ReportFormatPdfToEmailFlag   = "report-pdf-email"
 	ProjectName                  = "project-name"
 	ScanTypes                    = "scan-types"
 	ScanTypeFlag                 = "scan-type"

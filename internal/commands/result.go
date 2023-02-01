@@ -56,8 +56,9 @@ const (
 	indirectDependencyType   = "Transitive Dependency"
 	startedStatus            = "started"
 
-	completedStatus = "completed"
-
+	completedStatus           = "completed"
+	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
+		" Use \",\" as the delimiter for multiple emails"
 	delayValueForPdfReport = 150
 )
 
@@ -142,6 +143,7 @@ func resultShowSubCommand(
 		printer.FormatSummaryJSON,
 		printer.FormatPDF,
 	)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -475,6 +477,7 @@ func runGetResultCommand(
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
 		targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
+		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -487,6 +490,7 @@ func runGetResultCommand(
 			resultsPdfReportsWrapper,
 			scanID,
 			format,
+			formatPdfToEmail,
 			targetFile,
 			targetPath,
 			params)
@@ -540,6 +544,7 @@ func CreateScanReport(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
+	formatPdfToEmail,
 	targetFile,
 	targetPath string,
 	params map[string]string,
@@ -574,6 +579,12 @@ func CreateScanReport(
 		if err != nil {
 			return err
 		}
+	}
+	emailList := strings.Split(formatPdfToEmail, ",")
+	fmt.Println(emailList)
+	err = createPdfToEmailReport(emailList, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -648,6 +659,27 @@ func createReport(
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
+}
+
+func createPdfToEmailReport(
+	emails []string,
+	targetFile,
+	targetPath string,
+	results *wrappers.ScanResultsCollection,
+	summary *wrappers.ResultSummary,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+
+) error {
+	if isScanPending(summary.Status) {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
+	if len(emails) == 0 {
+		err := fmt.Errorf("please provide emails to send the report to")
+		return err
+	}
+	summaryRpt := createTargetName(targetFile, targetPath, "pdf")
+
+	return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, emails)
 }
 
 func createTargetName(targetFile, targetPath, targetType string) string {
@@ -796,6 +828,42 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
+func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string, emails []string) error {
+	var summaryEngines []string
+	pdfReportsPayload := &wrappers.PdfReportsPayload{}
+
+	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+
+	// the api can't generate pdf using a scan different from SAST, SCA or KICS
+	for _, engine := range summary.EnginesEnabled {
+		if strings.EqualFold(engine, commonParams.SastType) ||
+			strings.EqualFold(engine, commonParams.ScaType) ||
+			strings.EqualFold(engine, commonParams.KicsType) {
+			summaryEngines = append(summaryEngines, engine)
+		}
+	}
+
+	pdfReportsPayload.ReportName = "scan-report"
+	pdfReportsPayload.ReportType = "email"
+	pdfReportsPayload.FileFormat = "pdf"
+	pdfReportsPayload.Data.ScanID = summary.ScanID
+	pdfReportsPayload.Data.ProjectID = summary.ProjectID
+	pdfReportsPayload.Data.BranchName = summary.BranchName
+	pdfReportsPayload.Data.Email = emails
+	pdfReportsPayload.Data.Scanners = summaryEngines
+	pdfReportsPayload.Data.Sections = []string{"ScanSummary", "ExecutiveSummary", "ScanResults"}
+
+	_, webErr, err := pdfWrapper.GeneratePdfReport(pdfReportsPayload)
+	if webErr != nil {
+		return errors.Errorf("Error generating PDF report - %s", webErr.Message)
+	}
+	if err != nil {
+		return errors.Errorf("Error generating PDF report - %s", err.Error())
+	}
+
+	log.Println("Generating PDF report")
+	return nil
+}
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
 	var summaryEngines []string
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
