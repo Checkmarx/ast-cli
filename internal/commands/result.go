@@ -582,8 +582,9 @@ func CreateScanReport(
 				return err
 			}
 		}
+		return nil
 	}
-	if reportTypes == "json" && formatPdfToEmail != "" {
+	if formatPdfToEmail != "" {
 		emailList := extractValidEmails(formatPdfToEmail)
 		err = createPdfToEmailReport(emailList, summary, resultsPdfReportsWrapper)
 		if err != nil {

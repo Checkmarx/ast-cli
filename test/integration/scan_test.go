@@ -819,3 +819,22 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Error validating scan types")
 }
+func TestScanGeneratingPdfToEmailReport(t *testing.T) {
+	_, projectName := getRootProject(t)
+	apiKey := viper.GetString("CX_APIKEY")
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key generating PDF to email report should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+
+}
