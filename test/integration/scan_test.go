@@ -387,11 +387,11 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, " sast , iac-security "), flag(params.AsyncFlag)))
+	return executeCreateScan(t, append(getCreateArgs(source, tags, " sast , sca,iac-security "), flag(params.AsyncFlag)))
 }
 
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast"), flag(params.AsyncFlag)))
+	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,sca"), flag(params.AsyncFlag)))
 }
 
 // Create sca scan with resolver
@@ -416,7 +416,7 @@ func createScanScaWithResolver(
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,iac-security"), "--sast-incremental"))
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--sast-incremental"))
 }
 
 func getProjectNameForScanTests() string {
