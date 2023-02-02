@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -573,22 +574,29 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	reportList := strings.Split(reportTypes, ",")
-	for _, reportType := range reportList {
-		err = createReport(reportType, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
+	if formatPdfToEmail == "" {
+		reportList := strings.Split(reportTypes, ",")
+		for _, reportType := range reportList {
+			err = createReport(reportType, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if reportTypes == "json" && formatPdfToEmail != "" {
+		emailList := extractValidEmails(formatPdfToEmail)
+		err = createPdfToEmailReport(emailList, summary, resultsPdfReportsWrapper)
 		if err != nil {
 			return err
 		}
 	}
-	emailList := strings.Split(formatPdfToEmail, ",")
-	fmt.Println(emailList)
-	err = createPdfToEmailReport(emailList, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
-	if err != nil {
-		return err
-	}
 	return nil
 }
-
+func extractValidEmails(emailString string) []string {
+	re := regexp.MustCompile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
+	emails := re.FindAllString(emailString, -1)
+	return emails
+}
 func getResultsForAPISecScanner(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanID string,
@@ -663,9 +671,6 @@ func createReport(
 
 func createPdfToEmailReport(
 	emails []string,
-	targetFile,
-	targetPath string,
-	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 
@@ -674,12 +679,11 @@ func createPdfToEmailReport(
 		summary.ScanInfoMessage = scanPendingMessage
 	}
 	if len(emails) == 0 {
-		err := fmt.Errorf("please provide emails to send the report to")
+		err := fmt.Errorf("please provide valid emails to send the report to")
 		return err
 	}
-	summaryRpt := createTargetName(targetFile, targetPath, "pdf")
 
-	return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, emails)
+	return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, emails)
 }
 
 func createTargetName(targetFile, targetPath, targetType string) string {
@@ -828,7 +832,7 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string, emails []string) error {
+func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, emails []string) error {
 	var summaryEngines []string
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 
@@ -861,7 +865,7 @@ func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wra
 		return errors.Errorf("Error generating PDF report - %s", err.Error())
 	}
 
-	log.Println("Generating PDF report")
+	log.Println("Sending PDF report to emails: ", emails)
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt string) error {
