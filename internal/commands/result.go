@@ -574,30 +574,32 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	if formatPdfToEmail == "" {
-		reportList := strings.Split(reportTypes, ",")
-		for _, reportType := range reportList {
-			err = createReport(reportType, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	if formatPdfToEmail != "" {
-		emailList := extractValidEmails(formatPdfToEmail)
-		err = createPdfToEmailReport(emailList, summary, resultsPdfReportsWrapper)
+
+	reportList := strings.Split(reportTypes, ",")
+	for _, reportType := range reportList {
+		err = createReport(reportType, formatPdfToEmail, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
-func extractValidEmails(emailString string) []string {
+
+func validateEmails(emailString string) ([]string, error) {
 	re := regexp.MustCompile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
-	emails := re.FindAllString(emailString, -1)
-	return emails
+	emails := strings.Split(emailString, ",")
+	var validEmails []string
+	for _, emailStr := range emails {
+		email := strings.TrimSpace(emailStr)
+		if re.MatchString(email) {
+			validEmails = append(validEmails, email)
+		} else {
+			return nil, errors.Errorf("Report not sent, invalid email address: %s", email)
+		}
+	}
+	return validEmails, nil
 }
+
 func getResultsForAPISecScanner(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanID string,
@@ -626,6 +628,7 @@ func isScanPending(scanStatus string) bool {
 
 func createReport(
 	format,
+	formatPdfToEmail,
 	targetFile,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
@@ -663,6 +666,14 @@ func createReport(
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatPDF) {
+		// will generate pdf report and send it to the email list instead of saving it to the file system
+		if formatPdfToEmail != "" {
+			emailList, err := validateEmails(formatPdfToEmail)
+			if err != nil {
+				return err
+			}
+			return createPdfToEmailReport(emailList, summary, resultsPdfReportsWrapper)
+		}
 		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
 	}
