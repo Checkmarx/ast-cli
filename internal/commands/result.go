@@ -674,7 +674,7 @@ func createReport(
 			}
 			return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, emailList)
 		}
-		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
 	}
 	err := fmt.Errorf("bad report format %s", format)
@@ -844,7 +844,7 @@ func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wra
 
 	pdfReportsPayload.ReportName = "scan-report"
 	pdfReportsPayload.ReportType = "email"
-	pdfReportsPayload.FileFormat = "pdf"
+	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
 	pdfReportsPayload.Data.BranchName = summary.BranchName
@@ -881,7 +881,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 
 	pdfReportsPayload.ReportName = "scan-report"
 	pdfReportsPayload.ReportType = "cli"
-	pdfReportsPayload.FileFormat = "pdf"
+	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
 	pdfReportsPayload.Data.BranchName = summary.BranchName
