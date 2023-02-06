@@ -586,7 +586,7 @@ func CreateScanReport(
 }
 
 func validateEmails(emailString string) ([]string, error) {
-	re := regexp.MustCompile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}")
+	re := regexp.MustCompile(`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}`)
 	emails := strings.Split(emailString, ",")
 	var validEmails []string
 	for _, emailStr := range emails {
