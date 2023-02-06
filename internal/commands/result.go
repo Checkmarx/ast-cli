@@ -61,6 +61,7 @@ const (
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
 	delayValueForPdfReport = 150
+	reportNameScanReport   = "scan-report"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -842,7 +843,7 @@ func exportAndSendPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wra
 		}
 	}
 
-	pdfReportsPayload.ReportName = "scan-report"
+	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "email"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
@@ -879,7 +880,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		}
 	}
 
-	pdfReportsPayload.ReportName = "scan-report"
+	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
