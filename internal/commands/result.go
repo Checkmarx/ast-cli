@@ -672,30 +672,13 @@ func createReport(
 			if err != nil {
 				return err
 			}
-			return createPdfToEmailReport(emailList, summary, resultsPdfReportsWrapper)
+			return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, emailList)
 		}
 		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
-}
-
-func createPdfToEmailReport(
-	emails []string,
-	summary *wrappers.ResultSummary,
-	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-
-) error {
-	if isScanPending(summary.Status) {
-		summary.ScanInfoMessage = scanPendingMessage
-	}
-	if len(emails) == 0 {
-		err := fmt.Errorf("please provide valid emails to send the report to")
-		return err
-	}
-
-	return exportAndSendPdfResults(resultsPdfReportsWrapper, summary, emails)
 }
 
 func createTargetName(targetFile, targetPath, targetType string) string {
