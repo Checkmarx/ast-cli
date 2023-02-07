@@ -901,13 +901,13 @@ func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdf
 		commonParams.KicsType: "KICS",
 		commonParams.IacType:  "KICS",
 	}
+	pdfOptions = strings.ToLower(pdfOptions)
 	options := strings.Split(pdfOptions, ",")
 	for _, s := range options {
-		lower := strings.ToLower(strings.TrimSpace(s))
-		if pdfOptionsEnginesMap[lower] != "" {
-			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[lower])
-		} else if pdfOptionsSectionsMap[lower] != "" {
-			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[lower])
+		if pdfOptionsEnginesMap[s] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[s])
+		} else if pdfOptionsSectionsMap[s] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
 		}
