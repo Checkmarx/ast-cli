@@ -68,8 +68,6 @@ const (
 	defaultPdfOptionsDataSections = "ScanSummary,ExecutiveSummary,ScanResults"
 )
 
-// TODO use it in the future
-
 var filterResultsListFlagUsage = fmt.Sprintf(
 	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
 	strings.Join(
