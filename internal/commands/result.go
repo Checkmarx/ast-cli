@@ -833,6 +833,7 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 }
 
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
+	var err error
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 
@@ -891,9 +892,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	return nil
 }
 
-func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) ([]string, []string, error) {
-	var pdfOptionsEngines []string
-	var pdfOptionsSections []string
+func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
