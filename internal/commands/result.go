@@ -833,44 +833,12 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 }
 
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
-	var pdfOptionsEngines []string
-	var pdfOptionsSections []string
-	var pdfOptionsSectionsMap = map[string]string{
-		"scansummary":      "ScanSummary",
-		"executivesummary": "ExecutiveSummary",
-		"scanresults":      "ScanResults",
-	}
-	var pdfOptionsEnginesMap = map[string]string{
-		commonParams.ScaType:  "SCA",
-		commonParams.SastType: "SAST",
-		commonParams.KicsType: "KICS",
-		commonParams.IacType:  "KICS",
-	}
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 
-	options := strings.Split(pdfOptions, ",")
-	for _, s := range options {
-		lower := strings.ToLower(strings.TrimSpace(s))
-		if pdfOptionsEnginesMap[lower] != "" {
-			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[lower])
-		} else if pdfOptionsSectionsMap[lower] != "" {
-			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[lower])
-		}
-	}
-
-	// if the user don't specify the engines to generate the pdf
-	// the API will generate the pdf using all the enabled engines
-	if len(pdfOptionsEngines) == 0 {
-		summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
-		//the api can't generate pdf using a scan different from SAST, SCA or KICS
-		for _, engine := range summary.EnginesEnabled {
-			if strings.EqualFold(engine, commonParams.SastType) ||
-				strings.EqualFold(engine, commonParams.ScaType) ||
-				strings.EqualFold(engine, commonParams.KicsType) {
-				pdfOptionsEngines = append(pdfOptionsEngines, engine)
-			}
-		}
+	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions, summary)
+	if err != nil {
+		return err
 	}
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
@@ -921,7 +889,48 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}
 	return nil
+}
 
+func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) ([]string, []string, error) {
+	var pdfOptionsEngines []string
+	var pdfOptionsSections []string
+	var pdfOptionsSectionsMap = map[string]string{
+		"scansummary":      "ScanSummary",
+		"executivesummary": "ExecutiveSummary",
+		"scanresults":      "ScanResults",
+	}
+	var pdfOptionsEnginesMap = map[string]string{
+		commonParams.ScaType:  "SCA",
+		commonParams.SastType: "SAST",
+		commonParams.KicsType: "KICS",
+		commonParams.IacType:  "KICS",
+	}
+	options := strings.Split(pdfOptions, ",")
+	for _, s := range options {
+		lower := strings.ToLower(strings.TrimSpace(s))
+		if pdfOptionsEnginesMap[lower] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[lower])
+		} else if pdfOptionsSectionsMap[lower] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[lower])
+		} else {
+			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
+		}
+	}
+
+	// if the user don't specify the engines to generate the pdf
+	// the API will generate the pdf using all the enabled engines
+	if len(pdfOptionsEngines) == 0 {
+		summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+		// the api can't generate pdf using a scan different from SAST, SCA or KICS
+		for _, engine := range summary.EnginesEnabled {
+			if strings.EqualFold(engine, commonParams.SastType) ||
+				strings.EqualFold(engine, commonParams.ScaType) ||
+				strings.EqualFold(engine, commonParams.KicsType) {
+				pdfOptionsEngines = append(pdfOptionsEngines, engine)
+			}
+		}
+	}
+	return pdfOptionsSections, pdfOptionsEngines, nil
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
