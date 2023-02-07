@@ -832,9 +832,34 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com",
 	)
 
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+
+}
+
+func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
+	_, projectName := getRootProject(t)
+	apiKey := viper.GetString("CX_APIKEY")
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key generating PDF to email report should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+	)
+	defer func() {
+		_ = os.Remove("cx_result.pdf")
+		log.Println("Test file removed!")
+	}()
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 
 }

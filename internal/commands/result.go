@@ -914,19 +914,25 @@ func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdf
 	}
 
 	// if the user don't specify the engines to generate the pdf
-	// the API will generate the pdf using all the enabled engines
+	// the API will generate the pdf using all the scan enabled engines
 	if len(pdfOptionsEngines) == 0 {
-		summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
-		// the api can't generate pdf using a scan different from SAST, SCA or KICS
-		for _, engine := range summary.EnginesEnabled {
-			if strings.EqualFold(engine, commonParams.SastType) ||
-				strings.EqualFold(engine, commonParams.ScaType) ||
-				strings.EqualFold(engine, commonParams.KicsType) {
-				pdfOptionsEngines = append(pdfOptionsEngines, engine)
-			}
-		}
+		pdfOptionsEngines = setEnabledEngines(summary)
 	}
 	return pdfOptionsSections, pdfOptionsEngines, nil
+}
+
+func setEnabledEngines(summary *wrappers.ResultSummary) []string {
+	var pdfOptionsEngines []string
+	summary.EnginesEnabled = strings.Split(strings.ToUpper(strings.Join(summary.EnginesEnabled, ",")), ",")
+	// the api can't generate pdf using a scan different from SAST, SCA or KICS
+	for _, engine := range summary.EnginesEnabled {
+		if strings.EqualFold(engine, commonParams.SastType) ||
+			strings.EqualFold(engine, commonParams.ScaType) ||
+			strings.EqualFold(engine, commonParams.KicsType) {
+			pdfOptionsEngines = append(pdfOptionsEngines, engine)
+		}
+	}
+	return pdfOptionsEngines
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
