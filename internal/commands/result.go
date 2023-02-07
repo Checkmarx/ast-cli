@@ -833,7 +833,6 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 }
 
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
-	var err error
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 
@@ -850,16 +849,16 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfReportsPayload.Data.Scanners = pdfOptionsEngines
 	pdfReportsPayload.Data.Sections = pdfOptionsSections
 
-	// will generate pdf report and send it to the email list instead of saving it to the file system
+	// will generate pdf report and send it to the email list
+	// instead of saving it to the file system
 	if formatPdfToEmail != "" {
-		emailList, err := validateEmails(formatPdfToEmail)
-		if err != nil {
-			return err
+		emailList, validateErr := validateEmails(formatPdfToEmail)
+		if validateErr != nil {
+			return validateErr
 		}
 		pdfReportsPayload.ReportType = reportTypeEmail
 		pdfReportsPayload.Data.Email = emailList
 	}
-
 	pdfReportID, webErr, err := pdfWrapper.GeneratePdfReport(pdfReportsPayload)
 	if webErr != nil {
 		return errors.Errorf("Error generating PDF report - %s", webErr.Message)
