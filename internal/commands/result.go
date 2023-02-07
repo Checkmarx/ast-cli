@@ -60,7 +60,8 @@ const (
 	completedStatus           = "completed"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
-	pdfOptionsFlagDescription     = "PDF report sections"
+	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
+		defaultPdfOptionsDataSections
 	delayValueForPdfReport        = 150
 	reportNameScanReport          = "scan-report"
 	reportTypeEmail               = "email"
@@ -68,11 +69,6 @@ const (
 )
 
 // TODO use it in the future
-var pdfOptionsSectionsMap = map[string]bool{
-	"ScanSummary":      true,
-	"ExecutiveSummary": true,
-	"ScanResults":      true,
-}
 
 var filterResultsListFlagUsage = fmt.Sprintf(
 	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
@@ -837,30 +833,31 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 }
 
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
-	var summaryEngines []string
 	var pdfOptionsEngines []string
 	var pdfOptionsSections []string
-
+	var pdfOptionsSectionsMap = map[string]string{
+		"scansummary":      "ScanSummary",
+		"executivesummary": "ExecutiveSummary",
+		"scanresults":      "ScanResults",
+	}
+	var pdfOptionsEnginesMap = map[string]string{
+		commonParams.ScaType:  "SCA",
+		commonParams.SastType: "SAST",
+		commonParams.KicsType: "KICS",
+		commonParams.IacType:  "KICS",
+	}
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 
 	options := strings.Split(pdfOptions, ",")
-	start := false
 	for _, s := range options {
-		if start && (strings.EqualFold(s, commonParams.SastType) ||
-			strings.EqualFold(s, commonParams.ScaType) ||
-			strings.EqualFold(s, commonParams.KicsType)) {
-			pdfOptionsEngines = append(pdfOptionsEngines, strings.ToUpper(s))
-		} else {
-			// TODO validate the sections
-			pdfOptionsSections = append(pdfOptionsSections, s)
-		}
-		if strings.EqualFold(strings.TrimSpace(s), "ScanResults") {
-			start = true
+		lower := strings.ToLower(strings.TrimSpace(s))
+		if pdfOptionsEnginesMap[lower] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[lower])
+		} else if pdfOptionsSectionsMap[lower] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[lower])
 		}
 	}
-	fmt.Println("pdfOptionsEngines: ", pdfOptionsEngines)
-	fmt.Println("pdfOptionsSections: ", pdfOptionsSections)
 
 	// if the user don't specify the engines to generate the pdf
 	// the API will generate the pdf using all the enabled engines
@@ -871,19 +868,17 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 			if strings.EqualFold(engine, commonParams.SastType) ||
 				strings.EqualFold(engine, commonParams.ScaType) ||
 				strings.EqualFold(engine, commonParams.KicsType) {
-				summaryEngines = append(summaryEngines, engine)
+				pdfOptionsEngines = append(pdfOptionsEngines, engine)
 			}
 		}
 	}
-	fmt.Println("summaryEngines: ", summaryEngines)
-	//pdfOptionsSections := strings.Split(pdfOptions, ",")
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
 	pdfReportsPayload.Data.BranchName = summary.BranchName
-	pdfReportsPayload.Data.Scanners = summaryEngines
+	pdfReportsPayload.Data.Scanners = pdfOptionsEngines
 	pdfReportsPayload.Data.Sections = pdfOptionsSections
 
 	// will generate pdf report and send it to the email list instead of saving it to the file system
@@ -907,25 +902,26 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if pdfReportsPayload.ReportType == reportTypeEmail {
 		log.Println("Sending PDF report to: ", pdfReportsPayload.Data.Email)
 		return nil
-	} else {
-		log.Println("Generating PDF report")
-		poolingResp.Status = startedStatus
-		for poolingResp.Status == startedStatus {
-			poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
-			if err != nil || webErr != nil {
-				return errors.Wrapf(err, "%v", webErr)
-			}
-			time.Sleep(delayValueForPdfReport * time.Millisecond)
-		}
-		if poolingResp.Status != completedStatus {
-			return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
-		}
-		err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed downloading PDF report")
-		}
-		return nil
 	}
+
+	log.Println("Generating PDF report")
+	poolingResp.Status = startedStatus
+	for poolingResp.Status == startedStatus {
+		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
+		if err != nil || webErr != nil {
+			return errors.Wrapf(err, "%v", webErr)
+		}
+		time.Sleep(delayValueForPdfReport * time.Millisecond)
+	}
+	if poolingResp.Status != completedStatus {
+		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
+	}
+	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
+	}
+	return nil
+
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
