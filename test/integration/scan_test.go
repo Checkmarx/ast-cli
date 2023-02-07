@@ -839,13 +839,52 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 
 }
+func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
+	_, projectName := getRootProject(t)
+	apiKey := viper.GetString("CX_APIKEY")
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,invalid_email",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Report not sent, invalid email address: invalid_email")
+}
+
+func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+	_, projectName := getRootProject(t)
+	apiKey := viper.GetString("CX_APIKEY")
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "report option \"invalid_option\" unavailable")
+}
 
 func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	_, projectName := getRootProject(t)
 	apiKey := viper.GetString("CX_APIKEY")
 
 	outputBuffer := executeCmdNilAssertion(
-		t, "Scan create with API key generating PDF to email report should pass",
+		t, "Scan create with API key generating PDF report with options should pass",
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
@@ -855,11 +894,14 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
 	)
 	defer func() {
-		_ = os.Remove("cx_result.pdf")
-		log.Println("Test file removed!")
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+		log.Println("test file removed!")
 	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 
 }

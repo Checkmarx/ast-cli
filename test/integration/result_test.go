@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -173,4 +175,43 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
+}
+
+func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+	apiKey := viper.GetString("CX_APIKEY")
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "report option \"invalid_option\" unavailable")
+}
+
+func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
+	apiKey := viper.GetString("CX_APIKEY")
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.AstAPIKeyFlag), apiKey,
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+
 }
