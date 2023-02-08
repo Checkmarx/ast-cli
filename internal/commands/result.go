@@ -604,7 +604,7 @@ func validateEmails(emailString string) ([]string, error) {
 		if re.MatchString(email) {
 			validEmails = append(validEmails, email)
 		} else {
-			return nil, errors.Errorf("Report not sent, invalid email address: %s", email)
+			return nil, errors.Errorf("report not sent, invalid email address: %s", email)
 		}
 	}
 	return validEmails, nil
@@ -901,8 +901,8 @@ func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdf
 		commonParams.KicsType: "KICS",
 		commonParams.IacType:  "KICS",
 	}
-	pdfOptions = strings.ToLower(pdfOptions)
-	options := strings.Split(pdfOptions, ",")
+	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
+	options := strings.Split(strings.ReplaceAll(pdfOptions, "\n", ""), ",")
 	for _, s := range options {
 		if pdfOptionsEnginesMap[s] != "" {
 			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[s])
