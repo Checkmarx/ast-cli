@@ -821,7 +821,6 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 }
 func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 	_, projectName := getRootProject(t)
-	apiKey := viper.GetString("CX_APIKEY")
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Scan create with API key generating PDF to email report should pass",
@@ -829,7 +828,6 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "iac-security",
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
@@ -841,14 +839,12 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 }
 func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 	_, projectName := getRootProject(t)
-	apiKey := viper.GetString("CX_APIKEY")
 
 	args := []string{
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "iac-security",
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
@@ -861,14 +857,12 @@ func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 
 func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 	_, projectName := getRootProject(t)
-	apiKey := viper.GetString("CX_APIKEY")
 
 	args := []string{
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "iac-security",
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
@@ -881,7 +875,6 @@ func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 
 func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	_, projectName := getRootProject(t)
-	apiKey := viper.GetString("CX_APIKEY")
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Scan create with API key generating PDF report with options should pass",
@@ -889,7 +882,6 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "iac-security",
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",

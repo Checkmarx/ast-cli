@@ -849,7 +849,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 
 	// will generate pdf report and send it to the email list
 	// instead of saving it to the file system
-	if formatPdfToEmail != "" {
+	if len(formatPdfToEmail) > 0 {
 		emailList, validateErr := validateEmails(formatPdfToEmail)
 		if validateErr != nil {
 			return validateErr

@@ -12,7 +12,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -178,13 +177,11 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-	apiKey := viper.GetString("CX_APIKEY")
 	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
 	}
@@ -194,13 +191,11 @@ func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
-	apiKey := viper.GetString("CX_APIKEY")
 	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfToEmailFlag), "valid@mail.com,invalid_email",
 	}
@@ -210,14 +205,12 @@ func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
-	apiKey := viper.GetString("CX_APIKEY")
 	scanID, _ := getRootScan(t)
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
@@ -233,14 +226,11 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
-	apiKey := viper.GetString("CX_APIKEY")
 	scanID, _ := getRootScan(t)
-
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.AstAPIKeyFlag), apiKey,
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
