@@ -239,7 +239,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 		"--scan-id", "MOCK",
 		"--report-pdf-email", "ab@cd.pt,invalid")
 	assert.Equal(t, err.Error(), "report not sent, invalid email address: invalid", "Wrong expected error message")
-
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
@@ -249,7 +248,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 		"--scan-id", "MOCK",
 		"--report-pdf-options", "invalid")
 	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
-
 }
 
 func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
@@ -275,6 +273,7 @@ func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
 		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 		fmt.Println("test file removed!")
 	}()
+	assert.NilError(t, err)
 	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
 }
