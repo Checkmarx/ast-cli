@@ -231,3 +231,50 @@ func TestRunGetBFLByScanIdAndQueryIdWithFormatList(t *testing.T) {
 	err := executeTestCommand(cmd, "results", "bfl", "--scan-id", "MOCK", "--query-id", "MOCK", "--format", "List")
 	assert.NilError(t, err)
 }
+
+func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,invalid")
+	assert.Equal(t, err.Error(), "report not sent, invalid email address: invalid", "Wrong expected error message")
+
+}
+
+func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-options", "invalid")
+	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
+
+}
+
+func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
+	assert.NilError(t, err)
+}
+
+func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--output-name", fileName,
+		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+		fmt.Println("test file removed!")
+	}()
+	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
+}
