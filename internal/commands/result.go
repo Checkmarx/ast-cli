@@ -995,7 +995,7 @@ func findSarifMessageTitle(result *wrappers.ScanResult) string {
 	return strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 }
 
-func findRuleId(result *wrappers.ScanResult) (string, string) {
+func findRuleId(result *wrappers.ScanResult) (ruleId, ruleName string) {
 	if result.ScanResultData.QueryID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type), strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", "")))
 	}
