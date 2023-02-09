@@ -11,7 +11,6 @@ import (
 	"text/template"
 	"time"
 
-	html2md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -397,32 +396,30 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 		if err == nil {
 			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 			_ = f.Close()
-			//file, err := os.Create("arquivogerado.md")
-			//if err != nil {
-			//	return errors.Wrapf(err, "Failed to create file %s", targetFile)
-			//}
-			//err = summaryTemp.Execute(file, summary)
-			//if err != nil {
-			//	return errors.Wrapf(err, "Failed to write summary to file %s", "markdown")
-			//}
-			// TODO test
-			file, err := os.Open("inputFile")
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-			converter := html2md.NewConverter("", true, nil)
-
-			md, err := converter.ConvertReader(file)
-			if err != nil {
-				return err
-			}
-			fmt.Println(md)
-			defer file.Close()
+			writeMarkdownSummary(targetFile, summary)
 		}
 		return err
 	}
+	return nil
+}
+func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error {
+	log.Println("Creating Markdown Summary Report: ", targetFile)
+	tmpl, err := template.New("markdown").Parse(wrappers.SummaryMarkdownTemplate3)
+	if err != nil {
+		return err
+	}
+	// TODO rename file
+	file, err := os.Create("file.md")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
+	err = tmpl.Execute(file, &data)
+	if err != nil {
+		return err
+	}
+	log.Println("Markdown file generated!")
 	return nil
 }
 

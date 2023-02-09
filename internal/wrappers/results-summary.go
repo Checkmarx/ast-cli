@@ -537,6 +537,34 @@ const summaryTemplateFooter = `</div>
 </body>
 {{end}}
 `
+const SummaryMarkdownTemplate3 = `
+{{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
+{{- /* ResultSummary template */ -}}
+# {{.RiskMsg}}
+######  Scan :{{.ScanID}} | {{.CreatedAt}} | [More details]({{.BaseURI}})
+***
+
+## Total Vulnerabilities: {{.TotalIssues}}
+
+| High | Medium | Low | Info |
+|:----------:|:------------:|:---------:|:----------:|
+| {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
+***
+
+## Vulnerabilities per Scan Type
+
+| SAST | IaC Security | SCA |{{if .APISecurity}} API SECURITY |{{end}}
+|:----------:|:----------:|:---------:|{{if .APISecurity}}:---------:|{{end}}
+| {{.SastIssues}} | {{.KicsIssues}} | {{.ScaIssues}} |{{if .APISecurity}} {{.APISecurity.TotalRisksCount}} |{{end}}
+***
+
+| Detected APIs |
+|:---------:|
+| {{.APISecurity.APICount}} |
+
+{{if .APISecurity.TotalRisksCount!=0}}:---------:|{{end}}
+
+`
 
 func SummaryTemplate(isScanPending bool) string {
 	result := summaryTemplateHeader
