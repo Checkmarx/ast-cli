@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	html2md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -396,9 +397,32 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 		if err == nil {
 			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 			_ = f.Close()
+			//file, err := os.Create("arquivogerado.md")
+			//if err != nil {
+			//	return errors.Wrapf(err, "Failed to create file %s", targetFile)
+			//}
+			//err = summaryTemp.Execute(file, summary)
+			//if err != nil {
+			//	return errors.Wrapf(err, "Failed to write summary to file %s", "markdown")
+			//}
+			// TODO test
+			file, err := os.Open("inputFile")
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			converter := html2md.NewConverter("", true, nil)
+
+			md, err := converter.ConvertReader(file)
+			if err != nil {
+				return err
+			}
+			fmt.Println(md)
+			defer file.Close()
 		}
 		return err
 	}
+
 	return nil
 }
 
