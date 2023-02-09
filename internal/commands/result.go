@@ -915,7 +915,7 @@ func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdf
 
 	// if the user don't specify the engines to generate the pdf
 	// the API will generate the pdf using all the scan enabled engines
-	if len(pdfOptionsEngines) == 0 {
+	if len(pdfOptionsEngines) == 0 && len(pdfOptionsSections) == 0 {
 		pdfOptionsEngines = setEnabledEngines(summary)
 	}
 	return pdfOptionsSections, pdfOptionsEngines, nil
