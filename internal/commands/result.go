@@ -834,7 +834,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
 
-	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions, summary)
+	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions)
 	if err != nil {
 		return err
 	}
@@ -889,7 +889,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	return nil
 }
 
-func validatePdfOptions(pdfOptions string, summary *wrappers.ResultSummary) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
+func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
