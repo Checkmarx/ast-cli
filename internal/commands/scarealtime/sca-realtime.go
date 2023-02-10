@@ -155,15 +155,16 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			bodyRequest = append(bodyRequest, value)
 		}
 		var errorModel, errVulnerabilities error
+		var resolutionResult = &dependencyResolutionResult
 		for len(bodyRequest) > 0 {
 			// Add pagination to avoid SCA limitation in requests length
 			if len(bodyRequest) >= 50 { //nolint:gomnd
 				first50 := bodyRequest[:50]
 
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, first50)
+				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, resolutionResult, modelResults, first50)
 				bodyRequest = bodyRequest[50:]
 			} else {
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, bodyRequest)
+				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, resolutionResult, modelResults, bodyRequest)
 				bodyRequest = nil
 			}
 
@@ -185,10 +186,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	return nil
 }
 
-func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, dependencyResolutionResult *DependencyResolution,
-	modelResults []wrappers.ScaVulnerabilitiesResponseModel,
-	bodyRequest []wrappers.ScaDependencyBodyRequest,
-) (err error, err1 error) {
+func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, dependencyResolutionResult *DependencyResolution, modelResults []wrappers.ScaVulnerabilitiesResponseModel, bodyRequest []wrappers.ScaDependencyBodyRequest) (err, err1 error) {
 	// We need to call the SCA API for each DependencyResolution so that we can save the file name
 	vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(bodyRequest)
 	if errorModel != nil {
