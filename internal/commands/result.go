@@ -418,7 +418,6 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 	if err != nil {
 		return err
 	}
-	log.Println("Markdown file generated!")
 	return nil
 }
 

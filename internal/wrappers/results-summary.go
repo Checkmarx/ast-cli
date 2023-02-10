@@ -537,6 +537,8 @@ const summaryTemplateFooter = `</div>
 </body>
 {{end}}
 `
+
+// nolint: lll
 const SummaryMarkdownTemplate3 = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
