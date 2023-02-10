@@ -155,15 +155,16 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			bodyRequest = append(bodyRequest, value)
 		}
 		var errorModel, errVulnerabilities error
+		var vulnerabilitiesResponseModel []wrappers.ScaVulnerabilitiesResponseModel
 		for len(bodyRequest) > 0 {
 			// Add pagination to avoid SCA limitation in requests length
 			if len(bodyRequest) >= 50 { //nolint:gomnd
 				first50 := bodyRequest[:50]
 
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, first50)
+				vulnerabilitiesResponseModel, errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, first50)
 				bodyRequest = bodyRequest[50:]
 			} else {
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, bodyRequest)
+				vulnerabilitiesResponseModel, errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, bodyRequest)
 				bodyRequest = nil
 			}
 
@@ -172,6 +173,12 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			}
 			if errVulnerabilities != nil {
 				return errVulnerabilities
+			}
+
+			// Add file name for each vulnerability to display in IDEs
+			for _, vulnerability := range vulnerabilitiesResponseModel {
+				vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
+				modelResults = append(modelResults, vulnerability)
 			}
 		}
 	}
@@ -185,22 +192,17 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	return nil
 }
 
-func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, dependencyResolutionResult *DependencyResolution, modelResults []wrappers.ScaVulnerabilitiesResponseModel, bodyRequest []wrappers.ScaDependencyBodyRequest) (err, err1 error) { //nolint:lll
+func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, bodyRequest []wrappers.ScaDependencyBodyRequest) (vulnerabilities []wrappers.ScaVulnerabilitiesResponseModel, err, err1 error) { //nolint:lll
 	// We need to call the SCA API for each DependencyResolution so that we can save the file name
 	vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(bodyRequest)
 	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message), nil
+		return nil, errors.Errorf("%s: CODE: %d, %s", "An error occurred while getting sca vulnerabilities", errorModel.Code, errorModel.Message), nil
 	}
 	if errVulnerabilities != nil {
-		return nil, errVulnerabilities
-	}
-	// Add file name for each vulnerability to display in IDEs
-	for _, vulnerability := range vulnerabilitiesResponseModel {
-		vulnerability.FileName = dependencyResolutionResult.PackageManagerFile
-		modelResults = append(modelResults, vulnerability)
+		return nil, nil, errVulnerabilities
 	}
 
-	return nil, nil
+	return vulnerabilitiesResponseModel, nil, nil
 }
 
 // convertToScanResults Convert SCA Results to Scan Results to make it easier to display it in IDEs
