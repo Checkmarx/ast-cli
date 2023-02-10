@@ -141,6 +141,7 @@ func resultShowSubCommand(
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
 		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -396,7 +397,6 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 		if err == nil {
 			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 			_ = f.Close()
-			writeMarkdownSummary(targetFile, summary)
 		}
 		return err
 	}
@@ -404,12 +404,11 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error {
 	log.Println("Creating Markdown Summary Report: ", targetFile)
-	tmpl, err := template.New("markdown").Parse(wrappers.SummaryMarkdownTemplate3)
+	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate3)
 	if err != nil {
 		return err
 	}
-	// TODO rename file
-	file, err := os.Create("file.md")
+	file, err := os.Create(targetFile)
 	if err != nil {
 		return err
 	}
@@ -666,6 +665,11 @@ func createReport(
 	if printer.IsFormat(format, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, "pdf")
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt)
+	}
+	if printer.IsFormat(format, printer.FormatSummaryMarkdown) {
+		summaryRpt := createTargetName(targetFile, targetPath, "md")
+		convertNotAvailableNumberToZero(summary)
+		return writeMarkdownSummary(summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err

@@ -506,6 +506,7 @@ func scanCreateSubCommand(
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")

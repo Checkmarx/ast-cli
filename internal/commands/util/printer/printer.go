@@ -13,16 +13,18 @@ import (
 )
 
 const (
-	FormatJSON           = "json"
-	FormatSarif          = "sarif"
-	FormatSonar          = "sonar"
-	FormatSummary        = "summaryHTML"
-	FormatSummaryJSON    = "summaryJSON"
-	FormatSummaryConsole = "summaryConsole"
-	FormatList           = "list"
-	FormatTable          = "table"
-	FormatHTML           = "html"
-	FormatPDF            = "pdf"
+	FormatJSON            = "json"
+	FormatSarif           = "sarif"
+	FormatSonar           = "sonar"
+	FormatSummary         = "summaryHTML"
+	FormatSummaryJSON     = "summaryJSON"
+	FormatSummaryConsole  = "summaryConsole"
+	FormatList            = "list"
+	FormatTable           = "table"
+	FormatHTML            = "html"
+	FormatPDF             = "pdf"
+	FormatMarkdown        = "md"
+	FormatSummaryMarkdown = "markdown"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {

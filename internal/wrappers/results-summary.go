@@ -540,13 +540,24 @@ const summaryTemplateFooter = `</div>
 const SummaryMarkdownTemplate3 = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
-# {{.RiskMsg}}
-######  Scan :{{.ScanID}} | {{.CreatedAt}} | [More details]({{.BaseURI}})
+{{ $emoji := "⚪" }}
+{{ if eq .RiskMsg "High Risk" }}
+  {{ $emoji = "🔴" }}
+{{ else if eq .RiskMsg "Medium Risk" }}
+  {{ $emoji = "🟡" }}
+{{ else if eq .RiskMsg "Low Risk" }}
+  {{ $emoji = "⚪" }}
+{{ end }}
+# Checkmarx One Scan Summary
+***
+
+## {{$emoji}} {{.RiskMsg}} {{$emoji}}
+######  Scan : 💾 {{.ScanID}}     |   📅 {{.CreatedAt}}    |  [🔗 More details]({{.BaseURI}})
 ***
 
 ## Total Vulnerabilities: {{.TotalIssues}}
 
-| High | Medium | Low | Info |
+|🔴 High |🟡 Medium |⚪ Low |⚪ Info |
 |:----------:|:------------:|:---------:|:----------:|
 | {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
 ***
