@@ -1,7 +1,7 @@
 project_name: ast-cli
 
 release:
-  name_template: "AST CLI {{.Version}}"
+  name_template: "Checkmarx One CLI {{.Version}}"
 
 builds:
   - main: ./cmd/main.go
@@ -14,6 +14,8 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm
+      - arm64
     ignore:
       - goos: darwin
         goarch: 386
@@ -21,6 +23,10 @@ builds:
         goarm: 7
       - goos: windows
         goarm: 7
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
     ldflags:
       - -s
       - -w
@@ -84,7 +90,7 @@ brews:
       token: "{{ .Env.GO_BOT_TOKEN }}"
     folder: Formula
     homepage: https://github.com/Checkmarx/ast-cli
-    description: CLI for AST
+    description: CLI for Checkmarx One
     license: Apache
     test: |
       system "#{bin}/cx version"

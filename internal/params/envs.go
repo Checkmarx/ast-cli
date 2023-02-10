@@ -49,4 +49,5 @@ const (
 	LogsEngineLogPathEnv                = "CX_LOGS_ENGINE_LOG_PATH"
 	DescriptionsPathEnv                 = "CX_DESCRIPTIONS_PATH"
 	TenantConfigurationPathEnv          = "CX_TENANT_CONFIGURATION_PATH"
+	ResultsPdfReportPathEnv             = "CX_RESULTS_PDF_REPORT_PATH"
 )

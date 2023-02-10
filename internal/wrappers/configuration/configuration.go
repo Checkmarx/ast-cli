@@ -69,7 +69,7 @@ func PromptConfiguration() {
 			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
 		}
 	} else {
-		fmt.Printf("AST Client ID [%s]: ", obfuscateString(accessKey))
+		fmt.Printf("Checkmarx One Client ID [%s]: ", obfuscateString(accessKey))
 		accessKey, _ = reader.ReadString('\n')
 		accessKey = strings.Replace(accessKey, "\n", "", -1)
 		accessKey = strings.Replace(accessKey, "\r", "", -1)
@@ -145,7 +145,7 @@ func ShowConfiguration() {
 	fmt.Println(viper.GetString(params.BaseURIKey))
 	fmt.Printf("%30v", "BaseAuthURIKey: ")
 	fmt.Println(viper.GetString(params.BaseAuthURIKey))
-	fmt.Printf("%30v", "AST Tenant: ")
+	fmt.Printf("%30v", "Checkmarx One Tenant: ")
 	fmt.Println(viper.GetString(params.TenantKey))
 	fmt.Printf("%30v", "Client ID: ")
 	fmt.Println(viper.GetString(params.AccessKeyIDConfigKey))

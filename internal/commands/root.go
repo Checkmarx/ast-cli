@@ -21,9 +21,10 @@ import (
 
 const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 
-// NewAstCLI Return an AST CLI root command to execute
+// NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
@@ -42,13 +43,14 @@ func NewAstCLI(
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
 	tenantWrapper wrappers.TenantConfigurationWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
-		Short: "Checkmarx AST CLI",
-		Long:  "The AST CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx CxAST server.",
+		Short: "Checkmarx One CLI",
+		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server.",
 		Example: heredoc.Doc(
 			`
 			$ cx configure
@@ -126,15 +128,25 @@ func NewAstCLI(
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
 		logsWrapper,
 		groupsWrapper,
 		risksOverviewWrapper,
+		jwtWrapper,
 		scaRealTimeWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
-	resultsCmd := NewResultsCommand(resultsWrapper, scansWrapper, codeBashingWrapper, bflWrapper, risksOverviewWrapper)
+	resultsCmd := NewResultsCommand(
+		resultsWrapper,
+		scansWrapper,
+		resultsPdfReportsWrapper,
+		codeBashingWrapper,
+		bflWrapper,
+		risksOverviewWrapper,
+	)
+
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand(

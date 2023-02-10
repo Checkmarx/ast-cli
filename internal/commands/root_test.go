@@ -30,6 +30,7 @@ func TestMain(m *testing.M) {
 
 func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &mock.ScansMockWrapper{}
+	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
 	scansMockWrapper.Running = true
 	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
 	groupsMockWrapper := &mock.GroupsMockWrapper{}
@@ -48,10 +49,12 @@ func createASTTestCommand() *cobra.Command {
 	learnMoreMockWrapper := &mock.LearnMoreMockWrapper{}
 	prMockWrapper := &mock.PRMockWrapper{}
 	tenantConfigurationMockWrapper := &mock.TenantConfigurationMockWrapper{}
+	jwtWrapper := &mock.JWTMockWrapper{}
 	scaRealtimeMockWrapper := &mock.ScaRealTimeHTTPMockWrapper{}
 
 	return NewAstCLI(
 		scansMockWrapper,
+		resultsPdfWrapper,
 		resultsPredicatesMockWrapper,
 		codeBashingWrapper,
 		uploadsMockWrapper,
@@ -70,6 +73,7 @@ func createASTTestCommand() *cobra.Command {
 		prMockWrapper,
 		learnMoreMockWrapper,
 		tenantConfigurationMockWrapper,
+		jwtWrapper,
 		scaRealtimeMockWrapper,
 	)
 }

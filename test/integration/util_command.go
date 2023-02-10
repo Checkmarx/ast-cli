@@ -58,8 +58,10 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMore := viper.GetString(params.DescriptionsPathKey)
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
+	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -77,10 +79,12 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
+	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
@@ -99,6 +103,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		prWrapper,
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
+		jwtWrapper,
 		scaRealtimeWrapper,
 	)
 	return astCli

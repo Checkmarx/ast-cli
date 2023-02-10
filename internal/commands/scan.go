@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -83,6 +84,10 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	maxPollingWaitTime              = 60
+	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
+		"\nTo use this feature, you would need to purchase a license." +
+		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
+		"\nLicensed packages: %s"
 )
 
 var (
@@ -110,18 +115,20 @@ var (
 
 func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
-		Long:  "The scan command enables the ability to manage scans in CxAST.",
+		Long:  "The scan command enables the ability to manage scans in Checkmarx One.",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -133,11 +140,13 @@ func NewScanCommand(
 
 	createScanCmd := scanCreateSubCommand(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
 		groupsWrapper,
-		riskOverviewWrapper)
+		riskOverviewWrapper,
+		jwtWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper)
 
@@ -193,7 +202,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
-				`	
+				`
 			https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-350af120-85fa-9f20-7051-6d605524b4fc
 			`,
 			),
@@ -244,7 +253,7 @@ func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Get a list of all available tags to filter by",
-		Long:  "The tags command enables the ability to provide a list of all the available tags in CxAST.",
+		Long:  "The tags command enables the ability to provide a list of all the available tags in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan tags
@@ -266,7 +275,7 @@ func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	cancelScanCmd := &cobra.Command{
 		Use:   "cancel",
 		Short: "Cancel one or more scans from running",
-		Long:  "The cancel command enables the ability to cancel one or more running scans in CxAST.",
+		Long:  "The cancel command enables the ability to cancel one or more running scans in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan cancel --scan-id <scan ID>
@@ -311,7 +320,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	workflowScanCmd := &cobra.Command{
 		Use:   "workflow <scan id>",
 		Short: "Show information about a scan workflow",
-		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in CxAST.",
+		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan workflow --scan-id <scan Id>
@@ -334,7 +343,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
-		Long:  "The show command enables the ability to show information about a requested scan in CxAST.",
+		Long:  "The show command enables the ability to show information about a requested scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan show --scan-id <scan Id>
@@ -356,8 +365,8 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	listScansCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all scans in CxAST",
-		Long:  "The list command provides a list of all the scans in CxAST.",
+		Short: "List all scans in Checkmarx One",
+		Long:  "The list command provides a list of all the scans in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan list
@@ -378,16 +387,18 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 
 func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
-		Long:  "The create command enables the ability to create and run a new scan in CxAST.",
+		Long:  "The create command enables the ability to create and run a new scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan create --project-name <Project Name> -s <path or repository url>
@@ -402,11 +413,14 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(
 			scansWrapper,
+			resultsPdfReportsWrapper,
 			uploadsWrapper,
 			resultsWrapper,
 			projectsWrapper,
 			groupsWrapper,
-			risksOverviewWrapper),
+			risksOverviewWrapper,
+			jwtWrapper,
+		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
 	createScanCmd.PersistentFlags().IntP(
@@ -496,6 +510,7 @@ func scanCreateSubCommand(
 		printer.FormatJSON,
 		printer.FormatSummary,
 		printer.FormatSarif,
+		printer.FormatPDF,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -811,34 +826,42 @@ func addAPISecScan() map[string]interface{} {
 	return nil
 }
 
-func validateScanTypes(cmd *cobra.Command) {
+func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
+	var scanTypes []string
+	allowedEngines, err := jwtWrapper.GetAllowedEngines()
+	if err != nil {
+		err = errors.Errorf("Error validating scan types: %v", err)
+		return err
+	}
+
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if len(userScanTypes) > 0 {
-		// postprocessor to match iac-security with kics
-		actualScanTypes = strings.Replace(userScanTypes, commonParams.IacType, commonParams.KicsType, 1)
-	}
+		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
+		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 
-	scanTypes := strings.Split(actualScanTypes, ",")
-	for _, scanType := range scanTypes {
-		isValid := false
-		if strings.EqualFold(strings.TrimSpace(scanType), commonParams.SastType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.KicsType) ||
-			strings.EqualFold(strings.TrimSpace(scanType), commonParams.ScaType) {
-			isValid = true
-		} else if strings.EqualFold(strings.TrimSpace(scanType), commonParams.APISecurityType) {
-			if scanTypeEnabled(commonParams.SastType) {
-				isValid = true
-			} else {
-				log.Println("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-				os.Exit(1)
+		scanTypes = strings.Split(userScanTypes, ",")
+		for _, scanType := range scanTypes {
+			if !allowedEngines[scanType] {
+				keys := reflect.ValueOf(allowedEngines).MapKeys()
+				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
+				return err
 			}
 		}
-
-		if !isValid {
-			log.Println(fmt.Sprintf("Error: unknown scan type: %s", scanType))
-			os.Exit(1)
+	} else {
+		for k := range allowedEngines {
+			scanTypes = append(scanTypes, k)
 		}
 	}
+
+	actualScanTypes = strings.Join(scanTypes, ",")
+	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
+
+	if scanTypeEnabled(commonParams.APISecurityType) && !scanTypeEnabled(commonParams.SastType) {
+		err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
+		return err
+	}
+
+	return nil
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -1268,11 +1291,13 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		branch := viper.GetString(commonParams.BranchKey)
@@ -1289,6 +1314,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1317,13 +1343,14 @@ func runCreateScanCommand(
 				waitDelay,
 				timeoutMinutes,
 				scansWrapper,
+				resultsPdfReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
 
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1333,7 +1360,7 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsWrapper, risksOverviewWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1362,13 +1389,16 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	validateScanTypes(cmd)
-
+	err := validateScanTypes(cmd, jwtWrapper)
+	if err != nil {
+		return nil, "", err
+	}
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err = setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1483,6 +1513,7 @@ func handleWait(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1491,6 +1522,7 @@ func handleWait(
 		waitDelay,
 		timeoutMinutes,
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
 		cmd)
@@ -1510,6 +1542,7 @@ func createReportsAfterScan(
 	cmd *cobra.Command,
 	scanID string,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
@@ -1528,6 +1561,7 @@ func createReportsAfterScan(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,
 		targetFile,
@@ -1626,6 +1660,7 @@ func waitForScanCompletion(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	cmd *cobra.Command,
@@ -1642,7 +1677,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
+		running, err := isScanRunning(scansWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd)
 		if err != nil {
 			return err
 		}
@@ -1666,8 +1701,12 @@ func waitForScanCompletion(
 }
 
 func isScanRunning(
-	scansWrapper wrappers.ScansWrapper, resultsWrapper wrappers.ResultsWrapper,
-	risksOverViewWrapper wrappers.RisksOverviewWrapper, scanID string, cmd *cobra.Command,
+	scansWrapper wrappers.ScansWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+	risksOverViewWrapper wrappers.RisksOverviewWrapper,
+	scanID string,
+	cmd *cobra.Command,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -1691,6 +1730,7 @@ func isScanRunning(
 			cmd,
 			scanResponseModel.ID,
 			scansWrapper,
+			resultsPdfReportsWrapper,
 			resultsWrapper,
 			risksOverViewWrapper)
 		if reportErr != nil {

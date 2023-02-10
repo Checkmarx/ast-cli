@@ -22,6 +22,7 @@ const (
 	FormatList           = "list"
 	FormatTable          = "table"
 	FormatHTML           = "html"
+	FormatPDF            = "pdf"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {

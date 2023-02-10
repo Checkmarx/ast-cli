@@ -122,7 +122,8 @@ var BaseFilters = []string{
 	"requirements.txt",
 	"requirement.txt",
 	"composer.lock",
-	"Dockerfile",
+	"Dockerfile*",
+	"dock*",
 }
 
 var KicsBaseFilters = []string{

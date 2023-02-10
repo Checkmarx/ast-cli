@@ -40,8 +40,10 @@ func main() {
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
+	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -60,10 +62,12 @@ func main() {
 	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
+	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
+		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
@@ -82,6 +86,7 @@ func main() {
 		prWrapper,
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
+		jwtWrapper,
 		scaRealTimeWrapper,
 	)
 	exitListener()
