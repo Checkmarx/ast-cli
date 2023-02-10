@@ -508,9 +508,9 @@ const nonAsyncSummary = `<div class="top-row">
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
                         <div class="progress">
-                            <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
-                            <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
-							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
+                            <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
+                            <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
+							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
                             {{if .HasAPISecurity}}
 							    <div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
                             {{end}}
@@ -553,16 +553,14 @@ const SummaryMarkdownTemplate3 = `
 
 ## Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |{{if .APISecurity}} API SECURITY |{{end}}
-|:----------:|:----------:|:---------:|{{if .APISecurity}}:---------:|{{end}}
-| {{.SastIssues}} | {{.KicsIssues}} | {{.ScaIssues}} |{{if .APISecurity}} {{.APISecurity.TotalRisksCount}} |{{end}}
+| SAST | IaC Security | SCA |{{if .HasAPISecurity}} API SECURITY |{{end}}
+|:----------:|:----------:|:---------:|{{if .HasAPISecurity}}:---------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}| {{if .HasAPISecurity}}{{if lt .APISecurity.TotalRisksCount 0}}N/A{{else}}{{.APISecurity.TotalRisksCount}}{{end}} |{{end}}
 ***
 
 | Detected APIs |
 |:---------:|
 | {{.APISecurity.APICount}} |
-
-{{if .APISecurity.TotalRisksCount!=0}}:---------:|{{end}}
 
 `
 
