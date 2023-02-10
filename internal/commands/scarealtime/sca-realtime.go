@@ -186,7 +186,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	return nil
 }
 
-func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, dependencyResolutionResult *DependencyResolution, modelResults []wrappers.ScaVulnerabilitiesResponseModel, bodyRequest []wrappers.ScaDependencyBodyRequest) (err, err1 error) {
+func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, dependencyResolutionResult *DependencyResolution, modelResults []wrappers.ScaVulnerabilitiesResponseModel, bodyRequest []wrappers.ScaDependencyBodyRequest) (err, err1 error) { //nolint:lll
 	// We need to call the SCA API for each DependencyResolution so that we can save the file name
 	vulnerabilitiesResponseModel, errorModel, errVulnerabilities := scaRealTimeWrapper.GetScaVulnerabilitiesPackages(bodyRequest)
 	if errorModel != nil {
