@@ -155,16 +155,15 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			bodyRequest = append(bodyRequest, value)
 		}
 		var errorModel, errVulnerabilities error
-		var resolutionResult = &dependencyResolutionResult
 		for len(bodyRequest) > 0 {
 			// Add pagination to avoid SCA limitation in requests length
 			if len(bodyRequest) >= 50 { //nolint:gomnd
 				first50 := bodyRequest[:50]
 
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, resolutionResult, modelResults, first50)
+				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, first50)
 				bodyRequest = bodyRequest[50:]
 			} else {
-				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, resolutionResult, modelResults, bodyRequest)
+				errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, &dependencyResolutionResult, modelResults, bodyRequest)
 				bodyRequest = nil
 			}
 
