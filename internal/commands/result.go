@@ -973,7 +973,7 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
-	sarifRule.ID, sarifRule.Name = findRuleID(result)
+	sarifRule.ID, sarifRule.Name, _ = findRuleID(result)
 	sarifRule.FullDescription = findFullDescription(result)
 	sarifRule.Help = findHelp(result)
 	sarifRule.HelpURI = wrappers.SarifInformationURI
@@ -987,20 +987,15 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	return nil
 }
 
-func findSarifMessageTitle(result *wrappers.ScanResult) string {
+func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
 	if result.ScanResultData.QueryID == nil {
-		return fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
-	}
-
-	return strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
-}
-
-func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName string) {
-	if result.ScanResultData.QueryID == nil {
-		return fmt.Sprintf("%s (%s)", result.ID, result.Type), strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", "")))
+		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
+			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
+			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
 
 	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
+		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
 		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 }
 
@@ -1042,7 +1037,7 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 
 func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	var sarifProperties wrappers.SarifProperties
-	sarifProperties.ID, sarifProperties.Name = findRuleID(result)
+	sarifProperties.ID, sarifProperties.Name, _ = findRuleID(result)
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
@@ -1062,8 +1057,7 @@ func findSarifLevel(result *wrappers.ScanResult) string {
 
 func initSarifResult(result *wrappers.ScanResult) wrappers.SarifScanResult {
 	var scanResult wrappers.SarifScanResult
-	scanResult.RuleID, _ = findRuleID(result)
-	scanResult.Message.Text = findSarifMessageTitle(result)
+	scanResult.RuleID, _, scanResult.Message.Text = findRuleID(result)
 	scanResult.Level = findSarifLevel(result)
 	scanResult.Locations = []wrappers.SarifLocation{}
 
