@@ -507,6 +507,8 @@ func scanCreateSubCommand(
 		printer.FormatSarif,
 		printer.FormatPDF,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1449,7 +1451,6 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 
 	if uploadType == git {
 		source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-
 		scanHandler.RepoURL = strings.TrimSpace(source)
 	} else {
 		var err error
@@ -1545,6 +1546,9 @@ func createReportsAfterScan(
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
 	targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
 	reportFormats, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
+	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
+	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
+
 	params, err := getFilters(cmd)
 	if err != nil {
 		return err
@@ -1559,6 +1563,8 @@ func createReportsAfterScan(
 		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,
+		formatPdfToEmail,
+		formatPdfOptions,
 		targetFile,
 		targetPath,
 		params,
