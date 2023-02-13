@@ -882,7 +882,7 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 				sarifRules = append(sarifRules, *rule)
 			}
 			if sarifResult := findResult(result); sarifResult != nil {
-				sarifResults = append(sarifResults, *sarifResult)
+				sarifResults = append(sarifResults, sarifResult...)
 			}
 		}
 	}
@@ -973,8 +973,7 @@ func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRan
 
 func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappers.SarifDriverRule {
 	var sarifRule wrappers.SarifDriverRule
-	sarifRule.ID = findRuleID(result)
-	sarifRule.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	sarifRule.ID, sarifRule.Name, _ = findRuleID(result)
 	sarifRule.FullDescription = findFullDescription(result)
 	sarifRule.Help = findHelp(result)
 	sarifRule.HelpURI = wrappers.SarifInformationURI
@@ -988,12 +987,16 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	return nil
 }
 
-func findRuleID(result *wrappers.ScanResult) string {
+func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
 	if result.ScanResultData.QueryID == nil {
-		return fmt.Sprintf("%s (%s)", result.ID, result.Type)
+		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
+			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
+			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
 
-	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type)
+	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
+		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
+		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
 }
 
 func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription {
@@ -1034,8 +1037,7 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 
 func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	var sarifProperties wrappers.SarifProperties
-	sarifProperties.ID = findRuleID(result)
-	sarifProperties.Name = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	sarifProperties.ID, sarifProperties.Name, _ = findRuleID(result)
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
@@ -1043,59 +1045,100 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	return sarifProperties
 }
 
-func findResult(result *wrappers.ScanResult) *wrappers.SarifScanResult {
-	var scanResult wrappers.SarifScanResult
-	// Match cx severity with sarif severity
+func findSarifLevel(result *wrappers.ScanResult) string {
 	level := map[string]string{
 		infoCx:   infoLowSarif,
 		lowCx:    infoLowSarif,
 		mediumCx: mediumSarif,
 		highCx:   highSarif,
 	}
-	scanResult.RuleID = findRuleID(result)
-	scanResult.Level = level[result.Severity]
-	scanResult.Message.Text = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	return level[result.Severity]
+}
+
+func initSarifResult(result *wrappers.ScanResult) wrappers.SarifScanResult {
+	var scanResult wrappers.SarifScanResult
+	scanResult.RuleID, _, scanResult.Message.Text = findRuleID(result)
+	scanResult.Level = findSarifLevel(result)
 	scanResult.Locations = []wrappers.SarifLocation{}
 
-	if len(result.ScanResultData.Nodes) == 0 {
-		var scanLocation wrappers.SarifLocation
-		// to use in kics scan type
-		if result.Type == commonParams.KicsType {
-			// Need to remove the first / in kics filename in order to correct in sarif
-			scanLocation.PhysicalLocation.ArtifactLocation.URI = strings.Replace(
-				result.ScanResultData.Filename,
-				"/",
-				"",
-				1,
-			)
-			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-			scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
-			scanLocation.PhysicalLocation.Region.StartColumn = 1
-			scanLocation.PhysicalLocation.Region.EndColumn = 2
-			scanResult.Locations = append(scanResult.Locations, scanLocation)
-		}
-	} else {
-		for _, node := range result.ScanResultData.Nodes {
-			var scanLocation wrappers.SarifLocation
-			scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
-			if node.Line <= 0 {
-				continue
-			}
-			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-			scanLocation.PhysicalLocation.Region.StartLine = node.Line
-			column := node.Column
-			length := node.Length
-			scanLocation.PhysicalLocation.Region.StartColumn = column
-			scanLocation.PhysicalLocation.Region.EndColumn = column + length
+	return scanResult
+}
 
-			scanResult.Locations = append(scanResult.Locations, scanLocation)
-		}
+func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
+	var scanResults []wrappers.SarifScanResult
+
+	if len(result.ScanResultData.Nodes) > 0 {
+		scanResults = parseSarifResultSast(result, scanResults)
+	} else if result.Type == commonParams.KicsType {
+		scanResults = parseSarifResultKics(result, scanResults)
+	} else if result.Type == commonParams.ScaType {
+		scanResults = parseSarifResultsSca(result, scanResults)
 	}
 
-	if len(scanResult.Locations) > 0 {
-		return &scanResult
+	if len(scanResults) > 0 {
+		return scanResults
 	}
 	return nil
+}
+
+func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	for _, location := range result.ScanResultData.ScaPackageCollection.Locations {
+		var scanResult = initSarifResult(result)
+
+		var scanLocation wrappers.SarifLocation
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = *location
+		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+		scanLocation.PhysicalLocation.Region.StartLine = 1
+		scanLocation.PhysicalLocation.Region.StartColumn = 1
+		scanLocation.PhysicalLocation.Region.EndColumn = 2
+		scanResult.Locations = append(scanResult.Locations, scanLocation)
+
+		scanResults = append(scanResults, scanResult)
+	}
+	return scanResults
+}
+
+func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	var scanResult = initSarifResult(result)
+	var scanLocation wrappers.SarifLocation
+
+	scanLocation.PhysicalLocation.ArtifactLocation.URI = strings.Replace(
+		result.ScanResultData.Filename,
+		"/",
+		"",
+		1,
+	)
+	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+	scanLocation.PhysicalLocation.Region.StartColumn = 1
+	scanLocation.PhysicalLocation.Region.EndColumn = 2
+	scanResult.Locations = append(scanResult.Locations, scanLocation)
+
+	scanResults = append(scanResults, scanResult)
+	return scanResults
+}
+
+func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	var scanResult = initSarifResult(result)
+
+	for _, node := range result.ScanResultData.Nodes {
+		var scanLocation wrappers.SarifLocation
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
+		if node.Line <= 0 {
+			continue
+		}
+		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+		scanLocation.PhysicalLocation.Region.StartLine = node.Line
+		column := node.Column
+		length := node.Length
+		scanLocation.PhysicalLocation.Region.StartColumn = column
+		scanLocation.PhysicalLocation.Region.EndColumn = column + length
+
+		scanResult.Locations = append(scanResult.Locations, scanLocation)
+	}
+
+	scanResults = append(scanResults, scanResult)
+	return scanResults
 }
 
 func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
