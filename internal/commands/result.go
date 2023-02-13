@@ -404,7 +404,7 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error {
 	log.Println("Creating Markdown Summary Report: ", targetFile)
-	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate3)
+	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate)
 	if err != nil {
 		return err
 	}
