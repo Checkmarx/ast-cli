@@ -66,18 +66,11 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while requesting PDF report")
-		}
-		return nil, &errorModel, nil
 	case http.StatusAccepted:
 		model := PdfReportsResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Failed to parse response body")
+			return nil, nil, errors.Wrapf(err, "failed to parse response body")
 		}
 		return &model, nil, nil
 	default:
@@ -101,18 +94,11 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPoolingRespo
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error requesting PDF report")
-		}
-		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := PdfPoolingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Failed to parse response body")
+			return nil, nil, errors.Wrapf(err, "failed to parse response body")
 		}
 		return &model, nil, nil
 	default:
