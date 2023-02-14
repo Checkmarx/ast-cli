@@ -983,6 +983,9 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if engineType == commonParams.KicsType {
 				auxIssue.PrimaryLocation = parseLocationKics(result)
 				sonarIssues = append(sonarIssues, auxIssue)
+			} else if engineType == commonParams.ScaType {
+				auxIssue.PrimaryLocation = parseLocationSca(result)
+				sonarIssues = append(sonarIssues, auxIssue)
 			}
 		}
 	}
@@ -990,6 +993,17 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 }
 
 func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
+	var auxLocation wrappers.SonarLocation
+	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
+	auxLocation.Message = results.ScanResultData.Value
+	var auxTextRange wrappers.SonarTextRange
+	auxTextRange.StartLine = results.ScanResultData.Line
+	auxTextRange.StartColumn = 0
+	auxTextRange.EndColumn = 1
+	auxLocation.TextRange = auxTextRange
+	return auxLocation
+}
+func parseLocationSca(results *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
 	auxLocation.Message = results.ScanResultData.Value
