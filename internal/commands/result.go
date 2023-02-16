@@ -320,10 +320,16 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
-	summary.BaseURI = wrappers.GetCleanURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
+	accessToken, err := wrappers.GetAccessToken()
 	if err != nil {
 		return nil, err
 	}
+	baseUri, err := wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID), accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	summary.BaseURI = baseUri
 
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)

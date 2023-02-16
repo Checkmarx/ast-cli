@@ -553,28 +553,30 @@ const SummaryMarkdownTemplate = `
 # Checkmarx One Scan Summary
 ***
 
-## {{$emoji}} {{.RiskMsg}} {{$emoji}}
+### {{$emoji}} {{.RiskMsg}} {{$emoji}}
 ######  Scan : 💾 {{.ScanID}}     |   📅 {{.CreatedAt}}    |  [🔗 More details]({{.BaseURI}})
 ***
 
-## Total Vulnerabilities: {{.TotalIssues}}
+### Total Vulnerabilities: {{.TotalIssues}}
 
 |🔴 High |🟡 Medium |⚪ Low |⚪ Info |
 |:----------:|:------------:|:---------:|:----------:|
 | {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
 ***
 
-## Vulnerabilities per Scan Type
+### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |{{if .HasAPISecurity}} API SECURITY |{{end}}
-|:----------:|:----------:|:---------:|{{if .HasAPISecurity}}:---------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}| {{if .HasAPISecurity}}{{if lt .APISecurity.TotalRisksCount 0}}N/A{{else}}{{.APISecurity.TotalRisksCount}}{{end}} |{{end}}
-***
+| SAST | IaC Security | SCA |
+|:----------:|:----------:|:---------:|
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} |
 
-| Detected APIs |
-|:---------:|
-| {{.APISecurity.APICount}} |
+{{if .HasAPISecurity}}
+### API Security 
 
+| Detected APIs | APIs with risk |
+|:---------:|:---------:|
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
+{{end}}
 `
 
 func SummaryTemplate(isScanPending bool) string {
