@@ -315,22 +315,19 @@ func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
-	accessToken, err := wrappers.GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	baseURI, err := wrappers.GetURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID), accessToken)
+
+	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
 	summary.BaseURI = baseURI
-
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -589,7 +586,7 @@ func CreateScanReport(
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, risksOverviewWrapper)
+	summary, err := SummaryReport(results, scan, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
