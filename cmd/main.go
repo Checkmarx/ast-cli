@@ -63,6 +63,8 @@ func main() {
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
+	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
+
 	astCli := commands.NewAstCLI(
 		scansWrapper,
 		resultsPdfReportsWrapper,
@@ -85,6 +87,7 @@ func main() {
 		learnMoreWrapper,
 		tenantConfigurationWrapper,
 		jwtWrapper,
+		scaRealTimeWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

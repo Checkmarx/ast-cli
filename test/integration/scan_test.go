@@ -13,11 +13,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
+	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -36,6 +38,11 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
+)
+
+var (
+	_, b, _, _       = runtime.Caller(0)
+	projectDirectory = filepath.Dir(b)
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -87,6 +94,32 @@ func TestNoWaitScan(t *testing.T) {
 	)
 
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func TestInvalidSource(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TestProject",
+		flag(params.SourcesFlag), "invalidSource",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch"}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+}
+
+func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
+	args := []string{scanCommand, "show", flag(params.ScanIDQueryParam), ""}
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan: Please provide a scan ID"))
+	args = []string{scanCommand, "show", flag(params.ScanIDQueryParam), "invalidScan"}
+	err, _ = executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan:"))
+}
+
+func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
 }
 
 // Test ScaResolver as argument , this is a nop test
@@ -730,6 +763,70 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestRunScaRealtimeScan(t *testing.T) {
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+
+	// Ensure we have results to read
+	err = copyResultsToTempDir()
+	assert.NilError(t, err)
+
+	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper())
+	assert.NilError(t, err)
+
+	// Run second time to cover SCA Resolver download not needed code
+	err, _ = executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
+	args := []string{scanCommand, "sca-realtime"}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
+
+	args = []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory + "/missingFolder"}
+
+	err, _ = executeCommand(t, args...)
+	assert.Error(t, err, "Provided path does not exist: "+projectDirectory+"/missingFolder", "Sca realtime should fail due invalid project directory path")
+}
+
+func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+	err := os.RemoveAll(realtime.ScaResolverWorkingDir)
+	assert.NilError(t, err)
+
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
+
+	downloadURL := realtime.Params.SCAResolverDownloadURL
+	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
+	err, _ = executeCommand(t, args...)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+
+	realtime.Params.SCAResolverDownloadURL = downloadURL
+	realtime.Params.SCAResolverHashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	err, _ = executeCommand(t, args...)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+}
+
+func copyResultsToTempDir() error {
+	// Read all content of src to data, may cause OOM for a large file.
+	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
+	if err != nil {
+		return err
+	}
+	// Write data to dst
+	err = ioutil.WriteFile(realtime.ScaResolverResultsFileNameDir, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
