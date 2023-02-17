@@ -300,7 +300,6 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             padding: 16px 20px;
             width: 24.5%;
 			margin: 0 3rem 2rem;
-			position: fixed;
     		right: 40px;
         }
 
@@ -499,11 +498,6 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
-                    {{if .HasAPISecurity}}
-                        <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
-                            <div class="severity-engines-text bg-api-sec"></div>
-                        </div>
-                    {{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -511,21 +505,25 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
-                            {{if .HasAPISecurity}}
-							    <div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
-                            {{end}}
                         </div>
                     </div>
                 </div>
             </div>
             </div>
-        </div><hr>
+        </div>
+        {{if .HasAPISecurity}}
+        <hr>
 		<div class="second-row">
 				<div class="element">
                 	<div class="total">Detected APIs</div>
  					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
-		</div>`
+				<div class="element">
+                	<div class="total">APIs with risk </div>
+ 					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
+                </div>
+		</div>
+        {{end}}`
 
 const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
