@@ -506,6 +506,7 @@ func scanCreateSubCommand(
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)

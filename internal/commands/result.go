@@ -148,6 +148,7 @@ func resultShowSubCommand(
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
 		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
@@ -323,16 +324,19 @@ func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
-	summary.BaseURI = wrappers.GetCleanURL(fmt.Sprintf("projects/%s/overview", summary.ProjectID))
+
+	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
+	summary.BaseURI = baseURI
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -406,6 +410,24 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 			_ = summaryTemp.ExecuteTemplate(f, "SummaryTemplate", summary)
 			_ = f.Close()
 		}
+		return err
+	}
+	return nil
+}
+func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error {
+	log.Println("Creating Markdown Summary Report: ", targetFile)
+	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = tmpl.Execute(file, &data)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -580,7 +602,7 @@ func CreateScanReport(
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, risksOverviewWrapper)
+	summary, err := SummaryReport(results, scan, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
@@ -679,6 +701,11 @@ func createReport(
 	if printer.IsFormat(format, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions)
+	}
+	if printer.IsFormat(format, printer.FormatSummaryMarkdown) {
+		summaryRpt := createTargetName(targetFile, targetPath, "md")
+		convertNotAvailableNumberToZero(summary)
+		return writeMarkdownSummary(summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
