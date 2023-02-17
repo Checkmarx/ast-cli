@@ -300,7 +300,6 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             padding: 16px 20px;
             width: 24.5%;
 			margin: 0 3rem 2rem;
-			position: fixed;
     		right: 40px;
         }
 
@@ -499,33 +498,32 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
-                    {{if .HasAPISecurity}}
-                        <div class="legend"><span class="engines-legend-dot">API SECURITY</span>
-                            <div class="severity-engines-text bg-api-sec"></div>
-                        </div>
-                    {{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
                         <div class="progress">
-                            <div class="progress-bar bg-sast value">{{.SastIssues}}</div>
-                            <div class="progress-bar bg-kicks value">{{.KicsIssues}}</div>
-							<div class="progress-bar bg-sca value">{{.ScaIssues}}</div>
-                            {{if .HasAPISecurity}}
-							    <div class="progress-bar bg-api-sec value">{{.APISecurity.TotalRisksCount}}</div>
-                            {{end}}
+                            <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
+                            <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
+							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
                         </div>
                     </div>
                 </div>
             </div>
             </div>
-        </div><hr>
+        </div>
+        {{if .HasAPISecurity}}
+        <hr>
 		<div class="second-row">
 				<div class="element">
                 	<div class="total">Detected APIs</div>
  					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
-		</div>`
+				<div class="element">
+                	<div class="total">APIs with risk </div>
+ 					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
+                </div>
+		</div>
+        {{end}}`
 
 const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
@@ -535,6 +533,47 @@ const asyncSummaryTemplate = `<div class="cx-info">
 
 const summaryTemplateFooter = `</div>
 </body>
+{{end}}
+`
+
+// nolint: lll
+const SummaryMarkdownTemplate = `
+{{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
+{{- /* ResultSummary template */ -}}
+{{ $emoji := "⚪" }}
+{{ if eq .RiskMsg "High Risk" }}
+  {{ $emoji = "🔴" }}
+{{ else if eq .RiskMsg "Medium Risk" }}
+  {{ $emoji = "🟡" }}
+{{ else if eq .RiskMsg "Low Risk" }}
+  {{ $emoji = "⚪" }}
+{{ end }}
+# Checkmarx One Scan Summary
+***
+
+### {{$emoji}} {{.RiskMsg}} {{$emoji}}
+######  Scan : 💾 {{.ScanID}}     |   📅 {{.CreatedAt}}    |  [🔗 More details]({{.BaseURI}})
+***
+
+### Total Vulnerabilities: {{.TotalIssues}}
+
+|🔴 High |🟡 Medium |⚪ Low |⚪ Info |
+|:----------:|:------------:|:---------:|:----------:|
+| {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
+***
+
+### Vulnerabilities per Scan Type
+
+| SAST | IaC Security | SCA |
+|:----------:|:----------:|:---------:|
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} |
+
+{{if .HasAPISecurity}}
+### API Security 
+
+| Detected APIs | APIs with risk |
+|:---------:|:---------:|
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
 {{end}}
 `
 

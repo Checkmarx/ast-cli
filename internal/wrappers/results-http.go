@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -160,4 +161,17 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func (r *ResultsHTTPWrapper) GetResultsURL(projectID string) (string, error) {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return "", err
+	}
+	baseURI, err := GetURL(fmt.Sprintf("projects/%s/overview", projectID), accessToken)
+	if err != nil {
+		return "", err
+	}
+
+	return baseURI, nil
 }

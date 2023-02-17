@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"fmt"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
@@ -107,4 +109,8 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
 			},
 		},
 	}, nil, nil
+}
+
+func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
+	return fmt.Sprintf("projects/%s/overview", projectID), nil
 }
