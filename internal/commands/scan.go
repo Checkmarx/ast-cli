@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -122,6 +123,7 @@ func NewScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
+	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -162,6 +164,8 @@ func NewScanCommand(
 
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
+	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -179,6 +183,7 @@ func NewScanCommand(
 		tagsCmd,
 		logsCmd,
 		kicsRealtimeCmd,
+		scaRealtimeCmd,
 	)
 	return scanCmd
 }
