@@ -9,7 +9,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.3.0
 	github.com/gookit/color v1.5.2
-	github.com/mssola/user_agent v0.5.3
+	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
