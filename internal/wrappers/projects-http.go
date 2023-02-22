@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -33,6 +34,21 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 		return nil, nil, err
 	}
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
+}
+
+func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) (*ProjectResponseModel, *ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(model)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resp, err := SendHTTPRequest(http.MethodPut, p.path+"/"+projectID, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	fmt.Println("UPDATE HTTP STATUS - ", resp.Status)
+	return handleProjectResponseWithBody(resp, err, http.StatusNoContent)
 }
 
 func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error) {

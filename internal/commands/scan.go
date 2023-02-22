@@ -592,6 +592,36 @@ func createProject(
 	return projectID, err
 }
 
+func updateProject(
+	projectName string,
+	cmd *cobra.Command,
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper,
+) (string, error) {
+	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
+	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
+	if projectID == "" {
+		return "", errors.New("project-id flag is required")
+	}
+	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
+	if err != nil {
+		return "", err
+	}
+	var projModel = wrappers.Project{}
+	projModel.Name = projectName
+	projModel.Groups = groupsMap
+	projModel.Tags = createTagMap(projectTags)
+	resp, errorModel, err := projectsWrapper.Update(projectID, &projModel)
+	if errorModel != nil {
+		err = errors.Errorf(ErrorCodeFormat, failedUpdatingProj, errorModel.Code, errorModel.Message)
+	}
+	if err == nil {
+		projectID = resp.ID
+	}
+	return projectID, err
+}
+
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
 	tagListStr, _ := cmd.Flags().GetString(commonParams.TagList)
 	tags := strings.Split(tagListStr, ",")

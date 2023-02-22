@@ -20,7 +20,9 @@ import (
 )
 
 const (
-	failedCreatingProj    = "Failed creating a project"
+	failedCreatingProj = "Failed creating a project"
+	failedUpdatingProj = "Failed updating a project"
+
 	failedGettingProj     = "Failed getting a project"
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
