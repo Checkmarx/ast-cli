@@ -556,7 +556,6 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			log.Println("PROJECT ID:", resp.Projects[i].ID)
 			return updateProject(projectName, resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
 		}
 	}
@@ -609,12 +608,29 @@ func updateProject(
 		return "", err
 	}
 	if projectGroups == "" && projectTags == "" {
+		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	var projModel = wrappers.Project{}
+	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
+	if errModel != nil {
+		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
+	}
+	if err != nil {
+		return "", err
+	}
 	projModel.Name = projectName
-	projModel.Groups = groupsMap
-	projModel.Tags = createTagMap(projectTags)
+	projModel.Groups = projModelResp.Groups
+	projModel.Tags = projModelResp.Tags
+	if projectGroups != "" {
+		logger.PrintIfVerbose("Updating project groups")
+		projModel.Groups = groupsMap
+	}
+	if projectTags != "" {
+		logger.PrintIfVerbose("Updating project tags")
+		projModel.Tags = createTagMap(projectTags)
+	}
+
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", err
