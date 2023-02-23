@@ -553,11 +553,10 @@ func findProject(
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("PARAMS:", params)
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			fmt.Println("PROJECT ID:", resp.Projects[i].ID)
+			log.Println("PROJECT ID:", resp.Projects[i].ID)
 			return updateProject(projectName, resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
 		}
 	}
