@@ -17,14 +17,9 @@ func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
 		Name: model.Name,
 	}, nil, nil
 }
-func (p *ProjectsMockWrapper) Update(projectID string, model *wrappers.Project) (
-	*wrappers.ProjectResponseModel,
-	*wrappers.ErrorModel,
-	error) {
+func (p *ProjectsMockWrapper) Update(projectID string, model *wrappers.Project) error {
 	fmt.Println("Called Update in ProjectsMockWrapper")
-	return &wrappers.ProjectResponseModel{
-		Name: model.Name,
-	}, nil, nil
+	return nil
 }
 
 func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuration []wrappers.ProjectConfiguration) (*wrappers.ErrorModel, error) {
