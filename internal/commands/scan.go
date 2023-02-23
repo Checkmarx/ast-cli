@@ -603,14 +603,15 @@ func updateProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-	if err != nil {
-		return "", err
-	}
 	if projectGroups == "" && projectTags == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
+	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
+	if err != nil {
+		return "", err
+	}
+
 	var projModel = wrappers.Project{}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
