@@ -36,19 +36,23 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
-func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) (*ProjectResponseModel, *ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
-		return nil, nil, err
+		return nil
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPut, p.path+"/"+projectID, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
-	fmt.Println("UPDATE HTTP STATUS - ", resp.Status)
-	return handleProjectResponseWithBody(resp, err, http.StatusNoContent)
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return errors.Errorf("failed to update project %s, status - %s", projectID, resp.StatusCode)
+	case http.StatusOK:
+	}
+	return nil
 }
 
 func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error) {

@@ -553,9 +553,12 @@ func findProject(
 	if err != nil {
 		return "", err
 	}
+	fmt.Println("PARAMS:", params)
+
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return resp.Projects[i].ID, nil
+			fmt.Println("PROJECT ID:", resp.Projects[i].ID)
+			return updateProject(projectName, resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
 		}
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
@@ -571,6 +574,7 @@ func createProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) (string, error) {
+	fmt.Println("ENTROU CREATE PROJECT")
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
@@ -594,30 +598,27 @@ func createProject(
 
 func updateProject(
 	projectName string,
+	projectID string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
-	if projectID == "" {
-		return "", errors.New("project-id flag is required")
-	}
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
+	}
+	if projectGroups == "" && projectTags == "" {
+		return projectID, nil
 	}
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
 	projModel.Tags = createTagMap(projectTags)
-	resp, errorModel, err := projectsWrapper.Update(projectID, &projModel)
-	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedUpdatingProj, errorModel.Code, errorModel.Message)
-	}
-	if err == nil {
-		projectID = resp.ID
+	err = projectsWrapper.Update(projectID, &projModel)
+	if err != nil {
+		return "", err
 	}
 	return projectID, err
 }
