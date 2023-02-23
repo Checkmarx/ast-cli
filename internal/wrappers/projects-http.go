@@ -52,7 +52,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	case http.StatusNoContent:
 		return nil
 	default:
-		return errors.Errorf("failed to update project %s, status - %s", projectID, resp.StatusCode)
+		return errors.Errorf("failed to update project %s, status - %d", projectID, resp.StatusCode)
 	}
 }
 
