@@ -556,7 +556,7 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(projectName, resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
+			return updateProject(resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
 		}
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
@@ -595,7 +595,6 @@ func createProject(
 }
 
 func updateProject(
-	projectName string,
 	projectID string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -620,7 +619,7 @@ func updateProject(
 	if err != nil {
 		return "", err
 	}
-	projModel.Name = projectName
+	projModel.Name = projModelResp.Name
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
 	if projectGroups != "" {
