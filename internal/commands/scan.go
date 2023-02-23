@@ -572,7 +572,6 @@ func createProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) (string, error) {
-	fmt.Println("ENTROU CREATE PROJECT")
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
@@ -608,7 +607,7 @@ func updateProject(
 	}
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
 	var projModel = wrappers.Project{}
@@ -633,9 +632,9 @@ func updateProject(
 
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
-		return "", err
+		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
-	return projectID, err
+	return projectID, nil
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {

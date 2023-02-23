@@ -47,12 +47,13 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	if err != nil {
 		return err
 	}
+	resp.Body.Close()
 	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
+	case http.StatusNoContent:
+		return nil
+	default:
 		return errors.Errorf("failed to update project %s, status - %s", projectID, resp.StatusCode)
-	case http.StatusOK:
 	}
-	return nil
 }
 
 func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error) {
