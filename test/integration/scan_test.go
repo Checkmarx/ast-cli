@@ -1006,7 +1006,7 @@ func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ProjectTagList), "test_tag",
+		flag(params.ProjectTagList), "integration",
 		flag(params.ProjectGroupList), "test",
 	)
 
