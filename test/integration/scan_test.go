@@ -994,3 +994,40 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 
 }
+
+func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key using project groups and project tags should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "test_tag",
+		flag(params.ProjectGroupList), "test",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+
+}
+
+func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectGroupList), "wrong_group",
+		flag(params.DebugFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed finding groups")
+}
