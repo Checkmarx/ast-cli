@@ -605,10 +605,6 @@ func updateProject(
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
-	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-	if err != nil {
-		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
 
 	var projModel = wrappers.Project{}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
@@ -622,6 +618,10 @@ func updateProject(
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
 	if projectGroups != "" {
+		groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
+		if err != nil {
+			return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
+		}
 		logger.PrintIfVerbose("Updating project groups")
 		projModel.Groups = groupsMap
 	}
