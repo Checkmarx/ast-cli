@@ -1025,7 +1025,6 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ProjectGroupList), "wrong_group",
-		flag(params.DebugFlag),
 	}
 
 	err, _ := executeCommand(t, args...)
