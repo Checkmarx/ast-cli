@@ -618,9 +618,9 @@ func updateProject(
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
 	if projectGroups != "" {
-		groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-		if err != nil {
-			return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
+		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
+		if groupErr != nil {
+			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
 		}
 		logger.PrintIfVerbose("Updating project groups")
 		projModel.Groups = groupsMap
