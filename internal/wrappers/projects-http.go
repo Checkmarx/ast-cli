@@ -11,6 +11,8 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
+const configurationProjectPath = "api/configuration/project"
+
 type ProjectsHTTPWrapper struct {
 	path string
 }
@@ -32,6 +34,8 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	if err != nil {
 		return nil, nil, err
 	}
+	resp.Body.Close()
+
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -46,12 +50,41 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 		commonParams.ProjectIDFlag: projectID,
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodPatch, configurationProjectPath, params, bytes.NewBuffer(jsonBytes), clientTimeout)
 	if err != nil {
 		return nil, err
 	}
 
+	resp.Body.Close()
+
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
+}
+
+func (p *ProjectsHTTPWrapper) GetConfiguration(projectID string) (*[]ProjectConfiguration, *ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	params := map[string]string{
+		commonParams.ProjectIDFlag: projectID,
+	}
+
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, configurationProjectPath, params, nil, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		model := []ProjectConfiguration{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+		}
+		return &model, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
 }
 
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (

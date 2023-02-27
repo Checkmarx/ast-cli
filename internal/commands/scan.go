@@ -1415,6 +1415,20 @@ func createScanModel(
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
+	// Set up file source if not provided and exists in project configuration
+	sourcesFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	if sourcesFlag == "" {
+		log.Println("No file source provided, trying to get it from project settings")
+		projectConfigRepoURL, err := getGitRepoURLFromConfuguration(projectsWrapper, scanModel.Project.ID)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "%s: error getting git repo url from configuration", failedCreating)
+		}
+		if projectConfigRepoURL != "" {
+			cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
+			scanModel.Type = git
+			log.Println("File source found in project settings: " + projectConfigRepoURL)
+		}
+	}
 
 	// Set up the scan handler (either git or upload)
 	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper)
@@ -1490,6 +1504,28 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 	}
 
 	return scanHandler, zipFilePath, err
+}
+
+func getGitRepoURLFromConfuguration(projectsWrapper wrappers.ProjectsWrapper, projectID string) (string, error) {
+	var url string
+	projectConfig, errModel, err := projectsWrapper.GetConfiguration(projectID)
+	if err != nil {
+		return "", err
+	}
+	if errModel != nil {
+		return "", errors.New(errModel.Message)
+	}
+
+	for _, value := range *projectConfig {
+		if value.Key == "scan.handler.git.repository" {
+			url = value.Value
+			break
+		}
+	}
+	if url == "" {
+		return "", errors.New("No git repository url found in project configuration")
+	}
+	return url, nil
 }
 
 func defineSSHCredentials(sshKeyPath string, handler *wrappers.ScanHandler) error {

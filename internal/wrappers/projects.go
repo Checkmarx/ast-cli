@@ -51,4 +51,5 @@ type ProjectsWrapper interface {
 	Delete(projectID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)
 	UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error)
+	GetConfiguration(projectID string) (*[]ProjectConfiguration, *ErrorModel, error)
 }
