@@ -1424,7 +1424,7 @@ func createScanModel(
 			return nil, "", errors.Wrapf(err, "%s: error getting git repo url from configuration", failedCreating)
 		}
 		if projectConfigRepoURL != "" {
-			err := cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
+			err = cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
 			if err != nil {
 				return nil, "", errors.Wrapf(err, "%s: error setting sources flag", failedCreating)
 			}
