@@ -1424,7 +1424,10 @@ func createScanModel(
 			return nil, "", errors.Wrapf(err, "%s: error getting git repo url from configuration", failedCreating)
 		}
 		if projectConfigRepoURL != "" {
-			cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
+			err := cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
+			if err != nil {
+				return nil, "", errors.Wrapf(err, "%s: error setting sources flag", failedCreating)
+			}
 			scanModel.Type = git
 			log.Println("File source found in project settings: " + projectConfigRepoURL)
 		}
@@ -1523,7 +1526,7 @@ func getGitRepoURLFromConfuguration(projectsWrapper wrappers.ProjectsWrapper, pr
 		}
 	}
 	if url == "" {
-		return "", errors.New("No git repository url found in project configuration")
+		return "", errors.New("no git repository url found in project configuration")
 	}
 	return url, nil
 }
