@@ -37,6 +37,7 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
+	Mock                          = "MOCK"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -57,7 +58,7 @@ func TestRunGetScanByIdCommandFlagNonExist(t *testing.T) {
 }
 
 func TestRunGetScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "show", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "show", "--scan-id", Mock)
 }
 
 func TestRunDeleteScanByIdCommandNoScanID(t *testing.T) {
@@ -71,11 +72,11 @@ func TestRunDeleteByIdCommandFlagNonExist(t *testing.T) {
 }
 
 func TestRunDeleteScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "delete", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "delete", "--scan-id", Mock)
 }
 
 func TestRunCancelScanByIdCommand(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "cancel", "--scan-id", "MOCK")
+	execCmdNilAssertion(t, "scan", "cancel", "--scan-id", Mock)
 }
 
 func TestRunGetAllCommand(t *testing.T) {
@@ -116,27 +117,27 @@ func TestRunTagsCommand(t *testing.T) {
 }
 
 func TestCreateScan(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch")
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", "data", "--file-filter", "!.java")...)
 }
 
 func TestCreateScanSourceFile(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", "data/sources.zip", "-b", "dummy_branch")
 }
 
 func TestCreateScanWithTrimmedSources(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"data/"+blankSpace)...)
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+dummyRepo+blankSpace)...)
 }
 
 func TestCreateScanWrongFormatSource(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", "invalidSource")...)
 	assert.Assert(t, err.Error() == errorSourceBadFormat+"invalidSource")
@@ -146,7 +147,7 @@ func TestCreateScanWrongFormatSource(t *testing.T) {
 }
 
 func TestCreateScanWithScaResolver(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", "data", "-b", "dummy_branch"}
 	execCmdNilAssertion(
 		t,
 		append(
@@ -166,7 +167,7 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 		"scan",
 		"create",
 		"--project-name",
-		"MOCK",
+		Mock,
 		"-s",
 		"data",
 		"-b",
@@ -179,7 +180,7 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
@@ -193,28 +194,28 @@ func TestCreateScanWithNoFilteredProjects(t *testing.T) {
 }
 
 func TestCreateScanWithTags(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--tags", "dummy_tag:sub_dummy_tag")...)
 }
 
 func TestCreateScanWithPresetName(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--sast-preset-name", "High and Low")...)
 }
 
 func TestCreateScanExcludeGitFolder(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", "../..", "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-f", "!.git")...)
 }
 
 func TestCreateScanExcludeGitFolderChildren(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", "../..", "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-f", "!.git/HEAD")...)
 }
 
 func TestCreateScanBranches(t *testing.T) {
 	// Test Missing branch either in flag and in the environment variable
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo)
 	assert.Assert(t, err.Error() == errorMissingBranch)
 
 	// Bind cx_branch environment variable
@@ -222,18 +223,18 @@ func TestCreateScanBranches(t *testing.T) {
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
 
 	// Test branch from environment variable. Since the cx_branch is bind the scan must run successfully without a branch flag defined
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo)
 
 	// Test missing branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b")
 	assert.Assert(t, err.Error() == "flag needs an argument: 'b' in -b")
 
 	// Test empty branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "")
 	assert.Assert(t, err.Error() == errorMissingBranch)
 
 	// Test defined branch value
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "branch_defined")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "branch_defined")
 }
 
 func TestCreateScanWithProjectGroup(t *testing.T) {
@@ -250,7 +251,7 @@ func TestScanWorkflowMissingID(t *testing.T) {
 }
 
 func TestCreateScanMissingSSHValue(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-s", "../..", "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
 	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
@@ -263,7 +264,7 @@ func TestCreateScanMissingSSHValue(t *testing.T) {
 }
 
 func TestCreateScanInvalidSSHSource(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 
 	// zip file with ssh
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--ssh-key", "dummy_key")...)
@@ -279,7 +280,7 @@ func TestCreateScanInvalidSSHSource(t *testing.T) {
 }
 
 func TestCreateScanWrongSSHKeyPath(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "dummy_key")...)
 
@@ -292,7 +293,7 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 }
 
 func TestCreateScanWithSSHKey(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", dummySSHRepo, "--ssh-key", "data/sources.zip")...)
 }
@@ -340,7 +341,7 @@ func TestScanWorkFlowWithScaFilter(t *testing.T) {
 }
 
 func TestCreateScanFilterZipFile(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", Mock, "-b", "dummy_branch"}
 
 	execCmdNilAssertion(t, append(baseArgs, "-s", "data/sources.zip", "--file-filter", "!.java")...)
 }
@@ -404,11 +405,11 @@ func TestCreateRealtimeKicsFailedScan(t *testing.T) {
 }
 
 func TestCreateScanResubmit(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--resubmit")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--resubmit")
 }
 
 func TestCreateScanResubmitWithScanTypes(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", Mock, "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
 }
 
 func Test_parseThresholdSuccess(t *testing.T) {
@@ -429,7 +430,7 @@ func Test_parseThresholdParseError(t *testing.T) {
 }
 
 func TestScanWithoutFileSource(t *testing.T) {
-	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	baseArgs := []string{scanCommand, "create", "--project-name", Mock, "-b", "dummy_branch"}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
