@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 )
 
 type ProjectsMockWrapper struct{}
@@ -24,7 +25,31 @@ func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuratio
 }
 func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.ProjectConfiguration, *wrappers.ErrorModel, error) {
 	fmt.Println("Called Get Configuration for project", projectID, " in ProjectsMockWrapper")
-	return nil, nil, nil
+	projectConfig := &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{}}
+
+	if projectID == "FORCE-ERROR-MOCK" {
+		return projectConfig, nil, errors.New("error message")
+	}
+	if projectID == "FORCE-ERROR-MODEL-MOCK" {
+		return projectConfig, &wrappers.ErrorModel{
+			Code:    400,
+			Message: "error model message",
+		}, nil
+	}
+
+	if projectID == "MOCK" {
+		projectConfig = &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{
+			Key:           "scan.handler.git.repository",
+			Name:          "repository",
+			Category:      "git",
+			OriginLevel:   "Project",
+			Value:         "https://github.com/dummyuser/dummy_project.git",
+			ValueType:     "String",
+			AllowOverride: true,
+		}}
+	}
+
+	return projectConfig, nil, nil
 }
 
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
@@ -37,6 +62,28 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 
 	if params["name"] == "MOCK-NO-FILTERED-PROJECTS" {
 		filteredTotalCount = 0
+	}
+	if params["name"] == "FORCE-ERROR-MOCK" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "FORCE-ERROR-MOCK",
+					Name: "FORCE-ERROR-MOCK",
+				},
+			},
+		}, nil, nil
+	}
+	if params["name"] == "FORCE-ERROR-MODEL-MOCK" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "FORCE-ERROR-MODEL-MOCK",
+					Name: "FORCE-ERROR-MODEL-MOCK",
+				},
+			},
+		}, nil, nil
 	}
 
 	return &wrappers.ProjectsCollectionResponseModel{

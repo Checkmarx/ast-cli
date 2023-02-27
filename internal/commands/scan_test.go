@@ -427,3 +427,27 @@ func Test_parseThresholdParseError(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
+
+func TestScanWithoutFileSource(t *testing.T) {
+	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-b", "dummy_branch"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestScanWithoutFileSourceErrorGitUrlNotFound(t *testing.T) {
+	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK-NOT-FOUND", "-b", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "no git repository url found in project configuration", err.Error())
+}
+
+func TestScanWithoutFileSourceErrorGitUrl(t *testing.T) {
+	baseArgs := []string{scanCommand, "create", "--project-name", "FORCE-ERROR-MOCK", "-b", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "error message", err.Error())
+}
+func TestScanWithoutFileSourceErrorModelGitUrl(t *testing.T) {
+	baseArgs := []string{scanCommand, "create", "--project-name", "FORCE-ERROR-MODEL-MOCK", "-b", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "error model message", err.Error())
+}
