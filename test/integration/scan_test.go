@@ -992,5 +992,44 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
 
+func TestScanFastRepoAPISec(t *testing.T) {
+	_, projectName := getRootProject(t)
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API-SEC scan type should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), FastRepo,
+		flag(params.ScanTypes), "sast, api-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "main",
+	)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+func TestScanWithoutFileSource(t *testing.T) {
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create without file source should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), "ast-cli-tests_no_file_source_project_test",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "main",
+	)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+// TestScanWithoutFileSourceErrorNoGitRepoFound scan create fails when no git repo is found in project configuration
+func TestScanWithoutFileSourceErrorNoGitRepoFound(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "no git repository url found in project configuration")
 }

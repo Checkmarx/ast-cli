@@ -17,6 +17,7 @@ const (
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"
 	SlowRepo              = "https://github.com/WebGoat/WebGoat"
+	FastRepo              = "https://github.com/kmmanoj96/vulnerable-apis"
 	SSHRepo               = "git@github.com:hmmachadocx/hmmachado_dummy_project.git"
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
