@@ -1419,14 +1419,14 @@ func createScanModel(
 	sourcesFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 	if sourcesFlag == "" {
 		log.Println("No file source provided, trying to get it from project settings")
-		projectConfigRepoURL, err := getGitRepoURLFromConfuguration(projectsWrapper, scanModel.Project.ID)
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "%s: error getting git repo url from configuration", failedCreating)
+		projectConfigRepoURL, gitErr := getGitRepoURLFromConfuguration(projectsWrapper, scanModel.Project.ID)
+		if gitErr != nil {
+			return nil, "", errors.Wrapf(gitErr, "%s: error getting git repo url from configuration", failedCreating)
 		}
 		if projectConfigRepoURL != "" {
-			err = cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
-			if err != nil {
-				return nil, "", errors.Wrapf(err, "%s: error setting sources flag", failedCreating)
+			gitErr = cmd.Flags().Set(commonParams.SourcesFlag, projectConfigRepoURL)
+			if gitErr != nil {
+				return nil, "", errors.Wrapf(gitErr, "%s: error setting sources flag", failedCreating)
 			}
 			scanModel.Type = git
 			log.Println("File source found in project settings: " + projectConfigRepoURL)
