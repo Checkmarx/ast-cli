@@ -1,4 +1,3 @@
-// nolint
 package mock
 
 import (
@@ -6,6 +5,12 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
+)
+
+const (
+	forceErrorMock      = "FORCE-ERROR-MOCK"
+	forceErrorModelMock = "FORCE-ERROR-MODEL-MOCK"
+	mock                = "MOCK"
 )
 
 type ProjectsMockWrapper struct{}
@@ -28,17 +33,17 @@ func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.Pr
 	fmt.Println("Called Get Configuration for project", projectID, " in ProjectsMockWrapper")
 	projectConfig := &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{}}
 
-	if projectID == "FORCE-ERROR-MOCK" {
+	if projectID == forceErrorMock {
 		return projectConfig, nil, errors.New("error message")
 	}
-	if projectID == "FORCE-ERROR-MODEL-MOCK" {
+	if projectID == forceErrorModelMock {
 		return projectConfig, &wrappers.ErrorModel{
 			Code:    400,
 			Message: "error model message",
 		}, nil
 	}
 
-	if projectID == "MOCK" {
+	if projectID == mock {
 		projectConfig = &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{
 			Key:           "scan.handler.git.repository",
 			Name:          "repository",
@@ -64,24 +69,24 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	if params["name"] == "MOCK-NO-FILTERED-PROJECTS" {
 		filteredTotalCount = 0
 	}
-	if params["name"] == "FORCE-ERROR-MOCK" {
+	if params["name"] == forceErrorMock {
 		return &wrappers.ProjectsCollectionResponseModel{
 			FilteredTotalCount: uint(filteredTotalCount),
 			Projects: []wrappers.ProjectResponseModel{
 				{
-					ID:   "FORCE-ERROR-MOCK",
-					Name: "FORCE-ERROR-MOCK",
+					ID:   forceErrorMock,
+					Name: forceErrorMock,
 				},
 			},
 		}, nil, nil
 	}
-	if params["name"] == "FORCE-ERROR-MODEL-MOCK" {
+	if params["name"] == forceErrorModelMock {
 		return &wrappers.ProjectsCollectionResponseModel{
 			FilteredTotalCount: uint(filteredTotalCount),
 			Projects: []wrappers.ProjectResponseModel{
 				{
-					ID:   "FORCE-ERROR-MODEL-MOCK",
-					Name: "FORCE-ERROR-MODEL-MOCK",
+					ID:   forceErrorModelMock,
+					Name: forceErrorModelMock,
 				},
 			},
 		}, nil, nil
@@ -91,8 +96,8 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
 			{
-				ID:   "MOCK",
-				Name: "MOCK",
+				ID:   mock,
+				Name: mock,
 			},
 		},
 	}, nil, nil
