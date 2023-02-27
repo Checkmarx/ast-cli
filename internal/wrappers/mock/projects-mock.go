@@ -29,11 +29,11 @@ func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuratio
 	fmt.Println("Called Update Configuration for project", projectID, " in ProjectsMockWrapper with the configuration ", configuration)
 	return nil, nil
 }
+
+// nolint:gofmt
 func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.ProjectConfiguration, *wrappers.ErrorModel, error) {
 	fmt.Println("Called Get Configuration for project", projectID, " in ProjectsMockWrapper")
-	var projectConfig = &[]wrappers.ProjectConfiguration{
-		wrappers.ProjectConfiguration{},
-	}
+	projectConfig := &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{}}
 	if projectID == forceErrorMock {
 		return projectConfig, nil, errors.New("error message")
 	}
