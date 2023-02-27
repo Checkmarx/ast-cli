@@ -31,8 +31,9 @@ func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuratio
 }
 func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.ProjectConfiguration, *wrappers.ErrorModel, error) {
 	fmt.Println("Called Get Configuration for project", projectID, " in ProjectsMockWrapper")
-	projectConfig := &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{}}
-
+	var projectConfig = &[]wrappers.ProjectConfiguration{
+		wrappers.ProjectConfiguration{},
+	}
 	if projectID == forceErrorMock {
 		return projectConfig, nil, errors.New("error message")
 	}
@@ -42,7 +43,6 @@ func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.Pr
 			Message: "error model message",
 		}, nil
 	}
-
 	if projectID == mock {
 		projectConfig = &[]wrappers.ProjectConfiguration{wrappers.ProjectConfiguration{
 			Key:           "scan.handler.git.repository",
@@ -54,7 +54,6 @@ func (p *ProjectsMockWrapper) GetConfiguration(projectID string) (*[]wrappers.Pr
 			AllowOverride: true,
 		}}
 	}
-
 	return projectConfig, nil, nil
 }
 
