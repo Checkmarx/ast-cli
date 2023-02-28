@@ -17,7 +17,7 @@ import (
 
 const (
 	fileName         = "result-test"
-	resultsDirectory = "output-results-folder/"
+	resultsDirectory = "output-results"
 )
 
 // Create a scan and test getting its results
@@ -63,7 +63,7 @@ func assertResultFilesCreated(t *testing.T) {
 	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
 
 	for _, e := range extensions {
-		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
+		_, err := os.Stat(fmt.Sprintf("%s/%s.%s", resultsDirectory, fileName, e))
 		assert.NilError(t, err, "Report file should exist for extension "+e)
 	}
 
