@@ -553,9 +553,10 @@ func findProject(
 	if err != nil {
 		return "", err
 	}
+
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return resp.Projects[i].ID, nil
+			return updateProject(resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
 		}
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
@@ -590,6 +591,50 @@ func createProject(
 		projectID = resp.ID
 	}
 	return projectID, err
+}
+
+func updateProject(
+	projectID string,
+	cmd *cobra.Command,
+	projectsWrapper wrappers.ProjectsWrapper,
+	groupsWrapper wrappers.GroupsWrapper,
+) (string, error) {
+	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
+	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	if projectGroups == "" && projectTags == "" {
+		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
+		return projectID, nil
+	}
+
+	var projModel = wrappers.Project{}
+	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
+	if errModel != nil {
+		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
+	}
+	if err != nil {
+		return "", err
+	}
+	projModel.Name = projModelResp.Name
+	projModel.Groups = projModelResp.Groups
+	projModel.Tags = projModelResp.Tags
+	if projectGroups != "" {
+		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
+		if groupErr != nil {
+			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
+		}
+		logger.PrintIfVerbose("Updating project groups")
+		projModel.Groups = groupsMap
+	}
+	if projectTags != "" {
+		logger.PrintIfVerbose("Updating project tags")
+		projModel.Tags = createTagMap(projectTags)
+	}
+
+	err = projectsWrapper.Update(projectID, &projModel)
+	if err != nil {
+		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
+	}
+	return projectID, nil
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
