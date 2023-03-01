@@ -427,3 +427,15 @@ func Test_parseThresholdParseError(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
+
+func TestCreateScanProjectTags(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--project-tags", "test", "--debug")
+}
+
+func TestCreateScanProjecGroupsError(t *testing.T) {
+	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--debug", "--project-groups", "err"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
+}
