@@ -1176,6 +1176,9 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 }
 
 func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	if result == nil || result.ScanResultData.ScaPackageCollection == nil || result.ScanResultData.ScaPackageCollection.Locations == nil {
+		return scanResults
+	}
 	for _, location := range result.ScanResultData.ScaPackageCollection.Locations {
 		var scanResult = initSarifResult(result)
 
@@ -1213,6 +1216,9 @@ func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.Sa
 }
 
 func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	if result == nil || result.ScanResultData.Nodes == nil {
+		return scanResults
+	}
 	var scanResult = initSarifResult(result)
 
 	for _, node := range result.ScanResultData.Nodes {
