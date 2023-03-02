@@ -1215,6 +1215,9 @@ func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.Sa
 }
 
 func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	if result == nil || result.ScanResultData.Nodes == nil {
+		return scanResults
+	}
 	var scanResult = initSarifResult(result)
 
 	for _, node := range result.ScanResultData.Nodes {
