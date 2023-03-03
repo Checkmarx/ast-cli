@@ -629,7 +629,6 @@ func validateEmails(emailString string) ([]string, error) {
 			return nil, errors.Errorf("report not sent, invalid email address: %s", email)
 		}
 	}
-	// test
 	return validEmails, nil
 }
 
