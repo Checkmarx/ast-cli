@@ -1010,6 +1010,10 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if engineType == commonParams.KicsType {
 				auxIssue.PrimaryLocation = parseLocationKics(result)
 				sonarIssues = append(sonarIssues, auxIssue)
+			} else if engineType == commonParams.ScaType {
+				auxIssue.PrimaryLocation = parseLocationSca(result)
+				auxIssue.SecondaryLocations = parseSonarSecondLocationsSca(result)
+				sonarIssues = append(sonarIssues, auxIssue)
 			}
 		}
 	}
@@ -1017,6 +1021,17 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 }
 
 func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
+	var auxLocation wrappers.SonarLocation
+	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
+	auxLocation.Message = results.ScanResultData.Value
+	var auxTextRange wrappers.SonarTextRange
+	auxTextRange.StartLine = results.ScanResultData.Line
+	auxTextRange.StartColumn = 0
+	auxTextRange.EndColumn = 1
+	auxLocation.TextRange = auxTextRange
+	return auxLocation
+}
+func parseLocationSca(results *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
 	auxLocation.Message = results.ScanResultData.Value
@@ -1042,7 +1057,7 @@ func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocat
 func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.SonarLocation {
 	var auxSecondaryLocations []wrappers.SonarLocation
 	// Traverse all the rest of the scan result nodes into secondary location of sonar
-	if len(results.ScanResultData.Nodes) > 1 {
+	if len(results.ScanResultData.Nodes) >= 1 {
 		for _, node := range results.ScanResultData.Nodes[1:] {
 			var auxSecondaryLocation wrappers.SonarLocation
 			auxSecondaryLocation.FilePath = strings.TrimLeft(node.FileName, "/")
@@ -1052,6 +1067,19 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 		}
 	}
 	return auxSecondaryLocations
+}
+func parseSonarSecondLocationsSca(results *wrappers.ScanResult) []wrappers.SonarLocation {
+	var auxScaSecondLocations []wrappers.SonarLocation
+	// Traverse all the rest of the scan result nodes into secondary location of sonar
+	if len(results.ScanResultData.PackageData) >= 1 {
+		for _, node := range results.ScanResultData.PackageData[1:] {
+			var auxScaSecondaryLocation wrappers.SonarLocation
+			auxScaSecondaryLocation.FilePath = strings.TrimLeft(node.URL, "/")
+			auxScaSecondaryLocation.Message = strings.TrimLeft(node.Type, "/")
+			auxScaSecondLocations = append(auxScaSecondLocations, auxScaSecondaryLocation)
+		}
+	}
+	return auxScaSecondLocations
 }
 
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
