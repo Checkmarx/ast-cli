@@ -135,7 +135,7 @@ const (
 	ScaFilterFlag      = "sca-filter"
 	ScaFilterUsage     = "SCA filter"
 	ThresholdFlagUsage = "Local build threshold. Format <engine>-<severity>=<limit>. " +
-		"Example: --threshold \"sast-high=10;sca-high=5\""
+		"Example: scan create ... --threshold \"sast-high=10;sca-high=5\""
 
 	// PR decoration flags
 	NamespaceFlag      = "namespace"
