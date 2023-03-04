@@ -126,14 +126,16 @@ const (
 	ApikeyOverrideFlag           = "apikey-override"
 
 	// INDIVIDUAL FILTER FLAGS
-	SastFilterFlag  = "sast-filter"
-	SastFilterUsage = "SAST filter"
-	KicsFilterFlag  = "kics-filter"
-	IacsFilterFlag  = "iac-security-filter"
-	IacsFilterUsage = "IaC Security filter"
-	KicsFilterUsage = "KICS filter"
-	ScaFilterFlag   = "sca-filter"
-	ScaFilterUsage  = "SCA filter"
+	SastFilterFlag     = "sast-filter"
+	SastFilterUsage    = "SAST filter"
+	KicsFilterFlag     = "kics-filter"
+	IacsFilterFlag     = "iac-security-filter"
+	IacsFilterUsage    = "IaC Security filter"
+	KicsFilterUsage    = "KICS filter"
+	ScaFilterFlag      = "sca-filter"
+	ScaFilterUsage     = "SCA filter"
+	ThresholdFlagUsage = "Local build threshold. Format <engine>-<severity>=<limit>. " +
+		"Example: --threshold \"sast-high=10;sca-high=5\""
 
 	// PR decoration flags
 	NamespaceFlag      = "namespace"

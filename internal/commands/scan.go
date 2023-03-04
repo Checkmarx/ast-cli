@@ -523,7 +523,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.Threshold,
 		"",
-		"Local build threshold. Format <engine>-<severity>=<limit>",
+		commonParams.ThresholdFlagUsage,
 	)
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.ScanResubmit,
