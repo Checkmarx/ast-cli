@@ -523,7 +523,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.Threshold,
 		"",
-		"Local build threshold. Format <engine>-<severity>=<limit>",
+		commonParams.ThresholdFlagUsage,
 	)
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.ScanResubmit,
@@ -1670,7 +1670,8 @@ func applyThreshold(
 func parseThreshold(threshold string) map[string]int {
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
-		thresholdLimits := strings.Split(threshold, ";")
+		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
+		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			engineName := limit[0]
@@ -1680,7 +1681,7 @@ func parseThreshold(threshold string) map[string]int {
 				if err != nil {
 					log.Println("Error parsing threshold limit: ", err)
 				} else {
-					thresholdMap[strings.ToLower(engineName)] = intLimit
+					thresholdMap[engineName] = intLimit
 				}
 			}
 		}
