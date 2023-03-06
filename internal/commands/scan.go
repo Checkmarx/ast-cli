@@ -1671,7 +1671,7 @@ func parseThreshold(threshold string) map[string]int {
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
 		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
-		thresholdLimits := strings.Split(threshold, ";")
+		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			engineName := limit[0]
