@@ -413,7 +413,7 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
-	want[" kics - low"] = 1
+	want["iac-security-low"] = 1
 	threshold := " KICS - LoW=1"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
