@@ -50,4 +50,5 @@ const (
 	DescriptionsPathEnv                 = "CX_DESCRIPTIONS_PATH"
 	TenantConfigurationPathEnv          = "CX_TENANT_CONFIGURATION_PATH"
 	ResultsPdfReportPathEnv             = "CX_RESULTS_PDF_REPORT_PATH"
+	UploadURLEnv                        = "CX_UPLOAD_URL"
 )

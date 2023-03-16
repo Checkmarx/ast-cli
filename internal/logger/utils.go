@@ -17,6 +17,7 @@ var sanitizeFlags = []string{
 	params.UsernameFlag, params.PasswordFlag,
 	params.AstToken, params.SSHValue,
 	params.SCMTokenFlag, params.ProxyKey,
+	params.UploadURLEnv,
 }
 
 func Print(msg string) {
@@ -52,7 +53,7 @@ func PrintRequest(r *http.Request) {
 
 func PrintResponse(r *http.Response, body bool) {
 	PrintIfVerbose("Receiving API response:")
-	requestDump, err := httputil.DumpResponse(r, body)
+	requestDump, err := httputil.DumpResponse(r, false)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -63,6 +64,8 @@ func sanitizeLogs(msg string) string {
 	for _, flag := range sanitizeFlags {
 		value := viper.GetString(flag)
 		if len(value) > 0 {
+			// convert "\u0026" unicode character to "&" to avoid errors in logs sanitization
+			msg = strings.ReplaceAll(msg, "\\u0026", "&")
 			msg = strings.ReplaceAll(msg, value, "***")
 		}
 	}
