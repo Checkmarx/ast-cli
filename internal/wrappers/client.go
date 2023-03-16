@@ -155,11 +155,11 @@ func SendHTTPRequestByFullURL(
 	accessToken string,
 ) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := GetClient(timeout)
-	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
+	client := GetClient(timeout)
+	setAgentName(req)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken)
 	}
@@ -281,6 +281,38 @@ func HTTPRequestWithQueryParams(
 	}
 	req.URL.RawQuery = q.Encode()
 	enrichWithOath2Credentials(req, accessToken)
+	var resp *http.Response
+	resp, err = request(client, req, printBody)
+	if err != nil {
+		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL.RequestURI())
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return resp, errors.Errorf("%s", "Provided credentials do not have permissions for this command")
+	}
+	return resp, nil
+}
+func SendPrivateHTTPRequest(
+	method, path string,
+	body io.Reader, timeout uint,
+	auth, printBody bool,
+) (*http.Response, error) {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	u, err := GetURL(path, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(method, u, body)
+	client := GetClient(timeout)
+	setAgentName(req)
+	if err != nil {
+		return nil, err
+	}
+	if auth {
+		enrichWithOath2Credentials(req, accessToken)
+	}
 	var resp *http.Response
 	resp, err = request(client, req, printBody)
 	if err != nil {

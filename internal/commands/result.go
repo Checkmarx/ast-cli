@@ -483,7 +483,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
-		fmt.Printf("For more information: %s", summary.BaseURI)
+
+		customURL := strings.Replace(summary.BaseURI, "overview", "scans", 1)
+		customURL = fmt.Sprintf("%s?branch=%s&id=%s", customURL, summary.BranchName, summary.ScanID)
+		fmt.Printf("For more information: %s\n", customURL)
 	}
 	return nil
 }

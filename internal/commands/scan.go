@@ -1229,7 +1229,6 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	if zipFilePathErr != nil {
 		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 	}
-	logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
 	if unzip || !userProvidedZip {
 		return *preSignedURL, zipFilePath, zipFilePathErr
 	}
