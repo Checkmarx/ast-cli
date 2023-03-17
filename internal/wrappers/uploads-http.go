@@ -73,7 +73,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendPrivateHTTPRequest(http.MethodPost, u.path, nil, clientTimeout, true, false)
+	resp, err := SendPrivateHTTPRequest(http.MethodPost, u.path, nil, clientTimeout, true)
 	if err != nil {
 		return nil, errors.Errorf("invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}

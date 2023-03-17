@@ -337,6 +337,7 @@ func SummaryReport(
 	}
 
 	summary.BaseURI = baseURI
+	summary.BaseURI = generateScanSummaryURL(summary)
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -480,13 +481,11 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
 		fmt.Printf("              -----------------------------------     \n")
-		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
+		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
 
-		customURL := strings.Replace(summary.BaseURI, "overview", "scans", 1)
-		customURL = fmt.Sprintf("%s?branch=%s&id=%s", customURL, summary.BranchName, summary.ScanID)
-		fmt.Printf("For more information: %s\n", customURL)
+		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
 }

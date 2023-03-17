@@ -294,7 +294,7 @@ func HTTPRequestWithQueryParams(
 func SendPrivateHTTPRequest(
 	method, path string,
 	body io.Reader, timeout uint,
-	auth, printBody bool,
+	auth bool,
 ) (*http.Response, error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
@@ -314,7 +314,7 @@ func SendPrivateHTTPRequest(
 		enrichWithOath2Credentials(req, accessToken)
 	}
 	var resp *http.Response
-	resp, err = request(client, req, printBody)
+	resp, err = doPrivateRequest(client, req)
 	if err != nil {
 		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL.RequestURI())
 	}
