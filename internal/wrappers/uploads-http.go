@@ -3,7 +3,6 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -31,7 +30,6 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		return nil, errors.Errorf("Failed to marshal pre-signed URL - %s", err.Error())
 	}
 	*preSignedURL = string(preSignedURLBytes)
-	fmt.Println("PRE-SIGNED URL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ", *preSignedURL)
 	viper.Set(commonParams.UploadURLEnv, *preSignedURL)
 	file, err := os.Open(sourcesFile)
 	if err != nil {
