@@ -135,16 +135,32 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	}
 }
 
+func getURLAndAccessToken(path string) (url string, accessToken string, err error) {
+	accessToken, err = GetAccessToken()
+	if err != nil {
+		return "", "", err
+	}
+	url, err = GetURL(path, accessToken)
+	if err != nil {
+		return "", "", err
+	}
+	return url, accessToken, nil
+}
+
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	accessToken, err := GetAccessToken()
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
-	u, err := GetURL(path, accessToken)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken, true)
+}
+
+func SendPrivateHTTPRequest(method, path string, body io.Reader, timeout uint, auth bool) (*http.Response, error) {
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
-	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken, false)
 }
 
 func SendHTTPRequestByFullURL(
@@ -153,6 +169,7 @@ func SendHTTPRequestByFullURL(
 	auth bool,
 	timeout uint,
 	accessToken string,
+	bodyPrint bool,
 ) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
@@ -166,7 +183,7 @@ func SendHTTPRequestByFullURL(
 
 	req = addReqMonitor(req)
 	var resp *http.Response
-	resp, err = doRequest(client, req)
+	resp, err = request(client, req, bodyPrint)
 	if err != nil {
 		return nil, err
 	}
@@ -261,11 +278,7 @@ func HTTPRequestWithQueryParams(
 	method, path string, params map[string]string,
 	body io.Reader, timeout uint, printBody bool,
 ) (*http.Response, error) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	u, err := GetURL(path, accessToken)
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
@@ -283,38 +296,6 @@ func HTTPRequestWithQueryParams(
 	enrichWithOath2Credentials(req, accessToken)
 	var resp *http.Response
 	resp, err = request(client, req, printBody)
-	if err != nil {
-		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL.RequestURI())
-	}
-	if resp.StatusCode == http.StatusForbidden {
-		return resp, errors.Errorf("%s", "Provided credentials do not have permissions for this command")
-	}
-	return resp, nil
-}
-func SendPrivateHTTPRequest(
-	method, path string,
-	body io.Reader, timeout uint,
-	auth bool,
-) (*http.Response, error) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	u, err := GetURL(path, accessToken)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(method, u, body)
-	client := GetClient(timeout)
-	setAgentName(req)
-	if err != nil {
-		return nil, err
-	}
-	if auth {
-		enrichWithOath2Credentials(req, accessToken)
-	}
-	var resp *http.Response
-	resp, err = doPrivateRequest(client, req)
 	if err != nil {
 		return resp, errors.Errorf("%s %s \n", checkmarxURLError, req.URL.RequestURI())
 	}
@@ -345,11 +326,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	*http.Response,
 	error,
 ) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	fullURL, err := GetURL(path, accessToken)
+	fullURL, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}

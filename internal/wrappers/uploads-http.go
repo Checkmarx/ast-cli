@@ -54,7 +54,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed to unmarshal pre-signed URL - %s", err.Error())
 	}
-	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken)
+	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
