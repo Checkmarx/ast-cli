@@ -126,7 +126,7 @@ const (
 	IacsPlatformsFlag      = "iac-security-platforms"
 	IacsPlatformsFlagUsage = "IaC Security Platform Flag"
 	ApikeyOverrideFlag     = "apikey-override"
-
+	ExploitablePathFlag    = "exploitable-path"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
