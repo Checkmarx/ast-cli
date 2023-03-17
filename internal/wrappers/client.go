@@ -135,16 +135,16 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	}
 }
 
-func getURLAndAccessToken(path string) (url string, accessToken string, err error) {
+func getURLAndAccessToken(path string) (urlFromPath string, accessToken string, err error) {
 	accessToken, err = GetAccessToken()
 	if err != nil {
 		return "", "", err
 	}
-	url, err = GetURL(path, accessToken)
+	urlFromPath, err = GetURL(path, accessToken)
 	if err != nil {
 		return "", "", err
 	}
-	return url, accessToken, nil
+	return
 }
 
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
