@@ -135,7 +135,7 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	}
 }
 
-func getURLAndAccessToken(path string) (urlFromPath string, accessToken string, err error) {
+func getURLAndAccessToken(path string) (urlFromPath, accessToken string, err error) {
 	accessToken, err = GetAccessToken()
 	if err != nil {
 		return "", "", err
