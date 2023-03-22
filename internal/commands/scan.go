@@ -855,10 +855,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
-		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
-		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
-
 		if scanTypeEnabled(commonParams.SastType) {
+			scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+			scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 			if (scaConfig.ExploitablePath != "true" && scaConfig.ExploitablePath != "false") && scaConfig.ExploitablePath != "" {
 				logger.PrintIfVerbose("Invalid value for --exploitable-path flag. The value must be true or false. The flag will be ignored.")
 				scaConfig.ExploitablePath = ""
