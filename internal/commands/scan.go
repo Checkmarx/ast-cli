@@ -855,20 +855,10 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
-		if scanTypeEnabled(commonParams.SastType) {
-			scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
-			scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
-			if (scaConfig.ExploitablePath != "true" && scaConfig.ExploitablePath != "false") && scaConfig.ExploitablePath != "" {
-				logger.PrintIfVerbose("Invalid value for --exploitable-path flag. The value must be true or false. The flag will be ignored.")
-				scaConfig.ExploitablePath = ""
-			}
-			_, err := strconv.Atoi(scaConfig.LastSastScanTime)
-			if err != nil {
-				logger.PrintIfVerbose("Invalid value for --last-sast-scan-time flag. The value must be a positive integer. The flag will be ignored.")
-				scaConfig.LastSastScanTime = ""
-			}
-		}
-
+		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
+		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
+		scaConfig.LastSastScanTime = strings.ToLower(scaConfig.LastSastScanTime)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -1366,13 +1356,9 @@ func runCreateScanCommand(
 	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		branch := viper.GetString(commonParams.BranchKey)
-		if branch == "" {
-			return errors.Errorf("%s: Please provide a branch", failedCreating)
-		}
-		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
-		if timeoutMinutes < 0 {
-			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
+		timeoutMinutes, err := validateCreateScanFlags(cmd)
+		if err != nil {
+			return err
 		}
 		scanModel, zipFilePath, err := createScanModel(
 			cmd,
@@ -2232,4 +2218,34 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
 	}
 	return flagValue
+}
+
+func validateCreateScanFlags(cmd *cobra.Command) (int, error) {
+	branch := viper.GetString(commonParams.BranchKey)
+	if branch == "" {
+		return 0, errors.Errorf("%s: Please provide a branch", failedCreating)
+	}
+	timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
+	if timeoutMinutes < 0 {
+		return 0, errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
+	}
+	// actualScanTypes variable is not updated yet, so we need to get it from the command
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
+	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.SastType) &&
+		(exploitablePath != "" || lastSastScanTime != "") {
+		return 0, errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
+			"you must enable SAST scan type.")
+	}
+	if (strings.ToLower(exploitablePath) != "true" && strings.ToLower(exploitablePath) != "false") && exploitablePath != "" {
+		return 0, errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+	}
+	if lastSastScanTime != "" {
+		lsst, err := strconv.Atoi(lastSastScanTime)
+		if err != nil || lsst <= 0 {
+			return 0, errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
+		}
+	}
+	return timeoutMinutes, nil
 }

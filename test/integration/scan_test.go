@@ -1030,3 +1030,77 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Failed finding groups")
 }
+func TestScanCreateExploitablePath(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key using project groups and project tags should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ExploitablePathFlag), "true",
+		flag(params.LastSastScanTime), "1",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ExploitablePathFlag), "true",
+		flag(params.LastSastScanTime), "1",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "must enable SAST scan type")
+}
+func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca,sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ExploitablePathFlag), "nottrueorfalse",
+		flag(params.LastSastScanTime), "1",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Invalid value for --exploitable-path flag")
+}
+
+func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca,sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ExploitablePathFlag), "false",
+		flag(params.LastSastScanTime), "notanumber",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Invalid value for --last-sast-scan-time flag")
+}
