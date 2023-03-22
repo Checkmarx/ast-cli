@@ -2238,7 +2238,7 @@ func validateCreateScanFlags(cmd *cobra.Command) (int, error) {
 		return 0, errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
-	if (strings.ToLower(exploitablePath) != "true" && strings.ToLower(exploitablePath) != "false") && exploitablePath != "" {
+	if !strings.EqualFold(exploitablePath, "true") && !strings.EqualFold(exploitablePath, "false") && exploitablePath != "" {
 		return 0, errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
 	}
 	if lastSastScanTime != "" {
