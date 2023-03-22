@@ -35,16 +35,18 @@ import (
 )
 
 const (
-	failedCreating                  = "Failed creating a scan"
-	failedGetting                   = "Failed showing a scan"
-	failedGettingTags               = "Failed getting tags"
-	failedDeleting                  = "Failed deleting a scan"
-	failedCanceling                 = "Failed canceling a scan"
-	failedGettingAll                = "Failed listing"
-	thresholdLog                    = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog                 = "Threshold check finished with status %s : %s"
-	mbBytes                         = 1024.0 * 1024.0
-	notExploitable                  = "NOT_EXPLOITABLE"
+	failedCreating    = "Failed creating a scan"
+	failedGetting     = "Failed showing a scan"
+	failedGettingTags = "Failed getting tags"
+	failedDeleting    = "Failed deleting a scan"
+	failedCanceling   = "Failed canceling a scan"
+	failedGettingAll  = "Failed listing"
+	thresholdLog      = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog   = "Threshold check finished with status %s : %s"
+	mbBytes           = 1024.0 * 1024.0
+	notExploitable    = "NOT_EXPLOITABLE"
+	ignored           = "IGNORED"
+
 	git                             = "git"
 	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 	errorUnzippingFile              = "an error occurred while unzipping file. Reason: "
@@ -1717,12 +1719,16 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	}
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
-		if !strings.EqualFold(result.State, notExploitable) {
+		if isExploitable(result.State) {
 			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
 	}
 	return summaryMap, nil
+}
+
+func isExploitable(state string) bool {
+	return !strings.EqualFold(state, notExploitable) && !strings.EqualFold(state, ignored)
 }
 
 func waitForScanCompletion(
