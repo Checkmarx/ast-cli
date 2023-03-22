@@ -134,5 +134,7 @@ type KicsConfig struct {
 }
 
 type ScaConfig struct {
-	Filter string `json:"filter,omitempty"`
+	Filter           string `json:"filter,omitempty"`
+	ExploitablePath  string `json:"ExploitablePath,omitempty"`
+	LastSastScanTime string `json:"LastSastScanTime,omitempty"`
 }

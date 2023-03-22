@@ -513,6 +513,8 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
@@ -851,6 +853,21 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
+
+		if scanTypeEnabled(commonParams.SastType) {
+			if (scaConfig.ExploitablePath != "true" && scaConfig.ExploitablePath != "false") && scaConfig.ExploitablePath != "" {
+				logger.PrintIfVerbose("Invalid value for --exploitable-path flag. The value must be true or false. The flag will be ignored.")
+				scaConfig.ExploitablePath = ""
+			}
+			_, err := strconv.Atoi(scaConfig.LastSastScanTime)
+			if err != nil {
+				logger.PrintIfVerbose("Invalid value for --last-sast-scan-time flag. The value must be a positive integer. The flag will be ignored.")
+				scaConfig.LastSastScanTime = ""
+			}
+		}
+
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
