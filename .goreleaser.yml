@@ -106,5 +106,14 @@ brews:
       output = Utils.popen_read("#{bin}/cx utils completion -s fish")
       (fish_completion/"cx.fish").write output
 
+blobs:
+  - provider: s3
+    region: us-east-1
+    bucket: ${{ secrets.S3_BUCKET }}
+    folder: releases
+    ids:
+      - cx
+      - cx-mac-universal
+
 changelog:
   use: github-native
