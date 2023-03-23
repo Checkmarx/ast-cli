@@ -25,7 +25,12 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed creating pre-signed URL - %s", err.Error())
 	}
-
+	preSignedURLBytes, err := json.Marshal(*preSignedURL)
+	if err != nil {
+		return nil, errors.Errorf("Failed to marshal pre-signed URL - %s", err.Error())
+	}
+	*preSignedURL = string(preSignedURLBytes)
+	viper.Set(commonParams.UploadURLEnv, *preSignedURL)
 	file, err := os.Open(sourcesFile)
 	if err != nil {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())
@@ -45,10 +50,15 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken)
+	err = json.Unmarshal(preSignedURLBytes, preSignedURL)
+	if err != nil {
+		return nil, errors.Errorf("Failed to unmarshal pre-signed URL - %s", err.Error())
+	}
+	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -63,7 +73,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodPost, u.path, nil, true, clientTimeout)
+	resp, err := SendPrivateHTTPRequest(http.MethodPost, u.path, nil, clientTimeout, true)
 	if err != nil {
 		return nil, errors.Errorf("invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
