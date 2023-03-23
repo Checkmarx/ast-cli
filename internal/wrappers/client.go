@@ -135,16 +135,32 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	}
 }
 
+func getURLAndAccessToken(path string) (urlFromPath, accessToken string, err error) {
+	accessToken, err = GetAccessToken()
+	if err != nil {
+		return "", "", err
+	}
+	urlFromPath, err = GetURL(path, accessToken)
+	if err != nil {
+		return "", "", err
+	}
+	return
+}
+
 func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
-	accessToken, err := GetAccessToken()
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
-	u, err := GetURL(path, accessToken)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken, true)
+}
+
+func SendPrivateHTTPRequest(method, path string, body io.Reader, timeout uint, auth bool) (*http.Response, error) {
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
-	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken)
+	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken, false)
 }
 
 func SendHTTPRequestByFullURL(
@@ -153,20 +169,21 @@ func SendHTTPRequestByFullURL(
 	auth bool,
 	timeout uint,
 	accessToken string,
+	bodyPrint bool,
 ) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
-	client := GetClient(timeout)
-	setAgentName(req)
 	if err != nil {
 		return nil, err
 	}
+	client := GetClient(timeout)
+	setAgentName(req)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken)
 	}
 
 	req = addReqMonitor(req)
 	var resp *http.Response
-	resp, err = doRequest(client, req)
+	resp, err = request(client, req, bodyPrint)
 	if err != nil {
 		return nil, err
 	}
@@ -261,11 +278,7 @@ func HTTPRequestWithQueryParams(
 	method, path string, params map[string]string,
 	body io.Reader, timeout uint, printBody bool,
 ) (*http.Response, error) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	u, err := GetURL(path, accessToken)
+	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
@@ -313,11 +326,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	*http.Response,
 	error,
 ) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	fullURL, err := GetURL(path, accessToken)
+	fullURL, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
 		return nil, err
 	}
