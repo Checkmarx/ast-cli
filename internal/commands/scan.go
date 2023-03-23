@@ -1373,7 +1373,6 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
-			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1448,7 +1447,6 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
