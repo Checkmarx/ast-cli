@@ -1034,7 +1034,7 @@ func TestScanCreateExploitablePath(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
-		t, "Scan create with API key using project groups and project tags should pass",
+		t, "Scan create should pass",
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
