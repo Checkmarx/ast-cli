@@ -5,6 +5,10 @@ on:
     tags:
       - "*"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: macos-latest
@@ -53,6 +57,11 @@ jobs:
       - name: Clean
         run: |
           rm default.profraw
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::822112283600:role/cli-github-actions-role
+          aws-region: us-east-1
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
