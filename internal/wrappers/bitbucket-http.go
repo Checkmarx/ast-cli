@@ -272,11 +272,13 @@ func collectPageBitBucket(
 		if err != nil {
 			return -1, err
 		}
+		if len(commitHolder.Commits) == 0 {
+			return -1, nil
+		}
 		if !verifyDate(commitHolder.Commits[len(commitHolder.Commits)-1]) {
 			return -1, nil
 		}
 	}
-
 	return currentPage, nil
 }
 
