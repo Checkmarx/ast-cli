@@ -375,28 +375,26 @@ func SummaryReport(
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if contains(summary.EnginesEnabled, engineType) {
-		if engineType == commonParams.SastType && result.State != notExploitable {
+	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
+		if engineType == commonParams.SastType {
 			summary.SastIssues++
 			summary.TotalIssues++
 		} else if engineType == commonParams.ScaType {
 			summary.ScaIssues++
 			summary.TotalIssues++
-		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+		} else if engineType == commonParams.KicsType {
 			summary.KicsIssues++
 			summary.TotalIssues++
 		}
 		severity := strings.ToLower(result.Severity)
-		if result.State != notExploitable {
-			if severity == highLabel {
-				summary.HighIssues++
-			} else if severity == lowLabel {
-				summary.LowIssues++
-			} else if severity == mediumLabel {
-				summary.MediumIssues++
-			} else if severity == infoLabel {
-				summary.InfoIssues++
-			}
+		if severity == highLabel {
+			summary.HighIssues++
+		} else if severity == lowLabel {
+			summary.LowIssues++
+		} else if severity == mediumLabel {
+			summary.MediumIssues++
+		} else if severity == infoLabel {
+			summary.InfoIssues++
 		}
 	}
 }
