@@ -109,7 +109,7 @@ brews:
 blobs:
   - provider: s3
     region: us-east-1
-    bucket: ${{ secrets.S3_BUCKET }}
+    bucket: "{{ .Env.S3_BUCKET }}"
     folder: releases
     ids:
       - cx
