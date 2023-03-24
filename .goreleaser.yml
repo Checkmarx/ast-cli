@@ -108,8 +108,8 @@ brews:
 
 blobs:
   - provider: s3
-    region: us-east-1
-    bucket: "{{ .Env.S3_BUCKET }}"
+    region: "{{ .Env.S3_BUCKET_REGION }}"
+    bucket: "{{ .Env.S3_BUCKET_NAME }}"
     folder: releases
     ids:
       - cx

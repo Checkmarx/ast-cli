@@ -70,7 +70,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
 
   notify:
     runs-on: ubuntu-latest
