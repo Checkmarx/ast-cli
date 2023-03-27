@@ -126,6 +126,8 @@ const (
 	IacsPlatformsFlag      = "iac-security-platforms"
 	IacsPlatformsFlagUsage = "IaC Security Platform Flag"
 	ApikeyOverrideFlag     = "apikey-override"
+	ExploitablePathFlag    = "exploitable-path"
+	LastSastScanTime       = "last-sast-scan-time"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
