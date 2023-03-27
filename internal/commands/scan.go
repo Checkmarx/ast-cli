@@ -515,6 +515,8 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.PojecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
@@ -862,6 +864,10 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
+		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
+		scaConfig.LastSastScanTime = strings.ToLower(scaConfig.LastSastScanTime)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -1358,9 +1364,13 @@ func runCreateScanCommand(
 	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		branch := viper.GetString(commonParams.BranchKey)
-		if branch == "" {
-			return errors.Errorf("%s: Please provide a branch", failedCreating)
+		err := validateScanTypes(cmd, jwtWrapper)
+		if err != nil {
+			return err
+		}
+		err = validateCreateScanFlags(cmd)
+		if err != nil {
+			return err
 		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
@@ -1372,7 +1382,6 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
-			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1447,16 +1456,11 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	err := validateScanTypes(cmd, jwtWrapper)
-	if err != nil {
-		return nil, "", err
-	}
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err = setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -2224,4 +2228,28 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
 	}
 	return flagValue
+}
+
+func validateCreateScanFlags(cmd *cobra.Command) error {
+	branch := viper.GetString(commonParams.BranchKey)
+	if branch == "" {
+		return errors.Errorf("%s: Please provide a branch", failedCreating)
+	}
+	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
+	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
+		(exploitablePath != "" || lastSastScanTime != "") {
+		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
+			"you must enable SAST scan type.")
+	}
+	if !strings.EqualFold(exploitablePath, "true") && !strings.EqualFold(exploitablePath, "false") && exploitablePath != "" {
+		return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+	}
+	if lastSastScanTime != "" {
+		lsst, err := strconv.Atoi(lastSastScanTime)
+		if err != nil || lsst <= 0 {
+			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
+		}
+	}
+	return nil
 }
