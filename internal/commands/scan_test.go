@@ -439,3 +439,25 @@ func TestCreateScanProjecGroupsError(t *testing.T) {
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
 }
+func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--last-sast-scan-time", "notaniteger"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --last-sast-scan-time flag", err.Error())
+}
+
+func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--exploitable-path", "nottrueorfalse"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --exploitable-path flag", err.Error())
+}
+
+func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sca", "--exploitable-path", "true"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "you must enable SAST scan type", err.Error())
+}
+
+func TestScanCreateExploitablePath(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--exploitable-path", "true", "--last-sast-scan-time", "1", "--debug")
+}
