@@ -515,6 +515,7 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.PojecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
@@ -576,6 +577,7 @@ func createProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	projectPrivatePackage, _ := cmd.Flags().GetBool(commonParams.PojecPrivatePackageFlag)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
@@ -583,6 +585,7 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
+	projModel.PrivatePackage = projectPrivatePackage
 	projModel.Tags = createTagMap(projectTags)
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
@@ -603,12 +606,18 @@ func updateProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	if projectGroups == "" && projectTags == "" {
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.PojecPrivatePackageFlag)
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
-
 	var projModel = wrappers.Project{}
+	if strings.EqualFold(projectPrivatePackage, "true") {
+		projModel.PrivatePackage = true
+	}
+	if strings.EqualFold(projectPrivatePackage, "false") {
+		projModel.PrivatePackage = false
+	}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)

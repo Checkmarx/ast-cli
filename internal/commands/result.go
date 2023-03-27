@@ -62,10 +62,11 @@ const (
 		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
-	delayValueForPdfReport        = 150
-	reportNameScanReport          = "scan-report"
-	reportTypeEmail               = "email"
-	defaultPdfOptionsDataSections = "ScanSummary,ExecutiveSummary,ScanResults"
+	delayValueForPdfReport               = 150
+	reportNameScanReport                 = "scan-report"
+	reportTypeEmail                      = "email"
+	defaultPdfOptionsDataSections        = "ScanSummary,ExecutiveSummary,ScanResults"
+	projectPrivatePackageFlagDescription = "Enable or disable project private pacakge. Available options: true,false"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(

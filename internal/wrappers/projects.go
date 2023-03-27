@@ -5,13 +5,14 @@ import (
 )
 
 type Project struct {
-	Name       string            `json:"name,omitempty"`
-	RepoURL    string            `json:"repoUrl,omitempty"`
-	MainBranch string            `json:"mainBranch,omitempty"`
-	Origin     string            `json:"origin,omitempty"`
-	ScmRepoID  string            `json:"scmRepoId,omitempty"`
-	Tags       map[string]string `json:"tags,omitempty"`
-	Groups     []string          `json:"groups,omitempty"`
+	Name           string            `json:"name,omitempty"`
+	RepoURL        string            `json:"repoUrl,omitempty"`
+	MainBranch     string            `json:"mainBranch,omitempty"`
+	Origin         string            `json:"origin,omitempty"`
+	ScmRepoID      string            `json:"scmRepoId,omitempty"`
+	Tags           map[string]string `json:"tags,omitempty"`
+	Groups         []string          `json:"groups,omitempty"`
+	PrivatePackage bool              `json:"privatePackage,omitempty"`
 }
 
 type ProjectsCollectionResponseModel struct {
