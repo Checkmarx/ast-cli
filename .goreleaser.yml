@@ -110,7 +110,7 @@ blobs:
   - provider: s3
     region: "{{ .Env.S3_BUCKET_REGION }}"
     bucket: "{{ .Env.S3_BUCKET_NAME }}"
-    folder: releases
+    folder: "{{ .Tag }}"
     ids:
       - cx
       - cx-mac-universal
