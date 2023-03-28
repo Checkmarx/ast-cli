@@ -461,3 +461,19 @@ func TestScanCreateExploitablePath(t *testing.T) {
 	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--exploitable-path", "true", "--last-sast-scan-time", "1", "--debug")
 }
+
+func TestScanCreateProjectPrivatePackage(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--project-private-package", "true", "--debug")
+}
+
+func TestScanCreateProjectPrivatePackageWrongValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--project-private-package", "nottrueorfalse"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --project-private-package flag", err.Error())
+}
+
+func TestScanCreateScaPrivatePackageVersion(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--sca-private-package-version", "1.0.0", "--debug")
+}

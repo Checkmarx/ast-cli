@@ -1104,3 +1104,38 @@ func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Invalid value for --last-sast-scan-time flag")
 }
+
+func TestCreateScanProjectPrivatePackage(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "kics",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ProjecPrivatePackageFlag), "true",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "kics",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.ProjecPrivatePackageFlag), "nottrueorfalse",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Invalid value for --project-private-package flag")
+}
