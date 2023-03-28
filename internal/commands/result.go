@@ -68,7 +68,7 @@ const (
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
-	projectPrivatePackageFlagDescription    = "Enable or disable project private pacakge. Available options: true,false"
+	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 )
 

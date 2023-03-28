@@ -85,6 +85,8 @@ const (
 	configLanguageMode              = "languageMode"
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
+	trueString                      = "true"
+	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
@@ -615,10 +617,10 @@ func updateProject(
 		return projectID, nil
 	}
 	var projModel = wrappers.Project{}
-	if strings.EqualFold(projectPrivatePackage, "true") {
+	if strings.EqualFold(projectPrivatePackage, trueString) {
 		projModel.PrivatePackage = true
 	}
-	if strings.EqualFold(projectPrivatePackage, "false") {
+	if strings.EqualFold(projectPrivatePackage, falseString) {
 		projModel.PrivatePackage = false
 	}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
@@ -2028,7 +2030,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		origin = name + " " + version
 	}
 
-	if strings.EqualFold("true", scan.SastIncremental) {
+	if strings.EqualFold(trueString, scan.SastIncremental) {
 		scanType = "Incremental"
 	} else {
 		scanType = "Full"
@@ -2247,10 +2249,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			"you must enable SAST scan type.")
 	}
 	if exploitablePath != "" {
-		if exploitablePath != "true" && exploitablePath != "false" {
+		if exploitablePath != trueString && exploitablePath != falseString {
 			return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
 		}
-		cmd.Flags().Set(commonParams.ExploitablePathFlag, exploitablePath)
+		err := cmd.Flags().Set(commonParams.ExploitablePathFlag, exploitablePath)
+		if err != nil {
+			return errors.Errorf("Failed to set --exploitable-path flag: %v", err)
+		}
 	}
 	if lastSastScanTime != "" {
 		lsst, err := strconv.Atoi(lastSastScanTime)
@@ -2259,7 +2264,7 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		}
 	}
 
-	if projectPrivatePackage != "true" && projectPrivatePackage != "false" && projectPrivatePackage != "" {
+	if projectPrivatePackage != trueString && projectPrivatePackage != falseString && projectPrivatePackage != "" {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
