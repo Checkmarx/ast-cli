@@ -582,7 +582,7 @@ func createProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetBool(commonParams.ProjecPrivatePackageFlag)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
@@ -590,7 +590,9 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
-	projModel.PrivatePackage = projectPrivatePackage
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
+	}
 	projModel.Tags = createTagMap(projectTags)
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
@@ -617,11 +619,8 @@ func updateProject(
 		return projectID, nil
 	}
 	var projModel = wrappers.Project{}
-	if strings.EqualFold(projectPrivatePackage, trueString) {
-		projModel.PrivatePackage = true
-	}
-	if strings.EqualFold(projectPrivatePackage, falseString) {
-		projModel.PrivatePackage = false
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
@@ -870,7 +869,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		scaConfig.LastSastScanTime = strings.ToLower(scaConfig.LastSastScanTime)
+		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -2240,21 +2239,16 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	exploitablePath = strings.ToLower(exploitablePath)
-	projectPrivatePackage = strings.ToLower(projectPrivatePackage)
 	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
 		(exploitablePath != "" || lastSastScanTime != "") {
 		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
 	if exploitablePath != "" {
-		if exploitablePath != trueString && exploitablePath != falseString {
-			return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
-		}
-		err := cmd.Flags().Set(commonParams.ExploitablePathFlag, exploitablePath)
+		_, err := strconv.ParseBool(exploitablePath)
 		if err != nil {
-			return errors.Errorf("Failed to set --exploitable-path flag: %v", err)
+			return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
 		}
 	}
 	if lastSastScanTime != "" {
@@ -2263,9 +2257,12 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
 		}
 	}
-
-	if projectPrivatePackage != trueString && projectPrivatePackage != falseString && projectPrivatePackage != "" {
-		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	if projectPrivatePackage != "" {
+		_, err := strconv.ParseBool(projectPrivatePackage)
+		if err != nil {
+			return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+		}
 	}
 
 	return nil
