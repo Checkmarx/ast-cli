@@ -517,7 +517,8 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.PojecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
@@ -579,7 +580,7 @@ func createProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetBool(commonParams.PojecPrivatePackageFlag)
+	projectPrivatePackage, _ := cmd.Flags().GetBool(commonParams.ProjecPrivatePackageFlag)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
@@ -608,7 +609,7 @@ func updateProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.PojecPrivatePackageFlag)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
@@ -866,7 +867,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
-		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
+		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
 		scaConfig.LastSastScanTime = strings.ToLower(scaConfig.LastSastScanTime)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
@@ -2237,13 +2238,19 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	exploitablePath = strings.ToLower(exploitablePath)
+	projectPrivatePackage = strings.ToLower(projectPrivatePackage)
 	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
 		(exploitablePath != "" || lastSastScanTime != "") {
 		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
-	if !strings.EqualFold(exploitablePath, "true") && !strings.EqualFold(exploitablePath, "false") && exploitablePath != "" {
-		return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+	if exploitablePath != "" {
+		if exploitablePath != "true" && exploitablePath != "false" {
+			return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+		}
+		cmd.Flags().Set(commonParams.ExploitablePathFlag, exploitablePath)
 	}
 	if lastSastScanTime != "" {
 		lsst, err := strconv.Atoi(lastSastScanTime)
@@ -2251,5 +2258,10 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
 		}
 	}
+
+	if projectPrivatePackage != "true" && projectPrivatePackage != "false" && projectPrivatePackage != "" {
+		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	}
+
 	return nil
 }

@@ -62,14 +62,14 @@ const (
 		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
-	delayValueForPdfReport        = 150
-	reportNameScanReport          = "scan-report"
-	reportTypeEmail               = "email"
-	defaultPdfOptionsDataSections = "ScanSummary,ExecutiveSummary,ScanResults"
-	exploitablePathFlagDescription = "Enable or disable exploitable path in scan. Available options: true,false"
-	scaLastScanTimeFlagDescription = "SCA last scan time. Available options: integer above 1"
-	projectPrivatePackageFlagDescription = "Enable or disable project private pacakge. Available options: true,false"
-
+	delayValueForPdfReport                  = 150
+	reportNameScanReport                    = "scan-report"
+	reportTypeEmail                         = "email"
+	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
+	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
+	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
+	projectPrivatePackageFlagDescription    = "Enable or disable project private pacakge. Available options: true,false"
+	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
