@@ -269,14 +269,10 @@ func collectPageBitBucket(
 		}
 		commitHolder := BitBucketRootCommit{}
 		err = json.Unmarshal(marshal, &commitHolder)
-		if err != nil {
+		if err != nil || len(commitHolder.Commits) == 0 || !verifyDate(commitHolder.Commits[len(commitHolder.Commits)-1]) {
 			return -1, err
 		}
-		if !verifyDate(commitHolder.Commits[len(commitHolder.Commits)-1]) {
-			return -1, nil
-		}
 	}
-
 	return currentPage, nil
 }
 
