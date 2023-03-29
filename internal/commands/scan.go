@@ -86,6 +86,7 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	trueString                      = "true"
+	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
@@ -2271,7 +2272,7 @@ func validateBooleanString(value string) error {
 		return nil
 	}
 	lowedValue := strings.ToLower(value)
-	if lowedValue != "true" && lowedValue != "false" {
+	if lowedValue != trueString && lowedValue != falseString {
 		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
