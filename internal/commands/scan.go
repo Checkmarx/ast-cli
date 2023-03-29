@@ -2253,8 +2253,8 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 
 	if lastSastScanTime != "" {
-		lsst, err := strconv.Atoi(lastSastScanTime)
-		if err != nil || lsst <= 0 {
+		lsst, sastErr := strconv.Atoi(lastSastScanTime)
+		if sastErr != nil || lsst <= 0 {
 			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
 		}
 	}
