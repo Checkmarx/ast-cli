@@ -865,10 +865,12 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
-		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
+		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		if scaConfig.ExploitablePath != "" {
+			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
+		}
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -2244,12 +2246,11 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
-	if exploitablePath != "" {
-		_, err := strconv.ParseBool(exploitablePath)
-		if err != nil {
-			return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
-		}
+	err := validateBooleanString(exploitablePath)
+	if err != nil {
+		return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
 	}
+
 	if lastSastScanTime != "" {
 		lsst, err := strconv.Atoi(lastSastScanTime)
 		if err != nil || lsst <= 0 {
@@ -2257,12 +2258,21 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		}
 	}
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	if projectPrivatePackage != "" {
-		_, err := strconv.ParseBool(projectPrivatePackage)
-		if err != nil {
-			return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
-		}
+	err = validateBooleanString(projectPrivatePackage)
+	if err != nil {
+		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
+	return nil
+}
+
+func validateBooleanString(value string) error {
+	if value == "" {
+		return nil
+	}
+	lowedValue := strings.ToLower(value)
+	if lowedValue != "true" && lowedValue != "false" {
+		return errors.Errorf("Invalid value. The value must be true or false.")
+	}
 	return nil
 }
