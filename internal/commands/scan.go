@@ -2244,18 +2244,18 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	exploitablePath = strings.ToLower(exploitablePath)
 	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
 		(exploitablePath != "" || lastSastScanTime != "") {
-		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
+		return errors.Errorf("Please to use either --sca-exploitable-path or --sca-last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
 	err := validateBooleanString(exploitablePath)
 	if err != nil {
-		return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+		return errors.Errorf("Invalid value for --sca-exploitable-path flag. The value must be true or false.")
 	}
 
 	if lastSastScanTime != "" {
 		lsst, sastErr := strconv.Atoi(lastSastScanTime)
 		if sastErr != nil || lsst <= 0 {
-			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
+			return errors.Errorf("Invalid value for --sca-last-sast-scan-time flag. The value must be a positive integer.")
 		}
 	}
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
