@@ -126,8 +126,8 @@ const (
 	IacsPlatformsFlag        = "iac-security-platforms"
 	IacsPlatformsFlagUsage   = "IaC Security Platform Flag"
 	ApikeyOverrideFlag       = "apikey-override"
-	ExploitablePathFlag      = "exploitable-path"
-	LastSastScanTime         = "last-sast-scan-time"
+	ExploitablePathFlag      = "sca-exploitable-path"
+	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
