@@ -3,7 +3,7 @@ name: AST Cli Release
 on:
   push:
     tags:
-      - "*"
+      - "2.0.[0-9]+"
 
 permissions:
   id-token: write
