@@ -869,7 +869,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
-		if scaConfig.ExploitablePath != "" {
+		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
 		}
 		for _, config := range resubmitConfig {
