@@ -126,6 +126,8 @@ var BaseFilters = []string{
 	"dock*",
 	"*.dart",
 	"*.plist",
+	"go.mod",
+	"go.sum",
 }
 
 var KicsBaseFilters = []string{
