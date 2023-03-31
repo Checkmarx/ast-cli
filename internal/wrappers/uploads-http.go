@@ -1,9 +1,7 @@
 package wrappers
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -40,12 +38,6 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 		_ = file.Close()
 	}()
 
-	// read all of the contents of our uploaded file into a
-	// byte array
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, errors.Errorf("Failed to read file %s: %s", sourcesFile, err.Error())
-	}
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return nil, err
@@ -54,7 +46,12 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed to unmarshal pre-signed URL - %s", err.Error())
 	}
-	resp, err := SendHTTPRequestByFullURL(http.MethodPut, *preSignedURL, bytes.NewReader(fileBytes), true, NoTimeout, accessToken, true)
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, errors.Errorf("Failed to stat file %s: %s", sourcesFile, err.Error())
+	}
+	resp, err := SendHTTPRequestByFullURLContentLength(http.MethodPut, *preSignedURL, file, stat.Size(), true, NoTimeout, accessToken, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
@@ -78,7 +75,9 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 		return nil, errors.Errorf("invoking HTTP request to get pre-signed URL failed - %s", err.Error())
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	decoder := json.NewDecoder(resp.Body)
 

@@ -44,9 +44,10 @@ func PrintfIfVerbose(msg string, args ...interface{}) {
 
 func PrintRequest(r *http.Request) {
 	PrintIfVerbose("Sending API request to:")
-	requestDump, err := httputil.DumpRequest(r, true)
+	requestDump, err := httputil.DumpRequest(r, r.ContentLength < 1000000) // 1mb
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	PrintIfVerbose(string(requestDump))
 }
