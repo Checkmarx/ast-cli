@@ -481,7 +481,7 @@ func TestScanCreateScaPrivatePackageVersion(t *testing.T) {
 		"--sca-private-package-version", "1.0.0", "--debug")
 }
 func TestAddScaScan(t *testing.T) {
-	resubmitConfig := []wrappers.Config{}
+	var resubmitConfig []wrappers.Config
 
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
@@ -512,5 +512,74 @@ func TestAddScaScan(t *testing.T) {
 
 	if !reflect.DeepEqual(result, scaMapConfig) {
 		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
+	}
+}
+
+func TestAddSastScan(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:  "test",
+		Filter:      "test",
+		Incremental: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+
+}
+
+func TestAddKicsScan(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.KicsFilterFlag, "", "Filter for KICS scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IacsPlatformsFlag, false, "IaC platforms")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.KicsFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "true")
+
+	result := addKicsScan(cmdCommand, resubmitConfig)
+
+	kicsConfig := wrappers.KicsConfig{
+		Filter: "test",
+	}
+	kicsMapConfig := make(map[string]interface{})
+	kicsMapConfig[resultsMapType] = commonParams.KicsType
+
+	kicsMapConfig[resultsMapValue] = &kicsConfig
+
+	if !reflect.DeepEqual(result, kicsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", kicsMapConfig, result)
 	}
 }
