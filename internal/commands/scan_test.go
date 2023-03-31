@@ -549,7 +549,6 @@ func TestAddSastScan(t *testing.T) {
 	if !reflect.DeepEqual(result, sastMapConfig) {
 		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
 	}
-
 }
 
 func TestAddKicsScan(t *testing.T) {
