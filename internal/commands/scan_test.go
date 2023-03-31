@@ -7,9 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -476,4 +479,38 @@ func TestScanCreateProjectPrivatePackageWrongValue(t *testing.T) {
 func TestScanCreateScaPrivatePackageVersion(t *testing.T) {
 	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--sca-private-package-version", "1.0.0", "--debug")
+}
+func TestAddScaScan(t *testing.T) {
+	resubmitConfig := []wrappers.Config{}
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.ScaFilterFlag, "", "Filter for SCA scan")
+	cmdCommand.PersistentFlags().String(commonParams.LastSastScanTime, "", "Last SAST scan time")
+	cmdCommand.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", "Private package version")
+	cmdCommand.PersistentFlags().String(commonParams.ExploitablePathFlag, "", "Exploitable path")
+
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.ScaFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.LastSastScanTime, "1")
+	_ = cmdCommand.Flags().Set(commonParams.ScaPrivatePackageVersionFlag, "1.1.1")
+	_ = cmdCommand.Flags().Set(commonParams.ExploitablePathFlag, "true")
+
+	result := addScaScan(cmdCommand, resubmitConfig)
+	scaConfig := wrappers.ScaConfig{
+		Filter:                "test",
+		ExploitablePath:       "true",
+		LastSastScanTime:      "1",
+		PrivatePackageVersion: "1.1.1",
+	}
+	scaMapConfig := make(map[string]interface{})
+	scaMapConfig[resultsMapType] = commonParams.ScaType
+	scaMapConfig[resultsMapValue] = &scaConfig
+
+	if !reflect.DeepEqual(result, scaMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
+	}
 }
