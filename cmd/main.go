@@ -25,6 +25,7 @@ const (
 
 func main() {
 	var err error
+	bindProxy()
 	bindKeysToEnvAndDefault()
 	configuration.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
@@ -115,6 +116,18 @@ func bindKeysToEnvAndDefault() {
 			exitIfError(err)
 		}
 		viper.SetDefault(b.Key, b.Default)
+	}
+}
+
+func bindProxy() {
+	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
+	if err != nil {
+		exitIfError(err)
+	}
+	viper.SetDefault(params.ProxyKey, "")
+	err = os.Setenv(params.ProxyEnv, viper.GetString(params.ProxyKey))
+	if err != nil {
+		exitIfError(err)
 	}
 }
 

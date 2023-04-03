@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -39,8 +40,21 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 	}
 }
 
+func bindProxy(t *testing.T) {
+	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	viper.SetDefault(params.ProxyKey, "")
+	err = os.Setenv("HTTP_PROXY", viper.GetString(params.ProxyKey))
+	if err != nil {
+		assert.NilError(t, err)
+	}
+}
+
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
