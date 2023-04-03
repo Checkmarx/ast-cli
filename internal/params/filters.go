@@ -124,6 +124,10 @@ var BaseFilters = []string{
 	"composer.lock",
 	"Dockerfile*",
 	"dock*",
+	"*.dart",
+	"*.plist",
+	"go.mod",
+	"go.sum",
 }
 
 var KicsBaseFilters = []string{
