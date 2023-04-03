@@ -2,6 +2,7 @@ name: Checkmarx One CLI
 
 on:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   unit-tests:
