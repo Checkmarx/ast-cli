@@ -2,10 +2,6 @@ name: Checkmarx One CLI
 
 on:
   pull_request:
-  workflow_dispatch:
-  push:
-    branches:
-      - cx-http-proxy
 
 jobs:
   unit-tests:
