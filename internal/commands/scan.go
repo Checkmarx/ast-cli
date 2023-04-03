@@ -85,6 +85,8 @@ const (
 	configLanguageMode              = "languageMode"
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
+	trueString                      = "true"
+	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
@@ -517,6 +519,8 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
@@ -578,6 +582,7 @@ func createProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
@@ -585,6 +590,9 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
+	}
 	projModel.Tags = createTagMap(projectTags)
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
@@ -605,12 +613,15 @@ func updateProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	if projectGroups == "" && projectTags == "" {
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
-
 	var projModel = wrappers.Project{}
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
+	}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
@@ -855,10 +866,12 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
-		scaConfig.ExploitablePath, _ = cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
-		scaConfig.ExploitablePath = strings.ToLower(scaConfig.ExploitablePath)
-		scaConfig.LastSastScanTime = strings.ToLower(scaConfig.LastSastScanTime)
+		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
+		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		if exploitablePath != "" {
+			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
+		}
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -2018,7 +2031,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		origin = name + " " + version
 	}
 
-	if strings.EqualFold("true", scan.SastIncremental) {
+	if strings.EqualFold(trueString, scan.SastIncremental) {
 		scanType = "Incremental"
 	} else {
 		scanType = "Full"
@@ -2228,19 +2241,39 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
+	exploitablePath = strings.ToLower(exploitablePath)
 	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
 		(exploitablePath != "" || lastSastScanTime != "") {
-		return errors.Errorf("Please to use either --exploitable-path or --last-sast-scan-time flags in SCA, " +
+		return errors.Errorf("Please to use either --sca-exploitable-path or --sca-last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
-	if !strings.EqualFold(exploitablePath, "true") && !strings.EqualFold(exploitablePath, "false") && exploitablePath != "" {
-		return errors.Errorf("Invalid value for --exploitable-path flag. The value must be true or false.")
+	err := validateBooleanString(exploitablePath)
+	if err != nil {
+		return errors.Errorf("Invalid value for --sca-exploitable-path flag. The value must be true or false.")
 	}
+
 	if lastSastScanTime != "" {
-		lsst, err := strconv.Atoi(lastSastScanTime)
-		if err != nil || lsst <= 0 {
-			return errors.Errorf("Invalid value for --last-sast-scan-time flag. The value must be a positive integer.")
+		lsst, sastErr := strconv.Atoi(lastSastScanTime)
+		if sastErr != nil || lsst <= 0 {
+			return errors.Errorf("Invalid value for --sca-last-sast-scan-time flag. The value must be a positive integer.")
 		}
+	}
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	err = validateBooleanString(projectPrivatePackage)
+	if err != nil {
+		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	}
+
+	return nil
+}
+
+func validateBooleanString(value string) error {
+	if value == "" {
+		return nil
+	}
+	lowedValue := strings.ToLower(value)
+	if lowedValue != trueString && lowedValue != falseString {
+		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
 }
