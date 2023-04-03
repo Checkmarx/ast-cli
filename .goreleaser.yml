@@ -107,6 +107,9 @@ brews:
       owner: checkmarx
       name: homebrew-ast-cli
       token: "{{ .Env.GO_BOT_TOKEN }}"
+    ids:
+      - cx
+      - cx-mac-universal
     folder: Formula
     homepage: https://github.com/Checkmarx/ast-cli
     description: CLI for Checkmarx One
