@@ -171,9 +171,24 @@ func SendHTTPRequestByFullURL(
 	accessToken string,
 	bodyPrint bool,
 ) (*http.Response, error) {
+	return SendHTTPRequestByFullURLContentLength(method, fullURL, body, -1, auth, timeout, accessToken, bodyPrint)
+}
+
+func SendHTTPRequestByFullURLContentLength(
+	method, fullURL string,
+	body io.Reader,
+	contentLength int64,
+	auth bool,
+	timeout uint,
+	accessToken string,
+	bodyPrint bool,
+) (*http.Response, error) {
 	req, err := http.NewRequest(method, fullURL, body)
 	if err != nil {
 		return nil, err
+	}
+	if contentLength >= 0 {
+		req.ContentLength = contentLength
 	}
 	client := GetClient(timeout)
 	setAgentName(req)
@@ -225,10 +240,7 @@ func addReqMonitor(req *http.Request) *http.Request {
 	return req
 }
 
-func SendHTTPRequestPasswordAuth(
-	method, path string, body io.Reader, timeout uint,
-	username, password, adminClientID, adminClientSecret string,
-) (*http.Response, error) {
+func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
 	u, err := getAuthURI()
 	if err != nil {
 		return nil, err
@@ -252,12 +264,6 @@ func SendHTTPRequestPasswordAuth(
 		return nil, err
 	}
 	return resp, nil
-}
-
-func GetCleanURL(path string) string {
-	cleanURL := strings.TrimSpace(viper.GetString(commonParams.BaseURIKey))
-	cleanURL = strings.Trim(cleanURL, "/")
-	return fmt.Sprintf("%s/%s", cleanURL, path)
 }
 
 func SendPrivateHTTPRequestWithQueryParams(
