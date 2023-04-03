@@ -27,7 +27,7 @@ func (s ScaRealTimeHTTPWrapper) GetScaVulnerabilitiesPackages(scaRequest []ScaDe
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequestByFullURL(http.MethodPost, s.scaVulnerabilitiesPackagesURL, bytes.NewReader(jsonBytes), false, clientTimeout, "")
+	resp, err := SendHTTPRequestByFullURL(http.MethodPost, s.scaVulnerabilitiesPackagesURL, bytes.NewReader(jsonBytes), false, clientTimeout, "", true)
 	if err != nil {
 		return nil, nil, errors.Errorf("Invoking HTTP request to get sca vulnerabilities failed - %s", err.Error())
 	}

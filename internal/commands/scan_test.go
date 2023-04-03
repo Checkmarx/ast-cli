@@ -7,9 +7,12 @@ import (
 	"strings"
 	"testing"
 
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -413,7 +416,7 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
-	want[" kics - low"] = 1
+	want["iac-security-low"] = 1
 	threshold := " KICS - LoW=1"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
@@ -438,4 +441,144 @@ func TestCreateScanProjecGroupsError(t *testing.T) {
 		"--debug", "--project-groups", "err"}
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
+}
+func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-last-sast-scan-time", "notaniteger"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --sca-last-sast-scan-time flag", err.Error())
+}
+
+func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "nottrueorfalse"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --sca-exploitable-path flag", err.Error())
+}
+
+func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sca", "--sca-exploitable-path", "true"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "you must enable SAST scan type", err.Error())
+}
+
+func TestScanCreateExploitablePath(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "1", "--debug")
+}
+
+func TestScanCreateProjectPrivatePackage(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--project-private-package", "true", "--debug")
+}
+
+func TestScanCreateProjectPrivatePackageWrongValue(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--project-private-package", "nottrueorfalse"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Invalid value for --project-private-package flag", err.Error())
+}
+
+func TestScanCreateScaPrivatePackageVersion(t *testing.T) {
+	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--sca-private-package-version", "1.0.0", "--debug")
+}
+func TestAddScaScan(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.ScaFilterFlag, "", "Filter for SCA scan")
+	cmdCommand.PersistentFlags().String(commonParams.LastSastScanTime, "", "Last SAST scan time")
+	cmdCommand.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", "Private package version")
+	cmdCommand.PersistentFlags().String(commonParams.ExploitablePathFlag, "", "Exploitable path")
+
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.ScaFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.LastSastScanTime, "1")
+	_ = cmdCommand.Flags().Set(commonParams.ScaPrivatePackageVersionFlag, "1.1.1")
+	_ = cmdCommand.Flags().Set(commonParams.ExploitablePathFlag, "true")
+
+	result := addScaScan(cmdCommand, resubmitConfig)
+	scaConfig := wrappers.ScaConfig{
+		Filter:                "test",
+		ExploitablePath:       "true",
+		LastSastScanTime:      "1",
+		PrivatePackageVersion: "1.1.1",
+	}
+	scaMapConfig := make(map[string]interface{})
+	scaMapConfig[resultsMapType] = commonParams.ScaType
+	scaMapConfig[resultsMapValue] = &scaConfig
+
+	if !reflect.DeepEqual(result, scaMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
+	}
+}
+
+func TestAddSastScan(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:  "test",
+		Filter:      "test",
+		Incremental: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+}
+
+func TestAddKicsScan(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.KicsFilterFlag, "", "Filter for KICS scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IacsPlatformsFlag, false, "IaC platforms")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.KicsFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "true")
+
+	result := addKicsScan(cmdCommand, resubmitConfig)
+
+	kicsConfig := wrappers.KicsConfig{
+		Filter: "test",
+	}
+	kicsMapConfig := make(map[string]interface{})
+	kicsMapConfig[resultsMapType] = commonParams.KicsType
+
+	kicsMapConfig[resultsMapValue] = &kicsConfig
+
+	if !reflect.DeepEqual(result, kicsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", kicsMapConfig, result)
+	}
 }

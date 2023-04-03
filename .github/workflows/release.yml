@@ -3,7 +3,11 @@ name: AST Cli Release
 on:
   push:
     tags:
-      - "*"
+      - "2.0.[0-9]+"
+
+permissions:
+  id-token: write
+  contents: write
 
 jobs:
   build:
@@ -53,6 +57,11 @@ jobs:
       - name: Clean
         run: |
           rm default.profraw
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
@@ -61,6 +70,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
 
   notify:
     runs-on: ubuntu-latest

@@ -62,10 +62,14 @@ const (
 		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
-	delayValueForPdfReport        = 150
-	reportNameScanReport          = "scan-report"
-	reportTypeEmail               = "email"
-	defaultPdfOptionsDataSections = "ScanSummary,ExecutiveSummary,ScanResults"
+	delayValueForPdfReport                  = 150
+	reportNameScanReport                    = "scan-report"
+	reportTypeEmail                         = "email"
+	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
+	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
+	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
+	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
+	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -337,6 +341,7 @@ func SummaryReport(
 	}
 
 	summary.BaseURI = baseURI
+	summary.BaseURI = generateScanSummaryURL(summary)
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -375,28 +380,26 @@ func SummaryReport(
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
-	if contains(summary.EnginesEnabled, engineType) {
-		if engineType == commonParams.SastType && result.State != notExploitable {
+	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
+		if engineType == commonParams.SastType {
 			summary.SastIssues++
 			summary.TotalIssues++
 		} else if engineType == commonParams.ScaType {
 			summary.ScaIssues++
 			summary.TotalIssues++
-		} else if engineType == commonParams.KicsType && result.State != notExploitable {
+		} else if engineType == commonParams.KicsType {
 			summary.KicsIssues++
 			summary.TotalIssues++
 		}
 		severity := strings.ToLower(result.Severity)
-		if result.State != notExploitable {
-			if severity == highLabel {
-				summary.HighIssues++
-			} else if severity == lowLabel {
-				summary.LowIssues++
-			} else if severity == mediumLabel {
-				summary.MediumIssues++
-			} else if severity == infoLabel {
-				summary.InfoIssues++
-			}
+		if severity == highLabel {
+			summary.HighIssues++
+		} else if severity == lowLabel {
+			summary.LowIssues++
+		} else if severity == mediumLabel {
+			summary.MediumIssues++
+		} else if severity == infoLabel {
+			summary.InfoIssues++
 		}
 	}
 }
@@ -480,10 +483,11 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
 		fmt.Printf("              -----------------------------------     \n")
-		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", generateScanSummaryURL(summary))
+		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
-		fmt.Printf("For more information: %s", summary.BaseURI)
+
+		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
 }

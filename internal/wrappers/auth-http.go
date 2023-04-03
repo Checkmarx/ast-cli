@@ -41,10 +41,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(
 	createClientPath = strings.Replace(createClientPath, "organization", tenant, 1)
 	a.SetPath(createClientPath)
 	// send the request
-	res, err := SendHTTPRequestPasswordAuth(
-		http.MethodPost, a.path, bytes.NewBuffer(jsonBytes), clientTimeout,
-		username, password, adminClientID, adminClientSecret,
-	)
+	res, err := SendHTTPRequestPasswordAuth(http.MethodPost, bytes.NewBuffer(jsonBytes), clientTimeout, username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err
 	}

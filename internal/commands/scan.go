@@ -35,16 +35,18 @@ import (
 )
 
 const (
-	failedCreating                  = "Failed creating a scan"
-	failedGetting                   = "Failed showing a scan"
-	failedGettingTags               = "Failed getting tags"
-	failedDeleting                  = "Failed deleting a scan"
-	failedCanceling                 = "Failed canceling a scan"
-	failedGettingAll                = "Failed listing"
-	thresholdLog                    = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog                 = "Threshold check finished with status %s : %s"
-	mbBytes                         = 1024.0 * 1024.0
-	notExploitable                  = "NOT_EXPLOITABLE"
+	failedCreating    = "Failed creating a scan"
+	failedGetting     = "Failed showing a scan"
+	failedGettingTags = "Failed getting tags"
+	failedDeleting    = "Failed deleting a scan"
+	failedCanceling   = "Failed canceling a scan"
+	failedGettingAll  = "Failed listing"
+	thresholdLog      = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog   = "Threshold check finished with status %s : %s"
+	mbBytes           = 1024.0 * 1024.0
+	notExploitable    = "NOT_EXPLOITABLE"
+	ignored           = "IGNORED"
+
 	git                             = "git"
 	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 	errorUnzippingFile              = "an error occurred while unzipping file. Reason: "
@@ -83,6 +85,8 @@ const (
 	configLanguageMode              = "languageMode"
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
+	trueString                      = "true"
+	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
@@ -513,6 +517,10 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
@@ -523,7 +531,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.Threshold,
 		"",
-		"Local build threshold. Format <engine>-<severity>=<limit>",
+		commonParams.ThresholdFlagUsage,
 	)
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.ScanResubmit,
@@ -574,6 +582,7 @@ func createProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err
@@ -581,6 +590,9 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
+	}
 	projModel.Tags = createTagMap(projectTags)
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
@@ -601,12 +613,15 @@ func updateProject(
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	if projectGroups == "" && projectTags == "" {
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
-
 	var projModel = wrappers.Project{}
+	if projectPrivatePackage != "" {
+		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
+	}
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
@@ -851,6 +866,12 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
+		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
+		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
+		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+		if exploitablePath != "" {
+			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
+		}
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.ScaType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -1229,7 +1250,6 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	if zipFilePathErr != nil {
 		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 	}
-	logger.PrintIfVerbose(fmt.Sprintf("Uploaded file to %s\n", *preSignedURL))
 	if unzip || !userProvidedZip {
 		return *preSignedURL, zipFilePath, zipFilePathErr
 	}
@@ -1348,9 +1368,13 @@ func runCreateScanCommand(
 	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		branch := viper.GetString(commonParams.BranchKey)
-		if branch == "" {
-			return errors.Errorf("%s: Please provide a branch", failedCreating)
+		err := validateScanTypes(cmd, jwtWrapper)
+		if err != nil {
+			return err
+		}
+		err = validateCreateScanFlags(cmd)
+		if err != nil {
+			return err
 		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
@@ -1362,7 +1386,6 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
-			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1437,16 +1460,11 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
-	err := validateScanTypes(cmd, jwtWrapper)
-	if err != nil {
-		return nil, "", err
-	}
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err = setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1670,7 +1688,8 @@ func applyThreshold(
 func parseThreshold(threshold string) map[string]int {
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
-		thresholdLimits := strings.Split(threshold, ";")
+		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
+		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
 			limit := strings.Split(limits, "=")
 			engineName := limit[0]
@@ -1680,7 +1699,7 @@ func parseThreshold(threshold string) map[string]int {
 				if err != nil {
 					log.Println("Error parsing threshold limit: ", err)
 				} else {
-					thresholdMap[strings.ToLower(engineName)] = intLimit
+					thresholdMap[engineName] = intLimit
 				}
 			}
 		}
@@ -1699,12 +1718,16 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	}
 	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
-		if !strings.EqualFold(result.State, notExploitable) {
+		if isExploitable(result.State) {
 			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
 	}
 	return summaryMap, nil
+}
+
+func isExploitable(state string) bool {
+	return !strings.EqualFold(state, notExploitable) && !strings.EqualFold(state, ignored)
 }
 
 func waitForScanCompletion(
@@ -2008,7 +2031,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		origin = name + " " + version
 	}
 
-	if strings.EqualFold("true", scan.SastIncremental) {
+	if strings.EqualFold(trueString, scan.SastIncremental) {
 		scanType = "Incremental"
 	} else {
 		scanType = "Full"
@@ -2209,4 +2232,48 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
 	}
 	return flagValue
+}
+
+func validateCreateScanFlags(cmd *cobra.Command) error {
+	branch := viper.GetString(commonParams.BranchKey)
+	if branch == "" {
+		return errors.Errorf("%s: Please provide a branch", failedCreating)
+	}
+	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
+	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
+	exploitablePath = strings.ToLower(exploitablePath)
+	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
+		(exploitablePath != "" || lastSastScanTime != "") {
+		return errors.Errorf("Please to use either --sca-exploitable-path or --sca-last-sast-scan-time flags in SCA, " +
+			"you must enable SAST scan type.")
+	}
+	err := validateBooleanString(exploitablePath)
+	if err != nil {
+		return errors.Errorf("Invalid value for --sca-exploitable-path flag. The value must be true or false.")
+	}
+
+	if lastSastScanTime != "" {
+		lsst, sastErr := strconv.Atoi(lastSastScanTime)
+		if sastErr != nil || lsst <= 0 {
+			return errors.Errorf("Invalid value for --sca-last-sast-scan-time flag. The value must be a positive integer.")
+		}
+	}
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	err = validateBooleanString(projectPrivatePackage)
+	if err != nil {
+		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	}
+
+	return nil
+}
+
+func validateBooleanString(value string) error {
+	if value == "" {
+		return nil
+	}
+	lowedValue := strings.ToLower(value)
+	if lowedValue != trueString && lowedValue != falseString {
+		return errors.Errorf("Invalid value. The value must be true or false.")
+	}
+	return nil
 }

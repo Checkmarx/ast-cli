@@ -68,6 +68,18 @@ archives:
       386: x32
     files:
       - LICENSE
+  - id: cx-latest
+    builds:
+      - cx
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
   - id: cx-mac-universal
     builds:
       - cx-mac-universal
@@ -75,6 +87,13 @@ archives:
       - LICENSE
       - ./dist/cx-mac-universal_darwin_all/cx.dmg
     name_template: "{{ .ProjectName }}_{{ .Version }}_darwin_x64"
+  - id: cx-mac-universal-latest
+    builds:
+      - cx-mac-universal
+    files:
+      - LICENSE
+      - ./dist/cx-mac-universal_darwin_all/cx.dmg
+    name_template: "{{ .ProjectName }}_darwin_x64"
 
 universal_binaries:
   - id: cx-mac-universal
@@ -105,6 +124,22 @@ brews:
       # Install fish completion
       output = Utils.popen_read("#{bin}/cx utils completion -s fish")
       (fish_completion/"cx.fish").write output
+
+blobs:
+  - provider: s3
+    region: "{{ .Env.S3_BUCKET_REGION }}"
+    bucket: "{{ .Env.S3_BUCKET_NAME }}"
+    folder: "{{ .Tag }}"
+    ids:
+      - cx
+      - cx-mac-universal
+  - provider: s3
+    region: "{{ .Env.S3_BUCKET_REGION }}"
+    bucket: "{{ .Env.S3_BUCKET_NAME }}"
+    folder: "latest"
+    ids:
+      - cx-latest
+      - cx-mac-universal-latest
 
 changelog:
   use: github-native
