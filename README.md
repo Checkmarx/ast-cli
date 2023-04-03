@@ -57,6 +57,13 @@ Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-6
 ## Releases
 For the latest CLI release, please locate your platform download [here](https://github.com/Checkmarx/ast-cli/releases).
 
+You can also use the relevant link to download the latest version of the CLI:
+* [Windows x64](https://download.checkmarx.com/CxOne/CLI/latest/ast-cli_windows_x64.zip)
+* [MacOS x64](https://download.checkmarx.com/CxOne/CLI/latest/ast-cli_darwin_x64.tar.gz)
+* [Linux x64](https://download.checkmarx.com/CxOne/CLI/latest/ast-cli_linux_x64.tar.gz)
+* [Linux ARMv6](https://download.checkmarx.com/CxOne/CLI/latest/ast-cli_linux_armv6.tar.gz)
+* [Linux ARM64](https://download.checkmarx.com/CxOne/CLI/latest/ast-cli_linux_arm64.tar.gz)
+
 ## Compile
 
 To be able to build the code you should have:
