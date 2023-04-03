@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const ContentLengthLimit = 1000000 // 1mb in bytes
+
 var sanitizeFlags = []string{
 	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
 	params.UsernameFlag, params.PasswordFlag,
@@ -44,9 +46,10 @@ func PrintfIfVerbose(msg string, args ...interface{}) {
 
 func PrintRequest(r *http.Request) {
 	PrintIfVerbose("Sending API request to:")
-	requestDump, err := httputil.DumpRequest(r, true)
+	requestDump, err := httputil.DumpRequest(r, r.ContentLength < ContentLengthLimit)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	PrintIfVerbose(string(requestDump))
 }
