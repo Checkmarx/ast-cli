@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -167,6 +168,34 @@ func TestFailProxyAuth(t *testing.T) {
 	assert.Assert(t, err != nil, "Executing without proxy should fail")
 	//goland:noinspection GoNilness
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
+}
+
+func TestFailProxyAuthByEnv(t *testing.T) {
+	proxyValue := os.Getenv(params.ProxyEnv)
+	defer func() {
+		_ = os.Setenv(params.ProxyEnv, proxyValue)
+	}()
+	_ = os.Setenv(params.ProxyEnv, buildProxyURL())
+
+	validate := createASTIntegrationTestCommand(t)
+	args := []string{"auth", "validate", flag(params.DebugFlag)}
+	validate.SetArgs(args)
+	err := validate.Execute()
+	assert.NilError(t, err)
+
+	proxyValue = os.Getenv(params.CxProxyEnv)
+	defer func() {
+		_ = os.Setenv(params.CxProxyEnv, proxyValue)
+	}()
+	_ = os.Setenv(params.CxProxyEnv, "http://localhost:55555")
+
+	viper.Reset()
+
+	validate = createASTIntegrationTestCommand(t)
+	args = append(args, flag(params.RetryFlag), string(rune(0)))
+	validate.SetArgs(args)
+	err = validate.Execute()
+	assert.Assert(t, err != nil)
 }
 
 // assert success authentication

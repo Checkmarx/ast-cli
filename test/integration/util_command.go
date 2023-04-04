@@ -46,7 +46,7 @@ func bindProxy(t *testing.T) {
 		assert.NilError(t, err)
 	}
 	viper.SetDefault(params.ProxyKey, "")
-	err = os.Setenv("HTTP_PROXY", viper.GetString(params.ProxyKey))
+	err = os.Setenv(params.ProxyEnv, viper.GetString(params.ProxyKey))
 	if err != nil {
 		assert.NilError(t, err)
 	}
@@ -198,13 +198,18 @@ func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...strin
 }
 
 func appendProxyArgs(args []string) []string {
+	argsWithProxy := append(args, flag(params.ProxyFlag))
+	argsWithProxy = append(argsWithProxy, buildProxyURL())
+	return argsWithProxy
+}
+
+func buildProxyURL() string {
 	proxyUser := viper.GetString(ProxyUserEnv)
 	proxyPw := viper.GetString(ProxyPwEnv)
 	proxyPort := viper.GetInt(ProxyPortEnv)
 	proxyHost := viper.GetString(ProxyHostEnv)
-	argsWithProxy := append(args, flag(params.ProxyFlag))
-	argsWithProxy = append(argsWithProxy, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
-	return argsWithProxy
+	proxyURL := fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort)
+	return proxyURL
 }
 
 // Assert error with expected message
