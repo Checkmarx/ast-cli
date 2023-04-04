@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -39,8 +40,21 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 	}
 }
 
+func bindProxy(t *testing.T) {
+	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
+	if err != nil {
+		assert.NilError(t, err)
+	}
+	viper.SetDefault(params.ProxyKey, "")
+	err = os.Setenv(params.ProxyEnv, viper.GetString(params.ProxyKey))
+	if err != nil {
+		assert.NilError(t, err)
+	}
+}
+
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
@@ -184,13 +198,18 @@ func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...strin
 }
 
 func appendProxyArgs(args []string) []string {
+	argsWithProxy := append(args, flag(params.ProxyFlag))
+	argsWithProxy = append(argsWithProxy, buildProxyURL())
+	return argsWithProxy
+}
+
+func buildProxyURL() string {
 	proxyUser := viper.GetString(ProxyUserEnv)
 	proxyPw := viper.GetString(ProxyPwEnv)
 	proxyPort := viper.GetInt(ProxyPortEnv)
 	proxyHost := viper.GetString(ProxyHostEnv)
-	argsWithProxy := append(args, flag(params.ProxyFlag))
-	argsWithProxy = append(argsWithProxy, fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort))
-	return argsWithProxy
+	proxyURL := fmt.Sprintf(ProxyURLTmpl, proxyUser, proxyPw, proxyHost, proxyPort)
+	return proxyURL
 }
 
 // Assert error with expected message
