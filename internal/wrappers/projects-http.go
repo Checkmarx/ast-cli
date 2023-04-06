@@ -124,6 +124,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 	var request = "/branches?project-id=" + projectID
 
+	params["limit"] = limitValue
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
 
 	if err != nil {
