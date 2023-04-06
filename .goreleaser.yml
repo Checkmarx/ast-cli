@@ -1,7 +1,8 @@
 project_name: ast-cli
 
 release:
-  name_template: "Checkmarx One CLI {{.Version}}"
+  prerelease: '{{- eq .Env.DEV_BUILD "true" }}'
+  name_template: 'Checkmarx One CLI {{- if eq .Env.DEV_BUILD "true" }} Dev{{- end }} {{.Version}}'
 
 builds:
   - main: ./cmd/main.go
@@ -50,11 +51,18 @@ builds:
 dockers:
   - use: docker
     dockerfile: Dockerfile
+    skip_push: '{{- eq .Env.DEV_BUILD "true" }}'
     image_templates:
       - "cxsdlc/ast-cli:latest"
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
+  - use: docker
+    dockerfile: Dockerfile
+    skip_push: '{{- eq .Env.DEV_BUILD "false" }}'
+    image_templates:
+      - "cxsdlc/ast-cli-dev:{{ .Tag }}"
+      - "checkmarx/ast-cli-dev:{{ .Tag }}"
 
 archives:
   - id: cx
@@ -107,6 +115,7 @@ brews:
       owner: checkmarx
       name: homebrew-ast-cli
       token: "{{ .Env.GO_BOT_TOKEN }}"
+    skip_upload: '{{- eq .Env.DEV_BUILD "true" }}'
     ids:
       - cx
       - cx-mac-universal
@@ -137,6 +146,7 @@ blobs:
       - cx
       - cx-mac-universal
   - provider: s3
+    disable: '{{- eq .Env.DEV_BUILD "true" }}'
     region: "{{ .Env.S3_BUCKET_REGION }}"
     bucket: "{{ .Env.S3_BUCKET_NAME }}"
     folder: "CxOne/CLI/latest"
