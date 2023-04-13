@@ -121,3 +121,4 @@ jobs:
         with:
           version: v1.52.2
           args: -c .golangci.yml
+          only-new-issues: true
