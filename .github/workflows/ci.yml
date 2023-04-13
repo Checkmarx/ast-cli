@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.4
       - name: Set up Go 1.17.x
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17.x
       - name: Setup git
@@ -121,4 +121,3 @@ jobs:
         with:
           version: v1.28.1
           args: -c .golangci.yml
-          skip-go-installation: true
