@@ -79,6 +79,7 @@ jobs:
           git tag -a "${tag}" -m "${message}"
           git push origin "${tag}"
       - name: Run GoReleaser
+        if: github.event.inputs.dev == 'false'
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
@@ -88,7 +89,17 @@ jobs:
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
-          DEV_BUILD: ${{ github.event.inputs.dev }}
+      - name: Run GoReleaser Dev Build
+        if: github.event.inputs.dev == 'true'
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          version: latest
+          args: release --rm-dist --debug --config=".goreleaser-dev.yml"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
 
   notify:
     runs-on: ubuntu-latest

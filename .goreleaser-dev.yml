@@ -1,0 +1,88 @@
+project_name: ast-cli
+
+release:
+  prerelease: true
+  name_template: 'Checkmarx One CLI {{.Version}}'
+
+builds:
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx
+    id: cx
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarm: 7
+      - goos: windows
+        goarm: 7
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx
+    id: cx-mac-universal
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
+archives:
+  - id: cx
+    builds:
+      - cx
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
+    files:
+      - LICENSE
+  - id: cx-mac-universal
+    builds:
+      - cx-mac-universal
+    files:
+      - LICENSE
+      - ./dist/cx-mac-universal_darwin_all/cx.dmg
+    name_template: "{{ .ProjectName }}_{{ .Version }}_darwin_x64"
+
+universal_binaries:
+  - id: cx-mac-universal
+    replace: true
+    name_template: "cx"
+    hooks:
+      post: gon gonMac.hcl
+
+blobs:
+  - provider: s3
+    region: "{{ .Env.S3_BUCKET_REGION }}"
+    bucket: "{{ .Env.S3_BUCKET_NAME }}"
+    folder: "CxOne/CLI/{{ .Tag }}"
+    ids:
+      - cx
+      - cx-mac-universal
+
+changelog:
+  use: github-native
