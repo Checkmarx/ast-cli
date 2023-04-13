@@ -92,9 +92,10 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
+    if: github.event.inputs.dev == 'false'
     needs: build
     steps:
-      - name: Get latest relase notes
+      - name: Get latest release notes
         id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
