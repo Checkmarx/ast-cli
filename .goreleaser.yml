@@ -59,7 +59,7 @@ dockers:
       - "checkmarx/ast-cli:{{ .Tag }}"
   - use: docker
     dockerfile: Dockerfile
-    skip_push: '{{- eq .Env.DEV_BUILD "false" }}'
+    skip_push: true
     image_templates:
       - "cxsdlc/ast-cli-dev:{{ .Tag }}"
       - "checkmarx/ast-cli-dev:{{ .Tag }}"
