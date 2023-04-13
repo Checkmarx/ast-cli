@@ -51,7 +51,7 @@ builds:
 dockers:
   - use: docker
     dockerfile: Dockerfile
-    skip_push: '{{- eq .Env.DEV_BUILD "true" }}'
+    skip_push: true
     image_templates:
       - "cxsdlc/ast-cli:latest"
       - "cxsdlc/ast-cli:{{ .Tag }}"
