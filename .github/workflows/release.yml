@@ -60,15 +60,19 @@ jobs:
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
       - name: Install and start docker
+        if: ${{ inputs.dev }} == false
         uses: docker-practice/actions-setup-docker@master
       - name: Cleanup docker installation
+        if: ${{ inputs.dev }} == false
         run: |
           rm docker.rb
       - name: Test docker
+        if: ${{ inputs.dev }} == false
         run: |
           docker version
           docker info
       - name: Login to Docker Hub
+        if: ${{ inputs.dev }} == false
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -111,7 +115,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    if: github.event.inputs.dev == 'false'
+    if: ${{ inputs.dev }} == false
     needs: build
     steps:
       - name: Get latest release notes
