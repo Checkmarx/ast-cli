@@ -91,23 +91,18 @@ jobs:
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -a "${tag}" -m "${message}"
           git push origin "${tag}"
+      - name: Build GoReleaser Args
+        run: |
+          args='release --clean --debug'
+          if [ "${{ inputs.var }}" = true ]; then
+            args=${args}+' --config=".goreleaser-dev.yml"'
+          fi
+          echo "GR_ARGS=${args}" >> $GITHUB_ENV
       - name: Run GoReleaser
-        if: inputs.dev == false
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --clean --debug
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
-      - name: Run GoReleaser Dev Build
-        if: inputs.dev == true
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          version: latest
-          args: release --clean --debug --config=".goreleaser-dev.yml"
+          args: release --clean --debug ${{ env.GR_ARGS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
