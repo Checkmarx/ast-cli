@@ -78,6 +78,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Clean
+        if: inputs.dev == false
         run: |
           rm default.profraw
       - name: Configure AWS Credentials
