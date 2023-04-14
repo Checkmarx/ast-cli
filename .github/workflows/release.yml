@@ -1,15 +1,28 @@
 name: AST Cli Release
 
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Next release tag'
+        required: true
+        type: string
+      dev:
+        description: 'Is dev build'
+        required: false
+        default: true
+        type: boolean
   workflow_dispatch:
     inputs:
       tag:
         description: 'Next release tag'
         required: true
+        type: string
       dev:
         description: 'Is dev build'
         required: false
         default: true
+        type: boolean
 
 permissions:
   id-token: write
@@ -70,31 +83,31 @@ jobs:
           aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
       - name: Tag
         run: |
-          echo ${{ github.event.inputs.tag }}
-          echo "NEXT_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
-          tag=${{ github.event.inputs.tag }}
-          message='${{ github.event.inputs.tag }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
+          echo ${{ inputs.tag }}
+          echo "NEXT_VERSION=${{ inputs.tag }}" >> $GITHUB_ENV
+          tag=${{ inputs.tag }}
+          message='${{ inputs.tag }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -a "${tag}" -m "${message}"
           git push origin "${tag}"
       - name: Run GoReleaser
-        if: github.event.inputs.dev == 'false'
+        if: inputs.dev == false
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --rm-dist --debug
+          args: release --clean --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
       - name: Run GoReleaser Dev Build
-        if: github.event.inputs.dev == 'true'
+        if: inputs.dev == true
         uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
-          args: release --rm-dist --debug --config=".goreleaser-dev.yml"
+          args: release --clean --debug --config=".goreleaser-dev.yml"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
