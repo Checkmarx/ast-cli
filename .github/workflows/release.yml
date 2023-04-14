@@ -103,6 +103,8 @@ jobs:
             args=${args}+' --config=".goreleaser-dev.yml"'
           fi
           echo "GR_ARGS=${args}" >> $GITHUB_ENV
+      - name: Echo GoReleaser Args
+        run: echo ${{ env.GR_ARGS }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
