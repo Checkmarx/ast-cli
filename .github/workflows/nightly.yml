@@ -25,3 +25,4 @@ jobs:
     uses: Checkmarx/ast-cli/.github/workflows/release.yml@main
     with:
       tag: "2.0.0-nightly"
+    secrets: inherit
