@@ -99,7 +99,7 @@ jobs:
       - name: Build GoReleaser Args
         run: |
           args='release --clean --debug'
-          if [ ${{ inputs.var }} = true ]; then
+          if [ ${{ inputs.dev }} = true ]; then
             args=${args}' --config=\".goreleaser-dev.yml\"'
           fi
           echo "GR_ARGS=${args}" >> $GITHUB_ENV
