@@ -1,5 +1,17 @@
 package wrappers
 
+type ScaRealtimeScanResultsCollection struct {
+	Results    []ScanResult           `json:"results"`
+	Errors     []ScaRealtimeScanError `json:"errors"`
+	TotalCount uint                   `json:"totalCount"`
+	ScanID     string                 `json:"scanID"`
+}
+
+type ScaRealtimeScanError struct {
+	Filename string `json:"filename"`
+	Message  string `json:"message"`
+}
+
 type ScanResultsCollection struct {
 	Results    []*ScanResult `json:"results"`
 	TotalCount uint          `json:"totalCount"`
