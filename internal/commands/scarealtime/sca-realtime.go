@@ -21,6 +21,7 @@ import (
 
 var ScaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
 
+const scaResolverFailedStatus = "failedtoresolve"
 const scaResolverProjectName = "cx-cli-sca-realtime-project"
 const bitSize = 32
 
@@ -186,7 +187,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 		}
 
 		// Check resolution status
-		if strings.EqualFold(dependencyResolutionResult.DependencyResolverStatus, "failedtoresolve") {
+		if strings.EqualFold(dependencyResolutionResult.DependencyResolverStatus, scaResolverFailedStatus) {
 			scaRealtimeScanErrors = append(scaRealtimeScanErrors, wrappers.ScaRealtimeScanError{
 				Filename: dependencyResolutionResult.PackageManagerFile,
 				Message:  dependencyResolutionResult.Message,
