@@ -21,6 +21,7 @@ import (
 
 var ScaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
 
+const scaResolverFailedStatus = "failedtoresolve"
 const scaResolverProjectName = "cx-cli-sca-realtime-project"
 const bitSize = 32
 
@@ -126,6 +127,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	}
 
 	var modelResults []wrappers.ScaVulnerabilitiesResponseModel
+	var scaRealtimeScanErrors []wrappers.ScaRealtimeScanError
 
 	for _, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
 		// We're using a map to avoid adding repeated packages in request body
@@ -154,9 +156,11 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 		for _, value := range dependencyMap {
 			bodyRequest = append(bodyRequest, value)
 		}
-		var errorModel, errVulnerabilities error
+
 		var vulnerabilitiesResponseModel []wrappers.ScaVulnerabilitiesResponseModel
 		for len(bodyRequest) > 0 {
+			var errorModel, errVulnerabilities error
+
 			// Add pagination to avoid SCA limitation in requests length
 			if len(bodyRequest) >= 50 { //nolint:gomnd
 				first50 := bodyRequest[:50]
@@ -181,10 +185,18 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 				modelResults = append(modelResults, vulnerability)
 			}
 		}
+
+		// Check resolution status
+		if strings.EqualFold(dependencyResolutionResult.DependencyResolverStatus, scaResolverFailedStatus) {
+			scaRealtimeScanErrors = append(scaRealtimeScanErrors, wrappers.ScaRealtimeScanError{
+				Filename: dependencyResolutionResult.PackageManagerFile,
+				Message:  dependencyResolutionResult.Message,
+			})
+		}
 	}
 
 	// Convert SCA Results to Scan Results to make it easier to display it in IDEs
-	err = convertToScanResults(modelResults)
+	err = convertToScanResults(modelResults, scaRealtimeScanErrors)
 	if err != nil {
 		return err
 	}
@@ -206,14 +218,14 @@ func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrappe
 }
 
 // convertToScanResults Convert SCA Results to Scan Results to make it easier to display it in IDEs
-func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error {
-	var results []*wrappers.ScanResult
+func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel, resolutionErrors []wrappers.ScaRealtimeScanError) error {
+	var results []wrappers.ScanResult
 
 	for _, packageData := range data {
 		for _, vulnerability := range packageData.Vulnerabilities {
 			score, _ := strconv.ParseFloat(vulnerability.Cvss3.BaseScore, bitSize)
 
-			results = append(results, &wrappers.ScanResult{
+			results = append(results, wrappers.ScanResult{
 				Type:        vulnerability.Type,
 				ScaType:     "vulnerability",
 				Label:       commonParams.ScaType,
@@ -249,8 +261,9 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel) error
 		}
 	}
 
-	resultsCollection := wrappers.ScanResultsCollection{
+	resultsCollection := wrappers.ScaRealtimeScanResultsCollection{
 		Results:    results,
+		Errors:     resolutionErrors,
 		TotalCount: uint(len(results)),
 	}
 
