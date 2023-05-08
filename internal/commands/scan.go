@@ -2144,11 +2144,16 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
 	out, err := exec.Command(kicsCmd, kicsRunArgs...).CombinedOutput()
 	logger.PrintIfVerbose(string(out))
+	var resultsModel wrappers.KicsResultsCollection
 	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
 	definitely an incorrect behavior but the following check gets past it.
 	*/
 	if err == nil {
 		// no results
+		errs = printKicsResults(resultsModel)
+		if errs != nil {
+			return errors.Errorf("%s", errs)
+		}
 		return nil
 	}
 
@@ -2157,17 +2162,14 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
 
 		if contains(kicsErrorCodes, extractedErrorCode) {
-			var resultsModel wrappers.KicsResultsCollection
 			resultsModel, errs = readKicsResultsFile(tempDir)
 			if errs != nil {
 				return errors.Errorf("%s", errs)
 			}
-			var resultsJSON []byte
-			resultsJSON, errs = json.Marshal(resultsModel)
+			errs = printKicsResults(resultsModel)
 			if errs != nil {
 				return errors.Errorf("%s", errs)
 			}
-			fmt.Println(string(resultsJSON))
 			return nil
 		}
 		exitError, hasExistError := err.(*exec.ExitError)
@@ -2188,6 +2190,16 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 	}
 
+	return nil
+}
+
+func printKicsResults(resultsModel wrappers.KicsResultsCollection) error {
+	var resultsJSON []byte
+	resultsJSON, errs := json.Marshal(resultsModel)
+	if errs != nil {
+		return errors.Errorf("%s", errs)
+	}
+	fmt.Println(string(resultsJSON))
 	return nil
 }
 
