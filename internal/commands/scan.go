@@ -2150,7 +2150,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	*/
 	if err == nil {
 		// no results
-		errs = printKicsResults(resultsModel)
+		errs = printKicsResults(&resultsModel)
 		if errs != nil {
 			return errors.Errorf("%s", errs)
 		}
@@ -2166,7 +2166,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 			if errs != nil {
 				return errors.Errorf("%s", errs)
 			}
-			errs = printKicsResults(resultsModel)
+			errs = printKicsResults(&resultsModel)
 			if errs != nil {
 				return errors.Errorf("%s", errs)
 			}
@@ -2193,7 +2193,7 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	return nil
 }
 
-func printKicsResults(resultsModel wrappers.KicsResultsCollection) error {
+func printKicsResults(resultsModel *wrappers.KicsResultsCollection) error {
 	var resultsJSON []byte
 	resultsJSON, errs := json.Marshal(resultsModel)
 	if errs != nil {
