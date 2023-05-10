@@ -59,6 +59,7 @@ func PrintResponse(r *http.Response, body bool) {
 	requestDump, err := httputil.DumpResponse(r, body)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 	PrintIfVerbose(string(requestDump))
 }
