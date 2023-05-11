@@ -75,7 +75,7 @@ func (b HTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPas
 
 		for _, commit := range pageHolder.Commits {
 			timestamp := time.UnixMilli(commit.AuthorTimestamp)
-			if !timestamp.Before(ninetyDaysPast) {
+			if timestamp.After(ninetyDaysPast) {
 				acc = append(acc, commit)
 			} else {
 				break
