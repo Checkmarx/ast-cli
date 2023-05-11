@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -18,6 +19,15 @@ type HTTPWrapper struct {
 	client *http.Client
 }
 
+type ErrorModel struct {
+	Context string `json:"context,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+type ErrorResponseModel struct {
+	Errors []ErrorModel `json:"errors,omitempty"`
+}
+
 const (
 	bitBucketServerProjectsURL  = "rest/api/1.0/projects/"
 	bitBucketServerReposURL     = "rest/api/1.0/projects/%s/repos/"
@@ -26,8 +36,13 @@ const (
 	bitBucketServerPageStart    = "start"
 	bitBucketServerPageLimit    = "limit"
 	bitBucketServerAuthError    = "failed Bitbucket Server authentication"
-	bitBucketServerNotFound     = "resource not found: %s"
+	bitBucketServerNotFound     = "%s, skipping: %s"
 	bitBucketServerBearerFormat = "Bearer %s"
+)
+
+var (
+	ErrNotFound    = errors.New("resource not found")
+	ninetyDaysPast = time.Now().AddDate(0, -3, 0)
 )
 
 func NewBitbucketServerWrapper() Wrapper {
@@ -52,10 +67,20 @@ func (b HTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPas
 
 		err := getBitBucketServer(b.client, bitBucketPassword, url, &pageHolder, queryParams)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				break
+			}
 			return nil, err
 		}
 
-		acc = append(acc, pageHolder.Commits...)
+		for _, commit := range pageHolder.Commits {
+			timestamp := time.UnixMilli(commit.AuthorTimestamp)
+			if timestamp.After(ninetyDaysPast) {
+				acc = append(acc, commit)
+			} else {
+				break
+			}
+		}
 	}
 
 	return acc, nil
@@ -162,8 +187,15 @@ func getBitBucketServer(
 		err = errors.New(bitBucketServerAuthError)
 		return err
 	case http.StatusNotFound:
-		err = fmt.Errorf(bitBucketServerNotFound, url)
-		return err
+		errorResponse := ErrorResponseModel{}
+		err = json.NewDecoder(resp.Body).Decode(&errorResponse)
+		if err != nil {
+			return err
+		}
+		for _, errorModel := range errorResponse.Errors {
+			logger.Printf(bitBucketServerNotFound, errorModel.Message, url)
+		}
+		return ErrNotFound
 		// Case the commit/project does not exist in the organization
 	default:
 		body, err := io.ReadAll(resp.Body)
