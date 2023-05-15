@@ -62,6 +62,7 @@ const (
 		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
+	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	delayValueForPdfReport                  = 150
 	reportNameScanReport                    = "scan-report"
 	reportTypeEmail                         = "email"
@@ -109,6 +110,7 @@ var sonarSeverities = map[string]string{
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
@@ -125,7 +127,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper, risksOverviewWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -137,6 +139,7 @@ func NewResultsCommand(
 func resultShowSubCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) *cobra.Command {
@@ -149,7 +152,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper, risksOverviewWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -159,10 +162,12 @@ func resultShowSubCommand(
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
+		printer.FormaSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, "", sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -511,6 +516,7 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) func(cmd *cobra.Command, args []string) error {
@@ -520,6 +526,7 @@ func runGetResultCommand(
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
+		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
@@ -530,11 +537,13 @@ func runGetResultCommand(
 			resultsWrapper,
 			risksOverviewWrapper,
 			scanWrapper,
+			resultsSbomWrapper,
 			resultsPdfReportsWrapper,
 			scanID,
 			format,
 			formatPdfToEmail,
 			formatPdfOptions,
+			formatSbomOptions,
 			targetFile,
 			targetPath,
 			params)
@@ -585,11 +594,13 @@ func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
+	formatSbomOptions,
 	targetFile,
 	targetPath string,
 	params map[string]string,
@@ -621,7 +632,7 @@ func CreateScanReport(
 
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, targetFile, targetPath, results, summary, resultsPdfReportsWrapper)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper)
 		if err != nil {
 			return err
 		}
@@ -678,6 +689,7 @@ func createReport(
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 
 ) error {
@@ -718,6 +730,12 @@ func createReport(
 		summaryRpt := createTargetName(targetFile, targetPath, "md")
 		convertNotAvailableNumberToZero(summary)
 		return writeMarkdownSummary(summaryRpt, summary)
+	}
+	if printer.IsFormat(format, printer.FormaSbom) {
+		summaryRpt := createTargetName(targetFile, targetPath, "sbom")
+		convertNotAvailableNumberToZero(summary)
+		// TODO (il): exportSbomResults function is not implemented yet
+		return exportSbomResults(summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
@@ -869,6 +887,9 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
+func exportSbomResults(targetFile string, results *wrappers.ResultSummary) error {
+	return nil
+}
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	poolingResp := &wrappers.PdfPoolingResponse{}
