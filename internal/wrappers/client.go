@@ -339,6 +339,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	req, err := http.NewRequest(method, fullURL, body)
 	client := GetClient(timeout)
 	setAgentName(req)
+	req.Header.Del("content-type")
 	req.Header.Add("Content-Type", "application/json")
 	if err != nil {
 		return nil, err

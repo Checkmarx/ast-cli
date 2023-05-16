@@ -735,7 +735,7 @@ func createReport(
 		summaryRpt := createTargetName(targetFile, targetPath, "sbom")
 		convertNotAvailableNumberToZero(summary)
 		// TODO (il): exportSbomResults function is not implemented yet
-		return exportSbomResults(summaryRpt, summary)
+		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
@@ -887,7 +887,16 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(targetFile string, results *wrappers.ResultSummary) error {
+func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary) error {
+	payload := &wrappers.SbomReportsPayload{
+		ScanId:     results.ScanID,
+		FileFormat: "CycloneDxJson",
+	}
+
+	_, _, err := sbomWrapper.GenerateSbomReport(payload)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {

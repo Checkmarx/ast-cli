@@ -44,7 +44,8 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
+	//resp, err:= SendHTTPRequestByFullURL(http.MethodPost, "https://api-sca.checkmarx.net/export/requests", bytes.NewBuffer(params), true, clientTimeout, token, true)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
