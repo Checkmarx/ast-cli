@@ -149,6 +149,10 @@ const (
 	RepoNameFlagUsage  = "Github repository details"
 	PRNumberFlag       = "pr-number"
 	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
+
+	ConversationIdFlag = "conversation-id"
+	GptToken           = "gpt-token"
+	MessageFlag        = "message"
 )
 
 // Parameter values

@@ -65,6 +65,7 @@ func main() {
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
+	kicsGptWrapper := wrappers.NewKicsGptWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -89,6 +90,7 @@ func main() {
 		tenantConfigurationWrapper,
 		jwtWrapper,
 		scaRealTimeWrapper,
+		kicsGptWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
