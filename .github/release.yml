@@ -15,10 +15,9 @@ changelog:
       labels:
         - feature
         - features
-    - title: Dependencies Updates 🛠
-      labels:
-        - dependencies
-        - dependency
     - title: Other Changes
       labels:
         - "*"
+      exclude:
+        labels:
+          - dependencies
