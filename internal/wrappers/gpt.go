@@ -46,5 +46,5 @@ type ChatGPTResponse struct {
 }
 
 type KicsGptWrapper interface {
-	SendToChatGPT(conversation *Conversation) (string, error)
+	SendToChatGPT(conversation *Conversation, token string) (string, error)
 }

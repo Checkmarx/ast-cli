@@ -44,6 +44,7 @@ func RunKicsChat(kicsGptWrapper wrappers.KicsGptWrapper) func(*cobra.Command, []
 	return func(cmd *cobra.Command, _ []string) error {
 		conversationID, _ := cmd.Flags().GetString(params.ConversationIdFlag)
 		userMessage, _ := cmd.Flags().GetString(params.MessageFlag)
+		token, _ := cmd.Flags().GetString(params.GptToken)
 
 		if conversationID == "" {
 			// Generate conversation ID if not provided
@@ -64,7 +65,7 @@ func RunKicsChat(kicsGptWrapper wrappers.KicsGptWrapper) func(*cobra.Command, []
 		})
 
 		// Send conversation to ChatGPT and get response
-		response, err := kicsGptWrapper.SendToChatGPT(conv)
+		response, err := kicsGptWrapper.SendToChatGPT(conv, token)
 		if err != nil {
 			return err
 		}

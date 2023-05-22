@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 )
@@ -21,7 +22,7 @@ func NewKicsGptWrapper() KicsGptWrapper {
 	}
 }
 
-func (g *KicsHTTPGptWrapper) SendToChatGPT(conv *Conversation) (string, error) {
+func (g *KicsHTTPGptWrapper) SendToChatGPT(conv *Conversation, token string) (string, error) {
 	// Convert conversation to ChatGPT input format
 	var requestBody RequestBody
 	requestBody.Model = "gpt-3.5-turbo"
@@ -37,13 +38,13 @@ func (g *KicsHTTPGptWrapper) SendToChatGPT(conv *Conversation) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	logger.PrintIfVerbose(fmt.Sprintf("Response: %s", jsonData))
 
 	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	token := viper.GetString(params.GptToken)
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	resp, err := http.DefaultClient.Do(req)
@@ -57,6 +58,7 @@ func (g *KicsHTTPGptWrapper) SendToChatGPT(conv *Conversation) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	logger.PrintIfVerbose(fmt.Sprintf("Response: %s", bodyBytes))
 
 	// Parse ChatGPT response
 	var chatGPTResp ChatGPTResponse
