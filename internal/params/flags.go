@@ -193,6 +193,7 @@ const (
 	APISecurityLabel = "API Security"
 	ScaType          = "sca"
 	APISecType       = "apisec"
+	MicroEngineType  = "micro-engine"
 )
 
 // ScaAgent AST Role

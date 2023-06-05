@@ -168,6 +168,8 @@ func NewScanCommand(
 
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
+	microEnginesCmd := scanMicroEnginesSubCommand()
+
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
@@ -188,8 +190,24 @@ func NewScanCommand(
 		logsCmd,
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
+		microEnginesCmd,
 	)
 	return scanCmd
+}
+
+func scanMicroEnginesSubCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "micro-engines",
+		Short: "Manage micro-engines",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Micro-engines command executed")
+			// TODO: Implement the logic for the micro-engines command
+		},
+	}
+
+	// Define any flags or subcommands for the micro-engines command here
+
+	return cmd
 }
 
 func scanRealtimeSubCommand() *cobra.Command {
@@ -764,6 +782,11 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+
+	var microEngineConfig = addMicroEngineScan()
+	if microEngineConfig != nil {
+		configArr = append(configArr, microEngineConfig)
+	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
@@ -891,6 +914,15 @@ func addAPISecScan() map[string]interface{} {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecMapConfig["type"] = commonParams.APISecType
 		return apiSecMapConfig
+	}
+	return nil
+}
+
+func addMicroEngineScan() map[string]interface{} {
+	if scanTypeEnabled(commonParams.MicroEngineType) {
+		microEngineMapConfig := make(map[string]interface{})
+		microEngineMapConfig["type"] = commonParams.MicroEngineType
+		return microEngineMapConfig
 	}
 	return nil
 }
@@ -1186,7 +1218,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	err error,
 ) {
 	var preSignedURL string
-
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 
@@ -1376,6 +1407,9 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+
+		//correr o ME
+
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
@@ -1387,6 +1421,7 @@ func runCreateScanCommand(
 			groupsWrapper,
 			scansWrapper,
 		)
+
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1492,7 +1527,7 @@ func createScanModel(
 	if uploadType == "git" {
 		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	}
-
+	log.Println(zipFilePath)
 	return &scanModel, zipFilePath, nil
 }
 
