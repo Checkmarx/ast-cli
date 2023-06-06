@@ -63,12 +63,14 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 			return nil, nil, errors.Wrapf(err, "failed to parse response body")
 		}
 		return &model, nil, nil
+	case http.StatusBadRequest:
+		return nil, nil, errors.Errorf("report format unsupported for current tenant")
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func (r *SbomHTTPWrapper) CheckSbomReportStatus(reportID string) (*SbomPoolingResponse, *WebError, error) {
+func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPoolingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, "requests")
 	params := map[string]string{"returnUrl": "true", "exportId": reportID}

@@ -518,7 +518,7 @@ func scanCreateSubCommand(
 		printer.FormatJSON,
 		printer.FormatSummary,
 		printer.FormatSarif,
-		printer.FormaSbom,
+		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
@@ -527,7 +527,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, "", sbomReportFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")

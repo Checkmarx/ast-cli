@@ -277,3 +277,28 @@ func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
 	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
 }
+
+func TestSBOMReportInvalidSBOMOption(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "sbom",
+		"--scan-id", "MOCK",
+		"--report-sbom-format", "invalid")
+	assert.Equal(t, err.Error(), "invalid SBOM option: invalid", "Wrong expected error message")
+}
+
+func TestSBOMReportJson(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+}
+
+func TestSBOMReportXML(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+}

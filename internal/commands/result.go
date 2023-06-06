@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"log"
 	"net/url"
 	"os"
@@ -65,10 +64,11 @@ const (
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
-	delayValueForPdfReport                  = 150
+	delayValueForReport                     = 150
 	reportNameScanReport                    = "scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
+	defaultSbomOption                       = "CycloneDxJson"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
@@ -164,12 +164,12 @@ func resultShowSubCommand(
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
 		printer.FormatSummaryJSON,
-		printer.FormaSbom,
+		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, "", sbomReportFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -734,11 +734,17 @@ func createReport(
 		convertNotAvailableNumberToZero(summary)
 		return writeMarkdownSummary(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormaSbom) {
-		summaryRpt := createTargetName(targetFile, targetPath, "sbom")
+	if printer.IsFormat(format, printer.FormatSbom) {
+		targetType := printer.FormatJSON
+		if strings.Contains(strings.ToLower(formatSbomOptions), printer.FormatXML) {
+			targetType = printer.FormatXML
+		}
+		summaryRpt := createTargetName(fmt.Sprintf("%s_%s", targetFile, printer.FormatSbom), targetPath, targetType)
 		convertNotAvailableNumberToZero(summary)
-		if summary.ScaIssues == -1 {
-			err := fmt.Errorf("you cannot generate a SBOM report without any SCA issues")
+
+		// if summary.ScaIssues == -1 {
+		if !contains(summary.EnginesEnabled, scaType) {
+			err := fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
 			return err
 		}
 		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions)
@@ -896,9 +902,9 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string) error {
 	payload := &wrappers.SbomReportsPayload{
 		ScanId:     results.ScanID,
-		FileFormat: "CycloneDxJson",
+		FileFormat: defaultSbomOption,
 	}
-	if formatSbomOptions != "" {
+	if formatSbomOptions != "" && formatSbomOptions != defaultSbomOption {
 		format, err := validateSbomOptions(formatSbomOptions)
 		if err != nil {
 			return err
@@ -915,16 +921,15 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	if weberr != nil {
 		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
 	}
-	logger.PrintfIfVerbose("Creating SBOM Report with ID: ", sbomresp.ExportId)
 
-	log.Println("Generating SBOM report")
+	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
 	poolingResp.ExportStatus = exportingStatus
 	for poolingResp.ExportStatus == exportingStatus || poolingResp.ExportStatus == pendingStatus {
-		poolingResp, weberr, err = sbomWrapper.CheckSbomReportStatus(sbomresp.ExportId)
+		poolingResp, weberr, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportId)
 		if err != nil || weberr != nil {
 			return errors.Wrapf(err, "%v", weberr)
 		}
-		time.Sleep(delayValueForPdfReport * time.Millisecond)
+		time.Sleep(delayValueForReport * time.Millisecond)
 	}
 	if strings.ToLower(poolingResp.ExportStatus) != completedStatus {
 		return errors.Errorf("SBOM generating failed - Current status: %s", poolingResp.ExportStatus)
@@ -939,7 +944,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	if weberr != nil {
 		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
 	}
-	logger.PrintfIfVerbose("SBOM Report Status: ", poolingResp.ExportId, " ID: ", poolingResp.ExportStatus)
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
@@ -989,7 +993,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
-		time.Sleep(delayValueForPdfReport * time.Millisecond)
+		time.Sleep(delayValueForReport * time.Millisecond)
 	}
 	if poolingResp.Status != completedStatus {
 		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
@@ -1002,21 +1006,16 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 }
 
 func validateSbomOptions(sbomOption string) (string, error) {
-	var sbomOptionsMap = map[string]bool{
-		"cyclonedxjson": true,
-		"cyclonedxxml":  true,
-		"spdxjson":      true,
-	}
-	var sbomOptionsString = map[string]string{
+	var sbomOptionsStringMap = map[string]string{
 		"cyclonedxjson": "CycloneDxJson",
 		"cyclonedxxml":  "CycloneDxXml",
 		"spdxjson":      "SpdxJson",
 	}
 	sbomOption = strings.ToLower(strings.ReplaceAll(sbomOption, " ", ""))
-	if sbomOptionsMap[sbomOption] {
-		return sbomOptionsString[sbomOption], nil
+	if sbomOptionsStringMap[sbomOption] != "" {
+		return sbomOptionsStringMap[sbomOption], nil
 	}
-	return "", errors.Errorf("Invalid SBOM option: %s", sbomOption)
+	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
 func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {

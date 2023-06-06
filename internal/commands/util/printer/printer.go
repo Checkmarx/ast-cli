@@ -25,7 +25,8 @@ const (
 	FormatPDF             = "pdf"
 	FormatMarkdown        = "md"
 	FormatSummaryMarkdown = "markdown"
-	FormaSbom             = "sbom"
+	FormatSbom            = "sbom"
+	FormatXML             = "xml"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
