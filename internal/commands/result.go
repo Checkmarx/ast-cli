@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"log"
 	"net/url"
 	"os"
@@ -24,40 +25,41 @@ import (
 )
 
 const (
-	failedCreatingSummary    = "Failed creating summary"
-	failedGettingScan        = "Failed getting scan"
-	failedListingResults     = "Failed listing results"
-	failedListingCodeBashing = "Failed codebashing link"
-	mediumLabel              = "medium"
-	highLabel                = "high"
-	lowLabel                 = "low"
-	infoLabel                = "info"
-	sonarTypeLabel           = "_sonar"
-	directoryPermission      = 0700
-	infoSonar                = "INFO"
-	lowSonar                 = "MINOR"
-	mediumSonar              = "MAJOR"
-	highSonar                = "CRITICAL"
-	infoLowSarif             = "note"
-	mediumSarif              = "warning"
-	highSarif                = "error"
-	vulnerabilitySonar       = "VULNERABILITY"
-	infoCx                   = "INFO"
-	lowCx                    = "LOW"
-	mediumCx                 = "MEDIUM"
-	highCx                   = "HIGH"
-	codeBashingKey           = "cb-url"
-	failedGettingBfl         = "Failed getting BFL"
-	notAvailableString       = "N/A"
-	notAvailableNumber       = -1
-	defaultPaddingSize       = -14
-	scanPendingMessage       = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
-	scaType                  = "sca"
-	directDependencyType     = "Direct Dependency"
-	indirectDependencyType   = "Transitive Dependency"
-	startedStatus            = "started"
-
+	failedCreatingSummary     = "Failed creating summary"
+	failedGettingScan         = "Failed getting scan"
+	failedListingResults      = "Failed listing results"
+	failedListingCodeBashing  = "Failed codebashing link"
+	mediumLabel               = "medium"
+	highLabel                 = "high"
+	lowLabel                  = "low"
+	infoLabel                 = "info"
+	sonarTypeLabel            = "_sonar"
+	directoryPermission       = 0700
+	infoSonar                 = "INFO"
+	lowSonar                  = "MINOR"
+	mediumSonar               = "MAJOR"
+	highSonar                 = "CRITICAL"
+	infoLowSarif              = "note"
+	mediumSarif               = "warning"
+	highSarif                 = "error"
+	vulnerabilitySonar        = "VULNERABILITY"
+	infoCx                    = "INFO"
+	lowCx                     = "LOW"
+	mediumCx                  = "MEDIUM"
+	highCx                    = "HIGH"
+	codeBashingKey            = "cb-url"
+	failedGettingBfl          = "Failed getting BFL"
+	notAvailableString        = "N/A"
+	notAvailableNumber        = -1
+	defaultPaddingSize        = -14
+	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
+	scaType                   = "sca"
+	directDependencyType      = "Direct Dependency"
+	indirectDependencyType    = "Transitive Dependency"
+	startedStatus             = "started"
 	completedStatus           = "completed"
+	exportingStatus           = "Exporting"
+	pendingStatus             = "Pending"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
@@ -632,7 +634,7 @@ func CreateScanReport(
 
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper)
 		if err != nil {
 			return err
 		}
@@ -685,6 +687,7 @@ func createReport(
 	format,
 	formatPdfToEmail,
 	formatPdfOptions,
+	formatSbomOptions,
 	targetFile,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
@@ -734,8 +737,11 @@ func createReport(
 	if printer.IsFormat(format, printer.FormaSbom) {
 		summaryRpt := createTargetName(targetFile, targetPath, "sbom")
 		convertNotAvailableNumberToZero(summary)
-		// TODO (il): exportSbomResults function is not implemented yet
-		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary)
+		if summary.ScaIssues == -1 {
+			err := fmt.Errorf("you cannot generate a SBOM report without any SCA issues")
+			return err
+		}
+		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions)
 	}
 	err := fmt.Errorf("bad report format %s", format)
 	return err
@@ -887,16 +893,53 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary) error {
+func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string) error {
 	payload := &wrappers.SbomReportsPayload{
 		ScanId:     results.ScanID,
 		FileFormat: "CycloneDxJson",
 	}
+	if formatSbomOptions != "" {
+		format, err := validateSbomOptions(formatSbomOptions)
+		if err != nil {
+			return err
+		}
+		payload.FileFormat = format
+	}
 
-	_, _, err := sbomWrapper.GenerateSbomReport(payload)
+	poolingResp := &wrappers.SbomPoolingResponse{}
+
+	sbomresp, weberr, err := sbomWrapper.GenerateSbomReport(payload)
 	if err != nil {
 		return err
 	}
+	if weberr != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
+	}
+	logger.PrintfIfVerbose("Creating SBOM Report with ID: ", sbomresp.ExportId)
+
+	log.Println("Generating SBOM report")
+	poolingResp.ExportStatus = exportingStatus
+	for poolingResp.ExportStatus == exportingStatus || poolingResp.ExportStatus == pendingStatus {
+		poolingResp, weberr, err = sbomWrapper.CheckSbomReportStatus(sbomresp.ExportId)
+		if err != nil || weberr != nil {
+			return errors.Wrapf(err, "%v", weberr)
+		}
+		time.Sleep(delayValueForPdfReport * time.Millisecond)
+	}
+	if strings.ToLower(poolingResp.ExportStatus) != completedStatus {
+		return errors.Errorf("SBOM generating failed - Current status: %s", poolingResp.ExportStatus)
+	}
+	err = sbomWrapper.DownloadSbomReport(poolingResp.ExportId, targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
+	}
+	if err != nil {
+		return err
+	}
+	if weberr != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
+	}
+	logger.PrintfIfVerbose("SBOM Report Status: ", poolingResp.ExportId, " ID: ", poolingResp.ExportStatus)
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
@@ -956,6 +999,24 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}
 	return nil
+}
+
+func validateSbomOptions(sbomOption string) (string, error) {
+	var sbomOptionsMap = map[string]bool{
+		"cyclonedxjson": true,
+		"cyclonedxxml":  true,
+		"spdxjson":      true,
+	}
+	var sbomOptionsString = map[string]string{
+		"cyclonedxjson": "CycloneDxJson",
+		"cyclonedxxml":  "CycloneDxXml",
+		"spdxjson":      "SpdxJson",
+	}
+	sbomOption = strings.ToLower(strings.ReplaceAll(sbomOption, " ", ""))
+	if sbomOptionsMap[sbomOption] {
+		return sbomOptionsString[sbomOption], nil
+	}
+	return "", errors.Errorf("Invalid SBOM option: %s", sbomOption)
 }
 
 func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {

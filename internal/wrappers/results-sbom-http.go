@@ -21,12 +21,13 @@ type SbomReportsPayload struct {
 }
 
 type SbomReportsResponse struct {
-	exportId string `json:"exportId"`
+	ExportId string `json:"exportId"`
 }
+
 type SbomPoolingResponse struct {
-	ReportID string `json:"reportId"`
-	Status   string `json:"status"`
-	URL      string `json:"url"`
+	ExportId     string `json:"exportId"`
+	ExportStatus string `json:"exportStatus"`
+	FileUrl      string `json:"fileUrl"`
 }
 type SbomHTTPWrapper struct {
 	path string
@@ -44,21 +45,19 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
 	}
-	//resp, err:= SendHTTPRequestByFullURL(http.MethodPost, "https://api-sca.checkmarx.net/export/requests", bytes.NewBuffer(params), true, clientTimeout, token, true)
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
+	path := fmt.Sprintf("%s/%s", r.path, "requests")
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
-
 	switch resp.StatusCode {
 	case http.StatusAccepted:
 		model := SbomReportsResponse{}
+		decoder := json.NewDecoder(resp.Body)
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to parse response body")
@@ -71,8 +70,8 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 
 func (r *SbomHTTPWrapper) CheckSbomReportStatus(reportID string) (*SbomPoolingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf("%s/%s", r.path, reportID)
-	params := map[string]string{"returnUrl": "true"}
+	path := fmt.Sprintf("%s/%s", r.path, "requests")
+	params := map[string]string{"returnUrl": "true", "exportId": reportID}
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -99,7 +98,7 @@ func (r *SbomHTTPWrapper) CheckSbomReportStatus(reportID string) (*SbomPoolingRe
 
 func (r *SbomHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	url := fmt.Sprintf("%s/%s/download", r.path, reportID)
+	url := fmt.Sprintf("%s/%s/%s/%s", r.path, "requests", reportID, "download")
 	resp, err := SendHTTPRequest(http.MethodGet, url, nil, true, clientTimeout)
 	if err != nil {
 		return err
