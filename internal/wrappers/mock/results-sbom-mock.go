@@ -12,16 +12,16 @@ type ResultsSbomWrapper struct{}
 // GenerateSbomReport mock for tests
 func (*ResultsSbomWrapper) GenerateSbomReport(_ *wrappers.SbomReportsPayload) (*wrappers.SbomReportsResponse, *wrappers.WebError, error) {
 	return &wrappers.SbomReportsResponse{
-		ExportId: "id123456",
+		ExportID: "id123456",
 	}, nil, nil
 }
 
 // GetSbomReportStatus mock for tests
 func (*ResultsSbomWrapper) GetSbomReportStatus(_ string) (*wrappers.SbomPoolingResponse, *wrappers.WebError, error) {
 	return &wrappers.SbomPoolingResponse{
-		ExportId:     "id1234",
+		ExportID:     "id1234",
 		ExportStatus: "Completed",
-		FileUrl:      "url",
+		FileURL:      "url",
 	}, nil, nil
 }
 

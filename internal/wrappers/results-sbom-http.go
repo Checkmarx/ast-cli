@@ -16,18 +16,18 @@ import (
 )
 
 type SbomReportsPayload struct {
-	ScanId     string `json:"ScanId"`
+	ScanID     string `json:"ScanId"`
 	FileFormat string `json:"FileFormat"`
 }
 
 type SbomReportsResponse struct {
-	ExportId string `json:"exportId"`
+	ExportID string `json:"exportId"`
 }
 
 type SbomPoolingResponse struct {
-	ExportId     string `json:"exportId"`
+	ExportID     string `json:"exportId"`
 	ExportStatus string `json:"exportStatus"`
-	FileUrl      string `json:"fileUrl"`
+	FileURL      string `json:"fileUrl"`
 }
 type SbomHTTPWrapper struct {
 	path string

@@ -901,7 +901,7 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 
 func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string) error {
 	payload := &wrappers.SbomReportsPayload{
-		ScanId:     results.ScanID,
+		ScanID:     results.ScanID,
 		FileFormat: defaultSbomOption,
 	}
 	if formatSbomOptions != "" && formatSbomOptions != defaultSbomOption {
@@ -925,16 +925,16 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
 	poolingResp.ExportStatus = exportingStatus
 	for poolingResp.ExportStatus == exportingStatus || poolingResp.ExportStatus == pendingStatus {
-		poolingResp, weberr, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportId)
+		poolingResp, weberr, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
 		if err != nil || weberr != nil {
 			return errors.Wrapf(err, "%v", weberr)
 		}
 		time.Sleep(delayValueForReport * time.Millisecond)
 	}
-	if strings.ToLower(poolingResp.ExportStatus) != completedStatus {
+	if !strings.EqualFold(poolingResp.ExportStatus, completedStatus) {
 		return errors.Errorf("SBOM generating failed - Current status: %s", poolingResp.ExportStatus)
 	}
-	err = sbomWrapper.DownloadSbomReport(poolingResp.ExportId, targetFile)
+	err = sbomWrapper.DownloadSbomReport(poolingResp.ExportID, targetFile)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
 	}
