@@ -10,19 +10,19 @@ import (
 type ResultsSbomWrapper struct{}
 
 // GenerateSbomReport mock for tests
-func (*ResultsSbomWrapper) GenerateSbomReport(_ *wrappers.SbomReportsPayload) (*wrappers.SbomReportsResponse, *wrappers.WebError, error) {
+func (*ResultsSbomWrapper) GenerateSbomReport(_ *wrappers.SbomReportsPayload) (*wrappers.SbomReportsResponse, error) {
 	return &wrappers.SbomReportsResponse{
 		ExportID: "id123456",
-	}, nil, nil
+	}, nil
 }
 
 // GetSbomReportStatus mock for tests
-func (*ResultsSbomWrapper) GetSbomReportStatus(_ string) (*wrappers.SbomPoolingResponse, *wrappers.WebError, error) {
-	return &wrappers.SbomPoolingResponse{
+func (*ResultsSbomWrapper) GetSbomReportStatus(_ string) (*wrappers.SbomPollingResponse, error) {
+	return &wrappers.SbomPollingResponse{
 		ExportID:     "id1234",
 		ExportStatus: "Completed",
 		FileURL:      "url",
-	}, nil, nil
+	}, nil
 }
 
 // DownloadSbomReport mock for tests

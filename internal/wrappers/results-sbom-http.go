@@ -24,7 +24,7 @@ type SbomReportsResponse struct {
 	ExportID string `json:"exportId"`
 }
 
-type SbomPoolingResponse struct {
+type SbomPollingResponse struct {
 	ExportID     string `json:"exportId"`
 	ExportStatus string `json:"exportStatus"`
 	FileURL      string `json:"fileUrl"`
@@ -39,16 +39,16 @@ func NewResultsSbomReportsHTTPWrapper(path string) ResultsSbomWrapper {
 	}
 }
 
-func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*SbomReportsResponse, *WebError, error) {
+func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*SbomReportsResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
+		return nil, errors.Wrapf(err, "Failed to parse request body")
 	}
 	path := fmt.Sprintf("%s/%s", r.path, "requests")
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -60,23 +60,23 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 		decoder := json.NewDecoder(resp.Body)
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to parse response body")
+			return nil, errors.Wrapf(err, "failed to parse response body")
 		}
-		return &model, nil, nil
+		return &model, nil
 	case http.StatusBadRequest:
-		return nil, nil, errors.Errorf("report format unsupported for current tenant")
+		return nil, errors.Errorf("report format unsupported for current tenant")
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
-func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPoolingResponse, *WebError, error) {
+func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, "requests")
 	params := map[string]string{"returnUrl": "true", "exportId": reportID}
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	defer func() {
@@ -87,14 +87,14 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPoolingResp
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		model := SbomPoolingResponse{}
+		model := SbomPollingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to parse response body")
+			return nil, errors.Wrapf(err, "failed to parse response body")
 		}
-		return &model, nil, nil
+		return &model, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
@@ -118,11 +118,11 @@ func (r *SbomHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create file %s", targetFile)
 	}
+	defer file.Close()
 	size, err := io.Copy(file, resp.Body)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to write file %s", targetFile)
 	}
-	defer file.Close()
 
 	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
 	return nil

@@ -17,8 +17,8 @@ func (*ResultsPdfWrapper) GeneratePdfReport(_ *wrappers.PdfReportsPayload) (*wra
 }
 
 // CheckPdfReportStatus mock for tests
-func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPoolingResponse, *wrappers.WebError, error) {
-	return &wrappers.PdfPoolingResponse{
+func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPollingResponse, *wrappers.WebError, error) {
+	return &wrappers.PdfPollingResponse{
 		Status: "completed",
 	}, nil, nil
 }

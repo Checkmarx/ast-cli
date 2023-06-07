@@ -742,15 +742,12 @@ func createReport(
 		summaryRpt := createTargetName(fmt.Sprintf("%s_%s", targetFile, printer.FormatSbom), targetPath, targetType)
 		convertNotAvailableNumberToZero(summary)
 
-		// if summary.ScaIssues == -1 {
 		if !contains(summary.EnginesEnabled, scaType) {
-			err := fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
-			return err
+			return fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
 		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions)
 	}
-	err := fmt.Errorf("bad report format %s", format)
-	return err
+	return fmt.Errorf("bad report format %s", format)
 }
 
 func createTargetName(targetFile, targetPath, targetType string) string {
@@ -912,43 +909,34 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 		payload.FileFormat = format
 	}
 
-	poolingResp := &wrappers.SbomPoolingResponse{}
+	pollingResp := &wrappers.SbomPollingResponse{}
 
-	sbomresp, weberr, err := sbomWrapper.GenerateSbomReport(payload)
+	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
 	if err != nil {
 		return err
-	}
-	if weberr != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
 	}
 
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	poolingResp.ExportStatus = exportingStatus
-	for poolingResp.ExportStatus == exportingStatus || poolingResp.ExportStatus == pendingStatus {
-		poolingResp, weberr, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-		if err != nil || weberr != nil {
-			return errors.Wrapf(err, "%v", weberr)
+	pollingResp.ExportStatus = exportingStatus
+	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+		pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
+		if err != nil {
+			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
 		}
 		time.Sleep(delayValueForReport * time.Millisecond)
 	}
-	if !strings.EqualFold(poolingResp.ExportStatus, completedStatus) {
-		return errors.Errorf("SBOM generating failed - Current status: %s", poolingResp.ExportStatus)
+	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
+		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
 	}
-	err = sbomWrapper.DownloadSbomReport(poolingResp.ExportID, targetFile)
+	err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-	}
-	if err != nil {
-		return err
-	}
-	if weberr != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedListingResults, weberr.Code, weberr.Message)
 	}
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
-	poolingResp := &wrappers.PdfPoolingResponse{}
+	pollingResp := &wrappers.PdfPollingResponse{}
 
 	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions)
 	if err != nil {
@@ -987,16 +975,16 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	}
 
 	log.Println("Generating PDF report")
-	poolingResp.Status = startedStatus
-	for poolingResp.Status == startedStatus {
-		poolingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
+	pollingResp.Status = startedStatus
+	for pollingResp.Status == startedStatus {
+		pollingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
 		time.Sleep(delayValueForReport * time.Millisecond)
 	}
-	if poolingResp.Status != completedStatus {
-		return errors.Errorf("PDF generating failed - Current status: %s", poolingResp.Status)
+	if pollingResp.Status != completedStatus {
+		return errors.Errorf("PDF generating failed - Current status: %s", pollingResp.Status)
 	}
 	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
 	if err != nil {
