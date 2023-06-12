@@ -1171,7 +1171,6 @@ func TestCreateScanSBOMReportFormatWrongTenant(t *testing.T) {
 		flag(params.ProjectTagList), "integration",
 		flag(params.TargetFormatFlag), "sbom",
 	}
-
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "report format unsupported for current tenant")
+	assertError(t, err, "SBOM report is currently in beta mode and not available for this tenant type")
 }

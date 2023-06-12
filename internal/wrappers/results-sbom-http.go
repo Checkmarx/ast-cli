@@ -64,7 +64,7 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 		}
 		return &model, nil
 	case http.StatusBadRequest:
-		return nil, errors.Errorf("report format unsupported for current tenant")
+		return nil, errors.Errorf("SBOM report is currently in beta mode and not available for this tenant type")
 	default:
 		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
