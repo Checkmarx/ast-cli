@@ -1139,3 +1139,38 @@ func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Invalid value for --project-private-package flag")
 }
+
+func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "kics",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.TargetFormatFlag), "sbom",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "to generate sbom report, SCA engine must be enabled on scan summary")
+}
+
+func TestCreateScanSBOMReportFormatWrongTenant(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.TargetFormatFlag), "sbom",
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "SBOM report is currently in beta mode and not available for this tenant type")
+}

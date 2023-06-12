@@ -17,7 +17,7 @@ type ScaResultsFile struct {
 		ScanPath      string    `json:"ScanPath"`
 		ScanArguments struct {
 			ProjectDownloadURL interface{} `json:"ProjectDownloadUrl"`
-			ScanID             string      `json:"ScanId"`
+			ScanID             string      `json:"ScanID"`
 			TenantID           string      `json:"TenantId"`
 			ExcludePatterns    struct {
 				Patterns []interface{} `json:"Patterns"`
