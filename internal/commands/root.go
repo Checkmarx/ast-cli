@@ -162,6 +162,8 @@ func NewAstCLI(
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
+	chatCmd := NewChatCommand()
+
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -171,6 +173,7 @@ func NewAstCLI(
 		authCmd,
 		utilsCmd,
 		configCmd,
+		chatCmd,
 	)
 
 	rootCmd.SilenceErrors = true
