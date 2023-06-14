@@ -92,7 +92,7 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	microEnginesContainerImage    = "me-wrapper-v2"
+	microEnginesContainerImage    = "checkmarx.jfrog.io/ast-docker/microengine-wrapper-template:first-version-2"
 	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
 	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
 	microEnginesScanTargetFlag    = "--scan-target"
@@ -1015,17 +1015,6 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 			return "", err
 		}
 	}
-
-	// Testing to see if a file created in this zip folder reaches the repostore
-	f, err := zipWriter.Create(".test-results.json")
-	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Couldn't create file"))
-	}
-	_, err = f.Write([]byte("Test"))
-	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Couldn't write to file"))
-	}
-
 	// Close the file
 	err = zipWriter.Close()
 	if err != nil {
