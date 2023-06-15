@@ -509,7 +509,6 @@ const nonAsyncSummary = `<div class="top-row">
                     </div>
                 </div>
             </div>
-            </div>
         </div>
         {{if .HasAPISecurity}}
         <hr>

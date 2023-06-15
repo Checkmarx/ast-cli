@@ -33,7 +33,7 @@ type PdfReportsPayload struct {
 type PdfReportsResponse struct {
 	ReportID string `json:"reportId"`
 }
-type PdfPoolingResponse struct {
+type PdfPollingResponse struct {
 	ReportID string `json:"reportId"`
 	Status   string `json:"status"`
 	URL      string `json:"url"`
@@ -78,7 +78,7 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 	}
 }
 
-func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPoolingResponse, *WebError, error) {
+func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, reportID)
 	params := map[string]string{"returnUrl": "true"}
@@ -95,7 +95,7 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPoolingRespo
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		model := PdfPoolingResponse{}
+		model := PdfPollingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to parse response body")

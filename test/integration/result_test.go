@@ -240,3 +240,16 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 
 }
+func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "sbom",
+		flag(params.ReportSbomFormatFlag), "wrong",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Invalid SBOM option")
+}
