@@ -76,52 +76,72 @@ func runChat() func(cmd *cobra.Command, args []string) error {
 		chatApiKey, _ := cmd.Flags().GetString(params.ChatApiKey)
 		chatConversationId, _ := cmd.Flags().GetString(params.ChatConversationId)
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
+		chatResultFile, _ := cmd.Flags().GetString(params.ChatResultFile)
+		chatResultLine, _ := cmd.Flags().GetString(params.ChatResultLine)
+		chatResultSeverity, _ := cmd.Flags().GetString(params.ChatResultSeverity)
+		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
+		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
+
 		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatApiKey, chatModel)
 
 		if chatConversationId == "" {
 			chatConversationId = statefulWrapper.GenerateId().String()
 		}
+
 		id, err := uuid.Parse(chatConversationId)
+		if err != nil {
+			return outputError(cmd, id, err)
+		}
 
-		var newMessages []message.Message
-		newMessages = append(newMessages, message.Message{
-			Role:    role.System,
-			Content: systemInput,
-		})
-
-		chatResultFile, _ := cmd.Flags().GetString(params.ChatResultFile)
-		chatResultLine, _ := cmd.Flags().GetString(params.ChatResultLine)
-		chatResultSeverity, _ := cmd.Flags().GetString(params.ChatResultSeverity)
-		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
 		chatResultCode, err := os.ReadFile(chatResultFile)
 		if err != nil {
-			return err
+			return outputError(cmd, id, err)
 		}
-		newMessages = append(newMessages, message.Message{
-			Role:    role.Assistant,
-			Content: fmt.Sprintf(assistantInputFormat, string(chatResultCode), chatResultVulnerability, chatResultLine, chatResultSeverity),
-		})
 
-		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
-		newMessages = append(newMessages, message.Message{
-			Role:    role.User,
-			Content: fmt.Sprintf(userInputFormat, userInput),
-		})
+		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
 		response, err := statefulWrapper.Call(id, newMessages)
 		if err != nil {
-			return err
+			return outputError(cmd, id, err)
 		}
 
-		var responseContent []string
-		for _, r := range response {
-			responseContent = append(responseContent, r.Content)
-		}
+		responseContent := getMessageContents(response)
 
-		output := OutputModel{
+		return printer.Print(cmd.OutOrStdout(), &OutputModel{
 			ConversationId: id.String(),
 			Response:       responseContent,
-		}
-
-		return printer.Print(cmd.OutOrStdout(), &output, printer.FormatJSON)
+		}, printer.FormatJSON)
 	}
+}
+
+func getMessageContents(response []message.Message) []string {
+	var responseContent []string
+	for _, r := range response {
+		responseContent = append(responseContent, r.Content)
+	}
+	return responseContent
+}
+
+func buildMessages(chatResultCode []byte,
+	chatResultVulnerability, chatResultLine, chatResultSeverity, userInput string) []message.Message {
+	var newMessages []message.Message
+	newMessages = append(newMessages, message.Message{
+		Role:    role.System,
+		Content: systemInput,
+	})
+	newMessages = append(newMessages, message.Message{
+		Role:    role.Assistant,
+		Content: fmt.Sprintf(assistantInputFormat, string(chatResultCode), chatResultVulnerability, chatResultLine, chatResultSeverity),
+	})
+	newMessages = append(newMessages, message.Message{
+		Role:    role.User,
+		Content: fmt.Sprintf(userInputFormat, userInput),
+	})
+	return newMessages
+}
+
+func outputError(cmd *cobra.Command, id uuid.UUID, err error) error {
+	return printer.Print(cmd.OutOrStdout(), &OutputModel{
+		ConversationId: id.String(),
+		Response:       []string{err.Error()},
+	}, printer.FormatJSON)
 }
