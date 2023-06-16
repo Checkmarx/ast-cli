@@ -15,7 +15,7 @@ func TestChatHelp(t *testing.T) {
 }
 
 func TestChatInvalidId(t *testing.T) {
-	err, buffer := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat",
 		"--conversation-id", "invalidId",
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",
@@ -27,11 +27,11 @@ func TestChatInvalidId(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := string(output)
-	assert.Assert(t, s == fmt.Sprintf(ConversationIdErrorFormat, "invalidId"))
+	assert.Assert(t, s == fmt.Sprintf(ConversationIDErrorFormat, "invalidId"))
 }
 
 func TestChatInvalidFile(t *testing.T) {
-	err, buffer := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",
@@ -47,7 +47,7 @@ func TestChatInvalidFile(t *testing.T) {
 }
 
 func TestChatCorrectResponse(t *testing.T) {
-	err, buffer := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",

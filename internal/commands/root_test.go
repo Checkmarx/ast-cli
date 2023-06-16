@@ -103,13 +103,13 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	return cmd.Execute()
 }
 
-func executeRedirectedTestCommand(args ...string) (error, *bytes.Buffer) {
+func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
 	buffer := bytes.NewBufferString("")
 	cmd := createASTTestCommand()
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	cmd.SetOut(buffer)
-	return cmd.Execute(), buffer
+	return buffer, cmd.Execute()
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {

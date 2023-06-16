@@ -45,11 +45,11 @@ const userInputFormat = `The user question is:
 // dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
 const dropLen = 4
 
-const ConversationIdErrorFormat = "Invalid conversation ID %s."
+const ConversationIDErrorFormat = "Invalid conversation ID %s."
 const FileErrorFormat = "It seems that %s is not available for Ask KICS. Please ensure that you have opened the correct workspace or the relevant file."
 
 type OutputModel struct {
-	ConversationId string   `json:"conversationId"`
+	ConversationID string   `json:"conversationId"`
 	Response       []string `json:"response"`
 }
 
@@ -61,8 +61,8 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 		RunE:  runChat(chatWrapper),
 	}
 
-	chatCmd.Flags().String(params.ChatApiKey, "", "OpenAI API key")
-	chatCmd.Flags().String(params.ChatConversationId, "", "ID of existing conversation")
+	chatCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
+	chatCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
 	chatCmd.Flags().String(params.ChatUserInput, "", "User question")
 	chatCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
 	chatCmd.Flags().String(params.ChatResultFile, "", "IaC result code file")
@@ -71,7 +71,7 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatCmd.Flags().String(params.ChatResultVulnerability, "", "IaC result vulnerability name")
 
 	_ = chatCmd.MarkFlagRequired(params.ChatUserInput)
-	_ = chatCmd.MarkFlagRequired(params.ChatApiKey)
+	_ = chatCmd.MarkFlagRequired(params.ChatAPIKey)
 	_ = chatCmd.MarkFlagRequired(params.ChatResultFile)
 	_ = chatCmd.MarkFlagRequired(params.ChatResultLine)
 	_ = chatCmd.MarkFlagRequired(params.ChatResultSeverity)
@@ -82,8 +82,8 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 
 func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		chatApiKey, _ := cmd.Flags().GetString(params.ChatApiKey)
-		chatConversationId, _ := cmd.Flags().GetString(params.ChatConversationId)
+		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
+		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 		chatResultFile, _ := cmd.Flags().GetString(params.ChatResultFile)
 		chatResultLine, _ := cmd.Flags().GetString(params.ChatResultLine)
@@ -91,16 +91,16 @@ func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []s
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatApiKey, chatModel, dropLen)
+		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen)
 
-		if chatConversationId == "" {
-			chatConversationId = statefulWrapper.GenerateId().String()
+		if chatConversationID == "" {
+			chatConversationID = statefulWrapper.GenerateId().String()
 		}
 
-		id, err := uuid.Parse(chatConversationId)
+		id, err := uuid.Parse(chatConversationID)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ConversationIdErrorFormat, chatConversationId))
+			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID))
 		}
 
 		chatResultCode, err := os.ReadFile(chatResultFile)
@@ -118,7 +118,7 @@ func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []s
 		responseContent := getMessageContents(response)
 
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
-			ConversationId: id.String(),
+			ConversationID: id.String(),
 			Response:       responseContent,
 		}, printer.FormatJSON)
 	}
@@ -138,12 +138,10 @@ func buildMessages(chatResultCode []byte,
 	newMessages = append(newMessages, message.Message{
 		Role:    role.System,
 		Content: systemInput,
-	})
-	newMessages = append(newMessages, message.Message{
+	}, message.Message{
 		Role:    role.Assistant,
 		Content: fmt.Sprintf(assistantInputFormat, string(chatResultCode), chatResultVulnerability, chatResultLine, chatResultSeverity),
-	})
-	newMessages = append(newMessages, message.Message{
+	}, message.Message{
 		Role:    role.User,
 		Content: fmt.Sprintf(userInputFormat, userInput),
 	})
@@ -152,7 +150,7 @@ func buildMessages(chatResultCode []byte,
 
 func outputError(cmd *cobra.Command, id uuid.UUID, err error) error {
 	return printer.Print(cmd.OutOrStdout(), &OutputModel{
-		ConversationId: id.String(),
+		ConversationID: id.String(),
 		Response:       []string{err.Error()},
 	}, printer.FormatJSON)
 }

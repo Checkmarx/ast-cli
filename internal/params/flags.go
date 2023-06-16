@@ -151,8 +151,8 @@ const (
 	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
 
 	// Chat
-	ChatApiKey              = "chat-apikey"
-	ChatConversationId      = "conversation-id"
+	ChatAPIKey              = "chat-apikey"
+	ChatConversationID      = "conversation-id"
 	ChatUserInput           = "user-input"
 	ChatModel               = "model"
 	ChatResultFile          = "result-file"
