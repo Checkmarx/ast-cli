@@ -27,7 +27,7 @@ func TestChatInvalidId(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := string(output)
-	assert.Assert(t, s == fmt.Sprintf(ConversationIDErrorFormat, "invalidId"))
+	assert.Assert(t, s == fmt.Sprintf(ConversationIDErrorFormat, "invalidId"), s)
 }
 
 func TestChatInvalidFile(t *testing.T) {
@@ -43,7 +43,7 @@ func TestChatInvalidFile(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
-	assert.Assert(t, s == fmt.Sprintf(FileErrorFormat, "invalidfile"))
+	assert.Assert(t, s == fmt.Sprintf(FileErrorFormat, "invalidfile"), s)
 }
 
 func TestChatCorrectResponse(t *testing.T) {
