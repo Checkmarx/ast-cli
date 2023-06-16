@@ -5,12 +5,14 @@ import (
 	"os"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/message"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/role"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +40,9 @@ const userInputFormat = `The user question is:
 '<|KICS_QUESTION_START|>'
 "%s"
 '<|KICS_QUESTION_END|>'`
+
+const ConversationIdErrorFormat = "Invalid conversation ID %s."
+const FileErrorFormat = "It seems that %s is not available for Ask KICS. Please ensure that you have opened the correct workspace or the relevant file."
 
 type OutputModel struct {
 	ConversationId string   `json:"conversationId"`
@@ -90,12 +95,14 @@ func runChat() func(cmd *cobra.Command, args []string) error {
 
 		id, err := uuid.Parse(chatConversationId)
 		if err != nil {
-			return outputError(cmd, id, err)
+			logger.PrintIfVerbose(err.Error())
+			return outputError(cmd, id, errors.Errorf(ConversationIdErrorFormat, chatConversationId))
 		}
 
 		chatResultCode, err := os.ReadFile(chatResultFile)
 		if err != nil {
-			return outputError(cmd, id, err)
+			logger.PrintIfVerbose(err.Error())
+			return outputError(cmd, id, errors.Errorf(FileErrorFormat, chatResultFile))
 		}
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)

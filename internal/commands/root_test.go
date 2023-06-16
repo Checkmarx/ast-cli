@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -98,6 +99,15 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	return cmd.Execute()
+}
+
+func executeRedirectedTestCommand(args ...string) (error, *bytes.Buffer) {
+	buffer := bytes.NewBufferString("")
+	cmd := createASTTestCommand()
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	cmd.SetOut(buffer)
+	return cmd.Execute(), buffer
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {

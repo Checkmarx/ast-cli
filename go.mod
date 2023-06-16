@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230613122817-da0c37ce1aa6 // indirect
+	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230614144539-0f97d561dc9f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
