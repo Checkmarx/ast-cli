@@ -42,7 +42,7 @@ func TestChatInvalidFile(t *testing.T) {
 	assert.NilError(t, err)
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
-	s := strings.ToLower(string(output))
+	s := string(output)
 	assert.Assert(t, strings.Contains(s, fmt.Sprintf(FileErrorFormat, "invalidfile")), s)
 }
 
