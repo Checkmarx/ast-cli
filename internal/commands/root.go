@@ -46,6 +46,7 @@ func NewAstCLI(
 	tenantWrapper wrappers.TenantConfigurationWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
+	chatWrapper wrappers.ChatWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -165,7 +166,7 @@ func NewAstCLI(
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
-	chatCmd := NewChatCommand()
+	chatCmd := NewChatCommand(chatWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,

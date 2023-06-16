@@ -46,7 +46,7 @@ func TestChatInvalidFile(t *testing.T) {
 	assert.Assert(t, s == fmt.Sprintf(FileErrorFormat, "invalidfile"))
 }
 
-func TestChatInvalidApiKey(t *testing.T) {
+func TestChatCorrectResponse(t *testing.T) {
 	err, buffer := executeRedirectedTestCommand("chat",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
@@ -59,5 +59,5 @@ func TestChatInvalidApiKey(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
-	assert.Assert(t, strings.Contains(s, "api_key"), s)
+	assert.Assert(t, strings.Contains(s, "mock"), s)
 }

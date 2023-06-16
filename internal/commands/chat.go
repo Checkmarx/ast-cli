@@ -7,6 +7,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/message"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/role"
@@ -41,6 +42,9 @@ const userInputFormat = `The user question is:
 "%s"
 '<|KICS_QUESTION_END|>'`
 
+// dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
+const dropLen = 4
+
 const ConversationIdErrorFormat = "Invalid conversation ID %s."
 const FileErrorFormat = "It seems that %s is not available for Ask KICS. Please ensure that you have opened the correct workspace or the relevant file."
 
@@ -49,12 +53,12 @@ type OutputModel struct {
 	Response       []string `json:"response"`
 }
 
-func NewChatCommand() *cobra.Command {
+func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatCmd := &cobra.Command{
 		Use:   "chat",
 		Short: "Interact with OpenAI models",
 		Long:  "Interact with OpenAI models",
-		RunE:  runChat(),
+		RunE:  runChat(chatWrapper),
 	}
 
 	chatCmd.Flags().String(params.ChatApiKey, "", "OpenAI API key")
@@ -76,7 +80,7 @@ func NewChatCommand() *cobra.Command {
 	return chatCmd
 }
 
-func runChat() func(cmd *cobra.Command, args []string) error {
+func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chatApiKey, _ := cmd.Flags().GetString(params.ChatApiKey)
 		chatConversationId, _ := cmd.Flags().GetString(params.ChatConversationId)
@@ -87,7 +91,7 @@ func runChat() func(cmd *cobra.Command, args []string) error {
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatApiKey, chatModel)
+		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatApiKey, chatModel, dropLen)
 
 		if chatConversationId == "" {
 			chatConversationId = statefulWrapper.GenerateId().String()
@@ -106,7 +110,7 @@ func runChat() func(cmd *cobra.Command, args []string) error {
 		}
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
-		response, err := statefulWrapper.Call(id, newMessages)
+		response, err := chatWrapper.Call(statefulWrapper, id, newMessages)
 		if err != nil {
 			return outputError(cmd, id, err)
 		}
