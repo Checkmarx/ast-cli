@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const systemInput = `You are the Checkmarx KICS bot who can answer technical questions related to the results of KICS.
+const systemInput = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of KICS.
 
 You should be able to analyze and understand both the technical aspects of the security results and the common queries users may have about the results.
 
@@ -25,7 +25,7 @@ You should also be capable of delivering clear, concise, and informative answers
 
  
 
-If a question irrelevant to the mentioned KICS source or result is asked, answer 'I am the KICS bot and can answer only on questions related to the selected KICS result'.`
+If a question irrelevant to the mentioned KICS source or result is asked, answer 'I am the AI Guided Remediation bot and can answer only on questions related to the selected result'.`
 
 const assistantInputFormat = `Checkmarx KICS has scanned this source code and reported the result.
 This is the source code:
@@ -46,7 +46,7 @@ const userInputFormat = `The user question is:
 const dropLen = 4
 
 const ConversationIDErrorFormat = "Invalid conversation ID %s."
-const FileErrorFormat = "It seems that %s is not available for Ask KICS. Please ensure that you have opened the correct workspace or the relevant file."
+const FileErrorFormat = "It seems that %s is not available for AI Guided Remediation. Please ensure that you have opened the correct workspace or the relevant file."
 
 type OutputModel struct {
 	ConversationID string   `json:"conversationId"`
