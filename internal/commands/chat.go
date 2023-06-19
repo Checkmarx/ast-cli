@@ -25,17 +25,16 @@ You should also be capable of delivering clear, concise, and informative answers
 
  
 
-If a question irrelevant to the mentioned Infrastructure as Code Security source or result is asked, answer 'I am the AI Guided Remediation assistant and can answer only on questions related to the selected result'.`
+If a question irrelevant to the mentioned Infrastructure as Code Security source or result is asked,
+answer 'I am the AI Guided Remediation assistant and can answer only on questions related to the selected result'.`
 
 const assistantInputFormat = `Checkmarx Infrastructure as Code Security has scanned this source code and reported the result.
 This is the source code:
-'<|KICS_SOURCE_START|>'
+` + "```" + `
 %s
-'<|KICS_SOURCE_END|>'
+` + "```" + `
 and this is the result (vulnerability or security issue) found by Infrastructure as Code Security:
-'<|KICS_RESULT_START|>'
-'%s' is detected in line %s with severity '%s'.
-'<|KICS_RESULT_END|>'`
+'%s' is detected in line %s with severity '%s'.`
 
 const userInputFormat = `The user question is:
 '<|KICS_QUESTION_START|>'
