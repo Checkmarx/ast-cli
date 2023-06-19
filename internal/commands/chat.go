@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const systemInput = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of KICS.
+const systemInput = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of Infrastructure as Code Security.
 
 You should be able to analyze and understand both the technical aspects of the security results and the common queries users may have about the results.
 
@@ -25,14 +25,14 @@ You should also be capable of delivering clear, concise, and informative answers
 
  
 
-If a question irrelevant to the mentioned KICS source or result is asked, answer 'I am the AI Guided Remediation bot and can answer only on questions related to the selected result'.`
+If a question irrelevant to the mentioned Infrastructure as Code Security source or result is asked, answer 'I am the AI Guided Remediation assistant and can answer only on questions related to the selected result'.`
 
-const assistantInputFormat = `Checkmarx KICS has scanned this source code and reported the result.
+const assistantInputFormat = `Checkmarx Infrastructure as Code Security has scanned this source code and reported the result.
 This is the source code:
 '<|KICS_SOURCE_START|>'
 %s
 '<|KICS_SOURCE_END|>'
-and this is the result (vulnerability or security issue) found by KICS:
+and this is the result (vulnerability or security issue) found by Infrastructure as Code Security:
 '<|KICS_RESULT_START|>'
 '%s' is detected in line %s with severity '%s'.
 '<|KICS_RESULT_END|>'`
