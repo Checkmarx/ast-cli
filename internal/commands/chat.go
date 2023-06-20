@@ -18,13 +18,8 @@ import (
 )
 
 const systemInput = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of Infrastructure as Code Security.
-
 You should be able to analyze and understand both the technical aspects of the security results and the common queries users may have about the results.
-
 You should also be capable of delivering clear, concise, and informative answers to help take appropriate action based on the findings.
-
- 
-
 If a question irrelevant to the mentioned Infrastructure as Code Security source or result is asked,
 answer 'I am the AI Guided Remediation assistant and can answer only on questions related to the selected result'.`
 
@@ -37,9 +32,9 @@ and this is the result (vulnerability or security issue) found by Infrastructure
 '%s' is detected in line %s with severity '%s'.`
 
 const userInputFormat = `The user question is:
-'<|KICS_QUESTION_START|>'
+'<|IAC_QUESTION_START|>'
 "%s"
-'<|KICS_QUESTION_END|>'`
+'<|IAC_QUESTION_END|>'`
 
 // dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
 const dropLen = 4
