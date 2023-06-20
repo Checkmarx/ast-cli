@@ -639,6 +639,8 @@ github.com/checkmarxDev/gpt-wrapper v0.0.0-20230614144539-0f97d561dc9f h1:KW8EJM
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230614144539-0f97d561dc9f/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230616130821-990a46a50d40 h1:gJdxyugcYjcQLWo4PKzZUOJ5/Dy7tw8lcztabkpiObQ=
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230616130821-990a46a50d40/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230620151243-0a3131178ae4 h1:e4EGi1vqMlJ52qo6NsUkrKhUsprS6fYH4mNiE13omxU=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230620151243-0a3131178ae4/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
