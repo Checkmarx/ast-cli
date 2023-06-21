@@ -149,6 +149,16 @@ const (
 	RepoNameFlagUsage  = "Github repository details"
 	PRNumberFlag       = "pr-number"
 	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
+
+	// Chat
+	ChatAPIKey              = "chat-apikey"
+	ChatConversationID      = "conversation-id"
+	ChatUserInput           = "user-input"
+	ChatModel               = "model"
+	ChatResultFile          = "result-file"
+	ChatResultLine          = "result-line"
+	ChatResultSeverity      = "result-severity"
+	ChatResultVulnerability = "result-vulnerability"
 )
 
 // Parameter values

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -52,6 +53,7 @@ func createASTTestCommand() *cobra.Command {
 	tenantConfigurationMockWrapper := &mock.TenantConfigurationMockWrapper{}
 	jwtWrapper := &mock.JWTMockWrapper{}
 	scaRealtimeMockWrapper := &mock.ScaRealTimeHTTPMockWrapper{}
+	chatWrapper := &mock.ChatMockWrapper{}
 
 	return NewAstCLI(
 		scansMockWrapper,
@@ -77,6 +79,7 @@ func createASTTestCommand() *cobra.Command {
 		tenantConfigurationMockWrapper,
 		jwtWrapper,
 		scaRealtimeMockWrapper,
+		chatWrapper,
 	)
 }
 
@@ -98,6 +101,15 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	return cmd.Execute()
+}
+
+func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
+	buffer := bytes.NewBufferString("")
+	cmd := createASTTestCommand()
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	cmd.SetOut(buffer)
+	return buffer, cmd.Execute()
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {
