@@ -483,23 +483,23 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |     IAC-SECURITY:   %*s|     \n", defaultPaddingSize+2, notAvailableString)
+			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |     IAC-SECURITY:   %*d|     \n", defaultPaddingSize+2, summary.KicsIssues)
+			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
-			fmt.Printf("              |             SAST:   %*s|     \n", defaultPaddingSize+2, notAvailableString)
+			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             SAST:   %*d|     \n", defaultPaddingSize+2, summary.SastIssues)
+			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf("              |     APIS WITH RISK: %*d|     \n", defaultPaddingSize+2, summary.APISecurity.TotalRisksCount)
+				fmt.Printf("              |   APIS WITH RISK: %*d|     \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
 
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
-			fmt.Printf("              |             SCA:    %*s|     \n", defaultPaddingSize+2, notAvailableString)
+			fmt.Printf("              |              SCA: %*s|   \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             SCA:    %*d|     \n", defaultPaddingSize+2, summary.ScaIssues)
+			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
