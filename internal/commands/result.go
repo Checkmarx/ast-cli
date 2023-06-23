@@ -362,7 +362,6 @@ func SummaryReport(
 		if err != nil {
 			return nil, err
 		}
-
 		summary.APISecurity = *apiSecRisks
 	}
 
@@ -370,13 +369,19 @@ func SummaryReport(
 		countResult(summary, result)
 	}
 	if summary.SastIssues == 0 {
-		summary.SastIssues = notAvailableNumber
+		if !contains(summary.EnginesEnabled, commonParams.SastType) {
+			summary.SastIssues = notAvailableNumber
+		}
 	}
 	if summary.ScaIssues == 0 {
-		summary.ScaIssues = notAvailableNumber
+		if !contains(summary.EnginesEnabled, scaType) {
+			summary.ScaIssues = notAvailableNumber
+		}
 	}
 	if summary.KicsIssues == 0 {
-		summary.KicsIssues = notAvailableNumber
+		if !contains(summary.EnginesEnabled, commonParams.KicsType) {
+			summary.KicsIssues = notAvailableNumber
+		}
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -478,24 +483,23 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |     IAC-SECURITY:   %*s|     \n", defaultPaddingSize+2, notAvailableString)
 		} else {
-			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+			fmt.Printf("              |     IAC-SECURITY:   %*d|     \n", defaultPaddingSize+2, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
-			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |             SAST:   %*s|     \n", defaultPaddingSize+2, notAvailableString)
 		} else {
-			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+			fmt.Printf("              |             SAST:   %*d|     \n", defaultPaddingSize+2, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf(
-					"              |               APIS WITH RISK: %d |     \n",
-					summary.APISecurity.TotalRisksCount)
+				fmt.Printf("              |     APIS WITH RISK: %*d|     \n", defaultPaddingSize+2, summary.APISecurity.TotalRisksCount)
+
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
-			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |             SCA:    %*s|     \n", defaultPaddingSize+2, notAvailableString)
 		} else {
-			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
+			fmt.Printf("              |             SCA:    %*d|     \n", defaultPaddingSize+2, summary.ScaIssues)
 		}
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
