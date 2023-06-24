@@ -11,13 +11,13 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
+	
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-
+	
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-
+	
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -192,10 +192,10 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	addScanIDFlag(resultBflCmd, "ID to report on.")
 	addQueryIDFlag(resultBflCmd, "Query Id from the result.")
 	addFormatFlag(resultBflCmd, printer.FormatList, printer.FormatJSON)
-
+	
 	markFlagAsRequired(resultBflCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
-
+	
 	return resultBflCmd
 }
 
@@ -204,10 +204,10 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		var bflResponseModel *wrappers.BFLResponseModel
 		var errorModel *wrappers.WebError
 		var err error
-
+		
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		queryID, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
-
+		
 		scanIds := strings.Split(scanID, ",")
 		if len(scanIds) > 1 {
 			return errors.Errorf("%s", "Multiple scan-ids are not allowed.")
@@ -216,17 +216,17 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		if len(queryIds) > 1 {
 			return errors.Errorf("%s", "Multiple query-ids are not allowed.")
 		}
-
+		
 		params := make(map[string]string)
 		params[commonParams.ScanIDQueryParam] = scanID
 		params[commonParams.QueryIDQueryParam] = queryID
-
+		
 		bflResponseModel, errorModel, err = bflWrapper.GetBflByScanIDAndQueryID(params)
-
+		
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingBfl)
 		}
-
+		
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingBfl, errorModel.Code, errorModel.Message)
@@ -236,7 +236,7 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 				return err
 			}
 		}
-
+		
 		return nil
 	}
 }
@@ -244,7 +244,7 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 func toBflView(bflResponseModel wrappers.BFLResponseModel) []wrappers.ScanResultNode {
 	if (bflResponseModel.TotalCount) > 0 {
 		views := make([]wrappers.ScanResultNode, bflResponseModel.TotalCount)
-
+		
 		for i := 0; i < bflResponseModel.TotalCount; i++ {
 			views[i] = wrappers.ScanResultNode{
 				Name:       bflResponseModel.Trees[i].BFL.Name,
@@ -300,7 +300,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 	if scanInfo == nil {
 		return nil, errors.New(failedCreatingSummary)
 	}
-
+	
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
@@ -317,7 +317,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 			}
 		}
 	}
-
+	
 	return &wrappers.ResultSummary{
 		ScanID:         scanInfo.ID,
 		Status:         string(scanInfo.Status),
@@ -349,12 +349,12 @@ func SummaryReport(
 	if err != nil {
 		return nil, err
 	}
-
+	
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
 	}
-
+	
 	summary.BaseURI = baseURI
 	summary.BaseURI = generateScanSummaryURL(summary)
 	if summary.HasAPISecurity() {
@@ -364,24 +364,21 @@ func SummaryReport(
 		}
 		summary.APISecurity = *apiSecRisks
 	}
-
+	
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
-	if summary.SastIssues == 0 {
-		if !contains(summary.EnginesEnabled, commonParams.SastType) {
-			summary.SastIssues = notAvailableNumber
-		}
+	if summary.SastIssues == 0 && !contains(summary.EnginesEnabled, commonParams.SastType) {
+		summary.SastIssues = notAvailableNumber
+		
 	}
-	if summary.ScaIssues == 0 {
-		if !contains(summary.EnginesEnabled, scaType) {
-			summary.ScaIssues = notAvailableNumber
-		}
+	if summary.ScaIssues == 0 && !contains(summary.EnginesEnabled, scaType) {
+		summary.ScaIssues = notAvailableNumber
+		
 	}
-	if summary.KicsIssues == 0 {
-		if !contains(summary.EnginesEnabled, commonParams.KicsType) {
-			summary.KicsIssues = notAvailableNumber
-		}
+	if summary.KicsIssues == 0 && !contains(summary.EnginesEnabled, commonParams.KicsType) {
+		summary.KicsIssues = notAvailableNumber
+		
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -448,7 +445,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 		return err
 	}
 	defer file.Close()
-
+	
 	err = tmpl.Execute(file, &data)
 	if err != nil {
 		return err
@@ -474,7 +471,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
-
+		
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
@@ -482,7 +479,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
 		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
 		fmt.Printf("              -----------------------------------     \n")
-
+		
 		if summary.KicsIssues == notAvailableNumber {
 			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
@@ -494,7 +491,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
 				fmt.Printf("              |   APIS WITH RISK: %*d|     \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
-
+				
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
@@ -506,7 +503,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
-
+		
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
@@ -534,7 +531,7 @@ func runGetResultCommand(
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
-
+		
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
 		if err != nil {
@@ -626,17 +623,17 @@ func CreateScanReport(
 	if errorModel != nil {
 		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 	}
-
+	
 	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return err
 	}
-
+	
 	summary, err := SummaryReport(results, scan, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
-
+	
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper)
@@ -668,7 +665,7 @@ func getResultsForAPISecScanner(
 ) (results *wrappers.APISecResult, err error) {
 	var apiSecResultsModel *wrappers.APISecResult
 	var errorModel *wrappers.WebError
-
+	
 	apiSecResultsModel, errorModel, err = risksOverviewWrapper.GetAllAPISecRisksByScanID(scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
@@ -704,7 +701,7 @@ func createReport(
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
 	}
-
+	
 	if printer.IsFormat(format, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
 		return exportSarifResults(sarifRpt, results)
@@ -746,7 +743,7 @@ func createReport(
 		}
 		summaryRpt := createTargetName(fmt.Sprintf("%s_%s", targetFile, printer.FormatSbom), targetPath, targetType)
 		convertNotAvailableNumberToZero(summary)
-
+		
 		if !contains(summary.EnginesEnabled, scaType) {
 			return fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
@@ -778,23 +775,23 @@ func ReadResults(
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
-
+	
 	params[commonParams.ScanIDQueryParam] = scan.ID
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
-
+	
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	}
-
+	
 	if resultsModel != nil {
 		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
 		if err != nil {
 			return nil, err
 		}
-
+		
 		resultsModel.ScanID = scan.ID
 		return resultsModel, nil
 	}
@@ -913,14 +910,14 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 		}
 		payload.FileFormat = format
 	}
-
+	
 	pollingResp := &wrappers.SbomPollingResponse{}
-
+	
 	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
 	if err != nil {
 		return err
 	}
-
+	
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
 	pollingResp.ExportStatus = exportingStatus
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
@@ -942,7 +939,7 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-
+	
 	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions)
 	if err != nil {
 		return err
@@ -955,7 +952,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfReportsPayload.Data.BranchName = summary.BranchName
 	pdfReportsPayload.Data.Scanners = pdfOptionsEngines
 	pdfReportsPayload.Data.Sections = pdfOptionsSections
-
+	
 	// will generate pdf report and send it to the email list
 	// instead of saving it to the file system
 	if len(formatPdfToEmail) > 0 {
@@ -973,12 +970,12 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return errors.Errorf("Error generating PDF report - %s", err.Error())
 	}
-
+	
 	if pdfReportsPayload.ReportType == reportTypeEmail {
 		log.Println("Sending PDF report to: ", pdfReportsPayload.Data.Email)
 		return nil
 	}
-
+	
 	log.Println("Generating PDF report")
 	pollingResp.Status = startedStatus
 	for pollingResp.Status == startedStatus {
@@ -1080,13 +1077,13 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 
 func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
 	var sonarIssues []wrappers.SonarIssues
-
+	
 	if results != nil {
 		for _, result := range results.Results {
 			var auxIssue = initSonarIssue(result)
-
+			
 			engineType := strings.TrimSpace(result.Type)
-
+			
 			if engineType == commonParams.SastType {
 				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
 				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
@@ -1110,7 +1107,7 @@ func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 	sonarIssue.EngineID = result.Type
 	sonarIssue.RuleID = result.ID
 	sonarIssue.EffortMinutes = 0
-
+	
 	return sonarIssue
 }
 
@@ -1118,30 +1115,30 @@ func parseScaSonarLocations(result *wrappers.ScanResult) []wrappers.SonarIssues 
 	if result == nil || result.ScanResultData.ScaPackageCollection == nil || result.ScanResultData.ScaPackageCollection.Locations == nil {
 		return []wrappers.SonarIssues{}
 	}
-
+	
 	var issuesByLocation []wrappers.SonarIssues
-
+	
 	for _, location := range result.ScanResultData.ScaPackageCollection.Locations {
 		issueByLocation := initSonarIssue(result)
-
+		
 		var primaryLocation wrappers.SonarLocation
-
+		
 		primaryLocation.FilePath = *location
 		_, _, primaryLocation.Message = findRuleID(result)
-
+		
 		var textRange wrappers.SonarTextRange
 		textRange.StartColumn = 1
 		textRange.EndColumn = 2
 		textRange.StartLine = 1
 		textRange.EndLine = 2
-
+		
 		primaryLocation.TextRange = textRange
-
+		
 		issueByLocation.PrimaryLocation = primaryLocation
-
+		
 		issuesByLocation = append(issuesByLocation, issueByLocation)
 	}
-
+	
 	return issuesByLocation
 }
 
@@ -1201,12 +1198,12 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	sarifRule.Help = findHelp(result)
 	sarifRule.HelpURI = wrappers.SarifInformationURI
 	sarifRule.Properties = findProperties(result)
-
+	
 	if !ruleIds[sarifRule.ID] {
 		ruleIds[sarifRule.ID] = true
 		return &sarifRule
 	}
-
+	
 	return nil
 }
 
@@ -1216,7 +1213,7 @@ func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage str
 			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
-
+	
 	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
 		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
 		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
@@ -1232,7 +1229,7 @@ func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 	var sarifHelp wrappers.SarifHelp
 	sarifHelp.Text = findDescriptionText(result)
 	sarifHelp.Markdown = findHelpMarkdownText(result)
-
+	
 	return sarifHelp
 }
 
@@ -1243,7 +1240,7 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
 	}
-
+	
 	return result.Description
 }
 
@@ -1254,7 +1251,7 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
 	}
-
+	
 	return result.Description
 }
 
@@ -1264,7 +1261,7 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
-
+	
 	return sarifProperties
 }
 
@@ -1283,13 +1280,13 @@ func initSarifResult(result *wrappers.ScanResult) wrappers.SarifScanResult {
 	scanResult.RuleID, _, scanResult.Message.Text = findRuleID(result)
 	scanResult.Level = findSarifLevel(result)
 	scanResult.Locations = []wrappers.SarifLocation{}
-
+	
 	return scanResult
 }
 
 func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 	var scanResults []wrappers.SarifScanResult
-
+	
 	if len(result.ScanResultData.Nodes) > 0 {
 		scanResults = parseSarifResultSast(result, scanResults)
 	} else if result.Type == commonParams.KicsType {
@@ -1297,7 +1294,7 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 	} else if result.Type == commonParams.ScaType {
 		scanResults = parseSarifResultsSca(result, scanResults)
 	}
-
+	
 	if len(scanResults) > 0 {
 		return scanResults
 	}
@@ -1310,7 +1307,7 @@ func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.Sa
 	}
 	for _, location := range result.ScanResultData.ScaPackageCollection.Locations {
 		var scanResult = initSarifResult(result)
-
+		
 		var scanLocation wrappers.SarifLocation
 		scanLocation.PhysicalLocation.ArtifactLocation.URI = *location
 		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
@@ -1318,7 +1315,7 @@ func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.Sa
 		scanLocation.PhysicalLocation.Region.StartColumn = 1
 		scanLocation.PhysicalLocation.Region.EndColumn = 2
 		scanResult.Locations = append(scanResult.Locations, scanLocation)
-
+		
 		scanResults = append(scanResults, scanResult)
 	}
 	return scanResults
@@ -1327,7 +1324,7 @@ func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.Sa
 func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
 	var scanResult = initSarifResult(result)
 	var scanLocation wrappers.SarifLocation
-
+	
 	scanLocation.PhysicalLocation.ArtifactLocation.URI = strings.Replace(
 		result.ScanResultData.Filename,
 		"/",
@@ -1339,7 +1336,7 @@ func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.Sa
 	scanLocation.PhysicalLocation.Region.StartColumn = 1
 	scanLocation.PhysicalLocation.Region.EndColumn = 2
 	scanResult.Locations = append(scanResult.Locations, scanLocation)
-
+	
 	scanResults = append(scanResults, scanResult)
 	return scanResults
 }
@@ -1349,7 +1346,7 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 		return scanResults
 	}
 	var scanResult = initSarifResult(result)
-
+	
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
 		scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
@@ -1362,10 +1359,10 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 		length := node.Length
 		scanLocation.PhysicalLocation.Region.StartColumn = column
 		scanLocation.PhysicalLocation.Region.EndColumn = column + length
-
+		
 		scanResult.Locations = append(scanResult.Locations, scanLocation)
 	}
-
+	
 	scanResults = append(scanResults, scanResult)
 	return scanResults
 }
@@ -1415,7 +1412,7 @@ func addPackageInformation(
 ) *wrappers.ScanResultsCollection {
 	var currentID string
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
-
+	
 	for _, result := range resultsModel.Results {
 		if !(result.Type == scaType) {
 			continue
