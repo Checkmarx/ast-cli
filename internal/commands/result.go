@@ -374,11 +374,9 @@ func SummaryReport(
 	}
 	if summary.ScaIssues == 0 && !contains(summary.EnginesEnabled, scaType) {
 		summary.ScaIssues = notAvailableNumber
-		
 	}
 	if summary.KicsIssues == 0 && !contains(summary.EnginesEnabled, commonParams.KicsType) {
 		summary.KicsIssues = notAvailableNumber
-		
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
