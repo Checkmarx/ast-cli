@@ -452,6 +452,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
+// nolint: gofmt
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
