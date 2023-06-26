@@ -492,7 +492,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
-			fmt.Printf("              |              SCA: %*s|   \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
 		} else {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
