@@ -74,6 +74,7 @@ const (
 	ReportFormatPdfToEmailFlag   = "report-pdf-email"
 	ReportFormatPdfOptionsFlag   = "report-pdf-options"
 	ReportSbomFormatFlag         = "report-sbom-format"
+	ReportSbomFormatProxyFlag    = "report-sbom-proxy"
 	ProjectName                  = "project-name"
 	ScanTypes                    = "scan-types"
 	ScanTypeFlag                 = "scan-type"
