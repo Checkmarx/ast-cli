@@ -368,15 +368,20 @@ func SummaryReport(
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
-	if summary.SastIssues == 0 && !contains(summary.EnginesEnabled, commonParams.SastType) {
-		summary.SastIssues = notAvailableNumber
-
+	if summary.SastIssues == 0 {
+		if !contains(summary.EnginesEnabled, commonParams.SastType) {
+			summary.SastIssues = notAvailableNumber
+		}
 	}
-	if summary.ScaIssues == 0 && !contains(summary.EnginesEnabled, scaType) {
-		summary.ScaIssues = notAvailableNumber
+	if summary.ScaIssues == 0 {
+		if !contains(summary.EnginesEnabled, scaType) {
+			summary.ScaIssues = notAvailableNumber
+		}
 	}
-	if summary.KicsIssues == 0 && !contains(summary.EnginesEnabled, commonParams.KicsType) {
-		summary.KicsIssues = notAvailableNumber
+	if summary.KicsIssues == 0 {
+		if !contains(summary.EnginesEnabled, commonParams.KicsType) {
+			summary.KicsIssues = notAvailableNumber
+		}
 	}
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
