@@ -362,20 +362,19 @@ func SummaryReport(
 		if err != nil {
 			return nil, err
 		}
-
 		summary.APISecurity = *apiSecRisks
 	}
 
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
-	if summary.SastIssues == 0 {
+	if summary.SastIssues == 0 && !contains(summary.EnginesEnabled, commonParams.SastType) {
 		summary.SastIssues = notAvailableNumber
 	}
-	if summary.ScaIssues == 0 {
+	if summary.ScaIssues == 0 && !contains(summary.EnginesEnabled, scaType) {
 		summary.ScaIssues = notAvailableNumber
 	}
-	if summary.KicsIssues == 0 {
+	if summary.KicsIssues == 0 && !contains(summary.EnginesEnabled, commonParams.KicsType) {
 		summary.KicsIssues = notAvailableNumber
 	}
 	if summary.HighIssues > 0 {
@@ -451,6 +450,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 	return nil
 }
 
+// nolint: whitespace
 func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
@@ -487,9 +487,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf(
-					"              |               APIS WITH RISK: %d |     \n",
-					summary.APISecurity.TotalRisksCount)
+				fmt.Printf("              |   APIS WITH RISK: %*d|     \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
+
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
