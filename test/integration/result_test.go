@@ -253,3 +253,16 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Invalid SBOM option")
 }
+
+func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), "a6aa62f9-6c60-4be1-ac68-47e1cbc17d6c",
+		flag(params.TargetFormatFlag), "sbom",
+		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
+		flag(params.ReportSbomFormatProxyFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Assert(t, err != nil)
+}
