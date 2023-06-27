@@ -304,7 +304,7 @@ func TestSBOMReportXML(t *testing.T) {
 }
 
 func TestSBOMReportXMLWithProxy(t *testing.T) {
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml", "--report-sbom-proxy")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml", "--report-sbom-local-flow")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
 	// Remove generated json file
