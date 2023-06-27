@@ -551,7 +551,9 @@ func scanCreateSubCommand(
 	}
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
-	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatProxyFlag, false, "Use this flag to generate SBOM reports using SCA proxy APIs")
+	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatProxyFlag, false, "Use this flag to generate SBOM reports using an alternative API")
+
+	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatProxyFlag)
 
 	return createScanCmd
 }

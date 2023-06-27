@@ -174,7 +174,10 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
-	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatProxyFlag, false, "Use this flag to generate SBOM reports using SCA proxy APIs")
+	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatProxyFlag, false, "Use this flag to generate SBOM reports using an alternative API")
+
+	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatProxyFlag)
+
 	return resultShowCmd
 }
 
