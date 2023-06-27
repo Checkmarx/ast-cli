@@ -551,9 +551,10 @@ func scanCreateSubCommand(
 	}
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
-	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatProxyFlag, false, "Use this flag to generate SBOM reports using an alternative API")
 
-	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatProxyFlag)
+	// Temporary flag until SCA supports new api
+	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
+	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	return createScanCmd
 }
@@ -1632,7 +1633,7 @@ func createReportsAfterScan(
 	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
-	useSCAProxy, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatProxyFlag)
+	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	params, err := getFilters(cmd)
 	if err != nil {
@@ -1646,7 +1647,7 @@ func createReportsAfterScan(
 		risksOverviewWrapper,
 		scansWrapper,
 		resultsSbomWrapper,
-		useSCAProxy,
+		useSCALocalFlow,
 		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,
