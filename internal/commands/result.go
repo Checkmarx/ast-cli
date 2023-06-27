@@ -915,39 +915,39 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	}
 
 	if useSCAProxy {
-		log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
+		pollingResp := &wrappers.SbomPollingResponse{}
 
-		err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
+		sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
 		if err != nil {
 			return err
 		}
 
+		log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
+		pollingResp.ExportStatus = exportingStatus
+		for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+			pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
+			if err != nil {
+				return errors.Wrapf(err, "%s", "failed getting SBOM report status")
+			}
+			time.Sleep(delayValueForReport * time.Millisecond)
+		}
+		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
+			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
+		}
+		err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
+		if err != nil {
+			return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
+		}
 		return nil
 	}
 
-	pollingResp := &wrappers.SbomPollingResponse{}
+	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
 
-	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
+	err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	pollingResp.ExportStatus = exportingStatus
-	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-		pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-		}
-		time.Sleep(delayValueForReport * time.Millisecond)
-	}
-	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-	}
-	err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
-	if err != nil {
-		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-	}
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
