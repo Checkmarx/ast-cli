@@ -640,7 +640,8 @@ func CreateScanReport(
 
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCAProxy)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCAProxy)
 		if err != nil {
 			return err
 		}
