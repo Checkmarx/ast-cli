@@ -174,6 +174,11 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
+
+	// Temporary flag until SCA supports new api
+	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
+	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
+
 	return resultShowCmd
 }
 
@@ -528,6 +533,7 @@ func runGetResultCommand(
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
+		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
@@ -539,6 +545,7 @@ func runGetResultCommand(
 			risksOverviewWrapper,
 			scanWrapper,
 			resultsSbomWrapper,
+			useSCALocalFlow,
 			resultsPdfReportsWrapper,
 			scanID,
 			format,
@@ -596,6 +603,7 @@ func CreateScanReport(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	useSCALocalFlow bool,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
@@ -633,7 +641,8 @@ func CreateScanReport(
 
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow)
 		if err != nil {
 			return err
 		}
@@ -693,6 +702,7 @@ func createReport(
 	summary *wrappers.ResultSummary,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	useSCALocalFlow bool,
 
 ) error {
 	if isScanPending(summary.Status) {
@@ -744,7 +754,7 @@ func createReport(
 		if !contains(summary.EnginesEnabled, scaType) {
 			return fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
-		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions)
+		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow)
 	}
 	return fmt.Errorf("bad report format %s", format)
 }
@@ -895,7 +905,7 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string) error {
+func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string, useSCALocalFlow bool) error {
 	payload := &wrappers.SbomReportsPayload{
 		ScanID:     results.ScanID,
 		FileFormat: defaultSbomOption,
@@ -908,29 +918,40 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 		payload.FileFormat = format
 	}
 
-	pollingResp := &wrappers.SbomPollingResponse{}
+	if useSCALocalFlow {
+		pollingResp := &wrappers.SbomPollingResponse{}
 
-	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
+		sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
+		if err != nil {
+			return err
+		}
+
+		log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
+		pollingResp.ExportStatus = exportingStatus
+		for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+			pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
+			if err != nil {
+				return errors.Wrapf(err, "%s", "failed getting SBOM report status")
+			}
+			time.Sleep(delayValueForReport * time.Millisecond)
+		}
+		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
+			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
+		}
+		err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
+		if err != nil {
+			return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
+		}
+		return nil
+	}
+
+	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
+
+	err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	pollingResp.ExportStatus = exportingStatus
-	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-		pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-		}
-		time.Sleep(delayValueForReport * time.Millisecond)
-	}
-	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-	}
-	err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
-	if err != nil {
-		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-	}
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {

@@ -52,5 +52,6 @@ const (
 	TenantConfigurationPathEnv          = "CX_TENANT_CONFIGURATION_PATH"
 	ResultsPdfReportPathEnv             = "CX_RESULTS_PDF_REPORT_PATH"
 	ResultsSbomReportPathEnv            = "CX_RESULTS_SBOM_PATH"
+	ResultsSbomReportProxyPathEnv       = "CX_RESULTS_SBOM_PROXY_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
 )
