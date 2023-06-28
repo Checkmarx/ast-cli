@@ -54,4 +54,5 @@ var EnvVarsBinds = []struct {
 	{ClientTimeoutKey, ClientTimeoutEnv, "30"},
 	{ResultsPdfReportPathKey, ResultsPdfReportPathEnv, "api/reports"},
 	{ResultsSbomReportPathKey, ResultsSbomReportPathEnv, "api/sca/export"},
+	{ResultsSbomReportProxyPathKey, ResultsSbomReportProxyPathEnv, "api/sca/risk-management/risk-reports"},
 }

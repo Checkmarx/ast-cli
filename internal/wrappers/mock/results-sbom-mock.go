@@ -9,6 +9,20 @@ import (
 
 type ResultsSbomWrapper struct{}
 
+func (w *ResultsSbomWrapper) GenerateSbomReportWithProxy(payload *wrappers.SbomReportsPayload, targetFile string) error {
+	file, err := os.Create(targetFile)
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
+	return nil
+}
+
 // GenerateSbomReport mock for tests
 func (*ResultsSbomWrapper) GenerateSbomReport(_ *wrappers.SbomReportsPayload) (*wrappers.SbomReportsResponse, error) {
 	return &wrappers.SbomReportsResponse{
