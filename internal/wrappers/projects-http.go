@@ -79,6 +79,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*ProjectsCollectionResponseModel,
 	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	params["limit"] = limitValue
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err
