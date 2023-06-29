@@ -53,9 +53,10 @@ jobs:
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Updating and upgrading brew
         run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
-          git config --global core.compression 0
-          git config --global http.postBuffer 1048576000
+          git config --global pack.windowMemory "100m"
+          git config --global pack.SizeLimit "100m" 
+          git config --global pack.threads "1"
+          git config --global pack.window "0"
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew --version
       - name: Install gon
