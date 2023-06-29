@@ -105,8 +105,6 @@ jobs:
           echo "GR_ARGS=${args}" >> $GITHUB_ENV
       - name: Echo GoReleaser Args
         run: echo ${{ env.GR_ARGS }}
-      - name: Config Git credentials
-        run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com".insteadOf "https://github.com"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
