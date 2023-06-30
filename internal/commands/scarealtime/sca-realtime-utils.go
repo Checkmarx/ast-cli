@@ -18,6 +18,24 @@ import (
 
 var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
 
+var GetPackageManagerFromResolvingModuleType = map[string]string{
+	"composer":  "Php",
+	"gomodules": "Go",
+	"pip":       "Python",
+	"rubygems":  "Ruby",
+	"npm":       "Npm",
+	"yarn":      "Npm",
+	"bower":     "Npm",
+	"lerna":     "Npm",
+	"sbt":       "Maven",
+	"ivy":       "Maven",
+	"maven":     "Maven",
+	"gradle":    "Maven",
+	"swiftpm":   "Ios",
+	"carthage":  "Ios",
+	"cocoapods": "Ios",
+}
+
 // downloadSCAResolverAndHashFileIfNeeded Downloads SCA Realtime if it is not downloaded yet
 func downloadSCAResolverAndHashFileIfNeeded(scaRealTime *ScaRealTime) error {
 	logger.PrintIfVerbose("Handling SCA Resolver...")
