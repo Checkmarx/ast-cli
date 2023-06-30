@@ -30,6 +30,7 @@ type ResultSummary struct {
 	BranchName      string
 	ScanInfoMessage string
 	EnginesEnabled  []string
+	Policies        *PolicyResponseModel
 }
 
 type APISecResult struct {

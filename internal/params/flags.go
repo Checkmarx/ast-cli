@@ -21,6 +21,8 @@ const (
 	AsyncFlag                     = "async"
 	WaitDelayFlag                 = "wait-delay"
 	ScanTimeoutFlag               = "scan-timeout"
+	PolicyTimeoutFlag             = "policy-timeout"
+	IgnorePolicyFlag              = "ignore-policy"
 	SourceDirFilterFlag           = "file-filter"
 	SourceDirFilterFlagSh         = "f"
 	IncludeFilterFlag             = "file-include"

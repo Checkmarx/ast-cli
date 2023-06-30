@@ -69,6 +69,7 @@ func main() {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
+	policyWrapper := wrappers.NewHTTPPolicyWrapper("api/policy_management_service_uri/evaluation")
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -95,6 +96,7 @@ func main() {
 		jwtWrapper,
 		scaRealTimeWrapper,
 		chatWrapper,
+		policyWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

@@ -117,6 +117,7 @@ func NewResultsCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -322,7 +323,6 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 			}
 		}
 	}
-
 	return &wrappers.ResultSummary{
 		ScanID:         scanInfo.ID,
 		Status:         string(scanInfo.Status),
@@ -347,6 +347,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
+	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
@@ -368,6 +369,9 @@ func SummaryReport(
 			return nil, err
 		}
 		summary.APISecurity = *apiSecRisks
+	}
+	if policies != nil {
+		summary.Policies = filterViolatedRules(*policies)
 	}
 
 	for _, result := range results.Results {
@@ -456,7 +460,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, cmd *cobra.Command) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -501,11 +505,36 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
-		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("\n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
+		if summary.Policies != nil {
+			fmt.Printf("              -----------------------------------     \n\n")
+			if summary.Policies.BreakBuild {
+				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+			} else {
+				fmt.Printf("            Policy Management Violation:                     \n")
+			}
+			if len(summary.Policies.Polices) > 0 {
+				for _, police := range summary.Policies.Polices {
+					if len(police.RulesViolated) > 0 {
+						fmt.Printf("              Policy: %s | Break Build: %t\n", police.Name, police.BreakBuild)
+						fmt.Printf("              	Violated Rules:\n")
+						for _, violatedRule := range police.RulesViolated {
+							fmt.Printf("              		%s\n", violatedRule)
+						}
+					}
+				}
+			} else {
+				policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+				if !policyOverrideFlag {
+					fmt.Printf("              No policies violated\n")
+				} else {
+					fmt.Printf("              Policies ignored\n")
+				}
+			}
+		}
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
-
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
@@ -545,6 +574,7 @@ func runGetResultCommand(
 			risksOverviewWrapper,
 			scanWrapper,
 			resultsSbomWrapper,
+			nil, // add here the policies wrapper
 			useSCALocalFlow,
 			resultsPdfReportsWrapper,
 			scanID,
@@ -554,7 +584,8 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
-			params)
+			params,
+			cmd)
 	}
 }
 
@@ -603,6 +634,7 @@ func CreateScanReport(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scanWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	policies *wrappers.PolicyResponseModel,
 	useSCALocalFlow bool,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
@@ -613,6 +645,7 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	params map[string]string,
+	cmd *cobra.Command,
 ) error {
 	if scanID == "" {
 		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
@@ -634,7 +667,7 @@ func CreateScanReport(
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, risksOverviewWrapper, resultsWrapper)
+	summary, err := SummaryReport(results, scan, policies, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
@@ -642,7 +675,7 @@ func CreateScanReport(
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow)
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, cmd)
 		if err != nil {
 			return err
 		}
@@ -703,7 +736,7 @@ func createReport(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
-
+	cmd *cobra.Command,
 ) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
@@ -722,7 +755,7 @@ func createReport(
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary)
+		return writeConsoleSummary(summary, cmd)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
@@ -1470,4 +1503,16 @@ func addPackageInformation(
 		}
 	}
 	return resultsModel
+}
+
+func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {
+	i := 0
+	for _, policy := range policyModel.Polices {
+		if len(policy.RulesViolated) > 0 {
+			policyModel.Polices[i] = policy
+			i++
+		}
+	}
+	policyModel.Polices = policyModel.Polices[:i]
+	return &policyModel
 }
