@@ -138,14 +138,14 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			dependencyMap[dependency.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
 				PackageName:    dependency.ID.Name,
 				Version:        dependency.ID.Version,
-				PackageManager: dependency.ResolvingModuleType,
+				PackageManager: getPackageManagerFromResolvingModuleType(dependency.ResolvingModuleType),
 			}
 			if len(dependency.Children) > 0 {
 				for _, dependencyChildren := range dependency.Children {
 					dependencyMap[dependencyChildren.NodeID] = wrappers.ScaDependencyBodyRequest{
 						PackageName:    dependencyChildren.Name,
 						Version:        dependencyChildren.Version,
-						PackageManager: dependency.ResolvingModuleType,
+						PackageManager: getPackageManagerFromResolvingModuleType(dependency.ResolvingModuleType),
 					}
 				}
 			}
@@ -202,6 +202,37 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	}
 
 	return nil
+}
+
+func getPackageManagerFromResolvingModuleType(resolvingModuleType string) string {
+	switch strings.ToLower(resolvingModuleType) {
+	case "composer":
+		return "Php"
+	case "gomodules":
+		return "Go"
+	case "pip":
+		return "Python"
+	case "rubygems":
+		return "Ruby"
+	case "npm":
+	case "yarn":
+	case "bower":
+	case "lerna":
+		return "Npm"
+	case "sbt":
+	case "ivy":
+	case "maven":
+	case "gradle":
+		return "Maven"
+	case "swiftpm":
+	case "carthage":
+	case "cocoapods":
+		return "Ios"
+	default:
+		return strings.ToLower(resolvingModuleType)
+	}
+
+	return strings.ToLower(resolvingModuleType)
 }
 
 func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, bodyRequest []wrappers.ScaDependencyBodyRequest) (vulnerabilities []wrappers.ScaVulnerabilitiesResponseModel, err, err1 error) { //nolint:lll
