@@ -137,6 +137,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 			var dependency = dependencyResolutionResult.Dependencies[i]
 			var packageManager = GetPackageManagerFromResolvingModuleType[strings.ToLower(dependency.ResolvingModuleType)]
 
+			// if no package manager is found uses the resolving module type
 			if packageManager == "" {
 				packageManager = strings.ToLower(dependency.ResolvingModuleType)
 			}
