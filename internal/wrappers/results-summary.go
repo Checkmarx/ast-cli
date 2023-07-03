@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -50,6 +51,53 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) HasPolicies() bool {
+	return r.Policies != nil && len(r.Policies.Polices) > 0
+}
+
+func (r *ResultSummary) GeneratePolicyHtml() string {
+	html := `
+<div class="element">
+	<div class="header-policy">
+		Policy Management Violation
+	</div>
+	<table id="policy">
+		<tr>
+			<td>
+				Policy
+			</td>
+			<td>
+				Rule
+			</td>
+			<td>
+				Break Build
+			</td>
+		</tr>
+`
+	for _, police := range r.Policies.Polices {
+		html += `<tr>
+					<td>` +
+			police.Name +
+			`	
+					</td>
+				` +
+			`
+				<td>
+			` + strings.Join(police.RulesViolated, ",") +
+			`
+				</td>
+			` + `<td>` +
+			strconv.FormatBool(police.BreakBuild) +
+			`
+				</td>
+			</tr>
+			`
+	}
+	html += `</table>
+</div>`
+	return html
 }
 
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
@@ -390,6 +438,38 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             text-align: center;
             margin-bottom: 10px;
         }
+		#policy {
+		  	border-collapse: collapse;
+		  	width: 100%;
+		}
+		
+		#policy td, #policy th {
+		  	border: 1px solid #ddd;
+		  	padding: 8px;
+			font-size: 14px;
+		}
+		
+		#policy tr:nth-child(even){background-color: #f2f2f2;}
+		
+		#policy th {
+		  	padding-top: 12px;
+		  	padding-bottom: 12px;
+		  	text-align: left;
+		  	background-color: #04AA6D;
+		  	color: white;
+		}
+		.header-policy {
+			-ms-flex-pack: justify;
+			-webkit-box-pack: justify;
+			display: flex;
+			height: 20px;
+			justify-content: space-between;
+			margin-bottom: 5px;
+			align-items: center;
+			justify-content: left;
+			font-size: 15px;
+			font-weight: 700;
+		}
     </style>
     <script>
         window.addEventListener('load', function () {
@@ -510,6 +590,9 @@ const nonAsyncSummary = `<div class="top-row">
                     </div>
                 </div>
             </div>
+			{{if .HasPolicies}}
+				{{.GeneratePolicyHtml}}
+			{{end}}
         </div>
         {{if .HasAPISecurity}}
         <hr>
