@@ -2,10 +2,8 @@ package wrappers
 
 import (
 	"encoding/json"
-	//"fmt"
 	"net/http"
 
-	//"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 

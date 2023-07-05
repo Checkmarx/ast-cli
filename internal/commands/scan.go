@@ -1428,6 +1428,7 @@ func runCreateScanCommand(
 		}
 		// Wait until the scan is done: Queued, Running
 		AsyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
+		policyResponseModel := &wrappers.PolicyResponseModel{}
 		if !AsyncFlag {
 			waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 			err = handleWait(
@@ -1445,7 +1446,6 @@ func runCreateScanCommand(
 			}
 			// Handling policy response
 			policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-			policyResponseModel := &wrappers.PolicyResponseModel{}
 			if !policyOverrideFlag {
 				policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 				if policyTimeout < 0 {
@@ -1475,7 +1475,11 @@ func runCreateScanCommand(
 		}
 
 		cleanUpTempZip(zipFilePath)
-
+		// verify break build from policy
+		if len(policyResponseModel.Polices) > 0 && policyResponseModel.BreakBuild {
+			logger.PrintIfVerbose("Breaking the build due to policy violation")
+			return errors.Errorf("Policy Violation - Break Build Enabled")
+		}
 		return nil
 	}
 }
@@ -1658,7 +1662,7 @@ func handlePolicyWait(
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
-			log.Println("Policy evaluation failed")
+			logger.PrintIfVerbose("Policy evaluation failed")
 		}
 		return nil, err
 	}
@@ -1860,7 +1864,7 @@ func waitForPolicyCompletion(
 	scanResponseModel *wrappers.ScanResponseModel,
 	cmd *cobra.Command,
 ) (*wrappers.PolicyResponseModel, error) {
-	logger.PrintIfVerbose("Waiting for policy evaluation to complete for scanID:"+ scanResponseModel.ID +" and projectID:"+scanResponseModel.ProjectID)
+	logger.PrintIfVerbose("Waiting for policy evaluation to complete for scanID:" + scanResponseModel.ID + " and projectID:" + scanResponseModel.ProjectID)
 	var policyResponseModel *wrappers.PolicyResponseModel
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
 	fixedWait := time.Duration(waitDelay) * time.Second
@@ -1888,7 +1892,7 @@ func waitForPolicyCompletion(
 		}
 		i++
 	}
-	logger.PrintIfVerbose("Policy evaluation completed with status"+ policyResponseModel.Status)
+	logger.PrintIfVerbose("Policy evaluation completed with status" + policyResponseModel.Status)
 	return policyResponseModel, nil
 }
 
@@ -1963,9 +1967,9 @@ func isPolicyEvaluated(
 		}
 	}
 	// Case the policy is evaluated or None
-	logger.PrintIfVerbose("Policy evaluation finished with status: "+ policyResponseModel.Status)
+	logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
 	if policyResponseModel.Status == "COMPLETED" || policyResponseModel.Status == "NONE" {
-		logger.PrintIfVerbose("Policy status: "+ policyResponseModel.Status)
+		logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
 		return true, policyResponseModel, nil
 	}
 	return true, nil, nil
