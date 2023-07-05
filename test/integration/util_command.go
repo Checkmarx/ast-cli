@@ -100,6 +100,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
+	policyWrapper := wrappers.PolicyWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -126,6 +127,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		jwtWrapper,
 		scaRealtimeWrapper,
 		chatWrapper,
+		policyWrapper,
 	)
 	return astCli
 }
