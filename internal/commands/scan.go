@@ -1915,7 +1915,7 @@ func isScanRunning(
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	if errorModel != nil {
-		log.Fatal(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)
@@ -1961,7 +1961,7 @@ func isPolicyEvaluated(
 		return false, nil, err
 	}
 	if errorModel != nil {
-		log.Fatal(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
 	} else if policyResponseModel != nil {
 		if policyResponseModel.Status == evaluatingPolicy {
 			log.Println("Policy status: ", policyResponseModel.Status)
