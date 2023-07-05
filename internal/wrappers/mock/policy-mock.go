@@ -3,7 +3,6 @@ package mock
 import "github.com/checkmarx/ast-cli/internal/wrappers"
 
 type PolicyMockWrapper struct {
-	path string
 }
 
 func (r *PolicyMockWrapper) EvaluatePolicy(params map[string]string) (
