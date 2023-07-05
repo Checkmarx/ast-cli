@@ -15,7 +15,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -130,7 +130,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper,policyWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -145,6 +145,7 @@ func resultShowSubCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -155,7 +156,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper,policyWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -179,7 +180,18 @@ func resultShowSubCommand(
 	// Temporary flag until SCA supports new api
 	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
-
+	resultShowCmd.PersistentFlags().IntP(
+		commonParams.WaitDelayFlag,
+		"",
+		commonParams.WaitDelayDefault,
+		"Polling wait time in seconds",
+	)
+	resultShowCmd.PersistentFlags().Int(
+		commonParams.PolicyTimeoutFlag,
+		0,
+		"Cancel the policy evaluation and fail after the timeout in minutes",
+	)
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	return resultShowCmd
 }
 
@@ -477,6 +489,26 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, cmd *cobra.Command) er
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
+		if summary.Policies != nil {
+			fmt.Printf("              -----------------------------------     \n\n")
+			if summary.Policies.BreakBuild {
+				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+			} else {
+				fmt.Printf("            Policy Management Violation:                     \n")
+			}
+			if len(summary.Policies.Polices) > 0 {
+				for _, police := range summary.Policies.Polices {
+					if len(police.RulesViolated) > 0 {
+						fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
+						for _, violatedRule := range police.RulesViolated {
+							fmt.Printf("%s;", violatedRule)
+						}
+					}
+					fmt.Printf("\n")
+				}
+			}
+			fmt.Printf("\n")
+		}
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
@@ -507,32 +539,6 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, cmd *cobra.Command) er
 		}
 		fmt.Printf("\n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
-		if summary.Policies != nil {
-			fmt.Printf("              -----------------------------------     \n\n")
-			if summary.Policies.BreakBuild {
-				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
-			} else {
-				fmt.Printf("            Policy Management Violation:                     \n")
-			}
-			if len(summary.Policies.Polices) > 0 {
-				for _, police := range summary.Policies.Polices {
-					if len(police.RulesViolated) > 0 {
-						fmt.Printf("              Policy: %s | Break Build: %t\n", police.Name, police.BreakBuild)
-						fmt.Printf("              	Violated Rules:\n")
-						for _, violatedRule := range police.RulesViolated {
-							fmt.Printf("              		%s\n", violatedRule)
-						}
-					}
-				}
-			} else {
-				policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-				if !policyOverrideFlag {
-					fmt.Printf("              No policies violated\n")
-				} else {
-					fmt.Printf("              Policies ignored\n")
-				}
-			}
-		}
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
@@ -554,6 +560,7 @@ func runGetResultCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -565,19 +572,44 @@ func runGetResultCommand(
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+		if scanID == "" {
+			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
+		}
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
+		scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
+		if scanErr != nil {
+			return errors.Wrapf(scanErr, "%s", failedGetting)
+		}
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+		}
+
+		policyResponseModel := &wrappers.PolicyResponseModel{}
+		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
+		if !policyOverrideFlag {
+			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
+			if policyTimeout < 0 {
+				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
+			}
+			policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan, cmd)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.PrintIfVerbose("Skipping policy evaluation")
+		}
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
-			scanWrapper,
 			resultsSbomWrapper,
-			nil, // add here the policies wrapper
+			policyResponseModel,
 			useSCALocalFlow,
 			resultsPdfReportsWrapper,
-			scanID,
+			scan,
 			format,
 			formatPdfToEmail,
 			formatPdfOptions,
@@ -632,12 +664,11 @@ func runGetCodeBashingCommand(
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	scanWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
-	policies *wrappers.PolicyResponseModel,
+	policyResponseModel *wrappers.PolicyResponseModel,
 	useSCALocalFlow bool,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	scanID,
+	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
@@ -647,27 +678,16 @@ func CreateScanReport(
 	params map[string]string,
 	cmd *cobra.Command,
 ) error {
-	if scanID == "" {
-		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
-	}
 	err := createDirectory(targetPath)
 	if err != nil {
 		return err
 	}
-	scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
-	if scanErr != nil {
-		return errors.Wrapf(scanErr, "%s", failedGetting)
-	}
-	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
-	}
-
 	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, policies, risksOverviewWrapper, resultsWrapper)
+	summary, err := SummaryReport(results, scan,policyResponseModel , risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}

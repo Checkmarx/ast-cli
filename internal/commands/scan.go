@@ -1659,8 +1659,6 @@ func handlePolicyWait(
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
 			log.Println("Policy evaluation failed")
-			//taskResponseModel, _, _ := scansWrapper.GetWorkflowByID(scanResponseModel.ID)
-			//_ = printer.Print(cmd.OutOrStdout(), taskResponseModel, printer.FormatList)
 		}
 		return nil, err
 	}
@@ -1693,15 +1691,21 @@ func createReportsAfterScan(
 	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
 		reportFormats += "," + printer.FormatSummaryConsole
 	}
+	scan, errorModel, scanErr := scansWrapper.GetByID(scanID)
+	if scanErr != nil {
+		return errors.Wrapf(scanErr, "%s", failedGetting)
+	}
+	if errorModel != nil {
+		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+	}
 	return CreateScanReport(
 		resultsWrapper,
 		risksOverviewWrapper,
-		scansWrapper,
 		resultsSbomWrapper,
 		policyResponseModel,
 		useSCALocalFlow,
 		resultsPdfReportsWrapper,
-		scanID,
+		scan,
 		reportFormats,
 		formatPdfToEmail,
 		formatPdfOptions,
@@ -1856,7 +1860,7 @@ func waitForPolicyCompletion(
 	scanResponseModel *wrappers.ScanResponseModel,
 	cmd *cobra.Command,
 ) (*wrappers.PolicyResponseModel, error) {
-	log.Println("Waiting for policy evaluation to complete", scanResponseModel.ID, scanResponseModel.ProjectID)
+	logger.PrintIfVerbose("Waiting for policy evaluation to complete for scanID:"+ scanResponseModel.ID +" and projectID:"+scanResponseModel.ProjectID)
 	var policyResponseModel *wrappers.PolicyResponseModel
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
 	fixedWait := time.Duration(waitDelay) * time.Second
@@ -1884,7 +1888,7 @@ func waitForPolicyCompletion(
 		}
 		i++
 	}
-	log.Println("Policy evaluation completed with status", policyResponseModel.Status)
+	logger.PrintIfVerbose("Policy evaluation completed with status"+ policyResponseModel.Status)
 	return policyResponseModel, nil
 }
 
@@ -1959,9 +1963,9 @@ func isPolicyEvaluated(
 		}
 	}
 	// Case the policy is evaluated or None
-	log.Println("Policy evaluation finished with status: ", policyResponseModel.Status)
+	logger.PrintIfVerbose("Policy evaluation finished with status: "+ policyResponseModel.Status)
 	if policyResponseModel.Status == "COMPLETED" || policyResponseModel.Status == "NONE" {
-		log.Println("Policy status: ", policyResponseModel.Status)
+		logger.PrintIfVerbose("Policy status: "+ policyResponseModel.Status)
 		return true, policyResponseModel, nil
 	}
 	return true, nil, nil

@@ -60,8 +60,13 @@ func (r *ResultSummary) HasPolicies() bool {
 func (r *ResultSummary) GeneratePolicyHtml() string {
 	html := `
 <div class="element">
-	<div class="header-policy">
-		Policy Management Violation
+	<div class="header-policy">`
+	if r.Policies.BreakBuild {
+		html += "Policy Management Violation - Break Build Enabled\n"
+	} else {
+		html += "Policy Management Violation\n"
+	}
+	html += `
 	</div>
 	<table id="policy">
 		<tr>
@@ -98,6 +103,20 @@ func (r *ResultSummary) GeneratePolicyHtml() string {
 	html += `</table>
 </div>`
 	return html
+}
+
+func (r *ResultSummary) GeneratePolicyMarkdown() string {
+	markdown := ""
+	if r.Policies.BreakBuild {
+		markdown += "### Policy Management Violation - Break Build Enabled\n"
+	} else {
+		markdown += "### Policy Management Violation\n"
+	}
+	markdown += "| Policy | Rule | Break Build |\n|:----------:|:------------:|:---------:|\n"
+	for _, police := range r.Policies.Polices {
+		markdown += "|" + police.Name + "|" + strings.Join(police.RulesViolated, ",") + "|" + strconv.FormatBool(police.BreakBuild) + "|\n"
+	}
+	return markdown
 }
 
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
@@ -448,7 +467,11 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 		  	padding: 8px;
 			font-size: 14px;
 		}
-		
+
+		#policy tr{
+			word-break:break-all;
+		}
+
 		#policy tr:nth-child(even){background-color: #f2f2f2;}
 		
 		#policy th {
@@ -543,6 +566,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
 const nonAsyncSummary = `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
+			{{if .HasPolicies}}
+				{{.GeneratePolicyHtml}}
+			{{end}}
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
                 <div>
@@ -590,9 +616,6 @@ const nonAsyncSummary = `<div class="top-row">
                     </div>
                 </div>
             </div>
-			{{if .HasPolicies}}
-				{{.GeneratePolicyHtml}}
-			{{end}}
         </div>
         {{if .HasAPISecurity}}
         <hr>
@@ -637,6 +660,10 @@ const SummaryMarkdownTemplate = `
 ### {{$emoji}} {{.RiskMsg}} {{$emoji}}
 ######  Scan : 💾 {{.ScanID}}     |   📅 {{.CreatedAt}}    |  [🔗 More details]({{.BaseURI}})
 ***
+
+{{if .HasPolicies}}
+{{.GeneratePolicyMarkdown}}
+{{end}}
 
 ### Total Vulnerabilities: {{.TotalIssues}}
 
