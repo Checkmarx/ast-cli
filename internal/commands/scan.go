@@ -576,7 +576,7 @@ func findProject(
 	groupsWrapper wrappers.GroupsWrapper,
 ) (string, error) {
 	params := make(map[string]string)
-	params["name"] = projectName
+	params["names"] = projectName
 	resp, _, err := projectsWrapper.Get(params)
 	if err != nil {
 		return "", err
