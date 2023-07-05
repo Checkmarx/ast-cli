@@ -44,6 +44,7 @@ func main() {
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
 	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -69,7 +70,7 @@ func main() {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
-	policyWrapper := wrappers.NewHTTPPolicyWrapper("api/policy_management_service_uri/evaluation")
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,

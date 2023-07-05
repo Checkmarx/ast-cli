@@ -54,4 +54,5 @@ const (
 	ResultsSbomReportPathEnv            = "CX_RESULTS_SBOM_PATH"
 	ResultsSbomReportProxyPathEnv       = "CX_RESULTS_SBOM_PROXY_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
+	PolicyEvaluationPathEnv             = "CX_POLICY_EVALUATION_PATH"
 )
