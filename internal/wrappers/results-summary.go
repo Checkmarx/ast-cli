@@ -57,7 +57,7 @@ func (r *ResultSummary) HasPolicies() bool {
 	return r.Policies != nil && len(r.Policies.Polices) > 0
 }
 
-func (r *ResultSummary) GeneratePolicyHtml() string {
+func (r *ResultSummary) GeneratePolicyHTML() string {
 	html := `
 <div class="element">
 	<div class="header-policy">`
@@ -567,7 +567,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 const nonAsyncSummary = `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
 			{{if .HasPolicies}}
-				{{.GeneratePolicyHtml}}
+				{{.GeneratePolicyHTML}}
 			{{end}}
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>

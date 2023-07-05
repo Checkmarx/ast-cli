@@ -92,6 +92,9 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
+	completedPolicy  = "COMPLETED"
+	nonePolicy       = "NONE"
+	evaluatingPolicy = "EVALUATING"
 )
 
 var (
@@ -1717,7 +1720,6 @@ func createReportsAfterScan(
 		targetFile,
 		targetPath,
 		params,
-		cmd,
 	)
 }
 
@@ -1961,14 +1963,14 @@ func isPolicyEvaluated(
 	if errorModel != nil {
 		log.Fatal(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
 	} else if policyResponseModel != nil {
-		if policyResponseModel.Status == "EVALUATING" {
+		if policyResponseModel.Status == evaluatingPolicy {
 			log.Println("Policy status: ", policyResponseModel.Status)
 			return false, nil, nil
 		}
 	}
 	// Case the policy is evaluated or None
 	logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
-	if policyResponseModel.Status == "COMPLETED" || policyResponseModel.Status == "NONE" {
+	if policyResponseModel.Status == completedPolicy || policyResponseModel.Status == nonePolicy {
 		logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
 		return true, policyResponseModel, nil
 	}

@@ -472,7 +472,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary, cmd *cobra.Command) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -616,8 +616,7 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
-			params,
-			cmd)
+			params)
 	}
 }
 
@@ -676,7 +675,6 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	params map[string]string,
-	cmd *cobra.Command,
 ) error {
 	err := createDirectory(targetPath)
 	if err != nil {
@@ -695,7 +693,7 @@ func CreateScanReport(
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, cmd)
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow)
 		if err != nil {
 			return err
 		}
@@ -756,7 +754,6 @@ func createReport(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
-	cmd *cobra.Command,
 ) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
@@ -775,7 +772,7 @@ func createReport(
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary, cmd)
+		return writeConsoleSummary(summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, "html")
