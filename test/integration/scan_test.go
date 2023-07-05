@@ -630,7 +630,7 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.IgnorePolicyFlag),
 		flag(params.PolicyTimeoutFlag),
-		999999,
+		"999999",
 	}
 
 	err, _ := executeCommand(t, args...)
