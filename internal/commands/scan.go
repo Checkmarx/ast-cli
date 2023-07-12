@@ -92,7 +92,7 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	microEnginesContainerImage    = "checkmarx.jfrog.io/ast-docker/microengine-wrapper-template:first-version-2"
+	microEnginesContainerImage    = "codfishjoe/me-wrapper:cx-scorecard-v1.0.0"
 	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
 	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
 	microEnginesScanTargetFlag    = "--scan-target"
@@ -801,6 +801,10 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+	var microEngineConfig = addMicroEngineScan()
+	if microEngineConfig != nil {
+		configArr = append(configArr, microEngineConfig)
+	}
 
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
@@ -929,6 +933,15 @@ func addAPISecScan() map[string]interface{} {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecMapConfig["type"] = commonParams.APISecType
 		return apiSecMapConfig
+	}
+	return nil
+}
+
+func addMicroEngineScan() map[string]interface{} {
+	if scanTypeEnabled(commonParams.MicroEngineType) {
+		microEngineMapConfig := make(map[string]interface{})
+		microEngineMapConfig["type"] = commonParams.MicroEngineType
+		return microEngineMapConfig
 	}
 	return nil
 }
@@ -1284,13 +1297,13 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 }
 
 func addMicroEnginesResults(zipWriter *zip.Writer) error {
-	logger.PrintIfVerbose("Included MicroEngines Results: " + ".cxmicro-engines-results.json")
+	logger.PrintIfVerbose("Included MicroEngines Results: " + "cxmicro-engines-results.json")
 	dat, err := os.ReadFile(microEnginesResultsFile)
 	_ = os.Remove(microEnginesResultsFile)
 	if err != nil {
 		return err
 	}
-	f, err := zipWriter.Create(".cxmicro-engines-results.json")
+	f, err := zipWriter.Create("results.json")
 	if err != nil {
 		return err
 	}
@@ -1497,6 +1510,7 @@ func runCreateScanCommand(
 		}
 
 		if strings.Contains(actualScanTypes, commonParams.MicroEngineType) {
+			log.Println(fmt.Sprint("Running micro-engines"))
 			err = runMicroEnginesScan(cmd)
 			if err != nil {
 				return errors.Errorf("Error on micro-engines scan: %s", err.Error())

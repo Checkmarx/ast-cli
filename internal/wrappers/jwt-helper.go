@@ -15,11 +15,11 @@ type JWTStruct struct {
 }
 
 var defaultEngines = map[string]bool{
-	"sast":          true,
-	"sca":           true,
-	"api-security":  true,
-	"iac-security":  true,
-	"micro-engines": true,
+	"sast":         true,
+	"sca":          true,
+	"api-security": true,
+	"iac-security": true,
+	"microengines": true,
 }
 
 type JWTWrapper interface {
