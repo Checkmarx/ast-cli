@@ -92,7 +92,7 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	microEnginesContainerImage    = "codfishjoe/me-wrapper:cx-scorecard-v1.0.0"
+	microEnginesContainerImage    = "codfishjoe/me-wrapper:v2"
 	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
 	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
 	microEnginesScanTargetFlag    = "--scan-target"
