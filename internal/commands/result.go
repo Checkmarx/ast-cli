@@ -15,6 +15,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/logger"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -73,6 +74,7 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
+	reportSbomMaxRetries                    = 10
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -754,6 +756,11 @@ func createReport(
 		if !contains(summary.EnginesEnabled, scaType) {
 			return fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
+
+		if summary.ScaIssues == notAvailableNumber {
+			return fmt.Errorf("- SCA engine did not completed")
+		}
+
 		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow)
 	}
 	return fmt.Errorf("bad report format %s", format)
@@ -946,10 +953,26 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	}
 
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
+	i := uint64(0)
 
-	err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
-	if err != nil {
-		return err
+	for i < reportSbomMaxRetries {
+		completed, err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
+		if err != nil {
+			return err
+		}
+
+		if completed {
+			return nil
+		}
+		i++
+		time.Sleep(delayValueForReport * time.Millisecond)
+		logger.PrintIfVerbose(
+			fmt.Sprintf(
+				"Retry SBOM report: --%d retry",
+				i,
+			),
+		)
+
 	}
 
 	return nil
