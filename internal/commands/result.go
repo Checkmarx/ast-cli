@@ -754,11 +754,11 @@ func createReport(
 		convertNotAvailableNumberToZero(summary)
 
 		if !contains(summary.EnginesEnabled, scaType) {
-			return fmt.Errorf("to generate %s report, SCA engine must be enabled on scan summary", printer.FormatSbom)
+			return fmt.Errorf("unable to generate %s report - SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
 
 		if summary.ScaIssues == notAvailableNumber {
-			return fmt.Errorf("- SCA engine did not completed")
+			return fmt.Errorf("unable to generate %s report - SCA engine did not complete successfully", printer.FormatSbom)
 		}
 
 		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow)
