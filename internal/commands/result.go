@@ -28,6 +28,7 @@ const (
 	failedCreatingSummary     = "Failed creating summary"
 	failedGettingScan         = "Failed getting scan"
 	failedListingResults      = "Failed listing results"
+	failedCreatingReport      = "Failed creating report"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
 	highLabel                 = "high"
@@ -176,7 +177,7 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 
-	resultShowCmd.PersistentFlags().Uint(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
+	resultShowCmd.PersistentFlags().Int(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
 
 	// Temporary flag until SCA supports new api
 	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
@@ -544,7 +545,7 @@ func runGetResultCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		return CreateScanReport(
+		err = CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
 			scanWrapper,
@@ -560,6 +561,12 @@ func runGetResultCommand(
 			targetFile,
 			targetPath,
 			params)
+
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedCreatingReport)
+		}
+
+		return nil
 	}
 }
 
