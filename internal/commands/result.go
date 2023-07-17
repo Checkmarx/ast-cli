@@ -66,7 +66,7 @@ const (
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
-	delayValueForReport                     = 1500
+	delayValueForReport                     = 10
 	reportNameScanReport                    = "scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
@@ -954,7 +954,7 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 			if err != nil {
 				return errors.Wrapf(err, "%s", "failed getting SBOM report status")
 			}
-			time.Sleep(delayValueForReport * time.Millisecond)
+			time.Sleep(delayValueForReport * time.Second)
 		}
 		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
 			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
@@ -979,10 +979,10 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 			return nil
 		}
 		i++
-		time.Sleep(delayValueForReport * time.Millisecond)
+		time.Sleep(delayValueForReport * time.Second)
 		logger.PrintIfVerbose(
 			fmt.Sprintf(
-				"Retry SBOM report: --%d retry",
+				"Retry SBOM report: %d retry",
 				i,
 			),
 		)
