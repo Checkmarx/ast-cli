@@ -552,6 +552,7 @@ func scanCreateSubCommand(
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 
+	createScanCmd.PersistentFlags().Uint(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
 	// Temporary flag until SCA supports new api
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
@@ -1634,6 +1635,7 @@ func createReportsAfterScan(
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
+	retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 
 	params, err := getFilters(cmd)
 	if err != nil {
@@ -1648,6 +1650,7 @@ func createReportsAfterScan(
 		scansWrapper,
 		resultsSbomWrapper,
 		useSCALocalFlow,
+		retrySBOM,
 		resultsPdfReportsWrapper,
 		scanID,
 		reportFormats,

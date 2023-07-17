@@ -65,7 +65,7 @@ const (
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
-	delayValueForReport                     = 150
+	delayValueForReport                     = 1500
 	reportNameScanReport                    = "scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
@@ -74,7 +74,6 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
-	reportSbomMaxRetries                    = 10
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -176,6 +175,8 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
+
+	resultShowCmd.PersistentFlags().Uint(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
 
 	// Temporary flag until SCA supports new api
 	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
@@ -536,6 +537,7 @@ func runGetResultCommand(
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
+		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		params, err := getFilters(cmd)
@@ -548,6 +550,7 @@ func runGetResultCommand(
 			scanWrapper,
 			resultsSbomWrapper,
 			useSCALocalFlow,
+			retrySBOM,
 			resultsPdfReportsWrapper,
 			scanID,
 			format,
@@ -606,6 +609,7 @@ func CreateScanReport(
 	scanWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	useSCALocalFlow bool,
+	retrySBOM int,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scanID,
 	reportTypes,
@@ -644,7 +648,7 @@ func CreateScanReport(
 	reportList := strings.Split(reportTypes, ",")
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow)
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM)
 		if err != nil {
 			return err
 		}
@@ -693,20 +697,7 @@ func isScanPending(scanStatus string) bool {
 	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
-func createReport(
-	format,
-	formatPdfToEmail,
-	formatPdfOptions,
-	formatSbomOptions,
-	targetFile,
-	targetPath string,
-	results *wrappers.ScanResultsCollection,
-	summary *wrappers.ResultSummary,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
-	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	useSCALocalFlow bool,
-
-) error {
+func createReport(format, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary, resultsSbomWrapper wrappers.ResultsSbomWrapper, resultsPdfReportsWrapper wrappers.ResultsPdfWrapper, useSCALocalFlow bool, retrySBOM int) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
 	}
@@ -761,7 +752,7 @@ func createReport(
 			return fmt.Errorf("unable to generate %s report - SCA engine did not complete successfully", printer.FormatSbom)
 		}
 
-		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow)
+		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow, retrySBOM)
 	}
 	return fmt.Errorf("bad report format %s", format)
 }
@@ -912,7 +903,7 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string, useSCALocalFlow bool) error {
+func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string, useSCALocalFlow bool, retrySBOM int) error {
 	payload := &wrappers.SbomReportsPayload{
 		ScanID:     results.ScanID,
 		FileFormat: defaultSbomOption,
@@ -953,9 +944,9 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile strin
 	}
 
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
-	i := uint64(0)
+	i := 0
 
-	for i < reportSbomMaxRetries {
+	for i < retrySBOM {
 		completed, err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
 		if err != nil {
 			return err
