@@ -921,7 +921,12 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper, targetFile string, results *wrappers.ResultSummary, formatSbomOptions string, useSCALocalFlow bool, retrySBOM int) error {
+func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
+	targetFile string,
+	results *wrappers.ResultSummary,
+	formatSbomOptions string,
+	useSCALocalFlow bool,
+	retrySBOM int) error {
 	payload := &wrappers.SbomReportsPayload{
 		ScanID:     results.ScanID,
 		FileFormat: defaultSbomOption,
