@@ -704,7 +704,18 @@ func isScanPending(scanStatus string) bool {
 	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
-func createReport(format, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile, targetPath string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary, resultsSbomWrapper wrappers.ResultsSbomWrapper, resultsPdfReportsWrapper wrappers.ResultsPdfWrapper, useSCALocalFlow bool, retrySBOM int) error {
+func createReport(format,
+	formatPdfToEmail,
+	formatPdfOptions,
+	formatSbomOptions,
+	targetFile,
+	targetPath string,
+	results *wrappers.ScanResultsCollection,
+	summary *wrappers.ResultSummary,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	useSCALocalFlow bool,
+	retrySBOM int) error {
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
 	}
