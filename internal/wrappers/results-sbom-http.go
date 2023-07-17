@@ -72,35 +72,39 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 	}
 }
 
-func (r *SbomHTTPWrapper) GenerateSbomReportWithProxy(payload *SbomReportsPayload, targetFile string) error {
+func (r *SbomHTTPWrapper) GenerateSbomReportWithProxy(payload *SbomReportsPayload, targetFile string) (bool, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s/%s", r.proxyPath, payload.ScanID, "export")
 	params := map[string]string{"format": payload.FileFormat}
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
+	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusAccepted {
+		return false, nil
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("response status code %d", resp.StatusCode)
+		return true, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 
 	file, err := os.Create(targetFile)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+		return true, errors.Wrapf(err, "Failed to create file %s", targetFile)
 	}
 	defer file.Close()
 	size, err := io.Copy(file, resp.Body)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write file %s", targetFile)
+		return true, errors.Wrapf(err, "Failed to write file %s", targetFile)
 	}
 
 	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
-	return nil
+	return true, nil
 }
 
 func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResponse, error) {
