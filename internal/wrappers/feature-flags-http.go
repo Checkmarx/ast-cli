@@ -2,10 +2,11 @@ package wrappers
 
 import (
 	"encoding/json"
+	"net/http"
+
+	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"
-	"net/http"
 )
 
 type FeatureFlagsHTTPWrapper struct {
