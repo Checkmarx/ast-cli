@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 	"net/http"
