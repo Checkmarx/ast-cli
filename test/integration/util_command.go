@@ -75,6 +75,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
 	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -100,6 +101,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -126,6 +128,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		jwtWrapper,
 		scaRealtimeWrapper,
 		chatWrapper,
+		featureFlagsWrapper,
 	)
 	return astCli
 }
