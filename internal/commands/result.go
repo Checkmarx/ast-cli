@@ -545,7 +545,7 @@ func runGetResultCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
-		err = CreateScanReport(
+		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
 			scanWrapper,
@@ -561,12 +561,6 @@ func runGetResultCommand(
 			targetFile,
 			targetPath,
 			params)
-
-		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingReport)
-		}
-
-		return nil
 	}
 }
 
