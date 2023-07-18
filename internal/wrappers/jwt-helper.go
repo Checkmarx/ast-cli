@@ -38,7 +38,7 @@ func NewJwtWrapper() JWTWrapper {
 
 // GetAllowedEngines will return a map with user allowed engines
 func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error) {
-	if FeatureFlags[PackageEnforcementEnabled].Status {
+	if FeatureFlags[PackageEnforcementEnabled] {
 		accessToken, err := GetAccessToken()
 		if err != nil {
 			return nil, err

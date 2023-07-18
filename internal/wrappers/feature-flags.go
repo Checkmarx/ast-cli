@@ -18,7 +18,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	},
 }
 
-var FeatureFlags = map[string]Flag{}
+var FeatureFlags = map[string]bool{}
 
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) {
 	allFlags, err := featureFlagsWrapper.GetAll()
@@ -33,7 +33,7 @@ func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) {
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 	for _, flag := range allFlags {
-		FeatureFlags[flag.Name] = Flag{Status: flag.Status}
+		FeatureFlags[flag.Name] = flag.Status
 	}
 }
 
@@ -42,7 +42,7 @@ func loadFeatureFlagsDefaultValues() {
 
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
-			FeatureFlags[flag.Name] = Flag{Status: flag.Default}
+			FeatureFlags[flag.Name] = flag.Default
 		}
 	}
 }
@@ -54,11 +54,6 @@ type FeatureFlagsWrapper interface {
 type FeatureFlagsResponseModel []struct {
 	Name   string `json:"name"`
 	Status bool   `json:"status"`
-}
-
-type Flag struct {
-	Status  bool
-	Payload interface{}
 }
 
 type CommandFlags struct {
