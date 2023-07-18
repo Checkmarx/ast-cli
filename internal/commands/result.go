@@ -28,7 +28,6 @@ const (
 	failedCreatingSummary     = "Failed creating summary"
 	failedGettingScan         = "Failed getting scan"
 	failedListingResults      = "Failed listing results"
-	failedCreatingReport      = "Failed creating report"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
 	highLabel                 = "high"
