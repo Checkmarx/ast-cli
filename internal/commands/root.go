@@ -21,8 +21,6 @@ import (
 
 const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 
-var FeatureFlags = map[string]wrappers.Flag{}
-
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
@@ -105,11 +103,7 @@ func NewAstCLI(
 		}
 
 		if requiredFeatureFlagsCheck(cmd) {
-			allFlags, err := featureFlagsWrapper.GetAll() //TODO: Filter by tenant id
-			if err != nil {
-				loadFeatureFlagsDefaultValues()
-			}
-			loadFeatureFlagsMap(*allFlags)
+			wrappers.HandleFeatureFlags(featureFlagsWrapper)
 		}
 	}
 	// Link the environment variable to the CLI argument(s).
@@ -197,31 +191,13 @@ func NewAstCLI(
 }
 
 func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	fullCmd := cmd.Parent().Name() + " " + cmd.Name()
-
 	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == fullCmd {
+		if cmdFlag.CommandName == cmd.CommandPath() {
 			return true
 		}
 	}
 
 	return false
-}
-
-func loadFeatureFlagsMap(allFlags wrappers.FeatureFlagsResponseModel) {
-	for _, flag := range allFlags {
-		FeatureFlags[flag.Name] = wrappers.Flag{Status: flag.Status}
-	}
-}
-
-func loadFeatureFlagsDefaultValues() {
-	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
-
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		for _, flag := range cmdFlag.FeatureFlags {
-			FeatureFlags[flag.Name] = wrappers.Flag{Status: flag.Default}
-		}
-	}
 }
 
 const configFormatString = "%30v: %s"

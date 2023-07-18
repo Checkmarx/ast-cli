@@ -1,15 +1,50 @@
 package wrappers
 
-var FeatureFlagsBaseMap = CommandFlags{
+import (
+	"github.com/checkmarx/ast-cli/internal/logger"
+)
+
+const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
+
+var FeatureFlagsBaseMap = []CommandFlags{
 	{
-		CommandName: "scan create",
+		CommandName: "cx scan create",
 		FeatureFlags: []FlagBase{
 			{
-				Name:    "PACKAGE_ENFORCEMENT_ENABLED",
+				Name:    PackageEnforcementEnabled,
 				Default: true,
 			},
 		},
 	},
+}
+
+var FeatureFlags = map[string]Flag{}
+
+func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) {
+	allFlags, err := featureFlagsWrapper.GetAll()
+
+	if err != nil {
+		loadFeatureFlagsDefaultValues()
+		return
+	}
+
+	loadFeatureFlagsMap(*allFlags)
+}
+
+func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
+	for _, flag := range allFlags {
+		FeatureFlags[flag.Name] = Flag{Status: flag.Status}
+	}
+}
+
+func loadFeatureFlagsDefaultValues() {
+	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
+
+	for _, cmdFlag := range FeatureFlagsBaseMap {
+		for _, flag := range cmdFlag.FeatureFlags {
+			FeatureFlags[flag.Name] = Flag{Status: flag.Default}
+		}
+	}
 }
 
 type FeatureFlagsWrapper interface {
@@ -26,7 +61,7 @@ type Flag struct {
 	Payload interface{}
 }
 
-type CommandFlags []struct {
+type CommandFlags struct {
 	CommandName  string
 	FeatureFlags []FlagBase
 }

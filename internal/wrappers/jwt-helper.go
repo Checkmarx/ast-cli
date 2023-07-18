@@ -21,6 +21,13 @@ type JWTStruct struct {
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security"}
 
+var defaultEngines = map[string]bool{
+	"sast":         true,
+	"sca":          true,
+	"api-security": true,
+	"iac-security": true,
+}
+
 type JWTWrapper interface {
 	GetAllowedEngines() (allowedEngines map[string]bool, err error)
 }
@@ -31,16 +38,20 @@ func NewJwtWrapper() JWTWrapper {
 
 // GetAllowedEngines will return a map with user allowed engines
 func (*JWTStruct) GetAllowedEngines() (allowedEngines map[string]bool, err error) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, err
+	if FeatureFlags[PackageEnforcementEnabled].Status {
+		accessToken, err := GetAccessToken()
+		if err != nil {
+			return nil, err
+		}
+		jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
+		if err != nil {
+			return nil, err
+		}
+		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
+		return allowedEngines, nil
 	}
-	jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
-	if err != nil {
-		return nil, err
-	}
-	allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
-	return allowedEngines, nil
+
+	return defaultEngines, nil
 }
 
 func prepareEngines(engines []string) map[string]bool {
