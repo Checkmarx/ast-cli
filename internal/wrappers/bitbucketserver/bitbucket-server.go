@@ -11,7 +11,7 @@ type CommitList struct {
 
 type Commit struct {
 	Author          Author `json:"author,omitempty"`
-	AuthorTimestamp int    `json:"authorTimestamp"`
+	AuthorTimestamp int64  `json:"authorTimestamp"`
 }
 
 type Author struct {

@@ -73,9 +73,13 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
+	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
+	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
+	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
+
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -95,9 +99,11 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
+	chatWrapper := wrappers.NewChatWrapper()
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
+		resultsSbomReportsWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
@@ -119,6 +125,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		tenantConfigurationWrapper,
 		jwtWrapper,
 		scaRealtimeWrapper,
+		chatWrapper,
 	)
 	return astCli
 }
@@ -132,11 +139,12 @@ func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 	return cmd, outputBuffer
 }
 
-/*  Execute a previous created command. Used when there is a need to make changes in environment variables
+/*
+	Execute a previous created command. Used when there is a need to make changes in environment variables
 
 Ex.: 1. Create a command
-	 2. Make changes in environment variables using viper
-	 3. Execute command
+ 2. Make changes in environment variables using viper
+ 3. Execute command
 */
 func execute(cmd *cobra.Command, args ...string) error {
 	return executeWithTimeout(cmd, time.Minute, args...)

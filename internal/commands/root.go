@@ -21,9 +21,12 @@ import (
 
 const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 
+var FeatureFlags = map[string]wrappers.Flag{}
+
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
+	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
@@ -45,6 +48,8 @@ func NewAstCLI(
 	tenantWrapper wrappers.TenantConfigurationWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
+	chatWrapper wrappers.ChatWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -98,6 +103,14 @@ func NewAstCLI(
 			_ = cmd.Help()
 			os.Exit(0)
 		}
+
+		if requiredFeatureFlagsCheck(cmd) {
+			allFlags, err := featureFlagsWrapper.GetAll() //TODO: Filter by tenant id
+			if err != nil {
+				loadFeatureFlagsDefaultValues()
+			}
+			loadFeatureFlagsMap(*allFlags)
+		}
 	}
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
@@ -128,6 +141,7 @@ func NewAstCLI(
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(
 		scansWrapper,
+		resultsSbomWrapper,
 		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
@@ -141,6 +155,7 @@ func NewAstCLI(
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
+		resultsSbomWrapper,
 		resultsPdfReportsWrapper,
 		codeBashingWrapper,
 		bflWrapper,
@@ -162,6 +177,8 @@ func NewAstCLI(
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
+	chatCmd := NewChatCommand(chatWrapper)
+
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -171,11 +188,40 @@ func NewAstCLI(
 		authCmd,
 		utilsCmd,
 		configCmd,
+		chatCmd,
 	)
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
 	return rootCmd
+}
+
+func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
+	fullCmd := cmd.Parent().Name() + " " + cmd.Name()
+
+	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
+		if cmdFlag.CommandName == fullCmd {
+			return true
+		}
+	}
+
+	return false
+}
+
+func loadFeatureFlagsMap(allFlags wrappers.FeatureFlagsResponseModel) {
+	for _, flag := range allFlags {
+		FeatureFlags[flag.Name] = wrappers.Flag{Status: flag.Status}
+	}
+}
+
+func loadFeatureFlagsDefaultValues() {
+	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
+
+	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
+		for _, flag := range cmdFlag.FeatureFlags {
+			FeatureFlags[flag.Name] = wrappers.Flag{Status: flag.Default}
+		}
+	}
 }
 
 const configFormatString = "%30v: %s"

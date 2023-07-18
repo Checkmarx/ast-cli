@@ -135,17 +135,24 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 
 		for i := range dependencyResolutionResult.Dependencies {
 			var dependency = dependencyResolutionResult.Dependencies[i]
+			var packageManager = GetPackageManagerFromResolvingModuleType[strings.ToLower(dependency.ResolvingModuleType)]
+
+			// if no package manager is found uses the resolving module type
+			if packageManager == "" {
+				packageManager = strings.ToLower(dependency.ResolvingModuleType)
+			}
+
 			dependencyMap[dependency.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
 				PackageName:    dependency.ID.Name,
 				Version:        dependency.ID.Version,
-				PackageManager: dependency.ResolvingModuleType,
+				PackageManager: packageManager,
 			}
 			if len(dependency.Children) > 0 {
 				for _, dependencyChildren := range dependency.Children {
 					dependencyMap[dependencyChildren.NodeID] = wrappers.ScaDependencyBodyRequest{
 						PackageName:    dependencyChildren.Name,
 						Version:        dependencyChildren.Version,
-						PackageManager: dependency.ResolvingModuleType,
+						PackageManager: packageManager,
 					}
 				}
 			}

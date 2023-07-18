@@ -52,4 +52,7 @@ var (
 	DescriptionsPathKey                 = strings.ToLower(DescriptionsPathEnv)
 	TenantConfigurationPathKey          = strings.ToLower(TenantConfigurationPathEnv)
 	ResultsPdfReportPathKey             = strings.ToLower(ResultsPdfReportPathEnv)
+	ResultsSbomReportPathKey            = strings.ToLower(ResultsSbomReportPathEnv)
+	ResultsSbomReportProxyPathKey       = strings.ToLower(ResultsSbomReportProxyPathEnv)
+	FeatureFlagsKey                     = strings.ToLower(FeatureFlagsEnv)
 )

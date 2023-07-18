@@ -53,6 +53,10 @@ jobs:
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Updating and upgrading brew
         run: |
+          git config --global pack.windowMemory "100m"
+          git config --global pack.SizeLimit "100m" 
+          git config --global pack.threads "1"
+          git config --global pack.window "0"
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew --version
       - name: Install gon
@@ -108,7 +112,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
-          version: latest
+          version: v1.18.2
           args: ${{ env.GR_ARGS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
