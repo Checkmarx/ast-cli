@@ -552,7 +552,7 @@ func scanCreateSubCommand(
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 
-	createScanCmd.PersistentFlags().Uint(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
+	createScanCmd.PersistentFlags().Int(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
 	// Temporary flag until SCA supports new api
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
