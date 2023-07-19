@@ -194,6 +194,9 @@ const (
 	BaseIAMURI             = ""
 	Tenant                 = ""
 	Branch                 = ""
+	RetrySBOMFlag          = "retry-sbom"
+	RetrySBOMDefault       = 1000
+	RetrySBOMUsage         = "Retry requests to Checkmarx One on sbom creation"
 )
 
 // Results
