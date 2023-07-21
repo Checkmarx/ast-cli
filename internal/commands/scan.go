@@ -2176,6 +2176,9 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	*/
 	if err == nil {
 		// no results
+		if resultsModel.Results == nil {
+			resultsModel.Results = []wrappers.KicsQueries{}
+		}
 		errs = printKicsResults(&resultsModel)
 		if errs != nil {
 			return errors.Errorf("%s", errs)
