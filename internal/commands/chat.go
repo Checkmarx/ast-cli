@@ -85,7 +85,7 @@ func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []s
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen)
+		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen,10)
 
 		if chatConversationID == "" {
 			chatConversationID = statefulWrapper.GenerateId().String()

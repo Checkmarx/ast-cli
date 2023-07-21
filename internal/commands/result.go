@@ -823,6 +823,11 @@ func enrichScaResults(
 	if util.Contains(scan.Engines, scaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
+		println("antes poc")
+		_, _, err = resultsWrapper.GetAllResultsPackageByScanIDPoc()
+		if err != nil {
+			return nil, err
+		}
 		if errorModel != nil {
 			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}

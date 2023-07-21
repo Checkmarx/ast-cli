@@ -5,4 +5,9 @@ type ResultsWrapper interface {
 	GetAllResultsPackageByScanID(params map[string]string) (*[]ScaPackageCollection, *WebError, error)
 	GetAllResultsTypeByScanID(params map[string]string) (*[]ScaTypeCollection, *WebError, error)
 	GetResultsURL(projectID string) (string, error)
+	GetAllResultsPackageByScanIDPoc() (
+		*[]ScaPackageCollection,
+		*WebError,
+		error,
+	)
 }
