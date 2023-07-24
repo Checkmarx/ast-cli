@@ -103,7 +103,12 @@ func NewAstCLI(
 		}
 
 		if requiredFeatureFlagsCheck(cmd) {
-			wrappers.HandleFeatureFlags(featureFlagsWrapper)
+			err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
+
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 	}
 	// Link the environment variable to the CLI argument(s).
