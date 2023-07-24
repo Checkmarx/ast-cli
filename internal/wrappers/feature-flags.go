@@ -51,6 +51,16 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 	for _, flag := range allFlags {
 		FeatureFlags[flag.Name] = flag.Status
 	}
+
+	//  Update FeatureFlags map with default values in case it does not exist in all flags response
+	for _, cmdFlag := range FeatureFlagsBaseMap {
+		for _, flag := range cmdFlag.FeatureFlags {
+			_, ok := FeatureFlags[flag.Name]
+			if !ok {
+				FeatureFlags[flag.Name] = flag.Default
+			}
+		}
+	}
 }
 
 func loadFeatureFlagsDefaultValues() {
