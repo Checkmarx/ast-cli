@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230620151243-0a3131178ae4
+	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20221013030248-663e2500819c
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
