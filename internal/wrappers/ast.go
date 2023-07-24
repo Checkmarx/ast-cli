@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+var CodeErrorToErrorMessage map[int]string = map[int]string{
+	133: "--agent flag content length is too long (up to 20 characters)",
+}
+
 type ErrorModel struct {
 	Message string `json:"message"`
 	Type    string `json:"type"`

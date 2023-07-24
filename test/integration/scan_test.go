@@ -1174,3 +1174,20 @@ func TestCreateScanSBOMReportFormatWrongTenant(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "SBOM report is currently in beta mode and not available for this tenant type")
 }
+
+func TestCreateScanLongAgentFlagError(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ProjectTagList), "integration",
+		flag(params.AgentFlag), "123456789012345678901",
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "--agent flag content length is too long (up to 20 characters)")
+}

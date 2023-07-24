@@ -1408,6 +1408,9 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
+			if wrappers.CodeErrorToErrorMessage[errorModel.Code] != "" {
+				return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, wrappers.CodeErrorToErrorMessage[errorModel.Code])
+			}
 			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
