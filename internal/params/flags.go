@@ -160,6 +160,8 @@ const (
 	ChatResultLine          = "result-line"
 	ChatResultSeverity      = "result-severity"
 	ChatResultVulnerability = "result-vulnerability"
+	// Mask
+	MaskContent = "mask-content"
 )
 
 // Parameter values
