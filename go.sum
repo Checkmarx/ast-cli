@@ -635,6 +635,12 @@ github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XL
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230620151243-0a3131178ae4 h1:e4EGi1vqMlJ52qo6NsUkrKhUsprS6fYH4mNiE13omxU=
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230620151243-0a3131178ae4/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230717162620-99c2bde11714 h1:w+qRV8kXunM6jl6mOUA46hWWiifsK636edyq3zsYeSk=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230717162620-99c2bde11714/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721144905-7cf6332d593c h1:QrYW6xuYUQBhFikKRp9ngWxVUXHZC/9G4wstv7GXafE=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721144905-7cf6332d593c/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c h1:oKI4C1dXYpi0B8pltDDzp1ZRiyeILv5enbp9h4ASQ3s=
+github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c/go.mod h1:l+0rISRGaps2HWkpvKbYPE1nsNx28vBj6bKorEm1M5o=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=

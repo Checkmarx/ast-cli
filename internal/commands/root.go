@@ -172,6 +172,7 @@ func NewAstCLI(
 		prWrapper,
 		learnMoreWrapper,
 		tenantWrapper,
+		chatWrapper,
 	)
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
