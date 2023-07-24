@@ -13,11 +13,11 @@ type ChatMockWrapper struct {
 
 func (c ChatMockWrapper) MaskSecrets(wrapper gptWrapper.StatefulWrapper, s string) (*gptWrapperMaskedSecret.MaskedEntry, error) {
 	return &gptWrapperMaskedSecret.MaskedEntry{
-		MaskedFile:    "",
+		MaskedFile: "",
 		MaskedSecrets: []gptWrapperMaskedSecret.MaskedSecret{{
-			Masked:    "password=<masked>",
+			Masked: "password=<masked>",
 			Secret: "password=<not_masked>",
-			Line: 0,
+			Line:   0,
 		}},
 	}, nil
 }
