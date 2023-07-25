@@ -1,8 +1,6 @@
 package wrappers
 
 import (
-	"strings"
-
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
@@ -24,18 +22,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 var FeatureFlags = map[string]bool{}
 
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
-	accessToken, tokenError := GetAccessToken()
-	if tokenError != nil {
-		return tokenError
-	}
-
-	tenantIDFromClaims, extractError := extractFromTokenClaims(accessToken, tenantIDClaimKey)
-	if extractError != nil {
-		return extractError
-	}
-
-	tenantID := strings.Split(tenantIDFromClaims, "::")[1]
-	allFlags, err := featureFlagsWrapper.GetAll(tenantID)
+	allFlags, err := featureFlagsWrapper.GetAll()
 	if err != nil {
 		loadFeatureFlagsDefaultValues()
 
@@ -74,7 +61,7 @@ func loadFeatureFlagsDefaultValues() {
 }
 
 type FeatureFlagsWrapper interface {
-	GetAll(tenantID string) (*FeatureFlagsResponseModel, error)
+	GetAll() (*FeatureFlagsResponseModel, error)
 }
 
 type FeatureFlagsResponseModel []struct {

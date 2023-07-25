@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/spf13/viper"
 
@@ -19,7 +20,18 @@ func NewFeatureFlagsHTTPWrapper(path string) FeatureFlagsWrapper {
 	}
 }
 
-func (f FeatureFlagsHTTPWrapper) GetAll(tenantID string) (*FeatureFlagsResponseModel, error) {
+func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
+	accessToken, tokenError := GetAccessToken()
+	if tokenError != nil {
+		return nil, tokenError
+	}
+
+	tenantIDFromClaims, extractError := extractFromTokenClaims(accessToken, tenantIDClaimKey)
+	if extractError != nil {
+		return nil, extractError
+	}
+
+	tenantID := strings.Split(tenantIDFromClaims, "::")[1]
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params := map[string]string{
 		"filter": tenantID,
