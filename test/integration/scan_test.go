@@ -1181,3 +1181,14 @@ func TestCreateScanSBOMReportFormatWrongTenant(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "SBOM report is currently in beta mode and not available for this tenant type")
 }
+
+func TestScanWithPolicy(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main"}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+}
