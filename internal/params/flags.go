@@ -162,6 +162,8 @@ const (
 	ChatResultLine          = "result-line"
 	ChatResultSeverity      = "result-severity"
 	ChatResultVulnerability = "result-vulnerability"
+	// Mask
+	MaskContent = "mask-content"
 )
 
 // Parameter values
@@ -194,6 +196,9 @@ const (
 	BaseIAMURI             = ""
 	Tenant                 = ""
 	Branch                 = ""
+	RetrySBOMFlag          = "retry-sbom"
+	RetrySBOMDefault       = 1000
+	RetrySBOMUsage         = "Retry requests to Checkmarx One on sbom creation"
 )
 
 // Results

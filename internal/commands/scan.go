@@ -565,6 +565,7 @@ func scanCreateSubCommand(
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 
+	createScanCmd.PersistentFlags().Int(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
 	// Temporary flag until SCA supports new api
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
@@ -1690,6 +1691,7 @@ func createReportsAfterScan(
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
+	retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 
 	params, err := getFilters(cmd)
 	if err != nil {
@@ -1711,6 +1713,7 @@ func createReportsAfterScan(
 		resultsSbomWrapper,
 		policyResponseModel,
 		useSCALocalFlow,
+		retrySBOM,
 		resultsPdfReportsWrapper,
 		scan,
 		reportFormats,
@@ -2309,6 +2312,9 @@ func runKicsScan(cmd *cobra.Command, volumeMap, tempDir string, additionalParame
 	*/
 	if err == nil {
 		// no results
+		if resultsModel.Results == nil {
+			resultsModel.Results = []wrappers.KicsQueries{}
+		}
 		errs = printKicsResults(&resultsModel)
 		if errs != nil {
 			return errors.Errorf("%s", errs)

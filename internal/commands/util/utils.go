@@ -27,6 +27,7 @@ func NewUtilsCommand(
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
 	tenantWrapper wrappers.TenantConfigurationWrapper,
+	chatWrapper wrappers.ChatWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
@@ -57,6 +58,8 @@ func NewUtilsCommand(
 
 	tenantCmd := NewTenantConfigurationCommand(tenantWrapper)
 
+	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
+
 	utilsCmd.AddCommand(
 		completionCmd,
 		envCheckCmd,
@@ -71,6 +74,7 @@ func NewUtilsCommand(
 		prDecorationCmd,
 		remediationCmd,
 		tenantCmd,
+		maskSecretsCmd,
 	)
 
 	return utilsCmd
