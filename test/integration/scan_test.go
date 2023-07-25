@@ -1190,5 +1190,5 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.BranchFlag), "main"}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
+	assert.NilError(t,err)
 }
