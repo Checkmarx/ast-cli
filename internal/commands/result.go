@@ -191,7 +191,7 @@ func resultShowSubCommand(
 	)
 	resultShowCmd.PersistentFlags().Int(
 		commonParams.PolicyTimeoutFlag,
-		0,
+		commonParams.ResultPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")

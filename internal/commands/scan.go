@@ -553,7 +553,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().Int(
 		commonParams.PolicyTimeoutFlag,
-		0,
+		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
@@ -1892,8 +1892,8 @@ func waitForPolicyCompletion(
 			break
 		}
 		if timeoutMinutes > 0 && time.Now().After(timeout) {
-			log.Println("Canceling policy evaluation", scanResponseModel.ID)
-			return nil, errors.Errorf("Timeout of %d minute(s) for policy evaluation reached", timeoutMinutes)
+			logger.PrintfIfVerbose("Timeout of %d minute(s) for policy evaluation reached", timeoutMinutes)
+			return nil, nil
 		}
 		i++
 	}
