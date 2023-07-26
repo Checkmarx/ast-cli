@@ -1192,3 +1192,15 @@ func TestScanWithPolicy(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t,err)
 }
+
+func TestScanWithPolicyTimeout(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main",
+		flag(params.PolicyTimeoutFlag),"-1"}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t,err,"--policy-timeout should be equal or higher than 0")
+}
