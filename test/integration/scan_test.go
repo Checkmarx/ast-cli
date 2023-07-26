@@ -1187,7 +1187,8 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "sast",
-		flag(params.BranchFlag), "main"}
+		flag(params.BranchFlag), "main",
+		flag(params.TargetFormatFlag),"markdown,summaryConsole,summaryHTML"}
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t,err)
