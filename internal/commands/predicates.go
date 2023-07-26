@@ -149,10 +149,9 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 			Severity:     severity,
 			State:        state,
 			Comment:      comment,
-			ScannerType:  scanType,
 		}
 
-		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate)
+		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed updating the predicate")
 		}
