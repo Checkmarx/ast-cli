@@ -628,6 +628,9 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Invalid",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.IgnorePolicyFlag),
+		flag(params.PolicyTimeoutFlag),
+		"999999",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -640,6 +643,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 		"show",
 		flag(params.ScanIDFlag),
 		scanId,
+		flag(params.IgnorePolicyFlag),
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
 	file, err := ioutil.ReadFile("cx_result.json")
@@ -657,7 +661,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 	insecurePath := "data/insecure.zip"
 	args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
-	args = append(args, flag(params.SastFilterFlag), "!*.java")
+	args = append(args, flag(params.SastFilterFlag), "!*.java",flag(params.IgnorePolicyFlag))
 	scanId, projectId := executeCreateScan(t, args)
 	assert.Assert(t, scanId != "", "Scan ID should not be empty")
 	assert.Assert(t, projectId != "", "Project ID should not be empty")
@@ -685,6 +689,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
 		flag(params.SSHKeyFlag), SSHKeyFilePath,
+		flag(params.IgnorePolicyFlag),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
@@ -699,10 +704,12 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
+		flag(params.IgnorePolicyFlag),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
 }
+
 
 func TestRunKicsScan(t *testing.T) {
 	outputBuffer := executeCmdNilAssertion(
@@ -1173,4 +1180,28 @@ func TestCreateScanSBOMReportFormatWrongTenant(t *testing.T) {
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "SBOM report is currently in beta mode and not available for this tenant type")
+}
+
+func TestScanWithPolicy(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main",
+		flag(params.TargetFormatFlag),"markdown,summaryConsole,summaryHTML"}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t,err)
+}
+
+func TestScanWithPolicyTimeout(t *testing.T) {
+	args := []string{scanCommand, "create",
+		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "main",
+		flag(params.PolicyTimeoutFlag),"-1"}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t,err,"--policy-timeout should be equal or higher than 0")
 }

@@ -44,6 +44,7 @@ func main() {
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
 	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -69,6 +70,7 @@ func main() {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -95,6 +97,7 @@ func main() {
 		jwtWrapper,
 		scaRealTimeWrapper,
 		chatWrapper,
+		policyWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
