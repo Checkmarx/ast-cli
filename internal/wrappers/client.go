@@ -34,7 +34,7 @@ const (
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
 	MissingTenant           = "Failed to authenticate - please provide tenant"
-	jwtError                = "Error retrieving URL from jwt token"
+	jwtError                = "Error retrieving %s from jwt token"
 )
 
 type ClientCredentialsInfo struct {
@@ -651,7 +651,7 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
 		value = strings.TrimSpace(claims[claim].(string))
 	} else {
-		return "", errors.Errorf(jwtError)
+		return "", errors.Errorf(jwtError, claim)
 	}
 	return value, nil
 }
