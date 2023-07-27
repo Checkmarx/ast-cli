@@ -53,6 +53,7 @@ const (
 	ResultsPdfReportPathEnv             = "CX_RESULTS_PDF_REPORT_PATH"
 	ResultsSbomReportPathEnv            = "CX_RESULTS_SBOM_PATH"
 	ResultsSbomReportProxyPathEnv       = "CX_RESULTS_SBOM_PROXY_PATH"
+	FeatureFlagsEnv                     = "CX_FEATURE_FLAGS_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
 	PolicyEvaluationPathEnv             = "CX_POLICY_EVALUATION_PATH"
 )

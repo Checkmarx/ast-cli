@@ -55,5 +55,6 @@ var EnvVarsBinds = []struct {
 	{ResultsPdfReportPathKey, ResultsPdfReportPathEnv, "api/reports"},
 	{ResultsSbomReportPathKey, ResultsSbomReportPathEnv, "api/sca/export"},
 	{ResultsSbomReportProxyPathKey, ResultsSbomReportProxyPathEnv, "api/sca/risk-management/risk-reports"},
+	{FeatureFlagsKey, FeatureFlagsEnv, "api/flags"},
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
 }
