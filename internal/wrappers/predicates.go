@@ -16,9 +16,8 @@ type PredicateRequest struct {
 	SimilarityID string `json:"similarityId"`
 	ProjectID    string `json:"projectId"`
 	State        string `json:"state"`
-	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
-	ScannerType  string `json:"scannerType"`
+	Severity     string `json:"severity"`
 }
 
 type Predicate struct {
@@ -41,7 +40,7 @@ type PredicatesCollectionResponseModel struct {
 }
 
 type ResultsPredicatesWrapper interface {
-	PredicateSeverityAndState(predicate *PredicateRequest) (*WebError, error)
+	PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,
 	) (*PredicatesCollectionResponseModel, *WebError, error)

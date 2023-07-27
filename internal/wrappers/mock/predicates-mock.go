@@ -10,7 +10,7 @@ import (
 type ResultsPredicatesMockWrapper struct {
 }
 
-func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest) (
+func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest, scanType string) (
 	*wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'PredicateSeverityAndState' in ResultsPredicatesMockWrapper")
