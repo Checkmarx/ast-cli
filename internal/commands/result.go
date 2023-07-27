@@ -118,6 +118,7 @@ func NewResultsCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -130,7 +131,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	resultCmd.AddCommand(
@@ -145,6 +146,7 @@ func resultShowSubCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -155,7 +157,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -181,7 +183,18 @@ func resultShowSubCommand(
 	// Temporary flag until SCA supports new api
 	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
-
+	resultShowCmd.PersistentFlags().IntP(
+		commonParams.WaitDelayFlag,
+		"",
+		commonParams.WaitDelayDefault,
+		"Polling wait time in seconds",
+	)
+	resultShowCmd.PersistentFlags().Int(
+		commonParams.PolicyTimeoutFlag,
+		commonParams.ResultPolicyDefaultTimeout,
+		"Cancel the policy evaluation and fail after the timeout in minutes",
+	)
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	return resultShowCmd
 }
 
@@ -325,7 +338,6 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 			}
 		}
 	}
-
 	return &wrappers.ResultSummary{
 		ScanID:         scanInfo.ID,
 		Status:         string(scanInfo.Status),
@@ -350,6 +362,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 func SummaryReport(
 	results *wrappers.ScanResultsCollection,
 	scan *wrappers.ScanResponseModel,
+	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
@@ -371,6 +384,9 @@ func SummaryReport(
 			return nil, err
 		}
 		summary.APISecurity = *apiSecRisks
+	}
+	if policies != nil {
+		summary.Policies = filterViolatedRules(*policies)
 	}
 
 	for _, result := range results.Results {
@@ -476,6 +492,26 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
+		if summary.Policies != nil {
+			fmt.Printf("              -----------------------------------     \n\n")
+			if summary.Policies.BreakBuild {
+				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+			} else {
+				fmt.Printf("            Policy Management Violation:                     \n")
+			}
+			if len(summary.Policies.Polices) > 0 {
+				for _, police := range summary.Policies.Polices {
+					if len(police.RulesViolated) > 0 {
+						fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
+						for _, violatedRule := range police.RulesViolated {
+							fmt.Printf("%s;", violatedRule)
+						}
+					}
+					fmt.Printf("\n")
+				}
+			}
+			fmt.Printf("\n")
+		}
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
@@ -504,11 +540,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
-		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("\n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
-
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
@@ -528,6 +563,7 @@ func runGetResultCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -540,19 +576,45 @@ func runGetResultCommand(
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+		if scanID == "" {
+			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
+		}
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
+		scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
+		if scanErr != nil {
+			return errors.Wrapf(scanErr, "%s", failedGetting)
+		}
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+		}
+
+		policyResponseModel := &wrappers.PolicyResponseModel{}
+		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
+		if !policyOverrideFlag {
+			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
+			if policyTimeout < 0 {
+				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
+			}
+			policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan, cmd)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.PrintIfVerbose("Skipping policy evaluation")
+		}
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
-			scanWrapper,
 			resultsSbomWrapper,
+			policyResponseModel,
 			useSCALocalFlow,
 			retrySBOM,
 			resultsPdfReportsWrapper,
-			scanID,
+			scan,
 			format,
 			formatPdfToEmail,
 			formatPdfOptions,
@@ -606,12 +668,12 @@ func runGetCodeBashingCommand(
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	scanWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	policyResponseModel *wrappers.PolicyResponseModel,
 	useSCALocalFlow bool,
 	retrySBOM int,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	scanID,
+	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
@@ -620,27 +682,16 @@ func CreateScanReport(
 	targetPath string,
 	params map[string]string,
 ) error {
-	if scanID == "" {
-		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
-	}
 	err := createDirectory(targetPath)
 	if err != nil {
 		return err
 	}
-	scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
-	if scanErr != nil {
-		return errors.Wrapf(scanErr, "%s", failedGetting)
-	}
-	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
-	}
-
 	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, risksOverviewWrapper, resultsWrapper)
+	summary, err := SummaryReport(results, scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
@@ -709,6 +760,7 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
+
 	if isScanPending(summary.Status) {
 		summary.ScanInfoMessage = scanPendingMessage
 	}
@@ -1500,4 +1552,16 @@ func addPackageInformation(
 		}
 	}
 	return resultsModel
+}
+
+func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {
+	i := 0
+	for _, policy := range policyModel.Polices {
+		if len(policy.RulesViolated) > 0 {
+			policyModel.Polices[i] = policy
+			i++
+		}
+	}
+	policyModel.Polices = policyModel.Polices[:i]
+	return &policyModel
 }

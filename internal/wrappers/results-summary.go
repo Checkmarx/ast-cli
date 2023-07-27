@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -30,6 +31,7 @@ type ResultSummary struct {
 	BranchName      string
 	ScanInfoMessage string
 	EnginesEnabled  []string
+	Policies        *PolicyResponseModel
 }
 
 type APISecResult struct {
@@ -49,6 +51,72 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) HasPolicies() bool {
+	return r.Policies != nil && len(r.Policies.Polices) > 0
+}
+
+func (r *ResultSummary) GeneratePolicyHTML() string {
+	html := `
+<div class="element">
+	<div class="header-policy">`
+	if r.Policies.BreakBuild {
+		html += "Policy Management Violation - Break Build Enabled\n"
+	} else {
+		html += "Policy Management Violation\n"
+	}
+	html += `
+	</div>
+	<table id="policy">
+		<tr>
+			<td>
+				Policy
+			</td>
+			<td>
+				Rule
+			</td>
+			<td>
+				Break Build
+			</td>
+		</tr>
+`
+	for _, police := range r.Policies.Polices {
+		html += `<tr>
+					<td>` +
+			police.Name +
+			`	
+					</td>
+				` +
+			`
+				<td>
+			` + strings.Join(police.RulesViolated, ",") +
+			`
+				</td>
+			` + `<td>` +
+			strconv.FormatBool(police.BreakBuild) +
+			`
+				</td>
+			</tr>
+			`
+	}
+	html += `</table>
+</div>`
+	return html
+}
+
+func (r *ResultSummary) GeneratePolicyMarkdown() string {
+	markdown := ""
+	if r.Policies.BreakBuild {
+		markdown += "### Policy Management Violation - Break Build Enabled\n"
+	} else {
+		markdown += "### Policy Management Violation\n"
+	}
+	markdown += "| Policy | Rule | Break Build |\n|:----------:|:------------:|:---------:|\n"
+	for _, police := range r.Policies.Polices {
+		markdown += "|" + police.Name + "|" + strings.Join(police.RulesViolated, ",") + "|" + strconv.FormatBool(police.BreakBuild) + "|\n"
+	}
+	return markdown
 }
 
 const summaryTemplateHeader = `{{define "SummaryTemplate"}}
@@ -389,6 +457,42 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             text-align: center;
             margin-bottom: 10px;
         }
+		#policy {
+		  	border-collapse: collapse;
+		  	width: 100%;
+		}
+		
+		#policy td, #policy th {
+		  	border: 1px solid #ddd;
+		  	padding: 8px;
+			font-size: 14px;
+		}
+
+		#policy tr{
+			word-break:break-all;
+		}
+
+		#policy tr:nth-child(even){background-color: #f2f2f2;}
+		
+		#policy th {
+		  	padding-top: 12px;
+		  	padding-bottom: 12px;
+		  	text-align: left;
+		  	background-color: #04AA6D;
+		  	color: white;
+		}
+		.header-policy {
+			-ms-flex-pack: justify;
+			-webkit-box-pack: justify;
+			display: flex;
+			height: 20px;
+			justify-content: space-between;
+			margin-bottom: 5px;
+			align-items: center;
+			justify-content: left;
+			font-size: 15px;
+			font-weight: 700;
+		}
     </style>
     <script>
         window.addEventListener('load', function () {
@@ -462,6 +566,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
 const nonAsyncSummary = `<div class="top-row">
             <div class="element risk-level-tile {{.RiskStyle}}"><span class="value">{{.RiskMsg}}</span></div>
+			{{if .HasPolicies}}
+				{{.GeneratePolicyHTML}}
+			{{end}}
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
                 <div>
@@ -553,6 +660,10 @@ const SummaryMarkdownTemplate = `
 ### {{$emoji}} {{.RiskMsg}} {{$emoji}}
 ######  Scan : 💾 {{.ScanID}}     |   📅 {{.CreatedAt}}    |  [🔗 More details]({{.BaseURI}})
 ***
+
+{{if .HasPolicies}}
+{{.GeneratePolicyMarkdown}}
+{{end}}
 
 ### Total Vulnerabilities: {{.TotalIssues}}
 

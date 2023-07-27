@@ -48,6 +48,7 @@ func NewAstCLI(
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	chatWrapper wrappers.ChatWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -149,7 +150,8 @@ func NewAstCLI(
 		groupsWrapper,
 		risksOverviewWrapper,
 		jwtWrapper,
-		scaRealTimeWrapper)
+		scaRealTimeWrapper,
+		policyWrapper)
 	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -159,6 +161,7 @@ func NewAstCLI(
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
+		policyWrapper,
 	)
 
 	versionCmd := util.NewVersionCommand()
