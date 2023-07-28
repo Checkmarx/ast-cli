@@ -34,8 +34,9 @@ type ResultSummary struct {
 	Policies        *PolicyResponseModel
 }
 
+// nolint: govet
 type APISecResult struct {
-	APICount         int   `json:"api_count,omitempty",`
+	APICount         int   `json:"api_count,omitempty"`
 	TotalRisksCount  int   `json:"total_risks_count,omitempty"`
 	Risks            []int `json:"risks,omitempty"`
 	RiskDistribution []struct {
@@ -58,7 +59,7 @@ func (r *ResultSummary) HasAPISecurity() bool {
 }
 
 func (r *ResultSummary) HasAPISecurityDocumentation() bool {
-	if len(r.APISecurity.RiskDistribution) > 1 && strings.ToLower(r.APISecurity.RiskDistribution[1].Origin) == "documentation" {
+	if len(r.APISecurity.RiskDistribution) > 1 && strings.EqualFold(r.APISecurity.RiskDistribution[1].Origin, "documentation") {
 		return true
 	}
 	return false
