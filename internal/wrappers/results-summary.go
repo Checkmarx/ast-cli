@@ -35,15 +35,13 @@ type ResultSummary struct {
 }
 
 type APISecResult struct {
-	APICount         int                `json:"api_count,omitempty"`
-	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
-	Risks            []int              `json:"risks,omitempty"`
-	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
-}
-
-type riskDistribution struct {
-	Origin string `json:"origin,omitempty"`
-	Total  int    `json:"total,omitempty"`
+	APICount         int   `json:"api_count,omitempty",`
+	TotalRisksCount  int   `json:"total_risks_count,omitempty"`
+	Risks            []int `json:"risks,omitempty"`
+	RiskDistribution []struct {
+		Origin string `json:"origin,omitempty"`
+		Total  int    `json:"total,omitempty"`
+	} `json:"risk_distribution,omitempty"`
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -57,6 +55,17 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) HasAPISecurityDocumentation() bool {
+	if len(r.APISecurity.RiskDistribution) > 1 && strings.ToLower(r.APISecurity.RiskDistribution[1].Origin) == "documentation" {
+		return true
+	}
+	return false
+}
+
+func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
+	return r.APISecurity.RiskDistribution[1].Total
 }
 
 func (r *ResultSummary) HasPolicies() bool {
@@ -696,9 +705,9 @@ const SummaryMarkdownCompletedTemplate = `
 {{if .HasAPISecurity}}
 ### API Security 
 
-| Detected APIs | APIs with risk |
-|:---------:|:---------:|
-| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
+| Detected APIs | APIs with risk | {{if .HasAPISecurityDocumentation}} APIs Documentation |{{end}}
+|:---------:|:---------:| {{if .HasAPISecurityDocumentation}}:---------:|{{end}}
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
 {{end}}
 `
 
