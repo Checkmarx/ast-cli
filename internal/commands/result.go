@@ -561,10 +561,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              --------------------------------------     \n")
-		fmt.Printf("              |               High: %*d|     \n", defaultResultsPaddingSize, summary.HighIssues)
-		fmt.Printf("              |             Medium: %*d|     \n", defaultResultsPaddingSize, summary.MediumIssues)
-		fmt.Printf("              |                Low: %*d|     \n", defaultResultsPaddingSize, summary.LowIssues)
-		fmt.Printf("              |               Info: %*d|     \n", defaultResultsPaddingSize, summary.InfoIssues)
+		fmt.Printf("              |               High: %*d|     \n", defaultPaddingSize-2, summary.HighIssues)
+		fmt.Printf("              |             Medium: %*d|     \n", defaultPaddingSize-2, summary.MediumIssues)
+		fmt.Printf("              |                Low: %*d|     \n", defaultPaddingSize-2, summary.LowIssues)
+		fmt.Printf("              |               Info: %*d|     \n", defaultPaddingSize-2, summary.InfoIssues)
 		fmt.Printf("              --------------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
@@ -577,7 +577,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |                 SAST: %*d| \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf("              |         API-SECURITY: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
+				fmt.Printf("              |       APIS WITH RISK: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
+				if summary.HasAPISecurityDocumentation() {
+					fmt.Printf("              |   APIS DOCUMENTATION: %*d| \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
+				}
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
