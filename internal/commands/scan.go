@@ -529,6 +529,7 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumantationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
@@ -784,7 +785,7 @@ func setupScanTypeProjectAndConfig(
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
-	var apiSecConfig = addAPISecScan()
+	var apiSecConfig = addAPISecScan(cmd)
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
@@ -910,10 +911,16 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
-func addAPISecScan() map[string]interface{} {
+func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
-		apiSecMapConfig["type"] = commonParams.APISecType
+		apiSecConfig := wrappers.APISecConfig{}
+		apiSecMapConfig[resultsMapType] = commonParams.APISecType
+		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
+		if apiDocumentation != "" {
+			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+		}
+		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
 	}
 	return nil
