@@ -53,6 +53,7 @@ const (
 	notAvailableString        = "N/A"
 	notAvailableNumber        = -1
 	defaultPaddingSize        = -13
+	defaultResultsPaddingSize = -15
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
@@ -562,10 +563,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              --------------------------------------     \n")
-		fmt.Printf("              |               High: %*d|     \n", defaultPaddingSize-2, summary.HighIssues)
-		fmt.Printf("              |             Medium: %*d|     \n", defaultPaddingSize-2, summary.MediumIssues)
-		fmt.Printf("              |                Low: %*d|     \n", defaultPaddingSize-2, summary.LowIssues)
-		fmt.Printf("              |               Info: %*d|     \n", defaultPaddingSize-2, summary.InfoIssues)
+		fmt.Printf("              |               High: %*d|     \n", defaultResultsPaddingSize, summary.HighIssues)
+		fmt.Printf("              |             Medium: %*d|     \n", defaultResultsPaddingSize, summary.MediumIssues)
+		fmt.Printf("              |                Low: %*d|     \n", defaultResultsPaddingSize, summary.LowIssues)
+		fmt.Printf("              |               Info: %*d|     \n", defaultResultsPaddingSize, summary.InfoIssues)
 		fmt.Printf("              --------------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
