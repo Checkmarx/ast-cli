@@ -55,7 +55,7 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 	r.path = newPath
 }
 
-func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest) (
+func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (
 	*WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
@@ -66,12 +66,12 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	}
 
 	var triageAPIPath string
-	if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.SastType) {
+	if strings.EqualFold(strings.TrimSpace(scanType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
-	} else if strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.KicsType) || strings.EqualFold(strings.TrimSpace(predicate.ScannerType), params.IacType) {
+	} else if strings.EqualFold(strings.TrimSpace(scanType), params.KicsType) || strings.EqualFold(strings.TrimSpace(scanType), params.IacType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else {
-		return nil, errors.Errorf(invalidScanType, predicate.ScannerType)
+		return nil, errors.Errorf(invalidScanType, scanType)
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
