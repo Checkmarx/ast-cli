@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -778,6 +779,10 @@ func createReport(format,
 		jsonRpt := createTargetName(targetFile, targetPath, "json")
 		return exportJSONResults(jsonRpt, results)
 	}
+	if printer.IsFormat(format, printer.FormatGL) {
+		jsonRpt := createTargetName("gl-sast-report", targetPath, "json")
+		return exportGlSastResults(jsonRpt, results)
+	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
 	}
@@ -915,7 +920,23 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 	_ = f.Close()
 	return nil
 }
-
+func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection) error {
+	var err error
+	var resultsJSON []byte
+	log.Println("Creating gl-sast Report: ", targetFile)
+	var glSastResults = convertCxResultsToGLSast(results)
+	resultsJSON, err = json.Marshal(glSastResults)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+	}
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	_ = f.Close()
+	return nil
+}
 func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
 	var resultsJSON []byte
@@ -1142,6 +1163,83 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	sarif.Runs = []wrappers.SarifRun{}
 	sarif.Runs = append(sarif.Runs, createSarifRun(results))
 	return sarif
+}
+func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) wrappers.GlSastResultsCollection {
+	var glSast = new(wrappers.GlSastResultsCollection)
+	glSast.Scan = wrappers.ScanGlReport{}
+	glSast = setConstValueGlReport(*glSast)
+	var glVulnra []wrappers.GlVulnerabilities
+	glVulnra = convertCxResultToGlVulnerability(results, *glSast, glVulnra)
+	glSast.Vulnerabilities = glVulnra
+	return *glSast
+}
+
+func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast wrappers.GlSastResultsCollection, glVulnra []wrappers.GlVulnerabilities) []wrappers.GlVulnerabilities {
+	for _, result := range results.Results {
+		engineType := strings.TrimSpace(result.Type)
+		if engineType == commonParams.SastType {
+
+			if engineType == commonParams.SastType {
+				glSast = parseGlSastVulnerability(result, glSast)
+			} else if engineType == commonParams.KicsType {
+			} else if engineType == commonParams.ScaType {
+			}
+		}
+	}
+	glVulnra = glSast.Vulnerabilities
+	return glVulnra
+}
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast wrappers.GlSastResultsCollection) wrappers.GlSastResultsCollection {
+	glSast.Vulnerabilities = append(glSast.Vulnerabilities, wrappers.GlVulnerabilities{
+		ID:          result.ScanResultData.QueryName + ":" + result.ScanResultData.Nodes[0].FileName + ":" + strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10),
+		Category:    "Checkmarx-" + result.Type,
+		Name:        result.ScanResultData.QueryName,
+		Message:     result.ScanResultData.QueryName + "@" + result.ScanResultData.Nodes[0].FileName + " : " + strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10),
+		Description: result.Description,
+		CVE:         result.ScanResultData.QueryName + ":" + result.ScanResultData.Nodes[0].FileName + ":" + strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10),
+		Severity:    result.Severity,
+		Confidence:  result.Severity,
+		Solution:    "",
+		Scanner: wrappers.GlScanner{
+			ID:   "Checkmarx-" + result.Type,
+			Name: "Checkmarx-" + result.Type,
+		},
+		Links: nil,
+		Tracking: wrappers.Tracking{Items: wrappers.Item{
+			Signatures: wrappers.Signature{
+				Algorithm: result.Type + "-Algorithm ",
+				Value:     "NA"},
+			File:      result.ScanResultData.Nodes[0].FileName,
+			EndLine:   result.ScanResultData.Nodes[0].Line + result.ScanResultData.Nodes[0].Length,
+			StartLine: result.ScanResultData.Nodes[0].Line},
+		},
+		Flags: wrappers.Flag{
+			Type:        "",
+			Origin:      result.Type,
+			Description: result.Description,
+		},
+		Location: wrappers.Location{
+			File:      result.ScanResultData.Nodes[0].FileName,
+			StartLine: result.ScanResultData.Nodes[0].Line,
+			EndLine:   result.ScanResultData.Nodes[0].Line + result.ScanResultData.Nodes[0].Length,
+			Class:     result.ScanResultData.Nodes[0].FileName,
+		},
+	})
+	return glSast
+}
+func setGlIdentifiers() {
+
+}
+func setConstValueGlReport(glSast wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
+	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/blob/8a42b7e8ab41ec2920f02fb4b36f244bbbb4bfb8/lib/gitlab/ci/parsers/security/validators/schemas/14.1.2/sast-report-format.json"
+	glSast.Version = "14.1.2"
+	glSast.Scan.Analyzer.URL = wrappers.Analyzer_url
+	glSast.Scan.Analyzer.Name = wrappers.Vendor_name
+	glSast.Scan.Analyzer.Vendor.Name = wrappers.Vendor_name
+	glSast.Scan.Analyzer.ID = wrappers.Analyzer_Id
+	glSast.Scan.Scanner.ID = wrappers.Analyzer_Id
+	glSast.Scan.Scanner.Name = wrappers.Vendor_name
+	return &glSast
 }
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
