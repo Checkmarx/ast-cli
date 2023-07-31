@@ -36,13 +36,15 @@ type ResultSummary struct {
 
 // nolint: govet
 type APISecResult struct {
-	APICount         int   `json:"api_count,omitempty"`
-	TotalRisksCount  int   `json:"total_risks_count,omitempty"`
-	Risks            []int `json:"risks,omitempty"`
-	RiskDistribution []struct {
-		Origin string `json:"origin,omitempty"`
-		Total  int    `json:"total,omitempty"`
-	} `json:"risk_distribution,omitempty"`
+	APICount         int                `json:"api_count,omitempty"`
+	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
+	Risks            []int              `json:"risks,omitempty"`
+	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+}
+
+type riskDistribution struct {
+	Origin string `json:"origin,omitempty"`
+	Total  int    `json:"total,omitempty"`
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -59,14 +61,23 @@ func (r *ResultSummary) HasAPISecurity() bool {
 }
 
 func (r *ResultSummary) HasAPISecurityDocumentation() bool {
-	if len(r.APISecurity.RiskDistribution) > 1 && strings.EqualFold(r.APISecurity.RiskDistribution[1].Origin, "documentation") {
-		return true
+	if len(r.APISecurity.RiskDistribution) > 1 {
+		for _, risk := range r.APISecurity.RiskDistribution {
+			if strings.EqualFold(risk.Origin, "documentation") {
+				return true
+			}
+		}
 	}
 	return false
 }
 
 func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
-	return r.APISecurity.RiskDistribution[1].Total
+	for _, risk := range r.APISecurity.RiskDistribution {
+		if strings.EqualFold(risk.Origin, "documentation") {
+			return risk.Total
+		}
+	}
+	return 0
 }
 
 func (r *ResultSummary) HasPolicies() bool {
@@ -641,9 +652,15 @@ const nonAsyncSummary = `<div class="top-row">
  					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
 				<div class="element">
-                	<div class="total">APIs with risk </div>
+                	<div class="total">APIs with risk</div>
  					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
                 </div>
+				{{if .HasAPISecurityDocumentation}}
+					<div class="element">
+						<div class="total">APIs Documentation</div>
+						<div class="total">{{.GetAPISecurityDocumentationTotal}}</div>
+					</div>
+				{{end}}
 		</div>
         {{end}}`
 
