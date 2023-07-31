@@ -78,6 +78,7 @@ const (
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	policeManagementNoneStatus              = "none"
 	apiDocumantationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
+	policeManagementNoneStatus              = "none"
 )
 
 var resultsFormats = []string{
