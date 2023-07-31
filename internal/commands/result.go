@@ -76,6 +76,7 @@ const (
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	apiDocumantationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
+	policeManagementNoneStatus              = "none"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -494,7 +495,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
-		if summary.Policies != nil {
+		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
 			fmt.Printf("              --------------------------------------     \n\n")
 			if summary.Policies.BreakBuild {
 				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
