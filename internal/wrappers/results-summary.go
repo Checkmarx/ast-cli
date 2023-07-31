@@ -34,7 +34,6 @@ type ResultSummary struct {
 	Policies        *PolicyResponseModel
 }
 
-// nolint: govet
 type APISecResult struct {
 	APICount         int                `json:"api_count,omitempty"`
 	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
