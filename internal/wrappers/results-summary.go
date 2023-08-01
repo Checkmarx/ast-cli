@@ -70,10 +70,7 @@ func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution 
 
 func (r *ResultSummary) HasAPISecurityDocumentation() bool {
 	riskAPIDocumentation := r.getRiskFromAPISecurity("documentation")
-	if riskAPIDocumentation != nil {
-		return true
-	}
-	return false
+	return riskAPIDocumentation != nil
 }
 
 func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
