@@ -4,15 +4,15 @@ package integration
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strings"
-	"testing"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
+	"io/ioutil"
+	"log"
+	"os"
+	"strings"
+	"testing"
 )
 
 const (
@@ -277,4 +277,29 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, err != nil)
+}
+
+func TestResultAPIDocumentation(t *testing.T) {
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), "760fd104-925e-4fbb-838f-95920dd1c99c",
+		flag(params.TargetFormatFlag), printer.FormatSummaryMarkdown,
+		flag(params.TargetFlag), fileName,
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatMarkdown))
+		log.Println("test file removed!")
+	}()
+	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatMarkdown))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatMarkdown)
+
+	content, err := ioutil.ReadFile(fileName + "." + printer.FormatMarkdown)
+	assert.NilError(t, err, "error reading file")
+
+	if !strings.Contains(string(content), "APIs Documentation") {
+		t.Errorf("APIS DOCUMENTATION should be printed")
+	}
+	assert.NilError(t, err, "Scan must complete successfully")
 }
