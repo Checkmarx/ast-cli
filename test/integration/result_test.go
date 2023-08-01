@@ -279,7 +279,7 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 	assert.Assert(t, err != nil)
 }
 
-func TestResultAPIDocumentation(t *testing.T) {
+func TestResultAPIDocumentationMarkdown(t *testing.T) {
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), "760fd104-925e-4fbb-838f-95920dd1c99c",
