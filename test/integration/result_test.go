@@ -287,19 +287,17 @@ func TestResultAPIDocumentationMarkdown(t *testing.T) {
 		flag(params.TargetFlag), fileName,
 	}
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
+	resulsFileName := fmt.Sprintf("%s.%s", fileName, printer.FormatMarkdown)
+	assert.NilError(t, err, "Scan must complete successfully")
 	defer func() {
-		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatMarkdown))
+		os.Remove(resulsFileName)
 		log.Println("test file removed!")
 	}()
-	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatMarkdown))
-	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatMarkdown)
-
-	content, err := ioutil.ReadFile(fileName + "." + printer.FormatMarkdown)
+	_, err = os.Stat(resulsFileName)
+	assert.NilError(t, err, "Report file should exist: "+resulsFileName)
+	content, err := ioutil.ReadFile(resulsFileName)
 	assert.NilError(t, err, "error reading file")
-
 	if !strings.Contains(string(content), "APIs Documentation") {
-		t.Errorf("APIS DOCUMENTATION should be printed")
+		t.Errorf("THE RESULTS SHOULD CONTAIN APIS DOCUMENTATION")
 	}
-	assert.NilError(t, err, "Scan must complete successfully")
 }
