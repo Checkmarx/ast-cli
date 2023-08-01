@@ -544,6 +544,7 @@ func scanCreateSubCommand(
 		false,
 		"Create a scan with the configurations used in the most recent scan in the project",
 	)
+	createScanCmd.PersistentFlags().Bool(commonParams.HideDevDependenciesFlag, false, "Hide dev and test dependencies from sca results")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -1644,6 +1645,8 @@ func createReportsAfterScan(
 	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
 		reportFormats += "," + printer.FormatSummaryConsole
 	}
+	hideDevDependencies, _ := cmd.Flags().GetBool(commonParams.HideDevDependenciesFlag)
+
 	return CreateScanReport(
 		resultsWrapper,
 		risksOverviewWrapper,
@@ -1660,6 +1663,7 @@ func createReportsAfterScan(
 		targetFile,
 		targetPath,
 		params,
+		hideDevDependencies,
 	)
 }
 
@@ -1674,8 +1678,8 @@ func applyThreshold(
 	}
 
 	thresholdMap := parseThreshold(threshold)
-
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
+	hideDevDependencies, _ := cmd.Flags().GetBool(commonParams.HideDevDependenciesFlag)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, hideDevDependencies)
 	if err != nil {
 		return err
 	}
@@ -1731,11 +1735,11 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, hideDevDependencies bool) (
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string), hideDevDependencies)
 	if err != nil {
 		return nil, err
 	}

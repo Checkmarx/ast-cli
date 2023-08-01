@@ -133,6 +133,8 @@ const (
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
+	HideDevDependenciesFlag = "sca-hide-dev-dependencies"
+
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"

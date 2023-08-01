@@ -116,31 +116,33 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 	}
 }
 
-type GraphQLResponse struct {
-	Data   interface{} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-}
-
-type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables"`
-}
-
-func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanIDPoc() (
-	*[]ScaPackageCollection,
+func (r *ResultsHTTPWrapper) GetResultsWithDevByScanID(scanID string, hideDevDependencies bool,take int ,skip int) (
+	*VulnerabilitiesRisks,
 	*WebError,
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	query := `query ( $scanId: UUID!, $isExploitablePathEnabled: Boolean!,$packageId: String) { package ( scanId: $scanId, isExploitablePathEnabled: $isExploitablePathEnabled, packageId: $packageId) { packageId, locations,dependencyPaths:dependencyPath{name,version,isResolved,isDevelopment,vulnerabilityRiskLevel}} }`
+	// Build the query field for the graphQL request
+	query := `query ($where: VulnerabilityModelFilterInput, $take: Int!, $skip: Int!, $order: [VulnerabilitiesSort!], $scanId: UUID!, $isExploitablePathEnabled: Boolean!) { vulnerabilitiesRisksByScanId (where: $where, take: $take, skip: $skip, order: $order, scanId: $scanId, isExploitablePathEnabled: $isExploitablePathEnabled) { totalCount, items { state, isIgnored, cve, cwe, description, packageId, severity, type, published, vulnerabilityFixResolutionText, score, violatedPolicies, isExploitable, isKevDataExists, isExploitDbDataExists, relation, cweInfo { title }, packageInfo { name, packageRepository, version }, exploitablePath { methodMatch { fullName, line, namespace, shortName, sourceFile }, methodSourceCall { fullName, line, namespace, shortName, sourceFile } }, vulnerablePackagePath { id, isDevelopment, isResolved, name, version, vulnerabilityRiskLevel }, references { comment, type, url }, cvss2 { attackComplexity, attackVector, authentication, availability, availabilityRequirement, baseScore, collateralDamagePotential, confidentiality, confidentialityRequirement, exploitCodeMaturity, integrityImpact, integrityRequirement, remediationLevel, reportConfidence, targetDistribution }, cvss3 { attackComplexity, attackVector, availability, availabilityRequirement, baseScore, confidentiality, confidentialityRequirement, exploitCodeMaturity, integrity, integrityRequirement, privilegesRequired, remediationLevel, reportConfidence, scope, userInteraction } } } }`
+	// Create a map to represent the "where" object to use in variables
+	where := make(map[string]interface{})
+	// Case the hide dev dependencies flag is being used
+	if hideDevDependencies {
+		and := make(map[string]interface{})
+		and["isDev"] = map[string]bool{"eq": false}
+		and["isTest"] = map[string]bool{"eq": false}
+		where["and"] = and
+	} else { // otherwise, send the where object as nil
+		where = nil
+	}
+	// build the variables field for the graphQL request
 	variables := map[string]interface{}{
-		"scanId" :"68a2321f-b409-425b-b7cd-a04f9aab8373",
-		"skip": 0,
-		"take":10,
-		"isExploitablePathEnabled":true,
-		"packageId":"Npm-debug-2.6.9",
+		"where":                    where,
+		"skip":                     skip,
+		"take":                     take,
+		"order":                    map[string]string{"score": "DESC"},
+		"isExploitablePathEnabled": true,
+		"scanId":                   scanID,
 	}
 	body := GraphQLRequest{
 		Query:     query,
@@ -153,7 +155,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanIDPoc() (
 	}
 	resp, err := SendPrivateHTTPRequest(
 		http.MethodPost,
-		"api/sca/graphql/graphql",
+		"api/sca/graphql/graphql", // TO DO: Add this to constants
 		bytes.NewBuffer(jsonBody),
 		clientTimeout,
 		true,
@@ -167,7 +169,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanIDPoc() (
 	}()
 
 	decoder := json.NewDecoder(resp.Body)
-	fmt.Printf("resp status %v\n",resp.StatusCode)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := WebError{}
@@ -177,16 +178,14 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanIDPoc() (
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		var model GraphQLResponse
+		var model GraphQLVulnerabilityRisks
 		err = decoder.Decode(&model)
-		println("ok")
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-		fmt.Printf("Response from graphQL : %v\n",model)
-		return nil, nil, nil
-	case http.StatusNotFound: // scan was not triggered with SCA type or SCA scan didn't start yet
-		logger.PrintIfVerbose("SCA packages for enrichment not found")
+		return &model.Data, nil, nil
+	case http.StatusNotFound:
+		logger.PrintIfVerbose("SCA results for dev dependencies filter not found")
 		return nil, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)

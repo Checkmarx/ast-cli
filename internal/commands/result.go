@@ -177,9 +177,9 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
 
 	resultShowCmd.PersistentFlags().Int(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
-
 	// Temporary flag until SCA supports new api
 	resultShowCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
+	resultShowCmd.PersistentFlags().Bool(commonParams.HideDevDependenciesFlag, false, "Hide dev and test dependencies from sca results")
 	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	return resultShowCmd
@@ -544,6 +544,8 @@ func runGetResultCommand(
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
+		hideDevDependencies, _ := cmd.Flags().GetBool(commonParams.HideDevDependenciesFlag)
+
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
@@ -559,7 +561,8 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
-			params)
+			params,
+			hideDevDependencies)
 	}
 }
 
@@ -619,6 +622,7 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	params map[string]string,
+	hideDevDependencies bool,
 ) error {
 	if scanID == "" {
 		return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
@@ -635,7 +639,7 @@ func CreateScanReport(
 		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 	}
 
-	results, err := ReadResults(resultsWrapper, scan, params)
+	results, err := ReadResults(resultsWrapper, scan, params, hideDevDependencies)
 	if err != nil {
 		return err
 	}
@@ -788,6 +792,7 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
+	hideDevDependencies bool,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
@@ -803,7 +808,7 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel, hideDevDependencies)
 		if err != nil {
 			return nil, err
 		}
@@ -819,12 +824,11 @@ func enrichScaResults(
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
+	hideDevDependencies bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	if util.Contains(scan.Engines, scaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		println("antes poc")
-		_, _, err = resultsWrapper.GetAllResultsPackageByScanIDPoc()
 		if err != nil {
 			return nil, err
 		}
@@ -844,10 +848,37 @@ func enrichScaResults(
 		}
 		// Enrich sca results
 		if scaPackageModel != nil {
-			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+			// Get the information about the results dev and test dependencies
+			resultsFilteredByDev, errs := getResultWithDev(resultsWrapper, scan.ID, hideDevDependencies)
+			if errs != nil {
+				return nil, err
+			}
+			// Add the extra information to the sca packages
+			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel, resultsFilteredByDev)
 		}
 	}
 	return resultsModel, nil
+}
+
+func getResultWithDev(resultsWrapper wrappers.ResultsWrapper, scanID string, hideDevDependencies bool) (*[]wrappers.ScaVulnerability, error) {
+	take := 100
+	skip := 0
+	resultsFilteredByDev, _, errs := resultsWrapper.GetResultsWithDevByScanID(scanID, hideDevDependencies, take, skip)
+	if errs != nil {
+		return nil, errs
+	}
+	skip += 100
+	// handle pagination
+	for skip < resultsFilteredByDev.VulnerabilitiesRisks.TotalCount {
+		println("extra ",resultsFilteredByDev.VulnerabilitiesRisks.TotalCount)
+		resultsFilteredByDevPage, _, err := resultsWrapper.GetResultsWithDevByScanID(scanID, hideDevDependencies, take, skip)
+		if err != nil {
+			return nil, err
+		}
+		resultsFilteredByDev.VulnerabilitiesRisks.Items = append(resultsFilteredByDev.VulnerabilitiesRisks.Items, resultsFilteredByDevPage.VulnerabilitiesRisks.Items...)
+		skip += 100
+	}
+	return &resultsFilteredByDev.VulnerabilitiesRisks.Items, nil
 }
 
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
@@ -1462,47 +1493,64 @@ func addPackageInformation(
 	resultsModel *wrappers.ScanResultsCollection,
 	scaPackageModel *[]wrappers.ScaPackageCollection,
 	scaTypeModel *[]wrappers.ScaTypeCollection,
+	resultsFilteredByDev *[]wrappers.ScaVulnerability,
 ) *wrappers.ScanResultsCollection {
 	var currentID string
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
+	var filteredResults []*wrappers.ScanResult
 
 	for _, result := range resultsModel.Results {
 		if !(result.Type == scaType) {
+			filteredResults = append(filteredResults, result)
 			continue
 		} else {
+			// check if current result is part of the filtered results
 			currentID = result.ScanResultData.PackageIdentifier
-			const precision = 1
-			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
-			result.VulnerabilityDetails.CvssScore = roundedScore
-			// Add the sca type
-			result.ScaType = buildScaType(typesByCVE, result)
-			for _, packages := range *scaPackageModel {
-				currentPackage := packages
-				if packages.ID == currentID {
-					for _, dependencyPath := range currentPackage.DependencyPathArray {
-						head := &dependencyPath[0]
-						head.Locations = locationsByID[head.ID]
-						head.SupportsQuickFix = len(dependencyPath) == 1
-						for _, location := range locationsByID[head.ID] {
-							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+			if containsResult(currentID, resultsFilteredByDev) {
+				const precision = 1
+				var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+				result.VulnerabilityDetails.CvssScore = roundedScore
+				// Add the sca type
+				result.ScaType = buildScaType(typesByCVE, result)
+				for _, packages := range *scaPackageModel {
+					currentPackage := packages
+					if packages.ID == currentID {
+						for _, dependencyPath := range currentPackage.DependencyPathArray {
+							head := &dependencyPath[0]
+							head.Locations = locationsByID[head.ID]
+							head.SupportsQuickFix = len(dependencyPath) == 1
+							for _, location := range locationsByID[head.ID] {
+								head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+							}
+							currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
 						}
-						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
+						if result.VulnerabilityDetails.CveName != "" {
+							currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
+						} else {
+							currentPackage.FixLink = ""
+						}
+						if currentPackage.IsDirectDependency {
+							currentPackage.TypeOfDependency = directDependencyType
+						} else {
+							currentPackage.TypeOfDependency = indirectDependencyType
+						}
+						result.ScanResultData.ScaPackageCollection = &currentPackage
+						break
 					}
-					if result.VulnerabilityDetails.CveName != "" {
-						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
-					} else {
-						currentPackage.FixLink = ""
-					}
-					if currentPackage.IsDirectDependency {
-						currentPackage.TypeOfDependency = directDependencyType
-					} else {
-						currentPackage.TypeOfDependency = indirectDependencyType
-					}
-					result.ScanResultData.ScaPackageCollection = &currentPackage
-					break
 				}
+				filteredResults = append(filteredResults, result)
 			}
 		}
 	}
+	resultsModel.Results = filteredResults
 	return resultsModel
+}
+
+func containsResult(resultID string, resultsFilteredByDev *[]wrappers.ScaVulnerability) bool {
+	for _, e := range *resultsFilteredByDev {
+		if e.ID == resultID {
+			return true
+		}
+	}
+	return false
 }
