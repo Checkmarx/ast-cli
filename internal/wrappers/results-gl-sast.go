@@ -1,18 +1,17 @@
 package wrappers
 
 import (
-	"net/url"
 	"time"
 )
 
 const (
-	Analyzer_Name = "CxOne"
-	Analyzer_Id   = Analyzer_Name + "-SAST"
-	Analyzer_url  = "https://checkmarx.company.com/"
-	Vendor_name   = "Checkmarx"
+	AnalyzerName = "CxOne"
+	AnalyzerId   = AnalyzerName + "-SAST"
+	AnalyzerUrl  = "https://checkmarx.company.com/"
+	VendorName   = "Checkmarx"
 )
 
-var sast_verion string
+var sastVerion string
 
 type GlSastResultsCollection struct {
 	Scan            ScanGlReport        `json:"scan"`
@@ -92,20 +91,20 @@ type Vendor struct {
 	Name string `json:"name"`
 }
 type GLSastIdentifiers struct {
-	Type  string  `json:"type"`
-	Name  string  `json:"name"`
-	Url   url.URL `json:"url"`
-	Value string  `json:"value"`
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Value string `json:"value"`
 }
 type GlSastTracking struct {
-	items []GlSastTrackingItems `json:"items"`
+	Items []GlSastTrackingItems `json:"items"`
 }
 
 type GlSastTrackingItems struct {
 	Signatures GlSastTrackingItemsSignatures `json:"signatures"`
 	File       string                        `json:"file"`
-	End_line   string                        `json:"end_line"`
-	Start_line string                        `json:"start_line"`
+	EndLine    string                        `json:"end_line"`
+	StartLine  string                        `json:"start_line"`
 }
 type GlSastTrackingItemsSignatures struct {
 	Algorithm string `json:"algorithm"`
