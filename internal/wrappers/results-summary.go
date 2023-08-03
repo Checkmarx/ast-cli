@@ -656,12 +656,6 @@ const nonAsyncSummary = `<div class="top-row">
                 	<div class="total">APIs with risk</div>
  					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
                 </div>
-				{{if .HasAPISecurityDocumentation}}
-					<div class="element">
-						<div class="total">APIs Documentation</div>
-						<div class="total">{{.GetAPISecurityDocumentationTotal}}</div>
-					</div>
-				{{end}}
 		</div>
         {{end}}`
 
@@ -715,9 +709,9 @@ const SummaryMarkdownTemplate = `
 {{if .HasAPISecurity}}
 ### API Security 
 
-| Detected APIs | APIs with risk | {{if .HasAPISecurityDocumentation}} APIs Documentation |{{end}}
-|:---------:|:---------:| {{if .HasAPISecurityDocumentation}}:---------:|{{end}}
-| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
+| Detected APIs | APIs with risk |
+|:---------:|:---------:|
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
 {{end}}
 `
 
