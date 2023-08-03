@@ -580,10 +580,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |                 SAST: %*d| \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf("              |       APIS WITH RISK: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
-				if summary.HasAPISecurityDocumentation() {
-					fmt.Printf("              |   APIS DOCUMENTATION: %*d| \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
-				}
+				fmt.Printf("              |         API-SECURITY: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
