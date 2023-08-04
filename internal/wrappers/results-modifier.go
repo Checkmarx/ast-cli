@@ -22,6 +22,7 @@ const (
 	sca            = "sca-"
 )
 
+// TODO il: MAKE REDACT HTML HERE
 // UnmarshalJSON Function normalizes description to ScanResult
 func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	labels := map[string]string{
