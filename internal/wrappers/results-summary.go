@@ -59,15 +59,6 @@ func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
 }
 
-func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
-	for _, risk := range r.APISecurity.RiskDistribution {
-		if strings.EqualFold(risk.Origin, origin) {
-			return &risk
-		}
-	}
-	return nil
-}
-
 func (r *ResultSummary) HasPolicies() bool {
 	return r.Policies != nil && len(r.Policies.Polices) > 0
 }
