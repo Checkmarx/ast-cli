@@ -781,7 +781,7 @@ func createReport(format,
 	}
 	if printer.IsFormat(format, printer.FormatGL) {
 		jsonRpt := createTargetName("gl-sast-report", targetPath, "json")
-		return exportGlSastResults(jsonRpt, results)
+		return exportGlSastResults(jsonRpt, results, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
@@ -920,22 +920,27 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 	_ = f.Close()
 	return nil
 }
-func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection) error {
+func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
 	log.Println("Creating gl-sast Report: ", targetFile)
 	var glSastResults = convertCxResultsToGLSast(results)
+	//glSastResults = addStatus(summary, &glSastResults)
 	resultsJSON, err = json.Marshal(glSastResults)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
 	f, err := os.Create(targetFile)
-	_ = f.Close()
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	defer f.Close()
 	return nil
+}
+func addStatus(summary *wrappers.ResultSummary, glSastResults *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
+	//glSastResults.Scan.Analyzer.URL = summary.Status
+	return glSastResults
 }
 func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
@@ -1167,13 +1172,13 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) wrappers.GlSastResultsCollection {
 	var glSast = new(wrappers.GlSastResultsCollection)
 	glSast.Scan = wrappers.ScanGlReport{}
-	setConstValueGlReport(*glSast)
-	glVulnra := convertCxResultToGlVulnerability(results, *glSast)
+	glSast = setConstValueGlReport(*glSast)
+	glVulnra := convertCxResultToGlVulnerability(results, glSast)
 	glSast.Vulnerabilities = glVulnra
 	return *glSast
 }
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast wrappers.GlSastResultsCollection) []wrappers.GlVulnerabilities {
+func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection) []wrappers.GlVulnerabilities {
 	for _, result := range results.Results {
 		engineType := strings.TrimSpace(result.Type)
 		if engineType == commonParams.SastType {
@@ -1187,7 +1192,7 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 	return glSast.Vulnerabilities
 }
 
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast wrappers.GlSastResultsCollection) wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
