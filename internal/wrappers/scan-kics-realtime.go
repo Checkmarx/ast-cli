@@ -24,7 +24,7 @@ type KicsFiles struct {
 	Line            uint   `json:"line"`
 	IssueType       string `json:"issue_type"`
 	SearchKey       string `json:"search_key"`
-	SearchLine      uint   `json:"search_line"`
+	SearchLine      int    `json:"search_line"`
 	SearchValue     string `json:"search_value"`
 	ExpectedValue   string `json:"expected_value"`
 	ActualValue     string `json:"actual_value"`
