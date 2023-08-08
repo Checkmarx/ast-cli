@@ -2,6 +2,7 @@ package util
 
 import (
 	"log"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -100,9 +101,9 @@ func toLearnMoreResponseView(response *[]*wrappers.LearnMoreResponse) interface{
 				QueryName:              resp.QueryName,
 				QueryDescriptionID:     resp.QueryDescriptionID,
 				ResultDescription:      resp.ResultDescription,
-				Risk:                   resp.Risk,
-				Cause:                  resp.Cause,
-				GeneralRecommendations: resp.GeneralRecommendations,
+				Risk:                   strings.ReplaceAll(strings.ReplaceAll(resp.Risk, "<", "&lt;"), ">", "&gt;"),
+				Cause:                  strings.ReplaceAll(strings.ReplaceAll(resp.Cause, "<", "&lt;"), ">", "&gt;"),
+				GeneralRecommendations: strings.ReplaceAll(strings.ReplaceAll(resp.GeneralRecommendations, "<", "&lt;"), ">", "&gt;"),
 				Samples:                addSampleResponses(resp.Samples),
 			},
 		)

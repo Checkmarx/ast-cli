@@ -59,8 +59,19 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	if s.Description == "" && s.ScanResultData.Description != "" {
 		s.Description = s.ScanResultData.Description
 		s.ScanResultData.Description = ""
+	} else {
+		s.Description = strings.ReplaceAll(strings.ReplaceAll(s.Description, "<", "&lt;"), ">", "&gt;")
+		s.ScanResultData.Description = strings.ReplaceAll(strings.ReplaceAll(s.ScanResultData.Description, "<", "&lt;"), ">", "&gt;")
 	}
-
+	if s.ScanResultData.Nodes != nil {
+		for _, node := range s.ScanResultData.Nodes {
+			if node.Name == "" {
+				continue
+			}
+			node.Name = strings.ReplaceAll(strings.ReplaceAll(node.Name, "<", "&lt;"), ">", "&gt;")
+			node.FullName = strings.ReplaceAll(strings.ReplaceAll(node.FullName, "<", "&lt;"), ">", "&gt;")
+		}
+	}
 	// Convert markdown description to html description
 	s.DescriptionHTML = string(markdown.ToHTML([]byte(s.Description), nil, nil))
 
