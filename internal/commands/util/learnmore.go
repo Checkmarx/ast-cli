@@ -1,5 +1,6 @@
 package util
 
+// nolint:goimports
 import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
