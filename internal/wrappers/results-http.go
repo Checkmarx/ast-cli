@@ -68,11 +68,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	}
 }
 
-//	func redactHTMLInResults(results *ScanResultsCollection) {
-//		for i := range results.Results {
-//
-//		}
-//	}
 func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]string) (
 	*[]ScaPackageCollection,
 	*WebError,
