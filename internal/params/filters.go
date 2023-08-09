@@ -128,6 +128,8 @@ var BaseFilters = []string{
 	"*.plist",
 	"go.mod",
 	"go.sum",
+	"Podfile",
+	"Podfile.lock",
 }
 
 var KicsBaseFilters = []string{
