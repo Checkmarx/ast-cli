@@ -74,6 +74,7 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
+	policeManagementNoneStatus              = "none"
 )
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -492,7 +493,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
-		if summary.Policies != nil {
+		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
 			fmt.Printf("              -----------------------------------     \n\n")
 			if summary.Policies.BreakBuild {
 				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
@@ -540,7 +541,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		} else {
 			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
 		}
-		fmt.Printf("\n")
+		fmt.Printf("              -----------------------------------     \n\n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
