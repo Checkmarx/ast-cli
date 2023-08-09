@@ -61,6 +61,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
+
 		return &model, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)

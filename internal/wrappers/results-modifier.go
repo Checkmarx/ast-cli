@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -54,12 +55,22 @@ func (s *ScanResult) UnmarshalJSON(data []byte) error {
 	s.Status = strings.TrimSpace(s.Status)
 	s.State = strings.TrimSpace(s.State)
 	s.Severity = strings.TrimSpace(s.Severity)
-
 	if s.Description == "" && s.ScanResultData.Description != "" {
 		s.Description = s.ScanResultData.Description
 		s.ScanResultData.Description = ""
+	} else {
+		s.Description = html.EscapeString(s.Description)
+		s.ScanResultData.Description = html.EscapeString(s.ScanResultData.Description)
 	}
-
+	if s.ScanResultData.Nodes != nil {
+		for _, node := range s.ScanResultData.Nodes {
+			if node.Name == "" {
+				continue
+			}
+			node.Name = html.EscapeString(node.Name)
+			node.FullName = html.EscapeString(node.FullName)
+		}
+	}
 	// Convert markdown description to html description
 	s.DescriptionHTML = string(markdown.ToHTML([]byte(s.Description), nil, nil))
 
