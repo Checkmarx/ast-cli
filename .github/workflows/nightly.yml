@@ -11,15 +11,10 @@ on:
 
 jobs:
   delete_tag:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Delete release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          delete_release: true
-          tag_name: 2.0.0-nightly
+    uses: Checkmarx/ast-cli/.github/workflows/delete-dev-releases.yml@main
+    with:
+      tag: "2.0.0-nightly"
+    secrets: inherit
   nightly:
     needs: delete_tag
     uses: Checkmarx/ast-cli/.github/workflows/release.yml@main
