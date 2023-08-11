@@ -77,6 +77,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.AccessKeySecretFlag, "", params.AccessKeySecretFlagUsage)
 	rootCmd.PersistentFlags().Bool(params.InsecureFlag, false, params.InsecureFlagUsage)
 	rootCmd.PersistentFlags().String(params.ProxyFlag, "", params.ProxyFlagUsage)
+	rootCmd.PersistentFlags().Bool(params.IgnoreProxyFlag, false, params.IgnoreProxyFlagUsage)
 	rootCmd.PersistentFlags().String(params.ProxyTypeFlag, "", params.ProxyTypeFlagUsage)
 	rootCmd.PersistentFlags().String(params.NtlmProxyDomainFlag, "", params.NtlmProxyDomainFlagUsage)
 	rootCmd.PersistentFlags().String(params.TimeoutFlag, "", params.TimeoutFlagUsage)
@@ -130,6 +131,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
+	_ = viper.BindPFlag(params.IgnoreProxyFlag, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
 
 	// Set help func
 	rootCmd.SetHelpFunc(
