@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
+	"strconv"
 	"time"
 
 	b64 "encoding/base64"
@@ -27,6 +29,7 @@ const (
 	azureBaseReposURL    = "%s%s/%s/_apis/git/repositories"
 	azureBaseProjectsURL = "%s%s/_apis/projects"
 	azureTop             = "$top"
+	azurePage            = "$skip"
 	azureTopValue        = "1000000"
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
@@ -50,35 +53,84 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
+	queryParams[azureTop] = pageLenValue
+	repositories := []AzureRootCommit{}
 
-	err = g.get(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	err, azureCommits := paginateGetter(g.get)(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	if err != nil {
+		return repository, err
+	}
+	bytes, err := json.Marshal(azureCommits)
+	if err != nil {
+		return repository, err
+	}
+	err = json.Unmarshal(bytes, &repositories)
+	if err != nil {
+		return repository, err
+	}
 
+	for _, commit := range repositories {
+		repository.Commits = append(repository.Commits, commit.Commits...)
+	}
 	return repository, err
 }
 
 func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, token string) (AzureRootRepo, error) {
 	var err error
 	var repository AzureRootRepo
+	var repositories []AzureRootRepo
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
 	queryParams[azureTop] = azureTopValue
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
+	err, azureRepos := paginateGetter(g.get)(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
 
+	if err != nil {
+		return repository, err
+	}
+	bytes, err := json.Marshal(azureRepos)
+	if err != nil {
+		return repository, err
+	}
+	err = json.Unmarshal(bytes, &repositories)
+	if err != nil {
+		return repository, err
+	}
+
+	for _, commit := range repositories {
+		repository.Repos = append(repository.Repos, commit.Repos...)
+	}
 	return repository, err
 }
 
 func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (AzureRootProject, error) {
 	var err error
 	var project AzureRootProject
+	var projects []AzureRootProject
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(reposURL, encodeToken(token), &project, queryParams, basicFormat)
+	err, azureProjects := paginateGetter(g.get)(reposURL, encodeToken(token), &project, queryParams, basicFormat)
+
+	if err != nil {
+		return project, err
+	}
+	bytes, err := json.Marshal(azureProjects)
+	if err != nil {
+		return project, err
+	}
+	err = json.Unmarshal(bytes, &projects)
+	if err != nil {
+		return project, err
+	}
+
+	for _, commit := range projects {
+		project.Projects = append(project.Projects, commit.Projects...)
+	}
 
 	return project, err
 }
@@ -88,12 +140,12 @@ func (g *AzureHTTPWrapper) get(
 	target interface{},
 	queryParams map[string]string,
 	authFormat string,
-) error {
+) (error, *http.Response) {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	if len(token) > 0 {
@@ -108,7 +160,7 @@ func (g *AzureHTTPWrapper) get(
 	resp, err := g.client.Do(req)
 
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	logger.PrintRequest(req)
@@ -123,29 +175,50 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
-			return err
+			return err, nil
 		}
 		// State sent when expired token
 	case http.StatusNonAuthoritativeInfo:
 		err = errors.New(failedAuth)
-		return err
+		return err, nil
 		// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedAuth)
-		return err
+		return err, nil
 	case http.StatusNotFound:
 		// Case the commit/project does not exist in the organization
-		return nil
+		return nil, resp
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return err, nil
 		}
-		return errors.New(string(body))
+		return errors.New(string(body)), nil
 	}
-	return nil
+	return nil, resp
 }
+func paginateGetter(get func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *http.Response)) func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *[]interface{}) {
+	return func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *[]interface{}) {
+		var allTargets []interface{}
+		var currentPage = 0
+		queryParams[azurePage] = strconv.Itoa(currentPage)
+		for {
+			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
 
+			err, resp := get(url, token, targetCopy, queryParams, format)
+			if err != nil {
+				return err, &allTargets
+			}
+			allTargets = append(allTargets, targetCopy)
+			if resp.Header.Get("Link") == "" {
+				break
+			}
+			currentPage += 10
+			queryParams[azurePage] = strconv.Itoa(currentPage)
+		}
+		return nil, &allTargets
+	}
+}
 func getThreeMonthsTime() string {
 	today := time.Now()
 	lastThreeMonths := today.AddDate(0, -3, 0).Format(azureLayoutTime)
