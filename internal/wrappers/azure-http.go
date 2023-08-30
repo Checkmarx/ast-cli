@@ -56,7 +56,7 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	queryParams[azureTop] = pageLenValue
 	repositories := []AzureRootCommit{}
 
-	err, azureCommits := paginateGetter(g.get)(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	azureCommits, err := paginateGetter(g.get)(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
 	if err != nil {
 		return repository, err
 	}
@@ -85,15 +85,16 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	queryParams[azureTop] = azureTopValue
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err, azureRepos := paginateGetter(g.get)(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
-
+	azureRepos, err := paginateGetter(g.get)(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
 	if err != nil {
 		return repository, err
 	}
+
 	bytes, err := json.Marshal(azureRepos)
 	if err != nil {
 		return repository, err
 	}
+
 	err = json.Unmarshal(bytes, &repositories)
 	if err != nil {
 		return repository, err
@@ -114,15 +115,16 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err, azureProjects := paginateGetter(g.get)(reposURL, encodeToken(token), &project, queryParams, basicFormat)
-
+	azureProjects, err := paginateGetter(g.get)(reposURL, encodeToken(token), &project, queryParams, basicFormat)
 	if err != nil {
 		return project, err
 	}
+
 	bytes, err := json.Marshal(azureProjects)
 	if err != nil {
 		return project, err
 	}
+
 	err = json.Unmarshal(bytes, &projects)
 	if err != nil {
 		return project, err
@@ -140,12 +142,12 @@ func (g *AzureHTTPWrapper) get(
 	target interface{},
 	queryParams map[string]string,
 	authFormat string,
-) (error, *http.Response) {
+) (*http.Response, error) {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	if len(token) > 0 {
@@ -160,7 +162,7 @@ func (g *AzureHTTPWrapper) get(
 	resp, err := g.client.Do(req)
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	logger.PrintRequest(req)
@@ -175,39 +177,42 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
 		// State sent when expired token
 	case http.StatusNonAuthoritativeInfo:
 		err = errors.New(failedAuth)
-		return err, nil
+		return nil, err
 		// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedAuth)
-		return err, nil
+		return nil, err
 	case http.StatusNotFound:
 		// Case the commit/project does not exist in the organization
-		return nil, resp
+		return resp, nil
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return err, nil
+			return nil, err
 		}
-		return errors.New(string(body)), nil
+		return nil, errors.New(string(body))
 	}
-	return nil, resp
+	return resp, nil
 }
-func paginateGetter(get func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *http.Response)) func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *[]interface{}) {
-	return func(url, token string, target interface{}, queryParams map[string]string, format string) (error, *[]interface{}) {
+func paginateGetter(
+	get func(
+		url, token string, target interface{}, queryParams map[string]string, format string) (*http.Response, error)) func(
+	url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
+	return func(url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
 		var allTargets []interface{}
 		var currentPage = 0
 		queryParams[azurePage] = strconv.Itoa(currentPage)
 		for {
 			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
 
-			err, resp := get(url, token, targetCopy, queryParams, format)
+			resp, err := get(url, token, targetCopy, queryParams, format)
 			if err != nil {
-				return err, &allTargets
+				return &allTargets, err
 			}
 			allTargets = append(allTargets, targetCopy)
 			if resp.Header.Get("Link") == "" {
@@ -216,7 +221,7 @@ func paginateGetter(get func(url, token string, target interface{}, queryParams 
 			currentPage += 10
 			queryParams[azurePage] = strconv.Itoa(currentPage)
 		}
-		return nil, &allTargets
+		return &allTargets, nil
 	}
 }
 func getThreeMonthsTime() string {
