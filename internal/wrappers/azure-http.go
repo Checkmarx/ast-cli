@@ -211,6 +211,7 @@ func paginateGetter(
 			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
 
 			resp, err := get(url, token, targetCopy, queryParams, format)
+			defer resp.Body.Close()
 			if err != nil {
 				return &allTargets, err
 			}
