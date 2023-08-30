@@ -211,16 +211,17 @@ func paginateGetter(
 			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
 
 			resp, err := get(url, token, targetCopy, queryParams, format)
-			defer resp.Body.Close()
 			if err != nil {
 				return &allTargets, err
 			}
 			allTargets = append(allTargets, targetCopy)
 			if resp.Header.Get("Link") == "" {
+				resp.Body.Close()
 				break
 			}
 			currentPage += 10
 			queryParams[azurePage] = strconv.Itoa(currentPage)
+			resp.Body.Close()
 		}
 		return &allTargets, nil
 	}
