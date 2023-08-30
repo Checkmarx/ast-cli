@@ -202,34 +202,6 @@ func (g *AzureHTTPWrapper) get(
 	return resp, nil
 }
 
-//func paginateGetter(
-//	get func(
-//		url, token string, target interface{}, queryParams map[string]string, format string) (*http.Response, error)) func(
-//	url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
-//	return func(url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
-//		var allTargets []interface{}
-//		var currentPage = 0
-//		queryParams[azurePage] = strconv.Itoa(currentPage)
-//		for {
-//			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
-//
-//			resp, err := get(url, token, targetCopy, queryParams, format)
-//			if err != nil {
-//				return &allTargets, err
-//			}
-//			allTargets = append(allTargets, targetCopy)
-//			if resp.Header.Get("Link") == "" {
-//				resp.Body.Close()
-//				break
-//			}
-//			currentPage += 100
-//			queryParams[azurePage] = strconv.Itoa(currentPage)
-//			resp.Body.Close()
-//		}
-//		return &allTargets, nil
-//	}
-//}
-
 func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{},
 	queryParams map[string]string, format string) (*[]interface{}, error) {
 	var allTargets []interface{}
