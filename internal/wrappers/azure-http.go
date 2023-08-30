@@ -53,10 +53,10 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
-	queryParams[azureTop] = pageLenValue
+	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
 	repositories := []AzureRootCommit{}
 
-	azureCommits, err := paginateGetter(g.get)(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	azureCommits, err := g.paginateGetter(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
 	if err != nil {
 		return repository, err
 	}
@@ -82,10 +82,10 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
-	queryParams[azureTop] = azureTopValue
+	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	azureRepos, err := paginateGetter(g.get)(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
+	azureRepos, err := g.paginateGetter(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
 	if err != nil {
 		return repository, err
 	}
@@ -114,8 +114,9 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
+	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
 
-	azureProjects, err := paginateGetter(g.get)(reposURL, encodeToken(token), &project, queryParams, basicFormat)
+	azureProjects, err := g.paginateGetter(reposURL, encodeToken(token), &project, queryParams, basicFormat)
 	if err != nil {
 		return project, err
 	}
@@ -199,33 +200,59 @@ func (g *AzureHTTPWrapper) get(
 	}
 	return resp, nil
 }
-func paginateGetter(
-	get func(
-		url, token string, target interface{}, queryParams map[string]string, format string) (*http.Response, error)) func(
-	url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
-	return func(url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
-		var allTargets []interface{}
-		var currentPage = 0
-		queryParams[azurePage] = strconv.Itoa(currentPage)
-		for {
-			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
 
-			resp, err := get(url, token, targetCopy, queryParams, format)
-			if err != nil {
-				return &allTargets, err
-			}
-			allTargets = append(allTargets, targetCopy)
-			if resp.Header.Get("Link") == "" {
-				resp.Body.Close()
-				break
-			}
-			currentPage += 10
-			queryParams[azurePage] = strconv.Itoa(currentPage)
-			resp.Body.Close()
+//func paginateGetter(
+//	get func(
+//		url, token string, target interface{}, queryParams map[string]string, format string) (*http.Response, error)) func(
+//	url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
+//	return func(url, token string, target interface{}, queryParams map[string]string, format string) (*[]interface{}, error) {
+//		var allTargets []interface{}
+//		var currentPage = 0
+//		queryParams[azurePage] = strconv.Itoa(currentPage)
+//		for {
+//			targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
+//
+//			resp, err := get(url, token, targetCopy, queryParams, format)
+//			if err != nil {
+//				return &allTargets, err
+//			}
+//			allTargets = append(allTargets, targetCopy)
+//			if resp.Header.Get("Link") == "" {
+//				resp.Body.Close()
+//				break
+//			}
+//			currentPage += 100
+//			queryParams[azurePage] = strconv.Itoa(currentPage)
+//			resp.Body.Close()
+//		}
+//		return &allTargets, nil
+//	}
+//}
+
+func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{},
+	queryParams map[string]string, format string) (*[]interface{}, error) {
+	var allTargets []interface{}
+	var currentPage = 0
+	queryParams[azurePage] = strconv.Itoa(currentPage)
+	for {
+		targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
+
+		resp, err := g.get(url, token, targetCopy, queryParams, format)
+		if err != nil {
+			return &allTargets, err
 		}
-		return &allTargets, nil
+		allTargets = append(allTargets, targetCopy)
+		if resp.Header.Get("Link") == "" {
+			resp.Body.Close()
+			break
+		}
+		currentPage += pageLenValue
+		queryParams[azurePage] = strconv.Itoa(currentPage)
+		resp.Body.Close()
 	}
+	return &allTargets, nil
 }
+
 func getThreeMonthsTime() string {
 	today := time.Now()
 	lastThreeMonths := today.AddDate(0, -3, 0).Format(azureLayoutTime)
