@@ -34,6 +34,7 @@ const (
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
+	azurePageLenValue    = 100
 )
 
 func NewAzureWrapper() AzureWrapper {
@@ -53,7 +54,7 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
-	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
+	queryParams[azureTop] = fmt.Sprintf("%s", azurePageLenValue)
 	repositories := []AzureRootCommit{}
 
 	azureCommits, err := g.paginateGetter(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
@@ -82,7 +83,7 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
-	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
+	queryParams[azureTop] = fmt.Sprintf("%s", azurePageLenValue)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
 	azureRepos, err := g.paginateGetter(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
@@ -114,7 +115,7 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
-	queryParams[azureTop] = fmt.Sprintf("%s", pageLenValue)
+	queryParams[azureTop] = fmt.Sprintf("%s", azurePageLenValue)
 
 	azureProjects, err := g.paginateGetter(reposURL, encodeToken(token), &project, queryParams, basicFormat)
 	if err != nil {
@@ -243,12 +244,10 @@ func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{},
 		}
 		allTargets = append(allTargets, targetCopy)
 		if resp.Header.Get("Link") == "" {
-			resp.Body.Close()
 			break
 		}
-		currentPage += pageLenValue
+		currentPage += azurePageLenValue
 		queryParams[azurePage] = strconv.Itoa(currentPage)
-		resp.Body.Close()
 	}
 	return &allTargets, nil
 }

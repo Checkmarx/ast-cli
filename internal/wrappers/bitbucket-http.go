@@ -27,7 +27,7 @@ const (
 	failedBitbucketNotFound   = "no workspace with the provided identifier"
 	failedBitbucketAuth       = "failed Bitbucket Authentication"
 	pageLen                   = "pagelen"
-	pageLenValue              = 100
+	pageLenValue              = "100"
 	page                      = "page"
 	commitType                = "commit"
 	repoType                  = "repo"
@@ -247,7 +247,7 @@ func collectPageBitBucket(
 	// Set the api page number
 	queryParams[page] = strconv.Itoa(currentPage)
 	// Set the api page length
-	queryParams[pageLen] = fmt.Sprintf("%s", pageLenValue)
+	queryParams[pageLen] = pageLenValue
 	err := getBitBucket(client, token, url, &holder, queryParams)
 	if err != nil {
 		return -1, err
