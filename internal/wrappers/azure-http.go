@@ -190,9 +190,6 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusForbidden:
 		err = errors.New(failedAuth)
 		return "", err
-	case http.StatusNotFound:
-		// Case the commit/project does not exist in the organization
-		return "", nil
 	case http.StatusUnauthorized:
 		return "", errors.New(unauthorized)
 	default:
@@ -200,7 +197,7 @@ func (g *AzureHTTPWrapper) get(
 		if err != nil {
 			return "", err
 		}
-		return "", errors.New(string(body))
+		return "", errors.Errorf("%s - %s", string(body), resp.Status)
 	}
 	headerLink := resp.Header.Get("Link")
 	return headerLink, nil
