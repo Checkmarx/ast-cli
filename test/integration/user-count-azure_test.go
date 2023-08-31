@@ -125,7 +125,6 @@ func TestAzureUserCountOrgsFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one organization")
 }
 
@@ -145,7 +144,6 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one project")
 }
 
@@ -167,6 +165,39 @@ func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "You must provide a single org for repo counting")
+}
+
+func TestAzureUserCountWrongToken(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		utilsCommand,
+		usercount.UcCommand,
+		usercount.AzureCommand,
+		flag(usercount.OrgsFlag),
+		os.Getenv(envOrg),
+		flag(params.SCMTokenFlag),
+		"wrong",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+	assertError(t, err, "failed Azure Authentication")
+}
+
+func TestAzureUserCountWrongOrg(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		utilsCommand,
+		usercount.UcCommand,
+		usercount.AzureCommand,
+		flag(usercount.OrgsFlag),
+		"wrong",
+		flag(params.SCMTokenFlag),
+		os.Getenv(envToken),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+	assert.ErrorContains(t, err, "unauthorized")
 }

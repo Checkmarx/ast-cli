@@ -34,6 +34,7 @@ const (
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
+	unauthorized         = "unauthorized: verify if the organization you provided is correct"
 	azurePageLenValue    = 100
 )
 
@@ -192,6 +193,8 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusNotFound:
 		// Case the commit/project does not exist in the organization
 		return "", nil
+	case http.StatusUnauthorized:
+		return "", errors.New(unauthorized)
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
