@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"strconv"
 	"time"
 
 	b64 "encoding/base64"
@@ -49,95 +48,69 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	error,
 ) {
 	var err error
-	var repository AzureRootCommit
+	var rootCommit AzureRootCommit
+	var pages []AzureRootCommit
 	var queryParams = make(map[string]string)
 
 	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
-	repositories := []AzureRootCommit{}
 
-	azureCommits, err := g.paginateGetter(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	err = g.paginateGetter(commitsURL, encodeToken(token), &AzureRootCommit{}, &pages, queryParams, basicFormat)
 	if err != nil {
-		return repository, err
-	}
-	bytes, err := json.Marshal(azureCommits)
-	if err != nil {
-		return repository, err
-	}
-	err = json.Unmarshal(bytes, &repositories)
-	if err != nil {
-		return repository, err
+		return rootCommit, err
 	}
 
-	for _, commit := range repositories {
-		repository.Commits = append(repository.Commits, commit.Commits...)
+	for _, commitPage := range pages {
+		rootCommit.Commits = append(rootCommit.Commits, commitPage.Commits...)
 	}
-	return repository, err
+
+	return rootCommit, err
 }
 
 func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, token string) (AzureRootRepo, error) {
 	var err error
-	var repository AzureRootRepo
-	var repositories []AzureRootRepo
+	var rootRepo AzureRootRepo
+	var pages []AzureRootRepo
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
 	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	azureRepos, err := g.paginateGetter(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
+	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootRepo{}, &pages, queryParams, basicFormat)
 	if err != nil {
-		return repository, err
+		return rootRepo, err
 	}
 
-	bytes, err := json.Marshal(azureRepos)
-	if err != nil {
-		return repository, err
+	for _, repositoryPage := range pages {
+		rootRepo.Repos = append(rootRepo.Repos, repositoryPage.Repos...)
 	}
 
-	err = json.Unmarshal(bytes, &repositories)
-	if err != nil {
-		return repository, err
-	}
-
-	for _, commit := range repositories {
-		repository.Repos = append(repository.Repos, commit.Repos...)
-	}
-	return repository, err
+	return rootRepo, err
 }
 
 func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (AzureRootProject, error) {
 	var err error
-	var project AzureRootProject
-	var projects []AzureRootProject
+	var rootProject AzureRootProject
+	var pages []AzureRootProject
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
 
-	azureProjects, err := g.paginateGetter(reposURL, encodeToken(token), &project, queryParams, basicFormat)
+	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootProject{}, &pages, queryParams, basicFormat)
 	if err != nil {
-		return project, err
+		return rootProject, err
 	}
 
-	bytes, err := json.Marshal(azureProjects)
-	if err != nil {
-		return project, err
+	for _, projectPage := range pages {
+		rootProject.Projects = append(rootProject.Projects, projectPage.Projects...)
 	}
 
-	err = json.Unmarshal(bytes, &projects)
-	if err != nil {
-		return project, err
-	}
-
-	for _, commit := range projects {
-		project.Projects = append(project.Projects, commit.Projects...)
-	}
-
-	return project, err
+	return rootProject, err
 }
 
 func (g *AzureHTTPWrapper) get(
@@ -145,12 +118,12 @@ func (g *AzureHTTPWrapper) get(
 	target interface{},
 	queryParams map[string]string,
 	authFormat string,
-) (string, error) {
+) (bool, error) {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
 	if len(token) > 0 {
@@ -165,7 +138,7 @@ func (g *AzureHTTPWrapper) get(
 	resp, err := g.client.Do(req)
 
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
 	logger.PrintRequest(req)
@@ -180,49 +153,52 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
-			return "", err
+			return false, err
 		}
 		// State sent when expired token
 	case http.StatusNonAuthoritativeInfo:
 		err = errors.New(failedAuth)
-		return "", err
+		return false, err
 		// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedAuth)
-		return "", err
+		return false, err
 	case http.StatusUnauthorized:
-		return "", errors.New(unauthorized)
+		return false, errors.New(unauthorized)
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return "", err
+			return false, err
 		}
-		return "", errors.Errorf("%s - %s", string(body), resp.Status)
+		return false, errors.Errorf("%s - %s", string(body), resp.Status)
 	}
 	headerLink := resp.Header.Get("Link")
-	return headerLink, nil
+	continuationToken := resp.Header.Get("X-Ms-Continuationtoken")
+	return headerLink != "" || continuationToken != "", nil
 }
 
-func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{},
-	queryParams map[string]string, format string) (*[]interface{}, error) {
-	var allTargets []interface{}
+func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{}, slice interface{}, queryParams map[string]string, format string) error {
 	var currentPage = 0
-	queryParams[azurePage] = strconv.Itoa(currentPage)
 	for {
-		targetCopy := reflect.New(reflect.TypeOf(target).Elem()).Interface()
-
-		headerLink, err := g.get(url, token, targetCopy, queryParams, format)
+		queryParams[azurePage] = fmt.Sprintf("%d", currentPage)
+		hasNextPage, err := g.get(url, token, target, queryParams, format)
 		if err != nil {
-			return &allTargets, err
+			return err
 		}
-		allTargets = append(allTargets, targetCopy)
-		if headerLink == "" {
+
+		slicePtr := reflect.ValueOf(slice)
+		sliceValue := slicePtr.Elem()
+		sliceValue.Set(reflect.Append(sliceValue, reflect.ValueOf(target).Elem()))
+
+		target = reflect.New(reflect.TypeOf(target).Elem()).Interface()
+
+		if !hasNextPage {
 			break
 		}
+
 		currentPage += azurePageLenValue
-		queryParams[azurePage] = strconv.Itoa(currentPage)
 	}
-	return &allTargets, nil
+	return nil
 }
 
 func getThreeMonthsTime() string {
