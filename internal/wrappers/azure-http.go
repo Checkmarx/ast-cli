@@ -177,7 +177,7 @@ func (g *AzureHTTPWrapper) get(
 	return headerLink != "" || continuationToken != "", nil
 }
 
-func (g *AzureHTTPWrapper) paginateGetter(url, token string, target interface{}, slice interface{}, queryParams map[string]string, format string) error {
+func (g *AzureHTTPWrapper) paginateGetter(url, token string, target, slice interface{}, queryParams map[string]string, format string) error {
 	var currentPage = 0
 	for {
 		queryParams[azurePage] = fmt.Sprintf("%d", currentPage)
