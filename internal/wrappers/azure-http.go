@@ -29,7 +29,6 @@ const (
 	azureBaseProjectsURL = "%s%s/_apis/projects"
 	azureTop             = "$top"
 	azurePage            = "$skip"
-	azureTopValue        = "1000000"
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
@@ -76,9 +75,9 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
-	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
+	// unfortunately, Azure DevOps does not support pagination for repositories so we have to fetch all the repos
 	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootRepo{}, &pages, queryParams, basicFormat)
 	if err != nil {
 		return rootRepo, err
