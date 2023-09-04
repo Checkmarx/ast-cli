@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"time"
 
 	b64 "encoding/base64"
@@ -27,10 +28,12 @@ const (
 	azureBaseReposURL    = "%s%s/%s/_apis/git/repositories"
 	azureBaseProjectsURL = "%s%s/_apis/projects"
 	azureTop             = "$top"
-	azureTopValue        = "1000000"
+	azurePage            = "$skip"
 	azureLayoutTime      = "2006-01-02"
 	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
+	unauthorized         = "unauthorized: verify if the organization you provided is correct"
+	azurePageLenValue    = 100
 )
 
 func NewAzureWrapper() AzureWrapper {
@@ -44,43 +47,63 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	error,
 ) {
 	var err error
-	var repository AzureRootCommit
+	var rootCommit AzureRootCommit
+	var pages []AzureRootCommit
 	var queryParams = make(map[string]string)
 
 	commitsURL := fmt.Sprintf(azureBaseCommitURL, url, organizationName, projectName, repositoryName)
 	queryParams[azureSearchDate] = getThreeMonthsTime()
 	queryParams[azureAPIVersion] = azureAPIVersionValue
+	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
 
-	err = g.get(commitsURL, encodeToken(token), &repository, queryParams, basicFormat)
+	err = g.paginateGetter(commitsURL, encodeToken(token), &AzureRootCommit{}, &pages, queryParams, basicFormat)
+	if err != nil {
+		return rootCommit, err
+	}
 
-	return repository, err
+	for _, commitPage := range pages {
+		rootCommit.Commits = append(rootCommit.Commits, commitPage.Commits...)
+	}
+
+	return rootCommit, err
 }
 
+// GetRepositories we have to fetch all the repos because Azure DevOps does not support pagination for repositories
 func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, token string) (AzureRootRepo, error) {
 	var err error
-	var repository AzureRootRepo
+	var rootRepo AzureRootRepo
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
-	queryParams[azureTop] = azureTopValue
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	err = g.get(reposURL, encodeToken(token), &repository, queryParams, basicFormat)
-
-	return repository, err
+	_, err = g.get(reposURL, encodeToken(token), &rootRepo, queryParams, basicFormat)
+	if err != nil {
+		return rootRepo, err
+	}
+	return rootRepo, err
 }
 
 func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (AzureRootProject, error) {
 	var err error
-	var project AzureRootProject
+	var rootProject AzureRootProject
+	var pages []AzureRootProject
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
+	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
 
-	err = g.get(reposURL, encodeToken(token), &project, queryParams, basicFormat)
+	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootProject{}, &pages, queryParams, basicFormat)
+	if err != nil {
+		return rootProject, err
+	}
 
-	return project, err
+	for _, projectPage := range pages {
+		rootProject.Projects = append(rootProject.Projects, projectPage.Projects...)
+	}
+
+	return rootProject, err
 }
 
 func (g *AzureHTTPWrapper) get(
@@ -88,12 +111,12 @@ func (g *AzureHTTPWrapper) get(
 	target interface{},
 	queryParams map[string]string,
 	authFormat string,
-) error {
+) (bool, error) {
 	var err error
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if len(token) > 0 {
@@ -108,7 +131,7 @@ func (g *AzureHTTPWrapper) get(
 	resp, err := g.client.Do(req)
 
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	logger.PrintRequest(req)
@@ -123,25 +146,50 @@ func (g *AzureHTTPWrapper) get(
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
-			return err
+			return false, err
 		}
 		// State sent when expired token
 	case http.StatusNonAuthoritativeInfo:
 		err = errors.New(failedAuth)
-		return err
+		return false, err
 		// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedAuth)
-		return err
-	case http.StatusNotFound:
-		// Case the commit/project does not exist in the organization
-		return nil
+		return false, err
+	case http.StatusUnauthorized:
+		return false, errors.New(unauthorized)
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			return false, err
+		}
+		return false, errors.Errorf("%s - %s", string(body), resp.Status)
+	}
+	headerLink := resp.Header.Get("Link")
+	continuationToken := resp.Header.Get("X-Ms-Continuationtoken")
+	return headerLink != "" || continuationToken != "", nil
+}
+
+func (g *AzureHTTPWrapper) paginateGetter(url, token string, target, slice interface{}, queryParams map[string]string, format string) error {
+	var currentPage = 0
+	for {
+		queryParams[azurePage] = fmt.Sprintf("%d", currentPage)
+		hasNextPage, err := g.get(url, token, target, queryParams, format)
+		if err != nil {
 			return err
 		}
-		return errors.New(string(body))
+
+		slicePtr := reflect.ValueOf(slice)
+		sliceValue := slicePtr.Elem()
+		sliceValue.Set(reflect.Append(sliceValue, reflect.ValueOf(target).Elem()))
+
+		target = reflect.New(reflect.TypeOf(target).Elem()).Interface()
+
+		if !hasNextPage {
+			break
+		}
+
+		currentPage += azurePageLenValue
 	}
 	return nil
 }
