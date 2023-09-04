@@ -68,25 +68,19 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	return rootCommit, err
 }
 
+// GetRepositories we have to fetch all the repos because Azure DevOps does not support pagination for repositories
 func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, token string) (AzureRootRepo, error) {
 	var err error
 	var rootRepo AzureRootRepo
-	var pages []AzureRootRepo
 	var queryParams = make(map[string]string)
 
 	reposURL := fmt.Sprintf(azureBaseReposURL, url, organizationName, projectName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 
-	// unfortunately, Azure DevOps does not support pagination for repositories so we have to fetch all the repos
-	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootRepo{}, &pages, queryParams, basicFormat)
+	_, err = g.get(reposURL, encodeToken(token), &rootRepo, queryParams, basicFormat)
 	if err != nil {
 		return rootRepo, err
 	}
-
-	for _, repositoryPage := range pages {
-		rootRepo.Repos = append(rootRepo.Repos, repositoryPage.Repos...)
-	}
-
 	return rootRepo, err
 }
 
