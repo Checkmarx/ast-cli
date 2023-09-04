@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	envOrg       = "AZURE_ORG"
-	envToken     = "AZURE_TOKEN"
-	envProject   = "AZURE_PROJECT"
-	envRepos     = "AZURE_REPOS"
-	projectFlag  = "projects"
+	envOrg      = "AZURE_ORG"
+	envToken    = "AZURE_TOKEN"
+	envProject  = "AZURE_PROJECT"
+	envRepos    = "AZURE_REPOS"
+	projectFlag = "projects"
 )
 
 func TestAzureUserCountOrgs(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAzureUserCountOrgs(t *testing.T) {
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(usercount.OrgsFlag),
@@ -56,7 +56,7 @@ func TestAzureUserCountProjects(t *testing.T) {
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(usercount.OrgsFlag),
@@ -86,7 +86,7 @@ func TestAzureUserCountRepos(t *testing.T) {
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(usercount.OrgsFlag),
@@ -117,7 +117,7 @@ func TestAzureUserCountOrgsFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(params.SCMTokenFlag),
@@ -125,7 +125,6 @@ func TestAzureUserCountOrgsFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one organization")
 }
 
@@ -133,7 +132,7 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(usercount.OrgsFlag),
@@ -145,7 +144,6 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one project")
 }
 
@@ -153,7 +151,7 @@ func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
-		"utils",
+		utilsCommand,
 		usercount.UcCommand,
 		usercount.AzureCommand,
 		flag(usercount.OrgsFlag),
@@ -167,6 +165,39 @@ func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "You must provide a single org for repo counting")
+}
+
+func TestAzureUserCountWrongToken(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		utilsCommand,
+		usercount.UcCommand,
+		usercount.AzureCommand,
+		flag(usercount.OrgsFlag),
+		os.Getenv(envOrg),
+		flag(params.SCMTokenFlag),
+		"wrong",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+	assertError(t, err, "failed Azure Authentication")
+}
+
+func TestAzureUserCountWrongOrg(t *testing.T) {
+	_ = viper.BindEnv(pat)
+	err, _ := executeCommand(
+		t,
+		utilsCommand,
+		usercount.UcCommand,
+		usercount.AzureCommand,
+		flag(usercount.OrgsFlag),
+		"wrong",
+		flag(params.SCMTokenFlag),
+		os.Getenv(envToken),
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+	)
+	assert.ErrorContains(t, err, "unauthorized")
 }
