@@ -1172,7 +1172,7 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) wrappers.GlSastResultsCollection {
 	var glSast = new(wrappers.GlSastResultsCollection)
 	glSast.Scan = wrappers.ScanGlReport{}
-	glSast = setConstValueGlReport(*glSast)
+	glSast = setConstValueGlReport(glSast)
 	glVulnra := convertCxResultToGlVulnerability(results, glSast)
 	glSast.Vulnerabilities = glVulnra
 	return *glSast
@@ -1239,7 +1239,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 func setGlIdentifiers() {
 
 }
-func setConstValueGlReport(glSast wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
+func setConstValueGlReport(glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
 	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/blob/8a42b7e8ab41ec2920f02fb4b36f244bbbb4bfb8/lib/gitlab/ci/parsers/security/validators/schemas/14.1.2/sast-report-format.json"
 	glSast.Version = "14.1.2"
 	glSast.Scan.Analyzer.URL = wrappers.AnalyzerUrl
@@ -1248,7 +1248,7 @@ func setConstValueGlReport(glSast wrappers.GlSastResultsCollection) *wrappers.Gl
 	glSast.Scan.Analyzer.ID = wrappers.AnalyzerId
 	glSast.Scan.Scanner.ID = wrappers.AnalyzerId
 	glSast.Scan.Scanner.Name = wrappers.VendorName
-	return &glSast
+	return glSast
 }
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
