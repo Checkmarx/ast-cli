@@ -2,12 +2,10 @@ package wrappers
 
 const (
 	AnalyzerName = "CxOne"
-	AnalyzerId   = AnalyzerName + "-SAST"
-	AnalyzerUrl  = "https://checkmarx.company.com/"
+	AnalyzerID   = AnalyzerName + "-SAST"
+	AnalyzerURL  = "https://checkmarx.company.com/"
 	VendorName   = "Checkmarx"
 )
-
-var sastVerion string
 
 type GlSastResultsCollection struct {
 	Scan            ScanGlReport        `json:"scan"`

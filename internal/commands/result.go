@@ -1236,17 +1236,15 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	})
 	return glSast
 }
-func setGlIdentifiers() {
 
-}
 func setConstValueGlReport(glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
 	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/blob/8a42b7e8ab41ec2920f02fb4b36f244bbbb4bfb8/lib/gitlab/ci/parsers/security/validators/schemas/14.1.2/sast-report-format.json"
 	glSast.Version = "14.1.2"
-	glSast.Scan.Analyzer.URL = wrappers.AnalyzerUrl
+	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
 	glSast.Scan.Analyzer.Name = wrappers.VendorName
 	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
-	glSast.Scan.Analyzer.ID = wrappers.AnalyzerId
-	glSast.Scan.Scanner.ID = wrappers.AnalyzerId
+	glSast.Scan.Analyzer.ID = wrappers.AnalyzerID
+	glSast.Scan.Scanner.ID = wrappers.AnalyzerID
 	glSast.Scan.Scanner.Name = wrappers.VendorName
 	return glSast
 }
