@@ -925,7 +925,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	var resultsJSON []byte
 	log.Println("Creating gl-sast Report: ", targetFile)
 	var glSastResults = convertCxResultsToGLSast(results)
-	//glSastResults = addStatus(summary, &glSastResults)
+	glSastResults = addStatus(summary, glSastResults)
 	resultsJSON, err = json.Marshal(glSastResults)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
@@ -939,7 +939,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	return nil
 }
 func addStatus(summary *wrappers.ResultSummary, glSastResults *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
-	//glSastResults.Scan.Analyzer.URL = summary.Status
+	glSastResults.Scan.Status = summary.Status
 	return glSastResults
 }
 func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollection) error {
@@ -1169,13 +1169,13 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	sarif.Runs = append(sarif.Runs, createSarifRun(results))
 	return sarif
 }
-func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) wrappers.GlSastResultsCollection {
+func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) *wrappers.GlSastResultsCollection {
 	var glSast = new(wrappers.GlSastResultsCollection)
 	glSast.Scan = wrappers.ScanGlReport{}
 	glSast = setConstValueGlReport(glSast)
 	glVulnra := convertCxResultToGlVulnerability(results, glSast)
 	glSast.Vulnerabilities = glVulnra
-	return *glSast
+	return glSast
 }
 
 func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection) []wrappers.GlVulnerabilities {

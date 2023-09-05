@@ -1,9 +1,5 @@
 package wrappers
 
-import (
-	"time"
-)
-
 const (
 	AnalyzerName = "CxOne"
 	AnalyzerId   = AnalyzerName + "-SAST"
@@ -68,10 +64,10 @@ type Signature struct {
 	Value     string `json:"value"`
 }
 type ScanGlReport struct {
-	EndTime   time.Time `json:"end_time"`
+	EndTime   string    `json:"end_time"`
 	Analyzer  Analyzer  `json:"analyzer"`
 	Scanner   GlScanner `json:"scanner"`
-	StartTime time.Time `json:"start_time"`
+	StartTime string    `json:"start_time"`
 	Status    string    `json:"status"`
 	Type      string    `json:"type"`
 }
