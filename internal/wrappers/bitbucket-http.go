@@ -277,52 +277,28 @@ func collectPageBitBucket(
 }
 
 func getBitBucket(client *http.Client, token, url string, target interface{}, queryParams map[string]string) error {
-	var err error
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	resp, err := GetWithQueryParams(client, url, token, basicFormat, queryParams)
 	if err != nil {
 		return err
 	}
-	if len(token) > 0 {
-		req.Header.Add(AuthorizationHeader, fmt.Sprintf(basicFormat, token))
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-
-	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	logger.PrintRequest(req)
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	logger.PrintResponse(resp, true)
-
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
 		if err != nil {
 			return err
 		}
-		// State sent when expired token
+	// State sent when expired token
 	case http.StatusUnauthorized:
 		err = errors.New(failedBitbucketAuth)
 		return err
-		// State sent when no token is provided
+	// State sent when no token is provided
 	case http.StatusForbidden:
 		err = errors.New(failedBitbucketAuth)
 		return err
 	case http.StatusNotFound:
 		err = errors.New(failedBitbucketNotFound)
 		return err
-		// Case the commit/project does not exist in the organization
+	// Case the commit/project does not exist in the organization
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

@@ -30,7 +30,6 @@ const (
 	azureTop             = "$top"
 	azurePage            = "$skip"
 	azureLayoutTime      = "2006-01-02"
-	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
 	unauthorized         = "unauthorized: verify if the organization you provided is correct"
 	azurePageLenValue    = 100
@@ -112,8 +111,6 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-	var err error
-
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return false, err

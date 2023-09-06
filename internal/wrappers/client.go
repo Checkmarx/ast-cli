@@ -35,6 +35,8 @@ const (
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
 	MissingTenant           = "Failed to authenticate - please provide tenant"
 	jwtError                = "Error retrieving %s from jwt token"
+	basicFormat             = "Basic %s"
+	bearearFormat           = "Bearer %s"
 )
 
 type ClientCredentialsInfo struct {
@@ -356,6 +358,34 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	return resp, nil
 }
 
+func GetWithQueryParams(client *http.Client, url, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(token) > 0 {
+		req.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, token))
+	}
+
+	q := req.URL.Query()
+	for k, v := range queryParams {
+		q.Add(k, v)
+	}
+
+	req.URL.RawQuery = q.Encode()
+	resp, err := request(client, req, true)
+	if err != nil {
+		return nil, err
+	}
+	logger.PrintRequest(req)
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	logger.PrintResponse(resp, true)
+	return resp, nil
+}
 func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
