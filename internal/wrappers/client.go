@@ -70,7 +70,7 @@ func setAgentName(req *http.Request) {
 func GetClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
-	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyFlag)
+	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyKey)
 
 	if ignoreProxy {
 		proxyStr = ""
