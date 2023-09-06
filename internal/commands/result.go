@@ -1183,11 +1183,11 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 		engineType := strings.TrimSpace(result.Type)
 		if engineType == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast)
-		} else if engineType == commonParams.KicsType {
+		} /*else if engineType == commonParams.KicsType {
 			// Add code for KicsType if required.
 		} else if engineType == commonParams.ScaType {
 			// Add code for ScaType if required.
-		}
+		}*/
 	}
 	return glSast.Vulnerabilities
 }
