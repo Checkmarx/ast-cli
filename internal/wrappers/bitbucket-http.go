@@ -156,7 +156,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	}
 
 	if len(token) > 0 {
-		req.Header.Add(AuthorizationHeader, fmt.Sprintf(basicFormat, token))
+		enrichWithOath2Credentials(req, token, basicFormat)
 	}
 
 	q := req.URL.Query()
