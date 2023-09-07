@@ -48,6 +48,8 @@ const (
 	BaseURIFlag                   = "base-uri"
 	ProxyFlag                     = "proxy"
 	ProxyFlagUsage                = "Proxy server to send communication through"
+	IgnoreProxyFlag               = "ignore-proxy"
+	IgnoreProxyFlagUsage          = "Ignore proxy configuration"
 	ProxyTypeFlag                 = "proxy-auth-type"
 	ProxyTypeFlagUsage            = "Proxy authentication type, (basic or ntlm)"
 	TimeoutFlag                   = "timeout"
