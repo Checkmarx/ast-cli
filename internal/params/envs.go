@@ -56,4 +56,5 @@ const (
 	FeatureFlagsEnv                     = "CX_FEATURE_FLAGS_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
 	PolicyEvaluationPathEnv             = "CX_POLICY_EVALUATION_PATH"
+	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
 )
