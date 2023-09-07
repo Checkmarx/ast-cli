@@ -36,6 +36,7 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 		return "", nil, err
 	}
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.githubPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	defer resp.Body.Close()
 	return handlePRResponseWithBody(resp, err)
 }
 
