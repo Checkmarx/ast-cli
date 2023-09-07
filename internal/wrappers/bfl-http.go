@@ -33,6 +33,9 @@ func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	log.Println(fmt.Sprintf("Fetching the best fix location for QueryID: %s", params[commonParams.QueryIDQueryParam]))
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
 	defer resp.Body.Close()
 	return handleBflResponseWithBody(resp, err)
 }

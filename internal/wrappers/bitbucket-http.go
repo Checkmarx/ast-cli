@@ -150,7 +150,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 
 	logger.PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return err
 	}

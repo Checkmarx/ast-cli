@@ -111,7 +111,7 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return false, err
 	}
