@@ -1,3 +1,4 @@
+// nolint:bodyclose
 package wrappers
 
 import (
@@ -10,8 +11,6 @@ import (
 const (
 	failedToParseErr = "Failed to parse error response"
 )
-
-// nolint:bodyclose
 
 func handleScanResponseWithNoBody(resp *http.Response, err error,
 	successStatusCode int) (*ErrorModel, error) {
