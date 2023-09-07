@@ -70,9 +70,12 @@ func setAgentName(req *http.Request) {
 func GetClient(timeout uint) *http.Client {
 	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
 	proxyStr := viper.GetString(commonParams.ProxyKey)
+	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyKey)
 
 	var client *http.Client
-	if proxyTypeStr == ntlmProxyToken {
+	if ignoreProxy {
+		client = basicProxyClient(timeout, "")
+	} else if proxyTypeStr == ntlmProxyToken {
 		client = ntmlProxyClient(timeout, proxyStr)
 	} else {
 		client = basicProxyClient(timeout, proxyStr)
