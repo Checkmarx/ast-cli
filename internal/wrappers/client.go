@@ -350,8 +350,8 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	return doRequest(client, req)
 }
 
-func GetWithQueryParams(client *http.Client, url, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, urlAddress, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
