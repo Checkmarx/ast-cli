@@ -33,6 +33,7 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -47,7 +48,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusNoContent:
 		return nil
@@ -71,7 +72,7 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 	if err != nil {
 		return nil, err
 	}
-
+	defer resp.Body.Close()
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -121,6 +122,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
@@ -131,7 +133,6 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 	params["limit"] = limitValue
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
-
 	if err != nil {
 		return nil, nil, err
 	}
