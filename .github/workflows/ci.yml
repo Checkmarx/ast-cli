@@ -109,7 +109,7 @@ jobs:
     env:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
-      - uses: actions/checkout@v2.3.4
+      - uses: actions/checkout@v3
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v4
         with:
@@ -117,7 +117,7 @@ jobs:
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.4.0
+        uses: golangci/golangci-lint-action@v3
         with:
           version: v1.52.2
           args: -c .golangci.yml
