@@ -108,8 +108,8 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 
 func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	url := fmt.Sprintf("%s/%s/download", r.path, reportID)
-	resp, err := SendHTTPRequest(http.MethodGet, url, nil, true, clientTimeout)
+	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
+	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return err
 	}

@@ -26,7 +26,7 @@ func (r *TenantConfigurationHTTPWrapper) GetTenantConfiguration() (
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// add the path parameter to the path
-	resp, err := SendHTTPRequest(http.MethodGet, r.path, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, r.path, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

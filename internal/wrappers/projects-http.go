@@ -117,7 +117,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,7 +162,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
