@@ -281,6 +281,8 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)

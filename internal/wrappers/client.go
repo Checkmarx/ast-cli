@@ -29,6 +29,7 @@ const (
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
+	invalidCredentialsError = "Provided credentials are invalid"
 	APIKeyDecodeErrorFormat = "Token decoding error: %s"
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
@@ -37,6 +38,9 @@ const (
 	jwtError                = "Error retrieving %s from jwt token"
 	basicFormat             = "Basic %s"
 	bearearFormat           = "Bearer %s"
+	contentTypeHeader       = "Content-Type"
+	formURLContentType      = "application/x-www-form-urlencoded"
+	jsonContentType         = "application/json"
 )
 
 type ClientCredentialsInfo struct {
@@ -198,16 +202,12 @@ func SendHTTPRequestByFullURLContentLength(
 	client := GetClient(timeout)
 	setAgentName(req)
 	if auth {
-		enrichWithOath2Credentials(req, accessToken)
+		enrichWithOath2Credentials(req, accessToken, bearearFormat)
 	}
 
 	req = addReqMonitor(req)
-	var resp *http.Response
-	resp, err = request(client, req, bodyPrint)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+
+	return request(client, req, bodyPrint)
 }
 
 func addReqMonitor(req *http.Request) *http.Request {
@@ -256,19 +256,13 @@ func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, us
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("content-type", "application/json")
+	req.Header.Add(contentTypeHeader, jsonContentType)
 	err = enrichWithPasswordCredentials(req, username, password, adminClientID, adminClientSecret)
 	if err != nil {
 		return nil, err
 	}
-	var resp *http.Response
-
 	req = addReqMonitor(req)
-	resp, err = doRequest(client, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return doRequest(client, req)
 }
 
 func SendPrivateHTTPRequestWithQueryParams(
@@ -304,7 +298,7 @@ func HTTPRequestWithQueryParams(
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	enrichWithOath2Credentials(req, accessToken)
+	enrichWithOath2Credentials(req, accessToken, bearearFormat)
 	var resp *http.Response
 	resp, err = request(client, req, printBody)
 	if err != nil {
@@ -329,8 +323,8 @@ func addTenantAuthURI(baseAuthURI string) (string, error) {
 	return fmt.Sprintf("%s/%s", strings.Trim(baseAuthURI, "/"), authPath), nil
 }
 
-func enrichWithOath2Credentials(request *http.Request, accessToken string) {
-	request.Header.Add("Authorization", "Bearer "+accessToken)
+func enrichWithOath2Credentials(request *http.Request, accessToken, authFormat string) {
+	request.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, accessToken))
 }
 
 func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, auth bool, timeout uint) (
@@ -344,21 +338,16 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	req, err := http.NewRequest(method, fullURL, body)
 	client := GetClient(timeout)
 	setAgentName(req)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", jsonContentType)
 	if err != nil {
 		return nil, err
 	}
 	if auth {
-		enrichWithOath2Credentials(req, accessToken)
+		enrichWithOath2Credentials(req, accessToken, bearearFormat)
 	}
 
 	req = addReqMonitor(req)
-	var resp *http.Response
-	resp, err = doRequest(client, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return doRequest(client, req)
 }
 
 func GetWithQueryParams(client *http.Client, url, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
@@ -367,27 +356,16 @@ func GetWithQueryParams(client *http.Client, url, token, authFormat string, quer
 		return nil, err
 	}
 	if len(token) > 0 {
-		req.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, token))
+		enrichWithOath2Credentials(req, token, authFormat)
 	}
 
 	q := req.URL.Query()
 	for k, v := range queryParams {
 		q.Add(k, v)
 	}
-
 	req.URL.RawQuery = q.Encode()
-	resp, err := request(client, req, true)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintRequest(req)
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	logger.PrintResponse(resp, true)
-	return resp, nil
+	req = addReqMonitor(req)
+	return request(client, req, true)
 }
 func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()
@@ -432,8 +410,7 @@ func enrichWithPasswordCredentials(
 			"failed to authenticate",
 		)
 	}
-
-	request.Header.Add("Authorization", "Bearer "+accessToken)
+	enrichWithOath2Credentials(request, accessToken, bearearFormat)
 	return nil
 }
 
@@ -488,7 +465,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		return "", err
 	}
 	req = addReqMonitor(req)
-	req.Header.Add("content-type", "application/x-www-form-urlencoded")
+	req.Header.Add(contentTypeHeader, formURLContentType)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	client := GetClient(clientTimeout)
 
@@ -498,13 +475,13 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided Tenant Name is invalid")
+		return "", errors.Errorf("%d %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		return "", errors.Errorf("%v %s \n", res.StatusCode, "Provided credentials are invalid")
+		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 
 	body, _ := ioutil.ReadAll(res.Body)
@@ -516,7 +493,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 			return "", err
 		}
 
-		return "", errors.Errorf("%v %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
+		return "", errors.Errorf("%d %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
 	}
 
 	defer func() {
