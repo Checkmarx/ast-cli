@@ -72,12 +72,10 @@ func GetClient(timeout uint) *http.Client {
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyKey)
 
-	if ignoreProxy {
-		proxyStr = ""
-	}
-
 	var client *http.Client
-	if proxyTypeStr == ntlmProxyToken {
+	if ignoreProxy {
+		client = basicProxyClient(timeout, "")
+	} else if proxyTypeStr == ntlmProxyToken {
 		client = ntmlProxyClient(timeout, proxyStr)
 	} else {
 		client = basicProxyClient(timeout, proxyStr)
