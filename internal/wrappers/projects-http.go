@@ -166,6 +166,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -178,10 +179,9 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
-
-	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
