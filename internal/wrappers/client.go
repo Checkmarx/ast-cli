@@ -355,17 +355,21 @@ func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat strin
 	if err != nil {
 		return nil, err
 	}
-	if len(token) > 0 {
-		enrichWithOath2Credentials(req, token, authFormat)
-	}
+	return GetWithQueryParamsAndCustomRequest(client, req, urlAddress, token, authFormat, queryParams)
+}
 
-	q := req.URL.Query()
+// GetWithQueryParamsAndCustomRequest used when we need to add custom headers to the request
+func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Request, urlAddress, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+	if len(token) > 0 {
+		enrichWithOath2Credentials(customReq, token, authFormat)
+	}
+	q := customReq.URL.Query()
 	for k, v := range queryParams {
 		q.Add(k, v)
 	}
-	req.URL.RawQuery = q.Encode()
-	req = addReqMonitor(req)
-	return request(client, req, true)
+	customReq.URL.RawQuery = q.Encode()
+	customReq = addReqMonitor(customReq)
+	return request(client, customReq, true)
 }
 func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()

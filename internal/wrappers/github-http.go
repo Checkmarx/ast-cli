@@ -161,10 +161,7 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 }
 
 func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
-	resp, err := get(g.client, url, target, map[string]string{})
-
-	closeBody(resp)
-
+	_, err := get(g.client, url, target, map[string]string{})
 	return err
 }
 
@@ -205,7 +202,7 @@ func collectPage(
 		return "", err
 	}
 
-	defer closeBody(resp)
+	defer resp.Body.Close()
 
 	*pageCollection = append(*pageCollection, holder...)
 	next := getNextPageLink(resp)
@@ -229,71 +226,38 @@ func getNextPageLink(resp *http.Response) string {
 }
 
 func get(client *http.Client, url string, target interface{}, queryParams map[string]string) (*http.Response, error) {
-	var err error
-	var count uint8
-
-	for count < retryLimit {
-		var currentError error
-
-		req, currentError := http.NewRequest(http.MethodGet, url, http.NoBody)
-		if currentError != nil {
-			return nil, currentError
-		}
-
-		req.Header.Add(acceptHeader, apiVersion)
-
-		token := viper.GetString(params.SCMTokenFlag)
-		if len(token) > 0 {
-			req.Header.Add(AuthorizationHeader, fmt.Sprintf(tokenFormat, token))
-		}
-
-		q := req.URL.Query()
-		for k, v := range queryParams {
-			q.Add(k, v)
-		}
-		req.URL.RawQuery = q.Encode()
-
-		logger.PrintRequest(req)
-		resp, currentError := client.Do(req)
-		if currentError != nil {
-			count++
-			logger.PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
-			err = currentError
-			continue
-		}
-
-		logger.PrintResponse(resp, true)
-
-		switch resp.StatusCode {
-		case http.StatusOK:
-			logger.PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
-			currentError = json.NewDecoder(resp.Body).Decode(target)
-			closeBody(resp)
-			if currentError != nil {
-				return nil, currentError
-			}
-		case http.StatusConflict:
-			logger.PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
-			closeBody(resp)
-			return nil, nil
-		default:
-			body, currentError := io.ReadAll(resp.Body)
-			closeBody(resp)
-			if currentError != nil {
-				logger.PrintIfVerbose(currentError.Error())
-				return nil, currentError
-			}
-			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
-			return nil, errors.New(message)
-		}
-		return resp, nil
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, err
 	}
-
-	return nil, err
-}
-
-func closeBody(resp *http.Response) {
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
+	req.Header.Add(acceptHeader, apiVersion)
+	token := viper.GetString(params.SCMTokenFlag)
+	logger.PrintRequest(req)
+	resp, err := GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams)
+	if err != nil {
+		return nil, err
 	}
+	defer resp.Body.Close()
+	logger.PrintResponse(resp, true)
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		logger.PrintIfVerbose(fmt.Sprintf("Request to URL %s OK", req.URL))
+		err = json.NewDecoder(resp.Body).Decode(target)
+		if err != nil {
+			return nil, err
+		}
+	case http.StatusConflict:
+		logger.PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
+		return nil, nil
+	default:
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logger.PrintIfVerbose(err.Error())
+			return nil, err
+		}
+		message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
+		return nil, errors.New(message)
+	}
+	return resp, nil
 }
