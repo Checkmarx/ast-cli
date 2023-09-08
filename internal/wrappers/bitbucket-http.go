@@ -147,7 +147,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	url, token string, target interface{}, queryParams map[string]string,
 ) error {
 	var err error
-
+	// test
 	logger.PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
 	resp, err := GetWithQueryParams(g.client, url, token, basicFormat, queryParams)
