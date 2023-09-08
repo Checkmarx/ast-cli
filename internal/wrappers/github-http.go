@@ -161,7 +161,10 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 }
 
 func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
-	_, err := get(g.client, url, target, map[string]string{})
+	resp, err := get(g.client, url, target, map[string]string{})
+	if err != nil {
+		defer resp.Body.Close()
+	}
 	return err
 }
 
