@@ -150,28 +150,11 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 
 	logger.PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	resp, err := GetWithQueryParams(g.client, url, token, basicFormat, queryParams)
 	if err != nil {
 		return err
 	}
-
-	if len(token) > 0 {
-		enrichWithOath2Credentials(req, token, basicFormat)
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	resp, err := g.client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	//defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
