@@ -355,6 +355,7 @@ func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat strin
 	if err != nil {
 		return nil, err
 	}
+	logger.PrintRequest(req)
 	return GetWithQueryParamsAndCustomRequest(client, req, urlAddress, token, authFormat, queryParams)
 }
 

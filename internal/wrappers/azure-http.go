@@ -111,31 +111,12 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+
+	resp, err := GetWithQueryParams(g.client, url, token, authFormat, queryParams)
 	if err != nil {
 		return false, err
 	}
-
-	if len(token) > 0 {
-		req.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, token))
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	resp, err := g.client.Do(req)
-
-	if err != nil {
-		return false, err
-	}
-
-	logger.PrintRequest(req)
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
 	logger.PrintResponse(resp, true)
 
