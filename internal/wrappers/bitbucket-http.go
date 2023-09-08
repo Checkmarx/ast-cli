@@ -154,7 +154,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	if err != nil {
 		return err
 	}
-	//defer resp.Body.Close()
+	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
