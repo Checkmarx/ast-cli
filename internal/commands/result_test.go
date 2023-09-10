@@ -316,3 +316,27 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	// Run test for gl-sast
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
 }
+
+func TestGLReportJson(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatGL))
+}
+func TestRunGetResultsGeneratingGLReporWithOptions(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "gl-sast",
+		"--scan-id", "MOCK",
+		"--output-name", fileName,
+		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+		fmt.Println("test file removed!")
+	}()
+	assert.NilError(t, err)
+	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatGL)
+}
