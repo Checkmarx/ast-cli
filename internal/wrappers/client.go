@@ -37,7 +37,7 @@ const (
 	MissingTenant           = "Failed to authenticate - please provide tenant"
 	jwtError                = "Error retrieving %s from jwt token"
 	basicFormat             = "Basic %s"
-	bearearFormat           = "Bearer %s"
+	bearerFormat            = "Bearer %s"
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
@@ -202,7 +202,7 @@ func SendHTTPRequestByFullURLContentLength(
 	client := GetClient(timeout)
 	setAgentName(req)
 	if auth {
-		enrichWithOath2Credentials(req, accessToken, bearearFormat)
+		enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	}
 
 	req = addReqMonitor(req)
@@ -298,7 +298,7 @@ func HTTPRequestWithQueryParams(
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	enrichWithOath2Credentials(req, accessToken, bearearFormat)
+	enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	var resp *http.Response
 	resp, err = request(client, req, printBody)
 	if err != nil {
@@ -343,7 +343,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 		return nil, err
 	}
 	if auth {
-		enrichWithOath2Credentials(req, accessToken, bearearFormat)
+		enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	}
 
 	req = addReqMonitor(req)
@@ -415,7 +415,7 @@ func enrichWithPasswordCredentials(
 			"failed to authenticate",
 		)
 	}
-	enrichWithOath2Credentials(request, accessToken, bearearFormat)
+	enrichWithOath2Credentials(request, accessToken, bearerFormat)
 	return nil
 }
 

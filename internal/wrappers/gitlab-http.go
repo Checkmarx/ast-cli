@@ -138,7 +138,7 @@ func getFromGitLab(
 
 	logger.PrintRequest(req)
 
-	resp, err := GetWithQueryParamsAndCustomRequest(client, req, requestURL, token, bearearFormat, queryParams)
+	resp, err := GetWithQueryParamsAndCustomRequest(client, req, requestURL, token, bearerFormat, queryParams)
 	if err != nil {
 		return nil, err
 	}
