@@ -47,8 +47,12 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 
 	var request = "/" + similarityID + "?project-ids=" + projectID
 	logger.PrintIfVerbose(fmt.Sprintf("Sending GET request to %s", r.path+request))
-
-	return handleResponseWithBody(SendHTTPRequest(http.MethodGet, r.path+request, nil, true, clientTimeout))
+	resp, err := SendHTTPRequest(http.MethodGet, r.path+request, http.NoBody, true, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	return handleResponseWithBody(resp, err)
 }
 
 func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
