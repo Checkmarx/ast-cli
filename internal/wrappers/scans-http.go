@@ -39,6 +39,7 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -76,20 +77,22 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
 func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s/workflow", s.path, scanID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 	return handleWorkflowResponseWithBody(resp, err)
 }
 
@@ -98,8 +101,6 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 		return nil, nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-
-	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -124,10 +125,11 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -144,19 +146,18 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	defer resp.Body.Close()
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
-
 	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
