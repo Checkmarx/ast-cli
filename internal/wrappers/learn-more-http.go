@@ -32,6 +32,10 @@ func (r *LearnMoreHTTPWrapper) GetLearnMoreDetails(params map[string]string) (
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// add the path parameter to the path
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
 	return handleResponse(resp, err, params[commonParams.QueryIDQueryParam])
 }
 
@@ -41,10 +45,6 @@ func handleResponse(resp *http.Response, err error, queryID string) (*[]*LearnMo
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

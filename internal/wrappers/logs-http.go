@@ -28,7 +28,7 @@ func NewLogsWrapper(path string) LogsWrapper {
 func (l *LogsHTTPWrapper) GetLog(scanID, scanType string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	reportPath := fmt.Sprintf("%s/%s/%s", l.path, scanID, scanType)
-	resp, err := SendHTTPRequest(http.MethodGet, reportPath, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, reportPath, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return "", err
 	}
