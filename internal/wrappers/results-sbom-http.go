@@ -137,8 +137,8 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResp
 
 func (r *SbomHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	url := fmt.Sprintf("%s/%s/%s/%s", r.path, "requests", reportID, "download")
-	resp, err := SendHTTPRequest(http.MethodGet, url, nil, true, clientTimeout)
+	customURL := fmt.Sprintf("%s/%s/%s/%s", r.path, "requests", reportID, "download")
+	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return err
 	}
