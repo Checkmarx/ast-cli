@@ -14,7 +14,6 @@ type ScanSumaries struct {
 	ApiSecCounters        *ApiSecCounters        `json:"apiSecCounters"`
 }
 
-// TODO il: refactor this and remove duplicated structs
 type SastCounters struct {
 	QueriesCounters        []interface{}            `json:"queriesCounters"`
 	SinkFileCounters       []interface{}            `json:"sinkFileCounters"`
