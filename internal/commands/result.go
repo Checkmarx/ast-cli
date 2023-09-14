@@ -485,31 +485,31 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrap
 }
 
 // TODO il: remove this function
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
-	engineType := strings.TrimSpace(result.Type)
-	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
-		if engineType == commonParams.SastType {
-			summary.SastIssues++
-			summary.TotalIssues++
-		} else if engineType == commonParams.ScaType {
-			summary.ScaIssues++
-			summary.TotalIssues++
-		} else if engineType == commonParams.KicsType {
-			summary.KicsIssues++
-			summary.TotalIssues++
-		}
-		severity := strings.ToLower(result.Severity)
-		if severity == highLabel {
-			summary.HighIssues++
-		} else if severity == lowLabel {
-			summary.LowIssues++
-		} else if severity == mediumLabel {
-			summary.MediumIssues++
-		} else if severity == infoLabel {
-			summary.InfoIssues++
-		}
-	}
-}
+//func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+//	engineType := strings.TrimSpace(result.Type)
+//	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
+//		if engineType == commonParams.SastType {
+//			summary.SastIssues++
+//			summary.TotalIssues++
+//		} else if engineType == commonParams.ScaType {
+//			summary.ScaIssues++
+//			summary.TotalIssues++
+//		} else if engineType == commonParams.KicsType {
+//			summary.KicsIssues++
+//			summary.TotalIssues++
+//		}
+//		severity := strings.ToLower(result.Severity)
+//		if severity == highLabel {
+//			summary.HighIssues++
+//		} else if severity == lowLabel {
+//			summary.LowIssues++
+//		} else if severity == mediumLabel {
+//			summary.MediumIssues++
+//		} else if severity == infoLabel {
+//			summary.InfoIssues++
+//		}
+//	}
+//}
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Summary Report: ", targetFile)

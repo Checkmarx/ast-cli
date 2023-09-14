@@ -11,7 +11,7 @@ type ScanSumaries struct {
 	ScaCounters           ScaCounters           `json:"scaCounters,omitempty,"`
 	ScaPackagesCounters   ScaPackagesCounters   `json:"scaPackagesCounters,omitempty,"`
 	ScaContainersCounters ScaContainersCounters `json:"scaContainersCounters,omitempty,"`
-	ApiSecCounters        ApiSecCounters        `json:"apiSecCounters,omitempty,"`
+	APISecCounters        APISecCounters        `json:"apiSecCounters,omitempty,"`
 }
 
 type SastCounters struct {
@@ -77,7 +77,7 @@ type ScaContainersCounters struct {
 	PackageCounters             []packageCounters  `json:"packageVulnerabilitiesCounters,omitempty,"`
 }
 
-type ApiSecCounters struct {
+type APISecCounters struct {
 	SeverityCounters       []severityCounters       `json:"severityCounters,omitempty,"`
 	StatusCounters         []statusCounters         `json:"statusCounters,omitempty,"`
 	StateCounters          []stateCounters          `json:"stateCounters,omitempty,"`
@@ -86,7 +86,7 @@ type ApiSecCounters struct {
 	AgeCounters            []ageCounters            `json:"ageCounters,omitempty,"`
 	TotalCounter           int                      `json:"totalCounter,omitempty,"`
 	FilesScannedCounter    int                      `json:"filesScannedCounter,omitempty,"`
-	ApiSecTotal            int                      `json:"apiSecTotal,omitempty,"`
+	APISecTotal            int                      `json:"apiSecTotal,omitempty,"`
 }
 type categorySummary struct {
 	Category string `json:"category,omitempty,"`

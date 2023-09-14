@@ -114,3 +114,13 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
 func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
 	return fmt.Sprintf("projects/%s/overview", projectID), nil
 }
+
+// TODO il: review this mock
+func (r ResultsMockWrapper) GetScanSummariesByScanIDS(params map[string]string) (*wrappers.ScanSummariesModel, *wrappers.WebError, error) {
+	const mock = "mock"
+	return &wrappers.ScanSummariesModel{
+		ScansSummaries: []wrappers.ScanSumaries{
+			{},
+		},
+	}, nil, nil
+}
