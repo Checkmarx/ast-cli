@@ -1,142 +1,142 @@
 package wrappers
 
-type ResultsSummary struct {
-	ScansSummaries *ScanSumaries `json:"scansSummaries"`
-	TotalCount     int           `json:"totalCount"`
+type ScanSummariesModel struct {
+	ScansSummaries []ScanSumaries `json:"scansSummaries,omitempty,"`
+	TotalCount     int            `json:"totalCount,omitempty,"`
 }
 
 type ScanSumaries struct {
-	SastCounters          *SastCounters          `json:"sastCounters"`
-	KicsCounters          *KicsCounters          `json:"kicsCounters"`
-	ScaCounters           *ScaCounters           `json:"scaCounters"`
-	ScaPackagesCounters   *ScaPackagesCounters   `json:"scaPackagesCounters"`
-	ScaContainersCounters *ScaContainersCounters `json:"scaContainersCounters"`
-	ApiSecCounters        *ApiSecCounters        `json:"apiSecCounters"`
+	SastCounters          SastCounters          `json:"sastCounters,omitempty,"`
+	KicsCounters          KicsCounters          `json:"kicsCounters,omitempty,"`
+	ScaCounters           ScaCounters           `json:"scaCounters,omitempty,"`
+	ScaPackagesCounters   ScaPackagesCounters   `json:"scaPackagesCounters,omitempty,"`
+	ScaContainersCounters ScaContainersCounters `json:"scaContainersCounters,omitempty,"`
+	ApiSecCounters        ApiSecCounters        `json:"apiSecCounters,omitempty,"`
 }
 
 type SastCounters struct {
-	QueriesCounters        []interface{}            `json:"queriesCounters"`
-	SinkFileCounters       []interface{}            `json:"sinkFileCounters"`
-	LanguageCounters       []languageCounters       `json:"languageCounters"`
-	ComplianceCounters     []complianceCounters     `json:"complianceCounters"`
-	SeverityCounters       []severityCounters       `json:"severityCounters"`
-	StatusCounters         []statusCounters         `json:"statusCounters"`
-	StateCounters          []stateCounters          `json:"stateCounters"`
-	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters"`
-	SourceFileCounters     []interface{}            `json:"sourceFileCounters"`
-	AgeCounters            []ageCounters            `json:"ageCounters"`
-	TotalCounter           int                      `json:"totalCounter"`
-	FilesScannedCounter    int                      `json:"filesScannedCounter"`
+	QueriesCounters        []interface{}            `json:"queriesCounters,omitempty,"`
+	SinkFileCounters       []interface{}            `json:"sinkFileCounters,omitempty,"`
+	LanguageCounters       []languageCounters       `json:"languageCounters,omitempty,"`
+	ComplianceCounters     []complianceCounters     `json:"complianceCounters,omitempty,"`
+	SeverityCounters       []severityCounters       `json:"severityCounters,omitempty,"`
+	StatusCounters         []statusCounters         `json:"statusCounters,omitempty,"`
+	StateCounters          []stateCounters          `json:"stateCounters,omitempty,"`
+	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters,omitempty,"`
+	SourceFileCounters     []interface{}            `json:"sourceFileCounters,omitempty,"`
+	AgeCounters            []ageCounters            `json:"ageCounters,omitempty,"`
+	TotalCounter           int                      `json:"totalCounter,omitempty,"`
+	FilesScannedCounter    int                      `json:"filesScannedCounter,omitempty,"`
 }
 type KicsCounters struct {
-	SeverityCounters       []severityCounters       `json:"severityCounters"`
-	StatusCounters         []statusCounters         `json:"statusCounters"`
-	StateCounters          []stateCounters          `json:"stateCounters"`
-	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters"`
-	SourceFileCounters     []interface{}            `json:"sourceFileCounters"`
-	AgeCounters            []ageCounters            `json:"ageCounters"`
-	TotalCounter           int                      `json:"totalCounter"`
-	FilesScannedCounter    int                      `json:"filesScannedCounter"`
-	PlatformSummary        []plataformSummary       `json:"platformSummary"`
-	CategorySummary        []categorySummary        `json:"categorySummary"`
+	SeverityCounters       []severityCounters       `json:"severityCounters,omitempty,"`
+	StatusCounters         []statusCounters         `json:"statusCounters,omitempty,"`
+	StateCounters          []stateCounters          `json:"stateCounters,omitempty,"`
+	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters,omitempty,"`
+	SourceFileCounters     []interface{}            `json:"sourceFileCounters,omitempty,"`
+	AgeCounters            []ageCounters            `json:"ageCounters,omitempty,"`
+	TotalCounter           int                      `json:"totalCounter,omitempty,"`
+	FilesScannedCounter    int                      `json:"filesScannedCounter,omitempty,"`
+	PlatformSummary        []plataformSummary       `json:"platformSummary,omitempty,"`
+	CategorySummary        []categorySummary        `json:"categorySummary,omitempty,"`
 }
 
 type ScaCounters struct {
-	SeverityCounters       []severityCounters       `json:"severityCounters"`
-	StatusCounters         []interface{}            `json:"statusCounters"`
-	StateCounters          []stateCounters          `json:"stateCounters"`
-	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters"`
-	SourceFileCounters     []interface{}            `json:"sourceFileCounters"`
-	AgeCounters            []ageCounters            `json:"ageCounters"`
-	TotalCounter           int                      `json:"totalCounter"`
-	FilesScannedCounter    int                      `json:"filesScannedCounter"`
+	SeverityCounters       []severityCounters       `json:"severityCounters,omitempty,"`
+	StatusCounters         []interface{}            `json:"statusCounters,omitempty,"`
+	StateCounters          []stateCounters          `json:"stateCounters,omitempty,"`
+	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters,omitempty,"`
+	SourceFileCounters     []interface{}            `json:"sourceFileCounters,omitempty,"`
+	AgeCounters            []ageCounters            `json:"ageCounters,omitempty,"`
+	TotalCounter           int                      `json:"totalCounter,omitempty,"`
+	FilesScannedCounter    int                      `json:"filesScannedCounter,omitempty,"`
 }
 
 type ScaPackagesCounters struct {
-	SeverityCounters       []severityCounters  `json:"severityCounters"`
-	StatusCounters         []interface{}       `json:"statusCounters"`
-	StateCounters          []stateCounters     `json:"stateCounters"`
-	SeverityStatusCounters []interface{}       `json:"severityStatusCounters"`
-	SourceFileCounters     []interface{}       `json:"sourceFileCounters"`
-	AgeCounters            []interface{}       `json:"ageCounters"`
-	TotalCounter           int                 `json:"totalCounter"`
-	FilesScannedCounter    int                 `json:"filesScannedCounter"`
-	OutdatedCounter        int                 `json:"outdatedCounter"`
-	RiskLevelCounters      []riskLevelCounters `json:"riskLevelCounters"`
-	LicenseCounters        []lincenseCounters  `json:"licenseCounters"`
-	PackageCounters        []packageCounters   `json:"packageCounters"`
+	SeverityCounters       []severityCounters  `json:"severityCounters,omitempty,"`
+	StatusCounters         []interface{}       `json:"statusCounters,omitempty,"`
+	StateCounters          []stateCounters     `json:"stateCounters,omitempty,"`
+	SeverityStatusCounters []interface{}       `json:"severityStatusCounters,omitempty,"`
+	SourceFileCounters     []interface{}       `json:"sourceFileCounters,omitempty,"`
+	AgeCounters            []interface{}       `json:"ageCounters,omitempty,"`
+	TotalCounter           int                 `json:"totalCounter,omitempty,"`
+	FilesScannedCounter    int                 `json:"filesScannedCounter,omitempty,"`
+	OutdatedCounter        int                 `json:"outdatedCounter,omitempty,"`
+	RiskLevelCounters      []riskLevelCounters `json:"riskLevelCounters,omitempty,"`
+	LicenseCounters        []lincenseCounters  `json:"licenseCounters,omitempty,"`
+	PackageCounters        []packageCounters   `json:"packageCounters,omitempty,"`
 }
 
 type ScaContainersCounters struct {
-	TotalPackagesCounter        int                `json:"totalPackagesCounter"`
-	TotalVulnerabilitiesCounter int                `json:"totalVulnerabilitiesCounter"`
-	SeverityCounters            []severityCounters `json:"severityVulnerabilitiesCounters"`
-	StateCounters               []stateCounters    `json:"stateVulnerabilitiesCounters"`
-	StatusCounters              []statusCounters   `json:"statusVulnerabilitiesCounters"`
-	AgeCounters                 []ageCounters      `json:"ageVulnerabilitiesCounters"`
-	PackageCounters             []packageCounters  `json:"packageVulnerabilitiesCounters"`
+	TotalPackagesCounter        int                `json:"totalPackagesCounter,omitempty,"`
+	TotalVulnerabilitiesCounter int                `json:"totalVulnerabilitiesCounter,omitempty,"`
+	SeverityCounters            []severityCounters `json:"severityVulnerabilitiesCounters,omitempty,"`
+	StateCounters               []stateCounters    `json:"stateVulnerabilitiesCounters,omitempty,"`
+	StatusCounters              []statusCounters   `json:"statusVulnerabilitiesCounters,omitempty,"`
+	AgeCounters                 []ageCounters      `json:"ageVulnerabilitiesCounters,omitempty,"`
+	PackageCounters             []packageCounters  `json:"packageVulnerabilitiesCounters,omitempty,"`
 }
 
 type ApiSecCounters struct {
-	SeverityCounters       []severityCounters       `json:"severityCounters"`
-	StatusCounters         []statusCounters         `json:"statusCounters"`
-	StateCounters          []stateCounters          `json:"stateCounters"`
-	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters"`
-	SourceFileCounters     interface{}              `json:"sourceFileCounters"`
-	AgeCounters            []ageCounters            `json:"ageCounters"`
-	TotalCounter           int                      `json:"totalCounter"`
-	FilesScannedCounter    int                      `json:"filesScannedCounter"`
-	ApiSecTotal            int                      `json:"apiSecTotal"`
+	SeverityCounters       []severityCounters       `json:"severityCounters,omitempty,"`
+	StatusCounters         []statusCounters         `json:"statusCounters,omitempty,"`
+	StateCounters          []stateCounters          `json:"stateCounters,omitempty,"`
+	SeverityStatusCounters []severityStatusCounters `json:"severityStatusCounters,omitempty,"`
+	SourceFileCounters     interface{}              `json:"sourceFileCounters,omitempty,"`
+	AgeCounters            []ageCounters            `json:"ageCounters,omitempty,"`
+	TotalCounter           int                      `json:"totalCounter,omitempty,"`
+	FilesScannedCounter    int                      `json:"filesScannedCounter,omitempty,"`
+	ApiSecTotal            int                      `json:"apiSecTotal,omitempty,"`
 }
 type categorySummary struct {
-	Category string `json:"category"`
-	Counter  int    `json:"counter"`
+	Category string `json:"category,omitempty,"`
+	Counter  int    `json:"counter,omitempty,"`
 }
 type lincenseCounters struct {
-	License string `json:"license"`
-	Counter int    `json:"counter"`
+	License string `json:"license,omitempty,"`
+	Counter int    `json:"counter,omitempty,"`
 }
 type plataformSummary struct {
-	Platform string `json:"platform"`
-	Counter  int    `json:"counter"`
+	Platform string `json:"platform,omitempty,"`
+	Counter  int    `json:"counter,omitempty,"`
 }
 type severityStatusCounters struct {
-	Severity string `json:"severity"`
-	Status   string `json:"status"`
-	Counter  int    `json:"counter"`
+	Severity string `json:"severity,omitempty,"`
+	Status   string `json:"status,omitempty,"`
+	Counter  int    `json:"counter,omitempty,"`
 }
 type languageCounters struct {
-	Language string `json:"language"`
-	Counter  int    `json:"counter"`
+	Language string `json:"language,omitempty,"`
+	Counter  int    `json:"counter,omitempty,"`
 }
 type riskLevelCounters struct {
-	RiskLevel string `json:"riskLevel"`
-	Counter   int    `json:"counter"`
+	RiskLevel string `json:"riskLevel,omitempty,"`
+	Counter   int    `json:"counter,omitempty,"`
 }
 type severityCounters struct {
-	Severity string `json:"severity"`
-	Counter  int    `json:"counter"`
+	Severity string `json:"severity,omitempty,"`
+	Counter  int    `json:"counter,omitempty,"`
 }
 
 type ageCounters struct {
-	Age              string             `json:"age"`
-	SeverityCounters []severityCounters `json:"severityCounters"`
-	Counter          int                `json:"counter"`
+	Age              string             `json:"age,omitempty,"`
+	SeverityCounters []severityCounters `json:"severityCounters,omitempty,"`
+	Counter          int                `json:"counter,omitempty,"`
 }
 
 type complianceCounters struct {
-	Compliance string `json:"compliance"`
-	Counter    int    `json:"counter"`
+	Compliance string `json:"compliance,omitempty,"`
+	Counter    int    `json:"counter,omitempty,"`
 }
 type statusCounters struct {
-	Status  string `json:"status"`
-	Counter int    `json:"counter"`
+	Status  string `json:"status,omitempty,"`
+	Counter int    `json:"counter,omitempty,"`
 }
 type packageCounters struct {
-	Package string `json:"package"`
-	Counter int    `json:"counter"`
+	Package string `json:"package,omitempty,"`
+	Counter int    `json:"counter,omitempty,"`
 }
 type stateCounters struct {
-	State   string `json:"state"`
-	Counter int    `json:"counter"`
+	State   string `json:"state,omitempty,"`
+	Counter int    `json:"counter,omitempty,"`
 }

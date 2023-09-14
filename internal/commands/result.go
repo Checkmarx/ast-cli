@@ -360,18 +360,17 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 	}, nil
 }
 
-func SummaryReport(
-	results *wrappers.ScanResultsCollection,
+func summaryReport(
 	scan *wrappers.ScanResponseModel,
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
+
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
-
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
@@ -390,8 +389,9 @@ func SummaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	for _, result := range results.Results {
-		countResult(summary, result)
+	err = enhanceWithScanSummary(summary, resultsWrapper)
+	if err != nil {
+		return nil, err
 	}
 	if summary.SastIssues == 0 && !contains(summary.EnginesEnabled, commonParams.SastType) {
 		summary.SastIssues = notAvailableNumber
@@ -417,6 +417,74 @@ func SummaryReport(
 	return summary, nil
 }
 
+func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrappers.ResultsWrapper) error {
+	scanSummary, errModel, err := resultsWrapper.GetScanSummariesByScanIDS(map[string]string{
+		"scan-ids": summary.ScanID,
+	})
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return err
+	}
+	if errModel != nil {
+		logger.PrintIfVerbose(errModel.Message)
+		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errModel.Code, errModel.Message)
+	}
+
+	if scanSummary == nil || len(scanSummary.ScansSummaries) > 1 {
+		return errors.Errorf("error - scan summary is nil or has more than one element")
+	}
+	summary.SastIssues += scanSummary.ScansSummaries[0].SastCounters.TotalCounter
+	summary.KicsIssues += scanSummary.ScansSummaries[0].KicsCounters.TotalCounter
+	summary.ScaIssues += scanSummary.ScansSummaries[0].ScaCounters.TotalCounter
+	for _, sev := range scanSummary.ScansSummaries[0].SastCounters.SeverityCounters {
+		if strings.ToLower(sev.Severity) == highLabel {
+			summary.HighIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == mediumLabel {
+			summary.MediumIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == lowLabel {
+			summary.LowIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == infoLabel {
+			summary.InfoIssues += sev.Counter
+		}
+	}
+	for _, sev := range scanSummary.ScansSummaries[0].KicsCounters.SeverityCounters {
+		if strings.ToLower(sev.Severity) == highLabel {
+			summary.HighIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == mediumLabel {
+			summary.MediumIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == lowLabel {
+			summary.LowIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == infoLabel {
+			summary.InfoIssues += sev.Counter
+		}
+	}
+	for _, sev := range scanSummary.ScansSummaries[0].ScaCounters.SeverityCounters {
+		if strings.ToLower(sev.Severity) == highLabel {
+			summary.HighIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == mediumLabel {
+			summary.MediumIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == lowLabel {
+			summary.LowIssues += sev.Counter
+		}
+		if strings.ToLower(sev.Severity) == infoLabel {
+			summary.InfoIssues += sev.Counter
+		}
+	}
+
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues
+	return nil
+
+}
+
+// TODO il: remove this function
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
 	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
@@ -692,7 +760,7 @@ func CreateScanReport(
 		return err
 	}
 
-	summary, err := SummaryReport(results, scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
+	summary, err := summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}

@@ -17,14 +17,16 @@ const (
 )
 
 type ResultsHTTPWrapper struct {
-	path           string
-	scaPackagePath string
+	resultsPath     string
+	scanSummaryPath string
+	scaPackagePath  string
 }
 
-func NewHTTPResultsWrapper(path, scaPackagePath string) ResultsWrapper {
+func NewHTTPResultsWrapper(path, scaPackagePath, scanSummaryPath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
-		path:           path,
-		scaPackagePath: scaPackagePath,
+		resultsPath:     path,
+		scanSummaryPath: scanSummaryPath,
+		scaPackagePath:  scaPackagePath,
 	}
 }
 
@@ -36,7 +38,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
 	params[limit] = limitValue
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.resultsPath, params, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,7 +82,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/packages",
 		params,
-		nil,
+		http.NoBody,
 		clientTimeout,
 	)
 	if err != nil {
@@ -128,16 +130,14 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/vulnerabilities",
 		params,
-		nil,
+		http.NoBody,
 		clientTimeout,
 	)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
 	decoder := json.NewDecoder(resp.Body)
 
@@ -175,4 +175,42 @@ func (r *ResultsHTTPWrapper) GetResultsURL(projectID string) (string, error) {
 	}
 
 	return baseURI, nil
+}
+
+// TODO il: review error responses
+func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string) (
+	*ScanSummariesModel,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.scanSummaryPath, params, http.NoBody, clientTimeout)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer resp.Body.Close()
+
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		model := ScanSummariesModel{}
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+		}
+
+		return &model, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
 }
