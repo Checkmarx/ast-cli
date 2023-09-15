@@ -366,11 +366,11 @@ func summaryReport(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
-
 	summary, err := convertScanToResultsSummary(scan)
 	if err != nil {
 		return nil, err
 	}
+
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
@@ -378,6 +378,7 @@ func summaryReport(
 
 	summary.BaseURI = baseURI
 	summary.BaseURI = generateScanSummaryURL(summary)
+
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -385,6 +386,7 @@ func summaryReport(
 		}
 		summary.APISecurity = *apiSecRisks
 	}
+
 	if policies != nil {
 		summary.Policies = filterViolatedRules(*policies)
 	}
@@ -393,15 +395,22 @@ func summaryReport(
 	if err != nil {
 		return nil, err
 	}
-	if summary.SastIssues == 0 && !contains(summary.EnginesEnabled, commonParams.SastType) {
-		summary.SastIssues = notAvailableNumber
+
+	setDefaultIfZero(summary, &summary.SastIssues, commonParams.SastType, notAvailableNumber)
+	setDefaultIfZero(summary, &summary.ScaIssues, scaType, notAvailableNumber)
+	setDefaultIfZero(summary, &summary.KicsIssues, commonParams.KicsType, notAvailableNumber)
+	setRiskMsgAndStyle(summary)
+
+	return summary, nil
+}
+
+func setDefaultIfZero(summary *wrappers.ResultSummary, counter *int, engineType string, defaultValue int) {
+	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
+		*counter = defaultValue
 	}
-	if summary.ScaIssues == 0 && !contains(summary.EnginesEnabled, scaType) {
-		summary.ScaIssues = notAvailableNumber
-	}
-	if summary.KicsIssues == 0 && !contains(summary.EnginesEnabled, commonParams.KicsType) {
-		summary.KicsIssues = notAvailableNumber
-	}
+}
+
+func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
@@ -414,7 +423,6 @@ func summaryReport(
 	} else if summary.TotalIssues == 0 {
 		summary.RiskMsg = "No Risk"
 	}
-	return summary, nil
 }
 
 func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrappers.ResultsWrapper) error {
