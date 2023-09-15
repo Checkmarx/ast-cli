@@ -116,14 +116,13 @@ func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
 }
 
 func (r ResultsMockWrapper) GetScanSummariesByScanIDS(params map[string]string) (*wrappers.ScanSummariesModel, *wrappers.WebError, error) {
-	const mock = "mock"
 	if params["scan-ids"] == "MOCKWEBERR" {
 		return nil, &wrappers.WebError{
-			Message: "Web error",
+			Message: "web error",
 		}, nil
 	}
 	if params["scan-ids"] == "MOCKERR" {
-		return nil, nil, fmt.Errorf("Mock error")
+		return nil, nil, fmt.Errorf("mock error")
 	}
 	return &wrappers.ScanSummariesModel{
 		ScansSummaries: []wrappers.ScanSumaries{

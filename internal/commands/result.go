@@ -433,71 +433,37 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrap
 	if scanSummary == nil || len(scanSummary.ScansSummaries) > 1 {
 		return errors.Errorf("error - scan summary is nil or has more than one element")
 	}
-	summary.SastIssues += scanSummary.ScansSummaries[0].SastCounters.TotalCounter
-	summary.KicsIssues += scanSummary.ScansSummaries[0].KicsCounters.TotalCounter
-	summary.ScaIssues += scanSummary.ScansSummaries[0].ScaCounters.TotalCounter
-	summary.ScaIssues += scanSummary.ScansSummaries[0].ScaContainersCounters.TotalVulnerabilitiesCounter
 
-	for _, sev := range scanSummary.ScansSummaries[0].SastCounters.SeverityCounters {
-		if strings.EqualFold(sev.Severity, highLabel) {
-			summary.HighIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, mediumLabel) {
-			summary.MediumIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, lowLabel) {
-			summary.LowIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, infoLabel) {
-			summary.InfoIssues += sev.Counter
-		}
-	}
-	for _, sev := range scanSummary.ScansSummaries[0].KicsCounters.SeverityCounters {
-		if strings.EqualFold(sev.Severity, highLabel) {
-			summary.HighIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, mediumLabel) {
-			summary.MediumIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, lowLabel) {
-			summary.LowIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, infoLabel) {
-			summary.InfoIssues += sev.Counter
-		}
-	}
-	for _, sev := range scanSummary.ScansSummaries[0].ScaCounters.SeverityCounters {
-		if strings.EqualFold(sev.Severity, highLabel) {
-			summary.HighIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, mediumLabel) {
-			summary.MediumIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, lowLabel) {
-			summary.LowIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, infoLabel) {
-			summary.InfoIssues += sev.Counter
-		}
-	}
-	for _, sev := range scanSummary.ScansSummaries[0].ScaContainersCounters.SeverityCounters {
-		if strings.EqualFold(sev.Severity, highLabel) {
-			summary.HighIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, mediumLabel) {
-			summary.MediumIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, lowLabel) {
-			summary.LowIssues += sev.Counter
-		}
-		if strings.EqualFold(sev.Severity, infoLabel) {
-			summary.InfoIssues += sev.Counter
-		}
-
-	}
-
+	updateSummaryWithScanSummary(summary, &scanSummary.ScansSummaries[0])
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues
 	return nil
+}
+
+func updateSummaryWithScanSummary(summary *wrappers.ResultSummary, scanSummary *wrappers.ScanSumaries) {
+	summary.SastIssues += scanSummary.SastCounters.TotalCounter
+	summary.KicsIssues += scanSummary.KicsCounters.TotalCounter
+	summary.ScaIssues += scanSummary.ScaCounters.TotalCounter
+	summary.ScaIssues += scanSummary.ScaContainersCounters.TotalVulnerabilitiesCounter
+
+	updateSeverityCounts(summary, scanSummary.SastCounters.SeverityCounters)
+	updateSeverityCounts(summary, scanSummary.KicsCounters.SeverityCounters)
+	updateSeverityCounts(summary, scanSummary.ScaCounters.SeverityCounters)
+	updateSeverityCounts(summary, scanSummary.ScaContainersCounters.SeverityCounters)
+}
+
+func updateSeverityCounts(summary *wrappers.ResultSummary, severityCounts []wrappers.SeverityCounters) {
+	for _, sev := range severityCounts {
+		switch strings.ToLower(sev.Severity) {
+		case highLabel:
+			summary.HighIssues += sev.Counter
+		case mediumLabel:
+			summary.MediumIssues += sev.Counter
+		case lowLabel:
+			summary.LowIssues += sev.Counter
+		case infoLabel:
+			summary.InfoIssues += sev.Counter
+		}
+	}
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {

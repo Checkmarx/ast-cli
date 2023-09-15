@@ -72,10 +72,10 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 
 	// Testing errors
 	err := execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKERR", "--report-format", "summaryConsole")
-	assert.Equal(t, err.Error(), "Mock error")
+	assert.Equal(t, err.Error(), "mock error")
 
 	err = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKWEBERR", "--report-format", "summaryConsole")
-	assert.ErrorContains(t, err, "Web error")
+	assert.ErrorContains(t, err, "web error")
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
