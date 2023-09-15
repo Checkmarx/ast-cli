@@ -436,80 +436,69 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrap
 	summary.SastIssues += scanSummary.ScansSummaries[0].SastCounters.TotalCounter
 	summary.KicsIssues += scanSummary.ScansSummaries[0].KicsCounters.TotalCounter
 	summary.ScaIssues += scanSummary.ScansSummaries[0].ScaCounters.TotalCounter
+	summary.ScaIssues += scanSummary.ScansSummaries[0].ScaContainersCounters.TotalVulnerabilitiesCounter
+
 	for _, sev := range scanSummary.ScansSummaries[0].SastCounters.SeverityCounters {
-		if strings.ToLower(sev.Severity) == highLabel {
+		if strings.EqualFold(sev.Severity, highLabel) {
 			summary.HighIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == mediumLabel {
+		if strings.EqualFold(sev.Severity, mediumLabel) {
 			summary.MediumIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == lowLabel {
+		if strings.EqualFold(sev.Severity, lowLabel) {
 			summary.LowIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == infoLabel {
+		if strings.EqualFold(sev.Severity, infoLabel) {
 			summary.InfoIssues += sev.Counter
 		}
 	}
 	for _, sev := range scanSummary.ScansSummaries[0].KicsCounters.SeverityCounters {
-		if strings.ToLower(sev.Severity) == highLabel {
+		if strings.EqualFold(sev.Severity, highLabel) {
 			summary.HighIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == mediumLabel {
+		if strings.EqualFold(sev.Severity, mediumLabel) {
 			summary.MediumIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == lowLabel {
+		if strings.EqualFold(sev.Severity, lowLabel) {
 			summary.LowIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == infoLabel {
+		if strings.EqualFold(sev.Severity, infoLabel) {
 			summary.InfoIssues += sev.Counter
 		}
 	}
 	for _, sev := range scanSummary.ScansSummaries[0].ScaCounters.SeverityCounters {
-		if strings.ToLower(sev.Severity) == highLabel {
+		if strings.EqualFold(sev.Severity, highLabel) {
 			summary.HighIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == mediumLabel {
+		if strings.EqualFold(sev.Severity, mediumLabel) {
 			summary.MediumIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == lowLabel {
+		if strings.EqualFold(sev.Severity, lowLabel) {
 			summary.LowIssues += sev.Counter
 		}
-		if strings.ToLower(sev.Severity) == infoLabel {
+		if strings.EqualFold(sev.Severity, infoLabel) {
 			summary.InfoIssues += sev.Counter
 		}
+	}
+	for _, sev := range scanSummary.ScansSummaries[0].ScaContainersCounters.SeverityCounters {
+		if strings.EqualFold(sev.Severity, highLabel) {
+			summary.HighIssues += sev.Counter
+		}
+		if strings.EqualFold(sev.Severity, mediumLabel) {
+			summary.MediumIssues += sev.Counter
+		}
+		if strings.EqualFold(sev.Severity, lowLabel) {
+			summary.LowIssues += sev.Counter
+		}
+		if strings.EqualFold(sev.Severity, infoLabel) {
+			summary.InfoIssues += sev.Counter
+		}
+
 	}
 
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues
 	return nil
-
 }
-
-// TODO il: remove this function
-//func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
-//	engineType := strings.TrimSpace(result.Type)
-//	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
-//		if engineType == commonParams.SastType {
-//			summary.SastIssues++
-//			summary.TotalIssues++
-//		} else if engineType == commonParams.ScaType {
-//			summary.ScaIssues++
-//			summary.TotalIssues++
-//		} else if engineType == commonParams.KicsType {
-//			summary.KicsIssues++
-//			summary.TotalIssues++
-//		}
-//		severity := strings.ToLower(result.Severity)
-//		if severity == highLabel {
-//			summary.HighIssues++
-//		} else if severity == lowLabel {
-//			summary.LowIssues++
-//		} else if severity == mediumLabel {
-//			summary.MediumIssues++
-//		} else if severity == infoLabel {
-//			summary.InfoIssues++
-//		}
-//	}
-//}
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Summary Report: ", targetFile)
@@ -751,21 +740,27 @@ func CreateScanReport(
 	targetPath string,
 	params map[string]string,
 ) error {
-	err := createDirectory(targetPath)
-	if err != nil {
-		return err
-	}
-	results, err := ReadResults(resultsWrapper, scan, params)
-	if err != nil {
-		return err
-	}
+	reportList := strings.Split(reportTypes, ",")
+	results := &wrappers.ScanResultsCollection{}
 
 	summary, err := summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
 	if err != nil {
 		return err
 	}
 
-	reportList := strings.Split(reportTypes, ",")
+	err = createDirectory(targetPath)
+	if err != nil {
+		return err
+	}
+
+	isResultsNeeded := verifyFormatsByReportList(reportList, printer.FormatJSON, printer.FormatSarif, printer.FormatSonar)
+	if isResultsNeeded {
+		results, err = ReadResults(resultsWrapper, scan, params)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
 			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM)
@@ -774,6 +769,17 @@ func CreateScanReport(
 		}
 	}
 	return nil
+}
+
+func verifyFormatsByReportList(reportFormats []string, formats ...string) bool {
+	for _, reportFormat := range reportFormats {
+		for _, format := range formats {
+			if printer.IsFormat(reportFormat, format) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func validateEmails(emailString string) ([]string, error) {
@@ -835,27 +841,27 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSarif) {
-		sarifRpt := createTargetName(targetFile, targetPath, "sarif")
+		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatSonar) {
-		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, "json")
+		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, printer.FormatJSON)
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) {
-		jsonRpt := createTargetName(targetFile, targetPath, "json")
+		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
-		summaryRpt := createTargetName(targetFile, targetPath, "html")
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
 		convertNotAvailableNumberToZero(summary)
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
-		summaryRpt := createTargetName(targetFile, targetPath, "json")
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}

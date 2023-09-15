@@ -115,12 +115,88 @@ func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
 	return fmt.Sprintf("projects/%s/overview", projectID), nil
 }
 
-// TODO il: review this mock
 func (r ResultsMockWrapper) GetScanSummariesByScanIDS(params map[string]string) (*wrappers.ScanSummariesModel, *wrappers.WebError, error) {
 	const mock = "mock"
+	if params["scan-ids"] == "MOCKWEBERR" {
+		return nil, &wrappers.WebError{
+			Message: "Web error",
+		}, nil
+	}
+	if params["scan-ids"] == "MOCKERR" {
+		return nil, nil, fmt.Errorf("Mock error")
+	}
 	return &wrappers.ScanSummariesModel{
 		ScansSummaries: []wrappers.ScanSumaries{
-			{},
+			{
+				SastCounters: wrappers.SastCounters{
+					SeverityCounters: []wrappers.SeverityCounters{
+						{
+							Severity: "info",
+							Counter:  1,
+						},
+						{
+							Severity: "low",
+							Counter:  1,
+						},
+						{
+							Severity: "medium",
+							Counter:  1,
+						},
+						{
+							Severity: "high",
+							Counter:  1,
+						},
+					},
+					TotalCounter:        4,
+					FilesScannedCounter: 1,
+				},
+				KicsCounters: wrappers.KicsCounters{
+					SeverityCounters: []wrappers.SeverityCounters{
+						{
+							Severity: "info",
+							Counter:  1,
+						},
+						{
+							Severity: "low",
+							Counter:  1,
+						},
+						{
+							Severity: "medium",
+							Counter:  1,
+						},
+						{
+							Severity: "high",
+							Counter:  1,
+						},
+					},
+
+					TotalCounter:        4,
+					FilesScannedCounter: 1,
+				},
+				ScaCounters: wrappers.ScaCounters{
+					SeverityCounters: []wrappers.SeverityCounters{
+						{
+							Severity: "info",
+							Counter:  1,
+						},
+						{
+							Severity: "low",
+							Counter:  1,
+						},
+						{
+							Severity: "medium",
+							Counter:  1,
+						},
+						{
+							Severity: "high",
+							Counter:  1,
+						},
+					},
+
+					TotalCounter:        4,
+					FilesScannedCounter: 1,
+				},
+			},
 		},
 	}, nil, nil
 }

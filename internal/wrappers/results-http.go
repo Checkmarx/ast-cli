@@ -13,7 +13,10 @@ import (
 )
 
 const (
-	failedToParseGetResults = "Failed to parse list results"
+	failedToParseGetResults    = "Failed to parse list results"
+	failedTogetScanSummaries   = "Failed to get scan summaries"
+	failedToParseScanSummaries = "Failed to parse scan summaries"
+	respStatusCode             = "response status code %d"
 )
 
 type ResultsHTTPWrapper struct {
@@ -66,7 +69,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 
 		return &model, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
 
@@ -114,7 +117,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 		logger.PrintIfVerbose("SCA packages for enrichment not found")
 		return nil, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
 
@@ -160,7 +163,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 		logger.PrintIfVerbose("SCA types for enrichment not found")
 		return nil, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
 
@@ -199,18 +202,18 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, nil, errors.Wrapf(err, failedTogetScanSummaries)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := ScanSummariesModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, nil, errors.Wrapf(err, failedToParseScanSummaries)
 		}
 
 		return &model, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
