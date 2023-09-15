@@ -396,17 +396,17 @@ func summaryReport(
 		return nil, err
 	}
 
-	setDefaultIfZero(summary, &summary.SastIssues, commonParams.SastType, notAvailableNumber)
-	setDefaultIfZero(summary, &summary.ScaIssues, scaType, notAvailableNumber)
-	setDefaultIfZero(summary, &summary.KicsIssues, commonParams.KicsType, notAvailableNumber)
+	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
+	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, scaType)
+	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
 
 	return summary, nil
 }
 
-func setDefaultIfZero(summary *wrappers.ResultSummary, counter *int, engineType string, defaultValue int) {
+func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, engineType string) {
 	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
-		*counter = defaultValue
+		*counter = notAvailableNumber
 	}
 }
 
