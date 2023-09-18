@@ -53,7 +53,6 @@ const (
 	notAvailableNumber        = -1
 	defaultPaddingSize        = -14
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
-	scaType                   = "sca"
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
 	startedStatus             = "started"
@@ -76,6 +75,20 @@ const (
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	policeManagementNoneStatus              = "none"
 )
+
+var resultsFormats = []string{
+	printer.FormatJSON,
+	printer.FormatSarif,
+	printer.FormatSonar,
+}
+var summaryFormats = []string{
+	printer.FormatSummaryConsole,
+	printer.FormatSummary,
+	printer.FormatSummaryJSON,
+	printer.FormatPDF,
+	printer.FormatSummaryMarkdown,
+	printer.FormatSbom,
+}
 
 var filterResultsListFlagUsage = fmt.Sprintf(
 	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
@@ -397,10 +410,12 @@ func summaryReport(
 	}
 
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
-	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, scaType)
+	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
-
+	if isScanPending(summary.Status) {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
 	return summary, nil
 }
 
@@ -427,18 +442,16 @@ func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 
 func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrappers.ResultsWrapper) error {
 	scanSummary, errModel, err := resultsWrapper.GetScanSummariesByScanIDS(map[string]string{
-		"scan-ids": summary.ScanID,
+		commonParams.ScanIDsQueryParam: summary.ScanID,
 	})
 	if err != nil {
-		logger.PrintIfVerbose(err.Error())
 		return err
 	}
 	if errModel != nil {
-		logger.PrintIfVerbose(errModel.Message)
 		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errModel.Code, errModel.Message)
 	}
 
-	if scanSummary == nil || len(scanSummary.ScansSummaries) > 1 {
+	if len(scanSummary.ScansSummaries) != 1 {
 		return errors.Errorf("error - scan summary is nil or has more than one element")
 	}
 
@@ -714,22 +727,28 @@ func CreateScanReport(
 	targetPath string,
 	params map[string]string,
 ) error {
+
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
+	summary := &wrappers.ResultSummary{}
 
-	summary, err := summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
+	err := createDirectory(targetPath)
 	if err != nil {
 		return err
 	}
 
-	err = createDirectory(targetPath)
-	if err != nil {
-		return err
-	}
-
-	isResultsNeeded := verifyFormatsByReportList(reportList, printer.FormatJSON, printer.FormatSarif, printer.FormatSonar)
+	isResultsNeeded := verifyFormatsByReportList(reportList, resultsFormats...)
 	if isResultsNeeded {
 		results, err = ReadResults(resultsWrapper, scan, params)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
+	if isSummaryNeeded {
+		summary, err = summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
 		if err != nil {
 			return err
 		}
@@ -810,10 +829,6 @@ func createReport(format,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
 
-	if isScanPending(summary.Status) {
-		summary.ScanInfoMessage = scanPendingMessage
-	}
-
 	if printer.IsFormat(format, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
@@ -856,7 +871,7 @@ func createReport(format,
 		summaryRpt := createTargetName(fmt.Sprintf("%s_%s", targetFile, printer.FormatSbom), targetPath, targetType)
 		convertNotAvailableNumberToZero(summary)
 
-		if !contains(summary.EnginesEnabled, scaType) {
+		if !contains(summary.EnginesEnabled, commonParams.ScaType) {
 			return fmt.Errorf("unable to generate %s report - SCA engine must be enabled on scan summary", printer.FormatSbom)
 		}
 
@@ -921,7 +936,7 @@ func enrichScaResults(
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
-	if util.Contains(scan.Engines, scaType) {
+	if util.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
@@ -1532,7 +1547,7 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 	typesByCVE = make(map[string]string)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
-		if result.Type == scaType {
+		if result.Type == commonParams.ScaType {
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				locationsByID[packages.ID] = currentPackage.Locations
@@ -1563,7 +1578,7 @@ func addPackageInformation(
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
 
 	for _, result := range resultsModel.Results {
-		if !(result.Type == scaType) {
+		if !(result.Type == commonParams.ScaType) {
 			continue
 		} else {
 			currentID = result.ScanResultData.PackageIdentifier

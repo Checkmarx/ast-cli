@@ -180,7 +180,6 @@ func (r *ResultsHTTPWrapper) GetResultsURL(projectID string) (string, error) {
 	return baseURI, nil
 }
 
-// TODO il: review error responses
 func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string) (
 	*ScanSummariesModel,
 	*WebError,
