@@ -727,7 +727,6 @@ func CreateScanReport(
 	targetPath string,
 	params map[string]string,
 ) error {
-
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
 	summary := &wrappers.ResultSummary{}
@@ -736,7 +735,6 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-
 	isResultsNeeded := verifyFormatsByReportList(reportList, resultsFormats...)
 	if isResultsNeeded {
 		results, err = ReadResults(resultsWrapper, scan, params)
@@ -745,7 +743,6 @@ func CreateScanReport(
 		}
 
 	}
-
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded {
 		summary, err = summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
@@ -753,7 +750,6 @@ func CreateScanReport(
 			return err
 		}
 	}
-
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
 			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM)
@@ -1074,16 +1070,14 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		}
 		return nil
 	}
-
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
-	i := 0
 
+	i := 0
 	for i < retrySBOM {
 		completed, err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
 		if err != nil {
 			return err
 		}
-
 		if completed {
 			return nil
 		}
@@ -1097,7 +1091,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		)
 
 	}
-
 	return nil
 }
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {

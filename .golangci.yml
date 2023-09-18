@@ -86,7 +86,6 @@ linters:
     - unparam
     - unused
     - varcheck
-    - whitespace
   # don't enable:
   # - gochecknoglobals
   # - gocognit
