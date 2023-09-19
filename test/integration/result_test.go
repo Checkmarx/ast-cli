@@ -278,3 +278,15 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 }
+
+func TestResultsWrongScanID(t *testing.T) {
+
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), "wrong",
+		flag(params.TargetFormatFlag), "json",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "scan not found")
+}
