@@ -128,7 +128,6 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 func getFromGitLab(
 	client *http.Client, requestURL string, target interface{}, queryParams map[string]string,
 ) (*http.Response, error) {
-
 	req, err := http.NewRequest(http.MethodGet, requestURL, http.NoBody)
 	if err != nil {
 		return nil, err
