@@ -19,6 +19,7 @@ var (
 	CodeBashingPathKey                  = strings.ToLower(CodeBashingPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
+	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)
 	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
 	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
