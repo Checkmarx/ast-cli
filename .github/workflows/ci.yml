@@ -3,6 +3,9 @@ name: Checkmarx One CLI
 on:
   pull_request:
 
+env:
+  GO_VERSION: 1.17.x
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -14,7 +17,7 @@ jobs:
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
@@ -46,7 +49,7 @@ jobs:
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
@@ -113,7 +116,7 @@ jobs:
       - name: Set up Go 1.17.x
         uses: actions/setup-go@v4
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: golangci-lint
@@ -129,5 +132,5 @@ jobs:
       - id: govulncheck
         uses: golang/govulncheck-action@v1
         with:
-          go-version-input: '1.17.x'
+          go-version-input: ${{ env.GO_VERSION }}
           go-package: ./...
