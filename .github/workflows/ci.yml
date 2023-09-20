@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21.0-rc.3'
+          go-version: '1.21.0-rc.4'
           check-latest: true
       - run: go version
       - name: Setup git
@@ -48,7 +48,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21.0-rc.3'
+          go-version: '1.21.0-rc.4'
           check-latest: true
       - run: go version
       - name: Go Build
@@ -117,7 +117,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21.0-rc.3'
+          go-version: '1.21.0-rc.4'
           check-latest: true
       - run: go version
       - name: Setup git
