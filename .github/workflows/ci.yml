@@ -127,7 +127,7 @@ jobs:
           only-new-issues: true
   govulncheck:
     runs-on: ubuntu-latest
-    name: Run govulncheck
+    name: govulncheck
     steps:
       - id: govulncheck
         uses: golang/govulncheck-action@v1
