@@ -106,6 +106,10 @@ run:
     - internal/cache
     - internal/renameio
     - internal/robustio
+  skip-files:
+    - go\.mod
+    - go\.sum
+#  modules-download-mode: readonly
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
