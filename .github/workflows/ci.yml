@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v2
         with:
-          go-version: 1.21rc4
+          go-version: 1.21.x
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
