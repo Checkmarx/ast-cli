@@ -100,6 +100,7 @@ issues:
     - path: _test\.go
       linters:
         - gomnd
+    - path: go\.mod
 run:
   skip-dirs:
     - test/testdata_etc
