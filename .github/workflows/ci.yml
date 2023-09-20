@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v2
         with:
-          go-version: 1.21.x
+          go-version: 1.21.rc4
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v2
         with:
-          go-version: 1.21.x
+          go-version: 1.21.rc4
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
@@ -113,7 +113,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: 1.21.x
+          go-version: 1.21.rc4
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: golangci-lint
