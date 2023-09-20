@@ -58,7 +58,7 @@ jobs:
           CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
           CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
           CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
-          CX_APIKEY:  ${{ secrets.CX_APIKEY }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -122,3 +122,12 @@ jobs:
           version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
+  govulncheck:
+    runs-on: ubuntu-latest
+    name: govulncheck
+    steps:
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: '1.21.0-rc.4'
+          go-package: ./...
