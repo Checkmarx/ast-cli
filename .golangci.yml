@@ -101,6 +101,8 @@ issues:
       linters:
         - gomnd
     - path: go\.mod
+      linters:
+        [ ] # disable all linters
 run:
   skip-dirs:
     - test/testdata_etc
