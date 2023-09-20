@@ -11,10 +11,10 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v2.3.4
-      - name: Set up Go 1.17.x
+      - name: Set up Go version
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.x
+          go-version: 1.21rc4
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
@@ -58,7 +58,7 @@ jobs:
           CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
           CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
           CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
-          CX_APIKEY:  ${{ secrets.CX_APIKEY }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
