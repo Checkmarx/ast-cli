@@ -15,7 +15,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21.0-rc.4'
-          check-latest: true
       - run: go version
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
@@ -49,7 +48,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21.0-rc.4'
-          check-latest: true
       - run: go version
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
@@ -118,7 +116,6 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21.0-rc.4'
-          check-latest: true
       - run: go version
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
@@ -128,3 +125,12 @@ jobs:
           version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
+  govulncheck:
+    runs-on: ubuntu-latest
+    name: Run govulncheck
+    steps:
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: '1.21.0-rc.4'
+          go-package: ./...
