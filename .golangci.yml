@@ -106,7 +106,9 @@ run:
     - internal/cache
     - internal/renameio
     - internal/robustio
-  go: '1.21'
+
+ # In case of linter atoi() erros
+ # go: '^1.21'
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
