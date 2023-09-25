@@ -379,6 +379,9 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 
 	summary.BaseURI = baseURI
 	summary.BaseURI = generateScanSummaryURL(summary)
+	if isScanPending(summary.Status) {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
 
 	return summary, nil
 }
@@ -411,9 +414,7 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
-	if isScanPending(summary.Status) {
-		summary.ScanInfoMessage = scanPendingMessage
-	}
+
 	return summary, nil
 }
 
