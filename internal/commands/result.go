@@ -392,7 +392,6 @@ func summaryReport(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 ) (*wrappers.ResultSummary, error) {
-
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -817,7 +816,7 @@ func isScanPending(scanStatus string) bool {
 	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
-func isValidScanStatus(status string, format string) bool {
+func isValidScanStatus(status, format string) bool {
 	if isScanPending(status) {
 		log.Printf("Result format file %s not create because scan status is %s", format, status)
 		return false
