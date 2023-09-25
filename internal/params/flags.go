@@ -148,12 +148,14 @@ const (
 	ScaFilterUsage  = "SCA filter"
 
 	// PR decoration flags
-	NamespaceFlag      = "namespace"
-	NamespaceFlagUsage = "Github namespace is required to post the comments"
-	RepoNameFlag       = "repo-name"
-	RepoNameFlagUsage  = "Github repository details"
-	PRNumberFlag       = "pr-number"
-	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
+	NamespaceFlag       = "namespace"
+	NamespaceFlagUsage  = "Github namespace is required to post the comments"
+	RepoNameFlag        = "repo-name"
+	RepoNameFlagUsage   = "Github repository details"
+	PRNumberFlag        = "pr-number"
+	PRNumberFlagUsage   = "Pull Request number for posting notifications and comments"
+	PRIidFlag           = "iid"
+	PRGitlabProjectFlag = "gitlab-project-id"
 
 	// Chat
 	ChatAPIKey              = "chat-apikey"

@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	failedCreatingPrDecoration = "Failed creating PR Decoration"
-	errorCodeFormat            = "%s: CODE: %d, %s\n"
+	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
+	failedCreatingGitlabPrDecoration = "Failed creating gitlab PR Decoration"
+	errorCodeFormat                  = "%s: CODE: %d, %s\n"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
@@ -27,8 +28,10 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
 	}
 
 	prDecorationGithub := PRDecorationGithub(prWrapper)
+	prDecorationGitlab := PRDecorationGitlab(prWrapper)
 
 	cmd.AddCommand(prDecorationGithub)
+	cmd.AddCommand(prDecorationGitlab)
 	return cmd
 }
 
@@ -71,6 +74,47 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 	return prDecorationGithub
 }
 
+func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
+	prDecorationGitlab := &cobra.Command{
+		Use:   "gitlab",
+		Short: "Decorate gitlab PR with vulnerabilities",
+		Long:  "Decorate gitlab PR with vulnerabilities",
+		Example: heredoc.Doc(
+			`
+			$ cx utils pr gitlab --scan-id <scan-id> --token <PAT> --namespace <organization> --repo-name <repository>
+                --iid <pr iid> --gitlab-project < gitlab project ID >
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+			`,
+			),
+		},
+		RunE: runPRDecorationGitlab(prWrapper),
+	}
+
+	prDecorationGitlab.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
+	prDecorationGitlab.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
+	prDecorationGitlab.Flags().String(params.NamespaceFlag, "", params.NamespaceFlagUsage)
+	prDecorationGitlab.Flags().String(params.RepoNameFlag, "", params.RepoNameFlagUsage)
+	prDecorationGitlab.Flags().Int(params.PRIidFlag, 0, params.PRNumberFlagUsage)
+	prDecorationGitlab.Flags().Int(params.PRGitlabProjectFlag, 0, params.PRNumberFlagUsage)
+
+	// Set the value for token to mask the scm token
+	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationGitlab.Flags().Lookup(params.SCMTokenFlag))
+
+	// mark all fields as required\
+	_ = prDecorationGitlab.MarkFlagRequired(params.ScanIDFlag)
+	_ = prDecorationGitlab.MarkFlagRequired(params.SCMTokenFlag)
+	_ = prDecorationGitlab.MarkFlagRequired(params.NamespaceFlag)
+	_ = prDecorationGitlab.MarkFlagRequired(params.RepoNameFlag)
+	_ = prDecorationGitlab.MarkFlagRequired(params.PRIidFlag)
+	_ = prDecorationGitlab.MarkFlagRequired(params.PRGitlabProjectFlag)
+
+	return prDecorationGitlab
+}
+
 func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
@@ -94,7 +138,41 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		}
 
 		if errorModel != nil {
-			return errors.Errorf(errorCodeFormat, failedCreatingPrDecoration, errorModel.Code, errorModel.Message)
+			return errors.Errorf(errorCodeFormat, failedCreatingGithubPrDecoration, errorModel.Code, errorModel.Message)
+		}
+
+		logger.Print(prResponse)
+
+		return nil
+	}
+}
+
+func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
+		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
+		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
+		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
+		gitlabProjectIdFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
+
+		prModel := &wrappers.GitlabPRModel{
+			ScanID:          scanID,
+			ScmToken:        scmTokenFlag,
+			Namespace:       namespaceFlag,
+			RepoName:        repoNameFlag,
+			IiD:             iIDFlag,
+			GitlabProjectID: gitlabProjectIdFlag,
+		}
+
+		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
+
+		if err != nil {
+			return err
+		}
+
+		if errorModel != nil {
+			return errors.Errorf(errorCodeFormat, failedCreatingGitlabPrDecoration, errorModel.Code, errorModel.Message)
 		}
 
 		logger.Print(prResponse)
