@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -57,8 +59,8 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 
 	prDecorationGithub.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
 	prDecorationGithub.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
-	prDecorationGithub.Flags().String(params.NamespaceFlag, "", params.NamespaceFlagUsage)
-	prDecorationGithub.Flags().String(params.RepoNameFlag, "", params.RepoNameFlagUsage)
+	prDecorationGithub.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Github"))
+	prDecorationGithub.Flags().String(params.RepoNameFlag, "", fmt.Sprintf(params.RepoNameFlagUsage, "Github"))
 	prDecorationGithub.Flags().Int(params.PRNumberFlag, 0, params.PRNumberFlagUsage)
 
 	// Set the value for token to mask the scm token
@@ -82,7 +84,7 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
 		Example: heredoc.Doc(
 			`
 			$ cx utils pr gitlab --scan-id <scan-id> --token <PAT> --namespace <organization> --repo-name <repository>
-                --iid <pr iid> --gitlab-project < gitlab project ID >
+                --iid <pr iid> --gitlab-project <gitlab project ID>
 		`,
 		),
 		Annotations: map[string]string{
@@ -95,11 +97,11 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
 	}
 
 	prDecorationGitlab.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
-	prDecorationGitlab.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
-	prDecorationGitlab.Flags().String(params.NamespaceFlag, "", params.NamespaceFlagUsage)
-	prDecorationGitlab.Flags().String(params.RepoNameFlag, "", params.RepoNameFlagUsage)
-	prDecorationGitlab.Flags().Int(params.PRIidFlag, 0, params.PRNumberFlagUsage)
-	prDecorationGitlab.Flags().Int(params.PRGitlabProjectFlag, 0, params.PRNumberFlagUsage)
+	prDecorationGitlab.Flags().String(params.SCMTokenFlag, "", params.GitLabTokenUsage)
+	prDecorationGitlab.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Gitlab"))
+	prDecorationGitlab.Flags().String(params.RepoNameFlag, "", fmt.Sprintf(params.RepoNameFlagUsage, "Gitlab"))
+	prDecorationGitlab.Flags().Int(params.PRIidFlag, 0, params.PRIidFlagUsage)
+	prDecorationGitlab.Flags().Int(params.PRGitlabProjectFlag, 0, params.PRGitlabProjectFlagUsage)
 
 	// Set the value for token to mask the scm token
 	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationGitlab.Flags().Lookup(params.SCMTokenFlag))
