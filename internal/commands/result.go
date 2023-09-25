@@ -842,11 +842,11 @@ func createReport(format,
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatSonar) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatSonar) && isValidScanStatus(summary.Status, printer.FormatSonar) {
 		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, printer.FormatJSON)
 		return exportSonarResults(sonarRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
@@ -858,12 +858,12 @@ func createReport(format,
 		convertNotAvailableNumberToZero(summary)
 		return writeHTMLSummary(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatSummaryJSON) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatSummaryJSON) && isValidScanStatus(summary.Status, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatPDF) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatPDF) && isValidScanStatus(summary.Status, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions)
 	}
@@ -872,7 +872,7 @@ func createReport(format,
 		convertNotAvailableNumberToZero(summary)
 		return writeMarkdownSummary(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatSbom) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatSbom) && isValidScanStatus(summary.Status, printer.FormatSbom) {
 		targetType := printer.FormatJSON
 		if strings.Contains(strings.ToLower(formatSbomOptions), printer.FormatXML) {
 			targetType = printer.FormatXML
