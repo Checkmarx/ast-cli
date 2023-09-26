@@ -644,10 +644,11 @@ const summaryTemplateFooter = `</div>
 
 // nolint: lll
 const SummaryMarkdownPendingTemplate = `
-{{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
-{{- /* ResultSummary template */ -}}
+# Checkmarx One Scan Summary
+***
 ##### {{.ScanInfoMessage}}
-{{end}}
+##### [🔗 More details]({{.BaseURI}})
+***
 `
 
 // nolint: lll
