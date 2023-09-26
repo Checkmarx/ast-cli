@@ -649,7 +649,16 @@ const summaryTemplateFooter = `</div>
 `
 
 // nolint: lll
-const SummaryMarkdownTemplate = `
+const SummaryMarkdownPendingTemplate = `
+# Checkmarx One Scan Summary
+***
+##### {{.ScanInfoMessage}}
+##### [🔗 More details]({{.BaseURI}})
+***
+`
+
+// nolint: lll
+const SummaryMarkdownCompletedTemplate = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
 {{ $emoji := "⚪" }}
@@ -692,6 +701,14 @@ const SummaryMarkdownTemplate = `
 | {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
 {{end}}
 `
+
+func SummaryMarkdownTemplate(isScanPending bool) string {
+	if isScanPending {
+		return SummaryMarkdownPendingTemplate
+	}
+
+	return SummaryMarkdownCompletedTemplate
+}
 
 func SummaryTemplate(isScanPending bool) string {
 	result := summaryTemplateHeader
