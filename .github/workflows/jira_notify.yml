@@ -53,3 +53,9 @@ jobs:
               repo: context.repo.repo,
               body: 'Internal Jira issue: [${{ steps.create_jira_issue.outputs.issue }}](${{ env.JIRA_URL }}/browse/${{ steps.create_jira_issue.outputs.issue }})'
             })
+
+      - name: Send a teams notification
+        uses: thechetantalwar/teams-notify@v2
+        with:
+          teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
+          message: "Github issue created ${{ github.repository }} - Link - ${{inputs.html_url}} - Jira Issue - ${{ env.JIRA_URL }}/browse/${{ steps.create_jira_issue.outputs.issue }}"
