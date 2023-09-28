@@ -1178,7 +1178,7 @@ func validateSbomOptions(sbomOption string) (string, error) {
 	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
-func parsePDFOptions(pdfOptions string, enginesEnabled []string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
+func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
@@ -1202,8 +1202,8 @@ func parsePDFOptions(pdfOptions string, enginesEnabled []string) (pdfOptionsSect
 		}
 	}
 	if pdfOptionsEngines == nil {
-		for _, engine := range enginesEnabled {
-			if !strings.EqualFold(engine, commonParams.APISecType) {
+		for _, engine := range enabledEngines {
+			if pdfOptionsEnginesMap[engine] != "" {
 				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
 			}
 		}
