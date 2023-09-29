@@ -1109,11 +1109,11 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-
-	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions)
+	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled)
 	if err != nil {
 		return err
 	}
+
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
@@ -1178,7 +1178,7 @@ func validateSbomOptions(sbomOption string) (string, error) {
 	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
-func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
+func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
@@ -1199,6 +1199,13 @@ func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngine
 			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
+		}
+	}
+	if pdfOptionsEngines == nil {
+		for _, engine := range enabledEngines {
+			if pdfOptionsEnginesMap[engine] != "" {
+				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
+			}
 		}
 	}
 	return pdfOptionsSections, pdfOptionsEngines, nil
