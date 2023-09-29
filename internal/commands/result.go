@@ -859,7 +859,7 @@ func createReport(format,
 		convertNotAvailableNumberToZero(summary)
 		return writeHTMLSummary(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatSummaryJSON) && isValidScanStatus(summary.Status, printer.FormatSummaryJSON) {
+	if printer.IsFormat(format, printer.FormatSummaryJSON) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
