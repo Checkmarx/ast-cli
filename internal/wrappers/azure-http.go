@@ -30,7 +30,6 @@ const (
 	azureTop             = "$top"
 	azurePage            = "$skip"
 	azureLayoutTime      = "2006-01-02"
-	basicFormat          = "Basic %s"
 	failedAuth           = "failed Azure Authentication"
 	unauthorized         = "unauthorized: verify if the organization you provided is correct"
 	azurePageLenValue    = 100
@@ -112,33 +111,12 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-	var err error
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	resp, err := GetWithQueryParams(g.client, url, token, authFormat, queryParams)
 	if err != nil {
 		return false, err
 	}
-
-	if len(token) > 0 {
-		req.Header.Add(AuthorizationHeader, fmt.Sprintf(authFormat, token))
-	}
-
-	q := req.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	resp, err := g.client.Do(req)
-
-	if err != nil {
-		return false, err
-	}
-
-	logger.PrintRequest(req)
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
 	logger.PrintResponse(resp, true)
 

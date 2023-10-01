@@ -27,7 +27,7 @@ func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf(r.path, scanID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, clientTimeout)
+	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
