@@ -235,7 +235,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	for count < retryLimit {
 		var currentError error
 
-		req, currentError := http.NewRequest(http.MethodGet, url, http.NoBody)
+		req, currentError := http.NewRequest(http.MethodGet, url, nil)
 		if currentError != nil {
 			return nil, currentError
 		}
