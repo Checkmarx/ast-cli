@@ -128,57 +128,40 @@ func (g *GitLabHTTPWrapper) GetGitLabProjects(gitLabGroupName string, queryParam
 func getFromGitLab(
 	client *http.Client, requestURL string, target interface{}, queryParams map[string]string,
 ) (*http.Response, error) {
-	var err error
-	var count uint8
+	req, err := http.NewRequest(http.MethodGet, requestURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
 
-	for count < retryLimitGitLab {
-		var currentError error
-		req, currentError := http.NewRequest(http.MethodGet, requestURL, http.NoBody)
+	token := viper.GetString(params.SCMTokenFlag)
+
+	logger.PrintRequest(req)
+
+	resp, err := GetWithQueryParamsAndCustomRequest(client, req, requestURL, token, bearerFormat, queryParams)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	logger.PrintResponse(resp, true)
+
+	switch resp.StatusCode {
+	case http.StatusOK:
+		err = json.NewDecoder(resp.Body).Decode(target)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		body, currentError := io.ReadAll(resp.Body)
 		if currentError != nil {
+			logger.PrintIfVerbose(currentError.Error())
 			return nil, currentError
 		}
-
-		token := viper.GetString(params.SCMTokenFlag)
-		if len(token) > 0 {
-			req.Header.Add(gitLabAuthorizationHeader, fmt.Sprintf(gitLabTokenFormat, token))
-		}
-		q := req.URL.Query()
-		for k, v := range queryParams {
-			q.Add(k, v)
-		}
-		req.URL.RawQuery = q.Encode()
-
-		logger.PrintRequest(req)
-
-		resp, currentError := client.Do(req)
-		if currentError != nil {
-			count++
-			logger.PrintIfVerbose(fmt.Sprintf("Request to %s dropped, retrying", req.URL))
-			err = currentError
-			continue
-		}
-
-		logger.PrintResponse(resp, true)
-
-		switch resp.StatusCode {
-		case http.StatusOK:
-			currentError = json.NewDecoder(resp.Body).Decode(target)
-			closeResponseBody(resp)
-			if currentError != nil {
-				return nil, currentError
-			}
-		default:
-			body, currentError := io.ReadAll(resp.Body)
-			closeResponseBody(resp)
-			if currentError != nil {
-				logger.PrintIfVerbose(currentError.Error())
-				return nil, currentError
-			}
-			message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
-			return nil, errors.New(message)
-		}
-		return resp, nil
+		message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
+		return nil, errors.New(message)
 	}
+	return resp, nil
+
 	return nil, err
 }
 
@@ -217,7 +200,7 @@ func collectPageForGitLab(
 	if err != nil {
 		return "", err
 	}
-	defer closeResponseBody(resp)
+	defer resp.Body.Close()
 
 	*pageCollection = append(*pageCollection, holder...)
 	nextPageURL := getNextPage(resp)
@@ -237,10 +220,4 @@ func getNextPage(resp *http.Response) string {
 		}
 	}
 	return ""
-}
-
-func closeResponseBody(resp *http.Response) {
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
-	}
 }

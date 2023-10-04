@@ -3,6 +3,9 @@ name: Checkmarx One CLI
 on:
   pull_request:
 
+env:
+  GO_VERSION: '1.21.1'
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -10,11 +13,12 @@ jobs:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2.3.4
-      - name: Set up Go 1.17.x
-        uses: actions/setup-go@v2
+        uses: actions/checkout@v4
+      - name: Set up Go version
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
+      - run: go version
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: go test with coverage
@@ -40,13 +44,14 @@ jobs:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v4
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
-      - name: Set up Go 1.17.x
-        uses: actions/setup-go@v2
+      - name: Set up Go version
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
+      - run: go version
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Go Integration test
@@ -58,7 +63,7 @@ jobs:
           CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
           CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
           CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
-          CX_APIKEY:  ${{ secrets.CX_APIKEY }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -109,16 +114,26 @@ jobs:
     env:
       GOPRIVATE: "github.com/checkmarxDev/*"
     steps:
-      - uses: actions/checkout@v2.3.4
-      - name: Set up Go 1.17.x
+      - uses: actions/checkout@v4
+      - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: 1.17.x
+          go-version: ${{ env.GO_VERSION }}
+      - run: go version
       - name: Setup git
         run: git config --global url."https://${{ secrets.PERSONAL_ACCESS_TOKEN }}:@github.com/".insteadOf "https://github.com"
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3.4.0
+        uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.2
+          version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
+  govulncheck:
+    runs-on: ubuntu-latest
+    name: govulncheck
+    steps:
+      - id: govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: '1.21.0-rc.4'
+          go-package: ./...

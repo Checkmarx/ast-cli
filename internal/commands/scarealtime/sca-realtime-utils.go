@@ -162,7 +162,7 @@ func downloadSCAResolverHashFile(scaResolverHashURL, scaResolverZipFileNameHash 
 func downloadFile(downloadURLPath, fileName string) error {
 	logger.PrintIfVerbose("Downloading " + fileName + " from: " + downloadURLPath)
 
-	response, err := wrappers.SendHTTPRequestByFullURL(http.MethodGet, downloadURLPath, nil, false, 0, "", true)
+	response, err := wrappers.SendHTTPRequestByFullURL(http.MethodGet, downloadURLPath, http.NoBody, false, 0, "", true)
 	if err != nil {
 		return errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
