@@ -1077,7 +1077,7 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
 			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
 		}
-		err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
+		err = sbomWrapper.Downloadsbom_report(pollingResp.ExportID, targetFile)
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
 		}

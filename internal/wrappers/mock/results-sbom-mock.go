@@ -41,7 +41,7 @@ func (*ResultsSbomWrapper) GetSbomReportStatus(_ string) (*wrappers.SbomPollingR
 }
 
 // DownloadSbomReport mock for tests
-func (*ResultsSbomWrapper) DownloadSbomReport(_, targetFile string) error {
+func (*ResultsSbomWrapper) Downloadsbom_report(_, targetFile string) error {
 	file, err := os.Create(targetFile)
 	defer func() {
 		err = file.Close()
