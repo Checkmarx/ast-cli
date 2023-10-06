@@ -202,15 +202,22 @@ func collectPage(
 
 	resp, err := get(client, url, &holder, queryParams)
 	if err != nil {
-		return "", err
+    return "", err
 	}
 
-	defer resp.Body.Close()
+  defer cleanUpResponse(resp)
+	//defer resp.Body.Close()
 
 	*pageCollection = append(*pageCollection, holder...)
 	next := getNextPageLink(resp)
 
 	return next, nil
+}
+
+func cleanUpResponse(resp *http.Response) {
+  if resp != nil {
+    resp.Body.Close()
+  }
 }
 
 func getNextPageLink(resp *http.Response) string {
