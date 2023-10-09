@@ -443,9 +443,15 @@ func TestCreateScanProjecGroupsError(t *testing.T) {
 	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
 }
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-last-sast-scan-time", "notaniteger"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "notaniteger"}
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.ErrorContains(t, err, "Invalid value for --sca-last-sast-scan-time flag", err.Error())
+}
+
+func TestScanCreateLastSastScanTimeWithoutExploitablePathEnabled(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "false", "--sca-last-sast-scan-time", "notaniteger"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, "Please to use --sca-last-sast-scan-time flag in SCA, you must set --exploitable-path flag to true", err.Error())
 }
 
 func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {

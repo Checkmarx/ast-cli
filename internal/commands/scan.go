@@ -2419,14 +2419,17 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)
 	exploitablePath = strings.ToLower(exploitablePath)
-	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) &&
-		(exploitablePath != "" || lastSastScanTime != "") {
+	if !strings.Contains(strings.ToLower(actualScanTypes), commonParams.SastType) && strings.EqualFold(exploitablePath, trueString) {
 		return errors.Errorf("Please to use either --sca-exploitable-path or --sca-last-sast-scan-time flags in SCA, " +
 			"you must enable SAST scan type.")
 	}
 	err := validateBooleanString(exploitablePath)
 	if err != nil {
 		return errors.Errorf("Invalid value for --sca-exploitable-path flag. The value must be true or false.")
+	}
+	if lastSastScanTime != "" && !strings.EqualFold(exploitablePath, trueString) {
+		return errors.Errorf("Please to use --sca-last-sast-scan-time flag in SCA, " +
+			"you must set --exploitable-path flag to true.")
 	}
 
 	if lastSastScanTime != "" {
