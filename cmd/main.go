@@ -25,6 +25,9 @@ const (
 
 func main() {
 	var err error
+	if strings.Contains(strings.Join(os.Args[1:], ","), "--debug") {
+		logger.Printf("CLI VERSION: %s", params.Version)
+	}
 	bindProxy()
 	bindKeysToEnvAndDefault()
 	configuration.LoadConfiguration()
