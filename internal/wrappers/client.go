@@ -12,7 +12,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"strings"
-	"time"
+  "time"
 
 	"github.com/golang-jwt/jwt"
 
@@ -372,6 +372,7 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	customReq = addReqMonitor(customReq)
 	return request(client, customReq, true)
 }
+
 func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
@@ -554,6 +555,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			return nil, err
 		}
 	}
+
 	// try starts at -1 as we always do at least one request, retryLimit can be 0
 	for try := -1; try < retryLimit; try++ {
 		if body != nil {
@@ -569,8 +571,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		resp, err = client.Do(req)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
-		}
-		if resp != nil && err == nil {
+		} else if resp != nil && resp.StatusCode == 200 {
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
