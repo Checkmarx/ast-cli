@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 	"reflect"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
