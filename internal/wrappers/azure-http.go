@@ -1,18 +1,17 @@
 package wrappers
 
 import (
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 	"reflect"
 	"time"
 
-	b64 "encoding/base64"
-
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -112,7 +111,6 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-
 	resp, err := GetWithQueryParams(g.client, url, token, authFormat, queryParams)
 	if err != nil {
 		return false, err

@@ -3,11 +3,11 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"log"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
