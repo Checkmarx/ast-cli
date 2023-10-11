@@ -59,7 +59,11 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 	switch resp.StatusCode {
 	case http.StatusAccepted:
 		model := SbomReportsResponse{}
-		decoder := json.NewDecoder(resp.Body)
+		var decoder *json.Decoder
+		if resp != nil {
+			decoder = json.NewDecoder(resp.Body)
+			defer resp.Body.Close()
+		}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse response body")
@@ -120,7 +124,11 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResp
 		_ = resp.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:

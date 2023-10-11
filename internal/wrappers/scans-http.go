@@ -51,7 +51,11 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 	if err != nil {
 		return nil, nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	if resp != nil {
 		defer resp.Body.Close()
@@ -108,7 +112,11 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	if err != nil {
 		return nil, nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -171,7 +179,11 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	if resp != nil {
 		defer resp.Body.Close()
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

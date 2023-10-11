@@ -46,7 +46,11 @@ func handleResponse(resp *http.Response, err error, queryID string) (*[]*LearnMo
 		return nil, nil, err
 	}
 
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

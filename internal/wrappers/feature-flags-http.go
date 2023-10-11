@@ -40,7 +40,11 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	if resp != nil {
 		defer resp.Body.Close()

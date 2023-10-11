@@ -16,7 +16,11 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 	if err != nil {
 		return nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotFound:
@@ -39,7 +43,11 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 	if err != nil {
 		return nil, nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -69,7 +77,11 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 	if err != nil {
 		return nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -92,7 +104,11 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	if err != nil {
 		return nil, nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	if resp != nil {
 		defer resp.Body.Close()

@@ -50,7 +50,11 @@ func handlePRResponseWithBody(resp *http.Response, err error) (string, *WebError
 		return "", nil, err
 	}
 
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	defer func() {
 		_ = resp.Body.Close()

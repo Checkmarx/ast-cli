@@ -47,7 +47,11 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	if resp != nil {
 		defer resp.Body.Close()
 	}
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := WebError{}

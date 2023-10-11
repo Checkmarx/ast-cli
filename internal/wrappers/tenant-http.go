@@ -33,7 +33,11 @@ func (r *TenantConfigurationHTTPWrapper) GetTenantConfiguration() (
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

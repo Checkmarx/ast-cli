@@ -63,7 +63,11 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 		_ = resp.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusAccepted:
@@ -91,7 +95,11 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 		_ = resp.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
+	var decoder *json.Decoder
+	if resp != nil {
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:
