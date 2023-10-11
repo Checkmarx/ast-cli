@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"log"
 	"net/http"
 
@@ -36,7 +37,7 @@ func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 	return handleBflResponseWithBody(resp, err)
 }
 

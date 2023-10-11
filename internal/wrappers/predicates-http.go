@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 	"strings"
 
@@ -51,7 +52,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 	return handleResponseWithBody(resp, err)
 }
 

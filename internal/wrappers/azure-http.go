@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 	"reflect"
@@ -116,7 +117,7 @@ func (g *AzureHTTPWrapper) get(
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	logger.PrintResponse(resp, true)
 

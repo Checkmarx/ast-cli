@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 	"strings"
 
@@ -42,7 +43,7 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

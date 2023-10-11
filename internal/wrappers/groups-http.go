@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 	"strings"
 
@@ -37,7 +38,7 @@ func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

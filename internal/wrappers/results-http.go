@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -140,7 +141,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 		return nil, nil, err
 	}
 
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	decoder := json.NewDecoder(resp.Body)
 
@@ -192,7 +193,7 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		return nil, nil, err
 	}
 
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	decoder := json.NewDecoder(resp.Body)
 

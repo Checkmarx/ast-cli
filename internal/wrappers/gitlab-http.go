@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 	"net/url"
@@ -141,7 +142,7 @@ func getFromGitLab(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	logger.PrintResponse(resp, true)
 
@@ -200,7 +201,7 @@ func collectPageForGitLab(
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer utils.CloseHTTPResponseBody(resp)
 
 	*pageCollection = append(*pageCollection, holder...)
 	nextPageURL := getNextPage(resp)
