@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -40,7 +39,9 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -52,7 +53,9 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -82,7 +85,9 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorMod
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
@@ -93,7 +98,9 @@ func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseMo
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleWorkflowResponseWithBody(resp, err)
 }
 
@@ -130,7 +137,9 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -147,7 +156,9 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -157,7 +168,9 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {

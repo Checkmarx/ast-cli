@@ -3,7 +3,6 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io/ioutil"
 	"net/http"
 
@@ -33,7 +32,9 @@ func (l *LogsHTTPWrapper) GetLog(scanID, scanType string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

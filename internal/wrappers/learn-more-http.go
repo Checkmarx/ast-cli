@@ -3,7 +3,6 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -36,7 +35,9 @@ func (r *LearnMoreHTTPWrapper) GetLearnMoreDetails(params map[string]string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handleResponse(resp, err, params[commonParams.QueryIDQueryParam])
 }
 

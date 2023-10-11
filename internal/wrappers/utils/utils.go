@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"net/http"
 	"net/url"
 	"path"
 	"strings"
@@ -36,11 +35,5 @@ func ToStringArray(obj interface{}) []string {
 		return result
 	default:
 		return []string{}
-	}
-}
-
-func CloseHTTPResponseBody(resp *http.Response) {
-	if resp != nil {
-		resp.Body.Close()
 	}
 }

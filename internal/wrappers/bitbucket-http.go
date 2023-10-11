@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 	"strconv"
@@ -155,7 +154,9 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	if err != nil {
 		return err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
@@ -265,7 +266,9 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	if err != nil {
 		return err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusOK:

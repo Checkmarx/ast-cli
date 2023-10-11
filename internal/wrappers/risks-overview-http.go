@@ -3,7 +3,6 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -33,7 +32,9 @@ func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
 		return nil, nil, err
 	}
 
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {

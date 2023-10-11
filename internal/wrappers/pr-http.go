@@ -3,7 +3,6 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"net/http"
 
@@ -40,7 +39,9 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	if err != nil {
 		return "", nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return handlePRResponseWithBody(resp, err)
 }
 

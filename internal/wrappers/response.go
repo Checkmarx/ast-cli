@@ -2,7 +2,6 @@ package wrappers
 
 import (
 	"encoding/json"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -95,7 +94,9 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

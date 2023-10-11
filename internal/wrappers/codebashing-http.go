@@ -44,7 +44,9 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	if err != nil {
 		return nil, nil, err
 	}
-	defer utils.CloseHTTPResponseBody(resp)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
