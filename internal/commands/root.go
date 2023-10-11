@@ -214,6 +214,7 @@ func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
 const configFormatString = "%30v: %s"
 
 func PrintConfiguration() {
+	logger.PrintfIfVerbose("CLI Version: %s", params.Version)
 	logger.PrintIfVerbose("CLI Configuration:")
 	for param := range util.Properties {
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
