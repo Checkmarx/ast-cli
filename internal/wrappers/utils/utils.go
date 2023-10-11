@@ -39,7 +39,6 @@ func ToStringArray(obj interface{}) []string {
 	}
 }
 
-// CloseHTTPResponseBody closes the response body, use it with defer
 func CloseHTTPResponseBody(resp *http.Response) {
 	if resp != nil {
 		resp.Body.Close()
