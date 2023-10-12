@@ -122,8 +122,10 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 
 	var decoder *json.Decoder
 	if resp != nil {
-		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
+		if resp.Body != nil {
+			defer resp.Body.Close()
+			decoder = json.NewDecoder(resp.Body)
+		}
 	}
 
 	defer func() {
