@@ -1480,7 +1480,7 @@ func runCreateScanCommand(
 
 		cleanUpTempZip(zipFilePath)
 		// verify break build from policy
-		if len(policyResponseModel.Polices) > 0 && policyResponseModel.BreakBuild {
+		if policyResponseModel != nil && len(policyResponseModel.Polices) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
 			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
