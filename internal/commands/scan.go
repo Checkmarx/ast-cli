@@ -2427,10 +2427,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	if err != nil {
 		return errors.Errorf("Invalid value for --sca-exploitable-path flag. The value must be true or false.")
 	}
-	if lastSastScanTime != "" && !strings.EqualFold(exploitablePath, trueString) {
-		return errors.Errorf("Please to use --sca-last-sast-scan-time flag in SCA, " +
-			"you must set --exploitable-path flag to true.")
-	}
 
 	if lastSastScanTime != "" {
 		lsst, sastErr := strconv.Atoi(lastSastScanTime)
