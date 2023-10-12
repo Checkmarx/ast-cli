@@ -118,14 +118,11 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 		return nil, nil, err
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
-
 	var decoder *json.Decoder
 	if resp != nil {
-		if resp.Body != nil {
-			defer resp.Body.Close()
-			decoder = json.NewDecoder(resp.Body)
-		}
+		logger.PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+		decoder = json.NewDecoder(resp.Body)
+		defer resp.Body.Close()
 	}
 
 	defer func() {
