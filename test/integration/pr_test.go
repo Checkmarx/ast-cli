@@ -89,7 +89,6 @@ func TestPRGitlabDecorationSuccessCase(t *testing.T) {
 }
 
 func TestPRGitlabDecorationFailure(t *testing.T) {
-	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"utils",
@@ -109,5 +108,5 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 		os.Getenv(prGitlabIid),
 	}
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, "Failed creating gitlab PR Decoration")
+	assert.ErrorContains(t, err, "Failed creating gitlab MR Decoration")
 }

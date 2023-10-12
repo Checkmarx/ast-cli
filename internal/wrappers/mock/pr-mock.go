@@ -15,6 +15,6 @@ func (pr *PRMockWrapper) PostPRDecoration(model *wrappers.PRModel) (
 	return "PR comment created successfully.", nil, nil
 }
 
-func (pr *PRMockWrapper) PostGitlabPRDecoration(model **wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
+func (pr *PRMockWrapper) PostGitlabPRDecoration(model *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
 	return "MR comment created successfully.", nil, nil
 }

@@ -14,7 +14,7 @@ import (
 
 const (
 	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
-	failedCreatingGitlabPrDecoration = "Failed creating gitlab PR Decoration"
+	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
 	errorCodeFormat                  = "%s: CODE: %d, %s\n"
 )
 
