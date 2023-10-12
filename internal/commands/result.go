@@ -331,7 +331,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	return resultCmd
 }
 
-func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrappers.ResultSummary, error) {
+func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWrapper wrappers.ResultsWrapper) (*wrappers.ResultSummary, error) {
 	if scanInfo == nil {
 		return nil, errors.New(failedCreatingSummary)
 	}
@@ -352,7 +352,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 			}
 		}
 	}
-	return &wrappers.ResultSummary{
+	summary := &wrappers.ResultSummary{
 		ScanID:         scanInfo.ID,
 		Status:         string(scanInfo.Status),
 		CreatedAt:      scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
@@ -370,18 +370,6 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel) (*wrapper
 		ProjectName:    scanInfo.ProjectName,
 		BranchName:     scanInfo.Branch,
 		EnginesEnabled: scanInfo.Engines,
-	}, nil
-}
-
-func summaryReport(
-	scan *wrappers.ScanResponseModel,
-	policies *wrappers.PolicyResponseModel,
-	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	resultsWrapper wrappers.ResultsWrapper,
-) (*wrappers.ResultSummary, error) {
-	summary, err := convertScanToResultsSummary(scan)
-	if err != nil {
-		return nil, err
 	}
 
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
@@ -391,7 +379,19 @@ func summaryReport(
 
 	summary.BaseURI = baseURI
 	summary.BaseURI = generateScanSummaryURL(summary)
+	if isScanPending(summary.Status) {
+		summary.ScanInfoMessage = scanPendingMessage
+	}
 
+	return summary, nil
+}
+
+func summaryReport(
+	summary *wrappers.ResultSummary,
+	policies *wrappers.PolicyResponseModel,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	resultsWrapper wrappers.ResultsWrapper,
+) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -404,7 +404,7 @@ func summaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	err = enhanceWithScanSummary(summary, resultsWrapper)
+	err := enhanceWithScanSummary(summary, resultsWrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -413,9 +413,7 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
-	if isScanPending(summary.Status) {
-		summary.ScanInfoMessage = scanPendingMessage
-	}
+
 	return summary, nil
 }
 
@@ -502,7 +500,7 @@ func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error 
 }
 func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error {
 	log.Println("Creating Markdown Summary Report: ", targetFile)
-	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate)
+	tmpl, err := template.New(printer.FormatSummaryMarkdown).Parse(wrappers.SummaryMarkdownTemplate(isScanPending(data.Status)))
 	if err != nil {
 		return err
 	}
@@ -729,14 +727,20 @@ func CreateScanReport(
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-	summary := &wrappers.ResultSummary{}
 
-	err := createDirectory(targetPath)
+	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
+	if err != nil {
+		return err
+	}
+
+	scanPending := isScanPending(summary.Status)
+
+	err = createDirectory(targetPath)
 	if err != nil {
 		return err
 	}
 	isResultsNeeded := verifyFormatsByReportList(reportList, resultsFormats...)
-	if isResultsNeeded {
+	if isResultsNeeded && !scanPending {
 		results, err = ReadResults(resultsWrapper, scan, params)
 		if err != nil {
 			return err
@@ -744,8 +748,8 @@ func CreateScanReport(
 
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
-	if isSummaryNeeded {
-		summary, err = summaryReport(scan, policyResponseModel, risksOverviewWrapper, resultsWrapper)
+	if isSummaryNeeded && !scanPending {
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, resultsWrapper)
 		if err != nil {
 			return err
 		}
@@ -812,6 +816,15 @@ func isScanPending(scanStatus string) bool {
 	) || strings.EqualFold(scanStatus, "Failed"))
 }
 
+func isValidScanStatus(status, format string) bool {
+	if isScanPending(status) {
+		log.Printf("Result format file %s not create because scan status is %s", format, status)
+		return false
+	}
+
+	return true
+}
+
 func createReport(format,
 	formatPdfToEmail,
 	formatPdfOptions,
@@ -825,15 +838,15 @@ func createReport(format,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
 
-	if printer.IsFormat(format, printer.FormatSarif) {
+	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatSonar) {
+	if printer.IsFormat(format, printer.FormatSonar) && isValidScanStatus(summary.Status, printer.FormatSonar) {
 		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, printer.FormatJSON)
 		return exportSonarResults(sonarRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatJSON) {
+	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
@@ -850,7 +863,7 @@ func createReport(format,
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatPDF) {
+	if printer.IsFormat(format, printer.FormatPDF) && isValidScanStatus(summary.Status, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
 		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions)
 	}
@@ -859,7 +872,7 @@ func createReport(format,
 		convertNotAvailableNumberToZero(summary)
 		return writeMarkdownSummary(summaryRpt, summary)
 	}
-	if printer.IsFormat(format, printer.FormatSbom) {
+	if printer.IsFormat(format, printer.FormatSbom) && isValidScanStatus(summary.Status, printer.FormatSbom) {
 		targetType := printer.FormatJSON
 		if strings.Contains(strings.ToLower(formatSbomOptions), printer.FormatXML) {
 			targetType = printer.FormatXML
@@ -1096,11 +1109,11 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-
-	pdfOptionsSections, pdfOptionsEngines, err := validatePdfOptions(pdfOptions)
+	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled)
 	if err != nil {
 		return err
 	}
+
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
@@ -1165,7 +1178,7 @@ func validateSbomOptions(sbomOption string) (string, error) {
 	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
-func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
+func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
@@ -1186,6 +1199,13 @@ func validatePdfOptions(pdfOptions string) (pdfOptionsSections, pdfOptionsEngine
 			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
+		}
+	}
+	if pdfOptionsEngines == nil {
+		for _, engine := range enabledEngines {
+			if pdfOptionsEnginesMap[engine] != "" {
+				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
+			}
 		}
 	}
 	return pdfOptionsSections, pdfOptionsEngines, nil
