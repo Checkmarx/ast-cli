@@ -156,7 +156,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command
 		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
-		gitlabProjectIdFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
+		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
 		prModel := &wrappers.GitlabPRModel{
 			ScanID:          scanID,
@@ -164,7 +164,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command
 			Namespace:       namespaceFlag,
 			RepoName:        repoNameFlag,
 			IiD:             iIDFlag,
-			GitlabProjectID: gitlabProjectIdFlag,
+			GitlabProjectID: gitlabProjectIDFlag,
 		}
 
 		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
