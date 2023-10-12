@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -39,9 +40,7 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	if err != nil {
 		return "", nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handlePRResponseWithBody(resp, err)
 }
 
@@ -53,7 +52,6 @@ func handlePRResponseWithBody(resp *http.Response, err error) (string, *WebError
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	defer func() {

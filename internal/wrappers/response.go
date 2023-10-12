@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 )
 
@@ -19,7 +20,6 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -46,7 +46,6 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -80,7 +79,6 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -107,12 +105,9 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

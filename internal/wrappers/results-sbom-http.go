@@ -127,7 +127,6 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResp
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

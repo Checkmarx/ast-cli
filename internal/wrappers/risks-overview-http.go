@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -32,13 +33,10 @@ func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
 		return nil, nil, err
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

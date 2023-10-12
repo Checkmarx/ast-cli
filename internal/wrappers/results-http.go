@@ -7,6 +7,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -53,7 +54,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -103,7 +103,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -148,14 +147,11 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 		return nil, nil, err
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -206,14 +202,11 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		return nil, nil, err
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

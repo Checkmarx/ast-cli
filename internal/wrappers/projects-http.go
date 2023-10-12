@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -33,9 +34,7 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -50,9 +49,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	if err != nil {
 		return err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	switch resp.StatusCode {
 	case http.StatusNoContent:
 		return nil
@@ -76,9 +73,7 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -101,9 +96,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 		defer resp.Body.Close()
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := ErrorModel{}
@@ -134,9 +127,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
 }
 
@@ -156,9 +147,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 		decoder = json.NewDecoder(resp.Body)
 		defer resp.Body.Close()
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -187,9 +176,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -202,9 +189,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	var decoder *json.Decoder
 	if resp != nil {

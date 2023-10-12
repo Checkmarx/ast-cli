@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -43,12 +44,9 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -36,9 +37,7 @@ func (r *BflHTTPWrapper) GetBflByScanIDAndQueryID(params map[string]string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleBflResponseWithBody(resp, err)
 }
 
@@ -50,7 +49,6 @@ func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseMode
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

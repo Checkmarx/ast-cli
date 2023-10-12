@@ -9,6 +9,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/tomnomnom/linkheader"
@@ -141,9 +142,7 @@ func getFromGitLab(
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	logger.PrintResponse(resp, true)
 
@@ -200,9 +199,7 @@ func collectPageForGitLab(
 	if err != nil {
 		return "", err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	*pageCollection = append(*pageCollection, holder...)
 	nextPageURL := getNextPage(resp)

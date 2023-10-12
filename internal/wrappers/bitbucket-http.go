@@ -12,6 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 )
 
@@ -154,9 +155,7 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 	if err != nil {
 		return err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	switch resp.StatusCode {
 	case http.StatusOK:
 		err = json.NewDecoder(resp.Body).Decode(target)
@@ -266,9 +265,7 @@ func getBitBucket(client *http.Client, token, url string, target interface{}, qu
 	if err != nil {
 		return err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusOK:

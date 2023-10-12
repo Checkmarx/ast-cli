@@ -43,7 +43,6 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

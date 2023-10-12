@@ -11,6 +11,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -114,9 +115,7 @@ func (g *AzureHTTPWrapper) get(
 	if err != nil {
 		return false, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	logger.PrintResponse(resp, true)
 

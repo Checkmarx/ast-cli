@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -39,9 +40,7 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleScanResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -54,12 +53,9 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -89,9 +85,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorMod
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleScanResponseWithBody(resp, err, http.StatusOK)
 }
 
@@ -102,9 +96,7 @@ func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseMo
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleWorkflowResponseWithBody(resp, err)
 }
 
@@ -115,7 +107,6 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
@@ -145,9 +136,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -164,9 +153,7 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	return handleScanResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -176,13 +163,10 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer utils.CloseHTTPBody(resp)
 	var decoder *json.Decoder
 	if resp != nil {
 		decoder = json.NewDecoder(resp.Body)
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {
