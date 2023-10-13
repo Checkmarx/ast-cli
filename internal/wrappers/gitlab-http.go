@@ -161,8 +161,6 @@ func getFromGitLab(
 		return nil, errors.New(message)
 	}
 	return resp, nil
-
-	return nil, err
 }
 
 func fetchWithPagination(
