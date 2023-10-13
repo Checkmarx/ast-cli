@@ -252,7 +252,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		}
 	case http.StatusConflict:
 		logger.PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
-		return nil, nil
+		return resp, nil
 	default:
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
