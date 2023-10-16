@@ -17,6 +17,7 @@ const (
 	failedTogetScanSummaries   = "Failed to get scan summaries"
 	failedToParseScanSummaries = "Failed to parse scan summaries"
 	respStatusCode             = "response status code %d"
+	sortResultsDefault         = "-severity"
 )
 
 type ResultsHTTPWrapper struct {
@@ -129,6 +130,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
 	params["limit"] = limitValue
+	params["sort"] = sortResultsDefault
 	resp, err := SendPrivateHTTPRequestWithQueryParams(
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/vulnerabilities",
