@@ -25,21 +25,8 @@ func Contains(s []string, str string) bool {
 	return false
 }
 
-func DefaultMapValue(params map[string]string, key string, value string) {
+func DefaultMapValue(params map[string]string, key, value string) {
 	if _, ok := params[key]; !ok {
 		params[key] = value
-	}
-}
-
-func ToStringArray(obj interface{}) []string {
-	switch t := obj.(type) {
-	case []interface{}:
-		result := make([]string, 0, len(t))
-		for _, v := range t {
-			result = append(result, v.(string))
-		}
-		return result
-	default:
-		return []string{}
 	}
 }
