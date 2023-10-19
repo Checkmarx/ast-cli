@@ -7,6 +7,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ const (
 	failedTogetScanSummaries   = "Failed to get scan summaries"
 	failedToParseScanSummaries = "Failed to parse scan summaries"
 	respStatusCode             = "response status code %d"
+	sort                       = "sort"
 	sortResultsDefault         = "-severity"
 )
 
@@ -41,7 +43,9 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params[limit] = limitValue
+	utils.DefaultMapValue(params, limit, limitValue)
+	utils.DefaultMapValue(params, sort, sortResultsDefault)
+
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.resultsPath, params, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -81,7 +85,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params["limit"] = limitValue
+	params[limit] = limitValue
 	resp, err := SendPrivateHTTPRequestWithQueryParams(
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/packages",
@@ -129,8 +133,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params["limit"] = limitValue
-	params["sort"] = sortResultsDefault
+	params[limit] = limitValue
 	resp, err := SendPrivateHTTPRequestWithQueryParams(
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/vulnerabilities",

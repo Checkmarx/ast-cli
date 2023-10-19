@@ -25,6 +25,12 @@ func Contains(s []string, str string) bool {
 	return false
 }
 
+func DefaultMapValue(params map[string]string, key string, value string) {
+	if _, ok := params[key]; !ok {
+		params[key] = value
+	}
+}
+
 func ToStringArray(obj interface{}) []string {
 	switch t := obj.(type) {
 	case []interface{}:
