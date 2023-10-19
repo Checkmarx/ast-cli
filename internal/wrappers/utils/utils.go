@@ -24,9 +24,3 @@ func Contains(s []string, str string) bool {
 	}
 	return false
 }
-
-func DefaultMapValue(params map[string]string, key, value string) {
-	if _, ok := params[key]; !ok {
-		params[key] = value
-	}
-}

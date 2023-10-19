@@ -7,7 +7,6 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -43,8 +42,8 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	utils.DefaultMapValue(params, limit, limitValue)
-	utils.DefaultMapValue(params, sort, sortResultsDefault)
+	DefaultMapValue(params, limit, limitValue)
+	DefaultMapValue(params, sort, sortResultsDefault)
 
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.resultsPath, params, http.NoBody, clientTimeout)
 	if err != nil {
@@ -219,5 +218,11 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		return &model, nil, nil
 	default:
 		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
+	}
+}
+
+func DefaultMapValue(params map[string]string, key, value string) {
+	if _, ok := params[key]; !ok {
+		params[key] = value
 	}
 }
