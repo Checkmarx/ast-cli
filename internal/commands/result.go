@@ -30,6 +30,7 @@ const (
 	failedListingResults      = "Failed listing results"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
+	criticalLabel             = "critical"
 	highLabel                 = "high"
 	lowLabel                  = "low"
 	infoLabel                 = "info"
@@ -359,6 +360,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		ProjectID:      scanInfo.ProjectID,
 		RiskStyle:      "",
 		RiskMsg:        "",
+		CriticalIssues: 0,
 		HighIssues:     0,
 		MediumIssues:   0,
 		LowIssues:      0,
@@ -424,7 +426,10 @@ func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, 
 }
 
 func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
-	if summary.HighIssues > 0 {
+	if summary.CriticalIssues > 0 {
+		summary.RiskStyle = criticalLabel
+		summary.RiskMsg = "Critical Risk"
+	} else if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
 	} else if summary.MediumIssues > 0 {
@@ -473,6 +478,8 @@ func updateSummaryWithScanSummary(summary *wrappers.ResultSummary, scanSummary *
 func updateSeverityCounts(summary *wrappers.ResultSummary, severityCounts []wrappers.SeverityCounters) {
 	for _, sev := range severityCounts {
 		switch strings.ToLower(sev.Severity) {
+		case criticalLabel:
+			summary.CriticalIssues += sev.Counter
 		case highLabel:
 			summary.HighIssues += sev.Counter
 		case mediumLabel:
@@ -558,6 +565,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              |         Critical: %*d|     \n", defaultPaddingSize, summary.CriticalIssues)
 		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
 		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
 		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
