@@ -59,11 +59,9 @@ func (g *AzureHTTPWrapper) GetCommits(url, organizationName, projectName, reposi
 	if err != nil {
 		return rootCommit, err
 	}
-
 	for _, commitPage := range pages {
 		rootCommit.Commits = append(rootCommit.Commits, commitPage.Commits...)
 	}
-
 	return rootCommit, err
 }
 
@@ -92,7 +90,6 @@ func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (Azu
 	reposURL := fmt.Sprintf(azureBaseProjectsURL, url, organizationName)
 	queryParams[azureAPIVersion] = azureAPIVersionValue
 	queryParams[azureTop] = fmt.Sprintf("%d", azurePageLenValue)
-
 	err = g.paginateGetter(reposURL, encodeToken(token), &AzureRootProject{}, &pages, queryParams, basicFormat)
 	if err != nil {
 		return rootProject, err
