@@ -753,7 +753,6 @@ func CreateScanReport(
 		if err != nil {
 			return err
 		}
-
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
@@ -829,7 +828,6 @@ func isValidScanStatus(status, format string) bool {
 		log.Printf("Result format file %s not create because scan status is %s", format, status)
 		return false
 	}
-
 	return true
 }
 
@@ -845,7 +843,6 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
-
 	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
@@ -1089,7 +1086,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		}
 		payload.FileFormat = format
 	}
-
 	if useSCALocalFlow {
 		pollingResp := &wrappers.SbomPollingResponse{}
 
@@ -1135,7 +1131,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 				i,
 			),
 		)
-
 	}
 	return nil
 }
@@ -1146,7 +1141,6 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return err
 	}
-
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
@@ -1173,12 +1167,10 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return errors.Errorf("Error generating PDF report - %s", err.Error())
 	}
-
 	if pdfReportsPayload.ReportType == reportTypeEmail {
 		log.Println("Sending PDF report to: ", pdfReportsPayload.Data.Email)
 		return nil
 	}
-
 	log.Println("Generating PDF report")
 	pollingResp.Status = startedStatus
 	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
