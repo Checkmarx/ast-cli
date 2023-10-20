@@ -36,13 +36,14 @@ type ResultSummary struct {
 
 // nolint: govet
 type APISecResult struct {
-	APICount         int   `json:"api_count,omitempty"`
-	TotalRisksCount  int   `json:"total_risks_count,omitempty"`
-	Risks            []int `json:"risks,omitempty"`
-	RiskDistribution []struct {
-		Origin string `json:"origin,omitempty"`
-		Total  int    `json:"total,omitempty"`
-	} `json:"risk_distribution,omitempty"`
+	APICount         int                `json:"api_count,omitempty"`
+	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
+	Risks            []int              `json:"risks,omitempty"`
+	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+}
+type riskDistribution struct {
+	Origin string `json:"origin,omitempty"`
+	Total  int    `json:"total,omitempty"`
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
