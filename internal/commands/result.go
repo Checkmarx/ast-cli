@@ -57,6 +57,7 @@ const (
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
 	startedStatus             = "started"
+	requestedStatus           = "requested"
 	completedStatus           = "completed"
 	exportingStatus           = "Exporting"
 	pendingStatus             = "Pending"
@@ -1149,11 +1150,12 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 
 	log.Println("Generating PDF report")
 	pollingResp.Status = startedStatus
-	for pollingResp.Status == startedStatus {
+	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
 		pollingResp, webErr, err = pdfWrapper.CheckPdfReportStatus(pdfReportID.ReportID)
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
+		logger.PrintfIfVerbose("PDF report status: %s", pollingResp.Status)
 		time.Sleep(delayValueForReport * time.Millisecond)
 	}
 	if pollingResp.Status != completedStatus {
