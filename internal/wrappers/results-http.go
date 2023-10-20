@@ -17,6 +17,8 @@ const (
 	failedTogetScanSummaries   = "Failed to get scan summaries"
 	failedToParseScanSummaries = "Failed to parse scan summaries"
 	respStatusCode             = "response status code %d"
+	sort                       = "sort"
+	sortResultsDefault         = "-severity"
 )
 
 type ResultsHTTPWrapper struct {
@@ -40,7 +42,9 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params[limit] = limitValue
+	DefaultMapValue(params, limit, limitValue)
+	DefaultMapValue(params, sort, sortResultsDefault)
+
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.resultsPath, params, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -80,7 +84,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params["limit"] = limitValue
+	params[limit] = limitValue
 	resp, err := SendPrivateHTTPRequestWithQueryParams(
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/packages",
@@ -128,7 +132,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// AST has a limit of 10000 results, this makes it get all of them
-	params["limit"] = limitValue
+	params[limit] = limitValue
 	resp, err := SendPrivateHTTPRequestWithQueryParams(
 		http.MethodGet,
 		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/vulnerabilities",
@@ -214,5 +218,11 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		return &model, nil, nil
 	default:
 		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
+	}
+}
+
+func DefaultMapValue(params map[string]string, key, value string) {
+	if _, ok := params[key]; !ok {
+		params[key] = value
 	}
 }
