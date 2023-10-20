@@ -111,7 +111,6 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-
 	resp, err := GetWithQueryParams(g.client, url, token, authFormat, queryParams)
 	if err != nil {
 		return false, err
