@@ -102,7 +102,7 @@ const (
 	PresetName                    = "sast-preset-name"
 	Threshold                     = "threshold"
 	ThresholdFlagUsage            = "Local build threshold. Format <engine>-<severity>=<limit>. " +
-		"Example: scan --threshold \"sast-high=10;sca-high=5;iac-security-low=10\""
+		"Example: scan --threshold \"sast-critical=1;sast-high=10;sca-high=5;iac-security-low=10\""
 	KeyValuePairSize         = 2
 	WaitDelayDefault         = 5
 	SimilarityIDFlag         = "similarity-id"
