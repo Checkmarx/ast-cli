@@ -145,8 +145,12 @@ func (r ResultsMockWrapper) GetScanSummariesByScanIDS(params map[string]string) 
 							Severity: "high",
 							Counter:  1,
 						},
+						{
+							Severity: "critical",
+							Counter:  1,
+						},
 					},
-					TotalCounter:        4,
+					TotalCounter:        5,
 					FilesScannedCounter: 1,
 				},
 				KicsCounters: wrappers.KicsCounters{
