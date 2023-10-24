@@ -669,14 +669,13 @@ const SummaryMarkdownPendingTemplate = `
 ***
 `
 
-// TODO il: change critical icon
 // nolint: lll
 const SummaryMarkdownCompletedTemplate = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
 {{ $emoji := "⚪" }}
 {{ if eq .RiskMsg "Critical Risk" }}
-  {{ $emoji = "⚠️" }}
+  {{ $emoji = "🔴" }}
 {{ else if eq .RiskMsg "High Risk" }}
   {{ $emoji = "🔴" }}
 {{ else if eq .RiskMsg "Medium Risk" }}
@@ -697,7 +696,7 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Total Vulnerabilities: {{.TotalIssues}}
 
-|⚠️ Critical |🔴 High |🟡 Medium |⚪ Low |⚪ Info |
+|🔴 Critical |🔴 High |🟡 Medium |⚪ Low |⚪ Info |
 |:----------:|:----------:|:------------:|:---------:|:----------:|
 | {{.CriticalIssues}} | {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
 ***

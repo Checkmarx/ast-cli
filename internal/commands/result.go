@@ -40,6 +40,7 @@ const (
 	lowSonar                  = "MINOR"
 	mediumSonar               = "MAJOR"
 	highSonar                 = "CRITICAL"
+	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
@@ -48,6 +49,7 @@ const (
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
 	highCx                    = "HIGH"
+	criticalCx                = "CRITICAL"
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "N/A"
@@ -111,19 +113,22 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
 var securities = map[string]string{
-	infoCx:   "3.5",
-	lowCx:    "6.5",
-	mediumCx: "8.5",
-	highCx:   "9.5",
+	infoCx:     "2.0",
+	lowCx:      "3.9",
+	mediumCx:   "4.0",
+	highCx:     "7.0",
+	criticalCx: "9.0",
 }
 
 // Match cx severity with sonar severity
 var sonarSeverities = map[string]string{
-	infoCx:   infoSonar,
-	lowCx:    lowSonar,
-	mediumCx: mediumSonar,
-	highCx:   highSonar,
+	infoCx:     infoSonar,
+	lowCx:      lowSonar,
+	mediumCx:   mediumSonar,
+	highCx:     highSonar,
+	criticalCx: criticalSonar,
 }
 
 func NewResultsCommand(
@@ -868,6 +873,7 @@ func createReport(format,
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
+		targetFile = fmt.Sprintf("%s_summary", targetFile)
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
@@ -1454,10 +1460,11 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 
 func findSarifLevel(result *wrappers.ScanResult) string {
 	level := map[string]string{
-		infoCx:   infoLowSarif,
-		lowCx:    infoLowSarif,
-		mediumCx: mediumSarif,
-		highCx:   highSarif,
+		infoCx:     infoLowSarif,
+		lowCx:      infoLowSarif,
+		mediumCx:   mediumSarif,
+		highCx:     highSarif,
+		criticalCx: highSarif,
 	}
 	return level[result.Severity]
 }
