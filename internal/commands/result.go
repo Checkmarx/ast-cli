@@ -82,6 +82,7 @@ var resultsFormats = []string{
 	printer.FormatJSON,
 	printer.FormatSarif,
 	printer.FormatSonar,
+	printer.FormatGL,
 }
 var summaryFormats = []string{
 	printer.FormatSummaryConsole,
@@ -853,7 +854,7 @@ func createReport(format,
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatGL) {
-		jsonRpt := createTargetName("gl-sast-report", targetPath, "json")
+		jsonRpt := createTargetName("gl-sast-report", targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
@@ -1261,11 +1262,7 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 		engineType := strings.TrimSpace(result.Type)
 		if engineType == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast)
-		} /*else if engineType == commonParams.KicsType {
-			// Add code for KicsType if required.
-		} else if engineType == commonParams.ScaType {
-			// Add code for ScaType if required.
-		}*/
+		}
 	}
 	return glSast.Vulnerabilities
 }
@@ -1276,20 +1273,24 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
 	startLine := result.ScanResultData.Nodes[0].Line
 	endLine := result.ScanResultData.Nodes[0].Line + result.ScanResultData.Nodes[0].Length
+	ID := fmt.Sprintf("%s:%s:%s", queryName, fileName, lineNumber)
+	category := fmt.Sprintf("%s-%s", wrappers.VendorName, result.Type)
+	message := fmt.Sprintf("%s@%s:%s", queryName, fileName, lineNumber)
 
 	glSast.Vulnerabilities = append(glSast.Vulnerabilities, wrappers.GlVulnerabilities{
-		ID:          queryName + ":" + fileName + ":" + lineNumber,
-		Category:    wrappers.VendorName + "-" + result.Type,
-		Name:        queryName,
-		Message:     queryName + "@" + fileName + " : " + lineNumber,
+		ID:       ID,
+		Category: category,
+		Name:     queryName,
+		Message:  message,
+		//	Message:     queryName + "@" + fileName + " : " + lineNumber,
 		Description: result.Description,
-		CVE:         queryName + ":" + fileName + ":" + lineNumber,
+		CVE:         ID,
 		Severity:    result.Severity,
 		Confidence:  result.Severity,
 		Solution:    "",
 		Scanner: wrappers.GlScanner{
-			ID:   wrappers.VendorName + "-" + result.Type,
-			Name: wrappers.VendorName + "-" + result.Type,
+			ID:   category,
+			Name: category,
 		},
 		Links: nil,
 		Tracking: wrappers.Tracking{Items: wrappers.Item{
