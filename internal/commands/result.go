@@ -117,8 +117,8 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 
 // Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
 var securities = map[string]string{
-	infoCx:     "2.0",
-	lowCx:      "3.9",
+	infoCx:     "1.0",
+	lowCx:      "2.0",
 	mediumCx:   "4.0",
 	highCx:     "7.0",
 	criticalCx: "9.0",
@@ -1559,7 +1559,6 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
-
 	return sarifProperties
 }
 
