@@ -6,9 +6,9 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
-	"net/http"
 
 	"github.com/pkg/errors"
+	"net/http"
 )
 
 const (

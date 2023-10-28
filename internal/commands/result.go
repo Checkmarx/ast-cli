@@ -393,7 +393,6 @@ func summaryReport(
 	summary *wrappers.ResultSummary,
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	resultsWrapper wrappers.ResultsWrapper,
 	results *wrappers.ScanResultsCollection,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
@@ -408,7 +407,7 @@ func summaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	enhanceWithScanSummary(summary, resultsWrapper, results)
+	enhanceWithScanSummary(summary, results)
 
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
@@ -439,7 +438,7 @@ func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 	}
 }
 
-func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrappers.ResultsWrapper, results *wrappers.ScanResultsCollection) {
+func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection) {
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
@@ -709,7 +708,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, resultsWrapper, results)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, results)
 		if err != nil {
 			return err
 		}
