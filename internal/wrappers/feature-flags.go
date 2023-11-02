@@ -6,6 +6,7 @@ import (
 
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
+const CVSSV3Enabled = "CVSS_V3_ENABLED"
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -14,6 +15,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    PackageEnforcementEnabled,
 				Default: true,
+			},
+		},
+	},
+	{
+		CommandName: "cx triage update",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    CVSSV3Enabled,
+				Default: false,
 			},
 		},
 	},
