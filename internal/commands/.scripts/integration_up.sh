@@ -19,7 +19,9 @@ go test \
   github.com/checkmarx/ast-cli/test/integration
 
 status=$?
-if [ status -ne 0 ]; then
+echo "status value after tests"
+echo $status
+if [ $status -ne 0 ]; then
     echo "Integration tests failed"
     rm cover.out
 fi
