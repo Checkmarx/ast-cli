@@ -143,8 +143,8 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		// check if the current tenant has critical severity available
-		if !wrappers.FeatureFlags[wrappers.CVSSV3Enabled] && severity == "CRITICAL" {
-			return errors.Errorf("%s", "Critical severity is not available for your tenant")
+		if !wrappers.FeatureFlags[wrappers.CVSSV3Enabled] && strings.ToLower(severity) == "critical" {
+			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
 		}
 		predicate := &wrappers.PredicateRequest{
 			SimilarityID: similarityID,
