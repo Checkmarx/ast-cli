@@ -82,7 +82,7 @@ func getResultsWithPagination(resultPath string, queryParams map[string]string, 
 		if astAPIPageLen > int(target.TotalCount) {
 			break
 		}
-		currentPage += astAPIPageLen
+		currentPage += 1
 	}
 	return nil, nil
 }
@@ -115,7 +115,7 @@ func getResultsByOffset(resultPath string, params map[string]string, currentPage
 		if err != nil {
 			return nil, false, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-		if int(model.TotalCount) < currentPage {
+		if len(model.Results) == 0 {
 			return &model, false, nil, nil
 		}
 		return &model, true, nil, nil
