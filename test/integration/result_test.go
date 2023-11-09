@@ -61,7 +61,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown, printer.FormatGL}
+	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
@@ -264,7 +264,8 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
+
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {

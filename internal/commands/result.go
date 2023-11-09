@@ -35,6 +35,7 @@ const (
 	lowLabel                  = "low"
 	infoLabel                 = "info"
 	sonarTypeLabel            = "_sonar"
+	glSastTypeLobel           = ".gl-sast-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
 	lowSonar                  = "MINOR"
@@ -854,7 +855,7 @@ func createReport(format,
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatGL) {
-		jsonRpt := createTargetName("gl-sast-report", targetPath, printer.FormatJSON)
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLobel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
