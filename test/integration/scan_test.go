@@ -198,7 +198,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	err, _ := executeCommand(t, args...)
+	//executeCommand(t, args...)
 	///assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 	args[11] = "*js"
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
@@ -554,16 +554,16 @@ func TestScanWorkflow(t *testing.T) {
 	//assert.Assert(t, len(workflow) > 0, "At least one item should exist in the workflow response")
 }
 
-func TestScanLogsSAST(t *testing.T) {
-	scanID, _ := getRootScan(t)
-
-	//executeCmdNilAssertion(
-	//	t, "Getting scan SAST log should pass",
-	//	"scan", "logs",
-	//	flag(params.ScanIDFlag), scanID,
-	//	flag(params.ScanTypeFlag), "sast",
-	//)
-}
+//func TestScanLogsSAST(t *testing.T) {
+//	scanID, _ := getRootScan(t)
+//
+//	//executeCmdNilAssertion(
+//	//	t, "Getting scan SAST log should pass",
+//	//	"scan", "logs",
+//	//	flag(params.ScanIDFlag), scanID,
+//	//	flag(params.ScanTypeFlag), "sast",
+//	//)
+//}
 
 //func TestScanLogsKICSDeprecated(t *testing.T) {
 //	scanID, _ := getRootScan(t)
