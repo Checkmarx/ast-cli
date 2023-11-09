@@ -27,6 +27,7 @@ const (
 	FormatSummaryMarkdown = "markdown"
 	FormatSbom            = "sbom"
 	FormatXML             = "xml"
+	FormatGL              = "gl-sast"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
