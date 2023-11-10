@@ -347,6 +347,7 @@ func TestBrokenLinkScan(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.IncludeFilterFlag), "broken_link.txt",
+		flag(params.DebugFlag),
 	}
 
 	var buf bytes.Buffer
