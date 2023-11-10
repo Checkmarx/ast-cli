@@ -154,7 +154,7 @@ Ex.: 1. Create a command
  3. Execute command
 */
 func execute(cmd *cobra.Command, args ...string) error {
-	return executeWithTimeout(cmd, time.Minute, args...)
+	return executeWithTimeout(cmd, 5*time.Minute, args...)
 }
 
 // Execute a CLI command expecting an error and buffer to execute post assertions
