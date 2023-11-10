@@ -23,6 +23,7 @@ type DependencyPath struct {
 }
 
 type ScaTypeCollection struct {
-	ID   string `json:"id,omitempty"`
-	Type string `json:"type,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Type      string `json:"type,omitempty"`
+	IsIgnored bool   `json:"isIgnored,omitempty"`
 }
