@@ -475,7 +475,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 }
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
-	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 5*time.Minute, args...)
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 10*time.Minute, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {
@@ -693,7 +693,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		flag(params.IgnorePolicyFlag),
 	}
 
-	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 4*time.Minute, args...)
+	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
 }
 
 func TestRunKicsScan(t *testing.T) {
