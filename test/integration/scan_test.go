@@ -539,54 +539,54 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 	}
 }
 
-// Get a scan workflow and assert its structure
-//func TestScanWorkflow(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//
-//	buffer := executeCmdNilAssertion(
-//		t, "Workflow should pass", "scan", "workflow",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.FormatFlag), printer.FormatJSON,
-//	)
-//
-//	var workflow []ScanWorkflowResponse
-//	_ = unmarshall(t, buffer, &workflow, "Reading workflow output should work")
-//
-//	//assert.Assert(t, len(workflow) > 0, "At least one item should exist in the workflow response")
-//}
+// Get a scan workflow and assert it fails
+func TestScanWorkflow(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	args := []string{
+		"scan", "workflow",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.FormatFlag), printer.FormatJSON,
+	}
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
+}
 
-//func TestScanLogsSAST(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//
-//	//executeCmdNilAssertion(
-//	//	t, "Getting scan SAST log should pass",
-//	//	"scan", "logs",
-//	//	flag(params.ScanIDFlag), scanID,
-//	//	flag(params.ScanTypeFlag), "sast",
-//	//)
-//}
+func TestScanLogsSAST(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	args := []string{
+		"scan", "logs",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "sast",
+	}
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.Assert(t, err != nil, "response status code 404")
+}
 
-//func TestScanLogsKICSDeprecated(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//
-//	executeCmdNilAssertion(
-//		t, "Getting scan KICS log should pass",
-//		"scan", "logs",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.ScanTypeFlag), "kics",
-//	)
-//}
+func TestScanLogsKICSDeprecated(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	args := []string{
+		"scan", "logs",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "kics",
+	}
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.Assert(t, err != nil, "response status code 404")
+}
 
-//func TestScanLogsKICS(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//
-//	executeCmdNilAssertion(
-//		t, "Getting scan KICS log should pass",
-//		"scan", "logs",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.ScanTypeFlag), "iac-security",
-//	)
-//}
+func TestScanLogsKICS(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	args := []string{
+		"scan", "logs",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypeFlag), "iac-security",
+	}
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.Assert(t, err != nil, "response status code 404")
+}
 
 func TestPartialScanWithWrongPreset(t *testing.T) {
 	_, projectName := getRootProject(t)
