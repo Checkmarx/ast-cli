@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 	exitVal := m.Run()
-	deleteScanAndProject()
+	//deleteScanAndProject()
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
 }
@@ -59,20 +59,20 @@ func getRootScan(t *testing.T) (string, string) {
 }
 
 // Delete scan and projects
-func deleteScanAndProject() {
-	if len(rootScanId) > 0 {
-		deleteScan(testInstance, rootScanId)
-		rootScanId = ""
-	}
-	if len(rootScanProjectId) > 0 {
-		deleteProject(testInstance, rootScanProjectId)
-		rootScanProjectId = ""
-	}
-	if len(rootProjectId) > 0 {
-		deleteProject(testInstance, rootProjectId)
-		rootProjectId = ""
-	}
-}
+//func deleteScanAndProject() {
+//	if len(rootScanId) > 0 {
+//		deleteScan(testInstance, rootScanId)
+//		rootScanId = ""
+//	}
+//	if len(rootScanProjectId) > 0 {
+//		deleteProject(testInstance, rootScanProjectId)
+//		rootScanProjectId = ""
+//	}
+//	if len(rootProjectId) > 0 {
+//		deleteProject(testInstance, rootProjectId)
+//		rootProjectId = ""
+//	}
+//}
 
 // Create or return a project to be shared between tests
 func getRootProject(t *testing.T) (string, string) {

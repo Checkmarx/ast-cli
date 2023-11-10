@@ -65,7 +65,7 @@ func getResultsWithPagination(resultPath string, queryParams map[string]string, 
 	var currentPage = 0
 	for {
 		queryParams[offset] = fmt.Sprintf("%d", currentPage)
-		target, hasNextPage, weberr, err := getResultsByOffset(resultPath, queryParams, currentPage, clientTimeout)
+		target, hasNextPage, weberr, err := getResultsByOffset(resultPath, queryParams, clientTimeout)
 		if err != nil {
 			return nil, err
 		}
@@ -82,11 +82,11 @@ func getResultsWithPagination(resultPath string, queryParams map[string]string, 
 		if astAPIPageLen > int(target.TotalCount) {
 			break
 		}
-		currentPage += 1
+		currentPage++
 	}
 	return nil, nil
 }
-func getResultsByOffset(resultPath string, params map[string]string, currentPage int, clientTimeout uint) (*ScanResultsCollection, bool, *WebError, error) {
+func getResultsByOffset(resultPath string, params map[string]string, clientTimeout uint) (*ScanResultsCollection, bool, *WebError, error) {
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, resultPath, params, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, false, nil, err
