@@ -35,6 +35,7 @@ const (
 	lowLabel                  = "low"
 	infoLabel                 = "info"
 	sonarTypeLabel            = "_sonar"
+	glSastTypeLobel           = ".gl-sast-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
 	lowSonar                  = "MINOR"
@@ -836,7 +837,7 @@ func createReport(format,
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatGL) {
-		jsonRpt := createTargetName("gl-sast-report", targetPath, printer.FormatJSON)
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLobel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
@@ -1644,9 +1645,9 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 }
 
 func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection,
-	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]string) {
+	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]wrappers.ScaTypeCollection) {
 	locationsByID = make(map[string][]*string)
-	typesByCVE = make(map[string]string)
+	typesByCVE = make(map[string]wrappers.ScaTypeCollection)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == commonParams.ScaType {
@@ -1655,20 +1656,27 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
 			for _, types := range *scaTypeModel {
-				currentTypes := types
-				typesByCVE[types.ID] = currentTypes.Type
+				typesByCVE[types.ID] = types
 			}
 		}
 	}
 	return locationsByID, typesByCVE
 }
 
-func buildScaType(typesByCVE map[string]string, result *wrappers.ScanResult) string {
-	types := typesByCVE[result.ID]
-	if types == "SupplyChain" {
+func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
+	types, ok := typesByCVE[result.ID]
+	if ok && types.Type == "SupplyChain" {
 		return "Supply Chain"
 	}
 	return "Vulnerability"
+}
+
+func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
+	types, ok := typesByCVE[result.ID]
+	if ok && types.IsIgnored {
+		return notExploitable
+	}
+	return result.State
 }
 
 func addPackageInformation(
@@ -1689,6 +1697,8 @@ func addPackageInformation(
 			result.VulnerabilityDetails.CvssScore = roundedScore
 			// Add the sca type
 			result.ScaType = buildScaType(typesByCVE, result)
+			// Temporary code for client
+			result.State = buildScaState(typesByCVE, result)
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
