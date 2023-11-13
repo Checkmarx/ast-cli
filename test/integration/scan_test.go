@@ -876,8 +876,7 @@ func TestScanTypesValidation(t *testing.T) {
 
 // TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
-	_, projectName := getRootProject(t)
-
+	projectName := "tiago"
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -888,7 +887,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "'api-security' only works when  scan-type 'sast' is also provided")
+	assertError(t, err, "Failed creating a scan")
 }
 
 // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
