@@ -394,7 +394,7 @@ func summaryReport(
 	summary *wrappers.ResultSummary,
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	resultsWrapper wrappers.ResultsWrapper,
+	results *wrappers.ScanResultsCollection,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
@@ -408,10 +408,7 @@ func summaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	err := enhanceWithScanSummary(summary, resultsWrapper)
-	if err != nil {
-		return nil, err
-	}
+	enhanceWithScanSummary(summary, results)
 
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
@@ -442,51 +439,11 @@ func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 	}
 }
 
-func enhanceWithScanSummary(summary *wrappers.ResultSummary, resultsWrapper wrappers.ResultsWrapper) error {
-	scanSummary, errModel, err := resultsWrapper.GetScanSummariesByScanIDS(map[string]string{
-		commonParams.ScanIDsQueryParam: summary.ScanID,
-	})
-	if err != nil {
-		return err
+func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection) {
+	for _, result := range results.Results {
+		countResult(summary, result)
 	}
-	if errModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errModel.Code, errModel.Message)
-	}
-
-	if len(scanSummary.ScansSummaries) != 1 {
-		return errors.Errorf("error - scan summary is nil or has more than one element")
-	}
-
-	updateSummaryWithScanSummary(summary, &scanSummary.ScansSummaries[0])
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues
-	return nil
-}
-
-func updateSummaryWithScanSummary(summary *wrappers.ResultSummary, scanSummary *wrappers.ScanSumaries) {
-	summary.SastIssues += scanSummary.SastCounters.TotalCounter
-	summary.KicsIssues += scanSummary.KicsCounters.TotalCounter
-	summary.ScaIssues += scanSummary.ScaCounters.TotalCounter
-	summary.ScaIssues += scanSummary.ScaContainersCounters.TotalVulnerabilitiesCounter
-
-	updateSeverityCounts(summary, scanSummary.SastCounters.SeverityCounters)
-	updateSeverityCounts(summary, scanSummary.KicsCounters.SeverityCounters)
-	updateSeverityCounts(summary, scanSummary.ScaCounters.SeverityCounters)
-	updateSeverityCounts(summary, scanSummary.ScaContainersCounters.SeverityCounters)
-}
-
-func updateSeverityCounts(summary *wrappers.ResultSummary, severityCounts []wrappers.SeverityCounters) {
-	for _, sev := range severityCounts {
-		switch strings.ToLower(sev.Severity) {
-		case highLabel:
-			summary.HighIssues += sev.Counter
-		case mediumLabel:
-			summary.MediumIssues += sev.Counter
-		case lowLabel:
-			summary.LowIssues += sev.Counter
-		case infoLabel:
-			summary.InfoIssues += sev.Counter
-		}
-	}
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -743,8 +700,7 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-	isResultsNeeded := verifyFormatsByReportList(reportList, resultsFormats...)
-	if isResultsNeeded && !scanPending {
+	if !scanPending {
 		results, err = ReadResults(resultsWrapper, scan, params)
 		if err != nil {
 			return err
@@ -753,7 +709,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, resultsWrapper)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, results)
 		if err != nil {
 			return err
 		}
@@ -766,6 +722,32 @@ func CreateScanReport(
 		}
 	}
 	return nil
+}
+
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+	engineType := strings.TrimSpace(result.Type)
+	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
+		if engineType == commonParams.SastType {
+			summary.SastIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.ScaType {
+			summary.ScaIssues++
+			summary.TotalIssues++
+		} else if engineType == commonParams.KicsType {
+			summary.KicsIssues++
+			summary.TotalIssues++
+		}
+		severity := strings.ToLower(result.Severity)
+		if severity == highLabel {
+			summary.HighIssues++
+		} else if severity == lowLabel {
+			summary.LowIssues++
+		} else if severity == mediumLabel {
+			summary.MediumIssues++
+		} else if severity == infoLabel {
+			summary.InfoIssues++
+		}
+	}
 }
 
 func verifyFormatsByReportList(reportFormats []string, formats ...string) bool {
