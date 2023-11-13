@@ -19,10 +19,10 @@ go test \
   github.com/checkmarx/ast-cli/test/integration
 
 status=$?
-echo "status value after tests"
-echo $status
+echo "status value after tests $status"
 if [ $status -ne 0 ]; then
     echo "Integration tests failed"
     rm cover.out
 fi
+
 go tool cover -html=cover.out -o coverage.html

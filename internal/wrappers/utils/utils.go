@@ -24,16 +24,3 @@ func Contains(s []string, str string) bool {
 	}
 	return false
 }
-
-func ToStringArray(obj interface{}) []string {
-	switch t := obj.(type) {
-	case []interface{}:
-		result := make([]string, 0, len(t))
-		for _, v := range t {
-			result = append(result, v.(string))
-		}
-		return result
-	default:
-		return []string{}
-	}
-}

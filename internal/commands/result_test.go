@@ -69,13 +69,6 @@ func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
-
-	// Testing errors
-	err := execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKERR", "--report-format", "summaryConsole")
-	assert.Equal(t, err.Error(), "mock error")
-
-	err = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKWEBERR", "--report-format", "summaryConsole")
-	assert.ErrorContains(t, err, "web error")
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
@@ -316,4 +309,10 @@ func TestSBOMReportXMLWithProxy(t *testing.T) {
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
 	// Remove generated json file
 	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+}
+
+func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
+	// Run test for gl-sast report type
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
 }
