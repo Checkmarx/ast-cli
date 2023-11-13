@@ -77,7 +77,6 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
-	apiDocumantationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 	policeManagementNoneStatus              = "none"
 	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 )
