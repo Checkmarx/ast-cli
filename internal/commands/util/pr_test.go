@@ -13,3 +13,11 @@ func TestNewPRDecorationCommandMustExist(t *testing.T) {
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "scan-id")
 }
+
+func TestNewMRDecorationCommandMustExist(t *testing.T) {
+	cmd := PRDecorationGitlab(nil)
+	assert.Assert(t, cmd != nil, "MR decoration command must exist")
+
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, "scan-id")
+}
