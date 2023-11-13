@@ -15,9 +15,14 @@ const (
 	prGithubNamespace = "PR_GITHUB_NAMESPACE"
 	prGithubNumber    = "PR_GITHUB_NUMBER"
 	prGithubRepoName  = "PR_GITHUB_REPO_NAME"
+	prGitlabRepoName  = "PR_GITLAB_REPO_NAME"
+	prGitlabToken     = "PR_GITLAB_TOKEN"
+	prGitlabNamespace = "PR_GITLAB_NAMESPACE"
+	prGitlabProjectId = "PR_GITLAB_PROJECT_ID"
+	prGitlabIid       = "PR_GITLAB_IID"
 )
 
-func TestPRDecorationSuccessCase(t *testing.T) {
+func TestPRGithubDecorationSuccessCase(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	args := []string{
@@ -39,7 +44,7 @@ func TestPRDecorationSuccessCase(t *testing.T) {
 	assert.NilError(t, err, "Error should be nil")
 }
 
-func TestPRDecorationFailure(t *testing.T) {
+func TestPRGithubDecorationFailure(t *testing.T) {
 	args := []string{
 		"utils",
 		"pr",
@@ -56,5 +61,52 @@ func TestPRDecorationFailure(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, "Failed creating PR Decoration")
+	assert.ErrorContains(t, err, "Failed creating github PR Decoration")
+}
+
+func TestPRGitlabDecorationSuccessCase(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"utils",
+		"pr",
+		"gitlab",
+		flag(params.ScanIDFlag),
+		scanID,
+		flag(params.SCMTokenFlag),
+		os.Getenv(prGitlabToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prGitlabNamespace),
+		flag(params.RepoNameFlag),
+		os.Getenv(prGitlabRepoName),
+		flag(params.PRGitlabProjectFlag),
+		os.Getenv(prGitlabProjectId),
+		flag(params.PRIidFlag),
+		os.Getenv(prGitlabIid),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRGitlabDecorationFailure(t *testing.T) {
+
+	args := []string{
+		"utils",
+		"pr",
+		"gitlab",
+		flag(params.ScanIDFlag),
+		"",
+		flag(params.SCMTokenFlag),
+		os.Getenv(prGitlabToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prGitlabNamespace),
+		flag(params.RepoNameFlag),
+		os.Getenv(prGitlabRepoName),
+		flag(params.PRGitlabProjectFlag),
+		os.Getenv(prGitlabProjectId),
+		flag(params.PRIidFlag),
+		os.Getenv(prGitlabIid),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed creating gitlab MR Decoration")
 }
