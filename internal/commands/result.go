@@ -79,6 +79,7 @@ const (
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	apiDocumantationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 	policeManagementNoneStatus              = "none"
+	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 )
 
 var resultsFormats = []string{
@@ -1123,7 +1124,6 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return err
 	}
-
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
