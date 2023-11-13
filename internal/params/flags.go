@@ -148,12 +148,16 @@ const (
 	ScaFilterUsage  = "SCA filter"
 
 	// PR decoration flags
-	NamespaceFlag      = "namespace"
-	NamespaceFlagUsage = "Github namespace is required to post the comments"
-	RepoNameFlag       = "repo-name"
-	RepoNameFlagUsage  = "Github repository details"
-	PRNumberFlag       = "pr-number"
-	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
+	NamespaceFlag            = "namespace"
+	NamespaceFlagUsage       = "%s namespace is required to post the comments"
+	RepoNameFlag             = "repo-name"
+	RepoNameFlagUsage        = "%s repository details"
+	PRNumberFlag             = "pr-number"
+	PRNumberFlagUsage        = "Pull Request number for posting notifications and comments"
+	PRIidFlag                = "mr-iid"
+	PRIidFlagUsage           = "Gitlab IID (internal ID) of the merge request"
+	PRGitlabProjectFlag      = "gitlab-project-id"
+	PRGitlabProjectFlagUsage = "Gitlab project ID"
 
 	// Chat
 	ChatAPIKey              = "chat-apikey"
