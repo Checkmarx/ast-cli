@@ -53,7 +53,8 @@ const (
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "N/A"
 	notAvailableNumber        = -1
-	defaultPaddingSize        = -14
+	defaultPaddingSize        = -13
+	defaultResultsPaddingSize = -15
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
@@ -77,6 +78,7 @@ const (
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	policeManagementNoneStatus              = "none"
+	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 )
 
 var resultsFormats = []string{
@@ -490,14 +492,14 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			"              Risk Level: %s																									 \n",
 			summary.RiskMsg,
 		)
-		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              --------------------------------------     \n")
 		if summary.HasAPISecurity() {
 			fmt.Printf(
 				"              API Security - Total Detected APIs: %d                       \n",
 				summary.APISecurity.APICount)
 		}
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			fmt.Printf("              -----------------------------------     \n\n")
+			fmt.Printf("              --------------------------------------     \n\n")
 			if summary.Policies.BreakBuild {
 				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
 			} else {
@@ -518,33 +520,35 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		}
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-		fmt.Printf("              -----------------------------------     \n")
-		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
-		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
-		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
-		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
-		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              --------------------------------------     \n")
+		fmt.Printf("              |               High: %*d|     \n", defaultResultsPaddingSize, summary.HighIssues)
+		fmt.Printf("              |             Medium: %*d|     \n", defaultResultsPaddingSize, summary.MediumIssues)
+		fmt.Printf("              |                Low: %*d|     \n", defaultResultsPaddingSize, summary.LowIssues)
+		fmt.Printf("              |               Info: %*d|     \n", defaultResultsPaddingSize, summary.InfoIssues)
+		fmt.Printf("              --------------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |     IAC-SECURITY: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |         IAC-SECURITY: %*s| \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |     IAC-SECURITY: %*d|     \n", defaultPaddingSize, summary.KicsIssues)
+			fmt.Printf("              |         IAC-SECURITY: %*d| \n", defaultPaddingSize, summary.KicsIssues)
 		}
 		if summary.SastIssues == notAvailableNumber {
-			fmt.Printf("              |             SAST: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |                 SAST: %*s| \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |             SAST: %*d|     \n", defaultPaddingSize, summary.SastIssues)
+			fmt.Printf("              |                 SAST: %*d| \n", defaultPaddingSize, summary.SastIssues)
 			if summary.HasAPISecurity() {
-				fmt.Printf("              |   APIS WITH RISK: %*d|     \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
-
+				fmt.Printf("              |       APIS WITH RISK: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
+				if summary.HasAPISecurityDocumentation() {
+					fmt.Printf("              |   APIS DOCUMENTATION: %*d| \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
+				}
 			}
 		}
 		if summary.ScaIssues == notAvailableNumber {
-			fmt.Printf("              |              SCA: %*s|     \n", defaultPaddingSize, notAvailableString)
+			fmt.Printf("              |                  SCA: %*s| \n", defaultPaddingSize, notAvailableString)
 		} else {
-			fmt.Printf("              |              SCA: %*d|     \n", defaultPaddingSize, summary.ScaIssues)
+			fmt.Printf("              |                  SCA: %*d| \n", defaultPaddingSize, summary.ScaIssues)
 		}
-		fmt.Printf("              -----------------------------------     \n\n")
+		fmt.Printf("              --------------------------------------     \n\n")
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
@@ -705,7 +709,6 @@ func CreateScanReport(
 		if err != nil {
 			return err
 		}
-
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
@@ -807,7 +810,6 @@ func isValidScanStatus(status, format string) bool {
 		log.Printf("Result format file %s not create because scan status is %s", format, status)
 		return false
 	}
-
 	return true
 }
 
@@ -823,7 +825,6 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
-
 	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
@@ -1067,7 +1068,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		}
 		payload.FileFormat = format
 	}
-
 	if useSCALocalFlow {
 		pollingResp := &wrappers.SbomPollingResponse{}
 
@@ -1113,7 +1113,6 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 				i,
 			),
 		)
-
 	}
 	return nil
 }
@@ -1124,7 +1123,6 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return err
 	}
-
 	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
@@ -1151,12 +1149,10 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if err != nil {
 		return errors.Errorf("Error generating PDF report - %s", err.Error())
 	}
-
 	if pdfReportsPayload.ReportType == reportTypeEmail {
 		log.Println("Sending PDF report to: ", pdfReportsPayload.Data.Email)
 		return nil
 	}
-
 	log.Println("Generating PDF report")
 	pollingResp.Status = startedStatus
 	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
