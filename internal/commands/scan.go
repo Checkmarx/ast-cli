@@ -1156,7 +1156,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
 	if len(scaResolver) > 0 {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1172,7 +1172,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 			"-s",
 			sourceDir,
 			"-n",
-			commonParams.ProjectName,
+			projectName,
 			"-r",
 			scaResolverResultsFile,
 		}
@@ -1213,6 +1213,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
+	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1237,7 +1238,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
+			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
 			if dirPathErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
