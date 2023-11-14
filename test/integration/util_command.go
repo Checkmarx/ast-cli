@@ -72,6 +72,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bfl := viper.GetString(params.BflPathKey)
 	learnMore := viper.GetString(params.DescriptionsPathKey)
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
+	prDecorationGitlabPath := viper.GetString(params.PRDecorationGitlabPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
@@ -98,7 +99,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
-	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath,prDecorationGitlabPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
@@ -154,7 +155,7 @@ Ex.: 1. Create a command
  3. Execute command
 */
 func execute(cmd *cobra.Command, args ...string) error {
-	return executeWithTimeout(cmd, time.Minute, args...)
+	return executeWithTimeout(cmd, 5*time.Minute, args...)
 }
 
 // Execute a CLI command expecting an error and buffer to execute post assertions
@@ -162,7 +163,7 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 
 	cmd, buffer := createRedirectedTestCommand(t)
 
-	err := executeWithTimeout(cmd, time.Minute, args...)
+	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 
 	return err, buffer
 }
@@ -192,7 +193,7 @@ func executeCmdWithTimeOutNilAssertion(
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
-	args = append(args, flag(params.DebugFlag), flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
+	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 

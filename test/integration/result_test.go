@@ -41,6 +41,7 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
+				printer.FormatGL,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -263,7 +264,8 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
+
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {

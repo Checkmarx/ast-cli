@@ -529,7 +529,7 @@ func scanCreateSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 	)
-	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumantationFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumentationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
@@ -956,11 +956,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 	actualScanTypes = strings.Join(scanTypes, ",")
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
-	if scanTypeEnabled(commonParams.APISecurityType) && !scanTypeEnabled(commonParams.SastType) {
-		err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-		return err
-	}
-
 	return nil
 }
 
@@ -1163,7 +1158,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
 	if len(scaResolver) > 0 {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1179,7 +1174,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 			"-s",
 			sourceDir,
 			"-n",
-			commonParams.ProjectName,
+			projectName,
 			"-r",
 			scaResolverResultsFile,
 		}
@@ -1220,6 +1215,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
+	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1244,7 +1240,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
+			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
 			if dirPathErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
