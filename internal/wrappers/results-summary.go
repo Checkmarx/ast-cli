@@ -34,10 +34,16 @@ type ResultSummary struct {
 	Policies        *PolicyResponseModel
 }
 
+// nolint: govet
 type APISecResult struct {
-	APICount        int   `json:"api_count"`
-	TotalRisksCount int   `json:"total_risks_count"`
-	Risks           []int `json:"risks"`
+	APICount         int                `json:"api_count,omitempty"`
+	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
+	Risks            []int              `json:"risks,omitempty"`
+	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+}
+type riskDistribution struct {
+	Origin string `json:"origin,omitempty"`
+	Total  int    `json:"total,omitempty"`
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -51,6 +57,30 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
+	for _, risk := range r.APISecurity.RiskDistribution {
+		if strings.EqualFold(risk.Origin, origin) {
+			return &risk
+		}
+	}
+	return nil
+}
+
+func (r *ResultSummary) HasAPISecurityDocumentation() bool {
+	if len(r.APISecurity.RiskDistribution) > 1 && strings.EqualFold(r.APISecurity.RiskDistribution[1].Origin, "documentation") {
+		return true
+	}
+	return false
+}
+
+func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
+	riskAPIDocumentation := r.getRiskFromAPISecurity("documentation")
+	if riskAPIDocumentation != nil {
+		return riskAPIDocumentation.Total
+	}
+	return -1
 }
 
 func (r *ResultSummary) HasPolicies() bool {
@@ -625,7 +655,7 @@ const nonAsyncSummary = `<div class="top-row">
  					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
 				<div class="element">
-                	<div class="total">APIs with risk </div>
+                	<div class="total">APIs with risk</div>
  					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
                 </div>
 		</div>
@@ -690,9 +720,9 @@ const SummaryMarkdownCompletedTemplate = `
 {{if .HasAPISecurity}}
 ### API Security 
 
-| Detected APIs | APIs with risk |
-|:---------:|:---------:|
-| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
+| Detected APIs | APIs with risk | {{if .HasAPISecurityDocumentation}} APIs Documentation |{{end}}
+|:---------:|:---------:| {{if .HasAPISecurityDocumentation}}:---------:|{{end}}
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
 {{end}}
 `
 
