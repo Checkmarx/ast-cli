@@ -979,20 +979,21 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 	return nil
 }
 func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
-	var err error
-	var resultsJSON []byte
 	log.Println("Creating gl-sast Report: ", targetFile)
 	var glSast = new(wrappers.GlSastResultsCollection)
-	addScanToGlSastReport(summary, glSast)
+	err := addScanToGlSastReport(summary, glSast)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
+	}
 	convertCxResultToGlVulnerability(results, glSast)
 
-	resultsJSON, err = json.Marshal(glSast)
+	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	defer f.Close()
