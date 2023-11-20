@@ -912,7 +912,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecurityType) {
+	if scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecConfig := wrappers.APISecConfig{}
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType
