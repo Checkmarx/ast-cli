@@ -65,11 +65,10 @@ jobs:
           brew install mitchellh/gon/gon
       - name: Install and start docker
         if: inputs.dev == false
-        uses: docker-practice/actions-setup-docker@master
-      - name: Cleanup docker installation
-        if: inputs.dev == false
         run: |
-          rm docker.rb
+          brew install docker
+          colima start
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -81,10 +80,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Clean
-        if: inputs.dev == false
-        run: |
-          rm default.profraw
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
