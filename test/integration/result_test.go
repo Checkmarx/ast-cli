@@ -75,7 +75,6 @@ func assertResultFilesCreated(t *testing.T) {
 }
 
 func TestResultsShowParamFailed(t *testing.T) {
-
 	args := []string{
 		"results",
 		"show",
@@ -86,7 +85,6 @@ func TestResultsShowParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingParamFailed(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",
@@ -97,7 +95,6 @@ func TestCodeBashingParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingList(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -115,7 +112,6 @@ func TestCodeBashingList(t *testing.T) {
 }
 
 func TestCodeBashingListJson(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -134,7 +130,6 @@ func TestCodeBashingListJson(t *testing.T) {
 }
 
 func TestCodeBashingListTable(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -149,7 +144,6 @@ func TestCodeBashingListTable(t *testing.T) {
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",
@@ -256,22 +250,25 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
 	args := []string{
 		"results", "show",
-		flag(params.ScanIDFlag), "a6aa62f9-6c60-4be1-ac68-47e1cbc17d6c",
+		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
 	}
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
-
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
 	args := []string{
 		"results", "show",
-		flag(params.ScanIDFlag), "a6aa62f9-6c60-4be1-ac68-47e1cbc17d6c",
+		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
 		flag(params.ReportSbomFormatLocalFlowFlag),
@@ -282,7 +279,6 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 }
 
 func TestResultsWrongScanID(t *testing.T) {
-
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), "wrong",

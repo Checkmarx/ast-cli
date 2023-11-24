@@ -876,9 +876,8 @@ func TestScanTypesValidation(t *testing.T) {
 	assertError(t, err, "It looks like the")
 }
 
-// TestScanTypeApiSecurityWithoutSast must return an error when trying to run api-security scanType without sast
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
-	projectName := "tiago"
+	_, projectName := getRootProject(t)
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -889,7 +888,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed creating a scan")
+	assert.NilError(t, err, "Create a scan should be created only with api security. ")
 }
 
 // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
@@ -909,6 +908,7 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Error validating scan types")
 }
+
 func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 	_, projectName := getRootProject(t)
 
@@ -925,8 +925,8 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-
 }
+
 func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
