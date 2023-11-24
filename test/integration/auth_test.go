@@ -31,7 +31,7 @@ func TestAuthValidate(t *testing.T) {
 }
 
 func TestAuthValidateClientAndSecret(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate", "--apikey", "")
+	err, buffer := executeCommand(t, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
@@ -57,7 +57,7 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 
 	avoidCachedToken()
 
-	err := execute(validateCommand, "auth", "validate", "--apikey", "")
+	err := execute(validateCommand, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
 	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables

@@ -528,6 +528,7 @@ func scanCreateSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
+		printer.FormatGL,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumentationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
@@ -912,7 +913,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecurityType) {
+	if scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
 		apiSecConfig := wrappers.APISecConfig{}
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType

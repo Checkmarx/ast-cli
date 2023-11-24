@@ -27,7 +27,7 @@ type GlVulnerabilities struct {
 	Identifiers []Identifier `json:"identifiers"`
 	Links       []string     `json:"links"`
 	Tracking    Tracking     `json:"tracking"`
-	Flags       Flag         `json:"flags"`
+	Flags       []Flag       `json:"flags"`
 	Location    Location     `json:"location"`
 }
 type Identifier struct {
@@ -49,13 +49,14 @@ type Location struct {
 }
 
 type Tracking struct {
-	Items Item `json:"items"`
+	Type  string `json:"type"`
+	Items []Item `json:"items"`
 }
 type Item struct {
-	Signatures Signature `json:"signatures"`
-	File       string    `json:"file"`
-	EndLine    uint      `json:"end_line"`
-	StartLine  uint      `json:"start_line"`
+	Signatures []Signature `json:"signatures"`
+	File       string      `json:"file"`
+	EndLine    uint        `json:"end_line"`
+	StartLine  uint        `json:"start_line"`
 }
 type Signature struct {
 	Algorithm string `json:"algorithm"`
@@ -78,8 +79,10 @@ type Analyzer struct {
 	Version string `json:"version"`
 }
 type GlScanner struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Vendor  Vendor `json:"vendor"`
+	Version string `json:"version"`
 }
 type Vendor struct {
 	Name string `json:"name"`

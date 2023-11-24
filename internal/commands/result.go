@@ -17,6 +17,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
@@ -79,14 +81,10 @@ const (
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
 	policeManagementNoneStatus              = "none"
 	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
+	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
+	glTimeFormat                            = "2006-01-02T15:04:05"
 )
 
-var resultsFormats = []string{
-	printer.FormatJSON,
-	printer.FormatSarif,
-	printer.FormatSonar,
-	printer.FormatGL,
-}
 var summaryFormats = []string{
 	printer.FormatSummaryConsole,
 	printer.FormatSummary,
@@ -94,6 +92,7 @@ var summaryFormats = []string{
 	printer.FormatPDF,
 	printer.FormatSummaryMarkdown,
 	printer.FormatSbom,
+	printer.FormatGL,
 }
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -190,6 +189,7 @@ func resultShowSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
+		printer.FormatGL,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
@@ -979,26 +979,50 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 	return nil
 }
 func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
-	var err error
-	var resultsJSON []byte
 	log.Println("Creating gl-sast Report: ", targetFile)
-	var glSastResults = convertCxResultsToGLSast(results)
-	glSastResults = addStatus(summary, glSastResults)
-	resultsJSON, err = json.Marshal(glSastResults)
+	var glSast = new(wrappers.GlSastResultsCollection)
+	err := addScanToGlSastReport(summary, glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
+		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
+	}
+	convertCxResultToGlVulnerability(results, glSast)
+
+	resultsJSON, err := json.Marshal(glSast)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	defer f.Close()
 	return nil
 }
-func addStatus(summary *wrappers.ResultSummary, glSastResults *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
-	glSastResults.Scan.Status = summary.Status
-	return glSastResults
+func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlSastResultsCollection) error {
+	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	glSast.Scan = wrappers.ScanGlReport{}
+	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.jsonn"
+	glSast.Version = "15.0.0"
+	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
+	glSast.Scan.Analyzer.Name = wrappers.VendorName
+	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
+	glSast.Scan.Analyzer.ID = wrappers.AnalyzerID
+	glSast.Scan.Scanner.ID = wrappers.AnalyzerID
+	glSast.Scan.Scanner.Name = wrappers.VendorName
+	glSast.Scan.Status = commonParams.Success
+	glSast.Scan.Type = commonParams.SastType
+	glSast.Scan.StartTime = createdAt.Format(glTimeFormat)
+	glSast.Scan.EndTime = createdAt.Format(glTimeFormat)
+	glSast.Scan.Scanner.Vendor.Name = wrappers.VendorName
+	glSast.Scan.Scanner.Version = commonParams.Version
+	glSast.Scan.Analyzer.Version = commonParams.Version
+
+	return nil
 }
 func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollection) error {
 	var err error
@@ -1227,23 +1251,13 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	sarif.Runs = append(sarif.Runs, createSarifRun(results))
 	return sarif
 }
-func convertCxResultsToGLSast(results *wrappers.ScanResultsCollection) *wrappers.GlSastResultsCollection {
-	var glSast = new(wrappers.GlSastResultsCollection)
-	glSast.Scan = wrappers.ScanGlReport{}
-	glSast = setConstValueGlReport(glSast)
-	glVulnra := convertCxResultToGlVulnerability(results, glSast)
-	glSast.Vulnerabilities = glVulnra
-	return glSast
-}
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection) []wrappers.GlVulnerabilities {
+func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection) {
 	for _, result := range results.Results {
-		engineType := strings.TrimSpace(result.Type)
-		if engineType == commonParams.SastType {
+		if strings.TrimSpace(result.Type) == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast)
 		}
 	}
-	return glSast.Vulnerabilities
 }
 
 func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
@@ -1263,27 +1277,35 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 		Message:     message,
 		Description: result.Description,
 		CVE:         ID,
-		Severity:    result.Severity,
-		Confidence:  result.Severity,
+		Severity:    cases.Title(language.English).String(result.Severity),
+		Confidence:  cases.Title(language.English).String(result.Severity),
 		Solution:    "",
+
 		Scanner: wrappers.GlScanner{
 			ID:   category,
 			Name: category,
 		},
-		Links: nil,
-		Tracking: wrappers.Tracking{Items: wrappers.Item{
-			Signatures: wrappers.Signature{
-				Algorithm: result.Type + "-Algorithm ",
-				Value:     "NA"},
-			File:      fileName,
-			EndLine:   endLine,
-			StartLine: startLine},
+		Identifiers: []wrappers.Identifier{
+			{
+				Type:  "similarityId",
+				Name:  "Similarity Id ",
+				URL:   wrappers.AnalyzerURL,
+				Value: result.ID,
+			},
 		},
-		Flags: wrappers.Flag{
-			Type:        "",
-			Origin:      result.Type,
-			Description: result.Description,
+		Links: make([]string, 0),
+		Tracking: wrappers.Tracking{
+			Type: "source",
+			Items: []wrappers.Item{
+				{
+					Signatures: []wrappers.Signature{{Algorithm: result.Type + "-Algorithm ", Value: "NA"}},
+					File:       fileName,
+					EndLine:    endLine,
+					StartLine:  startLine,
+				},
+			},
 		},
+		Flags: make([]wrappers.Flag, 0),
 		Location: wrappers.Location{
 			File:      fileName,
 			StartLine: startLine,
@@ -1291,18 +1313,6 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 			Class:     fileName,
 		},
 	})
-	return glSast
-}
-
-func setConstValueGlReport(glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
-	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/blob/8a42b7e8ab41ec2920f02fb4b36f244bbbb4bfb8/lib/gitlab/ci/parsers/security/validators/schemas/14.1.2/sast-report-format.json"
-	glSast.Version = "14.1.2"
-	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
-	glSast.Scan.Analyzer.Name = wrappers.VendorName
-	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
-	glSast.Scan.Analyzer.ID = wrappers.AnalyzerID
-	glSast.Scan.Scanner.ID = wrappers.AnalyzerID
-	glSast.Scan.Scanner.Name = wrappers.VendorName
 	return glSast
 }
 
