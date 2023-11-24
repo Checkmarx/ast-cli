@@ -177,6 +177,8 @@ func TestCancelScan(t *testing.T) {
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
 
+	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 200, 5), "Scan should be running before cancel")
+
 	executeCmdNilAssertion(t, "Cancel should pass", "scan", "cancel", flag(params.ScanIDFlag), scanID)
 
 	assert.Assert(t, pollScanUntilStatus(t, scanID, wrappers.ScanCanceled, 90, 5), "Scan should be canceled")
