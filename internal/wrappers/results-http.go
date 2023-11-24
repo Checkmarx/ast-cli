@@ -57,6 +57,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	}
 	for _, resultsPage := range scanModelslice {
 		scanModel.Results = append(scanModel.Results, resultsPage.Results...)
+		scanModel.TotalCount = resultsPage.TotalCount
 	}
 	return &scanModel, nil, nil
 }
