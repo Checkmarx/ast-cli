@@ -260,7 +260,7 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {
@@ -275,7 +275,7 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err, "TestResultsGeneratingSBOM")
 }
 
 func TestResultsWrongScanID(t *testing.T) {
