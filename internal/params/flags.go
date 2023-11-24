@@ -220,6 +220,7 @@ const (
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
+	Success              = "success"
 )
 
 // ScaAgent AST Role
