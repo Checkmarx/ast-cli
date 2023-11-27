@@ -251,14 +251,14 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 		if len(group) > 0 {
 			groupIds, err := groupsWrapper.Get(group)
 			if err != nil {
-				return nil, err
-			}
-
-			groupID := findGroupID(groupIds, group)
-			if groupID != "" {
-				groupMap = append(groupMap, groupID)
-			} else {
 				groupsNotFound = append(groupsNotFound, group)
+			} else {
+				groupID := findGroupID(groupIds, group)
+				if groupID != "" {
+					groupMap = append(groupMap, groupID)
+				} else {
+					groupsNotFound = append(groupsNotFound, group)
+				}
 			}
 		}
 	}
