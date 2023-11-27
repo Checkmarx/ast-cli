@@ -243,7 +243,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             position: relative;
             top: 0;
             width: 100%;
-						margin-top: 10rem
+			margin-top: 10rem;
         }
 
         .progress {
@@ -271,7 +271,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
 
         .top-row .element {
-            margin: 0 3rem 2rem;
+            margin: 0 1rem 2rem;
         }
 
         .top-row .risk-level-tile .value {
@@ -297,6 +297,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         .top-row .risk-level-tile.high {
             background: #f1605d;
             color: #fcfdff;
+            justify-content: center;
         }
 
 		.top-row .risk-level-tile.medium {
@@ -362,7 +363,6 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         .top-row {
             -ms-flex-pack: justify;
             -webkit-box-pack: justify;
-            align-items: center;
             display: flex;
             justify-content: space-evenly;
             padding: 20px;
@@ -496,6 +496,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 		  	border: 1px solid #ddd;
 		  	padding: 8px;
 			font-size: 14px;
+            width: 25%;
 		}
 
 		#policy tr{
@@ -523,6 +524,17 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 			font-size: 15px;
 			font-weight: 700;
 		}
+        @media only screen and (max-width: 1100px) {
+            .top-row  {
+            	display: block;
+            }
+            .element.risk-level-tile.high{
+                width: 100%;
+            }
+            .element{
+                width: 100% !important;
+            }
+        }
     </style>
     <script>
         window.addEventListener('load', function () {
