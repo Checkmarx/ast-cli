@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -231,10 +232,9 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
 	)
-
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-
 }
+
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
@@ -287,4 +287,34 @@ func TestResultsWrongScanID(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "scan not found")
+}
+
+func TestResultsCounterJsonOutput(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+
 }
