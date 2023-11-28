@@ -985,7 +985,6 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
 	}
-	summary.BaseURI = generateScanSummaryURL(summary)
 	convertCxResultToGlVulnerability(results, glSast, summary.BaseURI)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
@@ -1287,7 +1286,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 		},
 		Identifiers: []wrappers.Identifier{
 			{
-				Type:  "similarityId",
+				Type:  "cxOneScan",
 				Name:  "CxOne Scan",
 				URL:   summaryBaseURI,
 				Value: result.ID,
