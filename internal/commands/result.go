@@ -985,7 +985,8 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
 	}
-	convertCxResultToGlVulnerability(results, glSast, summary)
+	summary.BaseURI = generateScanSummaryURL(summary)
+	convertCxResultToGlVulnerability(results, glSast, summary.BaseURI)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
@@ -1005,7 +1006,7 @@ func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlS
 	}
 
 	glSast.Scan = wrappers.ScanGlReport{}
-	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.jsonn"
+	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
 	glSast.Version = "15.0.0"
 	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
 	glSast.Scan.Analyzer.Name = wrappers.VendorName
@@ -1251,15 +1252,15 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summary *wrappers.ResultSummary) {
+func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
-			glSast = parseGlSastVulnerability(result, glSast, summary)
+			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI)
 		}
 	}
 }
 
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summary *wrappers.ResultSummary) *wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) *wrappers.GlSastResultsCollection {
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
@@ -1287,19 +1288,28 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 		Identifiers: []wrappers.Identifier{
 			{
 				Type:  "similarityId",
-				Name:  "Similarity Id ",
-				URL:   fmt.Sprintf("%s/results/%s/sast", summary.BaseURI, summary.ScanID),
+				Name:  "CxOne Scan",
+				URL:   summaryBaseURI,
 				Value: result.ID,
 			},
 		},
-		Links:    make([]string, 0),
-		Tracking: wrappers.Tracking{},
-		Flags:    make([]wrappers.Flag, 0),
+		Links: make([]string, 0),
+		Tracking: wrappers.Tracking{
+			Type: "source",
+			Items: []wrappers.Item{
+				{
+					Signatures: []wrappers.Signature{{Algorithm: result.Type + "-Algorithm ", Value: "NA"}},
+					File:       fileName,
+					EndLine:    endLine,
+					StartLine:  startLine,
+				},
+			},
+		},
+		Flags: make([]wrappers.Flag, 0),
 		Location: wrappers.Location{
 			File:      fileName,
 			StartLine: startLine,
 			EndLine:   endLine,
-			Class:     fileName,
 		},
 	})
 	return glSast

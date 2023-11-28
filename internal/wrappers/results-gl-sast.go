@@ -3,7 +3,7 @@ package wrappers
 const (
 	AnalyzerName = "CxOne"
 	AnalyzerID   = AnalyzerName + "-SAST"
-	AnalyzerURL  = "https://checkmarx.company.com/"
+	AnalyzerURL  = "https://checkmarx.com/"
 	VendorName   = "Checkmarx"
 )
 
