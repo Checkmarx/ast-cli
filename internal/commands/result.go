@@ -1288,7 +1288,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 			{
 				Type:  "similarityId",
 				Name:  "Similarity Id ",
-				URL:   summary.BaseURI + "/results/" + summary.ScanID,
+				URL:   fmt.Sprintf("%s/results/%s/sast", summary.BaseURI, summary.ScanID),
 				Value: result.ID,
 			},
 		},
