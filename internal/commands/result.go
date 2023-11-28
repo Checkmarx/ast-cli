@@ -985,8 +985,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
 	}
-	convertCxResultToGlVulnerability(results, glSast)
-
+	convertCxResultToGlVulnerability(results, glSast,summary)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
@@ -1252,15 +1251,15 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection) {
+func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection,summary *wrappers.ResultSummary) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
-			glSast = parseGlSastVulnerability(result, glSast)
+			glSast = parseGlSastVulnerability(result, glSast,summary)
 		}
 	}
 }
 
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection) *wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection,summary *wrappers.ResultSummary) *wrappers.GlSastResultsCollection {
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
@@ -1289,22 +1288,12 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 			{
 				Type:  "similarityId",
 				Name:  "Similarity Id ",
-				URL:   wrappers.AnalyzerURL,
+				URL:   summary.BaseURI+"/results/"+summary.ScanID,
 				Value: result.ID,
 			},
 		},
 		Links: make([]string, 0),
-		Tracking: wrappers.Tracking{
-			Type: "source",
-			Items: []wrappers.Item{
-				{
-					Signatures: []wrappers.Signature{{Algorithm: result.Type + "-Algorithm ", Value: "NA"}},
-					File:       fileName,
-					EndLine:    endLine,
-					StartLine:  startLine,
-				},
-			},
-		},
+		Tracking: wrappers.Tracking{},
 		Flags: make([]wrappers.Flag, 0),
 		Location: wrappers.Location{
 			File:      fileName,
