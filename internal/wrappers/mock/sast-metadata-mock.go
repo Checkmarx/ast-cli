@@ -11,8 +11,8 @@ func (s *SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string)
 		TotalCount: 2,
 		Scans: []wrappers.Scans{
 			{
-				ScanId:            "scan1",
-				ProjectId:         "project1",
+				ScanID:            "scan1",
+				ProjectID:         "project1",
 				Loc:               100,
 				FileCount:         50,
 				IsIncremental:     true,
@@ -20,14 +20,14 @@ func (s *SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string)
 				ChangedFilesCount: 5,
 			},
 			{
-				ScanId:                  "scan2",
-				ProjectId:               "project2",
+				ScanID:                  "scan2",
+				ProjectID:               "project2",
 				Loc:                     150,
 				FileCount:               70,
 				IsIncremental:           false,
 				IsIncrementalCanceled:   true,
 				IncrementalCancelReason: "Some reason",
-				BaseId:                  "baseID",
+				BaseID:                  "baseID",
 				DeletedFilesCount:       3,
 			},
 		},

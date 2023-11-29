@@ -16,7 +16,7 @@ import (
 )
 
 type SbomReportsPayload struct {
-	ScanID     string `json:"ScanId"`
+	ScanID     string `json:"ScanID"`
 	FileFormat string `json:"FileFormat"`
 }
 
