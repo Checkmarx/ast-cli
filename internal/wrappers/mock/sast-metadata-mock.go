@@ -2,9 +2,7 @@ package mock
 
 import "github.com/checkmarx/ast-cli/internal/wrappers"
 
-type SastMetadataMockWrapper struct {
-	path string
-}
+type SastMetadataMockWrapper struct{}
 
 func (s *SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) (*wrappers.SastMetadataModel, error) {
 	return &wrappers.SastMetadataModel{

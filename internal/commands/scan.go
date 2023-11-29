@@ -2196,20 +2196,16 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		return nil
 	}
 
-	scanMetadataMap := make(map[string]wrappers.Scans, len(sastMetadata.Scans))
-	for _, metadataScan := range sastMetadata.Scans {
-		scanMetadataMap[metadataScan.ScanID] = metadataScan
-	}
-
-	for i, scan := range scans {
-		if metadataScan, ok := scanMetadataMap[scan.ID]; ok {
-			scan.SastIncremental = strconv.FormatBool(metadataScan.IsIncremental)
-			scans[i] = scan
+	for i := 0; i < len(scans); i++ {
+		for _, metadataScan := range sastMetadata.Scans {
+			if scans[i].ID == metadataScan.ScanID {
+				scans[i].SastIncremental = strconv.FormatBool(metadataScan.IsIncremental)
+			}
 		}
 	}
 
 	views := make([]*scanView, len(scans))
-	for i := range scans {
+	for i := 0; i < len(scans); i++ {
 		views[i] = toScanView(&scans[i])
 	}
 	return views
