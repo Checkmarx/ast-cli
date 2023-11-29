@@ -2194,7 +2194,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 
 	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
 	if err != nil {
-		logger.Printf("error getting sast metadata:", err.Error())
+		logger.Printf("error getting sast metadata: %v", err)
 		return nil
 	}
 
