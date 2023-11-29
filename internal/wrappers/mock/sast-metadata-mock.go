@@ -1,8 +1,6 @@
 package mock
 
-import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-)
+import "github.com/checkmarx/ast-cli/internal/wrappers"
 
 type SastMetadataMockWrapper struct {
 }
