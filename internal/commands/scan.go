@@ -2184,13 +2184,11 @@ type scanView struct {
 }
 
 func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
-	paramsToSast := make(map[string]string)
-	var scanIDs []string
-
-	for _, scan := range scans {
-		scanIDs = append(scanIDs, scan.ID)
+	scanIDs := make([]string, len(scans))
+	for i := range scans {
+		scanIDs[i] = scans[i].ID
 	}
-	paramsToSast["scan-ids"] = strings.Join(scanIDs, ",")
+	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
 
 	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
 	if err != nil {
@@ -2198,16 +2196,20 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		return nil
 	}
 
-	for i := 0; i < len(scans); i++ {
-		for _, metadataScan := range sastMetadata.Scans {
-			if scans[i].ID == metadataScan.ScanId {
-				scans[i].SastIncremental = strconv.FormatBool(metadataScan.IsIncremental)
-			}
+	scanMetadataMap := make(map[string]wrappers.Scans, len(sastMetadata.Scans))
+	for _, metadataScan := range sastMetadata.Scans {
+		scanMetadataMap[metadataScan.ScanId] = metadataScan
+	}
+
+	for i, scan := range scans {
+		if metadataScan, ok := scanMetadataMap[scan.ID]; ok {
+			scan.SastIncremental = strconv.FormatBool(metadataScan.IsIncremental)
+			scans[i] = scan
 		}
 	}
 
 	views := make([]*scanView, len(scans))
-	for i := 0; i < len(scans); i++ {
+	for i := range scans {
 		views[i] = toScanView(&scans[i])
 	}
 	return views
@@ -2229,9 +2231,6 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 		scanType = "Full"
 	}
 
-	//if strings.EqualFold(commonParams.SastType, config.Type) && config.Value[configIncremental] == trueString {
-	//	scanType = "Incremental"
-	//}
 	intValForTimeout, err := strconv.Atoi(scan.Timeout)
 
 	if err == nil && intValForTimeout > 0 {
