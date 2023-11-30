@@ -2188,6 +2188,8 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 	for i := range scans {
 		scanIDs[i] = scans[i].ID
 	}
+
+	// return  a map
 	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
 
 	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
@@ -2196,6 +2198,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		return nil
 	}
 
+	// turn it key as scan ID and interface as value
 	for i := 0; i < len(scans); i++ {
 		for _, metadataScan := range sastMetadata.Scans {
 			if scans[i].ID == metadataScan.ScanID {
@@ -2203,7 +2206,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 			}
 		}
 	}
-
+	// TODO il do it in just one for
 	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
 		views[i] = toScanView(&scans[i])

@@ -4,7 +4,10 @@ import "github.com/checkmarx/ast-cli/internal/wrappers"
 
 type SastMetadataMockWrapper struct{}
 
-func (s *SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) (*wrappers.SastMetadataModel, error) {
+func (s *SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) (
+	*wrappers.SastMetadataModel,
+	error,
+) {
 	return &wrappers.SastMetadataModel{
 		TotalCount: 2,
 		Scans: []wrappers.Scans{
