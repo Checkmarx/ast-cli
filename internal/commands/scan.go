@@ -2198,10 +2198,11 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 	}
 
 	metadataMap := make(map[string]bool)
-	for _, scan := range sastMetadata.Scans {
-		metadataMap[scan.ScanID] = scan.IsIncremental
+	if sastMetadata != nil {
+		for _, scan := range sastMetadata.Scans {
+			metadataMap[scan.ScanID] = scan.IsIncremental
+		}
 	}
-
 	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
 		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
