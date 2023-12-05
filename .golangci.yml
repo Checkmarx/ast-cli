@@ -2,7 +2,7 @@ linters-settings:
   depguard:
     list-type: blacklist
     rules:
-      - package: "github.com/pkg/errors"
+      - pattern: "github.com/pkg/errors"
         action: allow
   dupl:
     threshold: 500
@@ -110,8 +110,8 @@ run:
     - internal/renameio
     - internal/robustio
 
- # In case of linter atoi() erros
- # go: '^1.21'
+  # In case of linter atoi() erros
+  # go: '^1.21'
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
