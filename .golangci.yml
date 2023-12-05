@@ -1,5 +1,16 @@
 linters-settings:
   depguard:
+    rules:
+      main:
+        files:
+          - $all
+        deny:
+          - pkg: "github.com/checkmarx/ast-cli"
+            desc: "ast-cli"
+          - pkg: "github.com/spf13/viper"
+            desc: "viper"
+          - pkg: "github.com/pkg/errors"
+            desc: "errors"
     list-type: blacklist
   dupl:
     threshold: 500
