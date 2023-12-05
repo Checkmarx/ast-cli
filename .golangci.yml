@@ -11,7 +11,6 @@ linters-settings:
             desc: "viper"
           - pkg: "github.com/pkg/errors"
             desc: "errors"
-    list-type: blacklist
   dupl:
     threshold: 500
   funlen:
