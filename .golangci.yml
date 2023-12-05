@@ -1,6 +1,9 @@
 linters-settings:
   depguard:
     list-type: blacklist
+    rules:
+      - pattern: github.com/pkg/errors
+        action: allow
   dupl:
     threshold: 500
   funlen:
