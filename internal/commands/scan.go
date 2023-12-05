@@ -2004,7 +2004,6 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-
 			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
 			if err != nil {
 				return err
