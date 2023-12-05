@@ -2,11 +2,11 @@ package wrappers
 
 import (
 	"encoding/json"
+	"net/http"
+
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
-
 	"github.com/spf13/viper"
-	"net/http"
 )
 
 type SastIncrementalHTTPWrapper struct {
