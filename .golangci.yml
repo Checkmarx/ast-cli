@@ -6,7 +6,6 @@ linters-settings:
           - $all
         allow:
           - pkg: "github.com/pkg/errors"
-            desc: "errors test"
   dupl:
     threshold: 500
   funlen:
