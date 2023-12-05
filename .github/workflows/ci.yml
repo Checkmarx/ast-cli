@@ -111,14 +111,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-#      - name: Set up Go version
-#        uses: actions/setup-go@v4
-#        with:
-#          go-version: ${{ env.GO_VERSION }}
-#      - run: go version
+      - name: Set up Go version
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: go version
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
+          skip-pkg-cache: true
           version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
