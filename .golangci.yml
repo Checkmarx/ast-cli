@@ -1,16 +1,6 @@
 linters-settings:
   depguard:
-    rules:
-      main:
-        files:
-          - $all
-        deny:
-          - pkg: "github.com/checkmarx/ast-cli"
-            desc: "ast-cli"
-          - pkg: "github.com/spf13/viper"
-            desc: "viper"
-          - pkg: "github.com/pkg/errors"
-            desc: "errors"
+    list-type: blacklist
   dupl:
     threshold: 500
   funlen:
@@ -123,6 +113,6 @@ run:
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.54.2 # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.55.2 # use the fixed version to not introduce new linters unexpectedly
   prepare:
     - echo "here I can run custom commands, but no preparation needed for this repo"
