@@ -120,7 +120,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           skip-pkg-cache: true
-          version: v1.55.2
+          version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
   govulncheck:

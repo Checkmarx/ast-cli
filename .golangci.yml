@@ -1,11 +1,9 @@
 linters-settings:
   depguard:
+    list-type: blacklist
     rules:
-      main:
-        files:
-          - $all
-        allow:
-          - pkg: "github.com/pkg/errors"
+      - package: github.com/pkg/errors
+        action: allow
   dupl:
     threshold: 500
   funlen:
@@ -112,12 +110,12 @@ run:
     - internal/renameio
     - internal/robustio
 
-  # In case of linter atoi() erros
-  # go: '^1.21'
+ # In case of linter atoi() erros
+ # go: '^1.21'
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.55.2 # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.54.2 # use the fixed version to not introduce new linters unexpectedly
   prepare:
     - echo "here I can run custom commands, but no preparation needed for this repo"
