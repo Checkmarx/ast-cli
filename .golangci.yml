@@ -2,8 +2,13 @@ linters-settings:
   depguard:
     list-type: blacklist
     Main:
-#      files:
-#        - $all
+      files:
+        - $all
+      deny:
+        - github.com/pkg/errors$
+    Internal:
+      files:
+        - "**/internal/**/*.go"
       deny:
         - github.com/pkg/errors$
   dupl:
