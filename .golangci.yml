@@ -9,7 +9,6 @@ linters-settings:
           - github.com/checkmarx/ast-cli/internal/wrappers
           - github.com/checkmarx/ast-cli/internal/params
           - github.com/spf13/viper
-          - github.com/pkg/errors
   dupl:
     threshold: 500
   funlen:
