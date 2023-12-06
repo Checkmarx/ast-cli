@@ -1,4 +1,5 @@
 linters-settings:
+#  https://golangci-lint.run/usage/linters/#depguard
   depguard:
     rules:
       # Name of a rule.
@@ -11,17 +12,11 @@ linters-settings:
         # Default: $all
         files:
           - $all
-#          - "!**/*_a _file.go"
         # List of allowed packages.
         allow:
-          - $gostd
+          - github.com/checkmarx/ast-cli$
+          - github.com/spf13/viper
           - github.com/pkg/errors
-        # Packages that are not allowed where the value is a suggestion.
-#        deny:
-#          - pkg: "github.com/sirupsen/logrus"
-#            desc: not allowed
-#          - pkg: "github.com/pkg/errors"
-#            desc: Should be replaced by standard lib errors package
   dupl:
     threshold: 500
   funlen:
