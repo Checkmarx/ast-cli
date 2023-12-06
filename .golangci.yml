@@ -1,8 +1,9 @@
 linters-settings:
   depguard:
-    rules:
-      - package: github.com/pkg/errors
-        skip: true
+    default:
+      packages:
+        - path: github.com/pkg/errors
+          skip: true
   dupl:
     threshold: 500
   funlen:
