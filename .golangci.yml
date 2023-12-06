@@ -1,9 +1,9 @@
 linters-settings:
 #  https://golangci-lint.run/usage/linters/#depguard
   depguard:
+    list-type: blacklist
     rules:
       main:
-        list-type: blacklist
         # Used to determine the package matching priority.
         # There are three different modes: `original`, `strict`, and `lax`.
         # Default: "original"
@@ -14,6 +14,7 @@ linters-settings:
 #          - $all
         # List of allowed packages.
         allow:
+          - $gostd
           - github.com/checkmarx/ast-cli$
           - github.com/spf13/viper
           - github.com/pkg/errors
