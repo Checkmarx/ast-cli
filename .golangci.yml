@@ -1,16 +1,13 @@
 linters-settings:
   depguard:
-    list-type: blacklist
     Main:
       files:
         - $all
+      allow:
+        - $all
       deny:
-        - github.com/pkg/errors$
-    Internal:
-      files:
-        - "**/internal/**/*.go"
-      deny:
-        - github.com/pkg/errors$
+        reflect: Please don't use reflect package
+#    list-type: blacklist
   dupl:
     threshold: 500
   funlen:
