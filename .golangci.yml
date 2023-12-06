@@ -4,8 +4,8 @@ linters-settings:
     Main:
 #      files:
 #        - $all
-      allow:
-        - github.com/pkg/errors
+      deny:
+        - github.com/pkg/errors$
   dupl:
     threshold: 500
   funlen:
