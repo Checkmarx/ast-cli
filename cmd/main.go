@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -9,11 +15,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/viper"
-	"os"
-	"os/exec"
-	"os/signal"
-	"strings"
-	"syscall"
 )
 
 const (
