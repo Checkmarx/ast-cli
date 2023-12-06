@@ -4,7 +4,6 @@ linters-settings:
     list-type: blacklist
     rules:
       main:
-        # List of allowed packages.
         allow:
           - $gostd
           - github.com/checkmarx/ast-cli/internal/wrappers
