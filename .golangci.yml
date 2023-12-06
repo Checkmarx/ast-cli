@@ -1,12 +1,11 @@
 linters-settings:
   depguard:
-    Main:
-      files:
-        - $all
-      allow:
-        - $all
-      deny:
-        reflect: Please don't use reflect package
+    skip-dirs-use-default: true
+    skip-dirs:
+      - github.com/checkmarx/ast-cli/internal/params
+      - github.com/pkg/errors
+      - github.com/spf13/viper
+      - github.com/checkmarx/ast-cli/internal/wrappers
 #    list-type: blacklist
   dupl:
     threshold: 500
