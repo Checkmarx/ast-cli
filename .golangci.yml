@@ -1,10 +1,11 @@
 linters-settings:
   depguard:
     list-type: blacklist
-#    packages:
-#      - github.com/pkg/errors
-    allow:
-      - github.com/pkg/errors$
+    Main:
+#      files:
+#        - $all
+      allow:
+        - github.com/pkg/errors
   dupl:
     threshold: 500
   funlen:
