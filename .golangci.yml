@@ -1,11 +1,10 @@
 linters-settings:
   depguard:
-    skip-dirs-use-default: true
-    skip-dirs:
-      - github.com/checkmarx/ast-cli/internal/params
-      - github.com/pkg/errors
-      - github.com/spf13/viper
-      - github.com/checkmarx/ast-cli/internal/wrappers
+    allow:
+      - pattern: 'github.com/checkmarx/ast-cli/internal/params/**'
+      - pattern: 'github.com/pkg/errors/**'
+      - pattern: 'github.com/spf13/viper/**'
+      - pattern: 'github.com/checkmarx/ast-cli/internal/wrappers/**'
 #    list-type: blacklist
   dupl:
     threshold: 500
