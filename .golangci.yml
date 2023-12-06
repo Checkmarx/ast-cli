@@ -3,7 +3,7 @@ linters-settings:
     list-type: blacklist
 #    packages:
 #      - github.com/pkg/errors
-    deny:
+    allow:
       - github.com/pkg/errors$
   dupl:
     threshold: 500
