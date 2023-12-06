@@ -1,11 +1,9 @@
 linters-settings:
   depguard:
     allow:
-      - package: github.com/checkmarx/ast-cli/internal/params
-      - package: github.com/pkg/errors
-      - package: github.com/spf13/viper
-      - package: github.com/checkmarx/ast-cli/internal/wrappers
-#    list-type: blacklist
+      - package: "github.com/pkg/errors"
+      - package: "github.com/spf13/viper"
+    list-type: blacklist
   dupl:
     threshold: 500
   funlen:
