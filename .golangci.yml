@@ -1,7 +1,7 @@
 linters-settings:
   depguard:
     allow:
-      - package: github.com/pkg/errors
+      - pattern: 'github.com/pkg/errors/**'
 #    default:
 #      packages:
 #        - path: github.com/pkg/errors
