@@ -8,13 +8,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/spf13/viper"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strings"
 	"syscall"
-
-	"github.com/spf13/viper"
 )
 
 const (
