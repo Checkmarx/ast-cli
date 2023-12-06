@@ -7,7 +7,7 @@ linters-settings:
         # List of allowed packages.
         allow:
           - $gostd
-          - github.com/checkmarx/ast-cli/$
+          - github.com/checkmarx/ast-cli/internal$
           - github.com/spf13/viper
           - github.com/pkg/errors
   dupl:
