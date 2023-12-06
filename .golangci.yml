@@ -2,12 +2,12 @@ linters-settings:
 #  https://golangci-lint.run/usage/linters/#depguard
   depguard:
     rules:
-      # Name of a rule.
       main:
+        list-type: blacklist
         # Used to determine the package matching priority.
         # There are three different modes: `original`, `strict`, and `lax`.
         # Default: "original"
-        list-mode: original
+#        list-mode: blacklist
         # List of file globs that will match this list of settings to compare against.
         # Default: $all
 #        files:
