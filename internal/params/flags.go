@@ -170,6 +170,13 @@ const (
 	ChatResultVulnerability = "result-vulnerability"
 	// Mask
 	MaskContent = "mask-content"
+
+	// SAST-Chat
+	ScanResultsFile = "scan-results-file"
+	SourceDir       = "source-dir"
+	SastLanguage    = "sast-language"
+	SastQuery       = "sast-query"
+	SastResultId    = "sast-result-id"
 )
 
 // Parameter values

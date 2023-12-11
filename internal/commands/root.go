@@ -47,6 +47,7 @@ func NewAstCLI(
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	chatWrapper wrappers.ChatWrapper,
+	sastChatWrapper wrappers.SastChatWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 ) *cobra.Command {
@@ -183,6 +184,7 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper)
+	sastChatCmd := NewSastChatCommand(sastChatWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,
@@ -194,6 +196,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
+		sastChatCmd,
 	)
 
 	rootCmd.SilenceErrors = true

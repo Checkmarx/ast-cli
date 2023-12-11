@@ -52,7 +52,7 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 		Use:   "chat",
 		Short: "Interact with OpenAI models",
 		Long:  "Interact with OpenAI models",
-		RunE:  runChat(chatWrapper),
+		RunE:  runSastChat(chatWrapper),
 	}
 
 	chatCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
@@ -116,14 +116,6 @@ func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []s
 			Response:       responseContent,
 		}, printer.FormatJSON)
 	}
-}
-
-func getMessageContents(response []message.Message) []string {
-	var responseContent []string
-	for _, r := range response {
-		responseContent = append(responseContent, r.Content)
-	}
-	return responseContent
 }
 
 func buildMessages(chatResultCode []byte,
