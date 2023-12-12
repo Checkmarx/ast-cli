@@ -20,11 +20,11 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
 
 	_, projectID = getRootScan(t)
-	similarityID := "1826563305"
+	similarityID := "1ddba286f9d7caa81c1a605df93351df959c5abc4a576a8cdcc1a047b656afb9"
 	state := "Urgent"
 	severity := "Medium"
 	comment := "Testing CLI Command for triage."
-	scanType := "sast"
+	scanType := "kics"
 
 	args := []string{
 		"triage", "update",
