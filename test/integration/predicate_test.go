@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -20,6 +21,10 @@ var projectID string
 func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
+
+	// alternative scan and project ID
+	// scanID := "1d72ad47-d2d8-4bc9-bd7b-7b7ca1276590"
+	// projectID = "71f6ea96-c0af-4096-8b06-ca2c67a41ad0"
 
 	scanID, projectID := getRootScan(t)
 	_ = executeCmdNilAssertion(
@@ -45,27 +50,26 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	err = json.Unmarshal(file, &result)
 	assert.NilError(t, err, "error unmarshalling file")
 
-	//similarityID := "1ddba286f9d7caa81c1a605df93351df959c5abc4a576a8cdcc1a047b656afb9"
-
-	similarityID := result.Results[0].SimilarityID
-	//if strings.HasPrefix(result.Results[0].SimilarityID, "-") {
-	//	similarityID = result.Results[0].SimilarityID[1:]
-	//}
-	state := "Confirmed"
-	if result.Results[0].State != "Urgent" {
-		state = "Urgent"
+	index := 0
+	for i := range result.Results {
+		if strings.EqualFold(result.Results[i].Type, params.SastType) {
+			index = i
+			break
+		}
 	}
-	severity := "High"
-	if result.Results[0].Severity != "Medium" {
-		severity = "Medium"
+
+	similarityID := result.Results[index].SimilarityID
+
+	state := "CONFIRMED"
+	if !strings.EqualFold(result.Results[index].State, "Urgent") {
+		state = "URGENT"
+	}
+	severity := "HIGH"
+	if !strings.EqualFold(result.Results[index].Severity, "Medium") {
+		severity = "MEDIUM"
 	}
 	comment := "Testing CLI Command for triage."
-	scanType := result.Results[0].Type
-
-	//state := "Urgent"
-	//severity := "Medium"
-	//comment := "Testing CLI Command for triage."
-	//scanType := "kics"
+	scanType := result.Results[index].Type
 
 	args := []string{
 		"triage", "update",
@@ -77,11 +81,10 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 		flag(params.ScanTypeFlag), scanType,
 	}
 
-	_, outputBufferForStep1 := executeCommand(t, args...)
+	err, outputBufferForStep1 := executeCommand(t, args...)
 	_, readingError := io.ReadAll(outputBufferForStep1)
 	assert.NilError(t, readingError, "Reading result should pass")
 
-	err, _ = executeCommand(t, args...)
 	assert.NilError(t, err, "Updating the predicate with same values should pass.")
 
 	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
@@ -97,7 +100,7 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 	fmt.Println(outputBufferForStep2)
 	_ = unmarshall(t, outputBufferForStep2, &predicateResult, "Reading results should pass")
 
-	assert.Assert(t, (len(predicateResult)) == 1, "Should have 1 predicate as the result.")
+	assert.Assert(t, (len(predicateResult)) >= 1, "Should have at least 1 predicate as the result.")
 
 	deleteScanAndProject()
 

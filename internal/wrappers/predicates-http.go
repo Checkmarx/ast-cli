@@ -97,7 +97,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		return nil, errors.Errorf("Predicate bad request.")
-	case http.StatusOK:
+	case http.StatusOK, http.StatusCreated:
 		fmt.Println("Predicate updated successfully.")
 		return nil, nil
 	case http.StatusNotModified:
