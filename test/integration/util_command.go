@@ -79,6 +79,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
+	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -99,13 +100,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
-	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath,prDecorationGitlabPath)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath, prDecorationGitlabPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -134,6 +136,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		chatWrapper,
 		featureFlagsWrapper,
 		policyWrapper,
+		sastMetadataWrapper,
 	)
 	return astCli
 }
