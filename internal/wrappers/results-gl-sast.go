@@ -14,22 +14,26 @@ type GlSastResultsCollection struct {
 	Vulnerabilities []GlVulnerabilities `json:"vulnerabilities"`
 }
 type GlVulnerabilities struct {
-	ID          string       `json:"id"`
-	Category    string       `json:"category"`
-	Name        string       `json:"name"`
-	Message     string       `json:"message"`
-	Description string       `json:"description"`
-	CVE         string       `json:"cve"`
-	Severity    string       `json:"severity"`
-	Confidence  string       `json:"confidence"`
-	Solution    string       `json:"solution"`
-	Scanner     GlScanner    `json:"scanner"`
-	Identifiers []Identifier `json:"identifiers"`
-	Links       []string     `json:"links"`
-	Tracking    Tracking     `json:"tracking"`
-	Flags       []Flag       `json:"flags"`
-	Location    Location     `json:"location"`
+	ID                  string       `json:"id"`
+	Category            string       `json:"category"`
+	Name                string       `json:"name"`
+	Message             string       `json:"message"`
+	Description         string       `json:"description"`
+	CVE                 string       `json:"cve"`
+	Severity            string       `json:"severity"`
+	Confidence          string       `json:"confidence"`
+	Solution            string       `json:"solution"`
+	Scanner             GlScanner    `json:"scanner"`
+	Identifiers         []Identifier `json:"identifiers"`
+	Links               []string     `json:"links"`
+	Tracking            Tracking     `json:"tracking"`
+	Flags               []Flag       `json:"flags"`
+	Location            Location     `json:"location"`
+	DetectionDate       string       `json:"detectionDate"`
+	VulnerabilityStatus string       `json:"status"`
+	VulnerabilityState  string       `json:"state"`
 }
+
 type Identifier struct {
 	Type  string `json:"type"`
 	Name  string `json:"name"`

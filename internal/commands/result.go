@@ -1270,15 +1270,18 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	message := fmt.Sprintf("%s@%s:%s", queryName, fileName, lineNumber)
 
 	glSast.Vulnerabilities = append(glSast.Vulnerabilities, wrappers.GlVulnerabilities{
-		ID:          ID,
-		Category:    category,
-		Name:        queryName,
-		Message:     message,
-		Description: result.Description,
-		CVE:         ID,
-		Severity:    cases.Title(language.English).String(result.Severity),
-		Confidence:  cases.Title(language.English).String(result.Severity),
-		Solution:    "",
+		ID:                  ID,
+		Category:            category,
+		Name:                queryName,
+		Message:             message,
+		Description:         result.Description,
+		CVE:                 ID,
+		Severity:            cases.Title(language.English).String(result.Severity),
+		Confidence:          cases.Title(language.English).String(result.Severity),
+		DetectionDate:       result.FirstFoundAt,
+		VulnerabilityStatus: result.Status,
+		VulnerabilityState:  result.State,
+		Solution:            "",
 
 		Scanner: wrappers.GlScanner{
 			ID:   category,
