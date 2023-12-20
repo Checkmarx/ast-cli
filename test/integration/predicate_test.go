@@ -22,10 +22,6 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
 
-	// alternative scan and project ID
-	// scanID := "1d72ad47-d2d8-4bc9-bd7b-7b7ca1276590"
-	// projectID = "71f6ea96-c0af-4096-8b06-ca2c67a41ad0"
-
 	scanID, projectID := getRootScan(t)
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
