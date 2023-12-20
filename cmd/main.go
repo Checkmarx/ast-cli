@@ -73,7 +73,6 @@ func main() {
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
-	sastChatWrapper := wrappers.NewSastChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 
@@ -102,7 +101,6 @@ func main() {
 		jwtWrapper,
 		scaRealTimeWrapper,
 		chatWrapper,
-		sastChatWrapper,
 		featureFlagsWrapper,
 		policyWrapper,
 	)

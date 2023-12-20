@@ -20,33 +20,7 @@ import (
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s: %v"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s: %v"
 
-func NewChatSastCommand(sastChatWrapper wrappers.ChatSastWrapper) *cobra.Command {
-	chatCmd := &cobra.Command{
-		Use:   "chatsast",
-		Short: "OpenAI-based SAST results remediation",
-		Long:  "Use OpenAI models to remediate SAST results and chat about them",
-		RunE:  runSastChat(sastChatWrapper),
-	}
-
-	chatCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
-	chatCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
-	chatCmd.Flags().String(params.ChatUserInput, "", "User question")
-	chatCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
-	chatCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
-	chatCmd.Flags().String(params.ChatSastLanguage, "", "Language of the result to remediate")
-	chatCmd.Flags().String(params.ChatSastQuery, "", "Query of the result to remediate")
-	chatCmd.Flags().String(params.ChatSastResultId, "", "ID of the result to remediate")
-
-	_ = chatCmd.MarkFlagRequired(params.ChatAPIKey)
-	_ = chatCmd.MarkFlagRequired(params.ChatSastScanResultsFile)
-	_ = chatCmd.MarkFlagRequired(params.ChatSastSourceDir)
-	_ = chatCmd.MarkFlagRequired(params.ChatSastResultId)
-
-	return chatCmd
-}
-
-func runSastChat(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Command, args []string) error {
+func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
@@ -102,7 +76,7 @@ func runSastChat(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 			return outputError(cmd, id, err)
 		}
 
-		promptTemplate, err := chatsast.ReadPromptTemplate("internal/commands/sastchat/prompts/CEF_MethodsAndNodes.txt")
+		promptTemplate, err := chatsast.ReadPromptTemplate("internal/commands/chatsast/prompts/CEF_MethodsAndNodes.txt")
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
 			return outputError(cmd, id, err)

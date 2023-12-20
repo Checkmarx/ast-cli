@@ -1,142 +1,73 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/message"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/role"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-const systemInput = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of Infrastructure as Code Security.
-You should be able to analyze and understand both the technical aspects of the security results and the common queries users may have about the results.
-You should also be capable of delivering clear, concise, and informative answers to help take appropriate action based on the findings.
-If a question irrelevant to the mentioned Infrastructure as Code Security source or result is asked,
-answer 'I am the AI Guided Remediation assistant and can answer only on questions related to the selected result'.`
-
-const assistantInputFormat = `Checkmarx Infrastructure as Code Security has scanned this source code and reported the result.
-This is the source code:
-` + "```" + `
-%s
-` + "```" + `
-and this is the result (vulnerability or security issue) found by Infrastructure as Code Security:
-'%s' is detected in line %s with severity '%s'.`
-
-const userInputFormat = `The user question is:
-'<|IAC_QUESTION_START|>'
-"%s"
-'<|IAC_QUESTION_END|>'`
-
-// dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
-const dropLen = 4
-
-const ConversationIDErrorFormat = "Invalid conversation ID %s."
-const FileErrorFormat = "It seems that %s is not available for AI Guided Remediation. Please ensure that you have opened the correct workspace or the relevant file."
-
-type OutputModel struct {
-	ConversationID string   `json:"conversationId"`
-	Response       []string `json:"response"`
-}
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatCmd := &cobra.Command{
 		Use:   "chat",
-		Short: "Interact with OpenAI models",
-		Long:  "Interact with OpenAI models",
-		RunE:  runSastChat(chatWrapper),
+		Short: "Chat with OpenAI models",
+		Long:  "Chat with OpenAI models regarding KICS or SAST results",
 	}
+	chatKicsCmd := chatKicsSubCommand(chatWrapper)
+	chatSastCmd := chatSastSubCommand(chatWrapper)
 
-	chatCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
-	chatCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
-	chatCmd.Flags().String(params.ChatUserInput, "", "User question")
-	chatCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatCmd.Flags().String(params.ChatResultFile, "", "IaC result code file")
-	chatCmd.Flags().String(params.ChatResultLine, "", "IaC result line")
-	chatCmd.Flags().String(params.ChatResultSeverity, "", "IaC result severity")
-	chatCmd.Flags().String(params.ChatResultVulnerability, "", "IaC result vulnerability name")
-
-	_ = chatCmd.MarkFlagRequired(params.ChatUserInput)
-	_ = chatCmd.MarkFlagRequired(params.ChatAPIKey)
-	_ = chatCmd.MarkFlagRequired(params.ChatResultFile)
-	_ = chatCmd.MarkFlagRequired(params.ChatResultLine)
-	_ = chatCmd.MarkFlagRequired(params.ChatResultSeverity)
-	_ = chatCmd.MarkFlagRequired(params.ChatResultVulnerability)
-
+	chatCmd.AddCommand(chatKicsCmd, chatSastCmd)
 	return chatCmd
 }
 
-func runChat(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
-		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
-		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
-		chatResultFile, _ := cmd.Flags().GetString(params.ChatResultFile)
-		chatResultLine, _ := cmd.Flags().GetString(params.ChatResultLine)
-		chatResultSeverity, _ := cmd.Flags().GetString(params.ChatResultSeverity)
-		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatResultVulnerability)
-		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
-
-		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen, 0)
-
-		if chatConversationID == "" {
-			chatConversationID = statefulWrapper.GenerateId().String()
-		}
-
-		id, err := uuid.Parse(chatConversationID)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID))
-		}
-
-		chatResultCode, err := os.ReadFile(chatResultFile)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(FileErrorFormat, chatResultFile))
-		}
-
-		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
-		response, err := chatWrapper.Call(statefulWrapper, id, newMessages)
-		if err != nil {
-			return outputError(cmd, id, err)
-		}
-
-		responseContent := getMessageContents(response)
-
-		return printer.Print(cmd.OutOrStdout(), &OutputModel{
-			ConversationID: id.String(),
-			Response:       responseContent,
-		}, printer.FormatJSON)
+func chatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+	chatKicsCmd := &cobra.Command{
+		Use:   "kics",
+		Short: "Chat about KICS result with OpenAI models",
+		Long:  "Chat about KICS result with OpenAI models",
+		RunE:  runChatKics(chatWrapper),
 	}
+
+	chatKicsCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
+	chatKicsCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
+	chatKicsCmd.Flags().String(params.ChatUserInput, "", "User question")
+	chatKicsCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
+	chatKicsCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
+	chatKicsCmd.Flags().String(params.ChatKicsResultLine, "", "IaC result line")
+	chatKicsCmd.Flags().String(params.ChatKicsResultSeverity, "", "IaC result severity")
+	chatKicsCmd.Flags().String(params.ChatKicsResultVulnerability, "", "IaC result vulnerability name")
+
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatUserInput)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatAPIKey)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultFile)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultLine)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultSeverity)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultVulnerability)
+
+	return chatKicsCmd
 }
 
-func buildMessages(chatResultCode []byte,
-	chatResultVulnerability, chatResultLine, chatResultSeverity, userInput string) []message.Message {
-	var newMessages []message.Message
-	newMessages = append(newMessages, message.Message{
-		Role:    role.System,
-		Content: systemInput,
-	}, message.Message{
-		Role:    role.Assistant,
-		Content: fmt.Sprintf(assistantInputFormat, string(chatResultCode), chatResultVulnerability, chatResultLine, chatResultSeverity),
-	}, message.Message{
-		Role:    role.User,
-		Content: fmt.Sprintf(userInputFormat, userInput),
-	})
-	return newMessages
-}
+func chatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+	chatSastCmd := &cobra.Command{
+		Use:   "sast",
+		Short: "OpenAI-based SAST results remediation",
+		Long:  "Use OpenAI models to remediate SAST results and chat about them",
+		RunE:  runChatSast(chatWrapper),
+	}
 
-func outputError(cmd *cobra.Command, id uuid.UUID, err error) error {
-	return printer.Print(cmd.OutOrStdout(), &OutputModel{
-		ConversationID: id.String(),
-		Response:       []string{err.Error()},
-	}, printer.FormatJSON)
+	chatSastCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
+	chatSastCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
+	chatSastCmd.Flags().String(params.ChatUserInput, "", "User question")
+	chatSastCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
+	chatSastCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
+	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
+	chatSastCmd.Flags().String(params.ChatSastLanguage, "", "Language of the result to remediate")
+	chatSastCmd.Flags().String(params.ChatSastQuery, "", "Query of the result to remediate")
+	chatSastCmd.Flags().String(params.ChatSastResultId, "", "ID of the result to remediate")
+
+	_ = chatSastCmd.MarkFlagRequired(params.ChatAPIKey)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastScanResultsFile)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastSourceDir)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastResultId)
+
+	return chatSastCmd
 }
