@@ -133,6 +133,7 @@ func NewScanCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	sastMetadataWrapper wrappers.SastMetadataWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -157,9 +158,10 @@ func NewScanCommand(
 		groupsWrapper,
 		riskOverviewWrapper,
 		jwtWrapper,
-		policyWrapper)
+		policyWrapper,
+	)
 
-	listScansCmd := scanListSubCommand(scansWrapper)
+	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
@@ -373,7 +375,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in Checkmarx One",
@@ -390,7 +392,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runListScansCommand(scansWrapper),
+		RunE: runListScansCommand(scansWrapper, sastMetadataWrapper),
 	}
 	listScansCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterScanListFlagUsage)
 	return listScansCmd
@@ -1984,7 +1986,7 @@ func isPolicyEvaluated(
 	return true, nil, nil
 }
 
-func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var allScansModel *wrappers.ScansCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -1997,11 +1999,12 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
+
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = printByFormat(cmd, toScanViews(allScansModel.Scans))
+			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
 			if err != nil {
 				return err
 			}
@@ -2179,9 +2182,29 @@ type scanView struct {
 	Engines         []string
 }
 
-func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
+	scanIDs := make([]string, len(scans))
+	for i := range scans {
+		scanIDs[i] = scans[i].ID
+	}
+
+	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
+
+	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
+	if err != nil {
+		logger.Printf("error getting sast metadata: %v", err)
+		return nil
+	}
+
+	metadataMap := make(map[string]bool)
+	if sastMetadata != nil {
+		for i := range sastMetadata.Scans {
+			metadataMap[sastMetadata.Scans[i].ScanID] = sastMetadata.Scans[i].IsIncremental
+		}
+	}
 	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
+		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
 		views[i] = toScanView(&scans[i])
 	}
 	return views
