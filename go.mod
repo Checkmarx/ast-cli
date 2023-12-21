@@ -8,7 +8,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gookit/color v1.5.4
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
