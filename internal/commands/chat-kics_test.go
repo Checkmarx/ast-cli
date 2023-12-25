@@ -10,11 +10,11 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestChatHelp(t *testing.T) {
-	execCmdNilAssertion(t, "help", "chat")
+func TestChatKicsHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "chat", "kics")
 }
 
-func TestChatInvalidId(t *testing.T) {
+func TestChatKicsInvalidId(t *testing.T) {
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", "invalidId",
 		"--chat-apikey", "apiKey",
@@ -30,7 +30,7 @@ func TestChatInvalidId(t *testing.T) {
 	assert.Assert(t, strings.Contains(s, fmt.Sprintf(ConversationIDErrorFormat, "invalidId")), s)
 }
 
-func TestChatInvalidFile(t *testing.T) {
+func TestChatKicsInvalidFile(t *testing.T) {
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
@@ -46,7 +46,7 @@ func TestChatInvalidFile(t *testing.T) {
 	assert.Assert(t, strings.Contains(s, fmt.Sprintf(FileErrorFormat, "invalidfile")), s)
 }
 
-func TestChatCorrectResponse(t *testing.T) {
+func TestChatKicsCorrectResponse(t *testing.T) {
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",

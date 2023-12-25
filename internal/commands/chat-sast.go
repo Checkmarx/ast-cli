@@ -17,8 +17,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s: %v"
-const CreatePromptErrorFormat = "Error creating prompt for result ID %s: %v"
+const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
+const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
@@ -79,7 +79,7 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 		scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ScanResultsFileErrorFormat, scanResultsFile, err))
+			return outputError(cmd, id, errors.Errorf(ScanResultsFileErrorFormat, scanResultsFile))
 		}
 
 		if sastResultId == "" {
@@ -102,16 +102,10 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 			return outputError(cmd, id, err)
 		}
 
-		promptTemplate, err := chatsast.ReadPromptTemplate("internal/commands/chatsast/prompts/CEF_MethodsAndNodes.txt")
+		prompt, err := chatsast.CreatePrompt(sastResult, sources)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, err)
-		}
-
-		prompt, err := chatsast.CreatePromptWithSource(sastResult, sources, promptTemplate)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(CreatePromptErrorFormat, sastResultId, err))
+			return outputError(cmd, id, errors.Errorf(CreatePromptErrorFormat, sastResultId))
 		}
 
 		var newMessages []message.Message
