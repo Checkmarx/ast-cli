@@ -39,7 +39,6 @@ const userInputFormat = `The user question is:
 // dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
 const dropLen = 4
 
-const ConversationIDErrorFormat = "Invalid conversation ID %s."
 const FileErrorFormat = "It seems that %s is not available for AI Guided Remediation. Please ensure that you have opened the correct workspace or the relevant file."
 
 type OutputModel struct {
@@ -47,31 +46,31 @@ type OutputModel struct {
 	Response       []string `json:"response"`
 }
 
-func NewChatKicsCommand(chatKicsWrapper wrappers.ChatWrapper) *cobra.Command {
-	chatCmd := &cobra.Command{
-		Use:   "chatkics",
-		Short: "Chat about KICS with OpenAI models",
-		Long:  "Chat about KICS with OpenAI models",
-		RunE:  runChatKics(chatKicsWrapper),
+func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+	chatKicsCmd := &cobra.Command{
+		Use:   "kics",
+		Short: "Chat about KICS result with OpenAI models",
+		Long:  "Chat about KICS result with OpenAI models",
+		RunE:  runChatKics(chatWrapper),
 	}
 
-	chatCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
-	chatCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
-	chatCmd.Flags().String(params.ChatUserInput, "", "User question")
-	chatCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
-	chatCmd.Flags().String(params.ChatKicsResultLine, "", "IaC result line")
-	chatCmd.Flags().String(params.ChatKicsResultSeverity, "", "IaC result severity")
-	chatCmd.Flags().String(params.ChatKicsResultVulnerability, "", "IaC result vulnerability name")
+	chatKicsCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
+	chatKicsCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
+	chatKicsCmd.Flags().String(params.ChatUserInput, "", "User question")
+	chatKicsCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
+	chatKicsCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
+	chatKicsCmd.Flags().String(params.ChatKicsResultLine, "", "IaC result line")
+	chatKicsCmd.Flags().String(params.ChatKicsResultSeverity, "", "IaC result severity")
+	chatKicsCmd.Flags().String(params.ChatKicsResultVulnerability, "", "IaC result vulnerability name")
 
-	_ = chatCmd.MarkFlagRequired(params.ChatUserInput)
-	_ = chatCmd.MarkFlagRequired(params.ChatAPIKey)
-	_ = chatCmd.MarkFlagRequired(params.ChatKicsResultFile)
-	_ = chatCmd.MarkFlagRequired(params.ChatKicsResultLine)
-	_ = chatCmd.MarkFlagRequired(params.ChatKicsResultSeverity)
-	_ = chatCmd.MarkFlagRequired(params.ChatKicsResultVulnerability)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatUserInput)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatAPIKey)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultFile)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultLine)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultSeverity)
+	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultVulnerability)
 
-	return chatCmd
+	return chatKicsCmd
 }
 
 func runChatKics(chatKicsWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {

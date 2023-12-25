@@ -15,7 +15,7 @@ func TestChatHelp(t *testing.T) {
 }
 
 func TestChatInvalidId(t *testing.T) {
-	buffer, err := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", "invalidId",
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",
@@ -31,7 +31,7 @@ func TestChatInvalidId(t *testing.T) {
 }
 
 func TestChatInvalidFile(t *testing.T) {
-	buffer, err := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",
@@ -47,7 +47,7 @@ func TestChatInvalidFile(t *testing.T) {
 }
 
 func TestChatCorrectResponse(t *testing.T) {
-	buffer, err := executeRedirectedTestCommand("chat",
+	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
 		"--user-input", "userInput",

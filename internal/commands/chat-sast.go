@@ -20,6 +20,32 @@ import (
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s: %v"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s: %v"
 
+func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+	chatSastCmd := &cobra.Command{
+		Use:   "sast",
+		Short: "OpenAI-based SAST results remediation",
+		Long:  "Use OpenAI models to remediate SAST results and chat about them",
+		RunE:  runChatSast(chatWrapper),
+	}
+
+	chatSastCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
+	chatSastCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
+	chatSastCmd.Flags().String(params.ChatUserInput, "", "User question")
+	chatSastCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
+	chatSastCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
+	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
+	chatSastCmd.Flags().String(params.ChatSastLanguage, "", "Language of the result to remediate")
+	chatSastCmd.Flags().String(params.ChatSastQuery, "", "Query of the result to remediate")
+	chatSastCmd.Flags().String(params.ChatSastResultId, "", "ID of the result to remediate")
+
+	_ = chatSastCmd.MarkFlagRequired(params.ChatAPIKey)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastScanResultsFile)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastSourceDir)
+	_ = chatSastCmd.MarkFlagRequired(params.ChatSastResultId)
+
+	return chatSastCmd
+}
+
 func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
@@ -47,7 +73,7 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 		id, err := uuid.Parse(chatConversationID)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID, err))
+			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID))
 		}
 
 		scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
