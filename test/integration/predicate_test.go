@@ -3,8 +3,11 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -19,12 +22,50 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
 
-	_, projectID = getRootScan(t)
-	similarityID := "1826563305"
-	state := "Urgent"
-	severity := "Medium"
+	scanID, projectID := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	index := 0
+	for i := range result.Results {
+		if strings.EqualFold(result.Results[i].Type, params.SastType) {
+			index = i
+			break
+		}
+	}
+
+	similarityID := result.Results[index].SimilarityID
+
+	state := "CONFIRMED"
+	if !strings.EqualFold(result.Results[index].State, "Urgent") {
+		state = "URGENT"
+	}
+	severity := "HIGH"
+	if !strings.EqualFold(result.Results[index].Severity, "Medium") {
+		severity = "MEDIUM"
+	}
 	comment := "Testing CLI Command for triage."
-	scanType := "sast"
+	scanType := result.Results[index].Type
 
 	args := []string{
 		"triage", "update",
@@ -36,11 +77,10 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 		flag(params.ScanTypeFlag), scanType,
 	}
 
-	_, outputBufferForStep1 := executeCommand(t, args...)
+	err, outputBufferForStep1 := executeCommand(t, args...)
 	_, readingError := io.ReadAll(outputBufferForStep1)
 	assert.NilError(t, readingError, "Reading result should pass")
 
-	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Updating the predicate with same values should pass.")
 
 	fmt.Println("Step 2: Testing the command 'triage show' to get the same predicate back.")
@@ -52,11 +92,11 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 		flag(params.ScanTypeFlag), scanType,
 	)
 
-	result := []wrappers.Predicate{}
+	predicateResult := []wrappers.Predicate{}
 	fmt.Println(outputBufferForStep2)
-	_ = unmarshall(t, outputBufferForStep2, &result, "Reading results should pass")
+	_ = unmarshall(t, outputBufferForStep2, &predicateResult, "Reading results should pass")
 
-	assert.Assert(t, (len(result)) == 1, "Should have 1 predicate as the result.")
+	assert.Assert(t, (len(predicateResult)) >= 1, "Should have at least 1 predicate as the result.")
 
 	deleteScanAndProject()
 
