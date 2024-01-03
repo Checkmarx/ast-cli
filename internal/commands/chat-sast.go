@@ -19,6 +19,7 @@ import (
 
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
+const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
@@ -59,12 +60,15 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 
 		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen, 0)
 
+		newConversation := false
+		var userInput string
 		if chatConversationID == "" {
+			newConversation = true
 			chatConversationID = statefulWrapper.GenerateId().String()
 		} else {
-			userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
+			userInput, _ = cmd.Flags().GetString(params.ChatUserInput)
 			if userInput == "" {
-				msg := fmt.Sprintf("%s is required when %s is provided", params.ChatUserInput, params.ChatConversationID)
+				msg := fmt.Sprintf(UserInputRequiredErrorFormat, params.ChatUserInput, params.ChatConversationID)
 				logger.PrintIfVerbose(msg)
 				return outputError(cmd, uuid.Nil, errors.Errorf(msg))
 			}
@@ -76,43 +80,23 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID))
 		}
 
-		scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ScanResultsFileErrorFormat, scanResultsFile))
-		}
-
-		if sastResultId == "" {
-			msg := fmt.Sprintf("currently only %s is supported", params.ChatSastResultId)
-			logger.PrintIfVerbose(msg)
-			return outputError(cmd, uuid.Nil, errors.Errorf(msg))
-		}
-
-		//languages := GetLanguages(scanResults, sastLanguage)
-		//queriesByLanguage := GetQueries(scanResults, languages, sastQuery)
-		sastResult, err := chatsast.GetResultById(scanResults, sastResultId)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, err)
-		}
-
-		sources, err := chatsast.GetSourcesForResult(sastResult, sourceDir)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, err)
-		}
-
-		prompt, err := chatsast.CreatePrompt(sastResult, sources)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(CreatePromptErrorFormat, sastResultId))
-		}
-
 		var newMessages []message.Message
-		newMessages = append(newMessages, message.Message{
-			Role:    role.User,
-			Content: prompt,
-		})
+		if newConversation {
+			prompt, err := buildPrompt(scanResultsFile, sastResultId, sourceDir)
+			if err != nil {
+				logger.PrintIfVerbose(err.Error())
+				return outputError(cmd, id, err)
+			}
+			newMessages = append(newMessages, message.Message{
+				Role:    role.User,
+				Content: prompt,
+			})
+		} else {
+			newMessages = append(newMessages, message.Message{
+				Role:    role.User,
+				Content: userInput,
+			})
+		}
 
 		response, err := sastChatWrapper.Call(statefulWrapper, id, newMessages)
 		if err != nil {
@@ -126,6 +110,36 @@ func runChatSast(sastChatWrapper wrappers.ChatSastWrapper) func(cmd *cobra.Comma
 			Response:       responseContent,
 		}, printer.FormatJSON)
 	}
+}
+
+func buildPrompt(scanResultsFile, sastResultId, sourceDir string) (string, error) {
+	scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
+	if err != nil {
+		return "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(ScanResultsFileErrorFormat, scanResultsFile), err)
+	}
+
+	if sastResultId == "" {
+		return "", errors.Errorf(fmt.Sprintf("error in build-prompt: currently only --%s is supported", params.ChatSastResultId))
+	}
+
+	//languages := GetLanguages(scanResults, sastLanguage)
+	//queriesByLanguage := GetQueries(scanResults, languages, sastQuery)
+	sastResult, err := chatsast.GetResultById(scanResults, sastResultId)
+	if err != nil {
+		return "", fmt.Errorf("error in build-prompt: %w", err)
+	}
+
+	sources, err := chatsast.GetSourcesForResult(sastResult, sourceDir)
+	if err != nil {
+		return "", fmt.Errorf("error in build-prompt: %w", err)
+	}
+
+	prompt, err := chatsast.CreatePrompt(sastResult, sources)
+	if err != nil {
+		return "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(CreatePromptErrorFormat, sastResultId), err)
+	}
+
+	return prompt, nil
 }
 
 func getMessageContents(response []message.Message) []string {
