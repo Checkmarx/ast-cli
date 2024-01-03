@@ -2,6 +2,7 @@ package usercount
 
 import (
 	"log"
+	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -17,6 +18,7 @@ type RepositoryView struct {
 }
 type UserView struct {
 	Name                       string `json:"name"`
+	UniqueContributorsEmail    string `json:"unique_contributors_email"`
 	UniqueContributorsUsername string `json:"unique_contributors_username"`
 }
 
@@ -76,6 +78,7 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 	return func(cmd *cobra.Command, args []string) error {
 		var err error
 
+		var totalContrib uint64 = 0
 		var totalCommits []wrappers.CommitRoot
 		var views []RepositoryView
 		var viewsUsers []UserView
@@ -91,13 +94,13 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 			return err
 		}
 
-		uniqueContributorsMap := getUniqueContributors(totalCommits)
+		totalContrib += uint64(len(getUniqueContributors(totalCommits)))
 
 		views = append(
 			views,
 			RepositoryView{
 				Name:               TotalContributorsName,
-				UniqueContributors: uint64(len(uniqueContributorsMap)),
+				UniqueContributors: totalContrib,
 			},
 		)
 
@@ -133,21 +136,24 @@ func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRo
 
 		uniqueContributorsMap := getUniqueContributors(commits)
 
-		views = append(
-			views,
-			RepositoryView{
-				Name:               repository.FullName,
-				UniqueContributors: uint64(len(uniqueContributorsMap)),
-			},
-		)
-		for name := range uniqueContributorsMap {
-			viewsUsers = append(
-				viewsUsers,
-				UserView{
-					Name:                       repository.FullName,
-					UniqueContributorsUsername: name,
+		if uint64(len(uniqueContributorsMap)) > 0 {
+			views = append(
+				views,
+				RepositoryView{
+					Name:               repository.FullName,
+					UniqueContributors: uint64(len(uniqueContributorsMap)),
 				},
 			)
+			for email, name := range uniqueContributorsMap {
+				viewsUsers = append(
+					viewsUsers,
+					UserView{
+						Name:                       repository.FullName,
+						UniqueContributorsUsername: name,
+						UniqueContributorsEmail:    email,
+					},
+				)
+			}
 		}
 	}
 	return totalCommits, views, viewsUsers, nil
@@ -186,12 +192,13 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 					UniqueContributors: uint64(len(uniqueContributorsMap)),
 				},
 			)
-			for name := range uniqueContributorsMap {
+			for email, name := range uniqueContributorsMap {
 				viewsUsers = append(
 					viewsUsers,
 					UserView{
 						Name:                       repository.FullName,
 						UniqueContributorsUsername: name,
+						UniqueContributorsEmail:    email,
 					},
 				)
 			}
@@ -200,12 +207,13 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getUniqueContributors(commits []wrappers.CommitRoot) map[string]bool {
-	var contributors = map[string]bool{}
+func getUniqueContributors(commits []wrappers.CommitRoot) map[string]string {
+	var contributors = map[string]string{}
 	for _, commit := range commits {
 		name := commit.Commit.CommitAuthor.Name
-		if !contributors[name] && isNotBot(commit) {
-			contributors[name] = true
+		email := strings.ToLower(commit.Commit.CommitAuthor.Email)
+		if _, ok := contributors[email]; !ok && isNotBot(commit) {
+			contributors[email] = name
 		}
 	}
 	return contributors
