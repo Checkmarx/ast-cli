@@ -590,7 +590,7 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName)
 		}
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
@@ -632,14 +632,27 @@ func createProject(
 }
 
 func updateProject(
-	projectID string,
+	resp *wrappers.ProjectsCollectionResponseModel,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	projectName string,
+
 ) (string, error) {
+	var projectID string
+	var mainBranch string
+
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	for i := 0; i < len(resp.Projects); i++ {
+		if resp.Projects[i].Name == projectName {
+			projectID = resp.Projects[i].ID
+		}
+		if resp.Projects[i].MainBranch != "" {
+			mainBranch = resp.Projects[i].MainBranch
+		}
+	}
 	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
@@ -658,6 +671,7 @@ func updateProject(
 	projModel.Name = projModelResp.Name
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
+	projModel.MainBranch = mainBranch
 	if projectGroups != "" {
 		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
 		if groupErr != nil {
