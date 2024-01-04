@@ -1,7 +1,6 @@
 package usercount
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
