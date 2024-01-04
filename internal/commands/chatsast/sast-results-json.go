@@ -82,9 +82,9 @@ type ScanResultsPartial struct {
 }
 
 type ScanResults struct {
-	Results    []Result `json:"results"`
-	TotalCount int      `json:"totalCount"`
-	ScanID     string   `json:"scanID"`
+	Results    []*Result `json:"results"`
+	TotalCount int       `json:"totalCount"`
+	ScanID     string    `json:"scanID"`
 }
 
 func ReadResultsAll(filename string) (*ScanResults, error) {
@@ -111,89 +111,90 @@ func ReadResultsSAST(filename string) (*ScanResults, error) {
 
 	// Unmarshal the JSON data into the ScanResults struct
 	var scanResultsPartial ScanResultsPartial
-	if err = json.Unmarshal(bytes, &scanResultsPartial); err != nil {
+	if err := json.Unmarshal(bytes, &scanResultsPartial); err != nil {
 		return nil, err
 	}
 
-	var results []Result
-	var resultsPartial []ResultPartial
-	if err = json.Unmarshal(scanResultsPartial.Results, &resultsPartial); err != nil {
+	var results []*Result
+	var resultsPartial []*ResultPartial
+	if err := json.Unmarshal(scanResultsPartial.Results, &resultsPartial); err != nil {
 		return nil, err
 	}
 
 	for _, resultPartial := range resultsPartial {
-		if resultPartial.Type == "sast" {
-			var data Data
-			if err = json.Unmarshal(resultPartial.Data, &data); err != nil {
-				return nil, err
-			}
-			var vulnerabilityDetails VulnerabilityDetails
-			if err = json.Unmarshal(resultPartial.VulnerabilityDetails, &vulnerabilityDetails); err != nil {
-				return nil, err
-			}
-
-			result := Result{resultPartial.Type,
-				resultPartial.Label,
-				resultPartial.ID,
-				resultPartial.SimilarityID,
-				resultPartial.Status,
-				resultPartial.State,
-				resultPartial.Severity,
-				resultPartial.Created,
-				resultPartial.FirstFoundAt,
-				resultPartial.FoundAt,
-				resultPartial.FirstScanID,
-				resultPartial.Description,
-				resultPartial.DescriptionHTML,
-				data,
-				resultPartial.Comments,
-				vulnerabilityDetails}
-			results = append(results, result)
+		if resultPartial.Type != "sast" {
+			continue
 		}
+		var data Data
+		if err := json.Unmarshal(resultPartial.Data, &data); err != nil {
+			return nil, err
+		}
+		var vulnerabilityDetails VulnerabilityDetails
+		if err := json.Unmarshal(resultPartial.VulnerabilityDetails, &vulnerabilityDetails); err != nil {
+			return nil, err
+		}
+
+		result := &Result{resultPartial.Type,
+			resultPartial.Label,
+			resultPartial.ID,
+			resultPartial.SimilarityID,
+			resultPartial.Status,
+			resultPartial.State,
+			resultPartial.Severity,
+			resultPartial.Created,
+			resultPartial.FirstFoundAt,
+			resultPartial.FoundAt,
+			resultPartial.FirstScanID,
+			resultPartial.Description,
+			resultPartial.DescriptionHTML,
+			data,
+			resultPartial.Comments,
+			vulnerabilityDetails}
+		results = append(results, result)
 	}
 	scanResults := ScanResults{results, scanResultsPartial.TotalCount, scanResultsPartial.ScanID}
 	return &scanResults, nil
 }
 
-func GetLanguages(results *ScanResults, language string) map[string]bool {
-	languages := make(map[string]bool)
-	if language == "" {
-		for _, result := range results.Results {
-			languages[result.Data.LanguageName] = true
-		}
-	} else {
-		languages[language] = true
-	}
-	return languages
-}
+// TODO: add support for language and query
+// func GetLanguages(results *ScanResults, language string) map[string]bool {
+// 	languages := make(map[string]bool)
+// 	if language == "" {
+// 		for _, result := range results.Results {
+// 			languages[result.Data.LanguageName] = true
+// 		}
+// 	} else {
+// 		languages[language] = true
+// 	}
+// 	return languages
+// }
 
-func GetQueries(results *ScanResults, languages map[string]bool, query string) map[string]map[string]bool {
-	queriesByLanguage := make(map[string]map[string]bool)
-	if query == "" {
-		for _, result := range results.Results {
-			if _, exist := languages[result.Data.LanguageName]; !exist {
-				continue
-			}
-			if _, exist := queriesByLanguage[result.Data.LanguageName]; !exist {
-				queriesByLanguage[result.Data.LanguageName] = make(map[string]bool)
-			}
-			queriesByLanguage[result.Data.LanguageName][result.Data.QueryName] = true
-		}
-		//fmt.Printf("There are %d Java queries to process\n", len(queriesByLanguage["Java"]))
-	} else {
-		for language := range languages {
-			queriesByLanguage[language] = make(map[string]bool)
-			queriesByLanguage[language][query] = true
-		}
-	}
-	return queriesByLanguage
-}
+// func GetQueries(results *ScanResults, languages map[string]bool, query string) map[string]map[string]bool {
+// 	queriesByLanguage := make(map[string]map[string]bool)
+// 	if query == "" {
+// 		for _, result := range results.Results {
+// 			if _, exist := languages[result.Data.LanguageName]; !exist {
+// 				continue
+// 			}
+// 			if _, exist := queriesByLanguage[result.Data.LanguageName]; !exist {
+// 				queriesByLanguage[result.Data.LanguageName] = make(map[string]bool)
+// 			}
+// 			queriesByLanguage[result.Data.LanguageName][result.Data.QueryName] = true
+// 		}
+// 	} else {
+// 		for language := range languages {
+// 			queriesByLanguage[language] = make(map[string]bool)
+// 			queriesByLanguage[language][query] = true
+// 		}
+// 	}
+// 	return queriesByLanguage
+// }
 
-func GetResultById(results *ScanResults, resultId string) (Result, error) {
+func GetResultByID(results *ScanResults, resultID string) (*Result, error) {
 	for _, result := range results.Results {
-		if result.ID == resultId {
+		if result.ID == resultID {
 			return result, nil
 		}
 	}
-	return Result{}, fmt.Errorf("result ID %s not found", resultId)
+	return &Result{}, fmt.Errorf("result ID %s not found", resultID)
 }

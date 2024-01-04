@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetSourcesForResult(scanResult Result, sourceDir string) (map[string][]string, error) {
+func GetSourcesForResult(scanResult *Result, sourceDir string) (map[string][]string, error) {
 	sourceFilenames := make(map[string]bool)
 	for _, node := range scanResult.Data.Nodes {
 		sourceFilename := strings.ReplaceAll(node.FileName, "\\", "/")

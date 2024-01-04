@@ -179,7 +179,7 @@ const (
 	ChatSastSourceDir       = "source-dir"
 	ChatSastLanguage        = "sast-language"
 	ChatSastQuery           = "sast-query"
-	ChatSastResultId        = "sast-result-id"
+	ChatSastResultID        = "sast-result-id"
 )
 
 // Parameter values
