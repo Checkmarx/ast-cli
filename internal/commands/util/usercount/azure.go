@@ -140,13 +140,13 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) (
 							UniqueContributors: uint64(len(uniqueContributors)),
 						},
 					)
-
 					for email, name := range uniqueContributors {
 						viewsUsers = append(
 							viewsUsers,
 							UserView{
 								Name:                       buildCountPath(org, project, repo),
 								UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
+								UniqueContributorsEmail:    email,
 							},
 						)
 					}
@@ -194,6 +194,7 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) (
 						UserView{
 							Name:                       buildCountPath(org, project, repo.Name),
 							UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
+							UniqueContributorsEmail:    email,
 						},
 					)
 				}
@@ -246,6 +247,7 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) (
 						UserView{
 							Name:                       buildCountPath(org, project.Name, repo.Name),
 							UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
+							UniqueContributorsEmail:    email,
 						},
 					)
 				}

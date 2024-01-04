@@ -1,6 +1,7 @@
 package usercount
 
 import (
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -124,6 +125,7 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 				return totalCommits, views, viewsUsers, err
 			}
 			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoObject.UUID, *BitBucketUsername, *BitBucketPassword)
+			fmt.Printf("%v", commits)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
@@ -146,6 +148,7 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 						UserView{
 							Name:                       buildBitBucketCountPath(workspace, repo),
 							UniqueContributorsUsername: cleanUsername(name),
+							UniqueContributorsEmail:    cleanEmail(name),
 						},
 					)
 				}
@@ -196,6 +199,7 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 						UserView{
 							Name:                       repo.Name,
 							UniqueContributorsUsername: cleanUsername(name),
+							UniqueContributorsEmail:    cleanEmail(name),
 						},
 					)
 				}
@@ -227,5 +231,17 @@ func buildBitBucketCountPath(workspace, repo string) string {
 func cleanUsername(username string) string {
 	var re = regexp.MustCompile(`<(\w+|.|@)+>`)
 	cleaned := re.ReplaceAllString(username, "")
+	return cleaned
+}
+
+func cleanEmail(email string) string {
+	var re = regexp.MustCompile(`<(\w+|.|@)+>`)
+	cleanedSplit := re.FindAllString(email, 1)
+	cleaned := ""
+	if len(cleanedSplit) > 0 {
+		cleaned = cleanedSplit[0]
+		cleaned = strings.Replace(cleaned, "<", "", 1)
+		cleaned = strings.Replace(cleaned, ">", "", 1)
+	}
 	return cleaned
 }
