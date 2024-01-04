@@ -47,7 +47,8 @@ func CreatePrompt(result *Result, sources map[string][]string) (string, error) {
 func createSourceForPrompt(result *Result, sources map[string][]string) (string, error) {
 	var sourcePrompt []string
 	methodsInPrompt := make(map[string][]string)
-	for j, node := range result.Data.Nodes {
+	for i := range result.Data.Nodes {
+		node := result.Data.Nodes[i]
 		sourceFilename := strings.ReplaceAll(node.FileName, "\\", "/")
 		methodLines, exists := methodsInPrompt[sourceFilename+":"+node.Method]
 		if !exists {
@@ -65,14 +66,14 @@ func createSourceForPrompt(result *Result, sources map[string][]string) (string,
 		}
 		lineInMethod := node.Line - node.MethodLine
 		var edge string
-		if j == 0 {
+		if i == 0 {
 			edge = " (input)"
-		} else if j == len(result.Data.Nodes)-1 {
+		} else if i == len(result.Data.Nodes)-1 {
 			edge = " (output)"
 		} else {
 			edge = ""
 		}
-		methodLines[lineInMethod] += fmt.Sprintf("//SAST Node #%d%s: %s (%s)", j, edge, node.Name, node.DomType)
+		methodLines[lineInMethod] += fmt.Sprintf("//SAST Node #%d%s: %s (%s)", i, edge, node.Name, node.DomType)
 		methodsInPrompt[sourceFilename+":"+node.Method] = methodLines
 	}
 

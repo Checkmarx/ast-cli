@@ -9,8 +9,8 @@ import (
 
 func GetSourcesForResult(scanResult *Result, sourceDir string) (map[string][]string, error) {
 	sourceFilenames := make(map[string]bool)
-	for _, node := range scanResult.Data.Nodes {
-		sourceFilename := strings.ReplaceAll(node.FileName, "\\", "/")
+	for i := range scanResult.Data.Nodes {
+		sourceFilename := strings.ReplaceAll(scanResult.Data.Nodes[i].FileName, "\\", "/")
 		sourceFilenames[sourceFilename] = true
 	}
 
@@ -28,8 +28,8 @@ func GetSourcesForQuery(scanResults *ScanResults, sourceDir, language, query str
 		if scanResult.Data.LanguageName != language || scanResult.Data.QueryName != query {
 			continue
 		}
-		for _, node := range scanResult.Data.Nodes {
-			sourceFilename := strings.ReplaceAll(node.FileName, "\\", "/")
+		for i := range scanResult.Data.Nodes {
+			sourceFilename := strings.ReplaceAll(scanResult.Data.Nodes[i].FileName, "\\", "/")
 			sourceFilenames[sourceFilename] = true
 		}
 	}
@@ -51,12 +51,16 @@ func GetFileContents(filenames map[string]bool, sourceDir string) (map[string][]
 		if err != nil {
 			return nil, err
 		}
-		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
 		var lines []string
 		for scanner.Scan() {
 			lines = append(lines, scanner.Text())
+		}
+
+		err = file.Close()
+		if err != nil {
+			return nil, err
 		}
 
 		if err := scanner.Err(); err != nil {

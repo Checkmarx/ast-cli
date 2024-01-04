@@ -3,16 +3,17 @@
 package integration
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
-	"strings"
-	"testing"
 )
 
 func TestChatInvalidAPIKey(t *testing.T) {
 	args := []string{
-		"chat",
+		"chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "invalidApiKey",
 		"--user-input", "userInput",
