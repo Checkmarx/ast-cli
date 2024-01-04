@@ -125,7 +125,6 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 				return totalCommits, views, viewsUsers, err
 			}
 			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoObject.UUID, *BitBucketUsername, *BitBucketPassword)
-			fmt.Printf("%v", commits)
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
