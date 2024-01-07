@@ -5,7 +5,13 @@ import (
 	"strings"
 )
 
-const promptTemplate = `Checkmarx Static Application Security Testing (SAST) detected the %s vulnerability within the provided %s code snippet. 
+const systemPrompt = `You are the Checkmarx AI Guided Remediation bot who can answer technical questions related to the results of Checkmarx Static Application 
+Security Testing (SAST). You should be able to analyze and understand both the technical aspects of the security results and the common queries users may have 
+about the results. You should also be capable of delivering clear, concise, and informative answers to help take appropriate action based on the findings.
+If a question irrelevant to the mentioned source code or SAST result is asked, answer 'I am the AI Guided Remediation assistant and can answer only on questions 
+related to source code or SAST results or SAST Queries'.`
+
+const userPromptTemplate = `Checkmarx Static Application Security Testing (SAST) detected the %s vulnerability within the provided %s code snippet. 
 The attack vector is presented by code snippets annotated by comments in the form ` + "`//SAST Node #X: element (element-type)`" + ` where X is 
 the node index in the result, ` + "`element`" + ` is the name of the element through which the data flows, and the ` + "`element-type`" + ` is it's type. 
 The first and last nodes are indicated by ` + "`(input ...)` and `(output ...)`" + ` respectively:
@@ -36,12 +42,16 @@ Your analysis should be presented in the following format:
     EXPLANATION: short_text
     FIX: fixed_snippet`
 
-func CreatePrompt(result *Result, sources map[string][]string) (string, error) {
+func GetSystemPrompt() string {
+	return systemPrompt
+}
+
+func CreateUserPrompt(result *Result, sources map[string][]string) (string, error) {
 	promptSource, err := createSourceForPrompt(result, sources)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(promptTemplate, result.Data.QueryName, result.Data.LanguageName, promptSource), nil
+	return fmt.Sprintf(userPromptTemplate, result.Data.QueryName, result.Data.LanguageName, promptSource), nil
 }
 
 func createSourceForPrompt(result *Result, sources map[string][]string) (string, error) {
