@@ -1617,10 +1617,11 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 		return scanResults
 	}
 	var scanResult = initSarifResult(result)
+	var numberOutOfRange = 2
 
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
-		if len(node.FileName) >= 2 {
+		if len(node.FileName) >= numberOutOfRange {
 			scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
 			if node.Line <= 0 {
 				continue
