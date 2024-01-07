@@ -90,8 +90,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args
 			newMessages = append(newMessages, message.Message{
 				Role:    role.System,
 				Content: systemPrompt,
-			})
-			newMessages = append(newMessages, message.Message{
+			}, message.Message{
 				Role:    role.User,
 				Content: userPrompt,
 			})
@@ -116,7 +115,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args
 	}
 }
 
-func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (string, string, error) {
+func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt, userPrompt string, err error) {
 	scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(ScanResultsFileErrorFormat, scanResultsFile), err)
