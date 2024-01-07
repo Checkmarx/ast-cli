@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"os"
 	"testing"
 
@@ -37,6 +38,14 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatSarif))
+}
+
+func TestParseSarifEmptyResultSast(t *testing.T) {
+	emptyResult := &wrappers.ScanResult{}
+	result := parseSarifResultSast(emptyResult, nil)
+	if result != nil {
+		t.Errorf("Expected nil result for empty ScanResultData.Nodes, got %v", result)
+	}
 }
 
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
