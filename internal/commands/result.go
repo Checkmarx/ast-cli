@@ -1620,18 +1620,20 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
-		if node.Line <= 0 {
-			continue
-		}
-		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-		scanLocation.PhysicalLocation.Region.StartLine = node.Line
-		column := node.Column
-		length := node.Length
-		scanLocation.PhysicalLocation.Region.StartColumn = column
-		scanLocation.PhysicalLocation.Region.EndColumn = column + length
+		if len(node.FileName) >= 2 {
+			scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
+			if node.Line <= 0 {
+				continue
+			}
+			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+			scanLocation.PhysicalLocation.Region.StartLine = node.Line
+			column := node.Column
+			length := node.Length
+			scanLocation.PhysicalLocation.Region.StartColumn = column
+			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 
-		scanResult.Locations = append(scanResult.Locations, scanLocation)
+			scanResult.Locations = append(scanResult.Locations, scanLocation)
+		}
 	}
 
 	scanResults = append(scanResults, scanResult)
