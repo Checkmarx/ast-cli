@@ -35,8 +35,6 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatSastCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
 	chatSastCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
 	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
-	chatSastCmd.Flags().String(params.ChatSastLanguage, "", "Language of the result to remediate")
-	chatSastCmd.Flags().String(params.ChatSastQuery, "", "Query of the result to remediate")
 	chatSastCmd.Flags().String(params.ChatSastResultID, "", "ID of the result to remediate")
 
 	_ = chatSastCmd.MarkFlagRequired(params.ChatAPIKey)
@@ -54,8 +52,6 @@ func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 		scanResultsFile, _ := cmd.Flags().GetString(params.ChatSastScanResultsFile)
 		sourceDir, _ := cmd.Flags().GetString(params.ChatSastSourceDir)
-		// sastLanguage, _ := cmd.Flags().GetString(params.SastLanguage) // TODO: add support for language
-		// sastQuery, _ := cmd.Flags().GetString(params.SastQuery) // TODO: add support for query
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
 
 		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen, 0)

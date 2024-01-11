@@ -177,8 +177,6 @@ const (
 	// Chat (SAST)
 	ChatSastScanResultsFile = "scan-results-file"
 	ChatSastSourceDir       = "source-dir"
-	ChatSastLanguage        = "sast-language"
-	ChatSastQuery           = "sast-query"
 	ChatSastResultID        = "sast-result-id"
 )
 
