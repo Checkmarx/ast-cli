@@ -274,7 +274,7 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 		flag(params.ReportSbomFormatLocalFlowFlag),
 	}
 
-	err, _ := executeCommand(t, args...)
+	executeCommand(t, args...)
 	// not supported yet, no assert to be done
 }
 
