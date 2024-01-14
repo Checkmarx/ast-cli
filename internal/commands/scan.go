@@ -643,7 +643,6 @@ func updateProject(
 ) (string, error) {
 	var projectID string
 	var projModel = wrappers.Project{}
-
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
@@ -657,7 +656,6 @@ func updateProject(
 		if resp.Projects[i].RepoURL != "" {
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
-
 	}
 	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
@@ -688,7 +686,6 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
