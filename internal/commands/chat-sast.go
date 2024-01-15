@@ -121,9 +121,6 @@ func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt,
 		return "", "", errors.Errorf(fmt.Sprintf("error in build-prompt: currently only --%s is supported", params.ChatSastResultID))
 	}
 
-	// TODO: add support for language and query
-	// languages := GetLanguages(scanResults, sastLanguage)
-	// queriesByLanguage := GetQueries(scanResults, languages, sastQuery)
 	sastResult, err := chatsast.GetResultByID(scanResults, sastResultID)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %w", err)

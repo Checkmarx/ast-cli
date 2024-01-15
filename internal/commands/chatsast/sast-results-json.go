@@ -156,40 +156,6 @@ func ReadResultsSAST(filename string) (*ScanResults, error) {
 	return &scanResults, nil
 }
 
-// TODO: add support for language and query
-// func GetLanguages(results *ScanResults, language string) map[string]bool {
-// 	languages := make(map[string]bool)
-// 	if language == "" {
-// 		for _, result := range results.Results {
-// 			languages[result.Data.LanguageName] = true
-// 		}
-// 	} else {
-// 		languages[language] = true
-// 	}
-// 	return languages
-// }
-
-// func GetQueries(results *ScanResults, languages map[string]bool, query string) map[string]map[string]bool {
-// 	queriesByLanguage := make(map[string]map[string]bool)
-// 	if query == "" {
-// 		for _, result := range results.Results {
-// 			if _, exist := languages[result.Data.LanguageName]; !exist {
-// 				continue
-// 			}
-// 			if _, exist := queriesByLanguage[result.Data.LanguageName]; !exist {
-// 				queriesByLanguage[result.Data.LanguageName] = make(map[string]bool)
-// 			}
-// 			queriesByLanguage[result.Data.LanguageName][result.Data.QueryName] = true
-// 		}
-// 	} else {
-// 		for language := range languages {
-// 			queriesByLanguage[language] = make(map[string]bool)
-// 			queriesByLanguage[language][query] = true
-// 		}
-// 	}
-// 	return queriesByLanguage
-// }
-
 func GetResultByID(results *ScanResults, resultID string) (*Result, error) {
 	for _, result := range results.Results {
 		if result.ID == resultID {
