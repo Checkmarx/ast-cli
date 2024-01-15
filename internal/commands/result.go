@@ -83,6 +83,7 @@ const (
 	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
 	glTimeFormat                            = "2006-01-02T15:04:05"
+	sarifNodeFileLength                     = 2
 )
 
 var summaryFormats = []string{
@@ -1620,18 +1621,20 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
-		if node.Line <= 0 {
-			continue
-		}
-		scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-		scanLocation.PhysicalLocation.Region.StartLine = node.Line
-		column := node.Column
-		length := node.Length
-		scanLocation.PhysicalLocation.Region.StartColumn = column
-		scanLocation.PhysicalLocation.Region.EndColumn = column + length
+		if len(node.FileName) >= sarifNodeFileLength {
+			scanLocation.PhysicalLocation.ArtifactLocation.URI = node.FileName[1:]
+			if node.Line <= 0 {
+				continue
+			}
+			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+			scanLocation.PhysicalLocation.Region.StartLine = node.Line
+			column := node.Column
+			length := node.Length
+			scanLocation.PhysicalLocation.Region.StartColumn = column
+			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 
-		scanResult.Locations = append(scanResult.Locations, scanLocation)
+			scanResult.Locations = append(scanResult.Locations, scanLocation)
+		}
 	}
 
 	scanResults = append(scanResults, scanResult)

@@ -582,3 +582,9 @@ func TestAddKicsScan(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", kicsMapConfig, result)
 	}
 }
+func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--project-tags", "SEG", "--debug"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}

@@ -36,7 +36,6 @@ jobs:
           fi
   integration-tests:
     runs-on: ubuntu-latest
-    environment: DEU_GALACTICA
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
