@@ -20,7 +20,7 @@ func TestMaskSecrets(t *testing.T) {
 		"Remediating kics result",
 		utilsCommand,
 		maskCommand,
-		flag(params.ChatResultFile),
+		flag(params.ChatKicsResultFile),
 		resultsFileValue,
 	)
 }
@@ -29,7 +29,7 @@ func TestFailedMaskSecrets(t *testing.T) {
 	args := []string{
 		utilsCommand,
 		maskCommand,
-		flag(params.ChatResultFile),
+		flag(params.ChatKicsResultFile),
 		resultFileNonExisting,
 	}
 	err, _ := executeCommand(t, args...)

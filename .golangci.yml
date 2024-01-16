@@ -6,9 +6,12 @@ linters-settings:
       main:
         allow:
           - $gostd
-          - github.com/checkmarx/ast-cli/internal/wrappers
-          - github.com/checkmarx/ast-cli/internal/params
+          - github.com/checkmarx/ast-cli/internal
           - github.com/spf13/viper
+          - github.com/checkmarxDev/gpt-wrapper
+          - github.com/spf13/cobra
+          - github.com/pkg/errors
+          - github.com/google
   dupl:
     threshold: 500
   funlen:

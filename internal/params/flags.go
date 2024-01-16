@@ -159,17 +159,25 @@ const (
 	PRGitlabProjectFlag      = "gitlab-project-id"
 	PRGitlabProjectFlagUsage = "Gitlab project ID"
 
-	// Chat
-	ChatAPIKey              = "chat-apikey"
-	ChatConversationID      = "conversation-id"
-	ChatUserInput           = "user-input"
-	ChatModel               = "model"
-	ChatResultFile          = "result-file"
-	ChatResultLine          = "result-line"
-	ChatResultSeverity      = "result-severity"
-	ChatResultVulnerability = "result-vulnerability"
+	// Chat (General)
+	ChatAPIKey         = "chat-apikey"
+	ChatConversationID = "conversation-id"
+	ChatUserInput      = "user-input"
+	ChatModel          = "model"
+
+	// Chat (Kics)
+	ChatKicsResultFile          = "result-file"
+	ChatKicsResultLine          = "result-line"
+	ChatKicsResultSeverity      = "result-severity"
+	ChatKicsResultVulnerability = "result-vulnerability"
+
 	// Mask
 	MaskContent = "mask-content"
+
+	// Chat (SAST)
+	ChatSastScanResultsFile = "scan-results-file"
+	ChatSastSourceDir       = "source-dir"
+	ChatSastResultID        = "sast-result-id"
 )
 
 // Parameter values
