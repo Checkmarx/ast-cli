@@ -11,7 +11,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestChatInvalidAPIKey(t *testing.T) {
+func TestChatKicsInvalidAPIKey(t *testing.T) {
 	args := []string{
 		"chat", "kics",
 		"--conversation-id", uuid.New().String(),
@@ -29,7 +29,7 @@ func TestChatInvalidAPIKey(t *testing.T) {
 	assert.Assert(t, strings.Contains(outputModel.Response[0], "Incorrect API key provided"), "Expecting incorrect api key error")
 }
 
-func TestChatInvalidAPIKey(t *testing.T) {
+func TestChatSastInvalidAPIKey(t *testing.T) {
 	args := []string{
 		"chat", "sast",
 		"--chat-apikey", "invalidApiKey",
