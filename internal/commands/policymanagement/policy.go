@@ -1,4 +1,4 @@
-package policyManagement
+package policymanagement
 
 import (
 	"fmt"

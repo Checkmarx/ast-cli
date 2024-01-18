@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policyManagement"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/mssola/user_agent"
@@ -1475,7 +1475,7 @@ func runCreateScanCommand(
 				if policyTimeout < 0 {
 					return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 				}
-				policyResponseModel, err = policyManagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID, cmd)
+				policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID, cmd)
 				if err != nil {
 					return err
 				}

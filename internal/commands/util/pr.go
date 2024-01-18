@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policyManagement"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -202,7 +202,7 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 	}
 	// retrieve policy information to send to the PR service
 	policyResponseModel := &wrappers.PolicyResponseModel{}
-	policyResponseModel, err = policyManagement.HandlePolicyWait(commonParams.WaitDelayDefault, commonParams.ResultPolicyDefaultTimeout, policyWrapper, scanID, scanResponseModel.ProjectID, cmd)
+	policyResponseModel, err = policymanagement.HandlePolicyWait(commonParams.WaitDelayDefault, commonParams.ResultPolicyDefaultTimeout, policyWrapper, scanID, scanResponseModel.ProjectID, cmd)
 	if err != nil {
 		return nil, err
 	}

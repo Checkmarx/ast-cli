@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policyManagement"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -609,7 +609,7 @@ func runGetResultCommand(
 			if policyTimeout < 0 {
 				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 			}
-			policyResponseModel, err = policyManagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
+			policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
 			if err != nil {
 				return err
 			}
