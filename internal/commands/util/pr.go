@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/policyManagement"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -18,7 +20,7 @@ const (
 	errorCodeFormat                  = "%s: CODE: %d, %s\n"
 )
 
-func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
+func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pr",
 		Short: "Posts the comment with scan results on the Pull Request",
@@ -29,7 +31,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
 		),
 	}
 
-	prDecorationGithub := PRDecorationGithub(prWrapper)
+	prDecorationGithub := PRDecorationGithub(prWrapper, policyWrapper, scansWrapper)
 	prDecorationGitlab := PRDecorationGitlab(prWrapper)
 
 	cmd.AddCommand(prDecorationGithub)
@@ -37,7 +39,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper) *cobra.Command {
 	return cmd
 }
 
-func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
+func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	prDecorationGithub := &cobra.Command{
 		Use:   "github",
 		Short: "Decorate github PR with vulnerabilities",
@@ -54,7 +56,7 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runPRDecoration(prWrapper),
+		RunE: runPRDecoration(prWrapper, policyWrapper, scansWrapper),
 	}
 
 	prDecorationGithub.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
@@ -117,7 +119,7 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
 	return prDecorationGitlab
 }
 
-func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args []string) error {
+func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
 		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
@@ -125,16 +127,22 @@ func runPRDecoration(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
+		// Retrieve policies related to the scan and project to include in the PR decoration
+		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
+		if policyError != nil {
+			return policyError
+		}
+
+		// Build and post the pr decoration
 		prModel := &wrappers.PRModel{
 			ScanID:    scanID,
 			ScmToken:  scmTokenFlag,
 			Namespace: namespaceFlag,
 			RepoName:  repoNameFlag,
 			PrNumber:  prNumberFlag,
+			Policies: policies,
 		}
-
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
-
 		if err != nil {
 			return err
 		}
@@ -181,4 +189,41 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command
 
 		return nil
 	}
+}
+
+func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper wrappers.PolicyWrapper, scanID string, cmd *cobra.Command) ([]wrappers.PrPolicy, error) {
+	// retrieve scan model to get the projectID
+	scanResponseModel, errorScanModel, err := scansWrapper.GetByID(scanID)
+	if err != nil {
+		return nil, err
+	}
+	if errorScanModel != nil {
+		return nil, err
+	}
+	// retrieve policy information to send to the PR service
+	policyResponseModel := &wrappers.PolicyResponseModel{}
+	policyResponseModel, err = policyManagement.HandlePolicyWait(commonParams.WaitDelayDefault, commonParams.ResultPolicyDefaultTimeout, policyWrapper, scanID, scanResponseModel.ProjectID, cmd)
+	if err != nil {
+		return nil, err
+	}
+	// transform into the PR model for violated policies
+	violatedPolicies := policiesToPrPolicies(policyResponseModel.Policies)
+	return violatedPolicies, nil
+}
+
+func policiesToPrPolicies( policies []wrappers.Policy)[]wrappers.PrPolicy{
+	var prPolicies []wrappers.PrPolicy
+	for _, policy := range policies {
+		prPolicy := wrappers.PrPolicy{}
+		prPolicy.Name = policy.Name
+		prPolicy.BreakBuild = policy.BreakBuild
+		prPolicy.RulesNames = policy.RulesViolated
+		prPolicies = append(prPolicies, prPolicy)
+	}
+	//prPolicy := wrappers.PrPolicy{}
+	//prPolicy.Name = "random policy from the cli"
+	//prPolicy.BreakBuild = false
+	//prPolicy.RulesNames = []string{"first", "second important rule"}
+	//prPolicies= append(prPolicies,prPolicy)
+	return prPolicies
 }

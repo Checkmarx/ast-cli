@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/policyManagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -506,8 +507,8 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			} else {
 				fmt.Printf("            Policy Management Violation:                     \n")
 			}
-			if len(summary.Policies.Polices) > 0 {
-				for _, police := range summary.Policies.Polices {
+			if len(summary.Policies.Policies) > 0 {
+				for _, police := range summary.Policies.Policies {
 					if len(police.RulesViolated) > 0 {
 						fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
 						for _, violatedRule := range police.RulesViolated {
@@ -608,7 +609,7 @@ func runGetResultCommand(
 			if policyTimeout < 0 {
 				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 			}
-			policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan, cmd)
+			policyResponseModel, err = policyManagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
 			if err != nil {
 				return err
 			}
@@ -1739,12 +1740,12 @@ func addPackageInformation(
 
 func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {
 	i := 0
-	for _, policy := range policyModel.Polices {
+	for _, policy := range policyModel.Policies {
 		if len(policy.RulesViolated) > 0 {
-			policyModel.Polices[i] = policy
+			policyModel.Policies[i] = policy
 			i++
 		}
 	}
-	policyModel.Polices = policyModel.Polices[:i]
+	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
 }
