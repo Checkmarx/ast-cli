@@ -3,7 +3,7 @@ package wrappers
 type PolicyResponseModel struct {
 	Status     string   `json:"status"`
 	BreakBuild bool     `json:"breakBuild"`
-	Policies    []Policy `json:"policies"`
+	Policies   []Policy `json:"policies"`
 }
 
 type Policy struct {

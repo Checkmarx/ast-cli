@@ -140,7 +140,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 			Namespace: namespaceFlag,
 			RepoName:  repoNameFlag,
 			PrNumber:  prNumberFlag,
-			Policies: policies,
+			Policies:  policies,
 		}
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 		if err != nil {
@@ -211,7 +211,7 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 	return violatedPolicies, nil
 }
 
-func policiesToPrPolicies( policies []wrappers.Policy)[]wrappers.PrPolicy{
+func policiesToPrPolicies(policies []wrappers.Policy) []wrappers.PrPolicy {
 	var prPolicies []wrappers.PrPolicy
 	for _, policy := range policies {
 		prPolicy := wrappers.PrPolicy{}
@@ -220,10 +220,5 @@ func policiesToPrPolicies( policies []wrappers.Policy)[]wrappers.PrPolicy{
 		prPolicy.RulesNames = policy.RulesViolated
 		prPolicies = append(prPolicies, prPolicy)
 	}
-	//prPolicy := wrappers.PrPolicy{}
-	//prPolicy.Name = "random policy from the cli"
-	//prPolicy.BreakBuild = false
-	//prPolicy.RulesNames = []string{"first", "second important rule"}
-	//prPolicies= append(prPolicies,prPolicy)
 	return prPolicies
 }
