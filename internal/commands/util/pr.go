@@ -32,7 +32,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	}
 
 	prDecorationGithub := PRDecorationGithub(prWrapper, policyWrapper, scansWrapper)
-	prDecorationGitlab := PRDecorationGitlab(prWrapper)
+	prDecorationGitlab := PRDecorationGitlab(prWrapper, policyWrapper, scansWrapper)
 
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
@@ -78,7 +78,7 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 	return prDecorationGithub
 }
 
-func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
+func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	prDecorationGitlab := &cobra.Command{
 		Use:   "gitlab",
 		Short: "Decorate gitlab PR with vulnerabilities",
@@ -95,7 +95,7 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runPRDecorationGitlab(prWrapper),
+		RunE: runPRDecorationGitlab(prWrapper, policyWrapper, scansWrapper),
 	}
 
 	prDecorationGitlab.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
@@ -157,7 +157,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 	}
 }
 
-func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command, args []string) error {
+func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
 		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
@@ -166,6 +166,13 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
+		// Retrieve policies related to the scan and project to include in the PR decoration
+		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
+		if policyError != nil {
+			return policyError
+		}
+
+		// Build and post the mr decoration
 		prModel := &wrappers.GitlabPRModel{
 			ScanID:          scanID,
 			ScmToken:        scmTokenFlag,
@@ -173,6 +180,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper) func(cmd *cobra.Command
 			RepoName:        repoNameFlag,
 			IiD:             iIDFlag,
 			GitlabProjectID: gitlabProjectIDFlag,
+			Policies:        policies,
 		}
 
 		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
