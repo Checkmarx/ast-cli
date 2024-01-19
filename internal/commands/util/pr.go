@@ -209,8 +209,12 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 		return nil, err
 	}
 	// retrieve policy information to send to the PR service
-	policyResponseModel := &wrappers.PolicyResponseModel{}
-	policyResponseModel, err = policymanagement.HandlePolicyWait(commonParams.WaitDelayDefault, commonParams.ResultPolicyDefaultTimeout, policyWrapper, scanID, scanResponseModel.ProjectID, cmd)
+	policyResponseModel, err := policymanagement.HandlePolicyWait(commonParams.WaitDelayDefault,
+		commonParams.ResultPolicyDefaultTimeout,
+		policyWrapper,
+		scanID,
+		scanResponseModel.ProjectID,
+		cmd)
 	if err != nil {
 		return nil, err
 	}
