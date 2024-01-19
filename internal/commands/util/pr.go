@@ -7,7 +7,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -18,6 +17,8 @@ const (
 	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
 	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
 	errorCodeFormat                  = "%s: CODE: %d, %s\n"
+	waitDelayDefault                 = 5
+	resultPolicyDefaultTimeout       = 1
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -209,8 +210,8 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 		return nil, err
 	}
 	// retrieve policy information to send to the PR service
-	policyResponseModel, err := policymanagement.HandlePolicyWait(commonParams.WaitDelayDefault,
-		commonParams.ResultPolicyDefaultTimeout,
+	policyResponseModel, err := policymanagement.HandlePolicyWait(waitDelayDefault,
+		resultPolicyDefaultTimeout,
 		policyWrapper,
 		scanID,
 		scanResponseModel.ProjectID,
