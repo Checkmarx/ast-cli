@@ -134,6 +134,7 @@ const (
 	ExploitablePathFlag      = "sca-exploitable-path"
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
+	PrioritizeSastFlag       = "prioritize-sast"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 

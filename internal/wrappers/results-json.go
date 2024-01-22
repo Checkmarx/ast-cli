@@ -93,6 +93,7 @@ type ScanResultData struct {
 	Group                string                   `json:"group,omitempty"`
 	ResultHash           string                   `json:"resultHash,omitempty"`
 	LanguageName         string                   `json:"languageName,omitempty"`
+	Priority             string                   `json:"priority,omitempty"`
 	Description          string                   `json:"description,omitempty"`
 	Nodes                []*ScanResultNode        `json:"nodes,omitempty"`
 	PackageData          []*ScanResultPackageData `json:"packageData,omitempty"`

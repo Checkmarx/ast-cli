@@ -216,6 +216,7 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	resultShowCmd.PersistentFlags().Bool(commonParams.PrioritizeSastFlag, false, "Prioritize SAST results")
 	return resultShowCmd
 }
 
@@ -583,6 +584,7 @@ func runGetResultCommand(
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
+		prioritizeSast, _ := cmd.Flags().GetBool(commonParams.PrioritizeSastFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -615,6 +617,11 @@ func runGetResultCommand(
 		} else {
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
+
+		if prioritizeSast {
+			params[commonParams.PrioritizeSastFlag] = ""
+		}
+
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
@@ -958,6 +965,12 @@ func enrichScaResults(
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
+	}
+	_, prioritizeSast := params[commonParams.PrioritizeSastFlag]
+
+	if util.Contains(scan.Engines, commonParams.SastType) && prioritizeSast {
+		// Compute SAST results priority
+		resultsModel = PrioritizeSastResults(resultsModel)
 	}
 	return resultsModel, nil
 }
