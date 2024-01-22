@@ -46,7 +46,6 @@ func GetQueries(resultsModel *wrappers.ScanResultsCollection, languages map[stri
 }
 
 func PrioritizeSastResultsForQuery(resultsModel *wrappers.ScanResultsCollection, language, query string) *wrappers.ScanResultsCollection {
-
 	queryResults := GetResultsForQuery(resultsModel, language, query)
 	if len(queryResults) == 0 {
 		return resultsModel
@@ -79,14 +78,12 @@ func GetResultsForQuery(resultsModel *wrappers.ScanResultsCollection, language, 
 }
 
 func prioritizeCoveredResults(queryResults []*wrappers.ScanResult, coveredResults map[string]map[string]bool) {
-
 	resultsByID := make(map[string]*wrappers.ScanResult)
 	for _, result := range queryResults {
 		resultsByID[result.ID] = result
 	}
 
 	for resultID, coveredResults := range coveredResults {
-
 		if len(coveredResults) == 0 {
 			resultsByID[resultID].ScanResultData.Priority = "FIX"
 		} else {
@@ -124,15 +121,15 @@ func computeCoveredResults(subFlows map[string]*SubFlow, queryResults []*wrapper
 	return coveredResults
 }
 
-func getMaxCoverage(coverage map[string]float64) (string, float64) {
+func getMaxCoverage(coverage map[string]float64) (maxCoverageResultID string, maxCoverage float64) {
 	var sortedResultsIDs []string
 	for resultID := range coverage {
 		sortedResultsIDs = append(sortedResultsIDs, resultID)
 	}
 	sort.Strings(sortedResultsIDs)
 
-	maxCoverageResultID := ""
-	maxCoverage := 0.0
+	maxCoverageResultID = ""
+	maxCoverage = 0.0
 	for _, resultID := range sortedResultsIDs {
 		c := coverage[resultID]
 		if c > maxCoverage {
@@ -219,7 +216,6 @@ func compareFlows(flows map[string][]string) map[string]*SubFlow {
 			}
 			subFlows[sf.ShaOne].Results[r1] = true
 			subFlows[sf.ShaOne].Results[r2] = true
-
 		}
 	}
 	return subFlows
@@ -228,9 +224,8 @@ func compareFlows(flows map[string][]string) map[string]*SubFlow {
 func GetKey(r1, r2 string) string {
 	if r1 <= r2 {
 		return r1 + "," + r2
-	} else {
-		return r2 + "," + r1
 	}
+	return r2 + "," + r1
 }
 
 func computeSubFlow(f1, f2 []string) (bool, *SubFlow) {
