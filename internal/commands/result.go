@@ -33,6 +33,7 @@ const (
 	failedListingResults      = "Failed listing results"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
+	criticalLabel             = "critical"
 	highLabel                 = "high"
 	lowLabel                  = "low"
 	infoLabel                 = "info"
@@ -43,6 +44,7 @@ const (
 	lowSonar                  = "MINOR"
 	mediumSonar               = "MAJOR"
 	highSonar                 = "CRITICAL"
+	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
@@ -51,6 +53,7 @@ const (
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
 	highCx                    = "HIGH"
+	criticalCx                = "CRITICAL"
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "N/A"
@@ -115,19 +118,22 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
 var securities = map[string]string{
-	infoCx:   "3.5",
-	lowCx:    "6.5",
-	mediumCx: "8.5",
-	highCx:   "9.5",
+	infoCx:     "1.0",
+	lowCx:      "2.0",
+	mediumCx:   "4.0",
+	highCx:     "7.0",
+	criticalCx: "9.0",
 }
 
 // Match cx severity with sonar severity
 var sonarSeverities = map[string]string{
-	infoCx:   infoSonar,
-	lowCx:    lowSonar,
-	mediumCx: mediumSonar,
-	highCx:   highSonar,
+	infoCx:     infoSonar,
+	lowCx:      lowSonar,
+	mediumCx:   mediumSonar,
+	highCx:     highSonar,
+	criticalCx: criticalSonar,
 }
 
 func NewResultsCommand(
@@ -366,6 +372,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		ProjectID:      scanInfo.ProjectID,
 		RiskStyle:      "",
 		RiskMsg:        "",
+		CriticalIssues: 0,
 		HighIssues:     0,
 		MediumIssues:   0,
 		LowIssues:      0,
@@ -428,7 +435,10 @@ func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, 
 }
 
 func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
-	if summary.HighIssues > 0 {
+	if summary.CriticalIssues > 0 {
+		summary.RiskStyle = criticalLabel
+		summary.RiskMsg = "Critical Risk"
+	} else if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
 	} else if summary.MediumIssues > 0 {
@@ -521,12 +531,13 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		}
 
 		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-		fmt.Printf("              --------------------------------------     \n")
-		fmt.Printf("              |               High: %*d|     \n", defaultResultsPaddingSize, summary.HighIssues)
-		fmt.Printf("              |             Medium: %*d|     \n", defaultResultsPaddingSize, summary.MediumIssues)
-		fmt.Printf("              |                Low: %*d|     \n", defaultResultsPaddingSize, summary.LowIssues)
-		fmt.Printf("              |               Info: %*d|     \n", defaultResultsPaddingSize, summary.InfoIssues)
-		fmt.Printf("              --------------------------------------     \n")
+		fmt.Printf("              -----------------------------------     \n")
+		fmt.Printf("              |         Critical: %*d|     \n", defaultPaddingSize, summary.CriticalIssues)
+		fmt.Printf("              |             High: %*d|     \n", defaultPaddingSize, summary.HighIssues)
+		fmt.Printf("              |           Medium: %*d|     \n", defaultPaddingSize, summary.MediumIssues)
+		fmt.Printf("              |              Low: %*d|     \n", defaultPaddingSize, summary.LowIssues)
+		fmt.Printf("              |             Info: %*d|     \n", defaultPaddingSize, summary.InfoIssues)
+		fmt.Printf("              -----------------------------------     \n")
 
 		if summary.KicsIssues == notAvailableNumber {
 			fmt.Printf("              |         IAC-SECURITY: %*s| \n", defaultPaddingSize, notAvailableString)
@@ -851,6 +862,7 @@ func createReport(format,
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
+		targetFile = fmt.Sprintf("%s_summary", targetFile)
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
@@ -1533,16 +1545,16 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
-
 	return sarifProperties
 }
 
 func findSarifLevel(result *wrappers.ScanResult) string {
 	level := map[string]string{
-		infoCx:   infoLowSarif,
-		lowCx:    infoLowSarif,
-		mediumCx: mediumSarif,
-		highCx:   highSarif,
+		infoCx:     infoLowSarif,
+		lowCx:      infoLowSarif,
+		mediumCx:   mediumSarif,
+		highCx:     highSarif,
+		criticalCx: highSarif,
 	}
 	return level[result.Severity]
 }

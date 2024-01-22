@@ -66,7 +66,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				--similarity-id <SimilarityID> 
 				--project-id <ProjectID> 
 				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT> 
-				--severity <HIGH|MEDIUM|LOW|INFO> 
+				--severity <CRITICAL|HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
 				--scan-type <SAST|IAC-SECURITY>
 		`,
@@ -142,7 +142,10 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
-
+		// check if the current tenant has critical severity available
+		if !wrappers.FeatureFlags[wrappers.CVSSV3Enabled] && strings.EqualFold(severity, "critical") {
+			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
+		}
 		predicate := &wrappers.PredicateRequest{
 			SimilarityID: similarityID,
 			ProjectID:    projectID,
