@@ -19,6 +19,9 @@ const (
 	respStatusCode             = "response status code %d"
 	sort                       = "sort"
 	sortResultsDefault         = "-severity"
+	offset                     = "offset"
+	astAPIPageLen              = 1000
+	astAPIPagingValue          = "1000"
 )
 
 type ResultsHTTPWrapper struct {
@@ -40,14 +43,54 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	*WebError,
 	error,
 ) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	// AST has a limit of 10000 results, this makes it get all of them
-	DefaultMapValue(params, limit, limitValue)
+	var scanModelslice []ScanResultsCollection
+	var scanModel ScanResultsCollection
+	DefaultMapValue(params, limit, astAPIPagingValue)
 	DefaultMapValue(params, sort, sortResultsDefault)
 
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.resultsPath, params, http.NoBody, clientTimeout)
+	webErr, err := getResultsWithPagination(r.resultsPath, params, &scanModelslice)
 	if err != nil {
-		return nil, nil, err
+		return &scanModel, nil, err
+	}
+	if webErr != nil {
+		return &scanModel, webErr, nil
+	}
+	for _, resultsPage := range scanModelslice {
+		scanModel.Results = append(scanModel.Results, resultsPage.Results...)
+		scanModel.TotalCount = resultsPage.TotalCount
+	}
+	return &scanModel, nil, nil
+}
+func getResultsWithPagination(resultPath string, queryParams map[string]string, slice *[]ScanResultsCollection) (*WebError, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	var currentPage = 0
+	for {
+		queryParams[offset] = fmt.Sprintf("%d", currentPage)
+		target, hasNextPage, weberr, err := getResultsByOffset(resultPath, queryParams, clientTimeout)
+		if err != nil {
+			return nil, err
+		}
+
+		if weberr != nil {
+			return weberr, nil
+		}
+
+		*slice = append(*slice, *target)
+
+		if !hasNextPage {
+			break
+		}
+		if astAPIPageLen > int(target.TotalCount) {
+			break
+		}
+		currentPage++
+	}
+	return nil, nil
+}
+func getResultsByOffset(resultPath string, params map[string]string, clientTimeout uint) (*ScanResultsCollection, bool, *WebError, error) {
+	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, resultPath, params, http.NoBody, clientTimeout)
+	if err != nil {
+		return nil, false, nil, err
 	}
 
 	defer func() {
@@ -61,22 +104,26 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, false, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-		return nil, &errorModel, nil
+		return nil, false, &errorModel, nil
 	case http.StatusOK:
 		model := ScanResultsCollection{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
+			return nil, false, nil, errors.Wrapf(err, failedToParseGetResults)
 		}
-
-		return &model, nil, nil
+		if err != nil {
+			return nil, false, nil, errors.Wrapf(err, failedToParseGetResults)
+		}
+		if len(model.Results) == 0 {
+			return &model, false, nil, nil
+		}
+		return &model, true, nil, nil
 	default:
-		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
+		return nil, false, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
-
 func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]string) (
 	*[]ScaPackageCollection,
 	*WebError,
@@ -184,6 +231,7 @@ func (r *ResultsHTTPWrapper) GetResultsURL(projectID string) (string, error) {
 	return baseURI, nil
 }
 
+// GetScanSummariesByScanIDS will no longer be used because it does not support --filters flag
 func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string) (
 	*ScanSummariesModel,
 	*WebError,

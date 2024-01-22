@@ -212,13 +212,14 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getGitLabUniqueContributors(commits []wrappers.GitLabCommit) map[string]bool {
-	var contributors = map[string]bool{}
+func getGitLabUniqueContributors(commits []wrappers.GitLabCommit) map[string]string {
+	var contributors = map[string]string{}
 
 	for _, commit := range commits {
 		name := commit.Name
-		if !contributors[name] && !isNotGitLabBot(commit) {
-			contributors[name] = true
+		_, contains := contributors[name]
+		if !contains && !isNotGitLabBot(commit) {
+			contributors[name] = commit.Email
 		}
 	}
 	return contributors
@@ -230,7 +231,7 @@ func isNotGitLabBot(commit wrappers.GitLabCommit) bool {
 
 func printUniqueContributors(
 	views *[]RepositoryView, viewsUsers *[]UserView, gitLabProjectName string,
-	uniqueContributorsMap map[string]bool,
+	uniqueContributorsMap map[string]string,
 ) {
 	*views = append(
 		*views,
@@ -240,12 +241,13 @@ func printUniqueContributors(
 		},
 	)
 
-	for name := range uniqueContributorsMap {
+	for name, email := range uniqueContributorsMap {
 		*viewsUsers = append(
 			*viewsUsers,
 			UserView{
 				Name:                       gitLabProjectName,
 				UniqueContributorsUsername: name,
+				UniqueContributorsEmail:    email,
 			},
 		)
 	}

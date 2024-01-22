@@ -1,6 +1,17 @@
 linters-settings:
+  #  https://golangci-lint.run/usage/linters/#depguard
   depguard:
     list-type: blacklist
+    rules:
+      main:
+        allow:
+          - $gostd
+          - github.com/checkmarx/ast-cli/internal
+          - github.com/spf13/viper
+          - github.com/checkmarxDev/gpt-wrapper
+          - github.com/spf13/cobra
+          - github.com/pkg/errors
+          - github.com/google
   dupl:
     threshold: 500
   funlen:
@@ -107,8 +118,8 @@ run:
     - internal/renameio
     - internal/robustio
 
- # In case of linter atoi() erros
- # go: '^1.21'
+  # In case of linter atoi() erros
+  # go: '^1.21'
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration

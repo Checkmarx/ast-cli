@@ -133,6 +133,7 @@ func NewScanCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	sastMetadataWrapper wrappers.SastMetadataWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -157,9 +158,10 @@ func NewScanCommand(
 		groupsWrapper,
 		riskOverviewWrapper,
 		jwtWrapper,
-		policyWrapper)
+		policyWrapper,
+	)
 
-	listScansCmd := scanListSubCommand(scansWrapper)
+	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
@@ -373,7 +375,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in Checkmarx One",
@@ -390,7 +392,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runListScansCommand(scansWrapper),
+		RunE: runListScansCommand(scansWrapper, sastMetadataWrapper),
 	}
 	listScansCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterScanListFlagUsage)
 	return listScansCmd
@@ -528,7 +530,9 @@ func scanCreateSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
+		printer.FormatGL,
 	)
+	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumentationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.LastSastScanTime, "", scaLastScanTimeFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
@@ -588,7 +592,7 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp.Projects[i].ID, cmd, projectsWrapper, groupsWrapper)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName)
 		}
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
@@ -630,19 +634,33 @@ func createProject(
 }
 
 func updateProject(
-	projectID string,
+	resp *wrappers.ProjectsCollectionResponseModel,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	projectName string,
+
 ) (string, error) {
+	var projectID string
+	var projModel = wrappers.Project{}
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	for i := 0; i < len(resp.Projects); i++ {
+		if resp.Projects[i].Name == projectName {
+			projectID = resp.Projects[i].ID
+		}
+		if resp.Projects[i].MainBranch != "" {
+			projModel.MainBranch = resp.Projects[i].MainBranch
+		}
+		if resp.Projects[i].RepoURL != "" {
+			projModel.RepoURL = resp.Projects[i].RepoURL
+		}
+	}
 	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
 		return projectID, nil
 	}
-	var projModel = wrappers.Project{}
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
@@ -668,7 +686,6 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
@@ -784,7 +801,7 @@ func setupScanTypeProjectAndConfig(
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
-	var apiSecConfig = addAPISecScan()
+	var apiSecConfig = addAPISecScan(cmd)
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
@@ -910,10 +927,16 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
-func addAPISecScan() map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) && scanTypeEnabled(commonParams.APISecurityType) {
+func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
-		apiSecMapConfig["type"] = commonParams.APISecType
+		apiSecConfig := wrappers.APISecConfig{}
+		apiSecMapConfig[resultsMapType] = commonParams.APISecType
+		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
+		if apiDocumentation != "" {
+			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+		}
+		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
 	}
 	return nil
@@ -948,11 +971,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 
 	actualScanTypes = strings.Join(scanTypes, ",")
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
-
-	if scanTypeEnabled(commonParams.APISecurityType) && !scanTypeEnabled(commonParams.SastType) {
-		err = errors.Errorf("Error: scan-type 'api-security' only works when  scan-type 'sast' is also provided.")
-		return err
-	}
 
 	return nil
 }
@@ -1156,7 +1174,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
 	if len(scaResolver) > 0 {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1172,7 +1190,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams string) error {
 			"-s",
 			sourceDir,
 			"-n",
-			commonParams.ProjectName,
+			projectName,
 			"-r",
 			scaResolverResultsFile,
 		}
@@ -1213,6 +1231,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
+	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1237,7 +1256,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// Make sure scaResolver only runs in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams)
+			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
 			if dirPathErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
@@ -1980,7 +1999,7 @@ func isPolicyEvaluated(
 	return true, nil, nil
 }
 
-func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var allScansModel *wrappers.ScansCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -1993,11 +2012,12 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Com
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}
+
 		// Checking the response
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = printByFormat(cmd, toScanViews(allScansModel.Scans))
+			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
 			if err != nil {
 				return err
 			}
@@ -2175,9 +2195,29 @@ type scanView struct {
 	Engines         []string
 }
 
-func toScanViews(scans []wrappers.ScanResponseModel) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
+	scanIDs := make([]string, len(scans))
+	for i := range scans {
+		scanIDs[i] = scans[i].ID
+	}
+
+	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
+
+	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
+	if err != nil {
+		logger.Printf("error getting sast metadata: %v", err)
+		return nil
+	}
+
+	metadataMap := make(map[string]bool)
+	if sastMetadata != nil {
+		for i := range sastMetadata.Scans {
+			metadataMap[sastMetadata.Scans[i].ScanID] = sastMetadata.Scans[i].IsIncremental
+		}
+	}
 	views := make([]*scanView, len(scans))
 	for i := 0; i < len(scans); i++ {
+		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
 		views[i] = toScanView(&scans[i])
 	}
 	return views

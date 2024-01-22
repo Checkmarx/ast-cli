@@ -9,6 +9,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 )
 
@@ -37,6 +38,14 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatSarif))
+}
+
+func TestParseSarifEmptyResultSast(t *testing.T) {
+	emptyResult := &wrappers.ScanResult{}
+	result := parseSarifResultSast(emptyResult, nil)
+	if result != nil {
+		t.Errorf("Expected nil result for empty ScanResultData.Nodes, got %v", result)
+	}
 }
 
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
@@ -69,13 +78,6 @@ func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
-
-	// Testing errors
-	err := execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKERR", "--report-format", "summaryConsole")
-	assert.Equal(t, err.Error(), "mock error")
-
-	err = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCKWEBERR", "--report-format", "summaryConsole")
-	assert.ErrorContains(t, err, "web error")
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {

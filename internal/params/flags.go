@@ -148,24 +148,36 @@ const (
 	ScaFilterUsage  = "SCA filter"
 
 	// PR decoration flags
-	NamespaceFlag      = "namespace"
-	NamespaceFlagUsage = "Github namespace is required to post the comments"
-	RepoNameFlag       = "repo-name"
-	RepoNameFlagUsage  = "Github repository details"
-	PRNumberFlag       = "pr-number"
-	PRNumberFlagUsage  = "Pull Request number for posting notifications and comments"
+	NamespaceFlag            = "namespace"
+	NamespaceFlagUsage       = "%s namespace is required to post the comments"
+	RepoNameFlag             = "repo-name"
+	RepoNameFlagUsage        = "%s repository details"
+	PRNumberFlag             = "pr-number"
+	PRNumberFlagUsage        = "Pull Request number for posting notifications and comments"
+	PRIidFlag                = "mr-iid"
+	PRIidFlagUsage           = "Gitlab IID (internal ID) of the merge request"
+	PRGitlabProjectFlag      = "gitlab-project-id"
+	PRGitlabProjectFlagUsage = "Gitlab project ID"
 
-	// Chat
-	ChatAPIKey              = "chat-apikey"
-	ChatConversationID      = "conversation-id"
-	ChatUserInput           = "user-input"
-	ChatModel               = "model"
-	ChatResultFile          = "result-file"
-	ChatResultLine          = "result-line"
-	ChatResultSeverity      = "result-severity"
-	ChatResultVulnerability = "result-vulnerability"
+	// Chat (General)
+	ChatAPIKey         = "chat-apikey"
+	ChatConversationID = "conversation-id"
+	ChatUserInput      = "user-input"
+	ChatModel          = "model"
+
+	// Chat (Kics)
+	ChatKicsResultFile          = "result-file"
+	ChatKicsResultLine          = "result-line"
+	ChatKicsResultSeverity      = "result-severity"
+	ChatKicsResultVulnerability = "result-vulnerability"
+
 	// Mask
 	MaskContent = "mask-content"
+
+	// Chat (SAST)
+	ChatSastScanResultsFile = "scan-results-file"
+	ChatSastSourceDir       = "source-dir"
+	ChatSastResultID        = "sast-result-id"
 )
 
 // Parameter values
@@ -207,14 +219,16 @@ const (
 
 // Results
 const (
-	SastType         = "sast"
-	KicsType         = "kics"
-	APISecurityType  = "api-security"
-	IacType          = "iac-security"
-	IacLabel         = "IaC Security"
-	APISecurityLabel = "API Security"
-	ScaType          = "sca"
-	APISecType       = "apisec"
+	SastType             = "sast"
+	KicsType             = "kics"
+	APISecurityType      = "api-security"
+	APIDocumentationFlag = "apisec-swagger-filter"
+	IacType              = "iac-security"
+	IacLabel             = "IaC Security"
+	APISecurityLabel     = "API Security"
+	ScaType              = "sca"
+	APISecType           = "apisec"
+	Success              = "success"
 )
 
 // ScaAgent AST Role

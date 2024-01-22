@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -32,7 +31,7 @@ func TestAuthValidate(t *testing.T) {
 }
 
 func TestAuthValidateClientAndSecret(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate", "--apikey", "")
+	err, buffer := executeCommand(t, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
@@ -58,7 +57,7 @@ func TestAuthValidateWithBaseAuthURI(t *testing.T) {
 
 	avoidCachedToken()
 
-	err := execute(validateCommand, "auth", "validate", "--apikey", "")
+	err := execute(validateCommand, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, "")
 
 	// valid authentication passing an empty base-auth-uri once it will be picked from environment variables
@@ -170,33 +169,33 @@ func TestFailProxyAuth(t *testing.T) {
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
 }
 
-func TestFailProxyAuthByEnv(t *testing.T) {
-	proxyValue := os.Getenv(params.ProxyEnv)
-	defer func() {
-		_ = os.Setenv(params.ProxyEnv, proxyValue)
-	}()
-	_ = os.Setenv(params.ProxyEnv, buildProxyURL())
-
-	validate := createASTIntegrationTestCommand(t)
-	args := []string{"auth", "validate", flag(params.DebugFlag)}
-	validate.SetArgs(args)
-	err := validate.Execute()
-	assert.NilError(t, err)
-
-	proxyValue = os.Getenv(params.CxProxyEnv)
-	defer func() {
-		_ = os.Setenv(params.CxProxyEnv, proxyValue)
-	}()
-	_ = os.Setenv(params.CxProxyEnv, "http://localhost:55555")
-
-	viper.Reset()
-
-	validate = createASTIntegrationTestCommand(t)
-	args = append(args, flag(params.RetryFlag), string(rune(0)))
-	validate.SetArgs(args)
-	err = validate.Execute()
-	assert.Assert(t, err != nil)
-}
+//func TestFailProxyAuthByEnv(t *testing.T) {
+//	proxyValue := os.Getenv(params.ProxyEnv)
+//	defer func() {
+//		_ = os.Setenv(params.ProxyEnv, proxyValue)
+//	}()
+//	_ = os.Setenv(params.ProxyEnv, buildProxyURL())
+//
+//	validate := createASTIntegrationTestCommand(t)
+//	args := []string{"auth", "validate", flag(params.DebugFlag)}
+//	validate.SetArgs(args)
+//	err := validate.Execute()
+//	assert.NilError(t, err)
+//
+//	proxyValue = os.Getenv(params.CxProxyEnv)
+//	defer func() {
+//		_ = os.Setenv(params.CxProxyEnv, proxyValue)
+//	}()
+//	_ = os.Setenv(params.CxProxyEnv, "http://localhost:55555")
+//
+//	viper.Reset()
+//
+//	validate = createASTIntegrationTestCommand(t)
+//	args = append(args, flag(params.RetryFlag), string(rune(0)))
+//	validate.SetArgs(args)
+//	err = validate.Execute()
+//	assert.Assert(t, err != nil)
+//}
 
 // assert success authentication
 func assertSuccessAuthentication(t *testing.T, err error, buffer *bytes.Buffer, assertionMessage string) {

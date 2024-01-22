@@ -40,6 +40,7 @@ func main() {
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
+	prDecorationGitlabPath := viper.GetString(params.PRDecorationGitlabPathKey)
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
@@ -47,6 +48,7 @@ func main() {
 	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
+	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -66,7 +68,7 @@ func main() {
 	bitBucketServerWrapper := bitbucketserver.NewBitbucketServerWrapper()
 	gitLabWrapper := wrappers.NewGitLabWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
-	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath, prDecorationGitlabPath)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(descriptionsPath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
@@ -74,6 +76,7 @@ func main() {
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -102,6 +105,7 @@ func main() {
 		chatWrapper,
 		featureFlagsWrapper,
 		policyWrapper,
+		sastMetadataWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

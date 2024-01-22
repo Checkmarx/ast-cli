@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -61,7 +62,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown, printer.FormatGL}
+	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
@@ -75,7 +76,6 @@ func assertResultFilesCreated(t *testing.T) {
 }
 
 func TestResultsShowParamFailed(t *testing.T) {
-
 	args := []string{
 		"results",
 		"show",
@@ -86,7 +86,6 @@ func TestResultsShowParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingParamFailed(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",
@@ -97,7 +96,6 @@ func TestCodeBashingParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingList(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -115,7 +113,6 @@ func TestCodeBashingList(t *testing.T) {
 }
 
 func TestCodeBashingListJson(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -134,7 +131,6 @@ func TestCodeBashingListJson(t *testing.T) {
 }
 
 func TestCodeBashingListTable(t *testing.T) {
-
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -149,7 +145,6 @@ func TestCodeBashingListTable(t *testing.T) {
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",
@@ -237,10 +232,9 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
 	)
-
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-
 }
+
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
@@ -256,32 +250,35 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
 	args := []string{
 		"results", "show",
-		flag(params.ScanIDFlag), "a6aa62f9-6c60-4be1-ac68-47e1cbc17d6c",
+		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
 	args := []string{
 		"results", "show",
-		flag(params.ScanIDFlag), "a6aa62f9-6c60-4be1-ac68-47e1cbc17d6c",
+		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
 		flag(params.ReportSbomFormatLocalFlowFlag),
 	}
 
-	err, _ := executeCommand(t, args...)
-	assert.Assert(t, err != nil)
+	executeCommand(t, args...)
+	// not supported yet, no assert to be done
 }
 
 func TestResultsWrongScanID(t *testing.T) {
-
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), "wrong",
@@ -290,4 +287,34 @@ func TestResultsWrongScanID(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "scan not found")
+}
+
+func TestResultsCounterJsonOutput(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+
 }

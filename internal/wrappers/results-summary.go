@@ -35,10 +35,16 @@ type ResultSummary struct {
 	Policies        *PolicyResponseModel
 }
 
+// nolint: govet
 type APISecResult struct {
-	APICount        int   `json:"api_count"`
-	TotalRisksCount int   `json:"total_risks_count"`
-	Risks           []int `json:"risks"`
+	APICount         int                `json:"api_count,omitempty"`
+	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
+	Risks            []int              `json:"risks,omitempty"`
+	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+}
+type riskDistribution struct {
+	Origin string `json:"origin,omitempty"`
+	Total  int    `json:"total,omitempty"`
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -52,6 +58,30 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
+	for _, risk := range r.APISecurity.RiskDistribution {
+		if strings.EqualFold(risk.Origin, origin) {
+			return &risk
+		}
+	}
+	return nil
+}
+
+func (r *ResultSummary) HasAPISecurityDocumentation() bool {
+	if len(r.APISecurity.RiskDistribution) > 1 && strings.EqualFold(r.APISecurity.RiskDistribution[1].Origin, "documentation") {
+		return true
+	}
+	return false
+}
+
+func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
+	riskAPIDocumentation := r.getRiskFromAPISecurity("documentation")
+	if riskAPIDocumentation != nil {
+		return riskAPIDocumentation.Total
+	}
+	return -1
 }
 
 func (r *ResultSummary) HasPolicies() bool {
@@ -218,7 +248,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             position: relative;
             top: 0;
             width: 100%;
-						margin-top: 10rem
+			margin-top: 10rem;
         }
 
         .progress {
@@ -246,7 +276,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 
 
         .top-row .element {
-            margin: 0 3rem 2rem;
+            margin: 0 1rem 2rem;
         }
 
         .top-row .risk-level-tile .value {
@@ -276,6 +306,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         .top-row .risk-level-tile.high {
             background: #f1605d;
             color: #fcfdff;
+            justify-content: center;
         }
 
 		.top-row .risk-level-tile.medium {
@@ -341,7 +372,6 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         .top-row {
             -ms-flex-pack: justify;
             -webkit-box-pack: justify;
-            align-items: center;
             display: flex;
             justify-content: space-evenly;
             padding: 20px;
@@ -480,6 +510,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 		  	border: 1px solid #ddd;
 		  	padding: 8px;
 			font-size: 14px;
+            width: 25%;
 		}
 
 		#policy tr{
@@ -507,6 +538,17 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 			font-size: 15px;
 			font-weight: 700;
 		}
+        @media only screen and (max-width: 1100px) {
+            .top-row  {
+            	display: block;
+            }
+            .element.risk-level-tile.high{
+                width: 100%;
+            }
+            .element{
+                width: 100% !important;
+            }
+        }
     </style>
     <script>
         window.addEventListener('load', function () {
@@ -643,7 +685,7 @@ const nonAsyncSummary = `<div class="top-row">
  					<div class="total">{{.APISecurity.APICount}}</div>
                 </div>
 				<div class="element">
-                	<div class="total">APIs with risk </div>
+                	<div class="total">APIs with risk</div>
  					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
                 </div>
 		</div>
@@ -710,9 +752,9 @@ const SummaryMarkdownCompletedTemplate = `
 {{if .HasAPISecurity}}
 ### API Security 
 
-| Detected APIs | APIs with risk |
-|:---------:|:---------:|
-| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} |
+| Detected APIs | APIs with risk | {{if .HasAPISecurityDocumentation}} APIs Documentation |{{end}}
+|:---------:|:---------:| {{if .HasAPISecurityDocumentation}}:---------:|{{end}}
+| {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
 {{end}}
 `
 

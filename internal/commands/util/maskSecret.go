@@ -32,8 +32,8 @@ func NewMaskSecretsCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 			),
 		},
 	}
-	maskSecretsCmd.Flags().String(params.ChatResultFile, "", "IaC result code file")
-	_ = maskSecretsCmd.MarkFlagRequired(params.ChatResultFile)
+	maskSecretsCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
+	_ = maskSecretsCmd.MarkFlagRequired(params.ChatKicsResultFile)
 
 	return maskSecretsCmd
 }
@@ -41,7 +41,7 @@ func NewMaskSecretsCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 func runMaskSecretCmd(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var err error
-		unmaskedFile, _ := cmd.Flags().GetString(params.ChatResultFile)
+		unmaskedFile, _ := cmd.Flags().GetString(params.ChatKicsResultFile)
 		unmaskedContent, err := os.ReadFile(unmaskedFile)
 		if err != nil {
 			return errors.Errorf("Error opening file : %s", err.Error())

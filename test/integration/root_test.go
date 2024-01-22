@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 	exitVal := m.Run()
-	deleteScanAndProject()
+	//deleteScanAndProject()
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
 }
