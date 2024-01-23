@@ -218,7 +218,8 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	resultShowCmd.PersistentFlags().Bool(commonParams.PrioritizeSastFlag, false, "Populate SAST results 'data.priority' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
+	resultShowCmd.PersistentFlags().Bool(commonParams.PrioritizeSastFlag, false,
+		"Populate SAST results 'data.priority' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	return resultShowCmd
 }
 
