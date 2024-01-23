@@ -11,6 +11,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
+const (
+	precision = 2
+	ten       = 10
+	half      = 0.5
+)
+
 func PrioritizeSastResults(resultsModel *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
 	languages := GetLanguages(resultsModel)
 	queriesByLanguage := GetQueries(resultsModel, languages)
@@ -104,11 +110,11 @@ func computeCoveredResults(subFlows map[string]*SubFlow, queryResults []*wrapper
 		coverage := make(map[string]float64)
 		for _, resultID := range sortedResults {
 			result := getResultForID(queryResults, resultID)
-			coverage[resultID] = roundFloat(float64(len(subFlows[key].Flow))/float64(len(result.ScanResultData.Nodes)), 2)
+			coverage[resultID] = roundFloat(float64(len(subFlows[key].Flow))/float64(len(result.ScanResultData.Nodes)), precision)
 		}
 		maxCoverageResultID, maxCoverage := getMaxCoverage(coverage)
 
-		if maxCoverage < 0.5 {
+		if maxCoverage < half {
 			continue
 		}
 		for resultID := range coverage {
@@ -141,7 +147,7 @@ func getMaxCoverage(coverage map[string]float64) (maxCoverageResultID string, ma
 }
 
 func roundFloat(val float64, precision uint) float64 {
-	ratio := math.Pow(10, float64(precision))
+	ratio := math.Pow(ten, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
 
@@ -231,7 +237,7 @@ func GetKey(r1, r2 string) string {
 func computeSubFlow(f1, f2 []string) (bool, *SubFlow) {
 	var subFlow []string
 	for i1 := 0; i1 < len(f1); {
-		for i2 := 0; i2 < len(f2); {
+		for i2 := 0; i2 < len(f2) && i1 < len(f1); {
 			if f1[i1] == f2[i2] {
 				subFlow = append(subFlow, f1[i1])
 				i1++

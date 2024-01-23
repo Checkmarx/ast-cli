@@ -62,6 +62,13 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
+func TestRunGetResultsByScanIdJsonFormatWithPrioritizeSast(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--prioritize-sast")
+
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+}
+
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
