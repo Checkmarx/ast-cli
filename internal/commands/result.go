@@ -84,6 +84,8 @@ const (
 	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
 	glTimeFormat                            = "2006-01-02T15:04:05"
 	sarifNodeFileLength                     = 2
+	fixLabel                                = "fix"
+	redundantLabel                          = "redundant"
 )
 
 var summaryFormats = []string{
@@ -216,7 +218,7 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	resultShowCmd.PersistentFlags().Bool(commonParams.PrioritizeSastFlag, false, "Prioritize SAST results")
+	resultShowCmd.PersistentFlags().Bool(commonParams.PrioritizeSastFlag, false, "Populate SAST results 'data.priority' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	return resultShowCmd
 }
 

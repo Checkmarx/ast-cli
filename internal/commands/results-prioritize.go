@@ -91,9 +91,9 @@ func prioritizeCoveredResults(queryResults []*wrappers.ScanResult, coveredResult
 
 	for resultID, coveredResults := range coveredResults {
 		if len(coveredResults) == 0 {
-			resultsByID[resultID].ScanResultData.Priority = "FIX"
+			resultsByID[resultID].ScanResultData.Priority = fixLabel
 		} else {
-			resultsByID[resultID].ScanResultData.Priority = "COVERED"
+			resultsByID[resultID].ScanResultData.Priority = redundantLabel
 		}
 	}
 }
