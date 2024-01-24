@@ -32,7 +32,9 @@ func PrioritizeSastResults(resultsModel *wrappers.ScanResultsCollection) *wrappe
 func GetLanguages(resultsModel *wrappers.ScanResultsCollection) map[string]bool {
 	languages := make(map[string]bool)
 	for _, result := range resultsModel.Results {
-		languages[result.ScanResultData.LanguageName] = true
+		if result.ScanResultData.LanguageName != "" {
+			languages[result.ScanResultData.LanguageName] = true
+		}
 	}
 	return languages
 }
