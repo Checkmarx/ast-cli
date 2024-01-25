@@ -6,6 +6,7 @@ import (
 
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
+const MinioEnabled = "MINIO_ENABLED"
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -13,6 +14,10 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    PackageEnforcementEnabled,
+				Default: true,
+			},
+			{
+				Name:    MinioEnabled,
 				Default: true,
 			},
 		},
