@@ -40,7 +40,7 @@ Next, please provide code that remediates the vulnerability so that a developer 
 Your analysis should be presented in the following format:
     CONFIDENCE: num
     EXPLANATION: short_text
-    Purposed Remediation: fixed_snippet`
+    PURPOSED REMEDIATION: fixed_snippet`
 
 func GetSystemPrompt() string {
 	return systemPrompt
