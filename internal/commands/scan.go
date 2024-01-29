@@ -1303,6 +1303,11 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	err = os.Chmod(microEnginesResultsFolder, 0644)
+	if err != nil {
+		fmt.Println("Error changing permissions:", err)
+		return err
+	}
 	// We might want in the future to have additional parameters we append to args, specific for each micro-engine
 	//microEnginesParsedParams, err := shlex.Split(microEnginesParams)
 	////if err != nil {
@@ -1338,10 +1343,6 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 			return errors.Errorf("%s", err.Error())
 		}
 	}
-	//err = os.WriteFile(microEnginesResultsFile, out, 0644)
-	//if err != nil {
-	//	return errors.Errorf("Failed to write microengines results to file: %s", err.Error())
-	//}
 
 	return nil
 }
