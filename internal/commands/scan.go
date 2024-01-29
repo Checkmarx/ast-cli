@@ -92,15 +92,23 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
+	completedPolicy               = "COMPLETED"
+	nonePolicy                    = "NONE"
+	evaluatingPolicy              = "EVALUATING"
+	microEnginesContainerImage    = "codfishjoe/microengine-scorecard:test-cli-with-volume5"
+	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
+	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
+	microEnginesScanTargetFlag    = "--scan-target"
+	microEnginesScanTarget        = "repo"
+	microEnginesTargetPathFlag    = "--target-path"
 )
 
 var (
-	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
-	filterScanListFlagUsage = fmt.Sprintf(
+	scaResolverResultsFile    = ""
+	microEnginesResultsFile   = ""
+	microEnginesResultsFolder = ""
+	actualScanTypes           = "sast,kics,sca"
+	filterScanListFlagUsage   = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
 			[]string{
@@ -177,6 +185,8 @@ func NewScanCommand(
 
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
+	microEnginesCmd := scanMicroEnginesSubCommand()
+
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
@@ -197,8 +207,24 @@ func NewScanCommand(
 		logsCmd,
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
+		microEnginesCmd,
 	)
 	return scanCmd
+}
+
+func scanMicroEnginesSubCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "micro-engines",
+		Short: "Manage micro-engines",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Micro-engines command executed")
+			// TODO: Implement the logic for the micro-engines command
+		},
+	}
+
+	// Define any flags or subcommands for the micro-engines command here
+
+	return cmd
 }
 
 func scanRealtimeSubCommand() *cobra.Command {
@@ -561,6 +587,19 @@ func scanCreateSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.RunMicroEngines,
+		false,
+		"Enable micro-engines scan",
+	)
+	createScanCmd.PersistentFlags().String(commonParams.MicroEnginesGithubTokenFlag,
+		"",
+		"Github token needed to scan repository with micro-engines")
+	createScanCmd.PersistentFlags().String(commonParams.MicroEnginesGithubURLFlag,
+		"",
+		"Github URL of the repository to scan with micro-engines")
+
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -805,6 +844,11 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+	var microEngineConfig = addMicroEngineScan()
+	if microEngineConfig != nil {
+		configArr = append(configArr, microEngineConfig)
+	}
+
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
@@ -942,6 +986,15 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
+func addMicroEngineScan() map[string]interface{} {
+	if scanTypeEnabled(commonParams.MicroEngineType) {
+		microEngineMapConfig := make(map[string]interface{})
+		microEngineMapConfig["type"] = commonParams.MicroEngineType
+		return microEngineMapConfig
+	}
+	return nil
+}
+
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
 	var scanTypes []string
 	allowedEngines, err := jwtWrapper.GetAllowedEngines()
@@ -951,11 +1004,15 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 	}
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	runMicroEngines, _ := cmd.Flags().GetBool(commonParams.RunMicroEngines)
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 
 		scanTypes = strings.Split(userScanTypes, ",")
+		if runMicroEngines && !strings.Contains(userScanTypes, commonParams.MicroEngineType) {
+			scanTypes = append(scanTypes, commonParams.MicroEngineType)
+		}
 		for _, scanType := range scanTypes {
 			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
@@ -965,7 +1022,14 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 		}
 	} else {
 		for k := range allowedEngines {
-			scanTypes = append(scanTypes, k)
+			// Micro-engine scans are allowed but don't run by default. Only run if listed in --scan-types or --run-micro-engines=true
+			if k != commonParams.MicroEngineType {
+				scanTypes = append(scanTypes, k)
+			} else {
+				if runMicroEngines {
+					scanTypes = append(scanTypes, k)
+				}
+			}
 		}
 	}
 
@@ -998,6 +1062,14 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
+		if err != nil {
+			return "", err
+		}
+	}
+	log.Println("Before checking microengines folder: " + microEnginesResultsFolder)
+	if strings.Contains(actualScanTypes, commonParams.MicroEngineType) && len(microEnginesResultsFolder) > 0 {
+		fmt.Println("Before adding microengine Results")
+		err = addMicroEnginesResults(zipWriter)
 		if err != nil {
 			return "", err
 		}
@@ -1223,12 +1295,110 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
+func runMicroEnginesScan(cmd *cobra.Command) error {
+	//microEnginesFile, err := os.CreateTemp("", "micro-engines*.json")
+	//microEnginesResultsFile = microEnginesFile.Name()
+	var err error
+	microEnginesResultsFolder, err = os.MkdirTemp("", "micro-engines-reports")
+	if err != nil {
+		return err
+	}
+	// We might want in the future to have additional parameters we append to args, specific for each micro-engine
+	//microEnginesParsedParams, err := shlex.Split(microEnginesParams)
+	////if err != nil {
+	//	return err
+	//}
+	microEnginesGithubToken, _ := cmd.Flags().GetString(commonParams.MicroEnginesGithubTokenFlag)
+	microEnginesGithubURL, _ := cmd.Flags().GetString(commonParams.MicroEnginesGithubURLFlag)
+	microEnginesRunArgs := []string{
+		containerRun,
+		containerRemove,
+		"-e",
+		microEnginesEnableSarifEnvVar,
+		"-e",
+		microEnginesGithubTokenEnvVar + microEnginesGithubToken,
+		"-v",
+		microEnginesResultsFolder + ":/reports",
+		microEnginesContainerImage,
+		microEnginesScanTargetFlag,
+		microEnginesScanTarget,
+		microEnginesTargetPathFlag,
+		microEnginesGithubURL,
+	}
+	log.Println(fmt.Sprintf("Using Micro-engines scan with args: %v", microEnginesRunArgs))
+	out, err := exec.Command("docker", microEnginesRunArgs...).Output()
+
+	logger.Print(string(out))
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// Command returned a non-zero exit status
+			return errors.Errorf("%s", exitErr.Stderr)
+		} else {
+			// Other error occurred
+			return errors.Errorf("%s", err.Error())
+		}
+	}
+	//err = os.WriteFile(microEnginesResultsFile, out, 0644)
+	//if err != nil {
+	//	return errors.Errorf("Failed to write microengines results to file: %s", err.Error())
+	//}
+
+	return nil
+}
+
+func addMicroEnginesResults(zipWriter *zip.Writer) error {
+	// Walk through the source folder and add its contents to the zip file
+	err := filepath.Walk(microEnginesResultsFolder, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		fmt.Println("File found:", path)
+		if !info.IsDir() {
+			dat, err := os.ReadFile(path)
+			_ = os.Remove(path)
+			if err != nil {
+				return err
+			}
+			separator := string(filepath.Separator)
+			f, err := zipWriter.Create("microengine-reports" + separator + info.Name())
+			if err != nil {
+				return err
+			}
+			_, err = f.Write(dat)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		fmt.Println("Error adding folder contents to zip file:", err)
+		return err
+	}
+	//logger.PrintIfVerbose("Included MicroEngines Results: " + "cxmicro-engines-results.json")
+	//dat, err := os.ReadFile(microEnginesResultsFile)
+	//_ = os.Remove(microEnginesResultsFile)
+	//if err != nil {
+	//	return err
+	//}
+	//f, err := zipWriter.Create("results.json")
+	//if err != nil {
+	//	return err
+	//}
+	//_, err = f.Write(dat)
+	//if err != nil {
+	//	return err
+	//}
+	//return nil
+	return nil
+}
+
 func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper) (
 	url, zipFilePath string,
 	err error,
 ) {
 	var preSignedURL string
-
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -1421,6 +1591,15 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+
+		if strings.Contains(actualScanTypes, commonParams.MicroEngineType) {
+			log.Println(fmt.Sprint("Running micro-engines"))
+			err = runMicroEnginesScan(cmd)
+			if err != nil {
+				return errors.Errorf("Error on micro-engines scan: %s", err.Error())
+			}
+		}
+
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
@@ -1432,6 +1611,7 @@ func runCreateScanCommand(
 			groupsWrapper,
 			scansWrapper,
 		)
+
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1556,7 +1736,7 @@ func createScanModel(
 	if uploadType == "git" {
 		log.Printf("\n\nScanning branch %s...\n", viper.GetString(commonParams.BranchKey))
 	}
-
+	log.Println(zipFilePath)
 	return &scanModel, zipFilePath, nil
 }
 

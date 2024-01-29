@@ -26,6 +26,7 @@ var defaultEngines = map[string]bool{
 	"sca":          true,
 	"api-security": true,
 	"iac-security": true,
+	"microengines": true,
 }
 
 type JWTWrapper interface {
