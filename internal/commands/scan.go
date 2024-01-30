@@ -95,7 +95,7 @@ const (
 	completedPolicy               = "COMPLETED"
 	nonePolicy                    = "NONE"
 	evaluatingPolicy              = "EVALUATING"
-	microEnginesContainerImage    = "codfishjoe/microengine-scorecard:test-cli-with-volume9"
+	microEnginesContainerImage    = "codfishjoe/microengine-scorecard:test-cli-with-volume10"
 	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
 	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
 	microEnginesScanTargetFlag    = "--scan-target"
@@ -1303,11 +1303,23 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	//err = os.Chmod(microEnginesResultsFolder, 0644)
+	_, err = os.CreateTemp(microEnginesResultsFolder, "sample")
 	if err != nil {
-		fmt.Println("Error changing permissions:", err)
+		fmt.Println("Error creating creating sample temp file:", err)
 		return err
 	}
+	//err = os.Chmod(microEnginesResultsFolder, 0644)
+	//if err != nil {
+	//	fmt.Println("Error changing permissions:", err)
+	//	return err
+	//}
+	microEnginesResultsFolder2 := "micro-engines-reports-perm"
+	err = os.Mkdir(microEnginesResultsFolder2, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating perm folder:", err)
+		return err
+	}
+
 	// We might want in the future to have additional parameters we append to args, specific for each micro-engine
 	//microEnginesParsedParams, err := shlex.Split(microEnginesParams)
 	////if err != nil {
@@ -1322,8 +1334,10 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 		microEnginesEnableSarifEnvVar,
 		"-e",
 		microEnginesGithubTokenEnvVar + microEnginesGithubToken,
-		"-v",
-		microEnginesResultsFolder + ":/reports",
+		//"-v",
+		//microEnginesResultsFolder + ":/reports",
+		"--mount",
+		"src=/" + microEnginesResultsFolder2 + ",target=/reports,type=bind",
 		microEnginesContainerImage,
 		microEnginesScanTargetFlag,
 		microEnginesScanTarget,
