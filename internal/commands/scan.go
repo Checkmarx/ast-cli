@@ -95,7 +95,7 @@ const (
 	completedPolicy               = "COMPLETED"
 	nonePolicy                    = "NONE"
 	evaluatingPolicy              = "EVALUATING"
-	microEnginesContainerImage    = "codfishjoe/microengine-scorecard:test-cli-with-volume5"
+	microEnginesContainerImage    = "codfishjoe/microengine-scorecard:test-cli-with-volume9"
 	microEnginesGithubTokenEnvVar = "GITHUB_AUTH_TOKEN="
 	microEnginesEnableSarifEnvVar = "ENABLE_SARIF=true"
 	microEnginesScanTargetFlag    = "--scan-target"
@@ -1303,7 +1303,7 @@ func runMicroEnginesScan(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	err = os.Chmod(microEnginesResultsFolder, 0644)
+	//err = os.Chmod(microEnginesResultsFolder, 0644)
 	if err != nil {
 		fmt.Println("Error changing permissions:", err)
 		return err

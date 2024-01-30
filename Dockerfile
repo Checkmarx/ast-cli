@@ -18,4 +18,5 @@ FROM alpine:3.19.0
 RUN apk add --update docker openrc
 RUN rc-update add docker boot
 COPY --from=build-env /app/bin/cx /app/bin/cx
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ENTRYPOINT ["/app/bin/cx"]
