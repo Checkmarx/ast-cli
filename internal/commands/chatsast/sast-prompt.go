@@ -83,7 +83,17 @@ func createSourceForPrompt(result *Result, sources map[string][]string) (string,
 		} else {
 			edge = ""
 		}
-		methodLines[lineInMethod] += fmt.Sprintf("//SAST Node #%d%s: %s (%s)", i, edge, node.Name, node.DomType)
+
+		// change UnknownReference to something more informational like VariableReference or TypeNameReference
+		nodeType := node.DomType
+		if node.DomType == "UnknownReference" {
+			if node.TypeName == "" {
+				nodeType = "VariableReference"
+			} else {
+				nodeType = node.TypeName + "Reference"
+			}
+		}
+		methodLines[lineInMethod] += fmt.Sprintf("//SAST Node #%d%s: %s (%s)", j, edge, node.Name, nodeType)
 		methodsInPrompt[sourceFilename+":"+node.Method] = methodLines
 	}
 
