@@ -35,12 +35,12 @@ or it's a false positive.
  
 Please provide a brief explanation for your confidence score, don't mention all the instruction above.
 
-Next, please provide code that fixes the vulnerability so that a developer can copy paste instead of the snippet above.
+Next, please provide code that remediates the vulnerability so that a developer can copy paste instead of the snippet above.
  
 Your analysis should be presented in the following format:
     CONFIDENCE: num
     EXPLANATION: short_text
-    FIX: fixed_snippet`
+    PROPOSED REMEDIATION: fixed_snippet`
 
 func GetSystemPrompt() string {
 	return systemPrompt

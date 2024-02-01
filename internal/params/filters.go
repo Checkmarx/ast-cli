@@ -130,6 +130,7 @@ var BaseFilters = []string{
 	"go.sum",
 	"Podfile",
 	"Podfile.lock",
+	"*.cmp",
 }
 
 var KicsBaseFilters = []string{
