@@ -1,4 +1,4 @@
-package chatsast
+package commands
 
 import (
 	"fmt"
