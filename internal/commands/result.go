@@ -218,8 +218,8 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	resultShowCmd.PersistentFlags().Bool(commonParams.SastPrioritizationFlag, false,
-		"Populate SAST results 'data.priority' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
+	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
+		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	return resultShowCmd
 }
 
@@ -587,7 +587,7 @@ func runGetResultCommand(
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
-		sastPrioritization, _ := cmd.Flags().GetBool(commonParams.SastPrioritizationFlag)
+		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -621,8 +621,8 @@ func runGetResultCommand(
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
 
-		if sastPrioritization {
-			params[commonParams.SastPrioritizationFlag] = ""
+		if sastRedundancy {
+			params[commonParams.SastRedundancyFlag] = ""
 		}
 
 		return CreateScanReport(
@@ -969,11 +969,11 @@ func enrichScaResults(
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
 	}
-	_, sastPrioritization := params[commonParams.SastPrioritizationFlag]
+	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
 
-	if util.Contains(scan.Engines, commonParams.SastType) && sastPrioritization {
-		// Compute SAST results priority
-		resultsModel = PrioritizeSastResults(resultsModel)
+	if util.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+		// Compute SAST results redundancy
+		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
 	return resultsModel, nil
 }

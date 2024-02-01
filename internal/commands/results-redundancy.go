@@ -17,13 +17,13 @@ const (
 	half      = 0.5
 )
 
-func PrioritizeSastResults(resultsModel *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+func ComputeRedundantSastResults(resultsModel *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
 	languages := GetLanguages(resultsModel)
 	queriesByLanguage := GetQueries(resultsModel, languages)
 
 	for language := range queriesByLanguage {
 		for query := range queriesByLanguage[language] {
-			resultsModel = PrioritizeSastResultsForQuery(resultsModel, language, query)
+			resultsModel = ComputeRedundantSastResultsForQuery(resultsModel, language, query)
 		}
 	}
 	return resultsModel
@@ -53,7 +53,7 @@ func GetQueries(resultsModel *wrappers.ScanResultsCollection, languages map[stri
 	return queriesByLanguage
 }
 
-func PrioritizeSastResultsForQuery(resultsModel *wrappers.ScanResultsCollection, language, query string) *wrappers.ScanResultsCollection {
+func ComputeRedundantSastResultsForQuery(resultsModel *wrappers.ScanResultsCollection, language, query string) *wrappers.ScanResultsCollection {
 	queryResults := GetResultsForQuery(resultsModel, language, query)
 	if len(queryResults) == 0 {
 		return resultsModel
@@ -63,9 +63,9 @@ func PrioritizeSastResultsForQuery(resultsModel *wrappers.ScanResultsCollection,
 
 	subFlows := compareFlows(flows)
 
-	coveredResults := computeCoveredResults(subFlows, queryResults)
+	redundantResults := computeRedundantResults(subFlows, queryResults)
 
-	prioritizeCoveredResults(queryResults, coveredResults)
+	labelRedundantResults(queryResults, redundantResults)
 	return resultsModel
 }
 
@@ -85,25 +85,25 @@ func GetResultsForQuery(resultsModel *wrappers.ScanResultsCollection, language, 
 	return queryResults
 }
 
-func prioritizeCoveredResults(queryResults []*wrappers.ScanResult, coveredResults map[string]map[string]bool) {
+func labelRedundantResults(queryResults []*wrappers.ScanResult, redundantResults map[string]map[string]bool) {
 	resultsByID := make(map[string]*wrappers.ScanResult)
 	for _, result := range queryResults {
 		resultsByID[result.ID] = result
 	}
 
-	for resultID, coveredResults := range coveredResults {
-		if len(coveredResults) == 0 {
-			resultsByID[resultID].ScanResultData.Priority = fixLabel
+	for resultID, redundantResult := range redundantResults {
+		if len(redundantResult) == 0 {
+			resultsByID[resultID].ScanResultData.Redundancy = fixLabel
 		} else {
-			resultsByID[resultID].ScanResultData.Priority = redundantLabel
+			resultsByID[resultID].ScanResultData.Redundancy = redundantLabel
 		}
 	}
 }
 
-func computeCoveredResults(subFlows map[string]*SubFlow, queryResults []*wrappers.ScanResult) map[string]map[string]bool {
-	coveredResults := make(map[string]map[string]bool)
+func computeRedundantResults(subFlows map[string]*SubFlow, queryResults []*wrappers.ScanResult) map[string]map[string]bool {
+	redundantResults := make(map[string]map[string]bool)
 	for _, result := range queryResults {
-		coveredResults[result.ID] = make(map[string]bool)
+		redundantResults[result.ID] = make(map[string]bool)
 	}
 
 	sortedSubFlowIDs := sortSubFlowIDs(subFlows)
@@ -123,10 +123,10 @@ func computeCoveredResults(subFlows map[string]*SubFlow, queryResults []*wrapper
 			if resultID == maxCoverageResultID {
 				continue
 			}
-			coveredResults[resultID][maxCoverageResultID] = true
+			redundantResults[resultID][maxCoverageResultID] = true
 		}
 	}
-	return coveredResults
+	return redundantResults
 }
 
 func getMaxCoverage(coverage map[string]float64) (maxCoverageResultID string, maxCoverage float64) {
