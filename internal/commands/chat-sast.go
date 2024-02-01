@@ -104,6 +104,8 @@ func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args
 
 		responseContent := getMessageContents(response)
 
+		responseContent = chatsast.AddNewlinesIfNecessary(responseContent)
+
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
 			ConversationID: id.String(),
 			Response:       responseContent,

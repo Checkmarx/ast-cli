@@ -2,6 +2,7 @@ package chatsast
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -11,13 +12,20 @@ about the results. You should also be capable of delivering clear, concise, and 
 If a question irrelevant to the mentioned source code or SAST result is asked, answer 'I am the AI Guided Remediation assistant and can answer only on questions 
 related to source code or SAST results or SAST Queries'.`
 
+const (
+	confidence  = "CONFIDENCE:"
+	explanation = "EXPLANATION:"
+	fix         = "FIX"
+	code        = "```"
+)
+
 const userPromptTemplate = `Checkmarx Static Application Security Testing (SAST) detected the %s vulnerability within the provided %s code snippet. 
 The attack vector is presented by code snippets annotated by comments in the form ` + "`//SAST Node #X: element (element-type)`" + ` where X is 
 the node index in the result, ` + "`element`" + ` is the name of the element through which the data flows, and the ` + "`element-type`" + ` is it's type. 
 The first and last nodes are indicated by ` + "`(input ...)` and `(output ...)`" + ` respectively:
-` + "```" + `
+` + code + `
 %s
-` + "```" + `
+` + code + `
 Please review the code above and provide a confidence score ranging from 0 to 100. 
 A score of 0 means you believe the result is completely incorrect, unexploitable, and a false positive. 
 A score of 100 means you believe the result is completely correct, exploitable, and a true positive.
@@ -38,9 +46,9 @@ Please provide a brief explanation for your confidence score, don't mention all 
 Next, please provide code that remediates the vulnerability so that a developer can copy paste instead of the snippet above.
  
 Your analysis should be presented in the following format:
-    CONFIDENCE: num
-    EXPLANATION: short_text
-    PROPOSED REMEDIATION: fixed_snippet`
+` + confidence + `number
+` + explanation + `short_text
+` + fix + `: fixed_snippet`
 
 func GetSystemPrompt() string {
 	return systemPrompt
@@ -126,4 +134,36 @@ func GetMethodByMethodLine(filename string, lines []string, methodLineNumber, no
 		methodLines[0] += fmt.Sprintf("// %s:%d", filename, methodLineNumber)
 	}
 	return methodLines, nil
+}
+
+func AddNewlinesIfNecessary(responseContent []string) []string {
+	if len(responseContent) == 0 {
+		return responseContent
+	}
+	stringToFix := responseContent[len(responseContent)-1]
+
+	stringToFix = addNewlineIfNecessary(stringToFix, confidence, explanation)
+	stringToFix = addNewlineIfNecessary(stringToFix, explanation, fix)
+	return append(responseContent[:len(responseContent)-1], stringToFix)
+}
+
+func addNewlineIfNecessary(s, from, to string) string {
+	startsAt := strings.Index(s, from) + len(from)
+	upTo := strings.Index(s, to)
+	if startsAt == -1 || upTo == -1 {
+		return s
+	}
+	if !endsWithNewlineAndWhitespace(s[startsAt:upTo]) {
+		return s[:upTo] + "\n" + s[upTo:]
+	}
+	return s
+}
+
+func endsWithNewlineAndWhitespace(s string) bool {
+	// Compile the regular expression that matches a newline followed by
+	// zero or more whitespace characters at the end of the string.
+	re := regexp.MustCompile(`\n\s*$`)
+	// Use the FindString method to find a match. If a match is found,
+	// it means the string ends with a newline and possibly other whitespace characters.
+	return re.FindString(s) != ""
 }
