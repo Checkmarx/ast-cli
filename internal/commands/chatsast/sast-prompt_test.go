@@ -38,11 +38,8 @@ func TestAddNewlinesIfNecessaryAllNewlines(t *testing.T) {
 }
 
 func getActual(input string, t *testing.T) []string {
-	var response []string
 	someText := "some text"
-	response = append(response, someText)
-	response = append(response, someText)
-	response = append(response, input)
+	response := []string{someText, someText, input}
 	output := AddNewlinesIfNecessary(response)
 	for i := 0; i < len(output)-1; i++ {
 		if output[i] != response[i] {
