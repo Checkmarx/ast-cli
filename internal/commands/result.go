@@ -1347,8 +1347,8 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 }
 
 func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriverRule, []wrappers.SarifScanResult) {
-	var sarifRules []wrappers.SarifDriverRule
-	var sarifResults []wrappers.SarifScanResult
+	var sarifRules = make([]wrappers.SarifDriverRule, 0)
+	var sarifResults = make([]wrappers.SarifScanResult, 0)
 	if results != nil {
 		ruleIds := map[interface{}]bool{}
 		for _, result := range results.Results {
