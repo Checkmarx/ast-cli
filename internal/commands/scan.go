@@ -2017,7 +2017,11 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
+			scanView, errScan := toScanViews(allScansModel.Scans, sastMetadataWrapper)
+			if errScan != nil {
+				return errScan
+			}
+			err = printByFormat(cmd, scanView)
 			if err != nil {
 				return err
 			}
@@ -2195,22 +2199,43 @@ type scanView struct {
 	Engines         []string
 }
 
-func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) ([]*scanView, error) {
 	scanIDs := make([]string, len(scans))
 	for i := range scans {
 		scanIDs[i] = scans[i].ID
 	}
+	// cannot send the full list of scanIDs, max 200
+	var sastMetadata wrappers.SastMetadataModel
+	var divided [][]string
 
-	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
-
-	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
-	if err != nil {
-		logger.Printf("error getting sast metadata: %v", err)
-		return nil
+	chunkSize := 200
+	if chunkSize>len(scanIDs){
+		chunkSize=len(scanIDs)
 	}
+	for i := 0; i < len(scanIDs); i += chunkSize {
+		end := i + chunkSize
+		if end > len(scanIDs) {
+			end = len(scanIDs)
+		}
+		divided = append(divided, scanIDs[i:end])
+	}
+	fmt.Printf("chunks %v",len(divided))
+	for _, currentScanIDs := range divided{
+			paramsToSast := map[string]string{"scan-ids": strings.Join(currentScanIDs, ",")}
+			currentSastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
+			if err != nil {
+				logger.Printf("error getting sast metadata: %v", err)
+				return nil, err
+			}
+			sastMetadata.Scans = append(sastMetadata.Scans,currentSastMetadata.Scans...)
+			sastMetadata.TotalCount += currentSastMetadata.TotalCount
+			sastMetadata.Missing = append(sastMetadata.Missing,currentSastMetadata.Missing...)
+	}
+	fmt.Printf("len(scans) %v",len(scans))
+	fmt.Printf("Scan number %v",sastMetadata.TotalCount)
 
 	metadataMap := make(map[string]bool)
-	if sastMetadata != nil {
+	if &sastMetadata != nil {
 		for i := range sastMetadata.Scans {
 			metadataMap[sastMetadata.Scans[i].ScanID] = sastMetadata.Scans[i].IsIncremental
 		}
@@ -2220,7 +2245,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
 		views[i] = toScanView(&scans[i])
 	}
-	return views
+	return views, nil
 }
 
 func toScanView(scan *wrappers.ScanResponseModel) *scanView {

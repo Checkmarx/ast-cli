@@ -1174,3 +1174,14 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
+
+func TestScanListWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "limit=10000",
+		flag(params.DebugFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
