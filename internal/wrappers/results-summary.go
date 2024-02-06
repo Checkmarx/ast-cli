@@ -32,6 +32,7 @@ type ResultSummary struct {
 	ScanInfoMessage string
 	EnginesEnabled  []string
 	Policies        *PolicyResponseModel
+	EnginesResult   EnginesResultsSummary
 }
 
 // nolint: govet
@@ -40,10 +41,69 @@ type APISecResult struct {
 	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
 	Risks            []int              `json:"risks,omitempty"`
 	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+	StatusCode       int
 }
 type riskDistribution struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
+}
+type EngineResultSummary struct {
+	High       int
+	Medium     int
+	Low        int
+	Info       int
+	StatusCode int
+}
+
+type EnginesResultsSummary map[string]*EngineResultSummary
+
+func (ers *EnginesResultsSummary) GetHighIssues() int {
+	highIssues := 0
+	for _, v := range *ers {
+		highIssues += v.High
+	}
+	return highIssues
+}
+
+func (ers *EnginesResultsSummary) GetLowIssues() int {
+	lowIssues := 0
+	for _, v := range *ers {
+		lowIssues += v.Low
+	}
+	return lowIssues
+}
+
+func (ers *EnginesResultsSummary) GetMediumIssues() int {
+	mediumIssues := 0
+	for _, v := range *ers {
+		mediumIssues += v.Medium
+	}
+	return mediumIssues
+}
+
+func (ers *EnginesResultsSummary) GetInfoIssues() int {
+	infoIssues := 0
+	for _, v := range *ers {
+		infoIssues += v.Info
+	}
+	return infoIssues
+}
+
+func (ers *EngineResultSummary) Increment(level string) {
+	switch level {
+	case "high":
+		ers.High++
+	case "medium":
+		ers.Medium++
+	case "low":
+		ers.Low++
+	case "info":
+		ers.Info++
+	}
+}
+
+func (summary *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
+	summary.EnginesResult[engineType].Increment(severity)
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -80,7 +140,7 @@ func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
 	if riskAPIDocumentation != nil {
 		return riskAPIDocumentation.Total
 	}
-	return -1
+	return 0
 }
 
 func (r *ResultSummary) HasPolicies() bool {
