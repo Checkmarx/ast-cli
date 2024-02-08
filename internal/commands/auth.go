@@ -120,7 +120,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
-		clientID = url.QueryEscape(clientID)
+		clientID = url.QueryEscape(clientID) // escape possible character in the client id such as +,%, etc...
 		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
 		apiKey := viper.GetString(params.AstAPIKey)
 		if (clientID != "" && clientSecret != "") || apiKey != "" {
