@@ -6,7 +6,7 @@ resource "aws_lb_listener" "listener5" {
 
     redirect {
       port        = "80"
-      protocol    = "HTTP"
+      protocol    = "HTTPS"
       status_code = "HTTP_301"
     }
   }
@@ -17,4 +17,5 @@ resource "aws_lb" "test3" {
   load_balancer_type = "application"
   subnets = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
   internal = true
+  drop_invalid_header_fields = true
 }
