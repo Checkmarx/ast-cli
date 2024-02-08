@@ -380,6 +380,7 @@ func GetAccessToken() (string, error) {
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeyID = url.QueryEscape(accessKeyID) // escape possible character in the client id such as +,%, etc...
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	if accessKeyID == "" && astAPIKey == "" {

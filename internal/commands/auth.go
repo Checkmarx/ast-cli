@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"net/url"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -119,6 +120,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
+		clientID = url.QueryEscape(clientID)
 		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
 		apiKey := viper.GetString(params.AstAPIKey)
 		if (clientID != "" && clientSecret != "") || apiKey != "" {
