@@ -104,12 +104,11 @@ func createSourceForPrompt(result *Result, sources map[string][]string) (string,
 		methodLines[lineInMethod] += fmt.Sprintf("//SAST Node #%d%s: %s (%s)", i, edge, node.Name, nodeType)
 		methodsInPrompt[sourceFilename+":"+node.Method] = methodLines
 	}
-	if methodsInPrompt != nil && len(methodsInPrompt) > 0 {
-		for _, methodLines := range methodsInPrompt {
-			methodLines = append(methodLines, "// method continues ...")
-			sourcePrompt = append(sourcePrompt, methodLines...)
-		}
+	for _, methodLines := range methodsInPrompt {
+		methodLines = append(methodLines, "// method continues ...")
+		sourcePrompt = append(sourcePrompt, methodLines...)
 	}
+
 	return strings.Join(sourcePrompt, "\n"), nil
 }
 
