@@ -54,6 +54,7 @@ type EngineResultSummary struct {
 	Info       int
 	StatusCode int
 }
+
 type EnginesResultsSummary map[string]*EngineResultSummary
 
 func (ers *EnginesResultsSummary) GetHighIssues() int {

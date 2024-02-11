@@ -447,12 +447,12 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
-	setEngineResultSummaryStatusCodes(summary)
+	setNotAvailableEnginesStatusCode(summary)
 
 	return summary, nil
 }
 
-func setEngineResultSummaryStatusCodes(summary *wrappers.ResultSummary) {
+func setNotAvailableEnginesStatusCode(summary *wrappers.ResultSummary) {
 	for engineName, engineResult := range summary.EnginesResult {
 		setNotAvailableNumberIfZero(summary, &engineResult.StatusCode, engineName)
 	}
@@ -483,10 +483,11 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
-	summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
-	summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
-	summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
-
+	if summary.HasAPISecurity() {
+		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
+		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
+		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 }
 
