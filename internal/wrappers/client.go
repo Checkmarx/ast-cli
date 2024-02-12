@@ -356,6 +356,7 @@ func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat strin
 		return nil, err
 	}
 	logger.PrintRequest(req)
+	isValidURL(req.URL.String())
 	return GetWithQueryParamsAndCustomRequest(client, req, urlAddress, token, authFormat, queryParams)
 }
 
@@ -387,15 +388,13 @@ func isValidURL(urlAddress string) bool {
 
 	allowedSchemes := []string{"http", "https"}
 
-	isValidScheme := false
 	for _, scheme := range allowedSchemes {
 		if strings.EqualFold(u.Scheme, scheme) {
-			isValidScheme = true
-			break
+			return true
 		}
 	}
 
-	return isValidScheme
+	return false
 }
 
 func GetAccessToken() (string, error) {
