@@ -619,7 +619,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("SCA", *summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
 
 	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n", fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
+		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf("              ---------------------------------------------------     \n\n")
 }
 
