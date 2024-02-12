@@ -89,6 +89,8 @@ const (
 	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
 	glTimeFormat                            = "2006-01-02T15:04:05"
 	sarifNodeFileLength                     = 2
+	fixLabel                                = "fix"
+	redundantLabel                          = "redundant"
 )
 
 var summaryFormats = []string{
@@ -221,6 +223,8 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
+		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	return resultShowCmd
 }
 
@@ -640,6 +644,7 @@ func runGetResultCommand(
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
+		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -672,6 +677,11 @@ func runGetResultCommand(
 		} else {
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
+
+		if sastRedundancy {
+			params[commonParams.SastRedundancyFlag] = ""
+		}
+
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
@@ -1017,6 +1027,12 @@ func enrichScaResults(
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
+	}
+	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
+
+	if util.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+		// Compute SAST results redundancy
+		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
 	return resultsModel, nil
 }
@@ -1390,8 +1406,8 @@ func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 }
 
 func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriverRule, []wrappers.SarifScanResult) {
-	var sarifRules []wrappers.SarifDriverRule
-	var sarifResults []wrappers.SarifScanResult
+	var sarifRules = make([]wrappers.SarifDriverRule, 0)
+	var sarifResults = make([]wrappers.SarifScanResult, 0)
 	if results != nil {
 		ruleIds := map[interface{}]bool{}
 		for _, result := range results.Results {
