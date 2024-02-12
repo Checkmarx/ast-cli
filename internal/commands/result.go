@@ -824,7 +824,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
-
 }
 
 func verifyFormatsByReportList(reportFormats []string, formats ...string) bool {
