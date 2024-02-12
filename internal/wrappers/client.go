@@ -364,14 +364,25 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	if len(token) > 0 {
 		enrichWithOath2Credentials(customReq, token, authFormat)
 	}
-	q := customReq.URL.Query()
-	for k, v := range queryParams {
-		q.Add(k, v)
+	currentUrl := customReq.URL.Query().Get("url")
+	if currentUrl != "" {
+		resp, err := http.Get(currentUrl)
+		if err != nil {
+			return nil, err
+		} else {
+			defer resp.Body.Close()
+			q := customReq.URL.Query()
+			for k, v := range queryParams {
+				q.Add(k, v)
+			}
+			customReq.URL.RawQuery = q.Encode()
+			customReq = addReqMonitor(customReq)
+			return request(client, customReq, true)
+		}
 	}
-	customReq.URL.RawQuery = q.Encode()
-	customReq = addReqMonitor(customReq)
-	return request(client, customReq, true)
+	return nil, errors.Errorf("url is empty")
 }
+
 func GetAccessToken() (string, error) {
 	authURI, err := getAuthURI()
 	if err != nil {
