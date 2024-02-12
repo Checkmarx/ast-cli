@@ -364,23 +364,39 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	if len(token) > 0 {
 		enrichWithOath2Credentials(customReq, token, authFormat)
 	}
-	currentUrl := customReq.URL.Query().Get("url")
-	if currentUrl != "" {
-		resp, err := http.Get(currentUrl)
-		if err != nil {
-			return nil, err
-		} else {
-			defer resp.Body.Close()
-			q := customReq.URL.Query()
-			for k, v := range queryParams {
-				q.Add(k, v)
-			}
-			customReq.URL.RawQuery = q.Encode()
-			customReq = addReqMonitor(customReq)
-			return request(client, customReq, true)
-		}
+	if err := validateURL(customReq.URL.Query().Get("url")); err != nil {
+		return nil, err
 	}
-	return nil, errors.Errorf("url is empty")
+	q := customReq.URL.Query()
+	for k, v := range queryParams {
+		q.Add(k, v)
+	}
+	customReq.URL.RawQuery = q.Encode()
+	customReq = addReqMonitor(customReq)
+	return request(client, customReq, true)
+}
+
+func validateURL(urlAddress string) error {
+	parsedURL, err := url.Parse(urlAddress)
+	if err != nil {
+		return err
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return errors.New("URL scheme must be HTTP or HTTPS")
+	}
+
+	if !isAllowedHost(parsedURL.Host) {
+		return errors.New("URL host is not allowed")
+	}
+
+	return nil
+}
+
+func isAllowedHost(host string) bool {
+	// Implement logic to check if the host is in the whitelist
+	// Return true if the host is allowed, false otherwise
+	return true
 }
 
 func GetAccessToken() (string, error) {
