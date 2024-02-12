@@ -361,11 +361,18 @@ func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat strin
 
 // GetWithQueryParamsAndCustomRequest used when we need to add custom headers to the request
 func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Request, urlAddress, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+	urlParam := queryParams["url"]
+	if urlParam == "" {
+		return nil, errors.New("URL parameter not found")
+	}
+
+	parsedURL, err := url.Parse(urlParam)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+		return nil, errors.New("Invalid URL protocol")
+	}
+
 	if len(token) > 0 {
 		enrichWithOath2Credentials(customReq, token, authFormat)
-	}
-	if err := validateURL(customReq.URL.Query().Get("url")); err != nil {
-		return nil, err
 	}
 	q := customReq.URL.Query()
 	for k, v := range queryParams {
@@ -374,29 +381,6 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	customReq.URL.RawQuery = q.Encode()
 	customReq = addReqMonitor(customReq)
 	return request(client, customReq, true)
-}
-
-func validateURL(urlAddress string) error {
-	parsedURL, err := url.Parse(urlAddress)
-	if err != nil {
-		return err
-	}
-
-	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return errors.New("URL scheme must be HTTP or HTTPS")
-	}
-
-	if !isAllowedHost(parsedURL.Host) {
-		return errors.New("URL host is not allowed")
-	}
-
-	return nil
-}
-
-func isAllowedHost(host string) bool {
-	// Implement logic to check if the host is in the whitelist
-	// Return true if the host is allowed, false otherwise
-	return true
 }
 
 func GetAccessToken() (string, error) {
