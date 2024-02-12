@@ -540,24 +540,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			summary.RiskMsg,
 		)
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			fmt.Printf("              --------------------------------------     \n")
-			if summary.Policies.BreakBuild {
-				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
-			} else {
-				fmt.Printf("            Policy Management Violation:                     \n")
-			}
-			if len(summary.Policies.Polices) > 0 {
-				for _, police := range summary.Policies.Polices {
-					if len(police.RulesViolated) > 0 {
-						fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
-						for _, violatedRule := range police.RulesViolated {
-							fmt.Printf("%s;", violatedRule)
-						}
-					}
-					fmt.Printf("\n")
-				}
-			}
-			fmt.Printf("\n")
+			printPoliciesSummary(summary)
 		}
 
 		printResultsSummaryTable(summary)
@@ -572,6 +555,27 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
+}
+
+func printPoliciesSummary(summary *wrappers.ResultSummary) {
+	fmt.Printf("              --------------------------------------     \n")
+	if summary.Policies.BreakBuild {
+		fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+	} else {
+		fmt.Printf("            Policy Management Violation:                     \n")
+	}
+	if len(summary.Policies.Polices) > 0 {
+		for _, police := range summary.Policies.Polices {
+			if len(police.RulesViolated) > 0 {
+				fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
+				for _, violatedRule := range police.RulesViolated {
+					fmt.Printf("%s;", violatedRule)
+				}
+			}
+			fmt.Printf("\n")
+		}
+	}
+	fmt.Printf("\n")
 }
 
 func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
