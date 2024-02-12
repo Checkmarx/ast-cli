@@ -808,16 +808,9 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		} else if severity == infoLabel {
 			summary.InfoIssues++
 		}
-		setEngineResultSummary(summary, engineType, severity)
-	}
-
-}
-
-func setEngineResultSummary(summary *wrappers.ResultSummary, engineType, severity string) {
-	switch severity {
-	case highLabel, mediumLabel, lowLabel, infoLabel:
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
+
 }
 
 func verifyFormatsByReportList(reportFormats []string, formats ...string) bool {

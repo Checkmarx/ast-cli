@@ -57,48 +57,48 @@ type EngineResultSummary struct {
 
 type EnginesResultsSummary map[string]*EngineResultSummary
 
-func (ers *EnginesResultsSummary) GetHighIssues() int {
+func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
-	for _, v := range *ers {
+	for _, v := range *engineSummary {
 		highIssues += v.High
 	}
 	return highIssues
 }
 
-func (ers *EnginesResultsSummary) GetLowIssues() int {
+func (engineSummary *EnginesResultsSummary) GetLowIssues() int {
 	lowIssues := 0
-	for _, v := range *ers {
+	for _, v := range *engineSummary {
 		lowIssues += v.Low
 	}
 	return lowIssues
 }
 
-func (ers *EnginesResultsSummary) GetMediumIssues() int {
+func (engineSummary *EnginesResultsSummary) GetMediumIssues() int {
 	mediumIssues := 0
-	for _, v := range *ers {
+	for _, v := range *engineSummary {
 		mediumIssues += v.Medium
 	}
 	return mediumIssues
 }
 
-func (ers *EnginesResultsSummary) GetInfoIssues() int {
+func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
 	infoIssues := 0
-	for _, v := range *ers {
+	for _, v := range *engineSummary {
 		infoIssues += v.Info
 	}
 	return infoIssues
 }
 
-func (ers *EngineResultSummary) Increment(level string) {
+func (engineSummary *EngineResultSummary) Increment(level string) {
 	switch level {
 	case "high":
-		ers.High++
+		engineSummary.High++
 	case "medium":
-		ers.Medium++
+		engineSummary.Medium++
 	case "low":
-		ers.Low++
+		engineSummary.Low++
 	case "info":
-		ers.Info++
+		engineSummary.Info++
 	}
 }
 
