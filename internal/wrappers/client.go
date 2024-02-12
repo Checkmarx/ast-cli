@@ -361,19 +361,15 @@ func GetWithQueryParams(client *http.Client, urlAddress, token, authFormat strin
 
 // GetWithQueryParamsAndCustomRequest used when we need to add custom headers to the request
 func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Request, urlAddress, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
-	urlParam := queryParams["url"]
-	if urlParam == "" {
-		return nil, errors.New("URL parameter not found")
-	}
-
-	parsedURL, err := url.Parse(urlParam)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		return nil, errors.New("Invalid URL protocol")
-	}
-
 	if len(token) > 0 {
 		enrichWithOath2Credentials(customReq, token, authFormat)
 	}
+
+	// Validate the URL from customReq
+	if !isValidURL(customReq.URL.String()) {
+		return nil, errors.New("Invalid URL")
+	}
+
 	q := customReq.URL.Query()
 	for k, v := range queryParams {
 		q.Add(k, v)
@@ -381,6 +377,25 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	customReq.URL.RawQuery = q.Encode()
 	customReq = addReqMonitor(customReq)
 	return request(client, customReq, true)
+}
+
+func isValidURL(urlAddress string) bool {
+	u, err := url.Parse(urlAddress)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	allowedSchemes := []string{"http", "https"}
+
+	isValidScheme := false
+	for _, scheme := range allowedSchemes {
+		if strings.EqualFold(u.Scheme, scheme) {
+			isValidScheme = true
+			break
+		}
+	}
+
+	return isValidScheme
 }
 
 func GetAccessToken() (string, error) {
