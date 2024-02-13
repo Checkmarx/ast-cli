@@ -562,6 +562,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 	return nil
 }
 
+// comment
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 	summaryURL := fmt.Sprintf(
 		strings.Replace(summary.BaseURI, "overview", "scans?id=%s&branch=%s", 1),
