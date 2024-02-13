@@ -462,12 +462,6 @@ func setNotAvailableEnginesStatusCode(summary *wrappers.ResultSummary) {
 	}
 }
 
-func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, engineType string) {
-	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
-		*counter = notAvailableNumber
-	}
-}
-
 func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 	if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
@@ -480,6 +474,12 @@ func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 		summary.RiskMsg = "Low Risk"
 	} else if summary.TotalIssues == 0 {
 		summary.RiskMsg = "No Risk"
+	}
+}
+
+func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, engineType string) {
+	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
+		*counter = notAvailableNumber
 	}
 }
 
