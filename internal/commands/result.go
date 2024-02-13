@@ -587,7 +587,7 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 	fmt.Printf("              --------------------------------------------------     \n\n")
 }
 
-func printTableRow(title string, counts wrappers.EngineResultSummary, statusNumber int) {
+func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
 	formatString := "              | %-4s   %4d   %6d   %4d   %4d   %-9s  |\n"
 	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
 
@@ -613,10 +613,10 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Println("              |          High   Medium   Low   Info   Status    |")
 
-	printTableRow("APIs", *summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
-	printTableRow("IAC", *summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
-	printTableRow("SAST", *summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
-	printTableRow("SCA", *summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
+	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
+	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
+	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
 
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
