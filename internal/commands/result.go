@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gookit/color"
 	"log"
 	"net/url"
 	"os"
@@ -61,7 +62,6 @@ const (
 	scanFailedNumber          = -2
 	scanCanceledNumber        = -3
 	defaultPaddingSize        = -13
-	boldFormat                = "\033[1m%s\033[0m"
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
@@ -604,6 +604,7 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 }
 
 func printResultsSummaryTable(summary *wrappers.ResultSummary) {
+	boldedFormat := color.New(color.Bold)
 	totalHighIssues := summary.EnginesResult.GetHighIssues()
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
@@ -620,7 +621,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
-		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+		boldedFormat.Sprintf("TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf("              ---------------------------------------------------     \n\n")
 }
 
