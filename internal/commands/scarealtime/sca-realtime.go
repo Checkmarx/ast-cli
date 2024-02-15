@@ -305,9 +305,6 @@ func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
 	if err != nil {
 		return ScaResultsFile{}, err
 	}
-	if file == nil || len(file) == 0 || string(file) == "" {
-		return ScaResultsFile{}, errors.New("SCA Resolver results file is empty")
-	}
 	data := ScaResultsFile{}
 	_ = json.Unmarshal(file, &data)
 

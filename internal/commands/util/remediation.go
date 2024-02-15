@@ -310,16 +310,14 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 	if err != nil {
 		return "", "", err
 	}
-	if kicsFile == nil || len(kicsFile) == 0 || string(kicsFile) == "null" || string(kicsFile) == "undefined" || string(kicsFile) == "[]" {
-		return "", "", errors.New("No results ware received from the engine")
-	}
 	// transform the file_name attribute to match container location
 	kicsFile, err = filenameMatcher(kicsFile)
 	if err != nil {
 		return "", "", err
 	}
 	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
-	err = os.WriteFile(destinationFile, kicsFile, 0666)
+	fileMode := os.FileMode(0666)
+	err = os.WriteFile(destinationFile, kicsFile, fileMode)
 	if err != nil {
 		return "", "", errors.New(containerWriteFolderError)
 	}
