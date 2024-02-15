@@ -21,6 +21,7 @@ import (
 const (
 	npmPackageFilename        = "package.json"
 	permission                = 0644
+	permission0666            = 0666
 	containerStarting         = "Starting kics container"
 	filesContainerLocation    = "/files/"
 	filesContainerVolume      = ":/files"
@@ -316,8 +317,7 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 		return "", "", err
 	}
 	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
-	fileMode := os.FileMode(0666)
-	err = os.WriteFile(destinationFile, kicsFile, fileMode)
+	err = os.WriteFile(destinationFile, kicsFile, permission0666)
 	if err != nil {
 		return "", "", errors.New(containerWriteFolderError)
 	}
