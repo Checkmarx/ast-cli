@@ -17,6 +17,12 @@ type WebError struct {
 	Data    json.RawMessage `json:"data"`
 }
 
+type JiraError struct {
+	Jira   int             `json:"code"`
+	Ticket string          `json:"message"`
+	Work   json.RawMessage `json:"data"`
+}
+
 type AstError struct {
 	Code int
 	Err  error
