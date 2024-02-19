@@ -30,9 +30,9 @@ var Tags = map[string]string{
 
 var testInstance *testing.T
 var rootScanId string
-var rootSastScanId string
+var rootEnginesScanId string
 var rootScanProjectId string
-var rootSastScanProjectId string
+var rootEnginesScanProjectId string
 var rootProjectId string
 var rootProjectName string
 
@@ -49,18 +49,18 @@ func TestMain(m *testing.M) {
 func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 	testInstance = t
 
-	if len(rootScanId) > 0 && len(scanTypes) == 0 {
+	if len(rootScanId) > 0 {
 		log.Println("Using the scanID: ", rootScanId)
 		log.Println("Using the projectID: ", rootScanProjectId)
 		return rootScanId, rootScanProjectId
 	}
-
-	if len(scanTypes) > 0 {
-		rootSastScanId, rootSastScanProjectId = createScanWithEngines(testInstance, Zip, Tags, scanTypes[0])
-		return rootSastScanId, rootSastScanProjectId
-	} else {
+	if len(scanTypes) == 0 {
 		rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
 		return rootScanId, rootScanProjectId
+	} else {
+		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, slices.join(scanTypes, ","))
+		return rootEnignesScanId, rootEnginesScanProjectId
+
 	}
 }
 
