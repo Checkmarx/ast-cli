@@ -380,7 +380,6 @@ func GetAccessToken() (string, error) {
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeyID = url.QueryEscape(accessKeyID) // escape possible character in the client id such as +,%, etc...
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	if accessKeyID == "" && astAPIKey == "" {
@@ -518,7 +517,8 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	logger.PrintIfVerbose("Using Client ID and secret credentials.")
-	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
+	clientID := url.QueryEscape(accessKeyID) // escape possible character in the client id such as +,%, etc...
+	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, accessKeySecret)
 }
 
 func getAPIKeyPayload(astToken string) string {
@@ -528,9 +528,11 @@ func getAPIKeyPayload(astToken string) string {
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	logger.PrintIfVerbose("Using username and password credentials.")
+	encodedUsername := url.QueryEscape(username)           // escape possible character in the client id such as +,%, etc...
+	encodedAdminClientID := url.QueryEscape(adminClientID) // escape possible character in the client id such as +,%, etc...
 	return fmt.Sprintf(
 		"scope=openid&grant_type=password&username=%s&password=%s"+
-			"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret,
+			"&client_id=%s&client_secret=%s", encodedUsername, password, encodedAdminClientID, adminClientSecret,
 	)
 }
 
