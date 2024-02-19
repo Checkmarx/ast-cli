@@ -414,6 +414,9 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,sca"), flag(params.AsyncFlag)))
 }
+func createScanWithEngines(t *testing.T, source string, tags map[string]string, scanTypes string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag)))
+}
 
 // Create sca scan with resolver
 func createScanScaWithResolver(
