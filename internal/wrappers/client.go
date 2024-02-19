@@ -517,8 +517,10 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	logger.PrintIfVerbose("Using Client ID and secret credentials.")
-	clientID := url.QueryEscape(accessKeyID) // escape possible character in the client id such as +,%, etc...
-	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, accessKeySecret)
+	// escape possible characters such as +,%, etc...
+	clientID := url.QueryEscape(accessKeyID)
+	clientSecret := url.QueryEscape(accessKeySecret)
+	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
 }
 
 func getAPIKeyPayload(astToken string) string {
@@ -528,11 +530,14 @@ func getAPIKeyPayload(astToken string) string {
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	logger.PrintIfVerbose("Using username and password credentials.")
-	encodedUsername := url.QueryEscape(username)           // escape possible character in the client id such as +,%, etc...
-	encodedAdminClientID := url.QueryEscape(adminClientID) // escape possible character in the client id such as +,%, etc...
+	// escape possible characters such as +,%, etc...
+	encodedUsername := url.QueryEscape(username)
+	encodedAdminClientID := url.QueryEscape(adminClientID)
+	encodedPassword := url.QueryEscape(password)
+	encodedAdminClientSecret := url.QueryEscape(adminClientSecret)
 	return fmt.Sprintf(
 		"scope=openid&grant_type=password&username=%s&password=%s"+
-			"&client_id=%s&client_secret=%s", encodedUsername, password, encodedAdminClientID, adminClientSecret,
+			"&client_id=%s&client_secret=%s", encodedUsername, encodedPassword, encodedAdminClientID, encodedAdminClientSecret,
 	)
 }
 
