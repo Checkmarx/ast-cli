@@ -61,7 +61,6 @@ func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 	} else {
 		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, strings.Join(scanTypes, ","))
 		return rootEnginesScanId, rootEnginesScanProjectId
-
 	}
 }
 
