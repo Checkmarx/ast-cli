@@ -1327,7 +1327,6 @@ func UnzipFile(f string) (string, error) {
 	defer func() {
 		_ = archive.Close()
 	}()
-
 	for _, f := range archive.File {
 		filePath := filepath.Join(tempDir, f.Name)
 		logger.PrintIfVerbose("unzipping file " + filePath + "...")
