@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -58,7 +59,7 @@ func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 		rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
 		return rootScanId, rootScanProjectId
 	} else {
-		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, slices.join(scanTypes, ","))
+		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, strings.Join(scanTypes, ","))
 		return rootEnginesScanId, rootEnginesScanProjectId
 
 	}
