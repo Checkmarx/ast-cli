@@ -59,7 +59,7 @@ func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 		return rootScanId, rootScanProjectId
 	} else {
 		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, slices.join(scanTypes, ","))
-		return rootEnignesScanId, rootEnginesScanProjectId
+		return rootEnginesScanId, rootEnginesScanProjectId
 
 	}
 }
