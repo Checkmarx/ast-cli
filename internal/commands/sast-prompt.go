@@ -163,6 +163,6 @@ func addDescriptionForIdentifier(responseContent []string) []string {
 	return responseContent
 }
 
-func replaceIdentifierTitleIfNeeded(input string, identifier string, identifierDescription string) string {
+func replaceIdentifierTitleIfNeeded(input, identifier, identifierDescription string) string {
 	return strings.Replace(input, identifier, fmt.Sprintf(identifierTitleForamt, identifier, identifierDescription), 1)
 }
