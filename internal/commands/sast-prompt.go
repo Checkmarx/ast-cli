@@ -164,8 +164,5 @@ func addDescriptionForIdentifier(responseContent []string) []string {
 }
 
 func replaceIdentifierTitleIfNeeded(input string, identifier string, identifierDescription string) string {
-	if strings.Contains(input, identifier) {
-		input = strings.Replace(input, identifier, fmt.Sprintf(identifierTitleForamt, identifier, identifierDescription), 1)
-	}
-	return input
+	return strings.Replace(input, identifier, fmt.Sprintf(identifierTitleForamt, identifier, identifierDescription), 1)
 }
