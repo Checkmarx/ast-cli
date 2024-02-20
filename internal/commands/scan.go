@@ -247,16 +247,16 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Download scan log for selected scan type",
-		Long:  "Accepts a scan-id and scan type (sast, iac-security or sca) and downloads the related scan log",
+		Long:  "Accepts a scan-id and scan type (sast, iac-security) and downloads the related scan log",
 		Example: heredoc.Doc(
 			`
-			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | iac-security>
+			$ cx scan logs --scan-id <scan Id> --scan-type <sast | iac-security>
 		`,
 		),
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security or sca.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security.")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -1328,7 +1328,6 @@ func UnzipFile(f string) (string, error) {
 	defer func() {
 		_ = archive.Close()
 	}()
-
 	for _, f := range archive.File {
 		filePath := filepath.Join(tempDir, f.Name)
 		logger.PrintIfVerbose("unzipping file " + filePath + "...")
