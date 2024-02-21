@@ -17,6 +17,7 @@ const (
 	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
 	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
 	errorCodeFormat                  = "%s: CODE: %d, %s\n"
+	policyErrorFormat                = "%s: Failed to get scanID policy information"
 	waitDelayDefault                 = 5
 	resultPolicyDefaultTimeout       = 1
 )
@@ -131,7 +132,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
 		if policyError != nil {
-			return policyError
+			return errors.Errorf(policyErrorFormat, failedCreatingGithubPrDecoration)
 		}
 
 		// Build and post the pr decoration
@@ -170,7 +171,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
 		if policyError != nil {
-			return policyError
+			return errors.Errorf(policyErrorFormat, failedCreatingGitlabPrDecoration)
 		}
 
 		// Build and post the mr decoration
