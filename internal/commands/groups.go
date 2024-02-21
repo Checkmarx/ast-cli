@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const accessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED" //feature flag
+const accessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED" // feature flag
 
 func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groups := strings.Split(groupsStr, ",")
@@ -97,7 +97,7 @@ func assignGroupsToProject(projectID string, projectName string, groups []*wrapp
 	return nil
 }
 
-func getGroupsToAssign(receivedGroups []*wrappers.Group, existingGroups []*wrappers.Group) []*wrappers.Group {
+func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrappers.Group {
 	var groupsToAssign []*wrappers.Group
 	for _, receivedGroup := range receivedGroups {
 		var find bool

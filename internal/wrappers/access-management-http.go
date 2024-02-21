@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	//APIs
+	// APIs
 	createAssignmentPath = "/"
 	entitiesForPath      = "/entities-for"
-	//EntityTypes
+	// EntityTypes
 	groupEntityType     = "group"
 	projectResourceType = "project"
 )
@@ -31,7 +31,7 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 		clientTimeout: viper.GetUint(commonParams.ClientTimeoutKey),
 	}
 }
-func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectId string, projectName string, groups []*Group) error {
+func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectId, projectName string, groups []*Group) error {
 	for _, group := range groups {
 		assignment := CreateAssignment{
 			EntityID:     group.ID,
