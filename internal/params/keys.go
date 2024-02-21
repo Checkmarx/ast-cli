@@ -59,4 +59,5 @@ var (
 	ResultsSbomReportProxyPathKey       = strings.ToLower(ResultsSbomReportProxyPathEnv)
 	FeatureFlagsKey                     = strings.ToLower(FeatureFlagsEnv)
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
+	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 )

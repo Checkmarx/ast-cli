@@ -222,63 +222,6 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	return nil
 }
 
-func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) error {
-	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
-
-	var groupMap []string
-	var info map[string]interface{}
-	_ = json.Unmarshal(*input, &info)
-	if _, ok := info["groups"]; !ok {
-		_ = json.Unmarshal([]byte("[]"), &groupMap)
-		info["groups"] = groupMap
-	}
-	groups, err := createGroupsMap(groupListStr, groupsWrapper)
-	if err != nil {
-		return err
-	}
-
-	info["groups"] = groups
-	*input, _ = json.Marshal(info)
-
-	return nil
-}
-
-func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]string, error) {
-	groups := strings.Split(groupsStr, ",")
-	var groupMap []string
-	var groupsNotFound []string
-	for _, group := range groups {
-		if len(group) > 0 {
-			groupIds, err := groupsWrapper.Get(group)
-			if err != nil {
-				groupsNotFound = append(groupsNotFound, group)
-			} else {
-				groupID := findGroupID(groupIds, group)
-				if groupID != "" {
-					groupMap = append(groupMap, groupID)
-				} else {
-					groupsNotFound = append(groupsNotFound, group)
-				}
-			}
-		}
-	}
-
-	if len(groupsNotFound) > 0 {
-		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
-	}
-
-	return groupMap, nil
-}
-
-func findGroupID(groups []wrappers.Group, name string) string {
-	for i := 0; i < len(groups); i++ {
-		if groups[i].Name == name {
-			return groups[i].ID
-		}
-	}
-	return ""
-}
-
 func runCreateProjectCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
