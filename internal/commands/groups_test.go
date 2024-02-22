@@ -1,9 +1,10 @@
 package commands
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"testing"
 )
 
 func TestCreateScanAndProjectWithGroupFFTrue(t *testing.T) {
