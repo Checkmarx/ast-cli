@@ -2,7 +2,6 @@ package commands
 
 import (
 	"encoding/json"
-	"fmt"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -104,7 +103,7 @@ func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrap
 		for _, existingGroup := range existingGroups {
 			if receivedGroup.ID == existingGroup.ID {
 				find = true
-				log.Println(fmt.Sprintf("Group [%s | %s] already assigned", receivedGroup.ID, receivedGroup.Name))
+				log.Printf("Group [%s | %s] already assigned", receivedGroup.ID, receivedGroup.Name)
 				break
 			}
 		}
@@ -113,5 +112,4 @@ func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrap
 		}
 	}
 	return groupsToAssign
-
 }

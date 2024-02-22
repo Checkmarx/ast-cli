@@ -11,6 +11,6 @@ type CreateAssignment struct {
 }
 
 type AccessManagementWrapper interface {
-	CreateGroupsAssignment(projectId, projectName string, groups []*Group) error
+	CreateGroupsAssignment(projectID, projectName string, groups []*Group) error
 	GetGroups(projectID string) ([]*Group, error)
 }

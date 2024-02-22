@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -31,14 +32,15 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 		clientTimeout: viper.GetUint(commonParams.ClientTimeoutKey),
 	}
 }
-func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectId, projectName string, groups []*Group) error {
+func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectName string, groups []*Group) error {
+	var resp *http.Response
 	for _, group := range groups {
 		assignment := CreateAssignment{
 			EntityID:     group.ID,
 			EntityType:   groupEntityType,
 			EntityName:   group.Name,
 			EntityRoles:  nil, // be used in the access-management phase 2
-			ResourceID:   projectId,
+			ResourceID:   projectID,
 			ResourceType: projectResourceType,
 			ResourceName: projectName,
 		}
@@ -47,17 +49,19 @@ func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectId, projectN
 			return errors.Wrapf(err, "Failed to parse request body")
 		}
 		path := fmt.Sprintf("%s/%s", a.path, createAssignmentPath)
-		_, err = SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, a.clientTimeout)
+		resp, err = SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, a.clientTimeout)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
+
 	}
+	defer resp.Body.Close()
 	return nil
 }
 
-func (a *AccessManagementHTTPWrapper) GetGroups(projectId string) ([]*Group, error) {
+func (a *AccessManagementHTTPWrapper) GetGroups(projectID string) ([]*Group, error) {
 	log.Println("Getting groups")
-	path := fmt.Sprintf("%s/%s?resource-id=%s&entity-types=group", a.path, entitiesForPath, projectId)
+	path := fmt.Sprintf("%s/%s?resource-id=%s&entity-types=group", a.path, entitiesForPath, projectID)
 	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, a.clientTimeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get groups")

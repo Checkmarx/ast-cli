@@ -689,7 +689,7 @@ func updateProject(
 		}
 		logger.PrintIfVerbose("Updating project groups")
 		projModel.Groups = getGroupIds(groupsMap)
-		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper) //move to end???
+		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
 	}
 	if projectTags != "" {
 		logger.PrintIfVerbose("Updating project tags")
