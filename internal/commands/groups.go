@@ -2,12 +2,13 @@ package commands
 
 import (
 	"encoding/json"
+	"log"
+	"strings"
+
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"log"
-	"strings"
 )
 
 const accessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED" // feature flag
