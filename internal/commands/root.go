@@ -159,7 +159,7 @@ func NewAstCLI(
 		sastMetadataWrapper,
 		accessManagementWrapper,
 	)
-	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
+	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,

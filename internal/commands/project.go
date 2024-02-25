@@ -61,7 +61,8 @@ var (
 	)
 )
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
+func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -91,7 +92,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper),
+		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -225,6 +226,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 func runCreateProjectCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var input = []byte("{}")
@@ -233,7 +235,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		err = updateGroupValues(&input, cmd, groupsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
@@ -267,7 +269,9 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
-
+		if wrappers.FeatureFlags[accessManagementEnabled] {
+			assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		}
 		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
 		if err != nil {
 			return err

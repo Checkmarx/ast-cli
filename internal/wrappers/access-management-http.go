@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -14,8 +14,8 @@ import (
 
 const (
 	// APIs
-	createAssignmentPath = "/"
-	entitiesForPath      = "/entities-for"
+	createAssignmentPath = ""
+	entitiesForPath      = "entities-for"
 	// EntityTypes
 	groupEntityType     = "group"
 	projectResourceType = "project"
@@ -34,34 +34,34 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 }
 func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectName string, groups []*Group) error {
 	var resp *http.Response
+	logger.Printf("Creating groups assignment for project %s", projectName)
 	for _, group := range groups {
-		assignment := CreateAssignment{
-			EntityID:     group.ID,
-			EntityType:   groupEntityType,
-			EntityName:   group.Name,
-			EntityRoles:  nil, // be used in the access-management phase 2
+		assignment := AssignmentPayload{
+			EntityID:   group.ID,
+			EntityType: groupEntityType,
+			//EntityRoles:  nil, // be used in the access-management phase 2
 			ResourceID:   projectID,
 			ResourceType: projectResourceType,
-			ResourceName: projectName,
 		}
 		params, err := json.Marshal(assignment)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to parse request body")
 		}
 		path := fmt.Sprintf("%s/%s", a.path, createAssignmentPath)
+		logger.Printf("Creating groups assignment by API: %s with payload: [%s]", path, string(params))
 		resp, err = SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, a.clientTimeout)
 		if err != nil {
+			logger.PrintResponse(resp, false)
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
 		defer resp.Body.Close()
 	}
-
+	logger.Print("Groups assignment created successfully")
 	return nil
 }
 
 func (a *AccessManagementHTTPWrapper) GetGroups(projectID string) ([]*Group, error) {
-	log.Println("Getting groups")
-	path := fmt.Sprintf("%s/%s?resource-id=%s&entity-types=group", a.path, entitiesForPath, projectID)
+	path := fmt.Sprintf("%s/%s?resource-id=%s&resource-type=project", a.path, entitiesForPath, projectID)
 	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, a.clientTimeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get groups")
@@ -70,11 +70,21 @@ func (a *AccessManagementHTTPWrapper) GetGroups(projectID string) ([]*Group, err
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("Failed to get groups, status code: %d", resp.StatusCode)
 	}
+	var assignments []*AssignmentResponse
 	var groups []*Group
 	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&groups)
+	err = decoder.Decode(&assignments)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse response body")
+	}
+	for _, assignment := range assignments {
+		if assignment.EntityType == groupEntityType {
+			group := &Group{
+				ID:   assignment.EntityID,
+				Name: assignment.EntityName,
+			}
+			groups = append(groups, group)
+		}
 	}
 	return groups, nil
 }

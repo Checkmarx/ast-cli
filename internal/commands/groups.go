@@ -49,7 +49,7 @@ func findGroupID(groups []wrappers.Group, name string) wrappers.Group {
 	return wrappers.Group{}
 }
 
-func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) error {
+func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
 
 	var groupMap []string
@@ -61,13 +61,13 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	}
 	groups, err := createGroupsMap(groupListStr, groupsWrapper)
 	if err != nil {
-		return err
+		return groups, err
 	}
-
-	info["groups"] = getGroupIds(groups)
-	*input, _ = json.Marshal(info)
-
-	return nil
+	if !wrappers.FeatureFlags[accessManagementEnabled] {
+		info["groups"] = getGroupIds(groups)
+		*input, _ = json.Marshal(info)
+	}
+	return groups, nil
 }
 
 func getGroupIds(groups []*wrappers.Group) []string {
@@ -89,6 +89,10 @@ func assignGroupsToProject(projectID string, projectName string, groups []*wrapp
 		return err
 	}
 	groupsToAssign := getGroupsToAssign(groups, groupsAssignedToTheProject)
+	if len(groupsToAssign) == 0 {
+		log.Println("No new groups to assign")
+		return nil
+	}
 
 	err = accessManagement.CreateGroupsAssignment(projectID, projectName, groupsToAssign)
 	if err != nil {

@@ -1,6 +1,6 @@
 package wrappers
 
-type CreateAssignment struct {
+type AssignmentResponse struct {
 	EntityID     string   `json:"entityID"`
 	EntityType   string   `json:"entityType"`
 	EntityName   string   `json:"entityName"`
@@ -13,4 +13,12 @@ type CreateAssignment struct {
 type AccessManagementWrapper interface {
 	CreateGroupsAssignment(projectID, projectName string, groups []*Group) error
 	GetGroups(projectID string) ([]*Group, error)
+}
+
+type AssignmentPayload struct {
+	EntityID     string        `json:"entityID"`
+	EntityType   string        `json:"entityType"`
+	EntityRoles  []interface{} `json:"entityRoles"`
+	ResourceType string        `json:"resourceType"`
+	ResourceID   string        `json:"resourceID"`
 }
