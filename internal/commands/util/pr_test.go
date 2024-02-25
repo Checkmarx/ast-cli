@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewPRDecorationCommandMustExist(t *testing.T) {
-	cmd := PRDecorationGithub(nil)
+	cmd := PRDecorationGithub(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "PR decoration command must exist")
 
 	err := cmd.Execute()
@@ -15,7 +15,7 @@ func TestNewPRDecorationCommandMustExist(t *testing.T) {
 }
 
 func TestNewMRDecorationCommandMustExist(t *testing.T) {
-	cmd := PRDecorationGitlab(nil)
+	cmd := PRDecorationGitlab(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "MR decoration command must exist")
 
 	err := cmd.Execute()

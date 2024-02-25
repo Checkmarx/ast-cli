@@ -103,7 +103,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args
 
 		responseContent := getMessageContents(response)
 
-		responseContent = AddNewlinesIfNecessary(responseContent)
+		responseContent = addDescriptionForIdentifier(responseContent)
 
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
 			ConversationID: id.String(),

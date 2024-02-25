@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/mssola/user_agent"
@@ -1491,7 +1492,7 @@ func runCreateScanCommand(
 				if policyTimeout < 0 {
 					return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 				}
-				policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel, cmd)
+				policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID, cmd)
 				if err != nil {
 					return err
 				}
@@ -1516,7 +1517,7 @@ func runCreateScanCommand(
 
 		cleanUpTempZip(zipFilePath)
 		// verify break build from policy
-		if policyResponseModel != nil && len(policyResponseModel.Polices) > 0 && policyResponseModel.BreakBuild {
+		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
 			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
@@ -1685,29 +1686,6 @@ func handleWait(
 		return err
 	}
 	return nil
-}
-
-func handlePolicyWait(
-	waitDelay,
-	timeoutMinutes int,
-	policyWrapper wrappers.PolicyWrapper,
-	scanResponseModel *wrappers.ScanResponseModel,
-	cmd *cobra.Command,
-) (*wrappers.PolicyResponseModel, error) {
-	policyResponseModel, err := waitForPolicyCompletion(
-		waitDelay,
-		timeoutMinutes,
-		policyWrapper,
-		scanResponseModel,
-		cmd)
-	if err != nil {
-		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
-		if verboseFlag {
-			logger.PrintIfVerbose("Policy evaluation failed")
-		}
-		return nil, err
-	}
-	return policyResponseModel, nil
 }
 
 func createReportsAfterScan(
@@ -1899,45 +1877,6 @@ func waitForScanCompletion(
 	return nil
 }
 
-func waitForPolicyCompletion(
-	waitDelay int,
-	timeoutMinutes int,
-	policyWrapper wrappers.PolicyWrapper,
-	scanResponseModel *wrappers.ScanResponseModel,
-	cmd *cobra.Command,
-) (*wrappers.PolicyResponseModel, error) {
-	logger.PrintIfVerbose("Waiting for policy evaluation to complete for scanID:" + scanResponseModel.ID + " and projectID:" + scanResponseModel.ProjectID)
-	var policyResponseModel *wrappers.PolicyResponseModel
-	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
-	fixedWait := time.Duration(waitDelay) * time.Second
-	i := uint64(0)
-	if !cmd.Flags().Changed(commonParams.RetryDelayFlag) {
-		viper.Set(commonParams.RetryDelayFlag, commonParams.RetryDelayPollingDefault)
-	}
-	for {
-		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
-		waitDuration := fixedWait + variableWait
-		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
-		time.Sleep(waitDuration)
-		evaluated := false
-		var err error
-		evaluated, policyResponseModel, err = isPolicyEvaluated(policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID)
-		if err != nil {
-			return nil, err
-		}
-		if evaluated {
-			break
-		}
-		if timeoutMinutes > 0 && time.Now().After(timeout) {
-			logger.PrintfIfVerbose("Timeout of %d minute(s) for policy evaluation reached", timeoutMinutes)
-			return nil, nil
-		}
-		i++
-	}
-	logger.PrintIfVerbose("Policy evaluation completed with status" + policyResponseModel.Status)
-	return policyResponseModel, nil
-}
-
 func isScanRunning(
 	scansWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
@@ -1981,40 +1920,6 @@ func isScanRunning(
 		return false, errors.New("scan did not complete successfully")
 	}
 	return false, nil
-}
-
-func isPolicyEvaluated(
-	policyWrapper wrappers.PolicyWrapper,
-	scanID,
-	projectID string,
-) (bool, *wrappers.PolicyResponseModel, error) {
-	var errorModel *wrappers.WebError
-	var err error
-	var policyResponseModel *wrappers.PolicyResponseModel
-	var params = make(map[string]string)
-
-	params["scanId"] = scanID
-	params["astProjectId"] = projectID
-
-	policyResponseModel, errorModel, err = policyWrapper.EvaluatePolicy(params)
-	if err != nil {
-		return false, nil, err
-	}
-	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
-	} else if policyResponseModel != nil {
-		if policyResponseModel.Status == evaluatingPolicy {
-			log.Println("Policy status: ", policyResponseModel.Status)
-			return false, nil, nil
-		}
-	}
-	// Case the policy is evaluated or None
-	logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
-	if policyResponseModel.Status == completedPolicy || policyResponseModel.Status == nonePolicy {
-		logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
-		return true, policyResponseModel, nil
-	}
-	return true, nil, nil
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {

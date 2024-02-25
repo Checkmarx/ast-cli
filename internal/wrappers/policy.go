@@ -3,7 +3,7 @@ package wrappers
 type PolicyResponseModel struct {
 	Status     string   `json:"status"`
 	BreakBuild bool     `json:"breakBuild"`
-	Polices    []Policy `json:"policies"`
+	Policies   []Policy `json:"policies"`
 }
 
 type Policy struct {
@@ -13,6 +13,12 @@ type Policy struct {
 	Description   string   `json:"description"`
 	RulesViolated []string `json:"rulesViolated"`
 	Tags          []string `json:"tags"`
+}
+
+type PrPolicy struct {
+	Name       string   `json:"policyName"`
+	RulesNames []string `json:"rulesNames"`
+	BreakBuild bool     `json:"breakBuild"`
 }
 
 type PolicyWrapper interface {
