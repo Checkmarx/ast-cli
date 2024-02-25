@@ -23,7 +23,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 			if err != nil {
 				groupsNotFound = append(groupsNotFound, group)
 			} else {
-				findGroup := findGroupID(groupIds, group)
+				findGroup := findGroupByName(groupIds, group)
 				if findGroup.Name != "" {
 					groupMap = append(groupMap, &findGroup)
 				} else {
@@ -40,7 +40,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupMap, nil
 }
 
-func findGroupID(groups []wrappers.Group, name string) wrappers.Group {
+func findGroupByName(groups []wrappers.Group, name string) wrappers.Group {
 	for i := 0; i < len(groups); i++ {
 		if groups[i].Name == name {
 			return groups[i]
@@ -83,7 +83,6 @@ func assignGroupsToProject(projectID string, projectName string, groups []*wrapp
 	if !wrappers.FeatureFlags[accessManagementEnabled] {
 		return nil
 	}
-	log.Println("Creating groups assignment...")
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)
 	if err != nil {
 		return err
@@ -103,17 +102,16 @@ func assignGroupsToProject(projectID string, projectName string, groups []*wrapp
 
 func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrappers.Group {
 	var groupsToAssign []*wrappers.Group
+	var groupsMap = make(map[string]bool)
+	for _, existingGroup := range existingGroups {
+		groupsMap[existingGroup.ID] = true
+	}
 	for _, receivedGroup := range receivedGroups {
-		var find bool
-		for _, existingGroup := range existingGroups {
-			if receivedGroup.ID == existingGroup.ID {
-				find = true
-				log.Printf("Group [%s | %s] already assigned", receivedGroup.ID, receivedGroup.Name)
-				break
-			}
-		}
+		find := groupsMap[receivedGroup.ID]
 		if !find {
 			groupsToAssign = append(groupsToAssign, receivedGroup)
+		} else {
+			log.Printf("Group [%s | %s] already assigned", receivedGroup.ID, receivedGroup.Name)
 		}
 	}
 	return groupsToAssign

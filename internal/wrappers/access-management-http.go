@@ -34,7 +34,6 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 }
 func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectName string, groups []*Group) error {
 	var resp *http.Response
-	logger.Printf("Creating groups assignment for project %s", projectName)
 	for _, group := range groups {
 		assignment := AssignmentPayload{
 			EntityID:   group.ID,
@@ -48,12 +47,12 @@ func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectN
 			return errors.Wrapf(err, "Failed to parse request body")
 		}
 		path := fmt.Sprintf("%s/%s", a.path, createAssignmentPath)
-		logger.Printf("Creating groups assignment by API: %s with payload: [%s]", path, string(params))
 		resp, err = SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, a.clientTimeout)
 		if err != nil {
 			logger.PrintResponse(resp, false)
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
+		logger.Printf("group '%s' assignment for project %s created", group.Name, projectName)
 		defer resp.Body.Close()
 	}
 	logger.Print("Groups assignment created successfully")
