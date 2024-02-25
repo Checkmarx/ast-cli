@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -88,6 +89,28 @@ func TestCreateAlreadyExistingProject(t *testing.T) {
 		printer.FormatJSON, flag(params.ProjectName), projectName,
 	)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
+}
+
+func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testing.T) {
+
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
+		flag(params.ApplicationName), "application-that-doesnt-exist",
+	)
+
+	assertError(t, err, applicationErrors.ApplicationDoesntExist)
+}
+
+func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
+
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
+		flag(params.ApplicationName), "my-application",
+	)
+
+	assert.NilError(t, err)
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {

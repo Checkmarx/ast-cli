@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"encoding/json"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -41,6 +42,8 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
 		}
 		return nil, &errorModel, nil
+	case http.StatusForbidden:
+		return nil, nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
 	case http.StatusOK:
 		model := ApplicationsResponseModel{}
 		err = decoder.Decode(&model)

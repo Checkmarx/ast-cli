@@ -22,6 +22,7 @@ import (
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -78,7 +79,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "Report file should exist for extension")
+	assert.NilError(t, err)
 }
 
 func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
@@ -92,7 +93,7 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "Report file should exist for extension")
+	assert.NilError(t, err)
 }
 
 func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
