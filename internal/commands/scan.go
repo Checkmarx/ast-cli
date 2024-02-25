@@ -773,6 +773,9 @@ func setupScanTypeProjectAndConfig(
 	if applicationName != "" {
 		application, err := getApplication(applicationName, applicationsWrapper)
 		if err != nil {
+			return err
+		}
+		if application == nil {
 			return errors.Errorf("Failed creating a scan: application doesn’t exist or user has no permission to the application")
 		}
 		applicationId = application.Id

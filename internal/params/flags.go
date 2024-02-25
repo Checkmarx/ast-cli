@@ -4,7 +4,7 @@ package params
 const (
 	AgentFlag                     = "agent"
 	AgentFlagUsage                = "Scan origin name"
-	ApplicationName               = "name"
+	ApplicationName               = "application-name"
 	DefaultAgent                  = "ASTCLI"
 	DebugFlag                     = "debug"
 	DebugUsage                    = "Debug mode with detailed logs"
