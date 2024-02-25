@@ -1,5 +1,6 @@
 package applicationErrors
 
 const (
-	ApplicationDoesntExist = "Failed creating a scan: application doesn’t exist or user has no permission to the application"
+	ApplicationDoesntExist  = "Failed creating a scan: application doesn't exist"
+	ApplicationNoPermission = "Failed creating a scan: no permission to create project"
 )

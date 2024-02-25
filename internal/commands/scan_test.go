@@ -124,13 +124,27 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
-func TestCreateScanInsideApplication(t *testing.T) {
+func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
-func TestCreateScanInsideApplicationNoApp(t *testing.T) {
+func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExist)
+}
+
+func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessfully(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+}
+
+func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
+}
+
+func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {

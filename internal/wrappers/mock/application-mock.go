@@ -11,7 +11,7 @@ type ApplicationsMockWrapper struct{}
 
 func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, *wrappers.ErrorModel, error) {
 	if params["name"] == NoPermissionApp {
-		return nil, nil, errors.Errorf("project doesn’t exists, no permission to create project")
+		return nil, nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
 	}
 	if params["name"] == ApplicationDoesntExist {
 		return nil, nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)

@@ -3,6 +3,8 @@
 package commands
 
 import (
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"testing"
 
 	"gotest.tools/assert"
@@ -20,6 +22,15 @@ func TestProjectNoSub(t *testing.T) {
 
 func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	execCmdNilAssertion(t, "project", "create", "--project-name", "test_project")
+}
+
+func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
+	execCmdNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", "MOCK")
+}
+
+func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
 }
 
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
