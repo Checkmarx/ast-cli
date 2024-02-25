@@ -600,10 +600,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationId)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationId)
 	if err != nil {
 		return "", err
 	}
@@ -615,6 +615,7 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	applicationId string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
@@ -626,6 +627,9 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
+	if applicationId != "" {
+		projModel.ApplicationIds = []string{applicationId}
+	}
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
@@ -647,6 +651,7 @@ func updateProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	projectName string,
+	applicationId string,
 
 ) (string, error) {
 	var projectID string
@@ -665,8 +670,8 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
-		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationId == "" {
+		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
@@ -694,11 +699,29 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
+	if applicationId != "" {
+		logger.PrintIfVerbose("Updating project applicationIds")
+		projModel.ApplicationIds = createApplicationIds(applicationId, projModelResp.ApplicationIds)
+	}
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 	return projectID, nil
+}
+
+func createApplicationIds(applicationId string, existingApplicationIds []string) []string {
+	if hasElements(existingApplicationIds) {
+		if !contains(existingApplicationIds, applicationId) {
+			existingApplicationIds = append(existingApplicationIds, applicationId)
+		}
+		return existingApplicationIds
+	}
+	return []string{applicationId}
+}
+
+func hasElements(items []string) bool {
+	return items != nil && len(items) > 0
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
