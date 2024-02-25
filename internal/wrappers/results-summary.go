@@ -32,6 +32,7 @@ type ResultSummary struct {
 	ScanInfoMessage string
 	EnginesEnabled  []string
 	Policies        *PolicyResponseModel
+	EnginesResult   EnginesResultsSummary
 }
 
 // nolint: govet
@@ -40,10 +41,69 @@ type APISecResult struct {
 	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
 	Risks            []int              `json:"risks,omitempty"`
 	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+	StatusCode       int
 }
 type riskDistribution struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
+}
+type EngineResultSummary struct {
+	High       int
+	Medium     int
+	Low        int
+	Info       int
+	StatusCode int
+}
+
+type EnginesResultsSummary map[string]*EngineResultSummary
+
+func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
+	highIssues := 0
+	for _, v := range *engineSummary {
+		highIssues += v.High
+	}
+	return highIssues
+}
+
+func (engineSummary *EnginesResultsSummary) GetLowIssues() int {
+	lowIssues := 0
+	for _, v := range *engineSummary {
+		lowIssues += v.Low
+	}
+	return lowIssues
+}
+
+func (engineSummary *EnginesResultsSummary) GetMediumIssues() int {
+	mediumIssues := 0
+	for _, v := range *engineSummary {
+		mediumIssues += v.Medium
+	}
+	return mediumIssues
+}
+
+func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
+	infoIssues := 0
+	for _, v := range *engineSummary {
+		infoIssues += v.Info
+	}
+	return infoIssues
+}
+
+func (engineSummary *EngineResultSummary) Increment(level string) {
+	switch level {
+	case "high":
+		engineSummary.High++
+	case "medium":
+		engineSummary.Medium++
+	case "low":
+		engineSummary.Low++
+	case "info":
+		engineSummary.Info++
+	}
+}
+
+func (summary *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
+	summary.EnginesResult[engineType].Increment(severity)
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -80,11 +140,11 @@ func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
 	if riskAPIDocumentation != nil {
 		return riskAPIDocumentation.Total
 	}
-	return -1
+	return 0
 }
 
 func (r *ResultSummary) HasPolicies() bool {
-	return r.Policies != nil && len(r.Policies.Polices) > 0
+	return r.Policies != nil && len(r.Policies.Policies) > 0
 }
 
 func (r *ResultSummary) GeneratePolicyHTML() string {
@@ -111,20 +171,20 @@ func (r *ResultSummary) GeneratePolicyHTML() string {
 			</td>
 		</tr>
 `
-	for _, police := range r.Policies.Polices {
+	for _, policy := range r.Policies.Policies {
 		html += `<tr>
 					<td>` +
-			police.Name +
+			policy.Name +
 			`	
 					</td>
 				` +
 			`
 				<td>
-			` + strings.Join(police.RulesViolated, ",") +
+			` + strings.Join(policy.RulesViolated, ",") +
 			`
 				</td>
 			` + `<td>` +
-			strconv.FormatBool(police.BreakBuild) +
+			strconv.FormatBool(policy.BreakBuild) +
 			`
 				</td>
 			</tr>
@@ -143,8 +203,8 @@ func (r *ResultSummary) GeneratePolicyMarkdown() string {
 		markdown += "### Policy Management Violation\n"
 	}
 	markdown += "| Policy | Rule | Break Build |\n|:----------:|:------------:|:---------:|\n"
-	for _, police := range r.Policies.Polices {
-		markdown += "|" + police.Name + "|" + strings.Join(police.RulesViolated, ",") + "|" + strconv.FormatBool(police.BreakBuild) + "|\n"
+	for _, policy := range r.Policies.Policies {
+		markdown += "|" + policy.Name + "|" + strings.Join(policy.RulesViolated, ",") + "|" + strconv.FormatBool(policy.BreakBuild) + "|\n"
 	}
 	return markdown
 }

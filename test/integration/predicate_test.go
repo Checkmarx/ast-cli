@@ -98,8 +98,6 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	assert.Assert(t, (len(predicateResult)) >= 1, "Should have at least 1 predicate as the result.")
 
-	deleteScanAndProject()
-
 }
 
 func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
