@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ var (
 	)
 )
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
+func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -91,7 +92,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -99,6 +100,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
 	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
+	createProjCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Create project under an application")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -280,12 +282,30 @@ func findGroupID(groups []wrappers.Group, name string) string {
 }
 
 func runCreateProjectCommand(
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var input = []byte("{}")
 		var err error
+		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
+		if err != nil {
+			return err
+		}
+
+		applicationId := ""
+		if applicationName != "" {
+			application, err := getApplication(applicationName, applicationsWrapper)
+			if err != nil {
+				return err
+			}
+			if application == nil {
+				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
+			}
+			applicationId = application.Id
+		}
+
+		var input = []byte("{}")
 		err = updateProjectRequestValues(&input, cmd)
 		if err != nil {
 			return err
@@ -300,6 +320,7 @@ func runCreateProjectCommand(
 			return err
 		}
 		var projModel = wrappers.Project{}
+		projModel.ApplicationIds = []string{applicationId}
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload
