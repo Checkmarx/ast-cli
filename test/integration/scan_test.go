@@ -106,7 +106,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed creating a scan: application doesn’t exist or user has no permission to the application")
+	assertError(t, err, applicationErrors.ApplicationDoesntExist)
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions

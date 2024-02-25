@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -799,7 +800,7 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 		if application == nil {
-			return errors.Errorf("Failed creating a scan: application doesn’t exist or user has no permission to the application")
+			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 		}
 		applicationId = application.Id
 	}

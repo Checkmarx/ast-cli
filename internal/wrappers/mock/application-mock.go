@@ -1,6 +1,7 @@
 package mock
 
 import (
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"time"
@@ -9,8 +10,11 @@ import (
 type ApplicationsMockWrapper struct{}
 
 func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, *wrappers.ErrorModel, error) {
-	if params["application-name"] == "NoPermissionApp" {
+	if params["name"] == NoPermissionApp {
 		return nil, nil, errors.Errorf("project doesn’t exists, no permission to create project")
+	}
+	if params["name"] == ApplicationDoesntExist {
+		return nil, nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
 	}
 	mockApplication := wrappers.Application{
 		Id:          "mockID",
