@@ -144,7 +144,7 @@ func (r *ResultSummary) GetAPISecurityDocumentationTotal() int {
 }
 
 func (r *ResultSummary) HasPolicies() bool {
-	return r.Policies != nil && len(r.Policies.Polices) > 0
+	return r.Policies != nil && len(r.Policies.Policies) > 0
 }
 
 func (r *ResultSummary) GeneratePolicyHTML() string {
@@ -171,20 +171,20 @@ func (r *ResultSummary) GeneratePolicyHTML() string {
 			</td>
 		</tr>
 `
-	for _, police := range r.Policies.Polices {
+	for _, policy := range r.Policies.Policies {
 		html += `<tr>
 					<td>` +
-			police.Name +
+			policy.Name +
 			`	
 					</td>
 				` +
 			`
 				<td>
-			` + strings.Join(police.RulesViolated, ",") +
+			` + strings.Join(policy.RulesViolated, ",") +
 			`
 				</td>
 			` + `<td>` +
-			strconv.FormatBool(police.BreakBuild) +
+			strconv.FormatBool(policy.BreakBuild) +
 			`
 				</td>
 			</tr>
@@ -203,8 +203,8 @@ func (r *ResultSummary) GeneratePolicyMarkdown() string {
 		markdown += "### Policy Management Violation\n"
 	}
 	markdown += "| Policy | Rule | Break Build |\n|:----------:|:------------:|:---------:|\n"
-	for _, police := range r.Policies.Polices {
-		markdown += "|" + police.Name + "|" + strings.Join(police.RulesViolated, ",") + "|" + strconv.FormatBool(police.BreakBuild) + "|\n"
+	for _, policy := range r.Policies.Policies {
+		markdown += "|" + policy.Name + "|" + strings.Join(policy.RulesViolated, ",") + "|" + strconv.FormatBool(policy.BreakBuild) + "|\n"
 	}
 	return markdown
 }
