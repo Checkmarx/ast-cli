@@ -3,6 +3,8 @@
 package commands
 
 import (
+	"github.com/checkmarx/ast-cli/internal/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"reflect"
 	"strings"
 	"testing"
@@ -124,6 +126,11 @@ func TestCreateScan(t *testing.T) {
 
 func TestCreateScanInsideApplication(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+}
+
+func TestCreateScanInsideApplicationNoApp(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExist)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
