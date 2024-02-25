@@ -121,6 +121,7 @@ var (
 )
 
 func NewScanCommand(
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
@@ -159,6 +160,7 @@ func NewScanCommand(
 		riskOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
+		applicationsWrapper,
 	)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
@@ -409,6 +411,7 @@ func scanCreateSubCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -437,6 +440,7 @@ func scanCreateSubCommand(
 			risksOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
+			applicationsWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -561,6 +565,8 @@ func scanCreateSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+
+	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Create scan under an application")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -578,6 +584,7 @@ func scanCreateSubCommand(
 }
 
 func findProject(
+	applicationId string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -738,6 +745,7 @@ func setupScanTypeProjectAndConfig(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -754,8 +762,24 @@ func setupScanTypeProjectAndConfig(
 	} else {
 		return errors.Errorf("Project name is required")
 	}
+
+	applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
+	if err != nil {
+		return err
+	}
+
+	applicationId := ""
+	if applicationName != "" {
+		application, err := getApplication(applicationName, applicationsWrapper)
+		if err != nil {
+			return errors.Errorf("Failed creating a scan: application doesn’t exist or user has no permission to the application")
+		}
+		applicationId = application.Id
+	}
+
 	// We need to convert the project name into an ID
 	projectID, err := findProject(
+		applicationId,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
@@ -808,6 +832,23 @@ func setupScanTypeProjectAndConfig(
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
+}
+
+func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
+	if applicationName != "" {
+		params := make(map[string]string)
+		params["name"] = applicationName
+		resp, _, err := applicationsWrapper.Get(params)
+		if err != nil {
+
+			return nil, err
+		}
+		if resp.Applications != nil && len(resp.Applications) > 0 {
+			application := resp.Applications[0]
+			return &application, nil
+		}
+	}
+	return nil, nil
 }
 
 func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
@@ -1411,6 +1452,7 @@ func runCreateScanCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper)
@@ -1431,6 +1473,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			applicationsWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1524,11 +1567,12 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -2017,7 +2061,11 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 		if errorModel != nil {
 			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
+			views, err := toScanViews(allScansModel.Scans, sastMetadataWrapper)
+			if err != nil {
+				return err
+			}
+			err = printByFormat(cmd, views)
 			if err != nil {
 				return err
 			}
@@ -2195,7 +2243,7 @@ type scanView struct {
 	Engines         []string
 }
 
-func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) ([]*scanView, error) {
 	scanIDs := make([]string, len(scans))
 	for i := range scans {
 		scanIDs[i] = scans[i].ID
@@ -2206,7 +2254,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
 	if err != nil {
 		logger.Printf("error getting sast metadata: %v", err)
-		return nil
+		return nil, err
 	}
 
 	metadataMap := make(map[string]bool)
@@ -2220,7 +2268,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
 		views[i] = toScanView(&scans[i])
 	}
-	return views
+	return views, nil
 }
 
 func toScanView(scan *wrappers.ScanResponseModel) *scanView {

@@ -60,6 +60,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	viper.AutomaticEnv()
 	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
 	scans := viper.GetString(params.ScansPathKey)
+	applications := viper.GetString(params.ApplicationsPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
@@ -82,6 +83,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
 
@@ -110,6 +112,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
 
 	astCli := commands.NewAstCLI(
+		applicationsWrapper,
 		scansWrapper,
 		resultsSbomReportsWrapper,
 		resultsPdfReportsWrapper,
@@ -197,7 +200,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	// args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

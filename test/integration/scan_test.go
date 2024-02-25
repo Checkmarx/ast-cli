@@ -67,6 +67,34 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Report file should exist for extension")
+}
+
+func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "application-that-doesnt-exist",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Failed creating a scan: application doesn’t exist or user has no permission to the application")
+}
+
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
@@ -1173,4 +1201,14 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
+}
+
+func TestScanListWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "limit=10000",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
 }
