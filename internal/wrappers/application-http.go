@@ -39,7 +39,7 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+			return nil, nil, errors.Wrapf(err, applicationErrors.FailedToParseGetApplication)
 		}
 		return nil, &errorModel, nil
 	case http.StatusForbidden:
@@ -48,7 +48,7 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 		model := ApplicationsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+			return nil, nil, errors.Wrapf(err, applicationErrors.FailedToParseGetApplication)
 		}
 		return &model, nil, nil
 	default:
