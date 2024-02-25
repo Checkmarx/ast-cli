@@ -81,11 +81,11 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	assert.NilError(t, err, "Report file should exist for extension")
 }
 
-func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), projectNameRandom,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
