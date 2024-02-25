@@ -122,6 +122,10 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScanInsideApplication(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+}
+
 func TestCreateScanSourceDirectory(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", "data", "--file-filter", "!.java")...)

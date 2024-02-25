@@ -600,10 +600,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, "")
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationId)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, "")
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationId)
 	if err != nil {
 		return "", err
 	}
