@@ -713,14 +713,14 @@ func updateProject(
 	return projectID, nil
 }
 
-func createApplicationIds(applicationId string, existingApplicationIds []string) []string {
+func createApplicationIds(applicationID string, existingApplicationIds []string) []string {
 	if hasElements(existingApplicationIds) {
-		if !contains(existingApplicationIds, applicationId) {
-			existingApplicationIds = append(existingApplicationIds, applicationId)
+		if !contains(existingApplicationIds, applicationID) {
+			existingApplicationIds = append(existingApplicationIds, applicationID)
 		}
 		return existingApplicationIds
 	}
-	return []string{applicationId}
+	return []string{applicationID}
 }
 
 func hasElements(items []string) bool {
@@ -795,7 +795,7 @@ func setupScanTypeProjectAndConfig(
 		return err
 	}
 
-	applicationId := ""
+	applicationID := ""
 	if applicationName != "" {
 		application, err := getApplication(applicationName, applicationsWrapper)
 		if err != nil {
@@ -804,12 +804,12 @@ func setupScanTypeProjectAndConfig(
 		if application == nil {
 			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 		}
-		applicationId = application.ID
+		applicationID = application.ID
 	}
 
 	// We need to convert the project name into an ID
 	projectID, err := findProject(
-		applicationId,
+		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
