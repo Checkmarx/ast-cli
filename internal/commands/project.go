@@ -101,7 +101,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
 	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
-	createProjCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Create project under an application")
+	createProjCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",

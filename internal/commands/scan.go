@@ -569,7 +569,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 
-	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Create scan under an application")
+	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
