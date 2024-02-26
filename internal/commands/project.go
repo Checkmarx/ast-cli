@@ -287,7 +287,6 @@ func runCreateProjectCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var err error
 		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
 		if err != nil {
 			return err

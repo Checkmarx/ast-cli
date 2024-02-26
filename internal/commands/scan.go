@@ -797,9 +797,9 @@ func setupScanTypeProjectAndConfig(
 
 	applicationID := ""
 	if applicationName != "" {
-		application, err := getApplication(applicationName, applicationsWrapper)
-		if err != nil {
-			return err
+		application, getAppErr := getApplication(applicationName, applicationsWrapper)
+		if getAppErr != nil {
+			return getAppErr
 		}
 		if application == nil {
 			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
@@ -808,15 +808,15 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	// We need to convert the project name into an ID
-	projectID, err := findProject(
+	projectID, findProjectErr := findProject(
 		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
 		groupsWrapper,
 	)
-	if err != nil {
-		return err
+	if findProjectErr != nil {
+		return findProjectErr
 	}
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
