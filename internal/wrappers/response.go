@@ -106,6 +106,8 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 		return nil, &errorModel, nil
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("project not found")
+	case http.StatusForbidden:
+		return nil, nil, errors.Errorf("forbidden action")
 	case successStatusCode:
 		model := ProjectResponseModel{}
 		err = decoder.Decode(&model)

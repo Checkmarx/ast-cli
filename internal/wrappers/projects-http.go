@@ -52,6 +52,8 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	switch resp.StatusCode {
 	case http.StatusNoContent:
 		return nil
+	case http.StatusForbidden:
+		return errors.Errorf("Failed to update project %s, status - %d, %s:", projectID, resp.StatusCode, "No permission")
 	default:
 		return errors.Errorf("failed to update project %s, status - %d", projectID, resp.StatusCode)
 	}
