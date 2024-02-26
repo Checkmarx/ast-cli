@@ -713,17 +713,13 @@ func updateProject(
 }
 
 func createApplicationIds(applicationID string, existingApplicationIds []string) []string {
-	if hasElements(existingApplicationIds) {
+	if len(existingApplicationIds) > 0 {
 		if !contains(existingApplicationIds, applicationID) {
 			existingApplicationIds = append(existingApplicationIds, applicationID)
 		}
 		return existingApplicationIds
 	}
 	return []string{applicationID}
-}
-
-func hasElements(items []string) bool {
-	return items != nil && len(items) > 0
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
