@@ -51,7 +51,7 @@ func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectN
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
-		logger.PrintIfVerbose("group '%s' assignment for project %s created", group.Name, projectName)
+		logger.PrintfIfVerbose("group '%s' assignment for project %s created", group.Name, projectName)
 		resp.Body.Close()
 	}
 	logger.PrintIfVerbose("Groups assignment created successfully")
