@@ -1224,7 +1224,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 func TestScanListWithFilters(t *testing.T) {
 	args := []string{
 		"scan", "list",
-		flag(params.FilterFlag), "limit=10000",
+		flag(params.FilterFlag), "limit=100",
 	}
 
 	err, _ := executeCommand(t, args...)
