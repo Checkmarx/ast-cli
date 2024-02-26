@@ -23,7 +23,7 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 	}
 	mockApplication := wrappers.Application{
-		Id:          "mockID",
+		ID:          "mockID",
 		Name:        "MOCK",
 		Description: "This is a mock application",
 		Criticality: 2,

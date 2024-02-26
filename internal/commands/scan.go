@@ -587,7 +587,7 @@ func scanCreateSubCommand(
 }
 
 func findProject(
-	applicationId string,
+	applicationID string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -602,10 +602,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationId)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationID)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationId)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationID)
 	if err != nil {
 		return "", err
 	}
@@ -617,7 +617,7 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	applicationId string,
+	applicationID string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
@@ -629,8 +629,8 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
-	if applicationId != "" {
-		projModel.ApplicationIds = []string{applicationId}
+	if applicationID != "" {
+		projModel.ApplicationIds = []string{applicationID}
 	}
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
@@ -653,7 +653,7 @@ func updateProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	projectName string,
-	applicationId string,
+	applicationID string,
 
 ) (string, error) {
 	var projectID string
@@ -672,7 +672,7 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationId == "" {
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationID == "" {
 		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
 		return projectID, nil
 	}
@@ -689,6 +689,7 @@ func updateProject(
 	projModel.Name = projModelResp.Name
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
+	projModel.ApplicationIds = projModelResp.ApplicationIds
 	if projectGroups != "" {
 		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
 		if groupErr != nil {
@@ -701,9 +702,9 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if applicationId != "" {
+	if applicationID != "" {
 		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationId, projModelResp.ApplicationIds)
+		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
 	}
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
@@ -712,14 +713,14 @@ func updateProject(
 	return projectID, nil
 }
 
-func createApplicationIds(applicationId string, existingApplicationIds []string) []string {
+func createApplicationIds(applicationID string, existingApplicationIds []string) []string {
 	if hasElements(existingApplicationIds) {
-		if !contains(existingApplicationIds, applicationId) {
-			existingApplicationIds = append(existingApplicationIds, applicationId)
+		if !contains(existingApplicationIds, applicationID) {
+			existingApplicationIds = append(existingApplicationIds, applicationID)
 		}
 		return existingApplicationIds
 	}
-	return []string{applicationId}
+	return []string{applicationID}
 }
 
 func hasElements(items []string) bool {
@@ -794,7 +795,7 @@ func setupScanTypeProjectAndConfig(
 		return err
 	}
 
-	applicationId := ""
+	applicationID := ""
 	if applicationName != "" {
 		application, err := getApplication(applicationName, applicationsWrapper)
 		if err != nil {
@@ -803,12 +804,12 @@ func setupScanTypeProjectAndConfig(
 		if application == nil {
 			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 		}
-		applicationId = application.Id
+		applicationID = application.ID
 	}
 
 	// We need to convert the project name into an ID
 	projectID, err := findProject(
-		applicationId,
+		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
