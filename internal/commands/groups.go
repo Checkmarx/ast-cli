@@ -32,11 +32,9 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 			}
 		}
 	}
-
 	if len(groupsNotFound) > 0 {
 		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
 	}
-
 	return groupMap, nil
 }
 
