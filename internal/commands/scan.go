@@ -37,18 +37,17 @@ import (
 )
 
 const (
-	failedCreating           = "Failed creating a scan"
-	failedGetting            = "Failed showing a scan"
-	failedGettingTags        = "Failed getting tags"
-	failedDeleting           = "Failed deleting a scan"
-	failedCanceling          = "Failed canceling a scan"
-	failedGettingAll         = "Failed listing"
-	failedGettingApplication = "Failed getting application"
-	thresholdLog             = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog          = "Threshold check finished with status %s : %s"
-	mbBytes                  = 1024.0 * 1024.0
-	notExploitable           = "NOT_EXPLOITABLE"
-	ignored                  = "IGNORED"
+	failedCreating    = "Failed creating a scan"
+	failedGetting     = "Failed showing a scan"
+	failedGettingTags = "Failed getting tags"
+	failedDeleting    = "Failed deleting a scan"
+	failedCanceling   = "Failed canceling a scan"
+	failedGettingAll  = "Failed listing"
+	thresholdLog      = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog   = "Threshold check finished with status %s : %s"
+	mbBytes           = 1024.0 * 1024.0
+	notExploitable    = "NOT_EXPLOITABLE"
+	ignored           = "IGNORED"
 
 	git                             = "git"
 	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"

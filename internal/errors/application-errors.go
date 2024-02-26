@@ -1,4 +1,4 @@
-package applicationErrors
+package applicationerrors
 
 const (
 	ApplicationDoesntExist  = "Provided application does not exist"
