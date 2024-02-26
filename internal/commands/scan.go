@@ -714,10 +714,8 @@ func updateProject(
 }
 
 func createApplicationIds(applicationID string, existingApplicationIds []string) []string {
-	if len(existingApplicationIds) > 0 {
-		if !contains(existingApplicationIds, applicationID) {
-			existingApplicationIds = append(existingApplicationIds, applicationID)
-		}
+	if (len(existingApplicationIds) > 0) && !contains(existingApplicationIds, applicationID) {
+		existingApplicationIds = append(existingApplicationIds, applicationID)
 		return existingApplicationIds
 	}
 	return []string{applicationID}
