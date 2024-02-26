@@ -23,8 +23,8 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 				groupsNotFound = append(groupsNotFound, group)
 			} else {
 				findGroup := findGroupByName(groupsFromEnv, group)
-				if findGroup.Name != "" {
-					groupsMap = append(groupsMap, &findGroup)
+				if findGroup != nil && findGroup.Name != "" {
+					groupsMap = append(groupsMap, findGroup)
 				} else {
 					groupsNotFound = append(groupsNotFound, group)
 				}
