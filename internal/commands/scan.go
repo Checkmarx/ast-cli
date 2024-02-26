@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -18,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"

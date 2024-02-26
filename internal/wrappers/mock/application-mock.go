@@ -1,10 +1,11 @@
 package mock
 
 import (
+	"time"
+
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type ApplicationsMockWrapper struct{}

@@ -3,9 +3,10 @@
 package commands
 
 import (
+	"testing"
+
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"testing"
 
 	"gotest.tools/assert"
 

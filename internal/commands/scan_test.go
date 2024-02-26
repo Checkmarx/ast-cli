@@ -3,14 +3,15 @@
 package commands
 
 import (
+	"reflect"
+	"strings"
+	"testing"
+
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
-	"reflect"
-	"strings"
-	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/spf13/cobra"

@@ -3,9 +3,10 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"strings"
 	"time"
+
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
