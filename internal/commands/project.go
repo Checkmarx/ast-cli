@@ -319,7 +319,9 @@ func runCreateProjectCommand(
 			return err
 		}
 		var projModel = wrappers.Project{}
-		projModel.ApplicationIds = []string{applicationID}
+		if applicationID != "" {
+			projModel.ApplicationIds = []string{applicationID}
+		}
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload
