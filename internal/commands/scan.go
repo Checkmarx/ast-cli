@@ -689,6 +689,7 @@ func updateProject(
 	projModel.Name = projModelResp.Name
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
+	projModel.ApplicationIds = projModelResp.ApplicationIds
 	if projectGroups != "" {
 		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
 		if groupErr != nil {
