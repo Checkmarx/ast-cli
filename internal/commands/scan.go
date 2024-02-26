@@ -587,7 +587,7 @@ func scanCreateSubCommand(
 }
 
 func findProject(
-	applicationId string,
+	applicationID string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -602,10 +602,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationId)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationID)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationId)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationID)
 	if err != nil {
 		return "", err
 	}
@@ -617,7 +617,7 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	applicationId string,
+	applicationID string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
@@ -629,8 +629,8 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
-	if applicationId != "" {
-		projModel.ApplicationIds = []string{applicationId}
+	if applicationID != "" {
+		projModel.ApplicationIds = []string{applicationID}
 	}
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
@@ -653,7 +653,7 @@ func updateProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	projectName string,
-	applicationId string,
+	applicationID string,
 
 ) (string, error) {
 	var projectID string
@@ -672,7 +672,7 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationId == "" {
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationID == "" {
 		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
 		return projectID, nil
 	}
@@ -701,9 +701,9 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if applicationId != "" {
+	if applicationID != "" {
 		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationId, projModelResp.ApplicationIds)
+		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
 	}
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
