@@ -37,13 +37,13 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupsMap, nil
 }
 
-func findGroupByName(groups []wrappers.Group, name string) wrappers.Group {
+func findGroupByName(groups []wrappers.Group, name string) *wrappers.Group {
 	for i := 0; i < len(groups); i++ {
 		if groups[i].Name == name {
-			return groups[i]
+			return &groups[i]
 		}
 	}
-	return wrappers.Group{}
+	return nil
 }
 
 func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
