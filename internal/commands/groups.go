@@ -37,7 +37,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupsMap, nil
 }
 
-func findGroupByName(groups []wrappers.Group, name string) (*wrappers.Group) {
+func findGroupByName(groups []wrappers.Group, name string) *wrappers.Group {
 	for i := 0; i < len(groups); i++ {
 		if groups[i].Name == name {
 			return &groups[i]
