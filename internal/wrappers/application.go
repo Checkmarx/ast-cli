@@ -9,7 +9,7 @@ type ApplicationsResponseModel struct {
 }
 
 type Application struct {
-	Id          string    `json:"id"`
+	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Criticality int       `json:"criticality"`
@@ -21,7 +21,7 @@ type Application struct {
 }
 
 type Rule struct {
-	Id    string `json:"id"`
+	ID    string `json:"id"`
 	Type  string `json:"type"`
 	Value string `json:"value"`
 }

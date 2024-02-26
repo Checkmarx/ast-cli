@@ -17,7 +17,7 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		return nil, nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
 	}
 	mockApplication := wrappers.Application{
-		Id:          "mockID",
+		ID:          "mockID",
 		Name:        "MOCK",
 		Description: "This is a mock application",
 		Criticality: 2,

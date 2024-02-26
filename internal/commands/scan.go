@@ -804,7 +804,7 @@ func setupScanTypeProjectAndConfig(
 		if application == nil {
 			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 		}
-		applicationId = application.Id
+		applicationId = application.ID
 	}
 
 	// We need to convert the project name into an ID

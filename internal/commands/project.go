@@ -302,7 +302,7 @@ func runCreateProjectCommand(
 			if application == nil {
 				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 			}
-			applicationId = application.Id
+			applicationId = application.ID
 		}
 
 		var input = []byte("{}")
