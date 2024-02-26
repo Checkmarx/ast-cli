@@ -270,7 +270,10 @@ func runCreateProjectCommand(
 			}
 		}
 		if wrappers.FeatureFlags[accessManagementEnabled] {
-			assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+			err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+			if err != nil {
+				return err
+			}
 		}
 		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
 		if err != nil {

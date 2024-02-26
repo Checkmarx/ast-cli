@@ -693,6 +693,9 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project groups")
 		if wrappers.FeatureFlags[accessManagementEnabled] {
 			err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			projModel.Groups = getGroupIds(groupsMap)
 		}

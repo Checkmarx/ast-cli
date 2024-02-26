@@ -53,7 +53,7 @@ func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectN
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
 		logger.Printf("group '%s' assignment for project %s created", group.Name, projectName)
-		defer resp.Body.Close()
+		resp.Body.Close()
 	}
 	logger.Print("Groups assignment created successfully")
 	return nil
