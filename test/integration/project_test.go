@@ -33,7 +33,7 @@ const SSHKeyFilePath = "ssh-key-file.txt"
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags)
+	projectID, _ := createProject(t, Tags, Groups)
 
 	response := listProjectByID(t, projectID)
 
@@ -43,7 +43,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	assertTags(t, project)
+	assertTagsAndGroups(t, project, Groups)
 
 	deleteProject(t, projectID)
 
@@ -53,7 +53,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 // Assert project contains created tags and groups
-func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
+func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, groups []string) {
 
 	allTags := getAllTags(t, "project")
 
@@ -65,6 +65,8 @@ func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
+
+	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
 // Create a project with empty project name should fail
@@ -117,9 +119,10 @@ func TestProjectBranches(t *testing.T) {
 	assert.Assert(t, strings.Contains(string(result), "[]"))
 }
 
-func createProject(t *testing.T, tags map[string]string) (string, string) {
+func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
+	groupsStr := formatGroups(groups)
 
 	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
@@ -129,6 +132,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
+		flag(params.GroupList), groupsStr,
 	)
 
 	createdProject := wrappers.ProjectResponseModel{}

@@ -26,6 +26,15 @@ func formatTags(tags map[string]string) string {
 	tagsStr = strings.TrimRight(tagsStr, ",")
 	return tagsStr
 }
+func formatGroups(groups []string) string {
+	var groupsStr string
+	for _, group := range groups {
+		groupsStr += group
+		groupsStr += ","
+	}
+	groupsStr = strings.TrimRight(groupsStr, ",")
+	return groupsStr
+}
 
 func getAllTags(t *testing.T, baseCmd string) map[string][]string {
 	tagsCommand, buffer := createRedirectedTestCommand(t)

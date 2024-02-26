@@ -50,6 +50,7 @@ func NewAstCLI(
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -156,8 +157,9 @@ func NewAstCLI(
 		scaRealTimeWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
+		accessManagementWrapper,
 	)
-	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
+	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,

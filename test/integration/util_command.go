@@ -80,6 +80,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
+	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -108,6 +109,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
+	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 
 	astCli := commands.NewAstCLI(
 		scansWrapper,
@@ -137,6 +139,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		featureFlagsWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
+		accessManagementWrapper,
 	)
 	return astCli
 }
