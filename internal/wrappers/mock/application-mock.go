@@ -9,12 +9,18 @@ import (
 
 type ApplicationsMockWrapper struct{}
 
-func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, *wrappers.ErrorModel, error) {
+func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, error) {
 	if params["name"] == NoPermissionApp {
-		return nil, nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
+		return nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
 	}
 	if params["name"] == ApplicationDoesntExist {
-		return nil, nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
+		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
+	}
+	if params["name"] == FakeHttpStatusBadRequest {
+		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
+	}
+	if params["name"] == FakeHttpStatusInternalServerError {
+		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 	}
 	mockApplication := wrappers.Application{
 		Id:          "mockID",
@@ -30,5 +36,5 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		Applications: []wrappers.Application{mockApplication},
 	}
 
-	return response, nil, nil
+	return response, nil
 }

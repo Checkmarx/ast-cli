@@ -32,5 +32,5 @@ type Tags struct {
 }
 
 type ApplicationsWrapper interface {
-	Get(params map[string]string) (*ApplicationsResponseModel, *ErrorModel, error)
+	Get(params map[string]string) (*ApplicationsResponseModel, error)
 }

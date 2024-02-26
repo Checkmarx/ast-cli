@@ -19,7 +19,7 @@ func NewApplicationsHTTPWrapper(path string) ApplicationsWrapper {
 	}
 }
 
-func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsResponseModel, *ErrorModel, error) {
+func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsResponseModel, error) {
 	if _, ok := params[limit]; !ok {
 		params[limit] = limitValue
 	}
@@ -30,28 +30,26 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 	defer resp.Body.Close()
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, applicationErrors.FailedToParseGetApplication)
+			return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 		}
-		return nil, &errorModel, nil
+		return nil, nil
 	case http.StatusForbidden:
-		return nil, nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
+		return nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
 	case http.StatusOK:
 		model := ApplicationsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, applicationErrors.FailedToParseGetApplication)
+			return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 		}
-		return &model, nil, nil
+		return &model, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }

@@ -867,10 +867,7 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 	if applicationName != "" {
 		params := make(map[string]string)
 		params["name"] = applicationName
-		resp, errorModel, err := applicationsWrapper.Get(params)
-		if errorModel != nil {
-			return nil, errors.Errorf(ErrorCodeFormat, failedGettingApplication, errorModel.Code, errorModel.Message)
-		}
+		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
 			return nil, err
 		}

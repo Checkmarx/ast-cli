@@ -33,6 +33,16 @@ func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t
 	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
 }
 
+func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHttpStatusBadRequest)
+	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+}
+
+func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHttpStatusInternalServerError)
+	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+}
+
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create")
 	assert.Assert(t, err.Error() == "Project name is required")

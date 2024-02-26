@@ -1,10 +1,10 @@
 package applicationErrors
 
 const (
-	ApplicationDoesntExist  = "Failed creating a scan: application doesn't exist"
-	ApplicationNoPermission = "Failed creating a scan: no permission to create project"
+	ApplicationDoesntExist  = "Provided application does not exist"
+	ApplicationNoPermission = "User have no permission to the application"
 )
 
 const (
-	FailedToParseGetApplication = "Failed to parse GetApplication"
+	FailedToGetApplication = "Failed to get application"
 )

@@ -142,6 +142,16 @@ func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *te
 	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
 }
 
+func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHttpStatusBadRequest, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+}
+
+func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHttpStatusInternalServerError, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+}
+
 func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
