@@ -142,12 +142,12 @@ func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *te
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHttpStatusBadRequest, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusBadRequest, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHttpStatusInternalServerError, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusInternalServerError, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
 }
 

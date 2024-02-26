@@ -16,10 +16,10 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 	if params["name"] == ApplicationDoesntExist {
 		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
 	}
-	if params["name"] == FakeHttpStatusBadRequest {
+	if params["name"] == FakeHTTPStatusBadRequest {
 		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 	}
-	if params["name"] == FakeHttpStatusInternalServerError {
+	if params["name"] == FakeHTTPStatusInternalServerError {
 		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)
 	}
 	mockApplication := wrappers.Application{
