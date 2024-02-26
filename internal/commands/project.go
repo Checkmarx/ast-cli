@@ -294,9 +294,9 @@ func runCreateProjectCommand(
 
 		applicationID := ""
 		if applicationName != "" {
-			application, err := getApplication(applicationName, applicationsWrapper)
-			if err != nil {
-				return err
+			application, getAppErr := getApplication(applicationName, applicationsWrapper)
+			if getAppErr != nil {
+				return getAppErr
 			}
 			if application == nil {
 				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
