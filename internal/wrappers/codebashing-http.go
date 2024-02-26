@@ -16,7 +16,6 @@ import (
 const (
 	failedToParseCodeBashing    = "Failed to parse list results"
 	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
-	limitValue                  = "10000"
 	limit                       = "limit"
 	noCodebashingLinkAvailable  = "No codebashing link available"
 	licenseNotFoundExitCode     = 3
