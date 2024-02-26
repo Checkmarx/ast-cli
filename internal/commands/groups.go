@@ -15,17 +15,17 @@ const accessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED" // feature flag
 
 func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groups := strings.Split(groupsStr, ",")
-	var groupMap []*wrappers.Group
+	var groupsMap []*wrappers.Group
 	var groupsNotFound []string
 	for _, group := range groups {
 		if len(group) > 0 {
-			groupIds, err := groupsWrapper.Get(group)
+			groupsFromEnv, err := groupsWrapper.Get(group)
 			if err != nil {
 				groupsNotFound = append(groupsNotFound, group)
 			} else {
-				findGroup := findGroupByName(groupIds, group)
+				findGroup := findGroupByName(groupsFromEnv, group)
 				if findGroup.Name != "" {
-					groupMap = append(groupMap, &findGroup)
+					groupsMap = append(groupsMap, &findGroup)
 				} else {
 					groupsNotFound = append(groupsNotFound, group)
 				}
@@ -35,7 +35,7 @@ func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	if len(groupsNotFound) > 0 {
 		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
 	}
-	return groupMap, nil
+	return groupsMap, nil
 }
 
 func findGroupByName(groups []wrappers.Group, name string) wrappers.Group {
@@ -49,19 +49,13 @@ func findGroupByName(groups []wrappers.Group, name string) wrappers.Group {
 
 func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
-
-	var groupMap []string
-	var info map[string]interface{}
-	_ = json.Unmarshal(*input, &info)
-	if _, ok := info["groups"]; !ok {
-		_ = json.Unmarshal([]byte("[]"), &groupMap)
-		info["groups"] = groupMap
-	}
 	groups, err := createGroupsMap(groupListStr, groupsWrapper)
 	if err != nil {
 		return groups, err
 	}
 	if !wrappers.FeatureFlags[accessManagementEnabled] {
+		var info map[string]interface{}
+		_ = json.Unmarshal(*input, &info)
 		info["groups"] = getGroupIds(groups)
 		*input, _ = json.Marshal(info)
 	}
