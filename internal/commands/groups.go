@@ -2,7 +2,6 @@ package commands
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -61,7 +60,12 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	}
 	return groups, nil
 }
-
+func getGroupsForRequest(groups []*wrappers.Group) []string {
+	if !wrappers.FeatureFlags[accessManagementEnabled] {
+		return getGroupIds(groups)
+	}
+	return nil
+}
 func getGroupIds(groups []*wrappers.Group) []string {
 	var groupIds []string
 	for _, group := range groups {
@@ -81,7 +85,6 @@ func assignGroupsToProject(projectID string, projectName string, groups []*wrapp
 	}
 	groupsToAssign := getGroupsToAssign(groups, groupsAssignedToTheProject)
 	if len(groupsToAssign) == 0 {
-		log.Println("No new groups to assign")
 		return nil
 	}
 
@@ -102,8 +105,6 @@ func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrap
 		find := groupsMap[receivedGroup.ID]
 		if !find {
 			groupsToAssign = append(groupsToAssign, receivedGroup)
-		} else {
-			log.Printf("Group [%s | %s] already assigned", receivedGroup.ID, receivedGroup.Name)
 		}
 	}
 	return groupsToAssign

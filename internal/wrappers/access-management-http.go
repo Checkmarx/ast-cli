@@ -49,7 +49,6 @@ func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectN
 		path := fmt.Sprintf("%s/%s", a.path, createAssignmentPath)
 		resp, err = SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, a.clientTimeout)
 		if err != nil {
-			logger.PrintResponse(resp, false)
 			return errors.Wrapf(err, "Failed to create groups assignment")
 		}
 		logger.Printf("group '%s' assignment for project %s created", group.Name, projectName)

@@ -624,9 +624,7 @@ func createProject(
 	}
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
-	if !wrappers.FeatureFlags[accessManagementEnabled] {
-		projModel.Groups = getGroupIds(groupsMap)
-	}
+	projModel.Groups = getGroupsForRequest(groupsMap)
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
@@ -691,13 +689,10 @@ func updateProject(
 			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
 		}
 		logger.PrintIfVerbose("Updating project groups")
-		if wrappers.FeatureFlags[accessManagementEnabled] {
-			err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			projModel.Groups = getGroupIds(groupsMap)
+		projModel.Groups = getGroupsForRequest(groupsMap)
+		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
+		if err != nil {
+			return "", err
 		}
 	}
 	if projectTags != "" {

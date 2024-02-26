@@ -269,11 +269,9 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
-		if wrappers.FeatureFlags[accessManagementEnabled] {
-			err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
-			if err != nil {
-				return err
-			}
+		err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		if err != nil {
+			return err
 		}
 		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
 		if err != nil {
