@@ -69,7 +69,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -395,7 +395,6 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 		assert.Assert(t, ok, "Scan should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-
 	deleteScan(t, scanID)
 
 	response = listScanByID(t, scanID)
@@ -448,11 +447,17 @@ func getProjectNameForScanTests() string {
 }
 
 func getCreateArgs(source string, tags map[string]string, scanTypes string) []string {
+	return getCreateArgsWithGroups(source, tags, nil, scanTypes)
+}
+func getCreateArgsWithGroups(source string, tags map[string]string, groups []string, scanTypes string) []string {
 	projectName := getProjectNameForScanTests()
-	return getCreateArgsWithName(source, tags, projectName, scanTypes)
+	return getCreateArgsWithNameAndGroups(source, tags, groups, projectName, scanTypes)
 }
 
 func getCreateArgsWithName(source string, tags map[string]string, projectName, scanTypes string) []string {
+	return getCreateArgsWithNameAndGroups(source, tags, nil, projectName, scanTypes)
+}
+func getCreateArgsWithNameAndGroups(source string, tags map[string]string, groups []string, projectName, scanTypes string) []string {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -461,6 +466,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName, s
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
+		flag(params.ProjectGroupList), formatGroups(groups),
 	}
 	return args
 }
