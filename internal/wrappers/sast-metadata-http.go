@@ -30,7 +30,11 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]stri
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

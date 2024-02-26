@@ -27,7 +27,11 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, a.path, params, nil, clientTimeout)
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	if err != nil {
 		return nil, err
