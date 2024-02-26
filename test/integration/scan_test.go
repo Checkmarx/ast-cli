@@ -81,6 +81,21 @@ func TestScansE2E(t *testing.T) {
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
+func TestScansUpdateProjectGroups(t *testing.T) {
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
+	response := listScanByID(t, scanID)
+	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
+	defer deleteProject(t, projectID)
+
+	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
+
 func TestInvalidSource(t *testing.T) {
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TestProject",
