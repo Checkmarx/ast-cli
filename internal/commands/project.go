@@ -293,7 +293,8 @@ func runCreateProjectCommand(
 			return err
 		}
 
-		applicationID := ""
+		var applicationID []string
+
 		if applicationName != "" {
 			application, getAppErr := getApplication(applicationName, applicationsWrapper)
 			if getAppErr != nil {
@@ -302,7 +303,7 @@ func runCreateProjectCommand(
 			if application == nil {
 				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 			}
-			applicationID = application.ID
+			applicationID = []string{application.ID}
 		}
 
 		var input = []byte("{}")
@@ -320,9 +321,7 @@ func runCreateProjectCommand(
 			return err
 		}
 		var projModel = wrappers.Project{}
-		if applicationID != "" {
-			projModel.ApplicationIds = []string{applicationID}
-		}
+		projModel.ApplicationIds = applicationID
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload

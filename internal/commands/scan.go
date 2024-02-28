@@ -587,7 +587,7 @@ func scanCreateSubCommand(
 }
 
 func findProject(
-	applicationID string,
+	applicationID []string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -617,7 +617,7 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	applicationID string,
+	applicationID []string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
@@ -629,9 +629,8 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.Groups = groupsMap
-	if applicationID != "" {
-		projModel.ApplicationIds = []string{applicationID}
-	}
+	projModel.ApplicationIds = applicationID
+
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
@@ -653,7 +652,7 @@ func updateProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	projectName string,
-	applicationID string,
+	applicationID []string,
 
 ) (string, error) {
 	var projectID string
@@ -672,7 +671,7 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && applicationID == "" {
+	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
 		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
 		return projectID, nil
 	}
@@ -702,7 +701,7 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if applicationID != "" {
+	if len(applicationID) > 0 {
 		logger.PrintIfVerbose("Updating project applicationIds")
 		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
 	}
@@ -713,12 +712,13 @@ func updateProject(
 	return projectID, nil
 }
 
-func createApplicationIds(applicationID string, existingApplicationIds []string) []string {
-	if (len(existingApplicationIds) > 0) && !contains(existingApplicationIds, applicationID) {
-		existingApplicationIds = append(existingApplicationIds, applicationID)
-		return existingApplicationIds
+func createApplicationIds(applicationID, existingApplicationIds []string) []string {
+	for _, id := range applicationID {
+		if !util.Contains(existingApplicationIds, id) {
+			existingApplicationIds = append(existingApplicationIds, id)
+		}
 	}
-	return []string{applicationID}
+	return existingApplicationIds
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
@@ -789,7 +789,7 @@ func setupScanTypeProjectAndConfig(
 		return err
 	}
 
-	applicationID := ""
+	var applicationID []string
 	if applicationName != "" {
 		application, getAppErr := getApplication(applicationName, applicationsWrapper)
 		if getAppErr != nil {
@@ -798,7 +798,7 @@ func setupScanTypeProjectAndConfig(
 		if application == nil {
 			return errors.Errorf(applicationErrors.ApplicationDoesntExist)
 		}
-		applicationID = application.ID
+		applicationID = []string{application.ID}
 	}
 
 	// We need to convert the project name into an ID
