@@ -94,7 +94,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(applicationsWrapper,projectsWrapper, groupsWrapper, accessManagementWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
