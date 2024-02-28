@@ -18,6 +18,7 @@ var (
 	IgnoreProxyKey                      = strings.ToLower(IgnoreProxyEnv)
 	CodeBashingPathKey                  = strings.ToLower(CodeBashingPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
+	ApplicationsPathKey                 = strings.ToLower(ApplicationsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)

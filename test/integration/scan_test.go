@@ -22,6 +22,7 @@ import (
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -65,6 +66,48 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
+}
+
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), projectNameRandom,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "application-that-doesnt-exist",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, applicationErrors.ApplicationDoesntExist)
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
@@ -1197,4 +1240,14 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
+}
+
+func TestScanListWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "limit=100",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
 }

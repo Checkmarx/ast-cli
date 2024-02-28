@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -61,7 +63,7 @@ var (
 	)
 )
 
-func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
+func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
@@ -92,7 +94,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper, accessManagementWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -100,6 +102,7 @@ func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper w
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
 	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
+	createProjCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -224,13 +227,31 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 }
 
 func runCreateProjectCommand(
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
+		if err != nil {
+			return err
+		}
+
+		var applicationID []string
+
+		if applicationName != "" {
+			application, getAppErr := getApplication(applicationName, applicationsWrapper)
+			if getAppErr != nil {
+				return getAppErr
+			}
+			if application == nil {
+				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
+			}
+			applicationID = []string{application.ID}
+		}
+
 		var input = []byte("{}")
-		var err error
 		err = updateProjectRequestValues(&input, cmd)
 		if err != nil {
 			return err
@@ -245,6 +266,7 @@ func runCreateProjectCommand(
 			return err
 		}
 		var projModel = wrappers.Project{}
+		projModel.ApplicationIds = applicationID
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload

@@ -15,6 +15,7 @@ var EnvVarsBinds = []struct {
 	{CodeBashingPathKey, ScansPathEnv, "api/codebashing/lessons"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
+	{ApplicationsPathKey, ApplicationsPathEnv, "api/applications"},
 	{GroupsPathKey, GroupsPathEnv, "auth/realms/organization/pip/groups"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
 	{ScanSummaryPathKey, ScanSummaryPathEnv, "api/scan-summary"},

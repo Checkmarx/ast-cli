@@ -191,7 +191,11 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 		return nil, nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	decoder := json.NewDecoder(resp.Body)
 
@@ -244,7 +248,11 @@ func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string)
 		return nil, nil, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	decoder := json.NewDecoder(resp.Body)
 

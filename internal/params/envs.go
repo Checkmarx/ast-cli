@@ -18,6 +18,7 @@ const (
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
+	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
 	ScaPackagePathEnv                   = "CX_SCA_PACKAGE_PATH"

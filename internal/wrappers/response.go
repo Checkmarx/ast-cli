@@ -94,7 +94,11 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -106,6 +110,8 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 		return nil, &errorModel, nil
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("project not found")
+	case http.StatusForbidden:
+		return nil, nil, errors.Errorf("forbidden action")
 	case successStatusCode:
 		model := ProjectResponseModel{}
 		err = decoder.Decode(&model)
