@@ -138,6 +138,7 @@ func NewScanCommand(
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -164,6 +165,7 @@ func NewScanCommand(
 		jwtWrapper,
 		policyWrapper,
 		applicationsWrapper,
+		accessManagementWrapper,
 	)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
@@ -414,7 +416,6 @@ func scanCreateSubCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -443,7 +444,6 @@ func scanCreateSubCommand(
 			risksOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
-			applicationsWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -592,6 +592,7 @@ func findProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) (string, error) {
 	params := make(map[string]string)
 	params["names"] = projectName
@@ -602,10 +603,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName, applicationID)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper,accessManagementWrapper, projectName, applicationID)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationID)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper,accessManagementWrapper, applicationID)
 	if err != nil {
 		return "", err
 	}
@@ -617,6 +618,7 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationID []string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
@@ -628,7 +630,7 @@ func createProject(
 	}
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
-	projModel.Groups = groupsMap
+	projModel.Groups = getGroupsForRequest(groupsMap)
 	projModel.ApplicationIds = applicationID
 
 	if projectPrivatePackage != "" {
@@ -642,6 +644,7 @@ func createProject(
 	}
 	if err == nil {
 		projectID = resp.ID
+		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
 	}
 	return projectID, err
 }
@@ -651,6 +654,7 @@ func updateProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	projectName string,
 	applicationID []string,
 
@@ -695,7 +699,11 @@ func updateProject(
 			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
 		}
 		logger.PrintIfVerbose("Updating project groups")
-		projModel.Groups = groupsMap
+		projModel.Groups = getGroupsForRequest(groupsMap)
+		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
+		if err != nil {
+			return "", err
+		}
 	}
 	if projectTags != "" {
 		logger.PrintIfVerbose("Updating project tags")
@@ -767,6 +775,7 @@ func setupScanTypeProjectAndConfig(
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -808,6 +817,7 @@ func setupScanTypeProjectAndConfig(
 		cmd,
 		projectsWrapper,
 		groupsWrapper,
+		accessManagementWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
@@ -1474,6 +1484,7 @@ func runCreateScanCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -1495,6 +1506,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			accessManagementWrapper,
 			applicationsWrapper,
 		)
 		if err != nil {
@@ -1589,12 +1601,13 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper)
 	if err != nil {
 		return nil, "", err
 	}

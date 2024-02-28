@@ -63,7 +63,8 @@ var (
 	)
 )
 
-func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
+func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -93,7 +94,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper,projectsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -225,67 +226,11 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	return nil
 }
 
-func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) error {
-	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
-
-	var groupMap []string
-	var info map[string]interface{}
-	_ = json.Unmarshal(*input, &info)
-	if _, ok := info["groups"]; !ok {
-		_ = json.Unmarshal([]byte("[]"), &groupMap)
-		info["groups"] = groupMap
-	}
-	groups, err := createGroupsMap(groupListStr, groupsWrapper)
-	if err != nil {
-		return err
-	}
-
-	info["groups"] = groups
-	*input, _ = json.Marshal(info)
-
-	return nil
-}
-
-func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]string, error) {
-	groups := strings.Split(groupsStr, ",")
-	var groupMap []string
-	var groupsNotFound []string
-	for _, group := range groups {
-		if len(group) > 0 {
-			groupIds, err := groupsWrapper.Get(group)
-			if err != nil {
-				groupsNotFound = append(groupsNotFound, group)
-			} else {
-				groupID := findGroupID(groupIds, group)
-				if groupID != "" {
-					groupMap = append(groupMap, groupID)
-				} else {
-					groupsNotFound = append(groupsNotFound, group)
-				}
-			}
-		}
-	}
-
-	if len(groupsNotFound) > 0 {
-		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
-	}
-
-	return groupMap, nil
-}
-
-func findGroupID(groups []wrappers.Group, name string) string {
-	for i := 0; i < len(groups); i++ {
-		if groups[i].Name == name {
-			return groups[i].ID
-		}
-	}
-	return ""
-}
-
 func runCreateProjectCommand(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
@@ -311,7 +256,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		err = updateGroupValues(&input, cmd, groupsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
@@ -346,7 +291,10 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
-
+		err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		if err != nil {
+			return err
+		}
 		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
 		if err != nil {
 			return err

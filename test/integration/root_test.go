@@ -29,6 +29,11 @@ var Tags = map[string]string{
 	"Integration": "Tests",
 }
 
+var Groups = []string{
+	"it_test_group_1",
+	"it_test_group_2",
+}
+
 var testInstance *testing.T
 var rootScanId string
 var rootEnginesScanId string
@@ -91,7 +96,7 @@ func getRootProject(t *testing.T) (string, string) {
 		return rootProjectId, rootProjectName
 	}
 
-	rootProjectId, rootProjectName = createProject(t, Tags)
+	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
 
 	return rootProjectId, rootProjectName
 }
