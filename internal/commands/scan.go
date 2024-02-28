@@ -164,8 +164,8 @@ func NewScanCommand(
 		riskOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
-		applicationsWrapper,
 		accessManagementWrapper,
+		applicationsWrapper,
 	)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
@@ -416,6 +416,8 @@ func scanCreateSubCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -444,6 +446,8 @@ func scanCreateSubCommand(
 			risksOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
+			accessManagementWrapper,
+			applicationsWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -603,10 +607,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper,accessManagementWrapper, projectName, applicationID)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, projectName, applicationID)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper,accessManagementWrapper, applicationID)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationID)
 	if err != nil {
 		return "", err
 	}
