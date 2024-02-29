@@ -129,7 +129,7 @@ func TestCreateScan_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(
 }
 
 func TestCreateScan_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
-	//when no container scan type is provided, we will ignore the container images flag and its value
+	// When no container scan type is provided, we will ignore the container images flag and its value
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag")
 }
 

@@ -66,7 +66,7 @@ func prepareEngines(engines []string) map[string]bool {
 
 		// Current limitation, CxOne is including non-engines in the JWT
 		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
-			if strings.ToLower(engine) == commonParams.ContainersType && !FeatureFlags[ContainerEngineCLIEnabled] {
+			if strings.EqualFold(engine, commonParams.ContainersType) && !FeatureFlags[ContainerEngineCLIEnabled] {
 				continue
 			}
 			m[strings.ToLower(engine)] = true

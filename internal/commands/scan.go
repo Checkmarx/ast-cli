@@ -1027,7 +1027,7 @@ func addContainersScan(cmd *cobra.Command) (map[string]interface{}, error) {
 			}
 		}
 	}
-	//TODO: add logic that will support the container scan
+	// TODO: add logic that will support the container scan
 	return containerMapConfig, nil
 }
 
