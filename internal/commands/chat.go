@@ -7,8 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ConversationIDErrorFormat = "Invalid conversation ID %s"
-const AiGuidedRemediationEnabled = "scan.config.plugins.aiGuidedRemediation"
+const (
+	ConversationIDErrorFormat  = "Invalid conversation ID %s"
+	AiGuidedRemediationEnabled = "scan.config.plugins.aiGuidedRemediation"
+)
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatCmd := &cobra.Command{
