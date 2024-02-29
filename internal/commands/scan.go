@@ -502,7 +502,8 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security,container-security)")
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -867,6 +868,13 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+	var containersConfig, containerConfigErr = addContainersScan(cmd)
+	if containersConfig != nil {
+		configArr = append(configArr, containersConfig)
+	}
+	if containerConfigErr != nil {
+		return containerConfigErr
+	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
@@ -1003,6 +1011,24 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		return scaMapConfig
 	}
 	return nil
+}
+
+func addContainersScan(cmd *cobra.Command) (map[string]interface{}, error) {
+	if !scanTypeEnabled(commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		return nil, nil
+	}
+	var containerMapConfig map[string]interface{}
+	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	if containerImages != "" {
+		containerImagesList := strings.Split(containerImages, ",")
+		for _, containerImageName := range containerImagesList {
+			if err := validateContainerImageFormat(containerImageName); err != nil {
+				return nil, err
+			}
+		}
+	}
+	//TODO: add logic that will support the container scan
+	return containerMapConfig, nil
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
@@ -2471,6 +2497,14 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
+	return nil
+}
+
+func validateContainerImageFormat(containerImage string) error {
+	imageParts := strings.Split(containerImage, ":")
+	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
+		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	}
 	return nil
 }
 

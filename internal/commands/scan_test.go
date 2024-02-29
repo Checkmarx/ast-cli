@@ -124,6 +124,26 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScan_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
+}
+
+func TestCreateScan_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
+	//when no container scan type is provided, we will ignore the container images flag and its value
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag")
+}
+
+func TestCreateScan_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
+	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
+}
+
+func TestCreateScan_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--container-images", "image1,image2:tag")
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+}
+
 func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
