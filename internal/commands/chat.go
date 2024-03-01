@@ -9,9 +9,10 @@ const ConversationIDErrorFormat = "Invalid conversation ID %s"
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatCmd := &cobra.Command{
-		Use:   "chat",
-		Short: "Chat with OpenAI models",
-		Long:  "Chat with OpenAI models regarding KICS or SAST results",
+		Use:    "chat",
+		Short:  "Chat with OpenAI models",
+		Long:   "Chat with OpenAI models regarding KICS or SAST results",
+		Hidden: true,
 	}
 	chatKicsCmd := ChatKicsSubCommand(chatWrapper)
 	chatSastCmd := ChatSastSubCommand(chatWrapper)

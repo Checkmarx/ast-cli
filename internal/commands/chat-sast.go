@@ -22,10 +22,11 @@ const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
-		Use:   "sast",
-		Short: "OpenAI-based SAST results remediation",
-		Long:  "Use OpenAI models to remediate SAST results and chat about them",
-		RunE:  runChatSast(chatWrapper),
+		Use:    "sast",
+		Short:  "OpenAI-based SAST results remediation",
+		Long:   "Use OpenAI models to remediate SAST results and chat about them",
+		Hidden: true,
+		RunE:   runChatSast(chatWrapper),
 	}
 
 	chatSastCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
