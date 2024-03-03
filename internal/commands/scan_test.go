@@ -128,6 +128,11 @@ func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationS
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExist)
+}
+
 func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExist)

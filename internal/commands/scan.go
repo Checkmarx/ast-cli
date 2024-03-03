@@ -878,14 +878,27 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 		params["name"] = applicationName
 		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
+
 			return nil, err
 		}
 		if resp.Applications != nil && len(resp.Applications) > 0 {
-			application := resp.Applications[0]
-			return &application, nil
+			application := verifyApplicationNameExactMatch(applicationName, resp)
+
+			return application, nil
 		}
 	}
 	return nil, nil
+}
+
+func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.ApplicationsResponseModel) *wrappers.Application {
+	var application *wrappers.Application
+	for _, app := range resp.Applications {
+		if app.Name == applicationName {
+			application = &app
+			break
+		}
+	}
+	return application
 }
 
 func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
