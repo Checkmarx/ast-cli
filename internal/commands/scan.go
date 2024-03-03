@@ -892,9 +892,9 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 
 func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.ApplicationsResponseModel) *wrappers.Application {
 	var application *wrappers.Application
-	for _, app := range resp.Applications {
-		if app.Name == applicationName {
-			application = &app
+	for i := range resp.Applications {
+		if resp.Applications[i].Name == applicationName {
+			application = &resp.Applications[i]
 			break
 		}
 	}
