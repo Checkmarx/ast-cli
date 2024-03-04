@@ -92,6 +92,7 @@ func TestChatSastAiGuidedRemediationDisabled(t *testing.T) {
 	assert.NilError(t, err)
 	s := string(output)
 	assert.Assert(t, strings.Contains(s, AiGuidedRemediationDisabledError), s)
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
 }
 
 func TestChatSastInvalidSourceDir(t *testing.T) {
