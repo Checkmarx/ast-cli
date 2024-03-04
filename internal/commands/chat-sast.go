@@ -20,6 +20,7 @@ import (
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
+const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
@@ -47,8 +48,8 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 
 func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if !aiGuidedRemediationEnabled(tenantWrapper) {
-			return errors.New("The AI Guided Remediation is disabled in your tenant account")
+		if !isAiGuidedRemediationEnabled(tenantWrapper) {
+			return outputError(cmd, uuid.Nil, errors.Errorf(AiGuidedRemediationDisabledError))
 		}
 		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
@@ -116,7 +117,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 	}
 }
 
-func aiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
+func isAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
 	tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
 	if err != nil {
 		return false
