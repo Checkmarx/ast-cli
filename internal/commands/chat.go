@@ -5,9 +5,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ConversationIDErrorFormat = "Invalid conversation ID %s"
+const (
+	ConversationIDErrorFormat  = "Invalid conversation ID %s"
+	AiGuidedRemediationEnabled = "scan.config.plugins.aiGuidedRemediation"
+)
 
-func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatCmd := &cobra.Command{
 		Use:    "chat",
 		Short:  "Chat with OpenAI models",
@@ -15,7 +18,7 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 		Hidden: true,
 	}
 	chatKicsCmd := ChatKicsSubCommand(chatWrapper)
-	chatSastCmd := ChatSastSubCommand(chatWrapper)
+	chatSastCmd := ChatSastSubCommand(chatWrapper, tenantWrapper)
 
 	chatCmd.AddCommand(chatKicsCmd, chatSastCmd)
 	return chatCmd
