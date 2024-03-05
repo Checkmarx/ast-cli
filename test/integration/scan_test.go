@@ -68,7 +68,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
-func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+func TestScanCreateUpdateProjectWithApplication(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -82,7 +82,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	assert.NilError(t, err)
 }
 
-func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+func TestScanCreateWithApplication(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -91,12 +91,13 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
+	scanID, projectID := executeCreateScan(t, args)
+	defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
-func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+func TestScanCreateApplicationDoesntExist(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
