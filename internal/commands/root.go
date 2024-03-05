@@ -185,7 +185,7 @@ func NewAstCLI(
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
-	chatCmd := NewChatCommand(chatWrapper)
+	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,
