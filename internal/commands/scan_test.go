@@ -125,12 +125,15 @@ func TestCreateScan(t *testing.T) {
 }
 
 func TestCreateScan_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
+
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScan_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
 	// When no container scan type is provided, we will ignore the container images flag and its value
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScan_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
@@ -139,8 +142,8 @@ func TestCreateScan_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.
 }
 
 func TestCreateScan_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
-		"--container-images", "image1,image2:tag")
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 }
 

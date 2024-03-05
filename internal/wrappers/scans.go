@@ -139,6 +139,8 @@ type ScaConfig struct {
 	LastSastScanTime      string `json:"LastSastScanTime,omitempty"`
 	PrivatePackageVersion string `json:"privatePackageVersion,omitempty"`
 }
+type ContainerConfig struct {
+}
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`
 }

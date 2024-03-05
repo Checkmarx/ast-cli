@@ -121,6 +121,7 @@ var (
 	)
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"50", "40", "30", "20"}
+	containerResolver   wrappers.ContainerResolverWrapper
 )
 
 func NewScanCommand(
@@ -139,6 +140,7 @@ func NewScanCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -166,6 +168,7 @@ func NewScanCommand(
 		policyWrapper,
 		accessManagementWrapper,
 		applicationsWrapper,
+		containerResolverWrapper,
 	)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
@@ -185,6 +188,7 @@ func NewScanCommand(
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
+	containerResolver = containerResolverWrapper
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -418,6 +422,7 @@ func scanCreateSubCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
+	containersResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -448,6 +453,7 @@ func scanCreateSubCommand(
 			policyWrapper,
 			accessManagementWrapper,
 			applicationsWrapper,
+			containersResolverWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -1017,17 +1023,12 @@ func addContainersScan(cmd *cobra.Command) (map[string]interface{}, error) {
 	if !scanTypeEnabled(commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
 		return nil, nil
 	}
-	var containerMapConfig map[string]interface{}
-	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if containerImages != "" {
-		containerImagesList := strings.Split(containerImages, ",")
-		for _, containerImageName := range containerImagesList {
-			if err := validateContainerImageFormat(containerImageName); err != nil {
-				return nil, err
-			}
-		}
-	}
-	// TODO: add logic that will support the container scan
+	containerMapConfig := make(map[string]interface{})
+	containerMapConfig[resultsMapType] = commonParams.ContainersType
+
+	containerConfig := wrappers.ContainerConfig{}
+
+	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig, nil
 }
 
@@ -1369,6 +1370,13 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
+		if strings.Contains(actualScanTypes, commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+			containerResolverError := runContainerResolver(cmd, directoryPath)
+			if containerResolverError != nil {
+				return "", "", containerResolverError
+			}
+		}
+
 		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
@@ -1384,6 +1392,26 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
 	return preSignedURL, zipFilePath, nil
+}
+
+func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
+	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
+	var containerImagesList []string
+
+	if containerImages != "" {
+		containerImagesList = strings.Split(strings.TrimSpace(containerImages), ",")
+		for _, containerImageName := range containerImagesList {
+			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
+				return containerImagesErr
+			}
+		}
+	}
+	containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
+	if containerResolverERR != nil {
+		return containerResolverERR
+	}
+	return nil
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool) (
@@ -1516,6 +1544,7 @@ func runCreateScanCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper)
