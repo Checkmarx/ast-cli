@@ -357,10 +357,11 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	scaIssues := 0
 	kicsIssues := 0
 	enginesStatusCode := map[string]int{
-		commonParams.SastType:   0,
-		commonParams.ScaType:    0,
-		commonParams.KicsType:   0,
-		commonParams.APISecType: 0,
+		commonParams.SastType:       0,
+		commonParams.ScaType:        0,
+		commonParams.KicsType:       0,
+		commonParams.APISecType:     0,
+		commonParams.ContainersType: 0,
 	}
 
 	if len(scanInfo.StatusDetails) > 0 {
@@ -401,10 +402,11 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:     scanInfo.Branch,
 		EnginesEnabled: scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
 
@@ -585,12 +587,12 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 	if summary.HasAPISecurityDocumentation() {
 		fmt.Printf("              APIS DOCUMENTATION: %*d \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
 	}
-	fmt.Printf("              --------------------------------------------------     \n\n")
+	fmt.Printf("              -------------------------------------------------------     \n\n")
 }
 
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
-	formatString := "              | %-4s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
+	formatString := "              | %-9s   %4d   %6d   %4d   %4d   %-9s  |\n"
+	notAvailableFormatString := "              | %-9s   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	switch statusNumber {
 	case notAvailableNumber:
@@ -609,20 +611,21 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Printf("              --------------------------------------------------------     \n\n")
 	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Println("              |          High   Medium   Low   Info   Status    |")
+	fmt.Println("              --------------------------------------------------------     ")
+	fmt.Println("              |               High   Medium   Low   Info   Status    |")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
+	printTableRow("Container", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
 
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
+	fmt.Println("              --------------------------------------------------------     ")
+	fmt.Printf("              | %-9s  %4d   %6d   %4d   %4d   %-9s  |\n",
 		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Printf("              --------------------------------------------------------     \n\n")
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
