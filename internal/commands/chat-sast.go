@@ -24,10 +24,11 @@ const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled 
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
-		Use:   "sast",
-		Short: "OpenAI-based SAST results remediation",
-		Long:  "Use OpenAI models to remediate SAST results and chat about them",
-		RunE:  runChatSast(chatWrapper, tenantWrapper),
+		Use:    "sast",
+		Short:  "OpenAI-based SAST results remediation",
+		Long:   "Use OpenAI models to remediate SAST results and chat about them",
+		Hidden: true,
+		RunE:   runChatSast(chatWrapper, tenantWrapper),
 	}
 
 	chatSastCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
