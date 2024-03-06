@@ -95,9 +95,10 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
+	completedPolicy             = "COMPLETED"
+	nonePolicy                  = "NONE"
+	evaluatingPolicy            = "EVALUATING"
+	containerResolutionFileName = "containers-resolution.json"
 )
 
 var (
@@ -1120,6 +1121,23 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	return outputFile.Name(), err
 }
 
+func isSingleContainerScanTriggered(cmd *cobra.Command) bool {
+	scanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	var scanTypeList []string
+	if len(scanTypes) > 0 {
+		scanTypeList = strings.Split(scanTypes, ",")
+	}
+	if len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType {
+		return true
+	}
+	//check if user license supports only container scanning
+	actualScanTypeList := strings.Split(actualScanTypes, ",")
+	if len(actualScanTypeList) == 1 && actualScanTypeList[0] == commonParams.ContainersType {
+		return true
+	}
+	return false
+}
+
 func getIncludeFilters(userIncludeFilter string) []string {
 	return buildFilters(commonParams.BaseFilters, userIncludeFilter)
 }
@@ -1337,6 +1355,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
+	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled]
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1344,9 +1363,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	}
 
 	var errorUnzippingFile error
-
 	userProvidedZip := len(zipFilePath) > 0
-	unzip := (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && userProvidedZip
+
+	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -1370,14 +1389,20 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
-		if strings.Contains(actualScanTypes, commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		if containerScanTriggered {
 			containerResolverError := runContainerResolver(cmd, directoryPath)
 			if containerResolverError != nil {
+				if unzip {
+					_ = cleanTempUnzipDirectory(directoryPath)
+				}
 				return "", "", containerResolverError
 			}
 		}
-
-		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if isSingleContainerScanTriggered(cmd) {
+			zipFilePath, dirPathErr = compressFile(directoryPath, containerResolutionFileName) // If only container scan is triggered, we zip only the container-resolution.json file
+		} else {
+			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		}
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
 			if dirRemovalErr != nil {
@@ -1392,6 +1417,29 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
 	return preSignedURL, zipFilePath, nil
+}
+
+func compressFile(sourceDir string, filename string) (string, error) {
+	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot source code temp file.")
+	}
+	zipWriter := zip.NewWriter(outputFile)
+	err = addDirFiles(zipWriter, "", sourceDir, []string{}, []string{filename})
+	if err != nil {
+		return "", err
+	}
+	// Close the file
+	err = zipWriter.Close()
+	if err != nil {
+		return "", err
+	}
+	stat, err := outputFile.Stat()
+	if err != nil {
+		return "", err
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
+	return outputFile.Name(), err
 }
 
 func runContainerResolver(cmd *cobra.Command, directoryPath string) error {

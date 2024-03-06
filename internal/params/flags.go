@@ -230,6 +230,7 @@ const (
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"
 	APISecurityLabel     = "API Security"
+	ContainerLabel       = "Containers"
 	ScaType              = "sca"
 	APISecType           = "apisec"
 	Success              = "success"
