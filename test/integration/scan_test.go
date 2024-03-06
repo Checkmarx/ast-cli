@@ -68,7 +68,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
-func TestScanCreateUpdateProjectWithApplication(t *testing.T) {
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -82,7 +82,7 @@ func TestScanCreateUpdateProjectWithApplication(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestScanCreateWithApplication(t *testing.T) {
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -98,7 +98,7 @@ func TestScanCreateWithApplication(t *testing.T) {
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
-func TestScanCreateApplicationDoesntExist(t *testing.T) {
+func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
