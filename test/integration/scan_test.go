@@ -90,6 +90,7 @@ func TestScanCreateWithApplication(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, args)
 	defer deleteProject(t, projectID)
