@@ -147,6 +147,12 @@ func TestCreateScan_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 }
 
+func TestCreateScan_NoContainerLicense_FailCreatingScan(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "--scan-types", "container-security", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+}
+
 func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
