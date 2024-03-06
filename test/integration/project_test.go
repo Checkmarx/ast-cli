@@ -115,6 +115,7 @@ func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T)
 	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 	defer deleteProject(t, createdProject.ID)
 	assert.NilError(t, err)
+	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {
