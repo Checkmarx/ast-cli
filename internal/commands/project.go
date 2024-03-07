@@ -246,7 +246,7 @@ func runCreateProjectCommand(
 				return getAppErr
 			}
 			if application == nil {
-				return errors.Errorf(applicationErrors.ApplicationDoesntExist)
+				return errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
 			}
 			applicationID = []string{application.ID}
 		}

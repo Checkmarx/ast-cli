@@ -12,10 +12,10 @@ type ApplicationsMockWrapper struct{}
 
 func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, error) {
 	if params["name"] == NoPermissionApp {
-		return nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
+		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
 	}
 	if params["name"] == ApplicationDoesntExist {
-		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExist)
+		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
 	}
 	if params["name"] == FakeHTTPStatusBadRequest {
 		return nil, errors.Errorf(applicationErrors.FailedToGetApplication)

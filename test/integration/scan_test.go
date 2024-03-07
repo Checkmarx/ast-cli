@@ -109,7 +109,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, applicationErrors.ApplicationDoesntExist)
+	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
