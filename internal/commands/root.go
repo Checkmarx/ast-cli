@@ -162,6 +162,9 @@ func NewAstCLI(
 		accessManagementWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
+
+	importCmd := NewImportCommand(uploadsWrapper)
+
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
@@ -203,6 +206,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
+		importCmd,
 	)
 
 	rootCmd.SilenceErrors = true
