@@ -46,7 +46,7 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 		}
 		return nil, nil
 	case http.StatusForbidden:
-		return nil, errors.Errorf(applicationErrors.ApplicationNoPermission)
+		return nil, errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
 	case http.StatusOK:
 		model := ApplicationsResponseModel{}
 		err = decoder.Decode(&model)

@@ -31,7 +31,7 @@ func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessf
 
 func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
