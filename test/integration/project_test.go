@@ -116,6 +116,7 @@ func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T)
 	defer deleteProject(t, createdProject.ID)
 	assert.NilError(t, err)
 	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
+	assert.Assert(t, len(createdProject.ApplicationIds) == 1, "The project must be connected to the application")
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {
