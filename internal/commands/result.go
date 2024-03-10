@@ -18,6 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/gookit/color"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
