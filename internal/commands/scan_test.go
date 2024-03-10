@@ -195,11 +195,11 @@ func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 
 func TestCreateScanSourceDirectory(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch"}
-	execCmdNilAssertion(t, append(baseArgs, "-s", "internal/commands/data/sources.zip", "--file-filter", "!.java")...)
+	execCmdNilAssertion(t, append(baseArgs, "-s", "data", "--file-filter", "!.java")...)
 }
 
 func TestCreateScanSourceFile(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "sources.zip", "-b", "dummy_branch")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch")
 }
 
 func TestCreateScanWithTrimmedSources(t *testing.T) {
