@@ -869,7 +869,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig, containerConfigErr = addContainersScan(cmd)
+	var containersConfig, containerConfigErr = addContainersScan()
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -1028,7 +1028,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
-func addContainersScan(cmd *cobra.Command) (map[string]interface{}, error) {
+func addContainersScan() (map[string]interface{}, error) {
 	if !scanTypeEnabled(commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
 		return nil, nil
 	}
@@ -1176,7 +1176,7 @@ func isSingleContainerScanTriggered(cmd *cobra.Command) bool {
 	if len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType {
 		return true
 	}
-	//check if user license supports only container scanning
+	// Check if user license supports only container scanning
 	actualScanTypeList := strings.Split(actualScanTypes, ",")
 	if len(actualScanTypeList) == 1 && actualScanTypeList[0] == commonParams.ContainersType {
 		return true
