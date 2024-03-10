@@ -8,7 +8,7 @@ import (
 type ContainerResolverMockWrapper struct {
 }
 
-func (c *ContainerResolverMockWrapper) Resolve(scanPath string, resolutionFilePath string, images []string, isDebug bool) error {
+func (c *ContainerResolverMockWrapper) Resolve(scanPath, resolutionFilePath string, images []string, isDebug bool) error {
 	// Create the content for the container-resolution.json file (empty JSON)
 	content := []byte("{}\n")
 

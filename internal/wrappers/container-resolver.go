@@ -15,6 +15,6 @@ func NewContainerResolverWrapper() ContainerResolverWrapper {
 	return &ContainerResolverImpl{}
 }
 
-func (c *ContainerResolverImpl) Resolve(scanPath string, resolutionFilePath string, images []string, isDebug bool) error {
+func (c *ContainerResolverImpl) Resolve(scanPath, resolutionFilePath string, images []string, isDebug bool) error {
 	return containersResolver.Resolve(scanPath, resolutionFilePath, images, isDebug)
 }

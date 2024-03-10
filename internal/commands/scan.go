@@ -95,9 +95,6 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy             = "COMPLETED"
-	nonePolicy                  = "NONE"
-	evaluatingPolicy            = "EVALUATING"
 	containerResolutionFileName = "containers-resolution.json"
 )
 
@@ -1459,7 +1456,7 @@ func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
 				return containerImagesErr
 			}
 		}
-		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", containerImagesList))
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 	}
 	containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
 	if containerResolverERR != nil {
