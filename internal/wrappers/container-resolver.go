@@ -1,7 +1,7 @@
 package wrappers
 
 import (
-	containersResolver "github.com/Checkmarx-Containers/containers-resolver/pkg/containerResolver"
+	containersResolver "github.com/CheckmarxDev/containers-resolver/pkg/containerResolver"
 )
 
 type ContainerResolverWrapper interface {

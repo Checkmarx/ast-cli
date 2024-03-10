@@ -171,6 +171,7 @@ func NewScanCommand(
 		applicationsWrapper,
 		containerResolverWrapper,
 	)
+	containerResolver = containerResolverWrapper
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
@@ -189,7 +190,6 @@ func NewScanCommand(
 	kicsRealtimeCmd := scanRealtimeSubCommand()
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
-	containerResolver = containerResolverWrapper
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -1012,6 +1012,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 				if resubmitFilter != nil && scaConfig.Filter == "" {
 					scaConfig.Filter = resubmitFilter.(string)
 				}
+				scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && scanTypeEnabled(commonParams.ContainersType))
 			}
 		}
 		scaMapConfig[resultsMapValue] = &scaConfig
@@ -1090,8 +1091,47 @@ func scanTypeEnabled(scanType string) bool {
 	}
 	return false
 }
+func compressFile(sourceFilePath, targetFileName string) (string, error) {
+	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot source code temp file.")
+	}
+	zipWriter := zip.NewWriter(outputFile)
+	dat, err := ioutil.ReadFile(sourceFilePath)
+	if err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("Failed to read file: %s\n", sourceFilePath))
+		return "", err
+	}
 
-func compress(sourceDir string, filter []string, userIncludeFilter []string, scaResolver string) (string, error) {
+	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
+	if folderNameBeginsIndex == -1 {
+		return "", errors.New("Failed to find folder name in output file name")
+	}
+	folderName := outputFile.Name()[folderNameBeginsIndex:]
+	folderName = strings.TrimSuffix(folderName, ".zip")
+
+	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write(dat)
+	if err != nil {
+		return "", err
+	}
+	// Close the file
+	err = zipWriter.Close()
+	if err != nil {
+		return "", err
+	}
+	stat, err := outputFile.Stat()
+	if err != nil {
+		return "", err
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
+	return outputFile.Name(), err
+}
+
+func compressFolder(sourceDir string, filter []string, userIncludeFilter []string, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1356,6 +1396,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled]
+	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1375,44 +1416,31 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	if directoryPath != "" {
 		var dirPathErr error
-
-		scaResolverParams, scaResolver := getScaResolverFlags(cmd)
-
-		// Make sure scaResolver only runs in sca type of scans
-		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
-			if dirPathErr != nil {
-				if unzip {
-					_ = cleanTempUnzipDirectory(directoryPath)
-				}
-				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
-			}
-		}
-
-		if containerScanTriggered {
-			containerResolverError := runContainerResolver(cmd, directoryPath)
-			if containerResolverError != nil {
-				if unzip {
-					_ = cleanTempUnzipDirectory(directoryPath)
-				}
-				return "", "", containerResolverError
-			}
+		resolversErr := runScannerResolvers(cmd, directoryPath, projectName, containerScanTriggered, scaResolver, scaResolverParams)
+		if resolversErr != nil {
+			_ = cleanTempUnzipDirectory(directoryPath)
+			return "", "", resolversErr
 		}
 		if isSingleContainerScanTriggered(cmd) {
-			zipFilePath, dirPathErr = compress(directoryPath, []string{}, []string{containerResolutionFileName}, "") // only include the container resolution file
+			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
+			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
+			zipFilePath, dirPathErr = compressFile(containerResolutionFilePath, containerResolutionFileName)
 		} else {
-			zipFilePath, dirPathErr = compress(directoryPath, getUserFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
+			zipFilePath, dirPathErr = compressFolder(directoryPath, getUserFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
 		}
+
+		if dirPathErr != nil {
+			return "", "", dirPathErr
+		}
+
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
 			if dirRemovalErr != nil {
 				return "", "", dirRemovalErr
 			}
 		}
-		if dirPathErr != nil {
-			return "", "", dirPathErr
-		}
 	}
+
 	if zipFilePath != "" {
 		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
 	}
@@ -1431,10 +1459,29 @@ func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
 				return containerImagesErr
 			}
 		}
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", containerImagesList))
 	}
 	containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
 	if containerResolverERR != nil {
 		return containerResolverERR
+	}
+	return nil
+}
+
+func runScannerResolvers(cmd *cobra.Command, directoryPath, projectName string, containerScanTriggered bool, scaResolver, scaResolverParams string) error {
+	// Make sure scaResolver only runs in sca type of scans
+	if strings.Contains(actualScanTypes, commonParams.ScaType) {
+		dirPathErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+		if dirPathErr != nil {
+			return errors.Wrapf(dirPathErr, "ScaResolver error")
+		}
+	}
+
+	if containerScanTriggered {
+		containerResolverError := runContainerResolver(cmd, directoryPath)
+		if containerResolverError != nil {
+			return containerResolverError
+		}
 	}
 	return nil
 }

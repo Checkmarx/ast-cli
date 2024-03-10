@@ -138,6 +138,7 @@ type ScaConfig struct {
 	ExploitablePath       string `json:"ExploitablePath,omitempty"`
 	LastSastScanTime      string `json:"LastSastScanTime,omitempty"`
 	PrivatePackageVersion string `json:"privatePackageVersion,omitempty"`
+	EnableContainersScan  bool   `json:"enableContainersScan,omitempty"`
 }
 type ContainerConfig struct {
 }

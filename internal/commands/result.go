@@ -624,7 +624,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 
 	fmt.Println("              --------------------------------------------------------     ")
 	fmt.Printf("              | %-9s  %4d   %6d   %4d   %4d   %-9s  |\n",
-		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+		fmt.Sprintf(color.Bold.Sprintf("TOTAL     ")), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf("              --------------------------------------------------------     \n\n")
 }
 

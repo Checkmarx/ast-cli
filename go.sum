@@ -1,5 +1,7 @@
 github.com/Checkmarx-Containers/containers-resolver v1.0.0 h1:UIwdGrqIPJ2ZK7aFb2SAoy5N8jyoYLCCutAPI4fH8t4=
 github.com/Checkmarx-Containers/containers-resolver v1.0.0/go.mod h1:dP07/O+vvnhagCz3f2VOwB/8u2aIpKBZcOW0a+sAVL0=
+github.com/CheckmarxDev/containers-resolver v1.0.1 h1:1d699fOdBiq5BcFWHAseU+fHqgd8wb3O+lDOuYS2lto=
+github.com/CheckmarxDev/containers-resolver v1.0.1/go.mod h1:+sNosfLkXhzpPnYFEpGH4OeO5c06QCiY7T4XakbuP3U=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c h1:oKI4C1dXYpi0B8pltDDzp1ZRiyeILv5enbp9h4ASQ3s=
