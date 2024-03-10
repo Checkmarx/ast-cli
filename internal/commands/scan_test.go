@@ -159,9 +159,14 @@ func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationS
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+}
+
 func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExist)
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessfully(t *testing.T) {
@@ -170,7 +175,7 @@ func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessf
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
@@ -185,7 +190,7 @@ func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateS
 
 func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationNoPermission)
+	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {

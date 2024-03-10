@@ -101,18 +101,22 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, applicationErrors.ApplicationDoesntExist)
+	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
 
-	err, _ := executeCommand(
+	err, outBuffer := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
 		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
 		flag(params.ApplicationName), "my-application",
 	)
-
+	createdProject := wrappers.ProjectResponseModel{}
+	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+	defer deleteProject(t, createdProject.ID)
 	assert.NilError(t, err)
+	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
+	assert.Assert(t, len(createdProject.ApplicationIds) == 1, "The project must be connected to the application")
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {
