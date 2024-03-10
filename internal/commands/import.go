@@ -31,7 +31,7 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 	return cmd
 }
 
-func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFileType, err := cmd.Flags().GetString(commonParams.ImportFileType)
 		if err != nil {
@@ -77,7 +77,7 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 	}
 }
 
-func importFile(projectId string, fileType string, path string) (string, error) {
+func importFile(projectId, fileType, path string) (string, error) {
 	// returns importId as string
 	return "", nil
 }
