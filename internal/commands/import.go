@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewImportCommand(uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import scan results",
@@ -21,16 +21,17 @@ func NewImportCommand(uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runImportCommand(uploadsWrapper),
+		RunE: runImportCommand(projectsWrapper, uploadsWrapper),
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFileType, "", "The type of the imported file (SARIF or ZIP containing SARIF files)")
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "The local path of the imported file")
+	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported.")
 
 	return cmd
 }
 
-func runImportCommand(wrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFileType, err := cmd.Flags().GetString(commonParams.ImportFileType)
 		if err != nil {
@@ -40,11 +41,34 @@ func runImportCommand(wrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, 
 		if err != nil {
 			return err
 		}
+		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
+		if err != nil {
+			return err
+		}
 
 		if importFileType == "" || importFilePath == "" {
 			return errors.Errorf(clierrors.MissingImportFlags)
 		}
-		_, err = importFile(importFileType, importFilePath)
+		if projectName == "" {
+			return errors.Errorf(clierrors.ProjectNameIsRequired)
+		}
+
+		params := make(map[string]string)
+		params["name"] = projectName
+		resp, _, err := projectsWrapper.Get(params)
+		if err != nil {
+			return err
+		}
+
+		projectCount := len(resp.Projects)
+		if resp.Projects == nil || projectCount == 0 {
+			return errors.Errorf(clierrors.ProjectNotExists)
+		}
+		if projectCount > 1 {
+			return errors.Errorf("The project name you provided matches multiple projects")
+		}
+
+		_, err = importFile(resp.Projects[0].ID, importFileType, importFilePath)
 		if err != nil {
 			return err
 		}
@@ -53,7 +77,7 @@ func runImportCommand(wrapper wrappers.UploadsWrapper) func(cmd *cobra.Command, 
 	}
 }
 
-func importFile(fileType string, path string) (string, error) {
+func importFile(projectId string, fileType string, path string) (string, error) {
 	// returns importId as string
 	return "", nil
 }

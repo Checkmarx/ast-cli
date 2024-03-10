@@ -11,12 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	cliErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
@@ -101,7 +100,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, cliErrors.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
