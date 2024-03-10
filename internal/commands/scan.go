@@ -166,7 +166,6 @@ func NewScanCommand(
 		policyWrapper,
 		accessManagementWrapper,
 		applicationsWrapper,
-		containerResolverWrapper,
 	)
 	containerResolver = containerResolverWrapper
 
@@ -420,7 +419,6 @@ func scanCreateSubCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
-	containersResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
