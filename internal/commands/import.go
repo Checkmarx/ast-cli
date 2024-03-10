@@ -77,7 +77,7 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 	}
 }
 
-func importFile(projectId, fileType, path string) (string, error) {
+func importFile(projectID, fileType, path string) (string, error) {
 	// returns importId as string
 	return "", nil
 }
