@@ -67,7 +67,7 @@ jobs:
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
           PR_GITHUB_NUMBER: 418
-          PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
+          PR_GITLAB_TOKEN: ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: "tiagobcx"
           PR_GITLAB_REPO_NAME: "testProject"
           PR_GITLAB_PROJECT_ID: 40227565
@@ -121,6 +121,7 @@ jobs:
           skip-pkg-cache: true
           version: v1.54.2
           args: -c .golangci.yml
+            --timeout 5m
           only-new-issues: true
   govulncheck:
     runs-on: ubuntu-latest
