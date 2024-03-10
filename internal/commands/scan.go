@@ -451,7 +451,6 @@ func scanCreateSubCommand(
 			policyWrapper,
 			accessManagementWrapper,
 			applicationsWrapper,
-			containersResolverWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -1613,7 +1612,6 @@ func runCreateScanCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
-	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper)
