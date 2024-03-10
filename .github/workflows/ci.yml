@@ -122,6 +122,7 @@ jobs:
           version: v1.54.2
           args: -c .golangci.yml
           only-new-issues: true
+          timeout-minutes: 5
   govulncheck:
     runs-on: ubuntu-latest
     name: govulncheck
