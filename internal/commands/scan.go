@@ -1094,7 +1094,6 @@ func compressFile(sourceFilePath, targetFileName string) (string, error) {
 	dat, err := ioutil.ReadFile(sourceFilePath)
 	if err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Failed to read file: %s\n", sourceFilePath))
-		return "", err
 	}
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
