@@ -1137,7 +1137,7 @@ func compressFile(sourceFilePath, targetFileName string) (string, error) {
 	return outputFile.Name(), err
 }
 
-func compressFolder(sourceDir string, filter []string, userIncludeFilter []string, scaResolver string) (string, error) {
+func compressFolder(sourceDir string, filter, userIncludeFilter []string, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
 	if err != nil {
