@@ -7,6 +7,8 @@ linters-settings:
         allow:
           - $gostd
           - github.com/checkmarx/ast-cli/internal
+          - github.com/gookit/color
+          - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
           - github.com/spf13/viper
           - github.com/checkmarxDev/gpt-wrapper
           - github.com/spf13/cobra

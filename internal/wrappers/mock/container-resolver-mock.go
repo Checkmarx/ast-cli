@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -12,11 +12,17 @@ func (c *ContainerResolverMockWrapper) Resolve(scanPath, resolutionFilePath stri
 	// Create the content for the container-resolution.json file (empty JSON)
 	content := []byte("{}\n")
 
-	// Construct the full path for the container-resolution.json file
 	resolutionFullPath := filepath.Join(scanPath, "containers-resolution.json")
 
-	// Write the content to the container-resolution.json file
-	err := ioutil.WriteFile(resolutionFullPath, content, 0644)
+	file, err := os.Create(resolutionFullPath)
+	if err != nil {
+		return err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	_, err = file.Write(content)
 	if err != nil {
 		return err
 	}

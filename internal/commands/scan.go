@@ -1102,7 +1102,7 @@ func compressFile(sourceFilePath, targetFileName string) (string, error) {
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
 	if folderNameBeginsIndex == -1 {
-		return "", errors.New("Failed to find folder name in output file name")
+		return "", errors.Errorf("Failed to find folder name in output file name")
 	}
 	folderName := outputFile.Name()[folderNameBeginsIndex:]
 	folderName = strings.TrimSuffix(folderName, ".zip")
