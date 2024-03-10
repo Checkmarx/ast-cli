@@ -869,12 +869,9 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig, containerConfigErr = addContainersScan()
+	var containersConfig = addContainersScan()
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
-	}
-	if containerConfigErr != nil {
-		return containerConfigErr
 	}
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
@@ -1028,9 +1025,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
-func addContainersScan() (map[string]interface{}, error) {
+func addContainersScan() map[string]interface{} {
 	if !scanTypeEnabled(commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
-		return nil, nil
+		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
@@ -1038,7 +1035,7 @@ func addContainersScan() (map[string]interface{}, error) {
 	containerConfig := wrappers.ContainerConfig{}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
-	return containerMapConfig, nil
+	return containerMapConfig
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
