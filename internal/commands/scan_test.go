@@ -199,7 +199,7 @@ func TestCreateScanSourceDirectory(t *testing.T) {
 }
 
 func TestCreateScanSourceFile(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "./data/sources.zip", "-b", "dummy_branch")
 }
 
 func TestCreateScanWithTrimmedSources(t *testing.T) {
