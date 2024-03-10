@@ -574,6 +574,8 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
+	createScanCmd.PersistentFlags().String(commonParams.ImportFileType, "", "The type of the imported file (SARIF or ZIP containing SARIF files)")
+	createScanCmd.PersistentFlags().String(commonParams.ImportFilePath, "", "The local path of the imported file")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -826,6 +828,24 @@ func setupScanTypeProjectAndConfig(
 	if findProjectErr != nil {
 		return findProjectErr
 	}
+
+	importFileType, err := cmd.Flags().GetString(commonParams.ImportFileType)
+	if err != nil {
+		return err
+	}
+	importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
+	if err != nil {
+		return err
+	}
+	if importFileType != "" && importFilePath != "" {
+		_, importFileError := importFile(projectID, importFileType, importFilePath)
+		if importFileError != nil {
+			logger.Printf(importFileError.Error())
+		} else {
+			logger.Printf("The SARIF results were successfully imported into project %s", projectID)
+		}
+	}
+
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
