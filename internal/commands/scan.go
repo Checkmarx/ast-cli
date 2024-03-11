@@ -1172,15 +1172,8 @@ func isSingleContainerScanTriggered(cmd *cobra.Command) bool {
 	if len(scanTypes) > 0 {
 		scanTypeList = strings.Split(scanTypes, ",")
 	}
-	if len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType {
-		return true
-	}
-	// Check if user license supports only container scanning
-	actualScanTypeList := strings.Split(actualScanTypes, ",")
-	if len(actualScanTypeList) == 1 && actualScanTypeList[0] == commonParams.ContainersType {
-		return true
-	}
-	return false
+	// If the scan type is not provided, we check if user has license for container engine
+	return (len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType) || userAllowedEngines[commonParams.ContainersType]
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
