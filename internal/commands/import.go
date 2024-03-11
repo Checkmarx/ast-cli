@@ -36,34 +36,20 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 		if err != nil {
 			return err
 		}
+		if importFilePath == "" {
+			return errors.Errorf(clierrors.MissingImportFlags)
+		}
 		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
 		if err != nil {
 			return err
-		}
-
-		if importFilePath == "" {
-			return errors.Errorf(clierrors.MissingImportFlags)
 		}
 		if projectName == "" {
 			return errors.Errorf(clierrors.ProjectNameIsRequired)
 		}
 
-		params := make(map[string]string)
-		params["name"] = projectName
-		resp, _, err := projectsWrapper.Get(params)
-		if err != nil {
-			return err
-		}
+		project, _, err := projectsWrapper.GetByName(projectName)
 
-		projectCount := len(resp.Projects)
-		if resp.Projects == nil || projectCount == 0 {
-			return errors.Errorf(clierrors.ProjectNotExists)
-		}
-		if projectCount > 1 {
-			return errors.Errorf("The project name you provided matches multiple projects")
-		}
-
-		_, err = importFile(resp.Projects[0].ID, importFilePath)
+		_, err = importFile(project.ID, importFilePath)
 		if err != nil {
 			return err
 		}

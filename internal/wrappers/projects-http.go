@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	clierrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -146,6 +147,28 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 		}
 	}()
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
+}
+
+func (p *ProjectsHTTPWrapper) GetByName(name string) (
+	*ProjectResponseModel,
+	*ErrorModel,
+	error) {
+	params := make(map[string]string)
+	params["name"] = name
+	resp, _, err := p.Get(params)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	projectCount := len(resp.Projects)
+	if resp.Projects == nil || projectCount == 0 {
+		return nil, nil, errors.Errorf(clierrors.ProjectNotExists)
+	}
+	if projectCount > 1 {
+		return nil, nil, errors.Errorf("The project name you provided matches multiple projects")
+	}
+
+	return &resp.Projects[0], nil, nil
 }
 
 func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {

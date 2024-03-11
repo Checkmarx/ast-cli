@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 
+	cliErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
@@ -58,6 +59,31 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &wrappers.ProjectResponseModel{
 		ID: projectID,
+		Tags: map[string]string{
+			"a": "b",
+			"c": "d",
+		},
+		Groups: []string{
+			"a",
+			"b",
+		},
+	}, nil, nil
+}
+
+func (p *ProjectsMockWrapper) GetByName(name string) (
+	*wrappers.ProjectResponseModel,
+	*wrappers.ErrorModel,
+	error) {
+	fmt.Println("Called GetByName in ProjectsMockWrapper")
+	if name == "mock-missing-file-path" {
+		return nil, nil, fmt.Errorf(cliErrors.MissingImportFlags)
+	}
+	if name == "" {
+		return nil, nil, fmt.Errorf(cliErrors.ProjectNameIsRequired)
+	}
+	return &wrappers.ProjectResponseModel{
+		ID:   "MOCK",
+		Name: name,
 		Tags: map[string]string{
 			"a": "b",
 			"c": "d",
