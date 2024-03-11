@@ -24,7 +24,6 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 		RunE: runImportCommand(projectsWrapper, uploadsWrapper),
 	}
 
-	cmd.PersistentFlags().String(commonParams.ImportFileType, "", "The type of the imported file (SARIF or ZIP containing SARIF files)")
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "The local path of the imported file")
 	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported.")
 
@@ -33,10 +32,6 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 
 func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		importFileType, err := cmd.Flags().GetString(commonParams.ImportFileType)
-		if err != nil {
-			return err
-		}
 		importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
 		if err != nil {
 			return err
@@ -46,7 +41,7 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 			return err
 		}
 
-		if importFileType == "" || importFilePath == "" {
+		if importFilePath == "" {
 			return errors.Errorf(clierrors.MissingImportFlags)
 		}
 		if projectName == "" {
@@ -68,7 +63,7 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 			return errors.Errorf("The project name you provided matches multiple projects")
 		}
 
-		_, err = importFile(resp.Projects[0].ID, importFileType, importFilePath)
+		_, err = importFile(resp.Projects[0].ID, importFilePath)
 		if err != nil {
 			return err
 		}
@@ -77,7 +72,7 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 	}
 }
 
-func importFile(projectID, fileType, path string) (string, error) {
+func importFile(projectID, path string) (string, error) {
 	// returns importId as string
 	return "", nil
 }
