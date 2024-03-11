@@ -3,7 +3,6 @@ package commands
 import (
 	"github.com/MakeNowJust/heredoc"
 	clierrors "github.com/checkmarx/ast-cli/internal/errors"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -44,7 +43,7 @@ func runImportCommand(uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappe
 		if importFileType == "" || importFilePath == "" {
 			return errors.Errorf(clierrors.MissingImportFlags)
 		}
-		_, err = importFile("projectID", importFileType, importFilePath, uploadsWrapper, byorWrapper)
+		_, err = importFile("projectID", importFilePath, uploadsWrapper, byorWrapper)
 		if err != nil {
 			return err
 		}
@@ -52,9 +51,8 @@ func runImportCommand(uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappe
 	}
 }
 
-func importFile(projectID string, fileType string, path string,
+func importFile(projectID string, path string,
 	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) (string, error) {
-	logger.Print("Importing file...")
 	uploadURL, err := uploadsWrapper.UploadFile(path)
 	if err != nil {
 		return "", err
