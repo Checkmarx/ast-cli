@@ -3,6 +3,7 @@ module github.com/checkmarx/ast-cli
 go 1.22.1
 
 require (
+	github.com/CheckmarxDev/containers-resolver v1.0.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
