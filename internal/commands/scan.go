@@ -120,6 +120,7 @@ var (
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
+	userAllowedEngines  = map[string]bool{}
 )
 
 func NewScanCommand(
@@ -168,6 +169,7 @@ func NewScanCommand(
 		applicationsWrapper,
 	)
 	containerResolver = containerResolverWrapper
+	userAllowedEngines, _ = jwtWrapper.GetAllowedEngines()
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
@@ -1016,7 +1018,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 				if resubmitFilter != nil && scaConfig.Filter == "" {
 					scaConfig.Filter = resubmitFilter.(string)
 				}
-				scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && scanTypeEnabled(commonParams.ContainersType))
+				scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && userAllowedEngines[commonParams.ContainersType])
 			}
 		}
 		scaMapConfig[resultsMapValue] = &scaConfig
@@ -1030,7 +1032,7 @@ func addContainersScan() map[string]interface{} {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
-	containerMapConfig[resultsMapType] = commonParams.ContainersType
+	containerMapConfig[resultsMapType] = strings.ToLower(commonParams.ContainerLabel)
 
 	containerConfig := wrappers.ContainerConfig{}
 
