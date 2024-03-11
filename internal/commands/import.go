@@ -48,6 +48,9 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 		}
 
 		project, _, err := projectsWrapper.GetByName(projectName)
+		if err != nil {
+			return err
+		}
 
 		_, err = importFile(project.ID, importFilePath)
 		if err != nil {
