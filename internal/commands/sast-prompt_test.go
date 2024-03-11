@@ -6,7 +6,7 @@ import (
 )
 
 const expectedOutputFormat = "<span style=\"color: regular;\">**CONFIDENCE:**</span><span style=\"color: grey; font-style: italic;\"> " +
-	"A score between 0 (low) and 100 (high) indicating OpenAI's confidence level for the effectiveness of the suggested remediation. " +
+	"A score between 0 (low) and 100 (high) indicating the degree of confidence in the exploitability of this vulnerability in the context of your code. " +
 	"<br></span>%s<span style=\"color: regular;\">**EXPLANATION:**</span><span style=\"color: grey; font-style: italic;\"> " +
 	"An OpenAI generated description of the vulnerability. <br></span>%s<span style=\"color: " +
 	"regular;\">**PROPOSED REMEDIATION:**</span><span style=\"color: grey; font-style: italic;\"> " +
