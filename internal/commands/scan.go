@@ -1421,7 +1421,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		var dirPathErr error
 		resolversErr := runScannerResolvers(cmd, directoryPath, projectName, containerScanTriggered, scaResolver, scaResolverParams)
 		if resolversErr != nil {
-			_ = cleanTempUnzipDirectory(directoryPath)
+			if unzip {
+				_ = cleanTempUnzipDirectory(directoryPath)
+			}
 			return "", "", resolversErr
 		}
 		if isSingleContainerScanTriggered(cmd) {
