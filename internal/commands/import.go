@@ -12,8 +12,8 @@ import (
 func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
-		Short: "Import scan results",
-		Long:  "Import a SARIF file or a ZIP file containing SARIF file/s.",
+		Short: "Import SAST scan results",
+		Long:  "The import command enables you to import SAST scan results from an external source into Checkmarx One. The results must be submitted in sarif format.",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -24,7 +24,7 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 		RunE: runImportCommand(projectsWrapper, uploadsWrapper),
 	}
 
-	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "The local path of the imported file")
+	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
 	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported.")
 
 	return cmd
