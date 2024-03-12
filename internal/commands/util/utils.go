@@ -158,7 +158,7 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 
 	dataFile, err := os.Open(sourceFilePath)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to open file: %s", sourceFilePath)
+		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
 	}
 	defer func(dataFile *os.File) {
 		closeDataFileError := dataFile.Close()
