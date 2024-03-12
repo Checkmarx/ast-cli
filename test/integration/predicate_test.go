@@ -128,7 +128,7 @@ func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
 }
 
 func TestPredicateWithInvalidValues(t *testing.T) {
-
+	//comment
 	err, _ := executeCommand(
 		t, "triage", "update",
 		flag(params.ProjectIDFlag), "1234",
