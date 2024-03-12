@@ -544,20 +544,22 @@ func toProjectViews(models []wrappers.ProjectResponseModel) []projectView {
 
 func toProjectView(model wrappers.ProjectResponseModel) projectView { //nolint:gocritic
 	return projectView{
-		ID:        model.ID,
-		Name:      model.Name,
-		CreatedAt: model.CreatedAt,
-		UpdatedAt: model.UpdatedAt,
-		Tags:      model.Tags,
-		Groups:    model.Groups,
+		ID:             model.ID,
+		Name:           model.Name,
+		CreatedAt:      model.CreatedAt,
+		UpdatedAt:      model.UpdatedAt,
+		Tags:           model.Tags,
+		Groups:         model.Groups,
+		ApplicationIds: model.ApplicationIds,
 	}
 }
 
 type projectView struct {
-	ID        string `format:"name:Project ID"`
-	Name      string
-	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
-	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
-	Tags      map[string]string
-	Groups    []string
+	ID             string `format:"name:Project ID"`
+	Name           string
+	CreatedAt      time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+	UpdatedAt      time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	Tags           map[string]string
+	Groups         []string
+	ApplicationIds []string
 }

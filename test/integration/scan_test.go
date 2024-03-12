@@ -90,10 +90,12 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
+	scanID, projectID := executeCreateScan(t, args)
+	defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
