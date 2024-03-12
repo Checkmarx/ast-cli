@@ -1097,44 +1097,6 @@ func scanTypeEnabled(scanType string) bool {
 	}
 	return false
 }
-func compressFile(sourceFilePath, targetFileName string) (string, error) {
-	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot source code temp file.")
-	}
-	zipWriter := zip.NewWriter(outputFile)
-	dat, err := ioutil.ReadFile(sourceFilePath)
-	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Failed to read file: %s\n", sourceFilePath))
-	}
-
-	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
-	if folderNameBeginsIndex == -1 {
-		return "", errors.Errorf("Failed to find folder name in output file name")
-	}
-	folderName := outputFile.Name()[folderNameBeginsIndex:]
-	folderName = strings.TrimSuffix(folderName, ".zip")
-
-	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
-	if err != nil {
-		return "", err
-	}
-	_, err = f.Write(dat)
-	if err != nil {
-		return "", err
-	}
-	// Close the file
-	err = zipWriter.Close()
-	if err != nil {
-		return "", err
-	}
-	stat, err := outputFile.Stat()
-	if err != nil {
-		return "", err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
-	return outputFile.Name(), err
-}
 
 func compressFolder(sourceDir string, filter, userIncludeFilter []string, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
@@ -1424,7 +1386,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		if isSingleContainerScanTriggered(cmd) {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
-			zipFilePath, dirPathErr = compressFile(containerResolutionFilePath, containerResolutionFileName)
+			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName)
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, getUserFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
 		}

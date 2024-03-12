@@ -1,14 +1,20 @@
 package util
 
 import (
+	"archive/zip"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +22,7 @@ const (
 	gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
 	sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
 	invalidFlag = "Value of %s is invalid"
+	mbBytes     = 1024.0 * 1024.0
 )
 
 func NewUtilsCommand(
@@ -127,4 +134,43 @@ func ReadFileAsString(path string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+func CompressFile(sourceFilePath, targetFileName string) (string, error) {
+	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot source code temp file.")
+	}
+	zipWriter := zip.NewWriter(outputFile)
+	data, err := ioutil.ReadFile(sourceFilePath)
+	if err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("Failed to read file: %s\n", sourceFilePath))
+	}
+
+	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
+	if folderNameBeginsIndex == -1 {
+		return "", errors.Errorf("Failed to find folder name in output file name")
+	}
+	folderName := outputFile.Name()[folderNameBeginsIndex:]
+	folderName = strings.TrimSuffix(folderName, ".zip")
+
+	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write(data)
+	if err != nil {
+		return "", err
+	}
+	// Close the file
+	err = zipWriter.Close()
+	if err != nil {
+		return "", err
+	}
+	stat, err := outputFile.Stat()
+	if err != nil {
+		return "", err
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
+	return outputFile.Name(), err
 }
