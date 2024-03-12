@@ -142,16 +142,16 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 		return "", errors.Wrapf(err, "Cannot create temp file")
 	}
 	defer func(outputFile *os.File) {
-		err := outputFile.Close()
-		if err != nil {
+		CloseFileErr := outputFile.Close()
+		if CloseFileErr != nil {
 			logger.PrintfIfVerbose("Failed to close file: %s", outputFile.Name())
 		}
 	}(outputFile)
 
 	zipWriter := zip.NewWriter(outputFile)
 	defer func(zipWriter *zip.Writer) {
-		err := zipWriter.Close()
-		if err != nil {
+		closeZipWriterError := zipWriter.Close()
+		if closeZipWriterError != nil {
 			logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
 		}
 	}(zipWriter)
@@ -161,8 +161,8 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 		return "", errors.Wrapf(err, "Failed to open file: %s", sourceFilePath)
 	}
 	defer func(dataFile *os.File) {
-		err := dataFile.Close()
-		if err != nil {
+		closeDataFileError := dataFile.Close()
+		if closeDataFileError != nil {
 			logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
 		}
 	}(dataFile)
