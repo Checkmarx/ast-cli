@@ -189,6 +189,6 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 		return "", err
 	}
 
-	fmt.Printf("Zip size: %fMB\n", float64(stat.Size())/mbBytes)
+	fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
 	return outputFile.Name(), nil
 }
