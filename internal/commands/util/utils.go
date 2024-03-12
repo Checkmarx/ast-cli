@@ -3,7 +3,7 @@ package util
 import (
 	"archive/zip"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -137,15 +137,35 @@ func ReadFileAsString(path string) (string, error) {
 }
 
 func CompressFile(sourceFilePath, targetFileName string) (string, error) {
-	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot source code temp file.")
+		return "", errors.Wrapf(err, "Cannot create temp file")
 	}
+	defer func(outputFile *os.File) {
+		err := outputFile.Close()
+		if err != nil {
+			logger.PrintfIfVerbose("Failed to close file: %s", outputFile.Name())
+		}
+	}(outputFile)
+
 	zipWriter := zip.NewWriter(outputFile)
-	data, err := ioutil.ReadFile(sourceFilePath)
+	defer func(zipWriter *zip.Writer) {
+		err := zipWriter.Close()
+		if err != nil {
+			logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
+		}
+	}(zipWriter)
+
+	dataFile, err := os.Open(sourceFilePath)
 	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Failed to read file: %s\n", sourceFilePath))
+		return "", errors.Wrapf(err, "Failed to open file: %s", sourceFilePath)
 	}
+	defer func(dataFile *os.File) {
+		err := dataFile.Close()
+		if err != nil {
+			logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
+		}
+	}(dataFile)
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
 	if folderNameBeginsIndex == -1 {
@@ -158,19 +178,17 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = f.Write(data)
+
+	_, err = io.Copy(f, dataFile)
 	if err != nil {
 		return "", err
 	}
-	// Close the file
-	err = zipWriter.Close()
-	if err != nil {
-		return "", err
-	}
+
 	stat, err := outputFile.Stat()
 	if err != nil {
 		return "", err
 	}
-	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
-	return outputFile.Name(), err
+
+	fmt.Printf("Zip size: %fMB\n", float64(stat.Size())/mbBytes)
+	return outputFile.Name(), nil
 }
