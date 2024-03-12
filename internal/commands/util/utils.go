@@ -160,35 +160,36 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
 	}
-	defer func(dataFile *os.File) {
-		closeDataFileError := dataFile.Close()
-		if closeDataFileError != nil {
-			logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
-		}
-	}(dataFile)
+	if dataFile != nil {
+		defer func(dataFile *os.File) {
+			closeDataFileError := dataFile.Close()
+			if closeDataFileError != nil {
+				logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
+			}
+		}(dataFile)
+	}
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
 	if folderNameBeginsIndex == -1 {
-		return "", errors.Errorf("Failed to find folder name in output file name")
+		logger.PrintfIfVerbose("Failed to find folder name in file: %s", outputFile.Name())
 	}
 	folderName := outputFile.Name()[folderNameBeginsIndex:]
 	folderName = strings.TrimSuffix(folderName, ".zip")
 
 	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
 	if err != nil {
-		return "", err
+		logger.PrintfIfVerbose("Failed to create file in zip: %s", targetFileName)
 	}
 
 	_, err = io.Copy(f, dataFile)
 	if err != nil {
-		return "", err
+		logger.PrintfIfVerbose("Failed to copy file to zip: %s", targetFileName)
 	}
 
 	stat, err := outputFile.Stat()
 	if err != nil {
-		return "", err
+		logger.PrintfIfVerbose("Failed to get file stat: %s", outputFile.Name())
 	}
-
 	fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
 	return outputFile.Name(), nil
 }
