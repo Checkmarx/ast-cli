@@ -1078,7 +1078,10 @@ func scanTypeEnabled(scanType string) bool {
 
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
-	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
+	defer func() {
+		_ = outputFile.Close()
+	}()
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
@@ -1267,7 +1270,7 @@ func filterMatched(filters []string, fileName string) bool {
 
 func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
 	if len(scaResolver) > 0 {
-		scaFile, err := ioutil.TempFile("", "sca")
+		scaFile, err := os.CreateTemp("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
 			return err
@@ -1368,7 +1371,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 	}
 	if zipFilePath != "" {
-		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
+		url, zipPath, err := uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip)
+		cleanUpTempZip(zipPath)
+		return url, zipPath, err
 	}
 	return preSignedURL, zipFilePath, nil
 }
