@@ -96,9 +96,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
-	if _, ok := params[limit]; !ok {
-		params[limit] = limitValue
-	}
+	setDefaultLimit(params)
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	if err != nil {
@@ -159,6 +157,7 @@ func (p *ProjectsHTTPWrapper) GetByName(name string) (
 	if err != nil {
 		return nil, nil, err
 	}
+	setDefaultLimit(params)
 
 	projectCount := len(resp.Projects)
 	if resp.Projects == nil || projectCount == 0 {
@@ -262,5 +261,11 @@ func (p *ProjectsHTTPWrapper) Tags() (
 
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func setDefaultLimit(params map[string]string) {
+	if _, ok := params[limit]; !ok {
+		params[limit] = limitValue
 	}
 }
