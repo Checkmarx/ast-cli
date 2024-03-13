@@ -157,7 +157,7 @@ func (p *ProjectsHTTPWrapper) GetByName(name string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	setDefaultLimit(params)
+	setLimit(params, "10")
 
 	projectCount := len(resp.Projects)
 	if resp.Projects == nil || projectCount == 0 {
@@ -265,7 +265,14 @@ func (p *ProjectsHTTPWrapper) Tags() (
 }
 
 func setDefaultLimit(params map[string]string) {
+	setLimit(params, "0")
+}
+
+func setLimit(params map[string]string, lim string) {
 	if _, ok := params[limit]; !ok {
+		if lim != "0" {
+			params[limit] = lim
+		}
 		params[limit] = limitValue
 	}
 }
