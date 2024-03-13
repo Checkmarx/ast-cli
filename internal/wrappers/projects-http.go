@@ -164,11 +164,14 @@ func (p *ProjectsHTTPWrapper) GetByName(name string) (
 	if resp.Projects == nil || projectCount == 0 {
 		return nil, nil, errors.Errorf(clierrors.ProjectNotExists)
 	}
-	if projectCount > 1 {
-		return nil, nil, errors.Errorf("The project name you provided matches multiple projects")
+
+	for i := range resp.Projects {
+		if resp.Projects[i].Name == name {
+			return &resp.Projects[i], nil, nil
+		}
 	}
 
-	return &resp.Projects[0], nil, nil
+	return nil, nil, errors.Errorf("The project name you provided does not match any project")
 }
 
 func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {
