@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
-	sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
-	invalidFlag = "Value of %s is invalid"
-	mbBytes     = 1024.0 * 1024.0
+	gitURLRegex     = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
+	sshURLRegex     = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
+	invalidFlag     = "Value of %s is invalid"
+	mbBytes         = 1024.0 * 1024.0
+	directoryPrefix = "cx-"
 )
 
 func NewUtilsCommand(
@@ -136,37 +137,20 @@ func ReadFileAsString(path string) (string, error) {
 	return string(content), nil
 }
 
-func CompressFile(sourceFilePath, targetFileName string) (string, error) {
-	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
+func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix ...string) (string, error) {
+	if len(createdDirectoryPrefix) == 0 {
+		createdDirectoryPrefix = append(createdDirectoryPrefix, directoryPrefix)
+	}
+	outputFile, err := os.CreateTemp(os.TempDir(), createdDirectoryPrefix[0]+"*.zip")
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot create temp file")
 	}
-	defer func(outputFile *os.File) {
-		CloseFileErr := outputFile.Close()
-		if CloseFileErr != nil {
-			logger.PrintfIfVerbose("Failed to close file: %s", outputFile.Name())
-		}
-	}(outputFile)
 
 	zipWriter := zip.NewWriter(outputFile)
-	defer func(zipWriter *zip.Writer) {
-		closeZipWriterError := zipWriter.Close()
-		if closeZipWriterError != nil {
-			logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
-		}
-	}(zipWriter)
 
 	dataFile, err := os.Open(sourceFilePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
-	}
-	if dataFile != nil {
-		defer func(dataFile *os.File) {
-			closeDataFileError := dataFile.Close()
-			if closeDataFileError != nil {
-				logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
-			}
-		}(dataFile)
 	}
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
@@ -189,7 +173,27 @@ func CompressFile(sourceFilePath, targetFileName string) (string, error) {
 	stat, err := outputFile.Stat()
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to get file stat: %s", outputFile.Name())
+	} else {
+		fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
 	}
-	fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
+
+	defer DeferCloseFileAndWriter(zipWriter, dataFile, outputFile)
 	return outputFile.Name(), nil
+}
+
+func DeferCloseFileAndWriter(writer *zip.Writer, files ...*os.File) {
+	for _, file := range files {
+		if file != nil {
+			err := file.Close()
+			if err != nil {
+				logger.PrintfIfVerbose("Failed to close file: %s", file.Name())
+			}
+		}
+	}
+	if writer != nil {
+		err := writer.Close()
+		if err != nil {
+			logger.PrintfIfVerbose("Failed to close zip writer")
+		}
+	}
 }

@@ -96,6 +96,7 @@ const (
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
+	directoryCreationPrefix     = "cx-"
 )
 
 var (
@@ -1386,7 +1387,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		if isSingleContainerScanTriggered(cmd) {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
-			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName)
+			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, getUserFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
 		}

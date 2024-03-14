@@ -46,3 +46,20 @@ func TestPrintTable(t *testing.T) {
 	err = Print(os.Stdout, []string{"column1", "column2", "column3"}, FormatTable)
 	assert.NilError(t, err, "table print must run well")
 }
+
+// test is format
+func TestIsFormat(t *testing.T) {
+	assert.Assert(t, IsFormat("json", FormatJSON), "json is a valid format")
+	assert.Assert(t, IsFormat("JSON", FormatJSON), "JSON is a valid format")
+	assert.Assert(t, IsFormat("list", FormatList), "list is a valid format")
+	assert.Assert(t, IsFormat("table", FormatTable), "table is a valid format")
+	assert.Assert(t, !IsFormat("invalid_format", FormatTable), "invalid_format is not a valid format")
+}
+
+func TestColumnReformat(t *testing.T) {
+	// Test nil
+	columnReformat(nil)
+
+	// Test empty
+	columnReformat([]*entity{})
+}
