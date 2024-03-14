@@ -84,17 +84,14 @@ func TestParseName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a function using the parseName function with the test input
 			f := parseName(tc.input)
 
-			// Create a property to pass to the function
 			prop := &property{}
 
-			// Call the generated function
 			f(prop, nil)
 
-			// Check if the key was set correctly
 			if prop.Key != tc.expectedResult {
 				t.Errorf("Expected key %s, but got %s", tc.expectedResult, prop.Key)
 			}
@@ -124,6 +121,7 @@ func TestParseTime(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			f := parseTime(tc.input)
 
@@ -160,17 +158,14 @@ func TestParseMaxlen(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a function using the parseMaxlen function with the test input
 			f := parseMaxlen(tc.input)
 
-			// Create a property to pass to the function
 			prop := &property{Value: tc.raw}
 
-			// Call the generated function
 			f(prop, nil)
 
-			// Check if the value was truncated correctly
 			if prop.Value != tc.expectedResult {
 				t.Errorf("Expected value %s, but got %s", tc.expectedResult, prop.Value)
 			}
@@ -194,23 +189,19 @@ func TestGetFormatter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Get the formatter function using the getFormatter function with the test input
 			f := getFormatter(tc.input)
 
-			// Perform type assertion to ensure raw is treated as a string
 			rawStr, ok := tc.raw.(string)
 			if !ok {
 				t.Fatalf("Unable to assert %v as string", tc.raw)
 			}
 
-			// Create a property to pass to the function
 			prop := &property{Value: rawStr}
 
-			// Call the generated function
 			f(prop, rawStr)
 
-			// Check if the property's value was formatted correctly
 			if prop.Value != tc.expectedResult {
 				t.Errorf("Expected value %s, but got %s", tc.expectedResult, prop.Value)
 			}

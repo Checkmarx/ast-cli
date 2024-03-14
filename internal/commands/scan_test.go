@@ -11,6 +11,7 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -658,4 +659,55 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestValidateContainerImageFormat(t *testing.T) {
+	testCases := []struct {
+		name           string
+		containerImage string
+		expectedError  error
+	}{
+		{
+			name:           "Valid container image format",
+			containerImage: "nginx:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Missing image name",
+			containerImage: ":latest",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Missing image tag",
+			containerImage: "nginx:",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Empty image name and tag",
+			containerImage: ":",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Extra colon",
+			containerImage: "nginx:latest:extra",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateContainerImageFormat(tc.containerImage)
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
+				t.Errorf("Expected error %v, but got %v", tc.expectedError, err)
+			}
+			if err == nil && tc.expectedError != nil {
+				t.Errorf("Expected error %v, but got nil", tc.expectedError)
+			}
+		})
+	}
 }
