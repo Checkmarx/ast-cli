@@ -177,7 +177,7 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 		fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
 	}
 
-	defer DeferCloseFileAndWriter(zipWriter, dataFile, outputFile)
+	DeferCloseFileAndWriter(zipWriter, dataFile, outputFile)
 	return outputFile.Name(), nil
 }
 
