@@ -40,5 +40,5 @@ func TestReadFileAsString_NoFile_Fail(t *testing.T) {
 func TestDeferCloseFileAndWriter_OnlyFile(t *testing.T) {
 	file, err := os.OpenFile("../data/package.json", os.O_RDWR, 0644)
 	assert.NilError(t, err, "OpenFile must run well")
-	defer CloseFilesAndWriter(nil, file)
+	CloseFilesAndWriter(nil, file)
 }
