@@ -90,6 +90,7 @@ func TestContains(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc // Create a local variable with the same name
 		t.Run(tc.name, func(t *testing.T) {
 			result := Contains(tc.input, tc.str)
 			if result != tc.expected {
