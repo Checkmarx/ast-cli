@@ -138,8 +138,8 @@ func ReadFileAsString(path string) (string, error) {
 }
 
 func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix ...string) (string, error) {
-	if len(createdDirectoryPrefix) == 0 {
-		createdDirectoryPrefix = append(createdDirectoryPrefix, directoryPrefix)
+	if len(createdDirectoryPrefix) == 0 || createdDirectoryPrefix[0] == "" {
+		createdDirectoryPrefix = []string{directoryPrefix}
 	}
 	outputFile, err := os.CreateTemp(os.TempDir(), createdDirectoryPrefix[0]+"*.zip")
 	if err != nil {
@@ -153,7 +153,7 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
 	}
 
-	folderNameBeginsIndex := strings.Index(outputFile.Name(), "cx-")
+	folderNameBeginsIndex := strings.Index(outputFile.Name(), createdDirectoryPrefix[0])
 	if folderNameBeginsIndex == -1 {
 		logger.PrintfIfVerbose("Failed to find folder name in file: %s", outputFile.Name())
 	}

@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"gotest.tools/assert"
@@ -36,9 +37,15 @@ func TestReadFileAsString_NoFile_Fail(t *testing.T) {
 	assert.Error(t, err, "open no-file-exists-with-this-name.json: no such file or directory")
 }
 
-// test DeferCloseFileAndWriter
 func TestDeferCloseFileAndWriter_OnlyFile(t *testing.T) {
 	file, err := os.OpenFile("../data/package.json", os.O_RDWR, 0644)
 	assert.NilError(t, err, "OpenFile must run well")
 	CloseFilesAndWriter(nil, file)
+}
+
+func TestCompressFile_EmptyDirectoryPrefix(t *testing.T) {
+	outputFileName, err := CompressFile("testfile.txt", "output.zip", "")
+	assert.NilError(t, err)
+	// Assert that the output file name contains the default prefix
+	assert.Assert(t, strings.Contains(outputFileName, "cx-"))
 }
