@@ -68,12 +68,61 @@ func TestCloseZipWriter(t *testing.T) {
 	assert.ErrorContains(t, zipClosedErr, "zip: writer closed twice")
 }
 
-func TestCloseDataFile(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "test-data-file-*.txt")
-	assert.NilError(t, err, "Failed to create temp file")
-	defer os.Remove(tempFile.Name())
+func TestExtractFolderNameFromZipPath(t *testing.T) {
+	type TestCase struct {
+		Name           string
+		OutputFileName string
+		DirPrefix      string
+		ExpectedResult string
+		ExpectedError  string
+	}
+	testCases := []TestCase{
+		{
+			Name:           "Success: Standard Prefix",
+			OutputFileName: "cx-archive.zip",
+			DirPrefix:      "cx-",
+			ExpectedResult: "cx-archive",
+			ExpectedError:  "",
+		},
+		{
+			Name:           "Success: Custom Prefix",
+			OutputFileName: "my-archive.zip",
+			DirPrefix:      "my-",
+			ExpectedResult: "my-archive",
+			ExpectedError:  "",
+		},
+		{
+			Name:           "Failure: No Prefix Match",
+			OutputFileName: "archive.zip",
+			DirPrefix:      "cx-",
+			ExpectedResult: "",
+			ExpectedError:  "Failed to extract folder name from zip path: archive.zip with prefix: cx-",
+		},
+		{
+			Name:           "Failure: Prefix Not Found",
+			OutputFileName: "example.zip",
+			DirPrefix:      "cx-",
+			ExpectedResult: "",
+			ExpectedError:  "Failed to extract folder name from zip path: example.zip with prefix: cx-",
+		},
+		{
+			Name:           "Success: Full Name With Prefix",
+			OutputFileName: "cx-archive.zip",
+			DirPrefix:      "cx-",
+			ExpectedResult: "cx-archive",
+			ExpectedError:  "",
+		},
+	}
 
-	CloseDataFile(tempFile)
-	closedErr := tempFile.Close()
-	assert.ErrorContains(t, closedErr, "file already closed")
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			folderName, err := extractFolderNameFromZipPath(tc.OutputFileName, tc.DirPrefix)
+			if tc.ExpectedError != "" {
+				assert.ErrorContains(t, err, tc.ExpectedError)
+			} else {
+				assert.NilError(t, err)
+				assert.Equal(t, tc.ExpectedResult, folderName)
+			}
+		})
+	}
 }

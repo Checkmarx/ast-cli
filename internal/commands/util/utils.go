@@ -3,7 +3,6 @@ package util
 import (
 	"archive/zip"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,11 +18,11 @@ import (
 )
 
 const (
-	gitURLRegex     = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
-	sshURLRegex     = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
-	invalidFlag     = "Value of %s is invalid"
-	mbBytes         = 1024.0 * 1024.0
-	directoryPrefix = "cx-"
+	gitURLRegex            = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
+	sshURLRegex            = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
+	invalidFlag            = "Value of %s is invalid"
+	mbBytes                = 1024.0 * 1024.0
+	defaultDirectoryPrefix = "cx-"
 )
 
 func NewUtilsCommand(
@@ -139,7 +138,7 @@ func ReadFileAsString(path string) (string, error) {
 
 func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix ...string) (string, error) {
 	if len(createdDirectoryPrefix) == 0 || createdDirectoryPrefix[0] == "" {
-		createdDirectoryPrefix = []string{directoryPrefix}
+		createdDirectoryPrefix = []string{defaultDirectoryPrefix}
 	}
 
 	outputFile, err := os.CreateTemp(os.TempDir(), createdDirectoryPrefix[0]+"*.zip")
@@ -152,32 +151,30 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 	zipWriter := zip.NewWriter(outputFile)
 	defer CloseZipWriter(zipWriter, outputFile)
 
-	dataFile, err := os.Open(sourceFilePath)
-	if err != nil {
-		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
-	}
-	if dataFile != nil {
-		defer CloseDataFile(dataFile)
-	}
+	dataFile, err := os.ReadFile(sourceFilePath)
 
-	folderNameBeginsIndex := strings.Index(outputFile.Name(), createdDirectoryPrefix[0])
-	if folderNameBeginsIndex == -1 {
-		logger.PrintfIfVerbose("Failed to find folder name in file: %s", outputFile.Name())
+	folderName, nameERR := extractFolderNameFromZipPath(outputFile.Name(), createdDirectoryPrefix[0])
+	if nameERR != nil {
+		return "", nameERR
 	}
-	folderName := outputFile.Name()[folderNameBeginsIndex:]
-	folderName = strings.TrimSuffix(folderName, ".zip")
 
 	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to create file in zip: %s", targetFileName)
 	}
-
-	_, err = io.Copy(f, dataFile)
+	_, err = f.Write(dataFile)
 	if err != nil {
-		logger.PrintfIfVerbose("Failed to copy file to zip: %s", targetFileName)
+		logger.PrintfIfVerbose("Failed to write file to zip: %s", targetFileName)
 	}
-
 	return outputFile.Name(), nil
+}
+
+func extractFolderNameFromZipPath(outputFileName, dirPrefix string) (string, error) {
+	folderNameBeginsIndex := strings.Index(outputFileName, dirPrefix)
+	if folderNameBeginsIndex == -1 {
+		return "", errors.New("Failed to extract folder name from zip path: " + outputFileName + " with prefix: " + dirPrefix)
+	}
+	return strings.TrimSuffix(outputFileName[folderNameBeginsIndex:], ".zip"), nil
 }
 
 func CloseOutputFile(outputFile *os.File) {
@@ -198,12 +195,5 @@ func CloseZipWriter(zipWriter *zip.Writer, outputFile *os.File) {
 	closeZipWriterError := zipWriter.Close()
 	if closeZipWriterError != nil {
 		logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
-	}
-}
-
-func CloseDataFile(dataFile *os.File) {
-	closeDataFileError := dataFile.Close()
-	if closeDataFileError != nil {
-		logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
 	}
 }
