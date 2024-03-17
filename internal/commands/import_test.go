@@ -15,7 +15,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 
 func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "my-project", "--import-file-path", "")
-	assert.Assert(t, err.Error() == errorconsts.MissingImportFlags)
+	assert.Assert(t, err.Error() == errorconsts.ImportFilePathIsRequired)
 }
 
 func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {

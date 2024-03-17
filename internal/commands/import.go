@@ -45,7 +45,7 @@ func runImportCommand(
 			return err
 		}
 		if importFilePath == "" {
-			return errors.Errorf(errorconsts.MissingImportFlags)
+			return errors.Errorf(errorconsts.ImportFilePathIsRequired)
 		}
 		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
 		if err != nil {
