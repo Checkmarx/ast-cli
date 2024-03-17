@@ -9,7 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper, groupsWrapper wrappers.GroupsWrapper, accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
+func NewImportCommand(
+	projectsWrapper wrappers.ProjectsWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
@@ -30,7 +34,11 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 	return cmd
 }
 
-func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.UploadsWrapper, groupsWrapper wrappers.GroupsWrapper, accessManagementWrapper wrappers.AccessManagementWrapper) func(cmd *cobra.Command, args []string) error {
+func runImportCommand(
+	projectsWrapper wrappers.ProjectsWrapper,
+	_ wrappers.UploadsWrapper,
+	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
 		if err != nil {
