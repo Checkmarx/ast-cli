@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper) *cobra.Command {
+func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper wrappers.UploadsWrapper, groupsWrapper wrappers.GroupsWrapper, accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
@@ -21,7 +21,7 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 			`,
 			),
 		},
-		RunE: runImportCommand(projectsWrapper, uploadsWrapper),
+		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
@@ -30,7 +30,7 @@ func NewImportCommand(projectsWrapper wrappers.ProjectsWrapper, uploadsWrapper w
 	return cmd
 }
 
-func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.UploadsWrapper) func(cmd *cobra.Command, args []string) error {
+func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.UploadsWrapper, groupsWrapper wrappers.GroupsWrapper, accessManagementWrapper wrappers.AccessManagementWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
 		if err != nil {
@@ -47,12 +47,12 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 			return errors.Errorf(clierrors.ProjectNameIsRequired)
 		}
 
-		project, _, err := projectsWrapper.GetByName(projectName)
+		projectID, err := findProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
 		if err != nil {
 			return err
 		}
 
-		_, err = importFile(project.ID, importFilePath)
+		_, err = importFile(projectID, importFilePath)
 		if err != nil {
 			return err
 		}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	clierrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -96,7 +95,9 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
-	setDefaultLimit(params)
+	if _, ok := params[limit]; !ok {
+		params[limit] = limitValue
+	}
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	if err != nil {
@@ -145,32 +146,6 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 		}
 	}()
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
-}
-
-func (p *ProjectsHTTPWrapper) GetByName(name string) (
-	*ProjectResponseModel,
-	*ErrorModel,
-	error) {
-	params := make(map[string]string)
-	params["name"] = name
-	resp, _, err := p.Get(params)
-	if err != nil {
-		return nil, nil, err
-	}
-	setLimit(params, "10")
-
-	projectCount := len(resp.Projects)
-	if resp.Projects == nil || projectCount == 0 {
-		return nil, nil, errors.Errorf(clierrors.ProjectNotExists)
-	}
-
-	for i := range resp.Projects {
-		if resp.Projects[i].Name == name {
-			return &resp.Projects[i], nil, nil
-		}
-	}
-
-	return nil, nil, errors.Errorf("The project name you provided does not match any project")
 }
 
 func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {
@@ -261,18 +236,5 @@ func (p *ProjectsHTTPWrapper) Tags() (
 
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
-	}
-}
-
-func setDefaultLimit(params map[string]string) {
-	setLimit(params, "0")
-}
-
-func setLimit(params map[string]string, lim string) {
-	if _, ok := params[limit]; !ok {
-		if lim != "0" {
-			params[limit] = lim
-		}
-		params[limit] = limitValue
 	}
 }

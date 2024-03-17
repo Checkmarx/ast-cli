@@ -163,7 +163,7 @@ func NewAstCLI(
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper)
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
