@@ -1,4 +1,4 @@
-package errorConstants
+package errorconsts
 
 const (
 	ApplicationDoesntExistOrNoPermission = "provided application does not exist or user has no permission to the application"

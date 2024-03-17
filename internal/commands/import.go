@@ -2,7 +2,7 @@ package commands
 
 import (
 	"github.com/MakeNowJust/heredoc"
-	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
+	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -37,14 +37,14 @@ func runImportCommand(projectsWrapper wrappers.ProjectsWrapper, _ wrappers.Uploa
 			return err
 		}
 		if importFilePath == "" {
-			return errors.Errorf(errorConstants.MissingImportFlags)
+			return errors.Errorf(errorconsts.MissingImportFlags)
 		}
 		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
 		if err != nil {
 			return err
 		}
 		if projectName == "" {
-			return errors.Errorf(errorConstants.ProjectNameIsRequired)
+			return errors.Errorf(errorconsts.ProjectNameIsRequired)
 		}
 
 		projectID, err := findProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
