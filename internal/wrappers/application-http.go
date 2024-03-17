@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	cliErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -42,16 +42,16 @@ func (a *ApplicationsHTTPWrapper) Get(params map[string]string) (*ApplicationsRe
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		if err != nil {
-			return nil, errors.Errorf(cliErrors.FailedToGetApplication)
+			return nil, errors.Errorf(errorConstants.FailedToGetApplication)
 		}
 		return nil, nil
 	case http.StatusForbidden:
-		return nil, errors.Errorf(cliErrors.ApplicationDoesntExistOrNoPermission)
+		return nil, errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 	case http.StatusOK:
 		model := ApplicationsResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, errors.Errorf(cliErrors.FailedToGetApplication)
+			return nil, errors.Errorf(errorConstants.FailedToGetApplication)
 		}
 		return &model, nil
 	default:

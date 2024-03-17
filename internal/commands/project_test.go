@@ -5,7 +5,7 @@ package commands
 import (
 	"testing"
 
-	clierrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
 	"gotest.tools/assert"
@@ -31,22 +31,22 @@ func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessf
 
 func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
-	assert.Assert(t, err.Error() == clierrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusBadRequest)
-	assert.Assert(t, err.Error() == clierrors.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusInternalServerError)
-	assert.Assert(t, err.Error() == clierrors.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create")
-	assert.Assert(t, err.Error() == clierrors.ProjectNameIsRequired)
+	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
 }
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {

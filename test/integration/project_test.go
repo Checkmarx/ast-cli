@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	cliErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
@@ -100,7 +100,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, cliErrors.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {

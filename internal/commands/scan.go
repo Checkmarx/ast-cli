@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	clierrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -809,7 +809,7 @@ func setupScanTypeProjectAndConfig(
 			return getAppErr
 		}
 		if application == nil {
-			return errors.Errorf(clierrors.ApplicationDoesntExistOrNoPermission)
+			return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 		}
 		applicationID = []string{application.ID}
 	}

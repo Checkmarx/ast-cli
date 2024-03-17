@@ -1,4 +1,4 @@
-package clierrors
+package errorConstants
 
 const (
 	ApplicationDoesntExistOrNoPermission = "provided application does not exist or user has no permission to the application"
