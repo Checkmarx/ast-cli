@@ -3,7 +3,7 @@ package mock
 import (
 	"time"
 
-	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
+	errorconsts "github.com/checkmarx/ast-cli/internal/constants"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
+	errorconsts "github.com/checkmarx/ast-cli/internal/constants"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"

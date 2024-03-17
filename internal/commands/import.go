@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
+	"github.com/checkmarx/ast-cli/internal/constants"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -48,13 +48,13 @@ func runImportCommand(
 			return err
 		}
 		if importFilePath == "" {
-			return errors.Errorf(errorconsts.ImportFilePathIsRequired)
+			return errors.Errorf(constants.ImportFilePathIsRequired)
 		}
 
 		extension := filepath.Ext(importFilePath)
 		extension = strings.ToLower(extension)
-		if extension != ".sarif" && extension != ".zip" {
-			return errors.Errorf(errorconsts.SarifInvalidFileExtension)
+		if extension != ".sarif" && extension != constants.ZipExtension {
+			return errors.Errorf(constants.SarifInvalidFileExtension)
 		}
 
 		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
@@ -62,7 +62,7 @@ func runImportCommand(
 			return err
 		}
 		if projectName == "" {
-			return errors.Errorf(errorconsts.ProjectNameIsRequired)
+			return errors.Errorf(constants.ProjectNameIsRequired)
 		}
 
 		projectID, err := findProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)

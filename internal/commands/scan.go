@@ -18,11 +18,10 @@ import (
 	"strings"
 	"time"
 
-	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
-
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/constants"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/google/shlex"
 	"github.com/google/uuid"
@@ -809,7 +808,7 @@ func setupScanTypeProjectAndConfig(
 			return getAppErr
 		}
 		if application == nil {
-			return errors.Errorf(errorconsts.ApplicationDoesntExistOrNoPermission)
+			return errors.Errorf(constants.ApplicationDoesntExistOrNoPermission)
 		}
 		applicationID = []string{application.ID}
 	}
@@ -1472,7 +1471,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 	info, statErr := os.Stat(sourceTrimmed)
 	if !os.IsNotExist(statErr) {
-		if filepath.Ext(sourceTrimmed) == ".zip" {
+		if filepath.Ext(sourceTrimmed) == constants.ZipExtension {
 			zipFile = sourceTrimmed
 		} else if info != nil && info.IsDir() {
 			sourceDir = filepath.ToSlash(sourceTrimmed)

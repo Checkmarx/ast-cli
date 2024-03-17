@@ -5,7 +5,7 @@ package commands
 import (
 	"testing"
 
-	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
+	errorconsts "github.com/checkmarx/ast-cli/internal/constants"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
 	"gotest.tools/assert"
