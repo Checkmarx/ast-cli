@@ -1105,7 +1105,7 @@ func scanTypeEnabled(scanType string) bool {
 
 func compressFolder(sourceDir string, filter, userIncludeFilter []string, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
-	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
@@ -1607,6 +1607,7 @@ func runCreateScanCommand(
 			applicationsWrapper,
 		)
 		if err != nil {
+
 			return errors.Errorf("%s", err)
 		}
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
@@ -1671,7 +1672,7 @@ func runCreateScanCommand(
 			}
 		}
 
-		cleanUpTempZip(zipFilePath)
+		defer cleanUpTempZip(zipFilePath)
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
