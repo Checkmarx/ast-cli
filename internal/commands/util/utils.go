@@ -141,16 +141,23 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 	if len(createdDirectoryPrefix) == 0 || createdDirectoryPrefix[0] == "" {
 		createdDirectoryPrefix = []string{directoryPrefix}
 	}
+
 	outputFile, err := os.CreateTemp(os.TempDir(), createdDirectoryPrefix[0]+"*.zip")
+
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot create temp file")
 	}
+	defer CloseOutputFile(outputFile)
 
 	zipWriter := zip.NewWriter(outputFile)
+	defer CloseZipWriter(zipWriter, outputFile)
 
 	dataFile, err := os.Open(sourceFilePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to open file: %s", sourceFilePath)
+	}
+	if dataFile != nil {
+		defer CloseDataFile(dataFile)
 	}
 
 	folderNameBeginsIndex := strings.Index(outputFile.Name(), createdDirectoryPrefix[0])
@@ -170,30 +177,33 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 		logger.PrintfIfVerbose("Failed to copy file to zip: %s", targetFileName)
 	}
 
-	stat, err := outputFile.Stat()
-	if err != nil {
-		logger.PrintfIfVerbose("Failed to get file stat: %s", outputFile.Name())
-	} else {
-		fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
-	}
-
-	CloseFilesAndWriter(zipWriter, dataFile, outputFile)
 	return outputFile.Name(), nil
 }
 
-func CloseFilesAndWriter(writer *zip.Writer, files ...*os.File) {
-	for _, file := range files {
-		if file != nil {
-			err := file.Close()
-			if err != nil {
-				logger.PrintfIfVerbose("Failed to close file: %s", file.Name())
-			}
-		}
+func CloseOutputFile(outputFile *os.File) {
+	stat, statErr := outputFile.Stat()
+	CloseFileErr := outputFile.Close()
+	if CloseFileErr != nil {
+		logger.PrintfIfVerbose("Failed to close file: %s", outputFile.Name())
 	}
-	if writer != nil {
-		err := writer.Close()
-		if err != nil {
-			logger.PrintfIfVerbose("Failed to close zip writer")
-		}
+	if statErr != nil {
+		logger.PrintfIfVerbose("Failed to get file stat: %s", outputFile.Name())
+	}
+	if stat != nil {
+		fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
+	}
+}
+
+func CloseZipWriter(zipWriter *zip.Writer, outputFile *os.File) {
+	closeZipWriterError := zipWriter.Close()
+	if closeZipWriterError != nil {
+		logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
+	}
+}
+
+func CloseDataFile(dataFile *os.File) {
+	closeDataFileError := dataFile.Close()
+	if closeDataFileError != nil {
+		logger.PrintfIfVerbose("Failed to close file: %s", dataFile.Name())
 	}
 }
