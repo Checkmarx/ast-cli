@@ -115,6 +115,7 @@ func TestExtractFolderNameFromZipPath(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			folderName, err := extractFolderNameFromZipPath(tc.OutputFileName, tc.DirPrefix)
 			if tc.ExpectedError != "" {
