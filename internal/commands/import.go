@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	errorconsts "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -47,6 +50,13 @@ func runImportCommand(
 		if importFilePath == "" {
 			return errors.Errorf(errorconsts.ImportFilePathIsRequired)
 		}
+
+		extension := filepath.Ext(importFilePath)
+		extension = strings.ToLower(extension)
+		if extension != ".sarif" && extension != ".zip" {
+			return errors.Errorf(errorconsts.SarifInvalidFileExtension)
+		}
+
 		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
 		if err != nil {
 			return err
