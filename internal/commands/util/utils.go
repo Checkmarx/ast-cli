@@ -151,11 +151,14 @@ func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix 
 	zipWriter := zip.NewWriter(outputFile)
 	defer CloseZipWriter(zipWriter, outputFile)
 
-	dataFile, err := os.ReadFile(sourceFilePath)
-
 	folderName, nameERR := extractFolderNameFromZipPath(outputFile.Name(), createdDirectoryPrefix[0])
 	if nameERR != nil {
 		return "", nameERR
+	}
+
+	dataFile, readErr := os.ReadFile(sourceFilePath)
+	if readErr != nil {
+		logger.PrintfIfVerbose("Failed to read file: %s", sourceFilePath)
 	}
 
 	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
