@@ -2,8 +2,8 @@ package scarealtime
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -301,11 +301,10 @@ func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
 
 // readSCAResolverResultsFromFile Get SCA Resolver results from file to build SCA API request body
 func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
-	file, err := ioutil.ReadFile(ScaResolverResultsFileNameDir)
+	file, err := os.ReadFile(ScaResolverResultsFileNameDir)
 	if err != nil {
 		return ScaResultsFile{}, err
 	}
-
 	data := ScaResultsFile{}
 	_ = json.Unmarshal(file, &data)
 

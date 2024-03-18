@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -53,10 +54,15 @@ const (
 	highCx                    = "HIGH"
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
-	notAvailableString        = "N/A"
+	notAvailableString        = "-"
+	scanFailedString          = "Failed"
+	scanCanceledString        = "Canceled"
+	scanSuccessString         = "Completed"
 	notAvailableNumber        = -1
+	scanFailedNumber          = -2
+	scanCanceledNumber        = -3
 	defaultPaddingSize        = -13
-	defaultResultsPaddingSize = -15
+	boldFormat                = "\033[1m%s\033[0m"
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
@@ -350,6 +356,13 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
+	enginesStatusCode := map[string]int{
+		commonParams.SastType:   0,
+		commonParams.ScaType:    0,
+		commonParams.KicsType:   0,
+		commonParams.APISecType: 0,
+	}
+
 	if len(scanInfo.StatusDetails) > 0 {
 		for _, statusDetailItem := range scanInfo.StatusDetails {
 			if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
@@ -360,6 +373,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
 				}
+			}
+			switch statusDetailItem.Status {
+			case wrappers.ScanFailed:
+				handleScanStatus(statusDetailItem, enginesStatusCode, scanFailedNumber)
+			case wrappers.ScanCanceled:
+				handleScanStatus(statusDetailItem, enginesStatusCode, scanCanceledNumber)
 			}
 		}
 	}
@@ -381,6 +400,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		ProjectName:    scanInfo.ProjectName,
 		BranchName:     scanInfo.Branch,
 		EnginesEnabled: scanInfo.Engines,
+		EnginesResult: map[string]*wrappers.EngineResultSummary{
+			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
+		},
 	}
 
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
@@ -395,6 +420,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	}
 
 	return summary, nil
+}
+
+func handleScanStatus(statusDetailItem wrappers.StatusInfo, targetTypes map[string]int, statusCode int) {
+	if _, ok := targetTypes[statusDetailItem.Name]; ok {
+		targetTypes[statusDetailItem.Name] = statusCode
+	}
 }
 
 func summaryReport(
@@ -421,13 +452,14 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
 	setRiskMsgAndStyle(summary)
+	setNotAvailableEnginesStatusCode(summary)
 
 	return summary, nil
 }
 
-func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, engineType string) {
-	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
-		*counter = notAvailableNumber
+func setNotAvailableEnginesStatusCode(summary *wrappers.ResultSummary) {
+	for engineName, engineResult := range summary.EnginesResult {
+		setNotAvailableNumberIfZero(summary, &engineResult.StatusCode, engineName)
 	}
 }
 
@@ -446,11 +478,22 @@ func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
 	}
 }
 
+func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, engineType string) {
+	if *counter == 0 && !contains(summary.EnginesEnabled, engineType) {
+		*counter = notAvailableNumber
+	}
+}
+
 func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection) {
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues
+	if summary.HasAPISecurity() {
+		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
+		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
+		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+	}
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -497,69 +540,89 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			"              Risk Level: %s																									 \n",
 			summary.RiskMsg,
 		)
-		fmt.Printf("              --------------------------------------     \n")
-		if summary.HasAPISecurity() {
-			fmt.Printf(
-				"              API Security - Total Detected APIs: %d                       \n",
-				summary.APISecurity.APICount)
-		}
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			fmt.Printf("              --------------------------------------     \n\n")
-			if summary.Policies.BreakBuild {
-				fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
-			} else {
-				fmt.Printf("            Policy Management Violation:                     \n")
-			}
-			if len(summary.Policies.Polices) > 0 {
-				for _, police := range summary.Policies.Polices {
-					if len(police.RulesViolated) > 0 {
-						fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
-						for _, violatedRule := range police.RulesViolated {
-							fmt.Printf("%s;", violatedRule)
-						}
-					}
-					fmt.Printf("\n")
-				}
-			}
-			fmt.Printf("\n")
+			printPoliciesSummary(summary)
 		}
 
-		fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-		fmt.Printf("              --------------------------------------     \n")
-		fmt.Printf("              |               High: %*d|     \n", defaultResultsPaddingSize, summary.HighIssues)
-		fmt.Printf("              |             Medium: %*d|     \n", defaultResultsPaddingSize, summary.MediumIssues)
-		fmt.Printf("              |                Low: %*d|     \n", defaultResultsPaddingSize, summary.LowIssues)
-		fmt.Printf("              |               Info: %*d|     \n", defaultResultsPaddingSize, summary.InfoIssues)
-		fmt.Printf("              --------------------------------------     \n")
+		printResultsSummaryTable(summary)
 
-		if summary.KicsIssues == notAvailableNumber {
-			fmt.Printf("              |         IAC-SECURITY: %*s| \n", defaultPaddingSize, notAvailableString)
-		} else {
-			fmt.Printf("              |         IAC-SECURITY: %*d| \n", defaultPaddingSize, summary.KicsIssues)
+		if summary.HasAPISecurity() {
+			printAPIsSecuritySummary(summary)
 		}
-		if summary.SastIssues == notAvailableNumber {
-			fmt.Printf("              |                 SAST: %*s| \n", defaultPaddingSize, notAvailableString)
-		} else {
-			fmt.Printf("              |                 SAST: %*d| \n", defaultPaddingSize, summary.SastIssues)
-			if summary.HasAPISecurity() {
-				fmt.Printf("              |       APIS WITH RISK: %*d| \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
-				if summary.HasAPISecurityDocumentation() {
-					fmt.Printf("              |   APIS DOCUMENTATION: %*d| \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
-				}
-			}
-		}
-		if summary.ScaIssues == notAvailableNumber {
-			fmt.Printf("              |                  SCA: %*s| \n", defaultPaddingSize, notAvailableString)
-		} else {
-			fmt.Printf("              |                  SCA: %*d| \n", defaultPaddingSize, summary.ScaIssues)
-		}
-		fmt.Printf("              --------------------------------------     \n\n")
+
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
 		fmt.Printf("For more information: %s\n", summary.BaseURI)
 	}
 	return nil
+}
+
+func printPoliciesSummary(summary *wrappers.ResultSummary) {
+	fmt.Printf("              --------------------------------------     \n")
+	if summary.Policies.BreakBuild {
+		fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+	} else {
+		fmt.Printf("            Policy Management Violation:                     \n")
+	}
+	if len(summary.Policies.Policies) > 0 {
+		for _, police := range summary.Policies.Policies {
+			if len(police.RulesViolated) > 0 {
+				fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
+				for _, violatedRule := range police.RulesViolated {
+					fmt.Printf("%s;", violatedRule)
+				}
+			}
+			fmt.Printf("\n")
+		}
+	}
+	fmt.Printf("\n")
+}
+
+func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
+	fmt.Printf("              API Security - Total Detected APIs: %d                       \n", summary.APISecurity.APICount)
+	fmt.Printf("              APIS WITH RISK: %*d \n", defaultPaddingSize, summary.APISecurity.TotalRisksCount)
+	if summary.HasAPISecurityDocumentation() {
+		fmt.Printf("              APIS DOCUMENTATION: %*d \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
+	}
+	fmt.Printf("              --------------------------------------------------     \n\n")
+}
+
+func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
+	formatString := "              | %-4s   %4d   %6d   %4d   %4d   %-9s  |\n"
+	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
+
+	switch statusNumber {
+	case notAvailableNumber:
+		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+	case scanFailedNumber:
+		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+	case scanCanceledNumber:
+		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+	default:
+		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+	}
+}
+
+func printResultsSummaryTable(summary *wrappers.ResultSummary) {
+	totalHighIssues := summary.EnginesResult.GetHighIssues()
+	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
+	totalLowIssues := summary.EnginesResult.GetLowIssues()
+	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Println("              ---------------------------------------------------     ")
+	fmt.Println("              |          High   Medium   Low   Info   Status    |")
+
+	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
+	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
+	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
+	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+
+	fmt.Println("              ---------------------------------------------------     ")
+	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
+		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+	fmt.Printf("              ---------------------------------------------------     \n\n")
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
@@ -613,7 +676,7 @@ func runGetResultCommand(
 			if policyTimeout < 0 {
 				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 			}
-			policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan, cmd)
+			policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
 			if err != nil {
 				return err
 			}
@@ -740,6 +803,7 @@ func CreateScanReport(
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
+	severity := strings.ToLower(result.Severity)
 	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
 		if engineType == commonParams.SastType {
 			summary.SastIssues++
@@ -751,7 +815,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			summary.KicsIssues++
 			summary.TotalIssues++
 		}
-		severity := strings.ToLower(result.Severity)
 		if severity == highLabel {
 			summary.HighIssues++
 		} else if severity == lowLabel {
@@ -761,6 +824,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		} else if severity == infoLabel {
 			summary.InfoIssues++
 		}
+		summary.UpdateEngineResultSummary(engineType, severity)
 	}
 }
 
@@ -1755,12 +1819,12 @@ func addPackageInformation(
 
 func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {
 	i := 0
-	for _, policy := range policyModel.Polices {
+	for _, policy := range policyModel.Policies {
 		if len(policy.RulesViolated) > 0 {
-			policyModel.Polices[i] = policy
+			policyModel.Policies[i] = policy
 			i++
 		}
 	}
-	policyModel.Polices = policyModel.Polices[:i]
+	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
 }

@@ -23,6 +23,7 @@ const ErrorCodeFormat = "%s: CODE: %d, %s\n"
 
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
@@ -50,6 +51,7 @@ func NewAstCLI(
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -143,6 +145,7 @@ func NewAstCLI(
 
 	// Create the CLI command structure
 	scanCmd := NewScanCommand(
+		applicationsWrapper,
 		scansWrapper,
 		resultsSbomWrapper,
 		resultsPdfReportsWrapper,
@@ -156,8 +159,9 @@ func NewAstCLI(
 		scaRealTimeWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
+		accessManagementWrapper,
 	)
-	projectCmd := NewProjectCommand(projectsWrapper, groupsWrapper)
+	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
@@ -181,11 +185,13 @@ func NewAstCLI(
 		learnMoreWrapper,
 		tenantWrapper,
 		chatWrapper,
+		policyWrapper,
+		scansWrapper,
 	)
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
-	chatCmd := NewChatCommand(chatWrapper)
+	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,

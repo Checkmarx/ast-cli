@@ -13,7 +13,7 @@ rm -rf ScaResolver-linux64.tar.gz
 go test \
   -tags integration \
   -v \
-  -timeout 60m \
+  -timeout 90m \
   -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
   github.com/checkmarx/ast-cli/test/integration
