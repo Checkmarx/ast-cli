@@ -1,5 +1,6 @@
 package constants
 
 const (
-	ZipExtension = ".zip"
+	ZipExtension   = ".zip"
+	SarifExtension = ".sarif"
 )

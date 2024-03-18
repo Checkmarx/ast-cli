@@ -51,18 +51,13 @@ func runImportCommand(
 			return errors.Errorf(constants.ImportFilePathIsRequired)
 		}
 
-		extension := filepath.Ext(importFilePath)
-		extension = strings.ToLower(extension)
-		if extension != ".sarif" && extension != constants.ZipExtension {
-			return errors.Errorf(constants.SarifInvalidFileExtension)
-		}
-
-		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
-		if err != nil {
+		if err = validateFileExtension(importFilePath); err != nil {
 			return err
 		}
-		if projectName == "" {
-			return errors.Errorf(constants.ProjectNameIsRequired)
+
+		projectName, err := getProjectName(cmd)
+		if err != nil {
+			return err
 		}
 
 		projectID, err := findProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
@@ -70,13 +65,32 @@ func runImportCommand(
 			return err
 		}
 
-		_, err = importFile(projectID, importFilePath)
-		if err != nil {
+		if _, err = importFile(projectID, importFilePath); err != nil {
 			return err
 		}
 
 		return nil
 	}
+}
+
+func getProjectName(cmd *cobra.Command) (string, error) {
+	projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
+	if err != nil {
+		return "", err
+	}
+	if projectName == "" {
+		return "", errors.Errorf(constants.ProjectNameIsRequired)
+	}
+	return projectName, nil
+}
+
+func validateFileExtension(importFilePath string) error {
+	extension := filepath.Ext(importFilePath)
+	extension = strings.ToLower(extension)
+	if extension != constants.SarifExtension && extension != constants.ZipExtension {
+		return errors.Errorf(constants.SarifInvalidFileExtension)
+	}
+	return nil
 }
 
 func importFile(projectID, path string) (string, error) {
