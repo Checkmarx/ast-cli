@@ -51,8 +51,8 @@ func runImportCommand(
 			return errors.Errorf(constants.ImportFilePathIsRequired)
 		}
 
-		if err = validateFileExtension(importFilePath); err != nil {
-			return err
+		if validationError := validateFileExtension(importFilePath); validationError != nil {
+			return validationError
 		}
 
 		projectName, err := getProjectName(cmd)
