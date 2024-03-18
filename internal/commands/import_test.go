@@ -13,6 +13,10 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 	execCmdNilAssertion(t, "import", "--project-name", "my-project", "--import-file-path", "my-path.sarif")
 }
 
+func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
+	execCmdNilAssertion(t, "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.sarif")
+}
+
 func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "my-project", "--import-file-path", "")
 	assert.Assert(t, err.Error() == errorconsts.ImportFilePathIsRequired)
@@ -21,10 +25,6 @@ func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWit
 func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--import-file-path", "my-path.zip")
 	assert.Assert(t, err.Error() == errorconsts.ProjectNameIsRequired)
-}
-
-func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	execCmdNilAssertion(t, "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.sarif")
 }
 
 func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
