@@ -79,6 +79,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 		},
 		RunE: runRegister(authWrapper),
 	}
+	fmt.Printf("hi")
 	createClientCmd.PersistentFlags().StringP(
 		params.UsernameFlag, params.UsernameSh, "", "Username for Checkmarx One user that privileges to "+
 			"create clients",
