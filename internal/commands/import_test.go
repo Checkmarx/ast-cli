@@ -27,6 +27,11 @@ func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsError
 	assert.Assert(t, err.Error() == errorconsts.ProjectNameIsRequired)
 }
 
+func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "import", "--project-name", "", "--import-file-path", "my-path.sarif")
+	assert.Assert(t, err.Error() == errorconsts.ProjectNameIsRequired)
+}
+
 func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.txt")
 	assert.Assert(t, err.Error() == errorconsts.SarifInvalidFileExtension)
