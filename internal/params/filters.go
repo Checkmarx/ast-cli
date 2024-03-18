@@ -131,7 +131,7 @@ var BaseFilters = []string{
 	"Podfile",
 	"Podfile.lock",
 	"*.cmp",
-	"Directory.Packages.props"
+	"Directory.Packages.props",
 }
 
 var KicsBaseFilters = []string{
