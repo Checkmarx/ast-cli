@@ -1,5 +1,12 @@
 package constants
 
+// HTTP Errors
+const (
+	StatusUnauthorized        = "you are not authorized to make this request"
+	StatusForbidden           = "you are not allowed to make this request"
+	StatusInternalServerError = "an error occurred during this request"
+)
+
 const (
 	ApplicationDoesntExistOrNoPermission = "provided application does not exist or user has no permission to the application"
 	ImportFilePathIsRequired             = "importFilePath is required"

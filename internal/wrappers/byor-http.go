@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/constants"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
@@ -12,8 +13,7 @@ import (
 )
 
 const (
-	importsPath = "/imports"
-
+	importsPath       = "/imports"
 	successfulMessage = "The SARIF results were successfully imported into project %s"
 )
 
@@ -44,11 +44,11 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusForbidden:
-		return "", getError(decoder, "You are not allowed to make this request")
+		return "", getError(decoder, constants.StatusForbidden)
 	case http.StatusUnauthorized:
-		return "", getError(decoder, "You are not authorized to make this request")
+		return "", getError(decoder, constants.StatusUnauthorized)
 	case http.StatusInternalServerError:
-		return "", getError(decoder, "An error occurred during this request")
+		return "", getError(decoder, constants.StatusInternalServerError)
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)

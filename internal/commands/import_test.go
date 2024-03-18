@@ -5,7 +5,8 @@ package commands
 import (
 	"testing"
 
-	errorconsts "github.com/checkmarx/ast-cli/internal/constants"
+	errorConsts "github.com/checkmarx/ast-cli/internal/constants"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
 
@@ -19,25 +20,40 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 
 func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "my-project", "--import-file-path", "")
-	assert.Assert(t, err.Error() == errorconsts.ImportFilePathIsRequired)
+	assert.Assert(t, err.Error() == errorConsts.ImportFilePathIsRequired)
 }
 
 func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--import-file-path", "my-path.zip")
-	assert.Assert(t, err.Error() == errorconsts.ProjectNameIsRequired)
+	assert.Assert(t, err.Error() == errorConsts.ProjectNameIsRequired)
 }
 
 func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "", "--import-file-path", "my-path.sarif")
-	assert.Assert(t, err.Error() == errorconsts.ProjectNameIsRequired)
+	assert.Assert(t, err.Error() == errorConsts.ProjectNameIsRequired)
 }
 
 func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.txt")
-	assert.Assert(t, err.Error() == errorconsts.SarifInvalidFileExtension)
+	assert.Assert(t, err.Error() == errorConsts.SarifInvalidFileExtension)
 }
 
 func TestImport_ImportSarifFileMissingExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "some/path/no/extension/my-path")
-	assert.Assert(t, err.Error() == errorconsts.SarifInvalidFileExtension)
+	assert.Assert(t, err.Error() == errorConsts.SarifInvalidFileExtension)
+}
+
+func TestImporFileFunction_FakeUnauthorizedHttpStatusCode_ReturnRelevantError(t *testing.T) {
+	_, err := importFile(mock.FakeUnauthorized401, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{})
+	assert.Assert(t, err.Error() == errorConsts.StatusUnauthorized)
+}
+
+func TestImporFileFunction_FakeForbiddenHttpStatusCode_ReturnRelevantError(t *testing.T) {
+	_, err := importFile(mock.FakeForbidden403, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{})
+	assert.Assert(t, err.Error() == errorConsts.StatusForbidden)
+}
+
+func TestImporFileFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantError(t *testing.T) {
+	_, err := importFile(mock.FakeInternalServerError500, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{})
+	assert.Assert(t, err.Error() == errorConsts.StatusInternalServerError)
 }

@@ -35,12 +35,12 @@ func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t
 }
 
 func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusBadRequest)
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeBadRequest400)
 	assert.Assert(t, err.Error() == errorconsts.FailedToGetApplication)
 }
 
 func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusInternalServerError)
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeInternalServerError500)
 	assert.Assert(t, err.Error() == errorconsts.FailedToGetApplication)
 }
 
