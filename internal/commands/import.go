@@ -16,7 +16,8 @@ func NewImportCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	byorWrapper wrappers.ByorWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
@@ -28,7 +29,7 @@ func NewImportCommand(
 			`,
 			),
 		},
-		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper),
+		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper),
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
@@ -39,9 +40,10 @@ func NewImportCommand(
 
 func runImportCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
-	_ wrappers.UploadsWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper) func(cmd *cobra.Command, args []string) error {
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	byorWrapper wrappers.ByorWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
 		if err != nil {
@@ -65,7 +67,7 @@ func runImportCommand(
 			return err
 		}
 
-		if _, err = importFile(projectID, importFilePath); err != nil {
+		if _, err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper); err != nil {
 			return err
 		}
 
@@ -93,7 +95,15 @@ func validateFileExtension(importFilePath string) error {
 	return nil
 }
 
-func importFile(projectID, path string) (string, error) {
-	// returns importId as string
-	return "", nil
+func importFile(projectID string, path string,
+	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) (string, error) {
+	uploadURL, err := uploadsWrapper.UploadFile(path)
+	if err != nil {
+		return "", err
+	}
+	importID, err := byorWrapper.Import(projectID, *uploadURL)
+	if err != nil {
+		return "", err
+	}
+	return importID, nil
 }
