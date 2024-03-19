@@ -112,96 +112,101 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
-//func TestScanCreateWithContainersEngine_WithoutContainerImagesFlagAndContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-//		flag(params.BranchFlag), "dummy_branch",
+//func TestScanCreateWithContainersEngine(t *testing.T) {
+//	type TestCase struct {
+//		Name      string
+//		Arguments []string
+//	}
+//	testCases := []TestCase{
+//		{
+//			Name: "Container images flag specified and empty folder project",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/empty-folder",
+//				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
+//		{
+//			Name: "Container images flag and container scan type specified",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/withDockerInZip.zip",
+//				flag(params.ScanTypes), "container-security",
+//				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
+//		{
+//			Name: "Container images flag specified",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/withDockerInZip.zip",
+//				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
+//		{
+//			Name: "Container images and debug flags specified",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/withDockerInZip.zip",
+//				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//				flag(params.DebugFlag),
+//			},
+//		},
+//		{
+//			Name: "Container images flag specified and empty folder project",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/empty-folder",
+//				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
+//		{
+//			Name: "Container type specified and empty folder project",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/empty-folder",
+//				flag(params.ScanTypes), "container-security",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
+//		{
+//			Name: "Invalid container images flag specified",
+//			Arguments: []string{
+//				"scan", "create",
+//				flag(params.ProjectName), "my-project",
+//				flag(params.SourcesFlag), "data/withDockerInZip.zip",
+//				flag(params.ContainerImagesFlag), "debian,nginx:latest",
+//				flag(params.BranchFlag), "dummy_branch",
+//			},
+//		},
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
+//	for _, tc := range testCases {
+//		tc := tc
+//		t.Run(tc.Name, func(t *testing.T) {
+//			scanID, projectID := executeCreateScan(t, tc.Arguments)
+//			deleteProject(t, projectID)
+//			executeScanAssertions(t, projectID, scanID, Tags)
+//			assertZipFileRemoved(t)
+//		})
+//	}
 //}
-
-//func TestScanCreateWithContainersEngine_ContainerImagesFlagAndContainerScanTypeSpecified_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-//		flag(params.ScanTypes), "container-security",
-//		flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
 //
-//	err, _ := executeCommand(t, args...)
+//func assertZipFileRemoved(t *testing.T) {
+//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
 //	assert.NilError(t, err)
-//}
-
-//func TestScanCreate_ContainerImagesFlagSpecified_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-//		flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-
-//func TestScanCreate_ContainerImagesAndDebugFlagsSpecified_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-//		flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.DebugFlag),
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-
-//func TestScanCreate_ContainerImagesFlagSpecifiedAndEmptyFolderProject_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/empty-folder",
-//		flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-
-//func TestScanCreate_WithContainerTypeAndEmptyFolderProject_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/empty-folder",
-//		flag(params.ScanTypes), "container-security",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-
-//func TestScanCreateWithContainersEngine_InvalidContainerImagesFlag_ScanCreatedSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-//		flag(params.ContainerImagesFlag), "debian,nginx:latest",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
+//	assert.Equal(t, len(glob), 0, "Zip file not removed")
 //}
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions

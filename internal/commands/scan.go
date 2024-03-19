@@ -1133,14 +1133,9 @@ func compressFolder(sourceDir string, filter, userIncludeFilter []string, scaRes
 	return outputFile.Name(), err
 }
 
-func isSingleContainerScanTriggered(cmd *cobra.Command) bool {
-	scanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-	var scanTypeList []string
-	if len(scanTypes) > 0 {
-		scanTypeList = strings.Split(scanTypes, ",")
-	}
-	// If the scan type is not provided, we check if user has license for container engine
-	return (len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType) || userAllowedEngines[commonParams.ContainersType]
+func isSingleContainerScanTriggered() bool {
+	scanTypeList := strings.Split(actualScanTypes, ",")
+	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
@@ -1388,7 +1383,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 			return "", "", resolversErr
 		}
-		if isSingleContainerScanTriggered(cmd) {
+		if isSingleContainerScanTriggered() {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
