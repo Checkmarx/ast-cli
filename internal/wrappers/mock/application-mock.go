@@ -12,16 +12,16 @@ type ApplicationsMockWrapper struct{}
 
 func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, error) {
 	if params["name"] == NoPermissionApp {
-		return nil, errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
+		return nil, errors.Errorf(errorconstants.ApplicationDoesntExistOrNoPermission)
 	}
 	if params["name"] == ApplicationDoesntExist {
-		return nil, errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
+		return nil, errors.Errorf(errorconstants.ApplicationDoesntExistOrNoPermission)
 	}
 	if params["name"] == FakeBadRequest400 {
-		return nil, errors.Errorf(errorConstants.FailedToGetApplication)
+		return nil, errors.Errorf(errorconstants.FailedToGetApplication)
 	}
 	if params["name"] == FakeInternalServerError500 {
-		return nil, errors.Errorf(errorConstants.FailedToGetApplication)
+		return nil, errors.Errorf(errorconstants.FailedToGetApplication)
 	}
 	mockApplication := wrappers.Application{
 		ID:          "mockID",

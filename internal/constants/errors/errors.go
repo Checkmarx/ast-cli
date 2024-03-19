@@ -1,4 +1,4 @@
-package errorConstants
+package errorconstants
 
 // HTTP Errors
 const (
