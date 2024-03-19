@@ -1796,9 +1796,13 @@ func addPackageInformation(
 						for _, location := range locationsByID[head.ID] {
 							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
 						}
+						if result.ID != "" {
+							currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
+						} else {
+							currentPackage.FixLink = ""
+						}
 						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
 					}
-					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
 					if currentPackage.IsDirectDependency {
 						currentPackage.TypeOfDependency = directDependencyType
 					} else {
