@@ -6,7 +6,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/constants"
-	"github.com/checkmarx/ast-cli/internal/constants/errors"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -68,7 +68,7 @@ func runImportCommand(
 			return err
 		}
 
-		_, err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper)
+		err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper)
 		if err != nil {
 			return err
 		}
@@ -98,14 +98,14 @@ func validateFileExtension(importFilePath string) error {
 }
 
 func importFile(projectID string, path string,
-	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) (string, error) {
+	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) error {
 	uploadURL, err := uploadsWrapper.UploadFile(path)
 	if err != nil {
-		return "", err
+		return err
 	}
-	importID, err := byorWrapper.Import(projectID, *uploadURL)
+	_, err = byorWrapper.Import(projectID, *uploadURL)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return importID, nil
+	return nil
 }
