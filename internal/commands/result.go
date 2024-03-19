@@ -1798,11 +1798,7 @@ func addPackageInformation(
 						}
 						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
 					}
-					if result.VulnerabilityDetails.CveName != "" {
-						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.VulnerabilityDetails.CveName
-					} else {
-						currentPackage.FixLink = ""
-					}
+					currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
 					if currentPackage.IsDirectDependency {
 						currentPackage.TypeOfDependency = directDependencyType
 					} else {
