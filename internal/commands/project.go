@@ -9,7 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	errorconsts "github.com/checkmarx/ast-cli/internal/constants"
+	"github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
@@ -216,7 +216,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	if projectName != "" {
 		info["name"] = projectName
 	} else {
-		return errors.Errorf(errorconsts.ProjectNameIsRequired)
+		return errors.Errorf(errorConstants.ProjectNameIsRequired)
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
@@ -245,7 +245,7 @@ func runCreateProjectCommand(
 				return getAppErr
 			}
 			if application == nil {
-				return errors.Errorf(errorconsts.ApplicationDoesntExistOrNoPermission)
+				return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 			}
 			applicationID = []string{application.ID}
 		}
