@@ -617,7 +617,6 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	fmt.Println("              |               High   Medium   Low   Info   Status    |")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
-	printTableRow("Container", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
