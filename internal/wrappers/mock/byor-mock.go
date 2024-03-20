@@ -3,20 +3,20 @@ package mock
 import (
 	"fmt"
 
-	errors2 "github.com/checkmarx/ast-cli/internal/constants/errors"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 )
 
 type ByorMockWrapper struct{}
 
 func (b *ByorMockWrapper) Import(projectID, uploadURL string) (string, error) {
 	if projectID == FakeUnauthorized401 {
-		return "", fmt.Errorf(errors2.StatusUnauthorized)
+		return "", fmt.Errorf(errorconstants.StatusUnauthorized)
 	}
 	if projectID == FakeForbidden403 {
-		return "", fmt.Errorf(errors2.StatusForbidden)
+		return "", fmt.Errorf(errorconstants.StatusForbidden)
 	}
 	if projectID == FakeInternalServerError500 {
-		return "", fmt.Errorf(errors2.StatusInternalServerError)
+		return "", fmt.Errorf(errorconstants.StatusInternalServerError)
 	}
 	return "", nil
 }

@@ -6,7 +6,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/constants"
-	errors2 "github.com/checkmarx/ast-cli/internal/constants/errors"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -51,7 +51,7 @@ func runImportCommand(
 			return err
 		}
 		if importFilePath == "" {
-			return errors.Errorf(errors2.ImportFilePathIsRequired)
+			return errors.Errorf(errorconstants.ImportFilePathIsRequired)
 		}
 
 		if validationError := validateFileExtension(importFilePath); validationError != nil {
@@ -83,7 +83,7 @@ func getProjectName(cmd *cobra.Command) (string, error) {
 		return "", err
 	}
 	if projectName == "" {
-		return "", errors.Errorf(errors2.ProjectNameIsRequired)
+		return "", errors.Errorf(errorconstants.ProjectNameIsRequired)
 	}
 	return projectName, nil
 }
@@ -92,7 +92,7 @@ func validateFileExtension(importFilePath string) error {
 	extension := filepath.Ext(importFilePath)
 	extension = strings.ToLower(extension)
 	if extension != constants.SarifExtension && extension != constants.ZipExtension {
-		return errors.Errorf(errors2.SarifInvalidFileExtension)
+		return errors.Errorf(errorconstants.SarifInvalidFileExtension)
 	}
 	return nil
 }
