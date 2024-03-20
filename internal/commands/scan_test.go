@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	errors2 "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -129,12 +130,12 @@ func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationS
 
 func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errors2.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errors2.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessfully(t *testing.T) {
@@ -143,22 +144,22 @@ func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessf
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errors2.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errors2.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errors2.FailedToGetApplication)
 }
 
 func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorconstants.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errors2.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
