@@ -22,7 +22,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	projectName := projectNameRandom
+	projectName := projectNameRandom()
 
 	args := []string{
 		"import",
