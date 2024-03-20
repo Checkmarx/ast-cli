@@ -241,7 +241,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         }
 
         .bg-kicks {
-            background-color: #008e96 !important;
+            background-color: #079E9E !important;
         }
 
         .bg-red {
@@ -249,18 +249,18 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         }
 
         .bg-sast {
-            background-color: #1165b4 !important;
+            background-color: #0356A5 !important;
         }
 
         .bg-sca {
-            background-color: #0fcdc2 !important;
+            background-color: #15D7D7 !important;
         }
 
 		.bg-api-sec {
             background-color: #bdbdbd !important;
         }
 		.bg-containers {
-            background-color: #c8ebed !important;
+            background-color: #70F9CC !important;
         }
 
         .header-row .cx-info .data .calendar-svg {
