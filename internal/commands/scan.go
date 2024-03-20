@@ -1013,6 +1013,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
+		scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && userAllowedEngines[commonParams.ContainersType])
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
@@ -1023,7 +1024,6 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 				if resubmitFilter != nil && scaConfig.Filter == "" {
 					scaConfig.Filter = resubmitFilter.(string)
 				}
-				scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && userAllowedEngines[commonParams.ContainersType])
 			}
 		}
 		scaMapConfig[resultsMapValue] = &scaConfig
