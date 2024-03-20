@@ -216,7 +216,7 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	if projectName != "" {
 		info["name"] = projectName
 	} else {
-		return errors.Errorf(errorconstants.ProjectNameIsRequired)
+		return errors.Errorf(errorConstants.ProjectNameIsRequired)
 	}
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
@@ -245,7 +245,7 @@ func runCreateProjectCommand(
 				return getAppErr
 			}
 			if application == nil {
-				return errors.Errorf(errorconstants.ApplicationDoesntExistOrNoPermission)
+				return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 			}
 			applicationID = []string{application.ID}
 		}
