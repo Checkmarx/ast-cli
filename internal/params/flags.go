@@ -230,7 +230,7 @@ const (
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
-	ContainerType        = "containers"
+	ContainersType       = "containers"
 	Success              = "success"
 )
 
