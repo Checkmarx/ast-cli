@@ -99,7 +99,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, errorconstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {

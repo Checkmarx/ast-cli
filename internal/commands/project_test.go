@@ -31,22 +31,22 @@ func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessf
 
 func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
-	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorconstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeBadRequest400)
-	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errorconstants.FailedToGetApplication)
 }
 
 func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeInternalServerError500)
-	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
+	assert.Assert(t, err.Error() == errorconstants.FailedToGetApplication)
 }
 
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create")
-	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
+	assert.Assert(t, err.Error() == errorconstants.ProjectNameIsRequired)
 }
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
