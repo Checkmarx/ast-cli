@@ -9,21 +9,19 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
-	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
+func TestImport_providedProjectDoesNotExist_correctError(t *testing.T) {
 	args := []string{
 		"import",
-		flag(params.ProjectName), projectName,
+		flag(params.ProjectName), "ProjectDoesNotExist",
 		flag(params.ImportFilePath), "./data/sarif.sarif",
 	}
+
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "import failed")
+	assertError(t, err, "Project name does not exist")
 }
-
-func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	projectName := projectNameRandom()
-
+func TestImport_okFromByorImports_projectContainsImportedData(t *testing.T) {
+	projectId, projectName := createProject(t, nil, nil)
+	defer deleteProject(t, projectId)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
