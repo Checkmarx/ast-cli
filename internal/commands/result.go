@@ -848,16 +848,12 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		switch severity {
 		case highLabel:
 			summary.HighIssues++
-			break
 		case mediumLabel:
 			summary.MediumIssues++
-			break
 		case lowLabel:
 			summary.LowIssues++
-			break
 		case infoLabel:
 			summary.InfoIssues++
-			break
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
