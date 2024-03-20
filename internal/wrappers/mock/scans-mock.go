@@ -83,7 +83,7 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 	return &wrappers.ScanResponseModel{
 		ID:      scanID,
 		Status:  status,
-		Engines: []string{params.ScaType, params.SastType, params.KicsType, params.ContainerType},
+		Engines: []string{params.ScaType, params.SastType, params.KicsType, params.ContainersType},
 	}, nil, nil
 }
 

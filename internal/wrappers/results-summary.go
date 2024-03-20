@@ -103,8 +103,8 @@ func (engineSummary *EngineResultSummary) Increment(level string) {
 	}
 }
 
-func (summary *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
-	summary.EnginesResult[engineType].Increment(severity)
+func (r *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
+	r.EnginesResult[engineType].Increment(severity)
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {

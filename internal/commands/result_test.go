@@ -37,7 +37,7 @@ func TestResultHelp(t *testing.T) {
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file
-	removeFileBySuffix(printer.FormatSarif)
+	removeFileBySuffix(t, printer.FormatSarif)
 }
 
 func TestParseSarifEmptyResultSast(t *testing.T) {
@@ -51,35 +51,35 @@ func TestParseSarifEmptyResultSast(t *testing.T) {
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
 	// Remove generated sonar file
-	removeFile(fileName+"_"+printer.FormatSonar, printer.FormatJSON)
+	removeFile(t, fileName+"_"+printer.FormatSonar, printer.FormatJSON)
 }
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 
 	// Remove generated json file
-	removeFileBySuffix(printer.FormatJSON)
+	removeFileBySuffix(t, printer.FormatJSON)
 }
 
 func TestRunGetResultsByScanIdJsonFormatWithSastRedundancy(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--sast-redundancy")
 
 	// Remove generated json file
-	removeFileBySuffix(printer.FormatJSON)
+	removeFileBySuffix(t, printer.FormatJSON)
 }
 
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
 	// Remove generated json file
-	removeFileBySuffix(printer.FormatJSON)
+	removeFileBySuffix(t, printer.FormatJSON)
 }
 
 func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryHTML")
 
 	// Remove generated html file
-	removeFileBySuffix(printer.FormatHTML)
+	removeFileBySuffix(t, printer.FormatHTML)
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
@@ -89,15 +89,16 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
-	removeFileBySuffix("md")
+	removeFileBySuffix(t, "md")
 }
 
-func removeFileBySuffix(suffix string) error {
-	return removeFile(fileName, suffix)
+func removeFileBySuffix(t *testing.T, suffix string) {
+	removeFile(t, fileName, suffix)
 }
 
-func removeFile(prefix string, suffix string) error {
-	return os.Remove(fmt.Sprintf("%s.%s", prefix, suffix))
+func removeFile(t *testing.T, prefix, suffix string) {
+	err := os.Remove(fmt.Sprintf("%s.%s", prefix, suffix))
+	assert.NilError(t, err, "Error removing file, check if report file created")
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
@@ -105,7 +106,7 @@ func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
 	// Remove generated pdf file
-	removeFileBySuffix(printer.FormatPDF)
+	removeFileBySuffix(t, printer.FormatPDF)
 }
 
 func TestRunGetResultsByScanIdWrongFormat(t *testing.T) {
@@ -299,7 +300,7 @@ func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
 		"--output-name", fileName,
 		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
 	defer func() {
-		removeFileBySuffix(printer.FormatPDF)
+		removeFileBySuffix(t, printer.FormatPDF)
 		fmt.Println("test file removed!")
 	}()
 	assert.NilError(t, err)
@@ -343,5 +344,5 @@ func TestSBOMReportXMLWithProxy(t *testing.T) {
 func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
-	removeFileBySuffix(printer.FormatGL)
+	removeFile(t, "cx_result.gl-sast-report", "json")
 }
