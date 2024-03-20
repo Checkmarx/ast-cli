@@ -68,7 +68,8 @@ func runImportCommand(
 			return err
 		}
 
-		if _, err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper); err != nil {
+		err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper)
+		if err != nil {
 			return err
 		}
 
@@ -97,14 +98,14 @@ func validateFileExtension(importFilePath string) error {
 }
 
 func importFile(projectID string, path string,
-	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) (string, error) {
+	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) error {
 	uploadURL, err := uploadsWrapper.UploadFile(path)
 	if err != nil {
-		return "", err
+		return err
 	}
-	importID, err := byorWrapper.Import(projectID, *uploadURL)
+	_, err = byorWrapper.Import(projectID, *uploadURL)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return importID, nil
+	return nil
 }
