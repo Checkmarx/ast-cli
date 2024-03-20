@@ -3,7 +3,7 @@ package mock
 import (
 	"fmt"
 
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/constants/errors"
 )
 
 type ByorMockWrapper struct{}
