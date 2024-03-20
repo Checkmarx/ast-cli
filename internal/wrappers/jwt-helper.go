@@ -19,14 +19,14 @@ type JWTStruct struct {
 	jwt.Claims
 }
 
-var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "container-security"}
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "containers"}
 
 var defaultEngines = map[string]bool{
-	"sast":               true,
-	"sca":                true,
-	"api-security":       true,
-	"iac-security":       true,
-	"container-security": true,
+	"sast":         true,
+	"sca":          true,
+	"api-security": true,
+	"iac-security": true,
+	"containers":   true,
 }
 
 type JWTWrapper interface {
@@ -63,7 +63,6 @@ func prepareEngines(engines []string) map[string]bool {
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
-		engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.ContainerLabel), commonParams.ContainersType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT
 		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
@@ -73,6 +72,7 @@ func prepareEngines(engines []string) map[string]bool {
 			m[strings.ToLower(engine)] = true
 		}
 	}
+	FeatureFlags[ContainerEngineCLIEnabled] = true
 	return m
 }
 

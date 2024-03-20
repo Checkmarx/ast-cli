@@ -1037,7 +1037,7 @@ func addContainersScan() map[string]interface{} {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
-	containerMapConfig[resultsMapType] = strings.ToLower(commonParams.ContainerLabel)
+	containerMapConfig[resultsMapType] = commonParams.ContainersType
 
 	containerConfig := wrappers.ContainerConfig{}
 
@@ -1072,6 +1072,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
+		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersFlagType, commonParams.ContainersType, 1)
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
