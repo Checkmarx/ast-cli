@@ -68,8 +68,7 @@ func runImportCommand(
 			return err
 		}
 
-		_, err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper)
-		if err != nil {
+		if _, err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper); err != nil {
 			return err
 		}
 
