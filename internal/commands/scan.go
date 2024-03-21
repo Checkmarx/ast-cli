@@ -1784,6 +1784,7 @@ func createReportsAfterScan(
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 	retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
+	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
 	params, err := getFilters(cmd)
 	if err != nil {
@@ -1814,6 +1815,7 @@ func createReportsAfterScan(
 		formatSbomOptions,
 		targetFile,
 		targetPath,
+		agent,
 		params,
 	)
 }

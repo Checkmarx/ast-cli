@@ -58,6 +58,8 @@ type EngineResultSummary struct {
 
 type EnginesResultsSummary map[string]*EngineResultSummary
 
+var IsContainersEnabled bool
+
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
 	for _, v := range *engineSummary {
@@ -120,7 +122,7 @@ func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
 }
 func (r *ResultSummary) ContainersEnabled() bool {
-	return FeatureFlags[ContainerEngineCLIEnabled]
+	return IsContainersEnabled
 }
 func (r *ResultSummary) ContainersIssuesValue() int {
 	return *r.ContainersIssues

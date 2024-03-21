@@ -143,6 +143,10 @@ var sonarSeverities = map[string]string{
 	highCx:   highSonar,
 }
 
+var containerSupportedAgents = []string{
+	commonParams.DefaultAgent,
+}
+
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
@@ -369,7 +373,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		commonParams.KicsType:   0,
 		commonParams.APISecType: 0,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if wrappers.IsContainersEnabled {
 		containersIssues = new(int)
 		*containersIssues = 0
 		enginesStatusCode[commonParams.ContainersType] = 0
@@ -384,7 +388,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
 					*containersIssues = notAvailableNumber
 				}
 			}
@@ -422,7 +426,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
 		},
 	}
-	if summary.ContainersEnabled() {
+	if wrappers.IsContainersEnabled {
 		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
 	}
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
@@ -468,7 +472,7 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
-	if summary.ContainersEnabled() {
+	if wrappers.IsContainersEnabled {
 		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
 	}
 	setRiskMsgAndStyle(summary)
@@ -514,7 +518,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
-	if summary.ContainersEnabled() {
+	if wrappers.IsContainersEnabled {
 		summary.TotalIssues += *summary.ContainersIssues
 	}
 }
@@ -638,7 +642,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
-	if summary.ContainersEnabled() {
+	if wrappers.IsContainersEnabled {
 		printTableRow("CONTAINERS", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	}
 
@@ -674,6 +678,7 @@ func runGetResultCommand(
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
+		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -706,7 +711,6 @@ func runGetResultCommand(
 		} else {
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
-
 		if sastRedundancy {
 			params[commonParams.SastRedundancyFlag] = ""
 		}
@@ -726,6 +730,7 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
+			agent,
 			params)
 	}
 }
@@ -769,7 +774,10 @@ func runGetCodeBashingCommand(
 		return nil
 	}
 }
-
+func setIsContainersEnabled(agent string) {
+	agentSupported := contains(containerSupportedAgents, agent)
+	wrappers.IsContainersEnabled = wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && agentSupported
+}
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -785,11 +793,12 @@ func CreateScanReport(
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
+	agent string,
 	params map[string]string,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-
+	setIsContainersEnabled(agent)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
 		return err
@@ -838,7 +847,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			summary.KicsIssues++
 			summary.TotalIssues++
 		} else if engineType == commonParams.ContainersType {
-			if summary.ContainersEnabled() {
+			if wrappers.IsContainersEnabled {
 				*summary.ContainersIssues++
 				summary.TotalIssues++
 			} else {
@@ -1477,7 +1486,7 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if engineType == commonParams.ScaType {
 				sonarIssuesByLocation := parseScaSonarLocations(result)
 				sonarIssues = append(sonarIssues, sonarIssuesByLocation...)
-			} else if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && engineType == commonParams.ContainersType {
+			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			}
@@ -1692,7 +1701,7 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultKics(result, scanResults)
 	} else if result.Type == commonParams.ScaType {
 		scanResults = parseSarifResultsSca(result, scanResults)
-	} else if result.Type == commonParams.ContainersType && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
 		scanResults = parseSarifResultsContainers(result, scanResults)
 	}
 
@@ -1792,7 +1801,7 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 		summary.SastIssues = 0
 	} else if summary.ScaIssues == notAvailableNumber {
 		summary.ScaIssues = 0
-	} else if summary.ContainersEnabled() && *summary.ContainersIssues == notAvailableNumber {
+	} else if wrappers.IsContainersEnabled && *summary.ContainersIssues == notAvailableNumber {
 		*summary.ContainersIssues = 0
 	}
 }
