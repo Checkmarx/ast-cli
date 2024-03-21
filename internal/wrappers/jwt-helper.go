@@ -72,7 +72,6 @@ func prepareEngines(engines []string) map[string]bool {
 			m[strings.ToLower(engine)] = true
 		}
 	}
-	FeatureFlags[ContainerEngineCLIEnabled] = true
 	return m
 }
 
