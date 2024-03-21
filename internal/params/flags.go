@@ -224,7 +224,6 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
-	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"
