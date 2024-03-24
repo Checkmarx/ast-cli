@@ -7,6 +7,7 @@ import (
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
+const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -21,6 +22,9 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Default: true,
 			},
 		},
+	},
+	{
+		CommandName: "cx project create",
 	},
 }
 

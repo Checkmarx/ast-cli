@@ -18,6 +18,7 @@ const (
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
+	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
 	ScaPackagePathEnv                   = "CX_SCA_PACKAGE_PATH"
@@ -58,5 +59,6 @@ const (
 	FeatureFlagsEnv                     = "CX_FEATURE_FLAGS_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
 	PolicyEvaluationPathEnv             = "CX_POLICY_EVALUATION_PATH"
+	AccessManagementPathEnv             = "CX_ACCESS_MANAGEMENT_PATH"
 	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
 )

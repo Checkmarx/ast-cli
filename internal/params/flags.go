@@ -4,6 +4,7 @@ package params
 const (
 	AgentFlag                     = "agent"
 	AgentFlagUsage                = "Scan origin name"
+	ApplicationName               = "application-name"
 	DefaultAgent                  = "ASTCLI"
 	DebugFlag                     = "debug"
 	DebugUsage                    = "Debug mode with detailed logs"
@@ -223,6 +224,7 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
+	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"
