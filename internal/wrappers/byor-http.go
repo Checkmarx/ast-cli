@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
@@ -44,11 +44,11 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusForbidden:
-		return "", getError(decoder, errorconstants.StatusForbidden)
+		return "", getError(decoder, errorConstants.StatusForbidden)
 	case http.StatusUnauthorized:
-		return "", getError(decoder, errorconstants.StatusUnauthorized)
+		return "", getError(decoder, errorConstants.StatusUnauthorized)
 	case http.StatusInternalServerError:
-		return "", getError(decoder, errorconstants.StatusInternalServerError)
+		return "", getError(decoder, errorConstants.StatusInternalServerError)
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
