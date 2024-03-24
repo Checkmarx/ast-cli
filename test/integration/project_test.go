@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
