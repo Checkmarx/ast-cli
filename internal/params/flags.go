@@ -26,6 +26,8 @@ const (
 	IgnorePolicyFlag              = "ignore-policy"
 	SourceDirFilterFlag           = "file-filter"
 	SourceDirFilterFlagSh         = "f"
+	ImportFileType                = "import-file-type"
+	ImportFilePath                = "import-file-path"
 	IncludeFilterFlag             = "file-include"
 	IncludeFilterFlagSh           = "i"
 	ProjectIDFlag                 = "project-id"
