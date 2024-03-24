@@ -1079,7 +1079,22 @@ func enrichScaResults(
 		// Compute SAST results redundancy
 		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
+	if util.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
+		resultsModel = removeContainerResults(resultsModel)
+	}
 	return resultsModel, nil
+}
+
+func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+	var newResults []*wrappers.ScanResult
+	for _, result := range model.Results {
+		if result.Type != commonParams.ContainersType {
+			newResults = append(newResults, result)
+		}
+	}
+	model.Results = newResults
+	model.TotalCount = uint(len(newResults))
+	return model
 }
 
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {

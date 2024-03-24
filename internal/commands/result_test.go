@@ -1,8 +1,9 @@
-//go:build !integration
+//go:build integration
 
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
 
@@ -345,4 +347,44 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	removeFile(t, "cx_result.gl-sast-report", "json")
+}
+func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+	assertContainersPresent(t, true)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: false}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+	assertContainersPresent(t, false)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+func TestRunResultsShow_AgentIsNotSupported_excludeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jet-brains")
+	assertContainersPresent(t, false)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func assertContainersPresent(t *testing.T, hasContainersPresent bool) {
+	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultsCollection *wrappers.ScanResultsCollection
+	err = json.Unmarshal(bytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+	for _, scanResult := range scanResultsCollection.Results {
+		if !hasContainersPresent && scanResult.Type == params.ContainersType {
+			assert.Assert(t, false, "Containers result should not be present")
+		} else if hasContainersPresent && scanResult.Type == params.ContainersType {
+			return
+		}
+	}
+	if hasContainersPresent {
+		assert.Assert(t, false, "Containers result should be present")
+	}
 }
