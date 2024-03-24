@@ -18,7 +18,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 		flag(params.ImportFilePath), "./data/sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "import failed")
+	assert.NilError(t, err, "Import command failed with existing project")
 }
 
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
@@ -30,5 +30,5 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 		flag(params.ImportFilePath), "./data/sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "import failed")
+	assert.NilError(t, err, "Import command failed with non-existing project")
 }
