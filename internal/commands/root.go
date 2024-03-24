@@ -54,7 +54,6 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
-	setUpFeatureFlags(featureFlagsWrapper)
 	// Create the root
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
@@ -108,7 +107,16 @@ func NewAstCLI(
 			_ = cmd.Help()
 			os.Exit(0)
 		}
+		if requiredFeatureFlagsCheck(cmd) {
+			err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
+
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
 	}
+
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
@@ -154,6 +162,7 @@ func NewAstCLI(
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		containerResolverWrapper,
+		featureFlagsWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
@@ -212,6 +221,16 @@ func PrintConfiguration() {
 	for param := range util.Properties {
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
 	}
+}
+
+func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
+	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
+		if cmdFlag.CommandName == cmd.CommandPath() {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
@@ -288,13 +307,4 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
-}
-
-func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }

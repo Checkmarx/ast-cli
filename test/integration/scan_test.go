@@ -113,11 +113,10 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 }
 
 func TestScanCreateWithContainersEngine(t *testing.T) {
-	type TestCase struct {
+	testCases := []struct {
 		Name      string
 		Arguments []string
-	}
-	testCases := []TestCase{
+	}{
 		{
 			Name: "Container images flag specified and empty folder project",
 			Arguments: []string{

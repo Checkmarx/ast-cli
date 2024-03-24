@@ -141,6 +141,7 @@ func NewScanCommand(
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -168,6 +169,7 @@ func NewScanCommand(
 		policyWrapper,
 		accessManagementWrapper,
 		applicationsWrapper,
+		featureFlagWrapper,
 	)
 	containerResolver = containerResolverWrapper
 	userAllowedEngines, _ = jwtWrapper.GetAllowedEngines()
@@ -422,6 +424,7 @@ func scanCreateSubCommand(
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -506,6 +509,12 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
+	if len(wrappers.FeatureFlags) == 0 {
+		featureFlagErr := wrappers.HandleFeatureFlags(featureFlagWrapper)
+		if featureFlagErr != nil {
+			log.Fatal(featureFlagErr)
+		}
+	}
 	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
 		createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 		createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security,container-security)")
