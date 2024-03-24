@@ -21,10 +21,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Name:    MinioEnabled,
 				Default: true,
 			},
-			{
-				Name:    ContainerEngineCLIEnabled,
-				Default: true,
-			},
 		},
 	},
 	{
