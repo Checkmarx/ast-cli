@@ -112,94 +112,81 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreateWithContainersEngine(t *testing.T) {
-	testCases := []struct {
-		Name      string
-		Arguments []string
-	}{
-		{
-			Name: "Container images flag specified and empty folder project",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/empty-folder",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
-		{
-			Name: "Container images flag and container scan type specified",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ScanTypes), "container-security",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
-		{
-			Name: "Container images flag specified",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
-		{
-			Name: "Container images and debug flags specified",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-				flag(params.DebugFlag),
-			},
-		},
-		{
-			Name: "Container images flag specified and empty folder project",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/empty-folder",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
-		{
-			Name: "Container type specified and empty folder project",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/empty-folder",
-				flag(params.ScanTypes), "container-security",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
-		{
-			Name: "Invalid container images flag specified",
-			Arguments: []string{
-				"scan", "create",
-				flag(params.ProjectName), "my-project",
-				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian,nginx:latest",
-				flag(params.BranchFlag), "dummy_branch",
-			},
-		},
+func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApikeyOverrideFlag),
 	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, Tags)
+	assertZipFileRemoved(t)
+}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.Name, func(t *testing.T) {
-			scanID, projectID := executeCreateScan(t, tc.Arguments)
-			deleteProject(t, projectID)
-			executeScanAssertions(t, projectID, scanID, Tags)
-			assertZipFileRemoved(t)
-		})
+func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.ContainerImagesFlag), "nginx:alpine",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApikeyOverrideFlag),
 	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, Tags)
+	assertZipFileRemoved(t)
+}
+
+func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.ContainerImagesFlag), "nginx:alpine",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+		flag(params.ApikeyOverrideFlag),
+	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, Tags)
+	assertZipFileRemoved(t)
+}
+
+func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/empty-folder",
+		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApikeyOverrideFlag),
+	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, Tags)
+	assertZipFileRemoved(t)
+}
+
+func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApikeyOverrideFlag),
+	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, Tags)
+	assertZipFileRemoved(t)
 }
 
 func assertZipFileRemoved(t *testing.T) {
