@@ -5,7 +5,6 @@ bundle_id = "com.checkmarx.cli"
 apple_id {
   username = "tiago.baptista@checkmarx.com"
   password = "@env:AC_PASSWORD"
-  provider = "Z68SAQG5BR"
 }
 
 sign {
