@@ -112,7 +112,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreateWithContainersEngine(t *testing.T) {
+func TestContainerEngineScansE2E(t *testing.T) {
 	testCases := []struct {
 		Name      string
 		Arguments []string
@@ -123,7 +123,7 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				"scan", "create",
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/empty-folder",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 			},
 		},
@@ -134,7 +134,7 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/withDockerInZip.zip",
 				flag(params.ScanTypes), "container-security",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 			},
 		},
@@ -144,7 +144,7 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				"scan", "create",
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 			},
 		},
@@ -154,7 +154,7 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				"scan", "create",
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 				flag(params.DebugFlag),
 			},
@@ -165,7 +165,7 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				"scan", "create",
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/empty-folder",
-				flag(params.ContainerImagesFlag), "debian:12,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 			},
 		},
@@ -185,20 +185,21 @@ func TestScanCreateWithContainersEngine(t *testing.T) {
 				"scan", "create",
 				flag(params.ProjectName), "my-project",
 				flag(params.SourcesFlag), "data/withDockerInZip.zip",
-				flag(params.ContainerImagesFlag), "debian,nginx:latest",
+				flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 				flag(params.BranchFlag), "dummy_branch",
 			},
 		},
 	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.Name, func(t *testing.T) {
-			scanID, projectID := executeCreateScan(t, tc.Arguments)
-			deleteProject(t, projectID)
-			executeScanAssertions(t, projectID, scanID, Tags)
-			assertZipFileRemoved(t)
-		})
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		for _, tc := range testCases {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				scanID, projectID := executeCreateScan(t, tc.Arguments)
+				deleteProject(t, projectID)
+				executeScanAssertions(t, projectID, scanID, Tags)
+				assertZipFileRemoved(t)
+			})
+		}
 	}
 }
 

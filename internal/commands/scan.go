@@ -515,6 +515,12 @@ func scanCreateSubCommand(
 			log.Fatal(featureFlagErr)
 		}
 	}
+	if len(wrappers.FeatureFlags) == 0 {
+		featureFlagErr := wrappers.HandleFeatureFlags(featureFlagWrapper)
+		if featureFlagErr != nil {
+			return nil
+		}
+	}
 	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
 		createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 		createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security,container-security)")
