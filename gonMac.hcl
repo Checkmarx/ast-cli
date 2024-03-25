@@ -9,7 +9,7 @@ apple_id {
 }
 
 sign {
-  application_identity = "Developer ID Application: CHECKMARX LTD"
+  application_identity = "Developer ID Application: CHECKMARX LTD (Z68SAQG5BR)"
 }
 
 dmg {
