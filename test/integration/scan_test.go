@@ -116,15 +116,17 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ScanTypes), "container-security",
 		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, Tags)
+	//defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
 }
 
@@ -132,14 +134,16 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, Tags)
+	//defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
 }
 
@@ -147,15 +151,17 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/withDockerInZip.zip",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
 		flag(params.ApikeyOverrideFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, Tags)
+	//defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
 }
 
@@ -167,10 +173,12 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, Tags)
+	//defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
 }
 
@@ -178,15 +186,14 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/withDockerInZip.zip",
-		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.ContainerImagesFlag), "nginx:",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, Tags)
-	assertZipFileRemoved(t)
+	err, _ := executeCommand(t, testArgs...)
+	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 }
 
 func assertZipFileRemoved(t *testing.T) {

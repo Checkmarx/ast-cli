@@ -60,8 +60,8 @@ github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbi
 github.com/BurntSushi/toml v1.3.2 h1:o7IhLm0Msx3BaB+n3Ag7L8EVlByGnpq14C4YWiu/gL8=
 github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/CheckmarxDev/containers-resolver v1.0.3 h1:OELrWejUfdNLQAahrn28SoNgfzmoUuq5S9/mt3l6sWg=
-github.com/CheckmarxDev/containers-resolver v1.0.3/go.mod h1:f8Xc7jBhlsmMh/XZHMhhLB6gTTIllzr5RgZE5GLwi+U=
+github.com/CheckmarxDev/containers-resolver v1.0.4 h1:iIYPKIrh0s6yaCxRn0ltgzssz6QVQyyZMuaP+aOejA8=
+github.com/CheckmarxDev/containers-resolver v1.0.4/go.mod h1:f8Xc7jBhlsmMh/XZHMhhLB6gTTIllzr5RgZE5GLwi+U=
 github.com/CycloneDX/cyclonedx-go v0.8.0 h1:FyWVj6x6hoJrui5uRQdYZcSievw3Z32Z88uYzG/0D6M=
 github.com/CycloneDX/cyclonedx-go v0.8.0/go.mod h1:K2bA+324+Og0X84fA8HhN2X066K7Bxz4rpMQ4ZhjtSk=
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
