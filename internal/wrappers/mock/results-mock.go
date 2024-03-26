@@ -42,6 +42,28 @@ func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]strin
 	return &scaPackages, nil, nil
 }
 
+var containersResults = &wrappers.ScanResult{
+	Type:     "containers",
+	Severity: "medium",
+	ScanResultData: wrappers.ScanResultData{
+		PackageName:       "image-mock",
+		PackageVersion:    "1.1",
+		ImageName:         "image-mock",
+		ImageTag:          "1.1",
+		ImageFilePath:     "DockerFile",
+		ImageOrigin:       "Docker",
+		PackageIdentifier: "mock",
+		QueryID:           12.4,
+		QueryName:         "mock-query-name",
+	},
+	Description: "mock-description",
+	VulnerabilityDetails: wrappers.VulnerabilityDetails{
+		CvssScore: 4.5,
+		CveName:   "CVE-2021-1234",
+		CweID:     "CWE-1234",
+	},
+}
+
 func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 	*wrappers.ScanResultsCollection,
 	*wrappers.WebError,
@@ -49,32 +71,11 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 ) {
 	if params["scan-id"] == "CONTAINERS_ONLY" {
 		return &wrappers.ScanResultsCollection{
-			TotalCount: 8,
+			TotalCount: 1,
 			Results: []*wrappers.ScanResult{
-				{
-					Type:     "containers",
-					Severity: "medium",
-					ScanResultData: wrappers.ScanResultData{
-						PackageName:       "image-mock",
-						PackageVersion:    "1.1",
-						ImageName:         "image-mock",
-						ImageTag:          "1.1",
-						ImageFilePath:     "DockerFile",
-						ImageOrigin:       "Docker",
-						PackageIdentifier: "mock",
-						QueryID:           12.4,
-						QueryName:         "mock-query-name",
-					},
-					Description: "mock-description",
-					VulnerabilityDetails: wrappers.VulnerabilityDetails{
-						CvssScore: 4.5,
-						CveName:   "CVE-2021-1234",
-						CweID:     "CWE-1234",
-					},
-				},
+				containersResults,
 			},
 		}, nil, nil
-
 	}
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
@@ -233,27 +234,7 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 					},
 				},
 			},
-			{
-				Type:     "containers",
-				Severity: "medium",
-				ScanResultData: wrappers.ScanResultData{
-					PackageName:       "image-mock",
-					PackageVersion:    "1.1",
-					ImageName:         "image-mock",
-					ImageTag:          "1.1",
-					ImageFilePath:     "DockerFile",
-					ImageOrigin:       "Docker",
-					PackageIdentifier: "mock",
-					QueryID:           12.4,
-					QueryName:         "mock-query-name",
-				},
-				Description: "mock-description",
-				VulnerabilityDetails: wrappers.VulnerabilityDetails{
-					CvssScore: 4.5,
-					CveName:   "CVE-2021-1234",
-					CweID:     "CWE-1234",
-				},
-			},
+			containersResults,
 			{
 				Type:     "kics",
 				Severity: "low",
