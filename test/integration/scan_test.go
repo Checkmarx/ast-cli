@@ -134,7 +134,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
@@ -151,8 +151,8 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
-		flag(params.ContainerImagesFlag), "nginx:alpine",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
 		flag(params.ApikeyOverrideFlag),
@@ -170,7 +170,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
 		flag(params.SourcesFlag), "data/empty-folder",
-		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
