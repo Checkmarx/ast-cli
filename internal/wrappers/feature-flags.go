@@ -23,7 +23,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			},
 			{
 				Name:    ContainerEngineCLIEnabled,
-				Default: true,
+				Default: false,
 			},
 		},
 	},
