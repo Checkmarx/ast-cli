@@ -388,3 +388,7 @@ func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 		assert.Assert(t, false, "Containers result should be present")
 	}
 }
+func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_NilAssertion(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: false}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "CONTAINERS_ONLY", "--report-format", "summaryConsole")
+}

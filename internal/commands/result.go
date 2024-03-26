@@ -208,7 +208,6 @@ func resultShowSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 		printer.FormatGL,
-		// printer.FormatSonar ??
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
