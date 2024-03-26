@@ -92,6 +92,7 @@ const (
 	sarifNodeFileLength                     = 2
 	fixLabel                                = "fix"
 	redundantLabel                          = "redundant"
+	tamarTry="tamar"
 )
 
 var summaryFormats = []string{
