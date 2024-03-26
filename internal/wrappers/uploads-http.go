@@ -30,6 +30,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	}
 	*preSignedURL = string(preSignedURLBytes)
 	viper.Set(commonParams.UploadURLEnv, *preSignedURL)
+
 	file, err := os.Open(sourcesFile)
 	if err != nil {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())

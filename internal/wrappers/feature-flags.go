@@ -26,6 +26,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	{
 		CommandName: "cx project create",
 	},
+	{
+		CommandName: "cx import",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    MinioEnabled,
+				Default: true,
+			},
+		},
+	},
 }
 
 var FeatureFlags = map[string]bool{}
