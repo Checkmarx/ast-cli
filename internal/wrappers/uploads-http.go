@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -62,6 +63,8 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	}()
 
 	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
 	case http.StatusOK:
 		return preSignedURL, nil
 	default:

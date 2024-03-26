@@ -183,6 +183,12 @@ func deleteProject(t *testing.T, projectID string) {
 	)
 }
 
+func deleteProjectByName(t *testing.T, projectName string) {
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(viper.GetString(params.ProjectsPathKey))
+	projectModel, _, _ := projectsWrapper.GetByName(projectName)
+	deleteProject(t, projectModel.ID)
+}
+
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 	fmt.Println("Listing project for id ", projectID)

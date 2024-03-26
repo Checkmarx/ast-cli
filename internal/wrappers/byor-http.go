@@ -58,7 +58,7 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		logger.Printf(successfulMessage, projectID)
 		return model.ImportID, nil
 	default:
-		return "", errors.Errorf("response status code %d", resp.StatusCode)
+		return "", errors.Errorf(errorConstants.ImportSarifFileErrorMessage)
 	}
 }
 
