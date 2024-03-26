@@ -41,6 +41,12 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	// Remove generated sarif file
 	removeFileBySuffix(t, printer.FormatSarif)
 }
+func TestRunGetResultsByScanIdSarifFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
+	// Remove generated sarif file
+	removeFileBySuffix(t, printer.FormatSarif)
+}
 
 func TestParseSarifEmptyResultSast(t *testing.T) {
 	emptyResult := &wrappers.ScanResult{}
@@ -56,7 +62,22 @@ func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 	removeFile(t, fileName+"_"+printer.FormatSonar, printer.FormatJSON)
 }
 
+func TestRunGetResultsByScanIdSonarFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
+	// Remove generated sonar file
+	removeFile(t, fileName+"_"+printer.FormatSonar, printer.FormatJSON)
+}
+
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunGetResultsByScanIdJsonFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 
 	// Remove generated json file
@@ -77,7 +98,23 @@ func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
+func TestRunGetResultsByScanIdSummaryJsonFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
+
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
 func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryHTML")
+
+	// Remove generated html file
+	removeFileBySuffix(t, printer.FormatHTML)
+}
+
+func TestRunGetResultsByScanIdSummaryHtmlFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryHTML")
 
 	// Remove generated html file
@@ -88,7 +125,19 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 }
 
+func TestRunGetResultsByScanIdSummaryMarkdownFormatWithContainers(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
+	// Remove generated md file
+	removeFileBySuffix(t, "md")
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+}
+
 func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
 	removeFileBySuffix(t, "md")
@@ -104,6 +153,15 @@ func removeFile(t *testing.T, prefix, suffix string) {
 }
 
 func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "pdf")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
+	// Remove generated pdf file
+	removeFileBySuffix(t, printer.FormatPDF)
+}
+
+func TestRunGetResultsByScanIdPDFFormatWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "pdf")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
@@ -328,6 +386,24 @@ func TestSBOMReportJson(t *testing.T) {
 }
 
 func TestSBOMReportXML(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+}
+
+func TestSBOMReportJsonWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom")
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+}
+
+func TestSBOMReportXMLWithContainers(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
