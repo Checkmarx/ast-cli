@@ -120,11 +120,10 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		flag(params.ScanTypes), "container-security",
 		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	//defer deleteProject(t, projectID)
+	defer deleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
@@ -137,11 +136,10 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	//defer deleteProject(t, projectID)
+	defer deleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
@@ -155,11 +153,10 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
-		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	//defer deleteProject(t, projectID)
+	defer deleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)
@@ -172,11 +169,10 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.SourcesFlag), "data/empty-folder",
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, testArgs)
-	//defer deleteProject(t, projectID)
+	defer deleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 	assertZipFileRemoved(t)

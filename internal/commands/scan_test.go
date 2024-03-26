@@ -125,17 +125,6 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
-func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
-	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-}
-
-func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
-}
-
 func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
