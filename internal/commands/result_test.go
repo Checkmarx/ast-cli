@@ -370,7 +370,7 @@ func TestRunResultsShow_AgentIsNotSupported_excludeContainersResult(t *testing.T
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
-func assertContainersPresent(t *testing.T, hasContainersPresent bool) {
+func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
@@ -378,13 +378,13 @@ func assertContainersPresent(t *testing.T, hasContainersPresent bool) {
 	err = json.Unmarshal(bytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 	for _, scanResult := range scanResultsCollection.Results {
-		if !hasContainersPresent && scanResult.Type == params.ContainersType {
+		if !isContainersEnabled && scanResult.Type == params.ContainersType {
 			assert.Assert(t, false, "Containers result should not be present")
-		} else if hasContainersPresent && scanResult.Type == params.ContainersType {
+		} else if isContainersEnabled && scanResult.Type == params.ContainersType {
 			return
 		}
 	}
-	if hasContainersPresent {
+	if isContainersEnabled {
 		assert.Assert(t, false, "Containers result should be present")
 	}
 }
