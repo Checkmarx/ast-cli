@@ -512,7 +512,7 @@ func scanCreateSubCommand(
 	if len(wrappers.FeatureFlags) == 0 {
 		featureFlagErr := wrappers.HandleFeatureFlags(featureFlagWrapper)
 		if featureFlagErr != nil {
-			log.Fatal(featureFlagErr)
+			logger.PrintIfVerbose("Failed to get feature flags")
 		}
 	}
 	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
