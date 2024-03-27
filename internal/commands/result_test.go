@@ -334,7 +334,6 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 }
 
 func Test_addPackageInformation(t *testing.T) {
-
 	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
 	resultsModel := &wrappers.ScanResultsCollection{
