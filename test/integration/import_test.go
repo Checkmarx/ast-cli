@@ -11,7 +11,7 @@ import (
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
-	projectId, projectName := createProject(t, nil, nil)
+	_, projectName := createProject(t, nil, nil)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
@@ -23,7 +23,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
-	projectId, projectName := createProject(t, nil, nil)
+	_, projectName := createProject(t, nil, nil)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
