@@ -12,7 +12,6 @@ import (
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
 	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
@@ -25,7 +24,6 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
 	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
