@@ -1,0 +1,6 @@
+package feature_flags
+
+const (
+	BYOR_ENABLED              = "BYOR_ENABLED"
+	ACCESS_MANAGEMENT_ENABLED = "ACCESS_MANAGEMENT_ENABLED"
+)

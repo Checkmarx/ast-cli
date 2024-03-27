@@ -9,6 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
@@ -207,8 +208,11 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
-		importCmd,
 	)
+
+	if wrappers.FeatureFlags[featureFlagsConstants.BYOR_ENABLED] {
+		rootCmd.AddCommand(importCmd)
+	}
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true

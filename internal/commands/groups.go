@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"strings"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-const accessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED" // feature flag
 
 func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groups := strings.Split(groupsStr, ",")
@@ -52,7 +51,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	if err != nil {
 		return groups, err
 	}
-	if !wrappers.FeatureFlags[accessManagementEnabled] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
 		var info map[string]interface{}
 		_ = json.Unmarshal(*input, &info)
 		info["groups"] = getGroupIds(groups)
@@ -61,7 +60,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	return groups, nil
 }
 func getGroupsForRequest(groups []*wrappers.Group) []string {
-	if !wrappers.FeatureFlags[accessManagementEnabled] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
 		return getGroupIds(groups)
 	}
 	return nil
@@ -76,7 +75,7 @@ func getGroupIds(groups []*wrappers.Group) []string {
 
 func assignGroupsToProject(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper) error {
-	if !wrappers.FeatureFlags[accessManagementEnabled] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
 		return nil
 	}
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)
