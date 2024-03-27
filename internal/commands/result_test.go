@@ -334,6 +334,9 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 }
 
 func Test_addPackageInformation(t *testing.T) {
+
+	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
 	resultsModel := &wrappers.ScanResultsCollection{
 		Results: []*wrappers.ScanResult{
 			{
@@ -351,8 +354,9 @@ func Test_addPackageInformation(t *testing.T) {
 	}
 	scaPackageModel := &[]wrappers.ScaPackageCollection{
 		{
-			ID:      "pkg-123",
-			FixLink: "",
+			ID:                  "pkg-123",
+			FixLink:             "",
+			DependencyPathArray: dependencyArray,
 		},
 	}
 	scaTypeModel := &[]wrappers.ScaTypeCollection{
