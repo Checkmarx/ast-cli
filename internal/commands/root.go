@@ -52,6 +52,7 @@ func NewAstCLI(
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -73,7 +74,7 @@ func NewAstCLI(
 			),
 		},
 	}
-
+	setUpFeatureFlags(featureFlagsWrapper)
 	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
@@ -106,16 +107,8 @@ func NewAstCLI(
 			_ = cmd.Help()
 			os.Exit(0)
 		}
-
-		if requiredFeatureFlagsCheck(cmd) {
-			err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		}
 	}
+
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
@@ -160,6 +153,7 @@ func NewAstCLI(
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
+		containerResolverWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
@@ -210,16 +204,6 @@ func NewAstCLI(
 	return rootCmd
 }
 
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
-
-	return false
-}
-
 const configFormatString = "%30v: %s"
 
 func PrintConfiguration() {
@@ -227,6 +211,15 @@ func PrintConfiguration() {
 	logger.PrintIfVerbose("CLI Configuration:")
 	for param := range util.Properties {
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
+	}
+}
+
+func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
