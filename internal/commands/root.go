@@ -74,7 +74,7 @@ func NewAstCLI(
 			),
 		},
 	}
-
+	setUpFeatureFlags(featureFlagsWrapper)
 	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
@@ -106,14 +106,6 @@ func NewAstCLI(
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
-		}
-		if requiredFeatureFlagsCheck(cmd) {
-			err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
 		}
 	}
 
@@ -162,7 +154,6 @@ func NewAstCLI(
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		containerResolverWrapper,
-		featureFlagsWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 	resultsCmd := NewResultsCommand(
@@ -223,14 +214,13 @@ func PrintConfiguration() {
 	}
 }
 
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
+func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
 
-	return false
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
