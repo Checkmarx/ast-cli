@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
@@ -32,6 +33,10 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    MinioEnabled,
 				Default: true,
+			},
+			{
+				Name:    feature_flags.BYOR_ENABLED,
+				Default: false,
 			},
 		},
 	},
