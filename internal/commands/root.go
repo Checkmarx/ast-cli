@@ -210,7 +210,7 @@ func NewAstCLI(
 		chatCmd,
 	)
 
-	if wrappers.FeatureFlags[featureFlagsConstants.BYOR_ENABLED] {
+	if wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
 		rootCmd.AddCommand(importCmd)
 	}
 

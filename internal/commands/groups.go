@@ -51,7 +51,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	if err != nil {
 		return groups, err
 	}
-	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		var info map[string]interface{}
 		_ = json.Unmarshal(*input, &info)
 		info["groups"] = getGroupIds(groups)
@@ -60,7 +60,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 	return groups, nil
 }
 func getGroupsForRequest(groups []*wrappers.Group) []string {
-	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		return getGroupIds(groups)
 	}
 	return nil
@@ -75,7 +75,7 @@ func getGroupIds(groups []*wrappers.Group) []string {
 
 func assignGroupsToProject(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper) error {
-	if !wrappers.FeatureFlags[featureFlagsConstants.ACCESS_MANAGEMENT_ENABLED] {
+	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		return nil
 	}
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)

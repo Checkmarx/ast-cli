@@ -35,7 +35,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Default: true,
 			},
 			{
-				Name:    feature_flags.BYOR_ENABLED,
+				Name:    feature_flags.ByorEnabled,
 				Default: false,
 			},
 		},

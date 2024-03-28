@@ -1,6 +1,6 @@
-package feature_flags
+package featureflags
 
 const (
-	BYOR_ENABLED              = "BYOR_ENABLED"
-	ACCESS_MANAGEMENT_ENABLED = "ACCESS_MANAGEMENT_ENABLED"
+	ByorEnabled             = "BYOR_ENABLED"
+	AccessManagementEnabled = "ACCESS_MANAGEMENT_ENABLED"
 )
