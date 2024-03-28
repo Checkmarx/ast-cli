@@ -11,26 +11,26 @@ import (
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
-	_, projectName := createProject(t, nil, nil)
+	projectId, projectName := createProject(t, nil, nil)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
 		flag(params.ImportFilePath), ".\\data\\sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)
-	defer deleteProjectByName(t, projectName)
+	defer deleteProject(t, projectId)
 	assert.NilError(t, err, "Import command failed with existing project")
 }
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
-	_, projectName := createProject(t, nil, nil)
+	projectId, projectName := createProject(t, nil, nil)
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
 		flag(params.ImportFilePath), ".\\data\\sarif.zip",
 	}
 	err, _ := executeCommand(t, args...)
-	defer deleteProjectByName(t, projectName)
+	defer deleteProject(t, projectId)
 	assert.NilError(t, err, "Import command failed with existing project")
 }
 
@@ -43,9 +43,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 		flag(params.ImportFilePath), ".\\data\\sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)
-
 	defer deleteProjectByName(t, projectName)
-
 	assert.NilError(t, err, "Import command failed with non-existing project")
 }
 
