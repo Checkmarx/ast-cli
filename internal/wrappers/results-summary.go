@@ -56,7 +56,6 @@ type SCSOverview struct {
 	TotalRisksCount      int                    `json:"totalRisks"`
 	RiskSummary          map[string]int         `json:"riskSummary"`
 	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews"`
-	StatusCode           int
 }
 
 type MicroEngineOverview struct {

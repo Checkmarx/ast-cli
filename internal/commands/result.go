@@ -59,6 +59,7 @@ const (
 	scanCanceledString        = "Canceled"
 	scanSuccessString         = "Completed"
 	scanPartialString         = "Partial"
+	scsScanUnavailableString  = ""
 	notAvailableNumber        = -1
 	scanFailedNumber          = -2
 	scanCanceledNumber        = -3
@@ -453,13 +454,13 @@ func summaryReport(
 		summary.APISecurity = *apiSecRisks
 	}
 
-	if summary.HasSCS() {
-		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
-		if err != nil {
-			return nil, err
-		}
-		summary.SCSOverview = *SCSOverview
+	//if summary.HasSCS() {
+	SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
+	if err != nil {
+		return nil, err
 	}
+	summary.SCSOverview = *SCSOverview
+	//}
 
 	if policies != nil {
 		summary.Policies = filterViolatedRules(*policies)
@@ -470,6 +471,7 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
+	setNotAvailableNumberIfZero(summary, &summary.ScsIssues, commonParams.ScsType)
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -513,17 +515,17 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 	}
 
-	if summary.HasSCS() {
-		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
-		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
-		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
-		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
+	//if summary.HasSCS() {
+	summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
+	summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
+	summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
+	summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
 
-		// Special case for SCS where status is partial if any microengines failed
-		if summary.SCSOverview.Status == scanPartialString {
-			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
-		}
+	// Special case for SCS where status is partial if any microengines failed
+	if summary.SCSOverview.Status == scanPartialString {
+		summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 	}
+	//}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.SCSOverview.TotalRisksCount
 }
 
@@ -581,6 +583,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			printAPIsSecuritySummary(summary)
 		}
 
+		//if summary.HasSCS() {
+		printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+		//}
+
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
@@ -630,8 +636,35 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+	case scanPartialNumber:
+		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+	}
+}
+
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
+	fmt.Printf("              Supply Chain Security Results\n")
+	fmt.Printf("              ---------------------------------------------------------------     \n")
+	fmt.Println("              |                      High   Medium   Low   Info   Status    |")
+	for _, microEngineOverview := range microEngineOverviews {
+		printSCSTableRow(microEngineOverview)
+	}
+	fmt.Printf("              ---------------------------------------------------------------     \n\n")
+}
+
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
+	formatString := "              | %-16s   %4d   %6d   %4d   %4d   %-9s  |\n"
+	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+
+	riskSummary := microEngineOverview.RiskSummary
+	microEngineName := microEngineOverview.FullName
+
+	switch microEngineOverview.Status {
+	case scsScanUnavailableString:
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+	default:
+		fmt.Printf(formatString, microEngineName, riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
 	}
 }
 
@@ -649,6 +682,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
 
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
