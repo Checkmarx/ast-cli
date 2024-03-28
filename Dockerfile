@@ -1,4 +1,4 @@
-FROM alpine:3.19.1
+FROM checkmarx.jfrog.io/ast-docker/library/alpine:3.13.1
 
 RUN apk add bash
 RUN adduser --system --disabled-password cxuser
