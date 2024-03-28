@@ -11,12 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
@@ -101,7 +100,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
@@ -182,6 +181,12 @@ func deleteProject(t *testing.T, projectID string) {
 		flag(params.ProjectIDFlag),
 		projectID,
 	)
+}
+
+func deleteProjectByName(t *testing.T, projectName string) {
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(viper.GetString(params.ProjectsPathKey))
+	projectModel, _, _ := projectsWrapper.GetByName(projectName)
+	deleteProject(t, projectModel.ID)
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {

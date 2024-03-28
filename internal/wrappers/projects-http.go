@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
@@ -146,6 +147,31 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 		}
 	}()
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
+}
+
+func (p *ProjectsHTTPWrapper) GetByName(name string) (
+	*ProjectResponseModel,
+	*ErrorModel,
+	error) {
+	params := make(map[string]string)
+	params["name"] = name
+	resp, _, err := p.Get(params)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	projectCount := len(resp.Projects)
+	if resp.Projects == nil || projectCount == 0 {
+		return nil, nil, errors.Errorf(errorConstants.ProjectNotExists)
+	}
+
+	for i := range resp.Projects {
+		if resp.Projects[i].Name == name {
+			return &resp.Projects[i], nil, nil
+		}
+	}
+
+	return nil, nil, errors.Errorf(errorConstants.ProjectNotExists)
 }
 
 func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {

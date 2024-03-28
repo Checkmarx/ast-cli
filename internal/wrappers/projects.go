@@ -51,6 +51,7 @@ type ProjectsWrapper interface {
 	Update(projectID string, model *Project) error
 	Get(params map[string]string) (*ProjectsCollectionResponseModel, *ErrorModel, error)
 	GetByID(projectID string) (*ProjectResponseModel, *ErrorModel, error)
+	GetByName(name string) (*ProjectResponseModel, *ErrorModel, error)
 	GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error)
 	Delete(projectID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)

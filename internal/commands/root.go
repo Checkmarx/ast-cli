@@ -9,6 +9,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
@@ -52,6 +53,7 @@ func NewAstCLI(
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	byorWrapper wrappers.ByorWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -162,6 +164,9 @@ func NewAstCLI(
 		accessManagementWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
+
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper)
+
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
@@ -204,6 +209,10 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 	)
+
+	if wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		rootCmd.AddCommand(importCmd)
+	}
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
