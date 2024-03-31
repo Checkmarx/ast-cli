@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"fmt"
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -79,12 +78,11 @@ func TestImporFileFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantE
 	assert.Assert(t, err.Error() == errorConstants.StatusInternalServerError)
 }
 
-func TestGetProjectNameFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantError(t *testing.T) {
+func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
 	wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
 	cmd := &cobra.Command{}
 	cmd.PersistentFlags().String(commonParams.ProjectName, "", "")
 	_ = cmd.Execute()
-	str, err := getProjectName(cmd)
-	fmt.Println(str)
+	_, err := getProjectName(cmd)
 	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
 }
