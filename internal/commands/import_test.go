@@ -3,12 +3,15 @@
 package commands
 
 import (
+	"fmt"
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/cobra"
 	"gotest.tools/assert"
 )
 
@@ -74,4 +77,14 @@ func TestImporFileFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantE
 	wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
 	err := importFile(mock.FakeInternalServerError500, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{})
 	assert.Assert(t, err.Error() == errorConstants.StatusInternalServerError)
+}
+
+func TestGetProjectNameFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantError(t *testing.T) {
+	wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
+	cmd := &cobra.Command{}
+	cmd.PersistentFlags().String(commonParams.ProjectName, "", "")
+	_ = cmd.Execute()
+	str, err := getProjectName(cmd)
+	fmt.Println(str)
+	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
 }
