@@ -118,9 +118,6 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 		t.Skip("BYOR flag is currently disabled")
 	}
 
-	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
-	_ = wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-
 	projectName := projectNameRandom
 
 	args := []string{
