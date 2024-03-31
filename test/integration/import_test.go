@@ -91,3 +91,16 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 	defer deleteProjectByName(t, projectName)
 	assertError(t, err, errorConstants.ImportSarifFileErrorMessage)
 }
+
+func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
+	t.Skip("BYOR flag is currently disabled")
+	projectName := projectNameRandom
+
+	args := []string{
+		"import",
+		flag(params.ProjectName), projectName,
+	}
+	err, _ := executeCommand(t, args...)
+	deleteProjectByName(t, projectName)
+	assertError(t, err, errorConstants.ImportFilePathIsRequired)
+}

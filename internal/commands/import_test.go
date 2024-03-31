@@ -24,6 +24,12 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 
 func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
 	wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
+	err := execCmdNotNilAssertion(t, "import", "--project-name", "my-project")
+	assert.Assert(t, err.Error() == errorConstants.ImportFilePathIsRequired)
+}
+
+func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
+	wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
 	err := execCmdNotNilAssertion(t, "import", "--project-name", "my-project", "--import-file-path", "")
 	assert.Assert(t, err.Error() == errorConstants.ImportFilePathIsRequired)
 }
