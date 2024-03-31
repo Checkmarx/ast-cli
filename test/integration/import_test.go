@@ -128,3 +128,19 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 	deleteProjectByName(t, projectName)
 	assertError(t, err, errorConstants.ImportFilePathIsRequired)
 }
+
+func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
+
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
+
+	args := []string{
+		"import",
+		flag(params.ProjectName), "",
+		flag(params.ImportFilePath), ".\\data\\sarif.sarif",
+	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, errorConstants.ProjectNameIsRequired)
+}
