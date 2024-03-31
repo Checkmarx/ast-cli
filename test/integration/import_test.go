@@ -13,13 +13,15 @@ import (
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
 
 	projectId, projectName := createProject(t, nil, nil)
 	defer deleteProject(t, projectId)
 
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
-	}
 	args := []string{
 		"import",
 		flag(params.ProjectName), projectName,
@@ -31,12 +33,14 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
-	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
-
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
 		t.Skip("BYOR flag is currently disabled")
 	}
+
+	projectId, projectName := createProject(t, nil, nil)
+	defer deleteProject(t, projectId)
 
 	args := []string{
 		"import",
@@ -49,7 +53,12 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 }
 
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	t.Skip("BYOR flag is currently disabled")
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
+
 	projectName := projectNameRandom
 	defer deleteProjectByName(t, projectName)
 
@@ -64,7 +73,12 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 }
 
 func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *testing.T) {
-	t.Skip("BYOR flag is currently disabled")
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
+
 	projectName := projectNameRandom
 	defer deleteProjectByName(t, projectName)
 
@@ -79,7 +93,12 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 }
 
 func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing.T) {
-	t.Skip("BYOR flag is currently disabled")
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
+
 	projectName := projectNameRandom
 
 	args := []string{
@@ -93,7 +112,15 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 }
 
 func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
-	t.Skip("BYOR flag is currently disabled")
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		t.Skip("BYOR flag is currently disabled")
+	}
+
+	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
+	_ = wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+
 	projectName := projectNameRandom
 
 	args := []string{
