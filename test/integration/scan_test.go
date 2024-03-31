@@ -23,6 +23,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -689,9 +690,19 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-
+	res := strings.Join(args, " ")
+	fmt.Println(res)
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan did not complete successfully")
+
+	switch e := err.(type) {
+	case *wrappers.AstError:
+		{
+			assert.Equal(t, e.Error(), "scan did not complete successfully")
+			assert.Equal(t, e.Code, exitCodes.SastExitCode)
+		}
+	default:
+		assert.Assert(t, false, "Error is not of type AstError")
+	}
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {

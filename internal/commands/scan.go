@@ -19,6 +19,7 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -1992,11 +1993,37 @@ func isScanRunning(
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
-		return false, errors.New("scan completed partially")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan completed partially"))
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
-		return false, errors.New("scan did not complete successfully")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan did not complete successfully"))
 	}
 	return false, nil
+}
+
+func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
+	failedStatuses := make([]int, 0)
+	for _, scanner := range scanResponseModel.StatusDetails {
+		scannerNameLowerCase := strings.ToLower(scanner.Name)
+		scannerErrorExitCode, ok := errorCodesByScanner[scannerNameLowerCase]
+		if scanner.Status == "Failed" && ok {
+			failedStatuses = append(failedStatuses, scannerErrorExitCode)
+		}
+	}
+	if len(failedStatuses) == 1 {
+		return failedStatuses[0]
+	}
+
+	return 1
+}
+
+var errorCodesByScanner = map[string]int{
+	"sast":   exitCodes.SastExitCode,
+	"sca":    exitCodes.ScaExitCode,
+	"iac":    exitCodes.IacExitCode,
+	"kics":   exitCodes.KicsExitCode,
+	"apisec": exitCodes.ApisecExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
