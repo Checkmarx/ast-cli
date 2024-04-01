@@ -2024,7 +2024,7 @@ const (
 	Sca     = "sca"
 	Iac     = "iac"
 	Kics    = "kics"
-	ApiSec  = "apisec"
+	APISec  = "apisec"
 )
 
 var errorCodesByScanner = map[string]int{
@@ -2033,7 +2033,7 @@ var errorCodesByScanner = map[string]int{
 	Sca:     exitCodes.ScaExitCode,
 	Iac:     exitCodes.IacExitCode,
 	Kics:    exitCodes.KicsExitCode,
-	ApiSec:  exitCodes.ApisecExitCode,
+	APISec:  exitCodes.ApisecExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
