@@ -1,6 +1,5 @@
-FROM checkmarx.jfrog.io/ast-docker/library/alpine:3.13.1
+FROM checkmarx.jfrog.io/docker/chainguard/go:1.22.1-r1--ed1afb92146ee7
 
-RUN apk add bash
 RUN adduser --system --disabled-password cxuser
 USER cxuser
 
