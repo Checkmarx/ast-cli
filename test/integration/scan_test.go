@@ -26,6 +26,7 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
