@@ -16,7 +16,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectId, projectName := createProject(t, nil, nil)
@@ -36,7 +36,7 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectId, projectName := createProject(t, nil, nil)
@@ -56,7 +56,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectName := projectNameRandom
@@ -76,7 +76,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectName := projectNameRandom
@@ -96,7 +96,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectName := projectNameRandom
@@ -115,7 +115,7 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	projectName := projectNameRandom
@@ -133,7 +133,7 @@ func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *t
 
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		t.Skip("BYOR flag is currently disabled")
+		//t.Skip("BYOR flag is currently disabled")
 	}
 
 	args := []string{
