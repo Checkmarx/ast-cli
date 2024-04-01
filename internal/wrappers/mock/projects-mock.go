@@ -40,6 +40,54 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		filteredTotalCount = 0
 	}
 
+	if params["names"] == "fake-kics-scanner-fail" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "fake-kics-scanner-fail-id",
+					Name: "fake-kics-scanner-fail",
+				},
+			},
+		}, nil, nil
+	}
+
+	if params["names"] == "fake-multiple-scanner-fails" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "fake-multiple-scanner-fails-id",
+					Name: "fake-multiple-scanner-fails",
+				},
+			},
+		}, nil, nil
+	}
+
+	if params["names"] == "fake-sca-fail-partial" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "fake-sca-fail-partial-id",
+					Name: "fake-sca-fail-partial",
+				},
+			},
+		}, nil, nil
+	}
+
+	if params["names"] == "fake-kics-fail-sast-canceled" {
+		return &wrappers.ProjectsCollectionResponseModel{
+			FilteredTotalCount: uint(filteredTotalCount),
+			Projects: []wrappers.ProjectResponseModel{
+				{
+					ID:   "fake-kics-fail-sast-canceled-id",
+					Name: "fake-kics-fail-sast-canceled",
+				},
+			},
+		}, nil, nil
+	}
+
 	return &wrappers.ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{

@@ -2006,8 +2006,8 @@ func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
 	failedStatuses := make([]int, 0)
 	for _, scanner := range scanResponseModel.StatusDetails {
 		scannerNameLowerCase := strings.ToLower(scanner.Name)
-		scannerErrorExitCode, ok := errorCodesByScanner[scannerNameLowerCase]
-		if scanner.Status == "Failed" && ok {
+		scannerErrorExitCode, errorCodeByScannerExists := errorCodesByScanner[scannerNameLowerCase]
+		if scanner.Status == wrappers.ScanFailed && scanner.Name != General && errorCodeByScannerExists {
 			failedStatuses = append(failedStatuses, scannerErrorExitCode)
 		}
 	}
@@ -2015,15 +2015,25 @@ func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
 		return failedStatuses[0]
 	}
 
-	return 1
+	return exitCodes.GeneralExitCode
 }
 
+const (
+	General = "general"
+	Sast    = "sast"
+	Sca     = "sca"
+	Iac     = "iac"
+	Kics    = "kics"
+	ApiSec  = "apisec"
+)
+
 var errorCodesByScanner = map[string]int{
-	"sast":   exitCodes.SastExitCode,
-	"sca":    exitCodes.ScaExitCode,
-	"iac":    exitCodes.IacExitCode,
-	"kics":   exitCodes.KicsExitCode,
-	"apisec": exitCodes.ApisecExitCode,
+	General: exitCodes.GeneralExitCode,
+	Sast:    exitCodes.SastExitCode,
+	Sca:     exitCodes.ScaExitCode,
+	Iac:     exitCodes.IacExitCode,
+	Kics:    exitCodes.KicsExitCode,
+	ApiSec:  exitCodes.ApisecExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
