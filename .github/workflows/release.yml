@@ -31,8 +31,8 @@ permissions:
 jobs:
   build:
     runs-on: macos-latest
-    container:
-      image: checkmarx.jfrog.io/ast-docker/library/alpine:3.13.1
+#    container:
+#      image: checkmarx.jfrog.io/ast-docker/library/alpine:3.13.1
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
