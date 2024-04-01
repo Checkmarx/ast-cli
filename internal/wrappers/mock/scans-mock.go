@@ -3,7 +3,6 @@ package mock
 import (
 	"fmt"
 
-	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
@@ -109,8 +108,8 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			ID:     "fake-scan-id-kics-scanner-fail",
 			Status: wrappers.ScanFailed,
 			StatusDetails: []wrappers.StatusInfo{
-				wrappers.StatusInfo{
-					Status: wrappers.ScanFailed, Name: commands.Kics,
+				{
+					Status: wrappers.ScanFailed, Name: "kics",
 				},
 			},
 		}, nil, nil
