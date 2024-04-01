@@ -454,13 +454,13 @@ func summaryReport(
 		summary.APISecurity = *apiSecRisks
 	}
 
-	//if summary.HasSCS() {
-	SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
-	if err != nil {
-		return nil, err
+	if summary.HasSCS() {
+		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+		summary.SCSOverview = *SCSOverview
 	}
-	summary.SCSOverview = *SCSOverview
-	//}
 
 	if policies != nil {
 		summary.Policies = filterViolatedRules(*policies)
@@ -515,17 +515,17 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 	}
 
-	//if summary.HasSCS() {
-	summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
-	summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
-	summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
-	summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
+	if summary.HasSCS() {
+		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
+		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
+		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
+		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
 
-	// Special case for SCS where status is partial if any microengines failed
-	if summary.SCSOverview.Status == scanPartialString {
-		summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
+		// Special case for SCS where status is partial if any microengines failed
+		if summary.SCSOverview.Status == scanPartialString {
+			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
+		}
 	}
-	//}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.SCSOverview.TotalRisksCount
 }
 
@@ -583,9 +583,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			printAPIsSecuritySummary(summary)
 		}
 
-		//if summary.HasSCS() {
-		printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
-		//}
+		if summary.HasSCS() {
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {

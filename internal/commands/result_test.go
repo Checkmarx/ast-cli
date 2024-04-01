@@ -3,8 +3,11 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -331,4 +334,100 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsNotScanned(t *testing.T) {
+	// Writing stdout to file
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := executeTestCommand(createASTTestCommandWithScs(false, false, false),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	w.Close()
+	os.Stdout = old
+
+	// Writing output to buffer
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	stdoutString := buf.String()
+	fmt.Print(stdoutString)
+
+	scsSummary := "| SCS       -        -      -      -       -      |"
+	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := "Secret Detection"
+	assert.Equal(t, !strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary to be missing:"+secretDetectionSummary)
+	scorecardSummary := "Scorecard"
+	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary to be missing:"+scorecardSummary)
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsPartial(t *testing.T) {
+	// Writing stdout to file
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := executeTestCommand(createASTTestCommandWithScs(true, true, true),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	w.Close()
+	os.Stdout = old
+
+	// Writing output to buffer
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	stdoutString := buf.String()
+	fmt.Print(stdoutString)
+
+	TotalResults := "Total Results: 17"
+	assert.Equal(t, strings.Contains(stdoutString, TotalResults), true,
+		"Expected: "+TotalResults)
+	TotalSummary := "| TOTAL    10        4      3      0   Completed  |"
+	assert.Equal(t, strings.Contains(stdoutString, TotalSummary), true,
+		"Expected TOTAL summary: "+TotalSummary)
+	scsSummary := "| SCS       5        3      2      0   Partial    |"
+	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := "| Secret Detection      5        3      2      0   Completed  |"
+	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary:"+secretDetectionSummary)
+	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
+	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary:"+scorecardSummary)
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsScorecardNotScanned(t *testing.T) {
+	// Writing stdout to file
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := executeTestCommand(createASTTestCommandWithScs(true, false, false),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	w.Close()
+	os.Stdout = old
+
+	// Writing output to buffer
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	stdoutString := buf.String()
+	fmt.Print(stdoutString)
+
+	scsSummary := "| SCS       5        3      2      0   Completed  |"
+	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := "| Secret Detection      5        3      2      0   Completed  |"
+	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary:"+secretDetectionSummary)
+	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
+	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary:"+scorecardSummary)
 }

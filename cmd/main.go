@@ -14,7 +14,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
 )
 
@@ -38,7 +37,7 @@ func main() {
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
-	//scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
+	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
@@ -63,8 +62,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
-	//scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
-	scsScanOverviewWrapper := mock.ScanOverviewMockWrapper{}
+	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()

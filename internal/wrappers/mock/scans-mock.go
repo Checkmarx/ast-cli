@@ -11,6 +11,7 @@ import (
 
 type ScansMockWrapper struct {
 	Running bool
+	HasSCS  bool
 }
 
 func (m *ScansMockWrapper) GetWorkflowByID(_ string) ([]*wrappers.ScanTaskResponseModel, *wrappers.ErrorModel, error) {
@@ -80,10 +81,14 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 	fmt.Println("Called GetByID in ScansMockWrapper")
 	var status wrappers.ScanStatus = "Completed"
 	m.Running = !m.Running
+	engines := []string{params.ScaType, params.SastType, params.KicsType}
+	if m.HasSCS {
+		engines = append(engines, params.ScsType)
+	}
 	return &wrappers.ScanResponseModel{
 		ID:      scanID,
 		Status:  status,
-		Engines: []string{params.ScaType, params.SastType, params.KicsType},
+		Engines: engines,
 	}, nil, nil
 }
 
