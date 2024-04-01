@@ -129,7 +129,7 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			ID:     "fake-scan-id-sca-fail-partial-id",
 			Status: wrappers.ScanPartial,
 			StatusDetails: []wrappers.StatusInfo{
-				wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "sca"},
+				{Status: wrappers.ScanFailed, Name: "sca"},
 			},
 		}, nil, nil
 	}
@@ -138,9 +138,9 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			ID:     "fake-scan-id-kics-fail-sast-canceled-id",
 			Status: wrappers.ScanFailed,
 			StatusDetails: []wrappers.StatusInfo{
-				wrappers.StatusInfo{Status: wrappers.ScanCompleted, Name: "general"},
-				wrappers.StatusInfo{Status: wrappers.ScanCanceled, Name: "sast"},
-				wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "kics"},
+				{Status: wrappers.ScanCompleted, Name: "general"},
+				{Status: wrappers.ScanCanceled, Name: "sast"},
+				{Status: wrappers.ScanFailed, Name: "kics"},
 			},
 		}, nil, nil
 	}
