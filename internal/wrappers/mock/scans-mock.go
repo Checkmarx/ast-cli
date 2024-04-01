@@ -134,7 +134,6 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			},
 		}, nil, nil
 	}
-
 	if scanID == "fake-scan-id-kics-fail-sast-canceled-id" {
 		return &wrappers.ScanResponseModel{
 			ID:     "fake-scan-id-kics-fail-sast-canceled-id",
@@ -145,7 +144,6 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 				wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "kics"},
 			},
 		}, nil, nil
-
 	}
 
 	var status wrappers.ScanStatus = "Completed"
