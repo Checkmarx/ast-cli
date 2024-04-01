@@ -693,16 +693,7 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 	res := strings.Join(args, " ")
 	fmt.Println(res)
 	err, _ := executeCommand(t, args...)
-
-	switch e := err.(type) {
-	case *wrappers.AstError:
-		{
-			assert.Equal(t, e.Error(), "scan did not complete successfully")
-			assert.Equal(t, e.Code, exitCodes.SastExitCode)
-		}
-	default:
-		assert.Assert(t, false, "Error is not of type AstError")
-	}
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastExitCode)
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
