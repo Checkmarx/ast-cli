@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
@@ -105,11 +106,14 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 	fmt.Println("Called GetByID in ScansMockWrapper")
 	if scanID == "fake-scan-id-kics-scanner-fail" {
 		return &wrappers.ScanResponseModel{
-			ID:            "fake-scan-id-kics-scanner-fail",
-			Status:        wrappers.ScanFailed,
-			StatusDetails: []wrappers.StatusInfo{wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "kics"}},
+			ID:     "fake-scan-id-kics-scanner-fail",
+			Status: wrappers.ScanFailed,
+			StatusDetails: []wrappers.StatusInfo{
+				wrappers.StatusInfo{
+					Status: wrappers.ScanFailed, Name: commands.Kics,
+				},
+			},
 		}, nil, nil
-
 	}
 	if scanID == "fake-scan-id-multiple-scanner-fails" {
 		return &wrappers.ScanResponseModel{
@@ -120,7 +124,6 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 				wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "sca"},
 			},
 		}, nil, nil
-
 	}
 	if scanID == "fake-scan-id-sca-fail-partial-id" {
 		return &wrappers.ScanResponseModel{
@@ -130,7 +133,6 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 				wrappers.StatusInfo{Status: wrappers.ScanFailed, Name: "sca"},
 			},
 		}, nil, nil
-
 	}
 
 	if scanID == "fake-scan-id-kics-fail-sast-canceled-id" {

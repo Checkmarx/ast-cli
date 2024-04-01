@@ -879,7 +879,6 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 		params["name"] = applicationName
 		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
-
 			return nil, err
 		}
 		if resp.Applications != nil && len(resp.Applications) > 0 {
