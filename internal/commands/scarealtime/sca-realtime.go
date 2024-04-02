@@ -130,7 +130,6 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	var scaRealtimeScanErrors []wrappers.ScaRealtimeScanError
 
 	for _, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
-
 		// We're using a map to avoid adding repeated packages in request body
 		dependencyMap := createDependencyMapFromDependencyResolution(&dependencyResolutionResult)
 
