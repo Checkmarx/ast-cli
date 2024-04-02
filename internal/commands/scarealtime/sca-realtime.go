@@ -129,34 +129,9 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	var modelResults []wrappers.ScaVulnerabilitiesResponseModel
 	var scaRealtimeScanErrors []wrappers.ScaRealtimeScanError
 
-	for _, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
+	for i, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
 		// We're using a map to avoid adding repeated packages in request body
-		dependencyMap := make(map[string]wrappers.ScaDependencyBodyRequest)
-
-		for i := range dependencyResolutionResult.Dependencies {
-			var dependency = dependencyResolutionResult.Dependencies[i]
-			var packageManager = GetPackageManagerFromResolvingModuleType[strings.ToLower(dependency.ResolvingModuleType)]
-
-			// if no package manager is found uses the resolving module type
-			if packageManager == "" {
-				packageManager = strings.ToLower(dependency.ResolvingModuleType)
-			}
-
-			dependencyMap[dependency.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
-				PackageName:    dependency.ID.Name,
-				Version:        dependency.ID.Version,
-				PackageManager: packageManager,
-			}
-			if len(dependency.Children) > 0 {
-				for _, dependencyChildren := range dependency.Children {
-					dependencyMap[dependencyChildren.NodeID] = wrappers.ScaDependencyBodyRequest{
-						PackageName:    dependencyChildren.Name,
-						Version:        dependencyChildren.Version,
-						PackageManager: packageManager,
-					}
-				}
-			}
-		}
+		dependencyMap := createDependencyMapFromDependencyResolution(&scaResolverResults.DependencyResolutionResults[i])
 
 		// Get all ScaDependencyBodyRequest from the map to call SCA API
 		var bodyRequest []wrappers.ScaDependencyBodyRequest
@@ -209,6 +184,37 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	}
 
 	return nil
+}
+
+func createDependencyMapFromDependencyResolution(dependencyResolutionResult *DependencyResolution) map[string]wrappers.ScaDependencyBodyRequest {
+	// We're using a map to avoid adding repeated packages in request body
+	dependencyMap := make(map[string]wrappers.ScaDependencyBodyRequest)
+
+	for i := range dependencyResolutionResult.Dependencies {
+		var dependency = dependencyResolutionResult.Dependencies[i]
+		var packageManager = GetPackageManagerFromResolvingModuleType[strings.ToLower(dependency.ResolvingModuleType)]
+
+		// if no package manager is found uses the resolving module type
+		if packageManager == "" {
+			packageManager = strings.ToLower(dependency.ResolvingModuleType)
+		}
+
+		dependencyMap[dependency.ID.NodeID] = wrappers.ScaDependencyBodyRequest{
+			PackageName:    dependency.ID.Name,
+			Version:        dependency.ID.Version,
+			PackageManager: packageManager,
+		}
+		if len(dependency.Children) > 0 {
+			for _, dependencyChildren := range dependency.Children {
+				dependencyMap[dependencyChildren.NodeID] = wrappers.ScaDependencyBodyRequest{
+					PackageName:    dependencyChildren.Name,
+					Version:        dependencyChildren.Version,
+					PackageManager: packageManager,
+				}
+			}
+		}
+	}
+	return dependencyMap
 }
 
 func GetScaVulnerabilitiesPackages(scaRealTimeWrapper wrappers.ScaRealTimeWrapper, bodyRequest []wrappers.ScaDependencyBodyRequest) (vulnerabilities []wrappers.ScaVulnerabilitiesResponseModel, err, err1 error) { //nolint:lll
