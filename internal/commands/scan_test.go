@@ -555,7 +555,7 @@ func TestAddScaScan(t *testing.T) {
 	}
 }
 
-func TestAddSastScanWithFastScan(t *testing.T) {
+func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 
 	cmdCommand := &cobra.Command{
