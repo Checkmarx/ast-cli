@@ -131,7 +131,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 
 	for _, dependencyResolutionResult := range scaResolverResults.DependencyResolutionResults {
 		// We're using a map to avoid adding repeated packages in request body
-		dependencyMap := createDependencyMapFromDependencyResolution(&dependencyResolutionResult)
+		dependencyMap := createDependencyMapFromDependencyResolution(dependencyResolutionResult)
 
 		// Get all ScaDependencyBodyRequest from the map to call SCA API
 		var bodyRequest []wrappers.ScaDependencyBodyRequest
@@ -186,7 +186,7 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 	return nil
 }
 
-func createDependencyMapFromDependencyResolution(dependencyResolutionResult *DependencyResolution) map[string]wrappers.ScaDependencyBodyRequest {
+func createDependencyMapFromDependencyResolution(dependencyResolutionResult DependencyResolution) map[string]wrappers.ScaDependencyBodyRequest {
 	// We're using a map to avoid adding repeated packages in request body
 	dependencyMap := make(map[string]wrappers.ScaDependencyBodyRequest)
 
