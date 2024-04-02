@@ -952,10 +952,10 @@ func getScanOverviewForSCSScanner(
 
 	scsOverview, errorModel, err = scsScanOverviewWrapper.GetSCSOverviewByScanID(scanID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s", failedListingResults)
+		return nil, errors.Wrapf(err, "SCS: %s", failedListingResults)
 	}
 	if errorModel != nil {
-		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf("SCS: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if scsOverview != nil {
 		return scsOverview, nil
 	}
