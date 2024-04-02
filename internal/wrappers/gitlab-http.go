@@ -141,7 +141,11 @@ func getFromGitLab(
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	logger.PrintResponse(resp, true)
 
@@ -198,7 +202,11 @@ func collectPageForGitLab(
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	*pageCollection = append(*pageCollection, holder...)
 	nextPageURL := getNextPage(resp)

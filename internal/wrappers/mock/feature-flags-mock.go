@@ -1,11 +1,17 @@
 package mock
 
 import (
+	"fmt"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-type FeatureFlagsMockWrapper struct{}
+var Flags wrappers.FeatureFlagsResponseModel
+
+type FeatureFlagsMockWrapper struct {
+}
 
 func (f FeatureFlagsMockWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, error) {
-	return &wrappers.FeatureFlagsResponseModel{}, nil
+	fmt.Println("Called GetAll in FeatureFlagsMockWrapper")
+	return &Flags, nil
 }

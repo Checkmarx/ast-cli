@@ -5,20 +5,22 @@ type PRResponseModel struct {
 }
 
 type PRModel struct {
-	ScanID    string `json:"scanId"`
-	ScmToken  string `json:"scmToken"`
-	Namespace string `json:"namespace"`
-	RepoName  string `json:"repoName"`
-	PrNumber  int    `json:"prNumber"`
+	ScanID    string     `json:"scanId"`
+	ScmToken  string     `json:"scmToken"`
+	Namespace string     `json:"namespace"`
+	RepoName  string     `json:"repoName"`
+	PrNumber  int        `json:"prNumber"`
+	Policies  []PrPolicy `json:"violatedPolicyList"`
 }
 
 type GitlabPRModel struct {
-	ScanID          string `json:"scanId"`
-	ScmToken        string `json:"scmToken"`
-	Namespace       string `json:"namespace"`
-	RepoName        string `json:"repoName"`
-	IiD             int    `json:"iid"`
-	GitlabProjectID int    `json:"gitlabProjectID"`
+	ScanID          string     `json:"scanId"`
+	ScmToken        string     `json:"scmToken"`
+	Namespace       string     `json:"namespace"`
+	RepoName        string     `json:"repoName"`
+	IiD             int        `json:"iid"`
+	GitlabProjectID int        `json:"gitlabProjectID"`
+	Policies        []PrPolicy `json:"violatedPolicyList"`
 }
 
 type PRWrapper interface {

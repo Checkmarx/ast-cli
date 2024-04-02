@@ -41,7 +41,11 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	if err != nil {
 		return "", nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handlePRResponseWithBody(resp, err)
 }
 
@@ -59,7 +63,11 @@ func (r *PRHTTPWrapper) PostGitlabPRDecoration(model *GitlabPRModel) (
 	if err != nil {
 		return "", nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handlePRResponseWithBody(resp, err)
 }
 

@@ -32,6 +32,7 @@ func main() {
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
+	applications := viper.GetString(params.ApplicationsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	scaPackage := viper.GetString(params.ScaPackagePathKey)
@@ -49,6 +50,7 @@ func main() {
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
+	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -57,6 +59,7 @@ func main() {
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
+	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
@@ -77,8 +80,10 @@ func main() {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
+	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 
 	astCli := commands.NewAstCLI(
+		applicationsWrapper,
 		scansWrapper,
 		resultsSbomReportsWrapper,
 		resultsPdfReportsWrapper,
@@ -106,6 +111,7 @@ func main() {
 		featureFlagsWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
+		accessManagementWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

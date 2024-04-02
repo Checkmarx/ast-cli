@@ -62,6 +62,13 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
+func TestRunGetResultsByScanIdJsonFormatWithSastRedundancy(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--sast-redundancy")
+
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+}
+
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
@@ -324,4 +331,39 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func Test_addPackageInformation(t *testing.T) {
+	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
+	resultsModel := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: "sca", // Assuming this matches commonParams.ScaType
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier: "pkg-123",
+				},
+				ID: "CVE-2021-23-424",
+				VulnerabilityDetails: wrappers.VulnerabilityDetails{
+					CvssScore: 5.0,
+					CveName:   "cwe-789",
+				},
+			},
+		},
+	}
+	scaPackageModel := &[]wrappers.ScaPackageCollection{
+		{
+			ID:                  "pkg-123",
+			FixLink:             "",
+			DependencyPathArray: dependencyArray,
+		},
+	}
+	scaTypeModel := &[]wrappers.ScaTypeCollection{
+		{}}
+
+	resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+
+	expectedFixLink := "https://devhub.checkmarx.com/cve-details/CVE-2021-23-424"
+	actualFixLink := resultsModel.Results[0].ScanResultData.ScaPackageCollection.FixLink
+	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
 }
