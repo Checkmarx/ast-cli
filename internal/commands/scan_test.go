@@ -626,9 +626,10 @@ func TestAddSastScan(t *testing.T) {
 	result := addSastScan(cmdCommand, resubmitConfig)
 
 	sastConfig := wrappers.SastConfig{
-		PresetName:  "test",
-		Filter:      "test",
-		Incremental: "true",
+		PresetName:   "test",
+		Filter:       "test",
+		Incremental:  "true",
+		FastScanMode: "true",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
