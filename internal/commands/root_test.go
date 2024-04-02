@@ -96,9 +96,9 @@ func createASTTestCommand() *cobra.Command {
 	)
 }
 
-func createASTTestCommandWithScs(ScsScanned, scsScanPartial, scorecardScanned bool) *cobra.Command {
+func createASTTestCommandWithScs(scsScanned, scsScanPartial, scorecardScanned bool) *cobra.Command {
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
-	scansMockWrapper := &mock.ScansMockWrapper{HasSCS: ScsScanned}
+	scansMockWrapper := &mock.ScansMockWrapper{HasSCS: scsScanned}
 	resultsSbomWrapper := &mock.ResultsSbomWrapper{}
 	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
 	scansMockWrapper.Running = true
@@ -205,8 +205,10 @@ func executeRedirectedOsStdoutTestCommand(cmd *cobra.Command, args ...string) (b
 	w.Close()
 	os.Stdout = old
 	var buffer bytes.Buffer
-	io.Copy(&buffer, r)
-
+	_, errCopy := io.Copy(&buffer, r)
+	if errCopy != nil {
+		return buffer, errCopy
+	}
 	return buffer, err
 }
 

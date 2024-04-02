@@ -18,14 +18,15 @@ import (
 const fileName = "cx_result"
 
 const (
-	resultsCommand     = "results"
-	codeBashingCommand = "codebashing"
-	vulnerabilityValue = "Reflected XSS All Clients"
-	languageValue      = "PHP"
-	cweValue           = "79"
-	jsonValue          = "json"
-	tableValue         = "table"
-	listValue          = "list"
+	resultsCommand      = "results"
+	codeBashingCommand  = "codebashing"
+	vulnerabilityValue  = "Reflected XSS All Clients"
+	languageValue       = "PHP"
+	cweValue            = "79"
+	jsonValue           = "json"
+	tableValue          = "table"
+	listValue           = "list"
+	secretDetectionLine = "| Secret Detection      5        3      2      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -408,7 +409,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsPartial(t *testing.T) {
 	scsSummary := "| SCS       5        3      2      0   Partial    |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
-	secretDetectionSummary := "| Secret Detection      5        3      2      0   Completed  |"
+	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
 	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
@@ -427,7 +428,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsScorecardNotScanned(t *
 	scsSummary := "| SCS       5        3      2      0   Completed  |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
-	secretDetectionSummary := "| Secret Detection      5        3      2      0   Completed  |"
+	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
 	scorecardSummary := "| Scorecard             -        -      -      -       -      |"

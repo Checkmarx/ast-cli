@@ -130,5 +130,4 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 			},
 		},
 	}, nil, nil
-
 }
