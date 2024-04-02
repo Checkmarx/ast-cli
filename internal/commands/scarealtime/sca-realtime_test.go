@@ -67,7 +67,8 @@ func TestCreateDependecyMapFromDependecyResolution_Success(t *testing.T) {
 				"2.0.3", "Nuget", []interface{}{"NetStandard20"}),
 		},
 	}
-	dependencyMap := createDependencyMapFromDependencyResolution(dependecyResolutionResult)
+	dependecyResolutionResultReference := &dependecyResolutionResult
+	dependencyMap := createDependencyMapFromDependencyResolution(dependecyResolutionResultReference)
 	assert.Equal(t, len(dependencyMap), 2)
 	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].PackageManager, "Nuget")
 	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].Version, "2.0.3")
