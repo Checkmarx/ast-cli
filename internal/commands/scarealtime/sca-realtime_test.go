@@ -58,7 +58,7 @@ func TestRequiredProjectDir(t *testing.T) {
 	assert.Error(t, err, "Provided path does not exist: "+invalidProjectPath, err.Error())
 }
 
-func TestCreateDependecyMapFromDependecyResolution_Success(t *testing.T) {
+func TestCreateDependencyMapFromDependencyResolution_NugetDependencies_Success(t *testing.T) {
 	dependecyResolutionResult := DependencyResolution{
 		Dependencies: []Dependency{
 			NewDependency("8ce2d33f-5783-4fe1-b9a7-3ce2c9a3aae9", "Microsoft. NETCore. Platforms",
@@ -67,8 +67,7 @@ func TestCreateDependecyMapFromDependecyResolution_Success(t *testing.T) {
 				"2.0.3", "Nuget", []interface{}{"NetStandard20"}),
 		},
 	}
-	dependecyResolutionResultReference := &dependecyResolutionResult
-	dependencyMap := createDependencyMapFromDependencyResolution(dependecyResolutionResultReference)
+	dependencyMap := createDependencyMapFromDependencyResolution(&dependecyResolutionResult)
 	assert.Equal(t, len(dependencyMap), 2)
 	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].PackageManager, "Nuget")
 	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].Version, "2.0.3")
