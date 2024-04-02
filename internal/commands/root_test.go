@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -188,6 +189,25 @@ func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
 	cmd.SilenceUsage = true
 	cmd.SetOut(buffer)
 	return buffer, cmd.Execute()
+}
+
+func executeRedirectedOsStdoutTestCommand(cmd *cobra.Command, args ...string) (bytes.Buffer, error) {
+	// Writing os stdout to file
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	err := cmd.Execute()
+
+	// Writing output to buffer
+	w.Close()
+	os.Stdout = old
+	var buffer bytes.Buffer
+	io.Copy(&buffer, r)
+
+	return buffer, err
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {

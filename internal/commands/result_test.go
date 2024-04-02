@@ -3,10 +3,9 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -369,24 +368,14 @@ func Test_addPackageInformation(t *testing.T) {
 	expectedFixLink := "https://devhub.checkmarx.com/cve-details/CVE-2021-23-424"
 	actualFixLink := resultsModel.Results[0].ScanResultData.ScaPackageCollection.FixLink
 	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
+}
 
 func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsNotScanned(t *testing.T) {
-	// Writing stdout to file
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := executeTestCommand(createASTTestCommandWithScs(false, false, false),
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(false, false, false),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
-	w.Close()
-	os.Stdout = old
-
-	// Writing output to buffer
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	stdoutString := buf.String()
+	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
 	scsSummary := "| SCS       -        -      -      -       -      |"
@@ -401,58 +390,38 @@ func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsNotScanned(t *testing.T
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsPartial(t *testing.T) {
-	// Writing stdout to file
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := executeTestCommand(createASTTestCommandWithScs(true, true, true),
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, true, true),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
-	w.Close()
-	os.Stdout = old
-
-	// Writing output to buffer
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	stdoutString := buf.String()
+	stdoutString := buffer.String()
+	ansiRegexp := regexp.MustCompile("\x1b\\[[0-9;]*[mK]")
+	cleanString := ansiRegexp.ReplaceAllString(stdoutString, "")
 	fmt.Print(stdoutString)
 
 	TotalResults := "Total Results: 17"
-	assert.Equal(t, strings.Contains(stdoutString, TotalResults), true,
+	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
 	TotalSummary := "| TOTAL    10        4      3      0   Completed  |"
-	assert.Equal(t, strings.Contains(stdoutString, TotalSummary), true,
+	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
 	scsSummary := "| SCS       5        3      2      0   Partial    |"
-	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := "| Secret Detection      5        3      2      0   Completed  |"
-	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
+	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
 	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
-	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
+	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsScorecardNotScanned(t *testing.T) {
-	// Writing stdout to file
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err := executeTestCommand(createASTTestCommandWithScs(true, false, false),
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, false, false),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
-	w.Close()
-	os.Stdout = old
-
-	// Writing output to buffer
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	stdoutString := buf.String()
+	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
 	scsSummary := "| SCS       5        3      2      0   Completed  |"
