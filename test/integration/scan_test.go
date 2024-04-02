@@ -113,6 +113,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
+	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
@@ -122,14 +123,17 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	assertZipFileRemoved(t)
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
+	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
@@ -138,14 +142,17 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	assertZipFileRemoved(t)
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
 }
 
 func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
+	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
@@ -155,14 +162,17 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.DebugFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	assertZipFileRemoved(t)
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
+	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
@@ -171,25 +181,29 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, testArgs)
-	defer deleteProject(t, projectID)
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	assertZipFileRemoved(t)
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
 }
 
 func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
+	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
 		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ContainerImagesFlag), "nginx:",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ApikeyOverrideFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	err, _ := executeCommand(t, testArgs...)
-	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		err, _ := executeCommand(t, testArgs...)
+		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	}
 }
 
 func assertZipFileRemoved(t *testing.T) {
