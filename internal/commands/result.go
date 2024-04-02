@@ -521,12 +521,14 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
 		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
 
+		summary.ScsIssues = summary.SCSOverview.TotalRisksCount
+
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.SCSOverview.TotalRisksCount
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.ScsIssues
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
