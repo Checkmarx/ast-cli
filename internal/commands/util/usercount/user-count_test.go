@@ -22,7 +22,7 @@ func TestNewUserCountCommand(t *testing.T) {
 	assert.NilError(t, cmd.Execute())
 }
 
-func TestGetEnabledRepositoriesAzureWrapper(t *testing.T) {
+func TestGetEnabledRepositories_2Enable1DisableRepo_Success(t *testing.T) {
 	repos := []wrappers.AzureRepo{
 		{
 			Name:       "MOCK REPO",
