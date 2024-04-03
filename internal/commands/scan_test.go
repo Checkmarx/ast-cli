@@ -555,6 +555,54 @@ func TestAddScaScan(t *testing.T) {
 	}
 }
 
+func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project with SAST fast scan configuration`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:   "test",
+		Filter:       "test",
+		Incremental:  "true",
+		FastScanMode: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+}
+
+func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-FAST-SCAN", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-FAST-SCAN", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Fast-Scan", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Fast-Scan", err.Error())
+}
+
 func TestAddSastScan(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 
@@ -567,6 +615,7 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, true, "Enable SAST Fast Scan")
 
 	_ = cmdCommand.Execute()
 
@@ -577,9 +626,10 @@ func TestAddSastScan(t *testing.T) {
 	result := addSastScan(cmdCommand, resubmitConfig)
 
 	sastConfig := wrappers.SastConfig{
-		PresetName:  "test",
-		Filter:      "test",
-		Incremental: "true",
+		PresetName:   "test",
+		Filter:       "test",
+		Incremental:  "true",
+		FastScanMode: "true",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
