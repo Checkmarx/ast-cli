@@ -49,6 +49,7 @@ type riskDistribution struct {
 	Total  int    `json:"total,omitempty"`
 }
 type EngineResultSummary struct {
+	Critical   int
 	High       int
 	Medium     int
 	Low        int
@@ -57,6 +58,14 @@ type EngineResultSummary struct {
 }
 
 type EnginesResultsSummary map[string]*EngineResultSummary
+
+func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
+	criticalIssues := 0
+	for _, v := range *engineSummary {
+		criticalIssues += v.Critical
+	}
+	return criticalIssues
+}
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
@@ -92,6 +101,8 @@ func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
 
 func (engineSummary *EngineResultSummary) Increment(level string) {
 	switch level {
+	case "critical":
+		engineSummary.Critical++
 	case "high":
 		engineSummary.High++
 	case "medium":

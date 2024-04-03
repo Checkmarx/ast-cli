@@ -595,44 +595,45 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 	if summary.HasAPISecurityDocumentation() {
 		fmt.Printf("              APIS DOCUMENTATION: %*d \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
 	}
-	fmt.Printf("              --------------------------------------------------     \n\n")
+	fmt.Printf("              ----------------------------------------------------------------     \n\n")
 }
 
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
-	formatString := "              | %-4s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
+	formatString := "              | %-4s         %4d   %4d   %6d   %4d   %4d   %-9s  |\n"
+	notAvailableFormatString := "              | %-4s         %4s   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	switch statusNumber {
 	case notAvailableNumber:
-		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	case scanFailedNumber:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	default:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
 	}
 }
 
 func printResultsSummaryTable(summary *wrappers.ResultSummary) {
+	totalCriticalIssues := summary.EnginesResult.GetCriticalIssues()
 	totalHighIssues := summary.EnginesResult.GetHighIssues()
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Printf("              ----------------------------------------------------------------     \n\n")
 	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Println("              |          High   Medium   Low   Info   Status    |")
+	fmt.Println("              ----------------------------------------------------------------     ")
+	fmt.Println("              |          Critical   High   Medium    Low   Info   Status     |")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
 
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
-		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Println("              ----------------------------------------------------------------     ")
+	fmt.Printf("              | %-4s        %4d   %4d   %6d   %4d   %4d   %-9s  |\n",
+		fmt.Sprintf(boldFormat, "TOTAL"), totalCriticalIssues, totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+	fmt.Printf("              ----------------------------------------------------------------     \n\n")
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
@@ -825,7 +826,9 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			summary.KicsIssues++
 			summary.TotalIssues++
 		}
-		if severity == highLabel {
+		if severity == criticalLabel {
+			summary.CriticalIssues++
+		} else if severity == highLabel {
 			summary.HighIssues++
 		} else if severity == lowLabel {
 			summary.LowIssues++

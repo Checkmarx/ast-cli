@@ -32,6 +32,8 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Default: false,
 			},
 		},
+	},
+	{
 		CommandName: "cx project create",
 	},
 }
