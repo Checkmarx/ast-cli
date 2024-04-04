@@ -34,7 +34,8 @@ func (g AzureMockWrapper) GetRepositories(url, organizationName, projectName, to
 	if len(projectName) > 0 {
 		var repos = make([]wrappers.AzureRepo, 1)
 		repos[0] = wrappers.AzureRepo{
-			Name: "MOCK REPO",
+			Name:       "MOCK REPO",
+			IsDisabled: false,
 		}
 		return wrappers.AzureRootRepo{Repos: repos}, nil
 	}

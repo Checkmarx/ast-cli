@@ -120,6 +120,7 @@ const (
 	GithubTokenUsage         = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage         = "GitLab OAuth token"
 	BotCount                 = "Note: dependabot is not counted but other bots might be considered as contributors."
+	DisabledReposCount       = "Note: Disabled repositories are not counted."
 	URLFlag                  = "url"
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
