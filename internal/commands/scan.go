@@ -522,6 +522,12 @@ func scanCreateSubCommand(
 		[]string{},
 		commonParams.KicsPlatformsFlagUsage,
 	)
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastFastScanFlag,
+		false,
+		"Enable SAST Fast Scan configuration",
+	)
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.IacsPlatformsFlag,
 		[]string{},
@@ -934,7 +940,9 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig := wrappers.SastConfig{}
 		sastMapConfig[resultsMapType] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		for _, config := range resubmitConfig {

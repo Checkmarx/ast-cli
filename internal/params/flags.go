@@ -57,6 +57,7 @@ const (
 	TimeoutFlag                   = "timeout"
 	TimeoutFlagUsage              = "Timeout for network activity, (default 5 seconds)"
 	NtlmProxyDomainFlag           = "proxy-ntlm-domain"
+	SastFastScanFlag              = "sast-fast-scan"
 	NtlmProxyDomainFlagUsage      = "Window domain when using NTLM proxy"
 	BaseURIFlagUsage              = "The base system URI"
 	BaseAuthURIFlag               = "base-auth-uri"
