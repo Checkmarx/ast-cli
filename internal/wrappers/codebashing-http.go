@@ -16,7 +16,6 @@ import (
 const (
 	failedToParseCodeBashing    = "Failed to parse list results"
 	failedGettingCodeBashingURL = "Authentication failed, not able to retrieve codebashing base link"
-	limitValue                  = "10000"
 	limit                       = "limit"
 	noCodebashingLinkAvailable  = "No codebashing link available"
 	licenseNotFoundExitCode     = 3
@@ -44,7 +43,11 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:

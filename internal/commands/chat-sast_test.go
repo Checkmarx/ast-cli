@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
@@ -67,6 +69,30 @@ func TestChatSastInvalideResultId(t *testing.T) {
 	assert.NilError(t, err)
 	s := string(output)
 	assert.Assert(t, strings.Contains(s, "result ID invalidResultId not found"), s)
+}
+
+func TestChatSastAiGuidedRemediationDisabled(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{{
+		Key:   "scan.config.plugins.ideScans",
+		Value: "true",
+	},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "false",
+		},
+	}
+
+	buffer, err := executeRedirectedTestCommand("chat", "sast",
+		"--chat-apikey", "apiKey",
+		"--scan-results-file", "./data/cx_result.json",
+		"--source-dir", "dir",
+		"--sast-result-id", "13588362")
+	assert.NilError(t, err)
+	output, err := io.ReadAll(buffer)
+	assert.NilError(t, err)
+	s := string(output)
+	assert.Assert(t, strings.Contains(s, AiGuidedRemediationDisabledError), s)
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
 }
 
 func TestChatSastInvalidSourceDir(t *testing.T) {

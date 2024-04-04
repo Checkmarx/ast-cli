@@ -22,6 +22,7 @@ import (
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -67,9 +68,68 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), projectNameRandom,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, args)
+	defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+}
+
+func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "application-that-doesnt-exist",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
+}
+
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast,iac-security,sca"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	defer deleteProject(t, projectID)
+
+	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
+
+func TestScansUpdateProjectGroups(t *testing.T) {
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
+	response := listScanByID(t, scanID)
+	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -395,7 +455,6 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 		assert.Assert(t, ok, "Scan should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-
 	deleteScan(t, scanID)
 
 	response = listScanByID(t, scanID)
@@ -413,6 +472,9 @@ func createScanNoWait(t *testing.T, source string, tags map[string]string) (stri
 
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgs(source, tags, "sast,sca"), flag(params.AsyncFlag)))
+}
+func createScanWithEngines(t *testing.T, source string, tags map[string]string, scanTypes string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgs(source, tags, scanTypes), flag(params.AsyncFlag)))
 }
 
 // Create sca scan with resolver
@@ -445,11 +507,17 @@ func getProjectNameForScanTests() string {
 }
 
 func getCreateArgs(source string, tags map[string]string, scanTypes string) []string {
+	return getCreateArgsWithGroups(source, tags, nil, scanTypes)
+}
+func getCreateArgsWithGroups(source string, tags map[string]string, groups []string, scanTypes string) []string {
 	projectName := getProjectNameForScanTests()
-	return getCreateArgsWithName(source, tags, projectName, scanTypes)
+	return getCreateArgsWithNameAndGroups(source, tags, groups, projectName, scanTypes)
 }
 
 func getCreateArgsWithName(source string, tags map[string]string, projectName, scanTypes string) []string {
+	return getCreateArgsWithNameAndGroups(source, tags, nil, projectName, scanTypes)
+}
+func getCreateArgsWithNameAndGroups(source string, tags map[string]string, groups []string, projectName, scanTypes string) []string {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -458,6 +526,7 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName, s
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
+		flag(params.ProjectGroupList), formatGroups(groups),
 	}
 	return args
 }
@@ -1173,4 +1242,14 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
+}
+
+func TestScanListWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "limit=100",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
 }

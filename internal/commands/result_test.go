@@ -62,6 +62,13 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
+func TestRunGetResultsByScanIdJsonFormatWithSastRedundancy(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--sast-redundancy")
+
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+}
+
 func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
@@ -324,4 +331,125 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func Test_addPackageInformation(t *testing.T) {
+	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
+	resultsModel := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: "sca", // Assuming this matches commonParams.ScaType
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier: "pkg-123",
+				},
+				ID: "CVE-2021-23-424",
+				VulnerabilityDetails: wrappers.VulnerabilityDetails{
+					CvssScore: 5.0,
+					CveName:   "cwe-789",
+				},
+			},
+		},
+	}
+	scaPackageModel := &[]wrappers.ScaPackageCollection{
+		{
+			ID:                  "pkg-123",
+			FixLink:             "",
+			DependencyPathArray: dependencyArray,
+		},
+	}
+	scaTypeModel := &[]wrappers.ScaTypeCollection{
+		{}}
+
+	resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+
+	expectedFixLink := "https://devhub.checkmarx.com/cve-details/CVE-2021-23-424"
+	actualFixLink := resultsModel.Results[0].ScanResultData.ScaPackageCollection.FixLink
+	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
+}
+
+func Test_setRiskMsgAndStyle_critical(t *testing.T) {
+	var summary wrappers.ResultSummary
+	summary.CriticalIssues = 1
+	setRiskMsgAndStyle(&summary)
+	assert.Equal(t, criticalLabel, summary.RiskStyle, "Incorrect Risk Style for critical issues.")
+	assert.Equal(t, "Critical Risk", summary.RiskMsg, "Incorrect Risk Message for critical issues.")
+}
+func Test_setRiskMsgAndStyle_high(t *testing.T) {
+	var summary wrappers.ResultSummary
+	summary.CriticalIssues = 0
+	summary.HighIssues = 1
+	setRiskMsgAndStyle(&summary)
+	assert.Equal(t, highLabel, summary.RiskStyle, "Incorrect Risk Style for high issues.")
+	assert.Equal(t, "High Risk", summary.RiskMsg, "Incorrect Risk Message for high issues.")
+}
+func Test_setRiskMsgAndStyle_criticalAndHigh(t *testing.T) {
+	var summary wrappers.ResultSummary
+	summary.CriticalIssues = 1
+	summary.HighIssues = 1
+	setRiskMsgAndStyle(&summary)
+	assert.Equal(t, criticalLabel, summary.RiskStyle, "Incorrect Risk Style for critical issues.")
+	assert.Equal(t, "Critical Risk", summary.RiskMsg, "Incorrect Risk Message for critical issues.")
+}
+func Test_countResult(t *testing.T) {
+	var result wrappers.ScanResult
+	result.Type = params.SastType
+	result.Severity = criticalLabel
+	result.State = "EXPLOITABLE"
+
+	var summary wrappers.ResultSummary
+	engineEnabled := []string{params.SastType}
+	summary.EnginesEnabled = engineEnabled
+	summary.SastIssues = 100
+	summary.TotalIssues = 1000
+	summary.CriticalIssues = 10
+	var engineResultSummary wrappers.EngineResultSummary
+	engineResultSummary.Critical = 0
+	var engineResult = make(map[string]*wrappers.EngineResultSummary)
+	engineResult[params.SastType] = &engineResultSummary
+	summary.EnginesResult = engineResult
+
+	countResult(&summary, &result)
+
+	assert.Equal(t, 101, summary.SastIssues, "Critical issues in summary SAST issues are not counted properly")
+	assert.Equal(t, 1001, summary.TotalIssues, "Critical issues in summary total issues are not counted properly")
+	assert.Equal(t, 11, summary.CriticalIssues, "Critical issues in summary are not counted properly")
+	assert.Equal(t, 1, summary.EnginesResult[params.SastType].Critical, "Critical issues in summary for SAST are not counted properly")
+}
+func Test_countResult_high(t *testing.T) {
+	var result wrappers.ScanResult
+	result.Type = params.ScaType
+	result.Severity = highLabel
+	result.State = "EXPLOITABLE"
+
+	var summary wrappers.ResultSummary
+	engineEnabled := []string{params.ScaType}
+	summary.EnginesEnabled = engineEnabled
+	summary.ScaIssues = 100
+	summary.TotalIssues = 1000
+	summary.HighIssues = 10
+	var engineResultSummary wrappers.EngineResultSummary
+	engineResultSummary.High = 0
+	var engineResult = make(map[string]*wrappers.EngineResultSummary)
+	engineResult[params.ScaType] = &engineResultSummary
+	summary.EnginesResult = engineResult
+
+	countResult(&summary, &result)
+
+	assert.Equal(t, 101, summary.ScaIssues, "High issues in summary SCA issues are not counted properly")
+	assert.Equal(t, 1001, summary.TotalIssues, "High issues in summary total issues are not counted properly")
+	assert.Equal(t, 11, summary.HighIssues, "High issues in summary are not counted properly")
+	assert.Equal(t, 1, summary.EnginesResult[params.ScaType].High, "High issues in summary for SCA are not counted properly")
+}
+func Test_findSarifLevel_critical(t *testing.T) {
+	var result wrappers.ScanResult
+	result.Severity = criticalCx
+	var sarifLevel = findSarifLevel(&result)
+	assert.Equal(t, highSarif, sarifLevel, "Incorrect sarif level for critical issues.")
+}
+func Test_findSarifLevel_high(t *testing.T) {
+	var result wrappers.ScanResult
+	result.Severity = highCx
+	var sarifLevel = findSarifLevel(&result)
+	assert.Equal(t, highSarif, sarifLevel, "Incorrect sarif level for high issues.")
 }
