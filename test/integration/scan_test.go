@@ -126,6 +126,19 @@ func TestScansE2E(t *testing.T) {
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
+func TestFastScan(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func createScanWithFastScan(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastFastScanFlag))
+	return executeCreateScan(t, args)
+}
+
 func TestScansUpdateProjectGroups(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
 	response := listScanByID(t, scanID)
