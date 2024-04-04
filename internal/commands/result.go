@@ -203,7 +203,6 @@ func resultShowSubCommand(
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1331,6 +1330,11 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 	}
 
 	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
+	// if no options are provided, report service defaults to all values
+	if pdfOptions == "" {
+		return pdfOptionsSections, pdfOptionsSections, nil
+	}
+
 	options := strings.Split(strings.ReplaceAll(pdfOptions, "\n", ""), ",")
 	for _, s := range options {
 		if pdfReportOptionsEngines[reportName][s] != "" {
