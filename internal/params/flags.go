@@ -231,7 +231,7 @@ const (
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
-	ScsType              = "microengines"
+	ScsType              = "scs"
 	Success              = "success"
 )
 
