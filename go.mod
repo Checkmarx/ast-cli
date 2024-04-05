@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.21.8
+go 1.21.9
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
