@@ -581,10 +581,9 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if resp != nil && err == nil {
 			if hasRedirectedStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" || !isTrusedUrl(redirectURL) {
+				if redirectURL == "" || !isTrustedUrl(redirectURL) || isValidHttpMethos(req.Method) {
 					return nil, fmt.Errorf("redirect URL not found in response")
 				}
-
 				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
 				if err != nil {
 					return nil, err
@@ -600,8 +599,17 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	return nil, err
 }
 
-func isTrusedUrl(host string) bool {
-	trustedHosts := []string{"https://s3.dualstack.eu-west-1.amazonaws.com"}
+func isValidHttpMethos(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+
+}
+func isTrustedUrl(host string) bool {
+	trustedHosts := []string{"https://s3.dualstack.eu-west-1.amazonaws.com/"}
 	for _, trustedHost := range trustedHosts {
 		if strings.HasPrefix(host, trustedHost) {
 			return true
