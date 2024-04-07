@@ -107,6 +107,7 @@ func createRunAzureUserCountFunc(azureWrapper wrappers.AzureWrapper) func(cmd *c
 		}
 
 		log.Println(params.BotCount)
+		log.Println(params.DisabledReposCount)
 
 		return err
 	}
