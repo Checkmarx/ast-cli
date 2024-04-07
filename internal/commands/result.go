@@ -38,7 +38,8 @@ const (
 	lowLabel                  = "low"
 	infoLabel                 = "info"
 	sonarTypeLabel            = "_sonar"
-	glSastTypeLobel           = ".gl-sast-report"
+	glSastTypeLabel           = ".gl-sast-report"
+	glDependencyTypeLabel     = ".gl-dependency-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
 	lowSonar                  = "MINOR"
@@ -104,6 +105,7 @@ var summaryFormats = []string{
 	printer.FormatSummaryMarkdown,
 	printer.FormatSbom,
 	printer.FormatGL,
+	printer.FormatGLDependency,
 }
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -201,6 +203,7 @@ func resultShowSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 		printer.FormatGL,
+		printer.FormatGLDependency,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
@@ -915,9 +918,14 @@ func createReport(format,
 		return exportJSONResults(jsonRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatGL) {
-		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLobel), targetPath, printer.FormatJSON)
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
+	if printer.IsFormat(format, printer.FormatGLDependency) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glDependencyTypeLabel), targetPath, printer.FormatJSON)
+		return exportGlDependencyResults(jsonRpt, results, summary)
+	}
+
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
 	}
@@ -1081,6 +1089,53 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	defer f.Close()
 	return nil
 }
+
+func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
+	log.Println("Creating Gl-dependency: ", targetFile)
+	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
+	err := addScanToGlDependencyReport(summary, glDependencyResult)
+	convertCxResultToGlDependencyVulnerability(results, glDependencyResult, summary.BaseURI)
+	convertCxResultToGlDependencyFiles(results, glDependencyResult, summary.BaseURI)
+	resultsJSON, err := json.Marshal(glDependencyResult)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
+	}
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
+	}
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	defer f.Close()
+
+	return nil
+}
+
+func addScanToGlDependencyReport(summary *wrappers.ResultSummary, glDependencyResult *wrappers.GlDependencyResultsCollection) error {
+	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	glDependencyResult.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
+	glDependencyResult.Version = "15.0.0"
+	glDependencyResult.Scan.Analyzer.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Analyzer.Id = wrappers.ScannerId
+	glDependencyResult.Scan.Scanner.Id = wrappers.ScannerId
+	glDependencyResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Scanner.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Status = commonParams.Success
+	glDependencyResult.Scan.Type = wrappers.ScannerType
+	glDependencyResult.Scan.StartTime = createdAt.Format(glTimeFormat)
+	glDependencyResult.Scan.EndTime = createdAt.Format(glTimeFormat)
+	glDependencyResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glDependencyResult.Scan.Scanner.VersionGlSca = commonParams.Version
+	glDependencyResult.Scan.Analyzer.VersionGlSca = commonParams.Version
+
+	return nil
+}
+
 func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlSastResultsCollection) error {
 	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
 	if err != nil {
@@ -1374,6 +1429,21 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 	}
 }
 
+func convertCxResultToGlDependencyVulnerability(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection, summaryBaseURI string) {
+	for _, result := range results.Results {
+		if strings.TrimSpace(result.Type) == commonParams.ScaType {
+			glDependencyResult = parseGlDependencyVulnerability(result, glDependencyResult)
+		}
+	}
+}
+
+func convertCxResultToGlDependencyFiles(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection, summaryBaseURI string) {
+	for _, result := range results.Results {
+		if strings.TrimSpace(result.Type) == commonParams.ScaType {
+			glDependencyResult = parseGlDependencyFiles(result, glDependencyResult)
+		}
+	}
+}
 func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) *wrappers.GlSastResultsCollection {
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
@@ -1429,6 +1499,107 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	return glSast
 }
 
+func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
+
+	if result.ScanResultData.ScaPackageCollection != nil {
+
+		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlDepVulnerabilities{
+			Id:          result.ID,
+			Name:        result.VulnerabilityDetails.CveName,
+			Description: result.Description,
+			Severity:    cases.Title(language.English).String(result.Severity),
+			Solution:    result.ScanResultData.RecommendedVersion,
+			Identifiers: collectDependencyPackageData(result),
+			Links:       collectDependencyPackageLinks(result),
+			TrackingDep: wrappers.TrackingDep{
+				Items: collectDependencyPackageItemsDep(result),
+			},
+			Flags: make([]string, 0),
+			LocationDep: wrappers.GlDepVulnerabilityLocation{
+				File: *(result.ScanResultData.ScaPackageCollection.Locations[0]),
+				Dependency: wrappers.DependencyLocation{
+					Package:                   wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
+					DependencyLocationVersion: "",
+					Iid:                       "",
+					Direct:                    result.ScanResultData.ScaPackageCollection.IsDirectDependency,
+					DependencyPath:            "",
+				},
+			},
+		})
+	}
+	return glDependencyResult
+}
+
+func parseGlDependencyFiles(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
+	if result.ScanResultData.ScaPackageCollection != nil {
+		glDependencyResult.DependencyFiles = append(glDependencyResult.DependencyFiles, wrappers.DependencyFile{
+			Path:           result.ScanResultData.ScaPackageCollection.ID, ///Need to enter correct File path
+			PackageManager: result.ScanResultData.ScaPackageCollection.ID, //Need to enter correct Package_manager
+			Dependencies:   collectDependencyFileLocations(result),
+		})
+	}
+	return glDependencyResult
+}
+
+func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.DependencyLocation {
+	allIdentifierLocations := []wrappers.DependencyLocation{}
+	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
+		allIdentifierLocations = append(allIdentifierLocations, wrappers.DependencyLocation{
+			Package: wrappers.PackageName{
+				Name: result.ScanResultData.PackageData[i].Type,
+			},
+			DependencyLocationVersion: result.ScanResultData.PackageData[i].URL,
+			Iid:                       result.ScanResultData.PackageData[i].Type,
+			Direct:                    true,
+			DependencyPath:            result.ScanResultData.PackageData[i].Type,
+		})
+	}
+	return allIdentifierLocations
+}
+
+func collectDependencyPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
+	allDependencyPackageItemDep := []wrappers.ItemDep{}
+	if result.ScanResultData.ScaPackageCollection != nil {
+		allDependencyPackageItemDep = append(allDependencyPackageItemDep, wrappers.ItemDep{
+			Signature: []wrappers.SignatureDep{{Algorithm: "SCA-Algorithm ", Value: "NA"}},
+			File:      *result.ScanResultData.ScaPackageCollection.DependencyPathArray[0][0].Locations[0],
+			EndLine:   0,
+			StartLine: 0,
+		})
+	}
+	return allDependencyPackageItemDep
+
+}
+
+func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
+	allDependencyPackageLinks := []wrappers.LinkDep{}
+	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
+
+		allDependencyPackageLinks = append(allDependencyPackageLinks, wrappers.LinkDep{
+			Name: result.ScanResultData.PackageData[i].Type,
+			Url:  result.ScanResultData.PackageData[i].URL,
+		})
+
+	}
+	return allDependencyPackageLinks
+
+}
+
+func collectDependencyPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep {
+	allIdentifierDep := []wrappers.IdentifierDep{}
+	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
+
+		allIdentifierDep = append(allIdentifierDep, wrappers.IdentifierDep{
+			Type:  result.ScanResultData.PackageData[i].Type,
+			Value: result.ScanResultData.PackageData[i].URL,
+			Name:  result.ScanResultData.PackageData[i].URL,
+		})
+
+	}
+	return allIdentifierDep
+}
+
+// func IdentifiersPackageData
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
 	sonar.Results = parseResultsSonar(results)
