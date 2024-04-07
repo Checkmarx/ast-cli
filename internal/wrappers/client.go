@@ -579,6 +579,18 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintIfVerbose(err.Error())
 		}
 		if resp != nil && err == nil {
+			if hasRedirectedStatusCode(resp) {
+				redirectURL := resp.Header.Get("Location")
+				if redirectURL == "" {
+					return nil, fmt.Errorf("redirect URL not found in response")
+				}
+
+				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
@@ -586,6 +598,10 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func hasRedirectedStatusCode(resp *http.Response) bool {
+	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
 func getAuthURI() (string, error) {
