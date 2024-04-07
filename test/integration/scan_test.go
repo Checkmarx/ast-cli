@@ -691,8 +691,6 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-	res := strings.Join(args, " ")
-	fmt.Println(res)
 	err, _ := executeCommand(t, args...)
 	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastExitCode)
 }

@@ -109,7 +109,10 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			Status: wrappers.ScanFailed,
 			StatusDetails: []wrappers.StatusInfo{
 				{
-					Status: wrappers.ScanFailed, Name: "kics",
+					Status:    wrappers.ScanFailed,
+					Name:      "kics",
+					Details:   "error message from kics scanner",
+					ErrorCode: 1234,
 				},
 			},
 		}, nil, nil

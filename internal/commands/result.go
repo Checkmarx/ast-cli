@@ -162,10 +162,30 @@ func NewResultsCommand(
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
+	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd,
+		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand,
 	)
 	return resultCmd
+}
+
+func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
+	exitCodeCmd := &cobra.Command{
+		Use:   "exit-code",
+		Short: "Get exit code and details of a scan",
+		Long:  "The exit-code command enables to get the exit code and failure details of a requested scan in Checkmarx One.",
+		Example: heredoc.Doc(
+			`
+			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | iac-security>
+		`,
+		),
+		RunE: runGetExitCodeCommand(scanWrapper),
+	}
+
+	exitCodeCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID")
+	exitCodeCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+
+	return exitCodeCmd
 }
 
 func resultShowSubCommand(
@@ -249,6 +269,87 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
 
 	return resultBflCmd
+}
+
+func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+		if scanID == "" {
+			return errors.New("Scan ID is required")
+		}
+		scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
+		if errorModel != nil || err != nil {
+			_ = printer.Print(cmd.OutOrStdout(), fmt.Sprintf("Scan %s not found", scanID), printer.FormatJSON)
+		}
+		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		var results []interface{}
+
+		if scanTypesFlagValue == "" {
+			results = createFailedScannersResponse(scanResponseModel)
+			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
+		}
+		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
+		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
+
+		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
+	}
+}
+
+func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrappers.ScanResponseModel) []interface{} {
+	var results []interface{}
+	for i := range scanTypes {
+		for j := range scanResponseModel.StatusDetails {
+			if scanResponseModel.StatusDetails[j].Name == scanTypes[i] {
+				results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[j]))
+			}
+		}
+	}
+	return results
+}
+
+func createFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
+	var results []interface{}
+	for i := range scanResponseModel.StatusDetails {
+		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
+			results = append(results, createFailedScannerResponse(&scanResponseModel.StatusDetails[i]))
+		}
+	}
+
+	return results
+}
+
+func createScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
+	if statusDetails.Status == wrappers.ScanFailed {
+		return createFailedScannerResponse(statusDetails)
+	} else {
+		return createNonFailedScannerResponse(statusDetails)
+	}
+}
+
+func sanitizeScannerNames(scanTypes string) []string {
+	scanTypeSlice := strings.Split(scanTypes, ",")
+	for i := range scanTypeSlice {
+		scanTypeSlice[i] = strings.ToLower(scanTypeSlice[i])
+	}
+
+	return scanTypeSlice
+}
+
+func createFailedScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
+	return FailedScannerResponse{
+		Name:      statusDetails.Name,
+		Status:    statusDetails.Status,
+		Details:   statusDetails.Details,
+		ErrorCode: strconv.Itoa(statusDetails.ErrorCode),
+	}
+}
+
+func createNonFailedScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
+	return SuccessfulScannerResponse{
+		Name:    statusDetails.Name,
+		Status:  statusDetails.Status,
+		Details: "",
+	}
 }
 
 func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobra.Command, args []string) error {
@@ -1827,4 +1928,16 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	}
 	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
+}
+
+type SuccessfulScannerResponse struct {
+	Name    string
+	Status  string
+	Details string
+}
+type FailedScannerResponse struct {
+	Name      string
+	Status    string
+	Details   string
+	ErrorCode string
 }
