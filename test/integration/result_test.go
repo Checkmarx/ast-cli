@@ -210,7 +210,7 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {
@@ -220,7 +220,6 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-
 }
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
@@ -230,7 +229,7 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
 	)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")

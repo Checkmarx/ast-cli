@@ -73,13 +73,15 @@ const (
 	pendingStatus             = "Pending"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
-	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
-		defaultPdfOptionsDataSections
+	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca and " +
+		defaultPdfOptionsDataSections + defaultPdfOprtionsImprovedDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	delayValueForReport                     = 10
 	reportNameScanReport                    = "scan-report"
+	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
-	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
+	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults with NEW_SAST_SCAN_REPORT_ENABLED feature flag disabled or "
+	defaultPdfOprtionsImprovedDataSections  = "scan-information,results-overview,scan-results,categories,resolved-results,vulnerability-details with the flag enabled"
 	defaultSbomOption                       = "CycloneDxJson"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
@@ -202,7 +204,7 @@ func resultShowSubCommand(
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1223,11 +1225,19 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled)
+	newScanReportEnabled := wrappers.FeatureFlags[wrappers.NewScanReportEnabled]
+
+	if newScanReportEnabled {
+		pdfReportsPayload.ReportName = reportNameImprovedScanReport
+	} else {
+		pdfReportsPayload.ReportName = reportNameScanReport
+	}
+
+	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled, pdfReportsPayload.ReportName)
 	if err != nil {
 		return err
 	}
-	pdfReportsPayload.ReportName = reportNameScanReport
+
 	pdfReportsPayload.ReportType = "cli"
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
@@ -1290,11 +1300,19 @@ func validateSbomOptions(sbomOption string) (string, error) {
 	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
-func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
+func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
 		"scansummary":      "ScanSummary",
 		"executivesummary": "ExecutiveSummary",
 		"scanresults":      "ScanResults",
+	}
+	var pdfOptionsSectionsMapImproved = map[string]string{
+		"scan-information":      "scan-information",
+		"results-overview":      "results-overview",
+		"scan-results":          "scan-results",
+		"categories":            "categories",
+		"resolved-results":      "resolved-results",
+		"vulnerability-details": "vulnerability-details",
 	}
 	var pdfOptionsEnginesMap = map[string]string{
 		commonParams.ScaType:  "SCA",
@@ -1302,13 +1320,29 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSect
 		commonParams.KicsType: "KICS",
 		commonParams.IacType:  "KICS",
 	}
+
+	var pdfReportOptionsSections = map[string]map[string]string{
+		reportNameImprovedScanReport: pdfOptionsSectionsMapImproved,
+		reportNameScanReport:         pdfOptionsSectionsMap,
+	}
+
+	var pdfReportOptionsEngines = map[string]map[string]string{
+		reportNameImprovedScanReport: pdfOptionsEnginesMap,
+		reportNameScanReport:         pdfOptionsEnginesMap,
+	}
+
 	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
+	// if no options are provided, report service defaults to all values
+	if pdfOptions == "" {
+		return pdfOptionsSections, pdfOptionsSections, nil
+	}
+
 	options := strings.Split(strings.ReplaceAll(pdfOptions, "\n", ""), ",")
 	for _, s := range options {
-		if pdfOptionsEnginesMap[s] != "" {
-			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[s])
-		} else if pdfOptionsSectionsMap[s] != "" {
-			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
+		if pdfReportOptionsEngines[reportName][s] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][s])
+		} else if pdfReportOptionsSections[reportName][s] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfReportOptionsSections[reportName][s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
 		}
@@ -1316,7 +1350,7 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string) (pdfOptionsSect
 	if pdfOptionsEngines == nil {
 		for _, engine := range enabledEngines {
 			if pdfOptionsEnginesMap[engine] != "" {
-				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
+				pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][engine])
 			}
 		}
 	}

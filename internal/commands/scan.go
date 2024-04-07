@@ -557,7 +557,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)

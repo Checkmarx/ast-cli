@@ -1069,7 +1069,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {

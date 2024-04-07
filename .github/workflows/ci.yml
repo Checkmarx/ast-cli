@@ -4,7 +4,7 @@ on:
   pull_request:
 
 env:
-  GO_VERSION: '1.21.8'
+  GO_VERSION: '1.21.9'
 
 jobs:
   unit-tests:
@@ -66,7 +66,7 @@ jobs:
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
-          PR_GITHUB_NUMBER: 418
+          PR_GITHUB_NUMBER: 419
           PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
