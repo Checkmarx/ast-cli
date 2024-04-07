@@ -581,9 +581,6 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if resp != nil && err == nil {
 			if hasRedirectedStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" || !isTrusedHost(redirectURL) {
-					return nil, fmt.Errorf("redirect URL not found in response")
-				}
 
 				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
 				if err != nil {
