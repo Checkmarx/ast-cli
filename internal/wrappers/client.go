@@ -585,7 +585,18 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 					return nil, fmt.Errorf("redirect URL not found in response")
 				}
 
-				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
+				parsedURL, err := url.Parse(redirectURL)
+				if err != nil {
+					return nil, fmt.Errorf("invalid redirect URL: %s", err)
+				}
+
+				// Perform additional checks on the parsed URL, such as ensuring it's an allowed domain, scheme, etc.
+				// Example:
+				// if parsedURL.Scheme != "https" || !strings.HasPrefix(parsedURL.Host, "example.com") {
+				//     return nil, fmt.Errorf("invalid redirect URL: %s", redirectURL)
+				// }
+
+				req, err = http.NewRequest(req.Method, parsedURL.String(), bytes.NewReader(body))
 				if err != nil {
 					return nil, err
 				}
@@ -594,6 +605,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
+
 		logger.PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
