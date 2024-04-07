@@ -2022,7 +2022,7 @@ func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
 		return failedStatuses[0]
 	}
 
-	return exitCodes.GeneralExitCode
+	return exitCodes.MultipleEnginesFailedExitCode
 }
 
 const (
@@ -2035,12 +2035,12 @@ const (
 )
 
 var errorCodesByScanner = map[string]int{
-	General: exitCodes.GeneralExitCode,
-	Sast:    exitCodes.SastExitCode,
-	Sca:     exitCodes.ScaExitCode,
-	Iac:     exitCodes.IacExitCode,
-	Kics:    exitCodes.KicsExitCode,
-	APISec:  exitCodes.ApisecExitCode,
+	General: exitCodes.MultipleEnginesFailedExitCode,
+	Sast:    exitCodes.SastEngineFailedExitCode,
+	Sca:     exitCodes.ScaEngineFailedExitCode,
+	Iac:     exitCodes.IacEngineFailedExitCode,
+	Kics:    exitCodes.KicsEngineFailedExitCode,
+	APISec:  exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {

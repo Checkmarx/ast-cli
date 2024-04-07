@@ -235,28 +235,28 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-scanner-fail", "-s", dummyRepo, "-b", "dummy_branch"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--scan-types", Kics)...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsExitCode)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
 }
 
 func TestScanCreate_MultipleScannersFail_ReturnGeneralExitCodeAndErrorMessage(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "fake-multiple-scanner-fails", "-s", dummyRepo, "-b", "dummy_branch"}
 	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s", Kics, Sca))
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.GeneralExitCode)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.MultipleEnginesFailedExitCode)
 }
 
 func TestScanCreate_ScaScannersFailPartialScan_ReturnScaExitCodeAndErrorMessage(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "fake-sca-fail-partial", "-s", dummyRepo, "-b", "dummy_branch"}
 	baseArgs = append(baseArgs, "--scan-types", Sca)
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan completed partially", exitCodes.ScaExitCode)
+	assertAstError(t, err, "scan completed partially", exitCodes.ScaEngineFailedExitCode)
 }
 
 func TestScanCreate_MultipleScannersDifferentStatusesOnlyKicsFail_ReturnKicsExitCodeAndErrorMessage(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-fail-sast-canceled", "-s", dummyRepo, "-b", "dummy_branch"}
 	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s,%s", Sca, Sast, Kics))
 	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsExitCode)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
 }
 
 func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {

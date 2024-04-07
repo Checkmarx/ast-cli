@@ -705,7 +705,7 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		"999999",
 	}
 	err, _ := executeCommand(t, args...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastExitCode)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
 }
 
 func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
@@ -714,7 +714,8 @@ func assertAstError(t *testing.T, err error, expectedErrorMessage string, expect
 		assert.Equal(t, e.Error(), expectedErrorMessage)
 		assert.Equal(t, e.Code, expectedExitCode)
 	} else {
-		assert.Assert(t, false, "Error is not of type AstError")
+		assertError(t, err, "Error is not of type AstError")
+		assert.Assert(t, false, fmt.Sprintf("Error is not of type AstError. Error message: %s", err.Error()))
 	}
 }
 
