@@ -581,7 +581,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if resp != nil && err == nil {
 			if hasRedirectedStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" {
+				if redirectURL == "" || !isTrusedHost(redirectURL) {
 					return nil, fmt.Errorf("redirect URL not found in response")
 				}
 
@@ -598,6 +598,16 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func isTrusedHost(host string) bool {
+	trustedHosts := []string{"s3.dualstack.eu-west-1.amazonaws.com"}
+	for _, trustedHost := range trustedHosts {
+		if strings.Contains(host, trustedHost) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasRedirectedStatusCode(resp *http.Response) bool {
