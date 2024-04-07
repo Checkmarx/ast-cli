@@ -57,7 +57,7 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	return model, nil, nil
 }
 
-func getProjectResponseModel(id string, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
+func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
 	return &wrappers.ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
