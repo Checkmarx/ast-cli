@@ -581,7 +581,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if resp != nil && err == nil {
 			if hasRedirectedStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" || !isTrustedUrl(redirectURL) || isValidHttpMethos(req.Method) {
+				if redirectURL == "" || !isTrustedUrl(redirectURL) || isValidHttpMethod(req.Method) {
 					return nil, fmt.Errorf("redirect URL not found in response")
 				}
 				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
@@ -599,7 +599,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	return nil, err
 }
 
-func isValidHttpMethos(method string) bool {
+func isValidHttpMethod(method string) bool {
 	switch method {
 	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete:
 		return true
