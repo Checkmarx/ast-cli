@@ -281,9 +281,19 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		if errorModel != nil || err != nil {
 			_ = printer.Print(cmd.OutOrStdout(), fmt.Sprintf("Scan %s not found", scanID), printer.FormatJSON)
 		}
-		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		var results []interface{}
 
+		if scanResponseModel.Status == wrappers.ScanCanceled ||
+			scanResponseModel.Status == wrappers.ScanRunning ||
+			scanResponseModel.Status == wrappers.ScanQueued {
+			result := ScanCanceledOrInProgressResponse{
+				ScanID: scanResponseModel.ID,
+				Status: scanResponseModel.Status,
+			}
+			return printer.Print(cmd.OutOrStdout(), result, printer.FormatIndentedJSON)
+		}
+
+		var results []interface{}
+		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createFailedScannersResponse(scanResponseModel)
 			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
@@ -299,7 +309,7 @@ func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrap
 	var results []interface{}
 	for i := range scanTypes {
 		for j := range scanResponseModel.StatusDetails {
-			if scanResponseModel.StatusDetails[j].Name == scanTypes[i] {
+			if scanTypes[i] == scanResponseModel.StatusDetails[j].Name {
 				results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[j]))
 			}
 		}
@@ -1940,4 +1950,8 @@ type FailedScannerResponse struct {
 	Status    string
 	Details   string
 	ErrorCode string
+}
+type ScanCanceledOrInProgressResponse struct {
+	ScanID string
+	Status wrappers.ScanStatus
 }
