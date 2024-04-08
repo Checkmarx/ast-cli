@@ -16,7 +16,9 @@ type ResultSummary struct {
 	SastIssues      int
 	KicsIssues      int
 	ScaIssues       int
+	ScsIssues       int
 	APISecurity     APISecResult
+	SCSOverview     SCSOverview
 	RiskStyle       string
 	RiskMsg         string
 	Status          string
@@ -43,10 +45,27 @@ type APISecResult struct {
 	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
 	StatusCode       int
 }
+
 type riskDistribution struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
 }
+
+type SCSOverview struct {
+	Status               ScanStatus             `json:"status"`
+	TotalRisksCount      int                    `json:"totalRisks"`
+	RiskSummary          map[string]int         `json:"riskSummary"`
+	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews"`
+}
+
+type MicroEngineOverview struct {
+	Name        string         `json:"name"`
+	FullName    string         `json:"fullName"`
+	Status      ScanStatus     `json:"status"`
+	TotalRisks  int            `json:"totalRisks"`
+	RiskSummary map[string]int `json:"riskSummary"`
+}
+
 type EngineResultSummary struct {
 	High       int
 	Medium     int
@@ -102,8 +121,8 @@ func (engineSummary *EngineResultSummary) Increment(level string) {
 	}
 }
 
-func (summary *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
-	summary.EnginesResult[engineType].Increment(severity)
+func (r *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
+	r.EnginesResult[engineType].Increment(severity)
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -117,6 +136,10 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+
+func (r *ResultSummary) HasSCS() bool {
+	return r.HasEngine(params.ScsType)
 }
 
 func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {

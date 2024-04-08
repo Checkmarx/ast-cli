@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -41,6 +42,7 @@ func createASTTestCommand() *cobra.Command {
 	projectsMockWrapper := &mock.ProjectsMockWrapper{}
 	resultsMockWrapper := &mock.ResultsMockWrapper{}
 	risksOverviewMockWrapper := &mock.RisksOverviewMockWrapper{}
+	scsScanOverviewMockWrapper := &mock.ScanOverviewMockWrapper{}
 	authWrapper := &mock.AuthMockWrapper{}
 	logsWrapper := &mock.LogsMockWrapper{}
 	codeBashingWrapper := &mock.CodeBashingMockWrapper{}
@@ -71,6 +73,73 @@ func createASTTestCommand() *cobra.Command {
 		projectsMockWrapper,
 		resultsMockWrapper,
 		risksOverviewMockWrapper,
+		scsScanOverviewMockWrapper,
+		authWrapper,
+		logsWrapper,
+		groupsMockWrapper,
+		gitHubWrapper,
+		azureWrapper,
+		bitBucketWrapper,
+		nil,
+		gitLabWrapper,
+		bflMockWrapper,
+		prMockWrapper,
+		learnMoreMockWrapper,
+		tenantConfigurationMockWrapper,
+		jwtWrapper,
+		scaRealtimeMockWrapper,
+		chatWrapper,
+		featureFlagsMockWrapper,
+		policyWrapper,
+		sastMetadataWrapper,
+		accessManagementWrapper,
+	)
+}
+
+func createASTTestCommandWithScs(scsScanned, scsScanPartial, scorecardScanned bool) *cobra.Command {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	scansMockWrapper := &mock.ScansMockWrapper{HasSCS: scsScanned}
+	resultsSbomWrapper := &mock.ResultsSbomWrapper{}
+	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
+	scansMockWrapper.Running = true
+	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
+	groupsMockWrapper := &mock.GroupsMockWrapper{}
+	uploadsMockWrapper := &mock.UploadsMockWrapper{}
+	projectsMockWrapper := &mock.ProjectsMockWrapper{}
+	resultsMockWrapper := &mock.ResultsMockWrapper{}
+	risksOverviewMockWrapper := &mock.RisksOverviewMockWrapper{}
+	scsScanOverviewMockWrapper := &mock.ScanOverviewMockWrapper{ScanPartial: scsScanPartial, ScorecardScanned: scorecardScanned}
+	authWrapper := &mock.AuthMockWrapper{}
+	logsWrapper := &mock.LogsMockWrapper{}
+	codeBashingWrapper := &mock.CodeBashingMockWrapper{}
+	gitHubWrapper := &mock.GitHubMockWrapper{}
+	azureWrapper := &mock.AzureMockWrapper{}
+	bitBucketWrapper := &mock.BitBucketMockWrapper{}
+	gitLabWrapper := &mock.GitLabMockWrapper{}
+	bflMockWrapper := &mock.BflMockWrapper{}
+	learnMoreMockWrapper := &mock.LearnMoreMockWrapper{}
+	prMockWrapper := &mock.PRMockWrapper{}
+	tenantConfigurationMockWrapper := &mock.TenantConfigurationMockWrapper{}
+	jwtWrapper := &mock.JWTMockWrapper{}
+	scaRealtimeMockWrapper := &mock.ScaRealTimeHTTPMockWrapper{}
+	chatWrapper := &mock.ChatMockWrapper{}
+	featureFlagsMockWrapper := &mock.FeatureFlagsMockWrapper{}
+	policyWrapper := &mock.PolicyMockWrapper{}
+	sastMetadataWrapper := &mock.SastMetadataMockWrapper{}
+	accessManagementWrapper := &mock.AccessManagementMockWrapper{}
+
+	return NewAstCLI(
+		applicationWrapper,
+		scansMockWrapper,
+		resultsSbomWrapper,
+		resultsPdfWrapper,
+		resultsPredicatesMockWrapper,
+		codeBashingWrapper,
+		uploadsMockWrapper,
+		projectsMockWrapper,
+		resultsMockWrapper,
+		risksOverviewMockWrapper,
+		scsScanOverviewMockWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsMockWrapper,
@@ -120,6 +189,27 @@ func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
 	cmd.SilenceUsage = true
 	cmd.SetOut(buffer)
 	return buffer, cmd.Execute()
+}
+
+func executeRedirectedOsStdoutTestCommand(cmd *cobra.Command, args ...string) (bytes.Buffer, error) {
+	// Writing os stdout to file
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	err := cmd.Execute()
+
+	// Writing output to buffer
+	w.Close()
+	os.Stdout = old
+	var buffer bytes.Buffer
+	_, errCopy := io.Copy(&buffer, r)
+	if errCopy != nil {
+		return buffer, errCopy
+	}
+	return buffer, err
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {
