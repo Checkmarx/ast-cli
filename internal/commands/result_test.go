@@ -10,6 +10,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
 
@@ -277,6 +278,7 @@ func TestRunGetBFLByScanIdAndQueryIdWithFormatList(t *testing.T) {
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -286,6 +288,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -294,7 +297,18 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
 }
 
+func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-options", "scan-information")
+	assert.Equal(t, err.Error(), "report option \"scan-information\" unavailable", "Wrong expected error message")
+}
+
 func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -305,7 +319,32 @@ func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
+func TestRunGetResultsGeneratingPdfReportWithOptionsImproved(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: true}}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scan-information")
+	assert.NilError(t, err)
+}
+
+func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: true}}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
+	assert.Error(t, err, "report option \"scansummary\" unavailable")
+}
+
+func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
