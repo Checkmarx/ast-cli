@@ -581,10 +581,11 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if resp != nil && err == nil {
 			if hasRedirectedStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" || !isTrustedUrl(redirectURL) || isValidHttpMethod(req.Method) {
+				method := GetHttpMethod(req)
+				if redirectURL == "" || !isTrustedUrl(redirectURL) || method == "" {
 					return nil, fmt.Errorf("redirect URL not found in response")
 				}
-				req, err = http.NewRequest(req.Method, redirectURL, bytes.NewReader(body))
+				req, err = http.NewRequest(method, redirectURL, bytes.NewReader(body))
 				if err != nil {
 					return nil, err
 				}
@@ -599,15 +600,23 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 	return nil, err
 }
 
-func isValidHttpMethod(method string) bool {
-	switch method {
-	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete:
-		return true
+func GetHttpMethod(req *http.Request) string {
+	switch req.Method {
+	case http.MethodGet:
+		return http.MethodGet
+	case http.MethodPost:
+		return http.MethodPost
+	case http.MethodPut:
+		return http.MethodPut
+	case http.MethodDelete:
+		return http.MethodDelete
+	case http.MethodPatch:
+		return http.MethodPatch
 	default:
-		return false
+		return ""
 	}
-
 }
+
 func isTrustedUrl(host string) bool {
 	trustedHosts := []string{"https://s3.dualstack.eu-west-1.amazonaws.com/"}
 	for _, trustedHost := range trustedHosts {
