@@ -610,7 +610,6 @@ func GetHTTPMethod(req *http.Request) string {
 		http.MethodPut:     http.MethodPut,
 		http.MethodDelete:  http.MethodDelete,
 		http.MethodOptions: http.MethodOptions,
-		http.MethodPatch:   http.MethodPatch,
 	}
 	return methodMap[req.Method]
 }
