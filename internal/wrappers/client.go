@@ -615,6 +615,8 @@ func GetHTTPMethod(req *http.Request) string {
 		return http.MethodDelete
 	case http.MethodOptions:
 		return http.MethodOptions
+	case http.MethodPatch:
+		return http.MethodPatch
 	default:
 		return ""
 	}
