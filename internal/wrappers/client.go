@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -604,14 +605,17 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 }
 
 func GetHTTPMethod(req *http.Request) string {
-	methodMap := map[string]string{
-		http.MethodGet:     http.MethodGet,
-		http.MethodPost:    http.MethodPost,
-		http.MethodPut:     http.MethodPut,
-		http.MethodDelete:  http.MethodDelete,
-		http.MethodOptions: http.MethodOptions,
+	allowedMethods := []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodDelete,
+		http.MethodOptions,
 	}
-	return methodMap[req.Method]
+	if util.Contains(allowedMethods, req.Method) {
+		return req.Method
+	}
+	return ""
 }
 
 func hasRedirectStatusCode(resp *http.Response) bool {
