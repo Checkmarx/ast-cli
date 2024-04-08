@@ -296,13 +296,10 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createAllScannersResponse(scanResponseModel)
-			viewjson, _ := json.MarshalIndent(results, " ", " ")
-			fmt.Println(string(viewjson))
 			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
 		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
-
 		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 	}
 }
