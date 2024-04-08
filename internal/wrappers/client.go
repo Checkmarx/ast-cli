@@ -579,7 +579,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintIfVerbose(err.Error())
 		}
 		if resp != nil && err == nil {
-			if hasRedirectedStatusCode(resp) {
+			if hasRedirectStatusCode(resp) {
 				redirectURL := resp.Header.Get("Location")
 				if redirectURL == "" {
 					return nil, fmt.Errorf("redirect URL not found in response")
@@ -604,25 +604,18 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 }
 
 func GetHTTPMethod(req *http.Request) string {
-	switch req.Method {
-	case http.MethodGet:
-		return http.MethodGet
-	case http.MethodPost:
-		return http.MethodPost
-	case http.MethodPut:
-		return http.MethodPut
-	case http.MethodDelete:
-		return http.MethodDelete
-	case http.MethodOptions:
-		return http.MethodOptions
-	case http.MethodPatch:
-		return http.MethodPatch
-	default:
-		return ""
+	methodMap := map[string]string{
+		http.MethodGet:     http.MethodGet,
+		http.MethodPost:    http.MethodPost,
+		http.MethodPut:     http.MethodPut,
+		http.MethodDelete:  http.MethodDelete,
+		http.MethodOptions: http.MethodOptions,
+		http.MethodPatch:   http.MethodPatch,
 	}
+	return methodMap[req.Method]
 }
 
-func hasRedirectedStatusCode(resp *http.Response) bool {
+func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
