@@ -285,9 +285,9 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		if scanResponseModel.Status == wrappers.ScanCanceled ||
 			scanResponseModel.Status == wrappers.ScanRunning ||
 			scanResponseModel.Status == wrappers.ScanQueued {
-			result := ScanCanceledOrInProgressResponse{
+			result := ScannerResponse{
 				ScanID: scanResponseModel.ID,
-				Status: scanResponseModel.Status,
+				Status: string(scanResponseModel.Status),
 			}
 			return printer.Print(cmd.OutOrStdout(), result, printer.FormatIndentedJSON)
 		}
@@ -295,7 +295,9 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		var results []interface{}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
-			results = createFailedScannersResponse(scanResponseModel)
+			results = createAllScannersResponse(scanResponseModel)
+			viewjson, _ := json.MarshalIndent(results, " ", " ")
+			fmt.Println(string(viewjson))
 			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
@@ -317,23 +319,12 @@ func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrap
 	return results
 }
 
-func createFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
+func createAllScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
 	var results []interface{}
 	for i := range scanResponseModel.StatusDetails {
-		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
-			results = append(results, createFailedScannerResponse(&scanResponseModel.StatusDetails[i]))
-		}
+		results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
 	}
-
 	return results
-}
-
-func createScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
-	if statusDetails.Status == wrappers.ScanFailed {
-		return createFailedScannerResponse(statusDetails)
-	} else {
-		return createNonFailedScannerResponse(statusDetails)
-	}
 }
 
 func sanitizeScannerNames(scanTypes string) []string {
@@ -345,20 +336,20 @@ func sanitizeScannerNames(scanTypes string) []string {
 	return scanTypeSlice
 }
 
-func createFailedScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
-	return FailedScannerResponse{
+func createScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
+	return ScannerResponse{
 		Name:      statusDetails.Name,
 		Status:    statusDetails.Status,
 		Details:   statusDetails.Details,
-		ErrorCode: strconv.Itoa(statusDetails.ErrorCode),
+		ErrorCode: stringifyErrorCode(statusDetails.ErrorCode),
 	}
 }
 
-func createNonFailedScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
-	return SuccessfulScannerResponse{
-		Name:    statusDetails.Name,
-		Status:  statusDetails.Status,
-		Details: "",
+func stringifyErrorCode(errorCode int) string {
+	if errorCode == 0 {
+		return ""
+	} else {
+		return strconv.Itoa(errorCode)
 	}
 }
 
@@ -1940,18 +1931,10 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	return &policyModel
 }
 
-type SuccessfulScannerResponse struct {
-	Name    string
-	Status  string
-	Details string
-}
-type FailedScannerResponse struct {
-	Name      string
-	Status    string
-	Details   string
-	ErrorCode string
-}
-type ScanCanceledOrInProgressResponse struct {
-	ScanID string
-	Status wrappers.ScanStatus
+type ScannerResponse struct {
+	ScanID    string `json:"ScanID,omitempty"`
+	Name      string `json:"Name,omitempty"`
+	Status    string `json:"Status,omitempty"`
+	Details   string `json:"Details,omitempty"`
+	ErrorCode string `json:"ErrorCode,omitempty"`
 }
