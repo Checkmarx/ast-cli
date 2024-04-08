@@ -347,9 +347,8 @@ func createScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
 func stringifyErrorCode(errorCode int) string {
 	if errorCode == 0 {
 		return ""
-	} else {
-		return strconv.Itoa(errorCode)
 	}
+	return strconv.Itoa(errorCode)
 }
 
 func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobra.Command, args []string) error {
