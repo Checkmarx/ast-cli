@@ -587,6 +587,9 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
+	createScanCmd.PersistentFlags().String(commonParams.SCSGitHubTokenFlag, "", "GitHub token to be used with SCS engines")
+	createScanCmd.PersistentFlags().String(commonParams.SCSGitHubUrlFlag, "", "GitHub url to be used with SCS engines")
+
 	return createScanCmd
 }
 
@@ -867,6 +870,12 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+
+	var SCSConfig = addSCSScan(cmd)
+	if SCSConfig != nil {
+		configArr = append(configArr, SCSConfig)
+	}
+
 	info["config"] = configArr
 	*input, err = json.Marshal(info)
 	return err
@@ -1029,6 +1038,23 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		}
 		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
+	}
+	return nil
+}
+
+func addSCSScan(cmd *cobra.Command) map[string]interface{} {
+	if scanTypeEnabled(commonParams.SCSType) {
+		SCSMapConfig := make(map[string]interface{})
+		SCSConfig := wrappers.SCSConfig{}
+		SCSMapConfig[resultsMapType] = commonParams.SCSType
+		SCSGitHubToken, _ := cmd.Flags().GetString(commonParams.SCSGitHubTokenFlag)
+		SCSGitHubURL, _ := cmd.Flags().GetString(commonParams.SCSGitHubTokenFlag)
+		if SCSGitHubToken != "" && SCSGitHubURL != "" {
+			SCSConfig.GitHubToken = strings.ToLower(SCSGitHubToken)
+			SCSConfig.GitHubUrl = strings.ToLower(SCSGitHubURL)
+		}
+		SCSMapConfig[resultsMapValue] = &SCSConfig
+		return SCSMapConfig
 	}
 	return nil
 }

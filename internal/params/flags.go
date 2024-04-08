@@ -180,6 +180,10 @@ const (
 	ChatSastScanResultsFile = "scan-results-file"
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
+
+	// SCS (Github)
+	SCSGitHubTokenFlag = "scs-github-token"
+	SCSGitHubUrlFlag   = "scs-github-url"
 )
 
 // Parameter values
@@ -232,6 +236,7 @@ const (
 	ScaType              = "sca"
 	APISecType           = "apisec"
 	Success              = "success"
+	SCSType              = "scs"
 )
 
 // ScaAgent AST Role
