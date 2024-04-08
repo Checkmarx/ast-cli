@@ -604,19 +604,22 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 }
 
 func GetHTTPMethod(req *http.Request) string {
-	allowedMethods := []string{
-		http.MethodGet,
-		http.MethodPost,
-		http.MethodPut,
-		http.MethodDelete,
-		http.MethodOptions,
+	switch req.Method {
+	case http.MethodGet:
+		return http.MethodGet
+	case http.MethodPost:
+		return http.MethodPost
+	case http.MethodPut:
+		return http.MethodPut
+	case http.MethodDelete:
+		return http.MethodDelete
+	case http.MethodOptions:
+		return http.MethodOptions
+	case http.MethodPatch:
+		return http.MethodPatch
+	default:
+		return ""
 	}
-	for _, method := range allowedMethods {
-		if req.Method == method {
-			return method
-		}
-	}
-	return ""
 }
 
 func hasRedirectStatusCode(resp *http.Response) bool {
