@@ -34,6 +34,34 @@ func TestResultHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results")
 }
 
+func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-scanner-fail")
+}
+
+func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-multiple-scanner-fails")
+}
+
+func TestResultsExitCode_OnFailedKicsAndScaScannersAndRequestedScannerIsSca_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-multiple-scanner-fails", "--scan-types", "sca")
+}
+
+func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-sca-fail-partial-id")
+}
+
+func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id")
+}
+
+func TestResultsExitCode_OnCanceledScanWithRequestedSuccessfulScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id", "--scan-types", "sast")
+}
+
+func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id", "--scan-types", "kics")
+}
+
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file

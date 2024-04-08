@@ -295,7 +295,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		var results []interface{}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
-			results = createAllScannersResponse(scanResponseModel)
+			results = createAllFailedScannersResponse(scanResponseModel)
 			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
@@ -316,10 +316,12 @@ func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrap
 	return results
 }
 
-func createAllScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
+func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
 	var results []interface{}
 	for i := range scanResponseModel.StatusDetails {
-		results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
+		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
+			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
+		}
 	}
 	return results
 }

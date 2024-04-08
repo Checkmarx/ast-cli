@@ -122,8 +122,8 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			ID:     "fake-scan-id-multiple-scanner-fails",
 			Status: wrappers.ScanFailed,
 			StatusDetails: []wrappers.StatusInfo{
-				{Status: wrappers.ScanFailed, Name: "kics"},
-				{Status: wrappers.ScanFailed, Name: "sca"},
+				{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
+				{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
 			},
 		}, nil, nil
 	}
@@ -132,18 +132,19 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 			ID:     "fake-scan-id-sca-fail-partial-id",
 			Status: wrappers.ScanPartial,
 			StatusDetails: []wrappers.StatusInfo{
-				{Status: wrappers.ScanFailed, Name: "sca"},
+				{Status: wrappers.ScanCompleted, Name: "sast"},
+				{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
 			},
 		}, nil, nil
 	}
 	if scanID == "fake-scan-id-kics-fail-sast-canceled-id" {
 		return &wrappers.ScanResponseModel{
 			ID:     "fake-scan-id-kics-fail-sast-canceled-id",
-			Status: wrappers.ScanFailed,
+			Status: wrappers.ScanCanceled,
 			StatusDetails: []wrappers.StatusInfo{
 				{Status: wrappers.ScanCompleted, Name: "general"},
-				{Status: wrappers.ScanCanceled, Name: "sast"},
-				{Status: wrappers.ScanFailed, Name: "kics"},
+				{Status: wrappers.ScanCompleted, Name: "sast"},
+				{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
 			},
 		}, nil, nil
 	}

@@ -21,7 +21,19 @@ const (
 	resultsDirectory = "output-results-folder/"
 )
 
-// Create a scan and test getting its results
+func TestResultsExitCode_OnSuccessfulScan_PrintResultsForAllScanners(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"results", "exit-code",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanTypes), "sast,sca",
+	}
+
+	err, _ := executeCommand(t, args...)
+	defer deleteScan(t, scanID)
+	assert.NilError(t, err)
+}
 func TestResultListJson(t *testing.T) {
 
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
