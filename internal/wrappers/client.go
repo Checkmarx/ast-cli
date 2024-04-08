@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -612,8 +611,10 @@ func GetHTTPMethod(req *http.Request) string {
 		http.MethodDelete,
 		http.MethodOptions,
 	}
-	if util.Contains(allowedMethods, req.Method) {
-		return req.Method
+	for _, method := range allowedMethods {
+		if req.Method == method {
+			return method
+		}
 	}
 	return ""
 }
