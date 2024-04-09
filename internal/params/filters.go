@@ -119,6 +119,8 @@ var BaseFilters = []string{
 	"build.gradle",
 	"build.sbt",
 	"yarn.lock",
+	"requirements.txt",
+	"requirement.txt",
 	"requirement*.txt",
 	"composer.lock",
 	"Dockerfile*",
