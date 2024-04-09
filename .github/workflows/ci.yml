@@ -3,9 +3,6 @@ name: Checkmarx One CLI
 on:
   pull_request:
 
-#env:
-#  GO_VERSION: '1.22.1'
-
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
