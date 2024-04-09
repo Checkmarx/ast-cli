@@ -36,6 +36,7 @@ func TestContains(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := Contains(tt.array, tt.val); got != tt.exists {
 				t.Errorf("Contains() = %v, want %v", got, tt.exists)
@@ -55,6 +56,7 @@ func TestIsGitURL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsGitURL(tt.url); got != tt.expected {
 				t.Errorf("IsGitURL() = %v, want %v", got, tt.expected)
@@ -74,6 +76,7 @@ func TestIsSSHURL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsSSHURL(tt.url); got != tt.expected {
 				t.Errorf("IsSSHURL() = %v, want %v", got, tt.expected)
