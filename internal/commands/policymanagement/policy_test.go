@@ -51,5 +51,4 @@ func TestWaitForPolicyCompletion_Timeout(t *testing.T) {
 	assert.NilError(t, err, "Expected no error, got %v", err)
 
 	assert.Assert(t, duration.Seconds() >= 1, "Expected timeout duration of at least 1 second, got %v", duration)
-
 }
