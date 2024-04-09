@@ -64,7 +64,7 @@ func TestGetFormatter(t *testing.T) {
 
 	for _, oneTest := range tests {
 		t.Run(oneTest.name, func(t *testing.T) {
-			test := oneTest
+			var test = oneTest
 			defer func() {
 				if r := recover(); (r != nil) != test.expectedPanic {
 					t.Errorf("Expected panic: %v, got panic: %v", test.expectedPanic, r != nil)
