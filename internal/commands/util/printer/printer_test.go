@@ -63,25 +63,25 @@ func TestGetFormatter(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		localTest := test
 		t.Run(test.name, func(t *testing.T) {
+			test := test
 			defer func() {
-				if r := recover(); (r != nil) != localTest.expectedPanic {
+				if r := recover(); (r != nil) != test.expectedPanic {
 					t.Errorf("Expected panic: %v, got panic: %v", test.expectedPanic, r != nil)
 				}
 			}()
 
-			formatFunc := getFormatter(localTest.formatName)
-			if !localTest.expectedPanic {
-				localProperty := localTest.property
+			formatFunc := getFormatter(test.formatName)
+			if !test.expectedPanic {
+				localProperty := test.property
 				formatFunc(&localProperty, time.Time{})
-				localTest.expectedFunc(&localTest.property, time.Time{})
-				if localProperty.Value != localTest.property.Value || localProperty.Key != localTest.property.Key {
-					t.Errorf("GetFormatter(%s) returned incorrect function", localTest.formatName)
+				test.expectedFunc(&test.property, time.Time{})
+				if localProperty.Value != test.property.Value || localProperty.Key != test.property.Key {
+					t.Errorf("GetFormatter(%s) returned incorrect function", test.formatName)
 				}
 
 			} else {
-				t.Errorf("GetFormatter(%s) did not panic as expected", localTest.formatName)
+				t.Errorf("GetFormatter(%s) did not panic as expected", test.formatName)
 			}
 		})
 	}
