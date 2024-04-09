@@ -121,6 +121,7 @@ var BaseFilters = []string{
 	"yarn.lock",
 	"requirements.txt",
 	"requirement.txt",
+	"requirement*.txt",
 	"composer.lock",
 	"Dockerfile*",
 	"dock*",
