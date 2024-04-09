@@ -62,9 +62,9 @@ func TestGetFormatter(t *testing.T) {
 		{"Invalid format", "invalid_format", nil, true, property{}},
 	}
 
-	for _, oneTest := range tests {
-		t.Run(oneTest.name, func(t *testing.T) {
-			var test = oneTest
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
 			defer func() {
 				if r := recover(); (r != nil) != test.expectedPanic {
 					t.Errorf("Expected panic: %v, got panic: %v", test.expectedPanic, r != nil)
