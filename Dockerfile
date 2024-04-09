@@ -1,7 +1,6 @@
-FROM checkmarx.jfrog.io/docker/chainguard/go:1.22.1-r1--ed1afb92146ee7
+FROM cgr.dev/chainguard/bash:latest
 
-RUN adduser --system --disabled-password cxuser
-USER cxuser
+USER nonroot
 
 COPY cx /app/bin/cx
 
