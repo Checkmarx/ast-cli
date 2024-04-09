@@ -79,7 +79,6 @@ func TestGetFormatter(t *testing.T) {
 				if localProperty.Value != test.property.Value || localProperty.Key != test.property.Key {
 					t.Errorf("GetFormatter(%s) returned incorrect function", test.formatName)
 				}
-
 			} else {
 				t.Errorf("GetFormatter(%s) did not panic as expected", test.formatName)
 			}
