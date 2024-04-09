@@ -19,13 +19,14 @@ type JWTStruct struct {
 	jwt.Claims
 }
 
-var enabledEngines = []string{"sast", "sca", "api-security", "iac-security"}
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs"}
 
 var defaultEngines = map[string]bool{
 	"sast":         true,
 	"sca":          true,
 	"api-security": true,
 	"iac-security": true,
+	"scs":          true,
 }
 
 type JWTWrapper interface {

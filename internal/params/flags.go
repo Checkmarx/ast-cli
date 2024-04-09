@@ -182,8 +182,8 @@ const (
 	ChatSastResultID        = "sast-result-id"
 
 	// SCS (Github)
-	SCSGitHubTokenFlag = "scs-github-token"
-	SCSGitHubUrlFlag   = "scs-github-url"
+	SCSRepoTokenFlag = "scs-repo-token"
+	SCSRepoUrlFlag   = "scs-repo-url"
 )
 
 // Parameter values

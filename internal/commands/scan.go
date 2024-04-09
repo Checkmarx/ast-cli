@@ -98,6 +98,8 @@ const (
 	completedPolicy  = "COMPLETED"
 	nonePolicy       = "NONE"
 	evaluatingPolicy = "EVALUATING"
+	scsScoreCardType = "scorecard"
+	scsTwoMSType     = "2ms"
 )
 
 var (
@@ -591,8 +593,8 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
-	createScanCmd.PersistentFlags().String(commonParams.SCSGitHubTokenFlag, "", "GitHub token to be used with SCS engines")
-	createScanCmd.PersistentFlags().String(commonParams.SCSGitHubUrlFlag, "", "GitHub url to be used with SCS engines")
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoUrlFlag, "", "GitHub url to be used with SCS engines")
 
 	return createScanCmd
 }
@@ -1051,12 +1053,14 @@ func addSCSScan(cmd *cobra.Command) map[string]interface{} {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.SCSType
-		SCSGitHubToken, _ := cmd.Flags().GetString(commonParams.SCSGitHubTokenFlag)
-		SCSGitHubURL, _ := cmd.Flags().GetString(commonParams.SCSGitHubTokenFlag)
-		if SCSGitHubToken != "" && SCSGitHubURL != "" {
-			SCSConfig.GitHubToken = strings.ToLower(SCSGitHubToken)
-			SCSConfig.GitHubUrl = strings.ToLower(SCSGitHubURL)
+		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoUrlFlag)
+		if SCSRepoToken != "" && SCSRepoURL != "" {
+			SCSConfig.RepoToken = SCSRepoToken
+			SCSConfig.RepoUrl = strings.ToLower(SCSRepoURL)
 		}
+		SCSConfig.Scorecard = strings.ToLower("true")
+		SCSConfig.Twoms = strings.ToLower("true")
 		SCSMapConfig[resultsMapValue] = &SCSConfig
 		return SCSMapConfig
 	}
