@@ -526,6 +526,12 @@ func scanCreateSubCommand(
 		[]string{},
 		commonParams.KicsPlatformsFlagUsage,
 	)
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastFastScanFlag,
+		false,
+		"Enable SAST Fast Scan configuration",
+	)
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.IacsPlatformsFlag,
 		[]string{},
@@ -554,7 +560,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -937,7 +943,9 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig := wrappers.SastConfig{}
 		sastMapConfig[resultsMapType] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		for _, config := range resubmitConfig {
