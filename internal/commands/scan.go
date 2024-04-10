@@ -2027,21 +2027,21 @@ func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
 }
 
 const (
-	General = "general"
-	Sast    = "sast"
-	Sca     = "sca"
-	Iac     = "iac"
-	Kics    = "kics"
-	APISec  = "apisec"
+	General     = "general"
+	Sast        = "sast"
+	Sca         = "sca"
+	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
+	Kics        = "kics"
+	APISec      = "apisec"
 )
 
 var errorCodesByScanner = map[string]int{
-	General: exitCodes.MultipleEnginesFailedExitCode,
-	Sast:    exitCodes.SastEngineFailedExitCode,
-	Sca:     exitCodes.ScaEngineFailedExitCode,
-	Iac:     exitCodes.IacEngineFailedExitCode,
-	Kics:    exitCodes.KicsEngineFailedExitCode,
-	APISec:  exitCodes.ApisecEngineFailedExitCode,
+	General:     exitCodes.MultipleEnginesFailedExitCode,
+	Sast:        exitCodes.SastEngineFailedExitCode,
+	Sca:         exitCodes.ScaEngineFailedExitCode,
+	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
+	Kics:        exitCodes.KicsEngineFailedExitCode,
+	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
