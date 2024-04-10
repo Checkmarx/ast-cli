@@ -31,7 +31,6 @@ func TestResultsExitCode_OnSuccessfulScan_PrintResultsForAllScanners(t *testing.
 	}
 
 	err, _ := executeCommand(t, args...)
-	defer deleteScan(t, scanID)
 	assert.NilError(t, err)
 }
 func TestResultListJson(t *testing.T) {
