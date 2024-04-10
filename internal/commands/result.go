@@ -295,18 +295,37 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 				ScanID: scanResponseModel.ID,
 				Status: string(scanResponseModel.Status),
 			}
-			return printer.Print(cmd.OutOrStdout(), result, printer.FormatJSON)
+			//return printer.Print(cmd.OutOrStdout(), result, printer.FormatJSON)
+
+			viewJSON, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			_, _ = fmt.Println(string(viewJSON))
 		}
 
 		var results []ScannerResponse
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createAllFailedScannersResponse(scanResponseModel)
-			return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
+
+			viewJSON, err := json.Marshal(results)
+			if err != nil {
+				return err
+			}
+			_, _ = fmt.Println(string(viewJSON))
+
+			//return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
 		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
-		return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
+
+		viewJSON, err := json.Marshal(results)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Println(string(viewJSON))
+		//return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 	}
 }
 
