@@ -302,6 +302,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 				return err
 			}
 			_, _ = fmt.Println(string(viewJSON))
+			return nil
 		}
 
 		var results []ScannerResponse
@@ -315,6 +316,8 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			}
 			_, _ = fmt.Println(string(viewJSON))
 
+			return nil
+
 			//return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
@@ -325,6 +328,8 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return err
 		}
 		_, _ = fmt.Println(string(viewJSON))
+
+		return nil
 		//return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 	}
 }
