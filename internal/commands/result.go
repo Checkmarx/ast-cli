@@ -291,18 +291,18 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 				ScanID: scanResponseModel.ID,
 				Status: string(scanResponseModel.Status),
 			}
-			return printer.Print(cmd.OutOrStdout(), result, printer.FormatIndentedJSON)
+			return printer.Print(cmd.OutOrStdout(), result, printer.FormatJSON)
 		}
 
 		var results []interface{}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createAllFailedScannersResponse(scanResponseModel)
-			return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
+			return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		}
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
 		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
-		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
+		return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 	}
 }
 
@@ -1002,9 +1002,6 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
-	if printer.IsFormat(format, printer.FormatIndentedJSON) {
-		return nil
-	}
 	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)

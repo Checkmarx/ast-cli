@@ -14,7 +14,6 @@ import (
 
 const (
 	FormatJSON            = "json"
-	FormatIndentedJSON    = "indented-json"
 	FormatSarif           = "sarif"
 	FormatSonar           = "sonar"
 	FormatSummary         = "summaryHTML"
@@ -32,13 +31,7 @@ const (
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
-	if IsFormat(format, FormatIndentedJSON) {
-		viewJSON, err := json.MarshalIndent(view, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = fmt.Fprintln(w, string(viewJSON))
-	} else if IsFormat(format, FormatJSON) {
+	if IsFormat(format, FormatJSON) {
 		viewJSON, err := json.Marshal(view)
 		if err != nil {
 			return err

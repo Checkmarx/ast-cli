@@ -46,7 +46,6 @@ func TestResultListJson(t *testing.T) {
 		"show",
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
-				printer.FormatIndentedJSON,
 				printer.FormatJSON,
 				printer.FormatSarif,
 				printer.FormatSummary,
