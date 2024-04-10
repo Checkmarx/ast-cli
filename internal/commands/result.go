@@ -323,7 +323,7 @@ func createRequestedScannersResponse(scanTypes map[string]string, scanResponseMo
 func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
 	var results []ScannerResponse
 	for i := range scanResponseModel.StatusDetails {
-		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
+		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed && scanResponseModel.StatusDetails[i].Name != General {
 			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
 		}
 	}
