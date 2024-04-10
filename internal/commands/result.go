@@ -278,7 +278,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
-			return errors.New(applicationErrors.ScanIdRequired)
+			return errors.New(applicationErrors.ScanIDRequired)
 		}
 		scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
 		if errorModel != nil || err != nil {

@@ -6,5 +6,5 @@ const (
 
 const (
 	FailedToGetApplication = "Failed to get application"
-	ScanIdRequired         = "scan ID is required"
+	ScanIDRequired         = "scan ID is required"
 )
