@@ -312,9 +312,9 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 func createRequestedScannersResponse(scanTypes map[string]string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
 	var results []ScannerResponse
-	for _, StatusDetail := range scanResponseModel.StatusDetails {
+	for i, StatusDetail := range scanResponseModel.StatusDetails {
 		if _, ok := scanTypes[StatusDetail.Name]; ok {
-			results = append(results, createScannerResponse(&StatusDetail))
+			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
 		}
 	}
 	return results
