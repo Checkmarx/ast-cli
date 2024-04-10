@@ -35,6 +35,10 @@ func TestResultHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results")
 }
 
+func TestResultsExitCode_CompletedScan_PrintCorrectInfoToConsole(t *testing.T) {
+	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "MOCK")
+}
+
 func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
 	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-scanner-fail")
 }
