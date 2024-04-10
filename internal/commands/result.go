@@ -21,6 +21,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -277,7 +278,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
-			return errors.New("scan ID is required")
+			return errors.New(applicationErrors.ScanIdRequired)
 		}
 		scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
 		if errorModel != nil || err != nil {
@@ -294,7 +295,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return printer.Print(cmd.OutOrStdout(), result, printer.FormatJSON)
 		}
 
-		var results []interface{}
+		var results []ScannerResponse
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createAllFailedScannersResponse(scanResponseModel)
@@ -306,8 +307,8 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrappers.ScanResponseModel) []interface{} {
-	var results []interface{}
+func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
 	for i := range scanTypes {
 		for j := range scanResponseModel.StatusDetails {
 			if scanTypes[i] == scanResponseModel.StatusDetails[j].Name {
@@ -318,8 +319,8 @@ func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrap
 	return results
 }
 
-func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []interface{} {
-	var results []interface{}
+func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
 	for i := range scanResponseModel.StatusDetails {
 		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
 			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
@@ -337,7 +338,7 @@ func sanitizeScannerNames(scanTypes string) []string {
 	return scanTypeSlice
 }
 
-func createScannerResponse(statusDetails *wrappers.StatusInfo) interface{} {
+func createScannerResponse(statusDetails *wrappers.StatusInfo) ScannerResponse {
 	return ScannerResponse{
 		Name:      statusDetails.Name,
 		Status:    statusDetails.Status,
