@@ -1,8 +1,6 @@
-FROM alpine:3.19.1
+FROM cgr.dev/chainguard/bash:latest
 
-RUN apk add bash
-RUN adduser --system --disabled-password cxuser
-USER cxuser
+USER nonroot
 
 COPY cx /app/bin/cx
 
