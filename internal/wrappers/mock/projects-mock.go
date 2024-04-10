@@ -40,63 +40,33 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		filteredTotalCount = 0
 	}
 
-	if params["names"] == "fake-kics-scanner-fail" {
-		return &wrappers.ProjectsCollectionResponseModel{
-			FilteredTotalCount: uint(filteredTotalCount),
-			Projects: []wrappers.ProjectResponseModel{
-				{
-					ID:   "fake-kics-scanner-fail-id",
-					Name: "fake-kics-scanner-fail",
-				},
-			},
-		}, nil, nil
+	var model *wrappers.ProjectsCollectionResponseModel
+	switch name := params["names"]; name {
+	case "fake-kics-scanner-fail":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "fake-multiple-scanner-fails":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "fake-sca-fail-partial":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "fake-kics-fail-sast-canceled":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	default:
+		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
 	}
 
-	if params["names"] == "fake-multiple-scanner-fails" {
-		return &wrappers.ProjectsCollectionResponseModel{
-			FilteredTotalCount: uint(filteredTotalCount),
-			Projects: []wrappers.ProjectResponseModel{
-				{
-					ID:   "fake-multiple-scanner-fails-id",
-					Name: "fake-multiple-scanner-fails",
-				},
-			},
-		}, nil, nil
-	}
+	return model, nil, nil
+}
 
-	if params["names"] == "fake-sca-fail-partial" {
-		return &wrappers.ProjectsCollectionResponseModel{
-			FilteredTotalCount: uint(filteredTotalCount),
-			Projects: []wrappers.ProjectResponseModel{
-				{
-					ID:   "fake-sca-fail-partial-id",
-					Name: "fake-sca-fail-partial",
-				},
-			},
-		}, nil, nil
-	}
-
-	if params["names"] == "fake-kics-fail-sast-canceled" {
-		return &wrappers.ProjectsCollectionResponseModel{
-			FilteredTotalCount: uint(filteredTotalCount),
-			Projects: []wrappers.ProjectResponseModel{
-				{
-					ID:   "fake-kics-fail-sast-canceled-id",
-					Name: "fake-kics-fail-sast-canceled",
-				},
-			},
-		}, nil, nil
-	}
-
+func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
 	return &wrappers.ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
 			{
-				ID:   "MOCK",
-				Name: "MOCK",
+				ID:   id,
+				Name: name,
 			},
 		},
-	}, nil, nil
+	}
 }
 
 func (p *ProjectsMockWrapper) GetByID(projectID string) (

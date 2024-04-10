@@ -1,10 +1,10 @@
 package exitcodes
 
 const (
-	GeneralExitCode = 1
-	SastExitCode    = 2
-	ScaExitCode     = 3
-	IacExitCode     = 4
-	KicsExitCode    = 5
-	ApisecExitCode  = 6
+	MultipleEnginesFailedExitCode   = 1
+	SastEngineFailedExitCode        = 2
+	ScaEngineFailedExitCode         = 3
+	IacSecurityEngineFailedExitCode = 4 // Same code as kics to support forward compatibility
+	KicsEngineFailedExitCode        = 4
+	ApisecEngineFailedExitCode      = 5
 )

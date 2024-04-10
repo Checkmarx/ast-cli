@@ -1955,7 +1955,8 @@ func waitForScanCompletion(
 			if errorModel != nil {
 				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
-			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
+
+			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
 		}
 		i++
 	}
@@ -2022,25 +2023,25 @@ func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
 		return failedStatuses[0]
 	}
 
-	return exitCodes.GeneralExitCode
+	return exitCodes.MultipleEnginesFailedExitCode
 }
 
 const (
-	General = "general"
-	Sast    = "sast"
-	Sca     = "sca"
-	Iac     = "iac"
-	Kics    = "kics"
-	APISec  = "apisec"
+	General     = "general"
+	Sast        = "sast"
+	Sca         = "sca"
+	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
+	Kics        = "kics"
+	APISec      = "apisec"
 )
 
 var errorCodesByScanner = map[string]int{
-	General: exitCodes.GeneralExitCode,
-	Sast:    exitCodes.SastExitCode,
-	Sca:     exitCodes.ScaExitCode,
-	Iac:     exitCodes.IacExitCode,
-	Kics:    exitCodes.KicsExitCode,
-	APISec:  exitCodes.ApisecExitCode,
+	General:     exitCodes.MultipleEnginesFailedExitCode,
+	Sast:        exitCodes.SastEngineFailedExitCode,
+	Sca:         exitCodes.ScaEngineFailedExitCode,
+	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
+	Kics:        exitCodes.KicsEngineFailedExitCode,
+	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
