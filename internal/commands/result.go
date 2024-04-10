@@ -176,7 +176,7 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	exitCodeCmd := &cobra.Command{
 		Use:   "exit-code",
 		Short: "Get exit code and details of a scan",
-		Long:  "The exit-code command enables to get the exit code and failure details of a requested scan in Checkmarx One.",
+		Long:  "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
 			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | iac-security>
@@ -281,8 +281,11 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return errors.New(applicationErrors.ScanIDRequired)
 		}
 		scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
-		if errorModel != nil || err != nil {
-			_ = printer.Print(cmd.OutOrStdout(), fmt.Sprintf("Scan %s not found", scanID), printer.FormatJSON)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGetting)
+		}
+		if errorModel != nil {
+			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
 		if scanResponseModel.Status == wrappers.ScanCanceled ||
@@ -307,13 +310,11 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func createRequestedScannersResponse(scanTypes []string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+func createRequestedScannersResponse(scanTypes map[string]string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
 	var results []ScannerResponse
-	for i := range scanTypes {
-		for j := range scanResponseModel.StatusDetails {
-			if scanTypes[i] == scanResponseModel.StatusDetails[j].Name {
-				results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[j]))
-			}
+	for _, StatusDetail := range scanResponseModel.StatusDetails {
+		if _, ok := scanTypes[StatusDetail.Name]; ok {
+			results = append(results, createScannerResponse(&StatusDetail))
 		}
 	}
 	return results
@@ -329,13 +330,15 @@ func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseMod
 	return results
 }
 
-func sanitizeScannerNames(scanTypes string) []string {
+func sanitizeScannerNames(scanTypes string) map[string]string {
 	scanTypeSlice := strings.Split(scanTypes, ",")
+	scanTypeMap := make(map[string]string)
 	for i := range scanTypeSlice {
-		scanTypeSlice[i] = strings.ToLower(scanTypeSlice[i])
+		lowered := strings.ToLower(scanTypeSlice[i])
+		scanTypeMap[lowered] = lowered
 	}
 
-	return scanTypeSlice
+	return scanTypeMap
 }
 
 func createScannerResponse(statusDetails *wrappers.StatusInfo) ScannerResponse {
