@@ -877,8 +877,10 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, apiSecConfig)
 	}
 
-	var SCSConfig = addSCSScan(cmd)
-	if SCSConfig != nil {
+	var SCSConfig, scsErr = addSCSScan(cmd)
+	if scsErr != nil {
+		return scsErr
+	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
 	}
 
@@ -1048,7 +1050,7 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func addSCSScan(cmd *cobra.Command) map[string]interface{} {
+func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.SCSType) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
@@ -1058,13 +1060,15 @@ func addSCSScan(cmd *cobra.Command) map[string]interface{} {
 		if SCSRepoToken != "" && SCSRepoURL != "" {
 			SCSConfig.RepoToken = SCSRepoToken
 			SCSConfig.RepoUrl = strings.ToLower(SCSRepoURL)
+		} else {
+			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required")
 		}
 		SCSConfig.Scorecard = strings.ToLower("true")
 		SCSConfig.Twoms = strings.ToLower("true")
 		SCSMapConfig[resultsMapValue] = &SCSConfig
-		return SCSMapConfig
+		return SCSMapConfig, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper) error {
