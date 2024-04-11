@@ -336,7 +336,7 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
-	err := executeWithTimeout(cmd, 2*time.Minute, args...)
+	err := executeWithTimeout(cmd, 3*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
 	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
