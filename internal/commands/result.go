@@ -17,11 +17,11 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -295,18 +295,23 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 				ScanID: scanResponseModel.ID,
 				Status: string(scanResponseModel.Status),
 			}
-			return printer.Print(cmd.OutOrStdout(), result, printer.FormatJSON)
+			return printer.Print(cmd.OutOrStdout(), result, printer.FormatIndentedJSON)
 		}
 
 		var results []ScannerResponse
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		if scanTypesFlagValue == "" {
 			results = createAllFailedScannersResponse(scanResponseModel)
-			return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
+		} else {
+			scanTypes := sanitizeScannerNames(scanTypesFlagValue)
+			results = createRequestedScannersResponse(scanTypes, scanResponseModel)
 		}
-		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
-		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
-		return printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
+
+		if len(results) == 0 {
+			return nil
+		}
+
+		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 	}
 }
 
