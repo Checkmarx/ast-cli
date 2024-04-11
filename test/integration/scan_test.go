@@ -244,7 +244,7 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
-	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
+	scanID, _ := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
