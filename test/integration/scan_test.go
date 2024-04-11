@@ -686,7 +686,8 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan completed partially")
+	//assertError(t, err, "scan completed partially")
+	assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
