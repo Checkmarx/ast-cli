@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"gotest.tools/assert"
 )
@@ -45,4 +46,42 @@ func TestPrintTable(t *testing.T) {
 	// Test empty table
 	err = Print(os.Stdout, []string{"column1", "column2", "column3"}, FormatTable)
 	assert.NilError(t, err, "table print must run well")
+}
+
+func TestGetFormatter(t *testing.T) {
+	tests := []struct {
+		name          string
+		formatName    string
+		expectedFunc  func(*property, interface{})
+		expectedPanic bool
+		property      property
+	}{
+		{"Valid maxlen format", "maxlen:5", parseMaxlen("maxlen:5"), false, property{Key: "key", Value: "1234567890"}},
+		{"Valid time format", "time:2006-01-02", parseTime("time:2006-01-02"), false, property{Key: "key", Value: "2021-09-01"}},
+		{"Valid name format", "name:CustomName", parseName("name:CustomName"), false, property{Key: "key", Value: "value"}},
+		{"Invalid format", "invalid_format", nil, true, property{}},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); (r != nil) != test.expectedPanic {
+					t.Errorf("Expected panic: %v, got panic: %v", test.expectedPanic, r != nil)
+				}
+			}()
+
+			formatFunc := getFormatter(test.formatName)
+			if !test.expectedPanic {
+				localProperty := test.property
+				formatFunc(&localProperty, time.Time{})
+				test.expectedFunc(&test.property, time.Time{})
+				if localProperty.Value != test.property.Value || localProperty.Key != test.property.Key {
+					t.Errorf("GetFormatter(%s) returned incorrect function", test.formatName)
+				}
+			} else {
+				t.Errorf("GetFormatter(%s) did not panic as expected", test.formatName)
+			}
+		})
+	}
 }

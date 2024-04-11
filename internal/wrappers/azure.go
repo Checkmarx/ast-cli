@@ -17,8 +17,19 @@ type AzureRootRepo struct {
 	Repos []AzureRepo `json:"value,omitempty"`
 }
 
+func (a *AzureRootRepo) GetEnabledRepos() AzureRootRepo {
+	var enabledRepos []AzureRepo
+	for _, repo := range a.Repos {
+		if !repo.IsDisabled {
+			enabledRepos = append(enabledRepos, repo)
+		}
+	}
+	return AzureRootRepo{Repos: enabledRepos}
+}
+
 type AzureRepo struct {
-	Name string `json:"name"`
+	Name       string `json:"name"`
+	IsDisabled bool   `json:"isDisabled"`
 }
 
 type AzureRootProject struct {

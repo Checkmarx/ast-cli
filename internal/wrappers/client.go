@@ -579,6 +579,21 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintIfVerbose(err.Error())
 		}
 		if resp != nil && err == nil {
+			if hasRedirectStatusCode(resp) {
+				redirectURL := resp.Header.Get("Location")
+				if redirectURL == "" {
+					return nil, fmt.Errorf("redirect URL not found in response")
+				}
+				method := GetHTTPMethod(req)
+				if method == "" {
+					return nil, fmt.Errorf("method not found in request")
+				}
+				req, err = http.NewRequest(method, redirectURL, bytes.NewReader(body))
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
@@ -586,6 +601,29 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func GetHTTPMethod(req *http.Request) string {
+	switch req.Method {
+	case http.MethodGet:
+		return http.MethodGet
+	case http.MethodPost:
+		return http.MethodPost
+	case http.MethodPut:
+		return http.MethodPut
+	case http.MethodDelete:
+		return http.MethodDelete
+	case http.MethodOptions:
+		return http.MethodOptions
+	case http.MethodPatch:
+		return http.MethodPatch
+	default:
+		return ""
+	}
+}
+
+func hasRedirectStatusCode(resp *http.Response) bool {
+	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
 func getAuthURI() (string, error) {

@@ -23,8 +23,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -124,6 +126,19 @@ func TestScansE2E(t *testing.T) {
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
+
+func TestFastScan(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
+	defer deleteProject(t, projectID)
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func createScanWithFastScan(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastFastScanFlag))
+	return executeCreateScan(t, args)
 }
 
 func TestScansUpdateProjectGroups(t *testing.T) {
@@ -689,9 +704,19 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan did not complete successfully")
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
+}
+
+func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
+	var e *wrappers.AstError
+	if errors.As(err, &e) {
+		assert.Equal(t, e.Error(), expectedErrorMessage)
+		assert.Equal(t, e.Code, expectedExitCode)
+	} else {
+		assertError(t, err, "Error is not of type AstError")
+		assert.Assert(t, false, fmt.Sprintf("Error is not of type AstError. Error message: %s", err.Error()))
+	}
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
@@ -1044,7 +1069,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {
