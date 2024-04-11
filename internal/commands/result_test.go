@@ -36,35 +36,137 @@ func TestResultHelp(t *testing.T) {
 }
 
 func TestResultsExitCode_CompletedScan_PrintCorrectInfoToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "MOCK")
+	model := wrappers.ScanResponseModel{ID: "MOCK", Status: wrappers.ScanCompleted, Engines: []string{params.ScaType, params.SastType, params.KicsType}}
+	results := getScannerResponse("", &model)
+	assert.Equal(t, len(results), 0, "Scanner results should be empty")
 }
 
 func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-scanner-fail")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-scanner-fail",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{
+				Status:    wrappers.ScanFailed,
+				Name:      "kics",
+				Details:   "error message from kics scanner",
+				ErrorCode: 1234,
+			},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "kics", "")
+	assert.Equal(t, results[0].ErrorCode, "1234", "")
 }
 
 func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-multiple-scanner-fails")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-multiple-scanner-fails",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 2, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "kics", "")
+	assert.Equal(t, results[0].ErrorCode, "2344", "")
+	assert.Equal(t, results[1].Name, "sca", "")
+	assert.Equal(t, results[1].ErrorCode, "4343", "")
 }
 
 func TestResultsExitCode_OnFailedKicsAndScaScannersAndRequestedScannerIsSca_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-multiple-scanner-fails", "--scan-types", "sca")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-multiple-scanner-fails",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+		},
+	}
+
+	results := getScannerResponse("sca", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "sca", "")
+	assert.Equal(t, results[0].ErrorCode, "4343", "")
 }
 
 func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-sca-fail-partial-id")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-sca-fail-partial-id",
+		Status: wrappers.ScanPartial,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "sca", "")
+	assert.Equal(t, results[0].ErrorCode, "4343", "")
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
 }
 
 func TestResultsExitCode_OnCanceledScanWithRequestedSuccessfulScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id", "--scan-types", "sast")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("sast", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
 }
 
 func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
-	execCmdNilAssertion(t, "results", "exit-code", "--scan-id", "fake-scan-id-kics-fail-sast-canceled-id", "--scan-types", "kics")
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("kics", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
 }
 
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {

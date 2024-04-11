@@ -288,24 +288,9 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		if scanResponseModel.Status == wrappers.ScanCanceled ||
-			scanResponseModel.Status == wrappers.ScanRunning ||
-			scanResponseModel.Status == wrappers.ScanQueued {
-			result := ScannerResponse{
-				ScanID: scanResponseModel.ID,
-				Status: string(scanResponseModel.Status),
-			}
-			return printer.Print(cmd.OutOrStdout(), result, printer.FormatIndentedJSON)
-		}
-
 		var results []ScannerResponse
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		if scanTypesFlagValue == "" {
-			results = createAllFailedScannersResponse(scanResponseModel)
-		} else {
-			scanTypes := sanitizeScannerNames(scanTypesFlagValue)
-			results = createRequestedScannersResponse(scanTypes, scanResponseModel)
-		}
+		results = getScannerResponse(scanTypesFlagValue, scanResponseModel)
 
 		if len(results) == 0 {
 			return nil
@@ -313,6 +298,30 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 	}
+}
+
+func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
+
+	if scanResponseModel.Status == wrappers.ScanCanceled ||
+		scanResponseModel.Status == wrappers.ScanRunning ||
+		scanResponseModel.Status == wrappers.ScanQueued {
+		result := ScannerResponse{
+			ScanID: scanResponseModel.ID,
+			Status: string(scanResponseModel.Status),
+		}
+		results = append(results, result)
+		return results
+	}
+
+	if scanTypesFlagValue == "" {
+		results = createAllFailedScannersResponse(scanResponseModel)
+	} else {
+		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
+		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
+	}
+
+	return results
 }
 
 func createRequestedScannersResponse(scanTypes map[string]string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
@@ -1011,6 +1020,9 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
+	if printer.IsFormat(format, printer.FormatIndentedJSON) {
+		return nil
+	}
 	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
