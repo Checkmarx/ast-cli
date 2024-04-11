@@ -191,7 +191,7 @@ func TestScaResolverArg(t *testing.T) {
 		"sast,iac-security",
 		viper.GetString(resolverEnvVar),
 	)
-	defer deleteProject(t, projectID)
+
 	assert.Assert(
 		t,
 		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
@@ -245,9 +245,6 @@ func TestIncrementalScan(t *testing.T) {
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
-
-	defer deleteProject(t, projectID)
-	defer deleteScan(t, scanID)
 
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
