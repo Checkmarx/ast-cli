@@ -14,7 +14,7 @@ import (
 
 const (
 	importsPath       = "/imports"
-	successfulMessage = "The SARIF results were successfully imported into project %s"
+	successfulMessage = "The SARIF results were successfully imported into project %s importID: %s"
 )
 
 type ByorHTTPWrapper struct {
@@ -53,9 +53,9 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return "", errors.Errorf("Parsing upload model failed - %s", err.Error())
+			return model.ImportID, errors.Errorf("Parsing upload model failed - %s", err.Error())
 		}
-		logger.Printf(successfulMessage, projectID)
+		logger.Printf(successfulMessage, projectID, model.ImportID)
 		return model.ImportID, nil
 	default:
 		return "", errors.Errorf(errorConstants.ImportSarifFileErrorMessage)
