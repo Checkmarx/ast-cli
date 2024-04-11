@@ -38,7 +38,9 @@ func TestResultHelp(t *testing.T) {
 func TestResultsExitCode_CompletedScan_PrintCorrectInfoToConsole(t *testing.T) {
 	model := wrappers.ScanResponseModel{ID: "MOCK", Status: wrappers.ScanCompleted, Engines: []string{params.ScaType, params.SastType, params.KicsType}}
 	results := getScannerResponse("", &model)
-	assert.Equal(t, len(results), 0, "Scanner results should be empty")
+	assert.Equal(t, len(results), 1, "")
+	assert.Equal(t, results[0].ScanID, "MOCK", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCompleted, "")
 }
 
 func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
