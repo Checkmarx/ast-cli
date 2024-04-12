@@ -1061,7 +1061,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if SCSRepoToken != "" && SCSRepoURL != "" {
 			SCSConfig.RepoToken = SCSRepoToken
-			SCSConfig.RepoUrl = strings.ToLower(SCSRepoURL)
+			SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
 		} else {
 			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required")
 		}

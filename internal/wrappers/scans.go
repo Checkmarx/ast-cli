@@ -146,6 +146,6 @@ type APISecConfig struct {
 type SCSConfig struct {
 	Twoms     string `json:"2ms,omitempty"`
 	Scorecard string `json:"scorecard,omitempty"`
-	RepoUrl   string `json:"repoUrl,omitempty"`
+	RepoURL   string `json:"repoUrl,omitempty"`
 	RepoToken string `json:"repoToken,omitempty"`
 }
