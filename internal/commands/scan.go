@@ -1067,12 +1067,6 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoUrlFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
-		if SCSRepoToken != "" && SCSRepoURL != "" {
-			SCSConfig.RepoToken = SCSRepoToken
-			SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
-		} else {
-			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required")
-		}
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
 			for _, engineType := range SCSEnginesTypes {
@@ -1087,6 +1081,12 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		} else {
 			SCSConfig.Scorecard = "true"
 			SCSConfig.Twoms = "true"
+		}
+		if SCSConfig.Scorecard == "true" && SCSRepoToken != "" && SCSRepoURL != "" {
+			SCSConfig.RepoToken = SCSRepoToken
+			SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+		} else {
+			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required, if scorecard is enabled")
 		}
 
 		SCSMapConfig[resultsMapValue] = &SCSConfig
@@ -1529,7 +1529,6 @@ func UnzipFile(f string) (string, error) {
 
 func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir string, err error) {
 	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-	logger.Printf("celso silva: " + source + "...")
 	sourceTrimmed := strings.TrimSpace(source)
 
 	info, statErr := os.Stat(sourceTrimmed)
@@ -2100,6 +2099,7 @@ const (
 	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
 	Kics        = "kics"
 	APISec      = "apisec"
+	Scs         = "scs"
 )
 
 var errorCodesByScanner = map[string]int{
