@@ -181,6 +181,9 @@ const (
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
 
+	//SCS Engines Enabled
+	SCSEnginesFlag = "scs-engines"
+
 	// SCS (Github)
 	SCSRepoTokenFlag = "scs-repo-token"
 	SCSRepoUrlFlag   = "scs-repo-url"

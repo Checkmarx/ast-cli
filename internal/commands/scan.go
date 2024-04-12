@@ -95,11 +95,11 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
-	scsScoreCardType = "scorecard"
-	scsTwoMSType     = "2ms"
+	completedPolicy        = "COMPLETED"
+	nonePolicy             = "NONE"
+	evaluatingPolicy       = "EVALUATING"
+	scsScoreCardType       = "scorecard"
+	scsSecretDetectionType = "secret-detection"
 )
 
 var (
@@ -595,6 +595,7 @@ func scanCreateSubCommand(
 
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoUrlFlag, "", "GitHub url to be used with SCS engines")
+	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Enabled engines for SCS scan (if empty will run all licensed engines)")
 
 	return createScanCmd
 }
@@ -1057,14 +1058,29 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		SCSMapConfig[resultsMapType] = commonParams.SCSType
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoUrlFlag)
+		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if SCSRepoToken != "" && SCSRepoURL != "" {
 			SCSConfig.RepoToken = SCSRepoToken
 			SCSConfig.RepoUrl = strings.ToLower(SCSRepoURL)
 		} else {
 			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required")
 		}
-		SCSConfig.Scorecard = strings.ToLower("true")
-		SCSConfig.Twoms = strings.ToLower("true")
+		if SCSEngines != "" {
+			SCSEnginesTypes := strings.Split(SCSEngines, ",")
+			for _, engineType := range SCSEnginesTypes {
+				engineType = strings.TrimSpace(engineType)
+				switch engineType {
+				case scsSecretDetectionType:
+					SCSConfig.Twoms = "true"
+				case scsScoreCardType:
+					SCSConfig.Scorecard = "true"
+				}
+			}
+		} else {
+			SCSConfig.Scorecard = "true"
+			SCSConfig.Twoms = "true"
+		}
+
 		SCSMapConfig[resultsMapValue] = &SCSConfig
 		return SCSMapConfig, nil
 	}
@@ -1505,6 +1521,7 @@ func UnzipFile(f string) (string, error) {
 
 func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir string, err error) {
 	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	logger.Printf("celso silva: " + source + "...")
 	sourceTrimmed := strings.TrimSpace(source)
 
 	info, statErr := os.Stat(sourceTrimmed)
