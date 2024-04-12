@@ -1073,16 +1073,16 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case scsSecretDetectionType:
-					SCSConfig.Twoms = "true"
+					SCSConfig.Twoms = trueString
 				case scsScoreCardType:
-					SCSConfig.Scorecard = "true"
+					SCSConfig.Scorecard = trueString
 				}
 			}
 		} else {
-			SCSConfig.Scorecard = "true"
-			SCSConfig.Twoms = "true"
+			SCSConfig.Scorecard = trueString
+			SCSConfig.Twoms = trueString
 		}
-		if SCSConfig.Scorecard == "true" {
+		if SCSConfig.Scorecard == trueString {
 			if SCSRepoToken != "" && SCSRepoURL != "" {
 				SCSConfig.RepoToken = SCSRepoToken
 				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)

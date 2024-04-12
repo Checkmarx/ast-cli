@@ -183,7 +183,7 @@ const (
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
 
-	//SCS Engines Enabled
+	// SCS Engines Enabled
 	SCSEnginesFlag = "scs-engines"
 
 	// SCS (Github)
