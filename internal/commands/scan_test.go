@@ -310,7 +310,7 @@ func TestCreateScanBranches(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
 
 	// Test missing branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "sast", "-s", dummyRepo, "-b")
 	assert.Assert(t, err.Error() == "flag needs an argument: 'b' in -b")
 
 	// Test empty branch value

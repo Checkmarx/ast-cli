@@ -3,7 +3,6 @@ package commands
 import (
 	"bytes"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"log"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
+
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -190,10 +191,7 @@ func updateArgsForSCSWhenScanTypeNotPresent(args ...string) []string {
 	foundScanCreate := utils.Contains(args, "create")
 	foundScanCreateHelp := utils.Contains(args, "help")
 	if !foundScanType && !foundScanCreateHelp && foundScan && foundScanCreate {
-		args = append(args, "--scs-repo-token")
-		args = append(args, "dummyToken")
-		args = append(args, "--scs-repo-url")
-		args = append(args, "dummyUrl")
+		args = append(args, "--scs-repo-token", "dummyToken", "--scs-repo-url", "dummyUrl")
 	}
 	return args
 }
