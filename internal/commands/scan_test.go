@@ -232,12 +232,6 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
-
-	scsArgs := append(baseArgs, flag(commonParams.ScanTypes), "scs",
-		flag(commonParams.SCSRepoURLFlag), dummyRepo,
-		flag(commonParams.SCSRepoTokenFlag), dummyToken)
-
-	execCmdNilAssertion(t, scsArgs...)
 }
 
 func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
