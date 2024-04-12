@@ -26,6 +26,7 @@ const (
 	blankSpace                    = " "
 	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
 	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
+	dummyToken                    = "dummyToken"
 	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
 	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
@@ -45,6 +46,7 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
+	SCSScoreCardError             = "SCS Repo Token and SCS Repo URL are required, if scorecard is enabled"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -230,6 +232,12 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
+
+	scsArgs := append(baseArgs, flag(commonParams.ScanTypes), "scs",
+		flag(commonParams.SCSRepoURLFlag), dummyRepo,
+		flag(commonParams.SCSRepoTokenFlag), dummyToken)
+
+	execCmdNilAssertion(t, scsArgs...)
 }
 
 func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
@@ -719,35 +727,51 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestAddSCSScan(t *testing.T) {
+func TestCreateScanWithSCSScorecardShouldFail(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		dummyRepo,
+		"-b",
+		"dummy_branch",
+		"--scs-engines",
+		"scorecard",
+	)
+	assert.Assert(t, err.Error() == SCSScoreCardError)
+}
+
+func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a project",
 		Long:  `Scan a project`,
 	}
-
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "secret-detection")
-
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
 	_ = cmdCommand.Execute()
-
-	_ = cmdCommand.Flags().Set(commonParams.KicsFilterFlag, "test")
-	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
 	result, _ := addSCSScan(cmdCommand)
 
 	scsConfig := wrappers.SCSConfig{
-		Twoms:     "",
-		Scorecard: "",
-		RepoURL:   "",
-		RepoToken: "",
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepo,
+		RepoToken: dummyToken,
 	}
-	SCSMapConfig := make(map[string]interface{})
-	SCSMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapValue] = &scsConfig
 
-	SCSMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, SCSMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", SCSMapConfig, result)
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
 	}
 }
 
