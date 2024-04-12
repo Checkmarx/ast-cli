@@ -126,6 +126,7 @@ type SastConfig struct {
 	EngineVerbose string `json:"engineVerbose,omitempty"`
 	LanguageMode  string `json:"languageMode,omitempty"`
 	PresetName    string `json:"presetName,omitempty"`
+	FastScanMode  string `json:"fastScanMode,omitempty"`
 }
 
 type KicsConfig struct {

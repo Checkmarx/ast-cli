@@ -19,6 +19,7 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -528,6 +529,12 @@ func scanCreateSubCommand(
 		[]string{},
 		commonParams.KicsPlatformsFlagUsage,
 	)
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastFastScanFlag,
+		false,
+		"Enable SAST Fast Scan configuration",
+	)
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.IacsPlatformsFlag,
 		[]string{},
@@ -556,7 +563,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -896,7 +903,6 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 		params["name"] = applicationName
 		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
-
 			return nil, err
 		}
 		if resp.Applications != nil && len(resp.Applications) > 0 {
@@ -951,7 +957,9 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig := wrappers.SastConfig{}
 		sastMapConfig[resultsMapType] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		for _, config := range resubmitConfig {
@@ -2011,7 +2019,8 @@ func waitForScanCompletion(
 			if errorModel != nil {
 				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
-			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
+
+			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
 		}
 		i++
 	}
@@ -2059,11 +2068,47 @@ func isScanRunning(
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
-		return false, errors.New("scan completed partially")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan completed partially"))
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
-		return false, errors.New("scan did not complete successfully")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan did not complete successfully"))
 	}
 	return false, nil
+}
+
+func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
+	failedStatuses := make([]int, 0)
+	for _, scanner := range scanResponseModel.StatusDetails {
+		scannerNameLowerCase := strings.ToLower(scanner.Name)
+		scannerErrorExitCode, errorCodeByScannerExists := errorCodesByScanner[scannerNameLowerCase]
+		if scanner.Status == wrappers.ScanFailed && scanner.Name != General && errorCodeByScannerExists {
+			failedStatuses = append(failedStatuses, scannerErrorExitCode)
+		}
+	}
+	if len(failedStatuses) == 1 {
+		return failedStatuses[0]
+	}
+
+	return exitCodes.MultipleEnginesFailedExitCode
+}
+
+const (
+	General     = "general"
+	Sast        = "sast"
+	Sca         = "sca"
+	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
+	Kics        = "kics"
+	APISec      = "apisec"
+)
+
+var errorCodesByScanner = map[string]int{
+	General:     exitCodes.MultipleEnginesFailedExitCode,
+	Sast:        exitCodes.SastEngineFailedExitCode,
+	Sca:         exitCodes.ScaEngineFailedExitCode,
+	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
+	Kics:        exitCodes.KicsEngineFailedExitCode,
+	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {

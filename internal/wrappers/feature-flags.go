@@ -8,6 +8,7 @@ const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
+const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -25,6 +26,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	},
 	{
 		CommandName: "cx project create",
+	},
+	{
+		CommandName: "cx results show",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    NewScanReportEnabled,
+				Default: false,
+			},
+		},
 	},
 }
 

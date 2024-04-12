@@ -3,14 +3,17 @@
 package commands
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -227,6 +230,43 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
+}
+
+func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-scanner-fail", "-s", dummyRepo, "-b", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--scan-types", Kics)...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
+}
+
+func TestScanCreate_MultipleScannersFail_ReturnGeneralExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-multiple-scanner-fails", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s", Kics, Sca))
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.MultipleEnginesFailedExitCode)
+}
+
+func TestScanCreate_ScaScannersFailPartialScan_ReturnScaExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-sca-fail-partial", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", Sca)
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan completed partially", exitCodes.ScaEngineFailedExitCode)
+}
+
+func TestScanCreate_MultipleScannersDifferentStatusesOnlyKicsFail_ReturnKicsExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-fail-sast-canceled", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s,%s", Sca, Sast, Kics))
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
+}
+
+func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
+	var e *wrappers.AstError
+	if errors.As(err, &e) {
+		assert.Equal(t, e.Error(), expectedErrorMessage)
+		assert.Equal(t, e.Code, expectedExitCode)
+	} else {
+		assert.Assert(t, false, "Error is not of type AstError")
+	}
 }
 
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
@@ -555,6 +595,54 @@ func TestAddScaScan(t *testing.T) {
 	}
 }
 
+func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project with SAST fast scan configuration`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:   "test",
+		Filter:       "test",
+		Incremental:  "true",
+		FastScanMode: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+}
+
+func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-FAST-SCAN", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-FAST-SCAN", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Fast-Scan", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Fast-Scan", err.Error())
+}
+
 func TestAddSastScan(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 
@@ -567,6 +655,7 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, true, "Enable SAST Fast Scan")
 
 	_ = cmdCommand.Execute()
 
@@ -577,9 +666,10 @@ func TestAddSastScan(t *testing.T) {
 	result := addSastScan(cmdCommand, resubmitConfig)
 
 	sastConfig := wrappers.SastConfig{
-		PresetName:  "test",
-		Filter:      "test",
-		Incremental: "true",
+		PresetName:   "test",
+		Filter:       "test",
+		Incremental:  "true",
+		FastScanMode: "true",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
