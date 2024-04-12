@@ -188,7 +188,7 @@ const (
 
 	// SCS (Github)
 	SCSRepoTokenFlag = "scs-repo-token"
-	SCSRepoUrlFlag   = "scs-repo-url"
+	SCSRepoURLFlag   = "scs-repo-url"
 )
 
 // Parameter values

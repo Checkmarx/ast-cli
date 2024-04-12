@@ -105,7 +105,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
+	actualScanTypes         = "sast,kics,sca,scs"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -601,7 +601,7 @@ func scanCreateSubCommand(
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	createScanCmd.PersistentFlags().String(commonParams.SCSRepoUrlFlag, "", "GitHub url to be used with SCS engines")
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Enabled engines for SCS scan (if empty will run all licensed engines)")
 
 	return createScanCmd
@@ -1065,7 +1065,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		SCSConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.SCSType
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
-		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoUrlFlag)
+		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
@@ -1082,13 +1082,14 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 			SCSConfig.Scorecard = "true"
 			SCSConfig.Twoms = "true"
 		}
-		if SCSConfig.Scorecard == "true" && SCSRepoToken != "" && SCSRepoURL != "" {
-			SCSConfig.RepoToken = SCSRepoToken
-			SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
-		} else {
-			return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required, if scorecard is enabled")
+		if SCSConfig.Scorecard == "true" {
+			if SCSRepoToken != "" && SCSRepoURL != "" {
+				SCSConfig.RepoToken = SCSRepoToken
+				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+			} else {
+				return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required, if scorecard is enabled")
+			}
 		}
-
 		SCSMapConfig[resultsMapValue] = &SCSConfig
 		return SCSMapConfig, nil
 	}

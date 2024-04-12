@@ -718,3 +718,59 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
+
+func TestAddSCSScan(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "secret-detection")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.KicsFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "true")
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "",
+		Scorecard: "",
+		RepoURL:   "",
+		RepoToken: "",
+	}
+	SCSMapConfig := make(map[string]interface{})
+	SCSMapConfig[resultsMapType] = commonParams.SCSType
+
+	SCSMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, SCSMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", SCSMapConfig, result)
+	}
+}
+
+func TestCreateScanWithSCSSecretDetection(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "true",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
