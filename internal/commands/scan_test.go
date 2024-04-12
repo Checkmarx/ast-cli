@@ -335,7 +335,7 @@ func TestScanWorkflowMissingID(t *testing.T) {
 }
 
 func TestCreateScanMissingSSHValue(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
 	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
@@ -732,6 +732,8 @@ func TestCreateScanWithSCSScorecardShouldFail(t *testing.T) {
 		dummyRepo,
 		"-b",
 		"dummy_branch",
+		"--scan-types",
+		"scs",
 		"--scs-engines",
 		"scorecard",
 	)
