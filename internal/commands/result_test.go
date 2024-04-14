@@ -83,7 +83,7 @@ func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersIn
 	assert.Equal(t, results[1].ErrorCode, "4343", "")
 }
 
-func TestResultsExitCode_OnFailedKicsAndScaScannersAndRequestedScannerIsSca_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
+func TestResultsExitCode_OnRequestedFailedScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
 	model := wrappers.ScanResponseModel{
 		ID:     "fake-scan-id-multiple-scanner-fails",
 		Status: wrappers.ScanFailed,
