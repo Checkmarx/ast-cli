@@ -179,7 +179,7 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 		Long:  "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One.",
 		Example: heredoc.Doc(
 			`
-			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | sca | iac-security | apisec>
+			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | sca | iac-security | apisec | containers>
 		`,
 		),
 		RunE: runGetExitCodeCommand(scanWrapper),

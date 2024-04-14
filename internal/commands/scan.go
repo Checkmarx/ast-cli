@@ -2033,6 +2033,7 @@ const (
 	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
 	Kics        = "kics"
 	APISec      = "apisec"
+	Containers  = "containers"
 )
 
 var errorCodesByScanner = map[string]int{
@@ -2042,6 +2043,7 @@ var errorCodesByScanner = map[string]int{
 	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
 	Kics:        exitCodes.KicsEngineFailedExitCode,
 	APISec:      exitCodes.ApisecEngineFailedExitCode,
+	Containers:  exitCodes.ContainersEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
