@@ -192,6 +192,8 @@ func TestScaResolverArg(t *testing.T) {
 		viper.GetString(resolverEnvVar),
 	)
 
+	defer deleteProject(t, projectID)
+
 	assert.Assert(
 		t,
 		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
@@ -244,7 +246,10 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
-	scanID, _ := createScanSastNoWait(t, SlowRepo, map[string]string{})
+	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
+
+	defer deleteProject(t, projectID)
+	defer deleteScan(t, scanID)
 
 	// canceling too quickly after creating fails the scan...
 	time.Sleep(30 * time.Second)
@@ -336,7 +341,7 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
-	err := executeWithTimeout(cmd, 3*time.Minute, args...)
+	err := executeWithTimeout(cmd, 2*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
 	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
