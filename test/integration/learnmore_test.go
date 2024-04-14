@@ -3,10 +3,11 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestGetLearnMoreInformationFailure(t *testing.T) {
