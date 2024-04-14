@@ -51,9 +51,12 @@ func runImportCommand(
 			return err
 		}
 
-		projectName, err := getProjectName(cmd)
+		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
 		if err != nil {
 			return err
+		}
+		if projectName == "" {
+			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
 
 		projectID, err := findProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
@@ -83,17 +86,6 @@ func validateFilePath(cmd *cobra.Command) (string, error) {
 		return "", validationError
 	}
 	return importFilePath, nil
-}
-
-func getProjectName(cmd *cobra.Command) (string, error) {
-	projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
-	if err != nil {
-		return "", err
-	}
-	if projectName == "" {
-		return "", errors.Errorf(errorConstants.ProjectNameIsRequired)
-	}
-	return projectName, nil
 }
 
 func validateFileExtension(importFilePath string) error {
