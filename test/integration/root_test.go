@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	FullScanWait          = 60
+	FullScanWait          = 180
 	ScanPollSleep         = 5
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"

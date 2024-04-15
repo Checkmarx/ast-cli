@@ -200,7 +200,7 @@ func TestScaResolverArg(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
-// Test ScaResolver as argument , no existing path to the resolver should fail
+// Test ScaResolver as argument, no existing path to the resolver should fail
 func TestScaResolverArgFailed(t *testing.T) {
 	args := []string{
 		"scan", "create",
