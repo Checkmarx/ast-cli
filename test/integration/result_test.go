@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
@@ -32,6 +33,18 @@ func TestResultsExitCode_OnSuccessfulScan_PrintResultsForAllScanners(t *testing.
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
+}
+
+func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
+	_, _ = getRootScan(t)
+
+	args := []string{
+		"results", "exit-code",
+		flag(params.ScanTypes), "sast",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, applicationErrors.ScanIDRequired)
 }
 func TestResultListJson(t *testing.T) {
 
