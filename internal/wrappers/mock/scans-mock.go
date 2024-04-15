@@ -5,8 +5,8 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 type ScansMockWrapper struct {
@@ -103,6 +103,10 @@ func (m *ScansMockWrapper) Get(_ map[string]string) (
 
 func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, *wrappers.ErrorModel, error) {
 	fmt.Println("Called GetByID in ScansMockWrapper")
+	if scanID == "fake-error-id" {
+		return nil, nil, errors.New("fake error message")
+	}
+
 	if scanID == "fake-scan-id-kics-scanner-fail" {
 		return &wrappers.ScanResponseModel{
 			ID:     "fake-scan-id-kics-scanner-fail",

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -169,6 +170,16 @@ func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanI
 	assert.Equal(t, len(results), 1, "Scanner results should be empty")
 	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
 	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+}
+
+func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "exit-code")
+	assert.Equal(t, err.Error(), applicationErrors.ScanIDRequired, "Wrong expected error message")
+}
+
+func TestResultsExitCode_OnErrorScan_FailCommandWithError(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "exit-code", "--scan-id", "fake-error-id")
+	assert.Equal(t, err.Error(), "Failed showing a scan: fake error message", "Wrong expected error message")
 }
 
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {

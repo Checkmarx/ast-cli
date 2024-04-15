@@ -7,5 +7,4 @@ const (
 	IacSecurityEngineFailedExitCode = 4 // Same code as kics to support forward compatibility
 	KicsEngineFailedExitCode        = 4
 	ApisecEngineFailedExitCode      = 5
-	ContainersEngineFailedExitCode  = 6
 )
