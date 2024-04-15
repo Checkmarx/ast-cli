@@ -12,6 +12,7 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/shared"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -21,13 +22,9 @@ import (
 )
 
 const (
-	failedCreatingProj = "Failed creating a project"
-	failedUpdatingProj = "Failed updating a project"
-
-	failedGettingProj     = "Failed getting a project"
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
-	failedFindingGroup    = "Failed finding groups"
+
 	projOriginLevel       = "Project"
 	repoConfKey           = "scan.handler.git.repository"
 	sshConfKey            = "scan.handler.git.sshKey"
@@ -271,26 +268,26 @@ func runCreateProjectCommand(
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
+			return errors.Wrapf(err, "%s: Input in bad format", shared.FailedCreatingProj)
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
 		logger.PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingProj)
+			return errors.Wrapf(err, "%s", shared.FailedCreatingProj)
 		}
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(shared.ErrorCodeFormat, shared.FailedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s", failedCreatingProj)
+				return errors.Wrapf(err, "%s", shared.FailedCreatingProj)
 			}
 		}
-		err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		err = shared.AssignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
 		if err != nil {
 			return err
 		}
@@ -412,7 +409,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(shared.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
 			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
@@ -430,15 +427,15 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		var err error
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
-			return errors.Errorf("%s: Please provide a project ID", failedGettingProj)
+			return errors.Errorf("%s: Please provide a project ID", shared.FailedGettingProj)
 		}
 		projectResponseModel, errorModel, err = projectsWrapper.GetByID(projectID)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedGettingProj)
+			return errors.Wrapf(err, "%s", shared.FailedGettingProj)
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", shared.FailedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
@@ -503,7 +500,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedDeletingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(shared.ErrorCodeFormat, failedDeletingProj, errorModel.Code, errorModel.Message)
 		}
 		return nil
 	}

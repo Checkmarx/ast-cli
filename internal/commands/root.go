@@ -20,8 +20,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const ErrorCodeFormat = "%s: CODE: %d, %s\n"
-
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
@@ -157,7 +155,7 @@ func NewAstCLI(
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper)
+	importCmd := util.NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,

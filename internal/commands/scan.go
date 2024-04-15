@@ -19,6 +19,7 @@ import (
 	"time"
 
 	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/shared"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -598,149 +599,6 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(
-	applicationID []string,
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
-	if err != nil {
-		return "", err
-	}
-
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, projectName, applicationID)
-		}
-	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationID)
-	if err != nil {
-		return "", err
-	}
-	return projectID, nil
-}
-
-func createProject(
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationID []string,
-) (string, error) {
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-	if err != nil {
-		return "", err
-	}
-	var projModel = wrappers.Project{}
-	projModel.Name = projectName
-	projModel.Groups = getGroupsForRequest(groupsMap)
-	projModel.ApplicationIds = applicationID
-
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModel.Tags = createTagMap(projectTags)
-	resp, errorModel, err := projectsWrapper.Create(&projModel)
-	projectID := ""
-	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
-	}
-	if err == nil {
-		projectID = resp.ID
-		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
-	}
-	return projectID, err
-}
-
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	projectName string,
-	applicationID []string,
-
-) (string, error) {
-	var projectID string
-	var projModel = wrappers.Project{}
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
-		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
-		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
-		}
-	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
-		return projectID, nil
-	}
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
-	if errModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
-	}
-	if err != nil {
-		return "", err
-	}
-	projModel.Name = projModelResp.Name
-	projModel.Groups = projModelResp.Groups
-	projModel.Tags = projModelResp.Tags
-	projModel.ApplicationIds = projModelResp.ApplicationIds
-	if projectGroups != "" {
-		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
-		if groupErr != nil {
-			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-		}
-		logger.PrintIfVerbose("Updating project groups")
-		projModel.Groups = getGroupsForRequest(groupsMap)
-		err = assignGroupsToProject(projectID, projectName, groupsMap, accessManagementWrapper)
-		if err != nil {
-			return "", err
-		}
-	}
-	if projectTags != "" {
-		logger.PrintIfVerbose("Updating project tags")
-		projModel.Tags = createTagMap(projectTags)
-	}
-	if len(applicationID) > 0 {
-		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
-	}
-	err = projectsWrapper.Update(projectID, &projModel)
-	if err != nil {
-		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-	return projectID, nil
-}
-
-func createApplicationIds(applicationID, existingApplicationIds []string) []string {
-	for _, id := range applicationID {
-		if !util.Contains(existingApplicationIds, id) {
-			existingApplicationIds = append(existingApplicationIds, id)
-		}
-	}
-	return existingApplicationIds
-}
-
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
 	tagListStr, _ := cmd.Flags().GetString(commonParams.TagList)
 	tags := strings.Split(tagListStr, ",")
@@ -762,22 +620,6 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 		}
 	}
 	*input, _ = json.Marshal(info)
-}
-
-func createTagMap(tagListStr string) map[string]string {
-	tagsList := strings.Split(tagListStr, ",")
-	tags := make(map[string]string)
-	for _, tag := range tagsList {
-		if len(tag) > 0 {
-			value := ""
-			keyValuePair := strings.Split(tag, ":")
-			if len(keyValuePair) > 1 {
-				value = keyValuePair[1]
-			}
-			tags[keyValuePair[0]] = value
-		}
-	}
-	return tags
 }
 
 func setupScanTypeProjectAndConfig(
@@ -823,7 +665,7 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	// We need to convert the project name into an ID
-	projectID, findProjectErr := findProject(
+	projectID, findProjectErr := shared.FindProject(
 		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
@@ -924,7 +766,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	}
 	// Checking the response for errors
 	if errorModel != nil {
-		return nil, errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf(shared.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
 	config := allScansModel.Scans[0].Metadata.Configs
 	engines := allScansModel.Scans[0].Engines
@@ -1545,7 +1387,7 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
+			return errors.Errorf(shared.ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
@@ -1955,7 +1797,7 @@ func waitForScanCompletion(
 				return errors.Wrapf(err, "%s\n", failedCanceling)
 			}
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(shared.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 
 			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
@@ -2062,7 +1904,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(shared.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			views, err := toScanViews(allScansModel.Scans, sastMetadataWrapper)
 			if err != nil {
@@ -2143,7 +1985,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
+				return errors.Errorf(shared.ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2164,7 +2006,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			}
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(shared.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 

@@ -83,14 +83,6 @@ func NewUtilsCommand(
 }
 
 // Contains Tests if a string exists in the provided array/**
-func Contains(array []string, val string) bool {
-	for _, e := range array {
-		if e == val {
-			return true
-		}
-	}
-	return false
-}
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
