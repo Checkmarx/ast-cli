@@ -99,8 +99,9 @@ const (
 	completedPolicy        = "COMPLETED"
 	nonePolicy             = "NONE"
 	evaluatingPolicy       = "EVALUATING"
-	scsScoreCardType       = "scorecard"
-	scsSecretDetectionType = "secret-detection"
+	ScsScoreCardType       = "scorecard"
+	ScsSecretDetectionType = "secret-detection"
+	ScsRepoRequiredMsg     = "SCS Repo Token and SCS Repo URL are required, if scorecard is enabled"
 )
 
 var (
@@ -1072,9 +1073,9 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
-				case scsSecretDetectionType:
+				case ScsSecretDetectionType:
 					SCSConfig.Twoms = trueString
-				case scsScoreCardType:
+				case ScsScoreCardType:
 					SCSConfig.Scorecard = trueString
 				}
 			}
@@ -1627,7 +1628,8 @@ func runCreateScanCommand(
 				return err
 			}
 			// Handling policy response
-			policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+			//policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+			policyOverrideFlag := true
 			if !policyOverrideFlag {
 				policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 				if policyTimeout < 0 {

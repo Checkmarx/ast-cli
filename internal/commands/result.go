@@ -740,6 +740,7 @@ func runGetResultCommand(
 
 		policyResponseModel := &wrappers.PolicyResponseModel{}
 		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		//policyOverrideFlag := true
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		if !policyOverrideFlag {
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)

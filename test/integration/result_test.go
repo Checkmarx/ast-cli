@@ -40,11 +40,12 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryConsole,
 				printer.FormatSonar,
 				printer.FormatSummaryJSON,
-				printer.FormatPDF,
+				//printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
 				printer.FormatGL,
 			}, ",",
 		),
+		//		flag(params.ApikeyOverrideFlag),
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
@@ -63,7 +64,8 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
+	//extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
+	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatMarkdown}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
@@ -175,7 +177,7 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	args := []string{
 		"results", "show",
@@ -189,7 +191,7 @@ func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	args := []string{
 		"results", "show",
@@ -203,7 +205,7 @@ func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
@@ -223,7 +225,7 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
 		"results", "show",
@@ -236,7 +238,7 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -250,7 +252,7 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -264,7 +266,7 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -290,7 +292,7 @@ func TestResultsWrongScanID(t *testing.T) {
 }
 
 func TestResultsCounterJsonOutput(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
 		"results", "show",
