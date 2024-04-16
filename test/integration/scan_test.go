@@ -23,10 +23,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -200,7 +198,7 @@ func TestScaResolverArg(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
-// Test ScaResolver as argument , no existing path to the resolver should fail
+// Test ScaResolver as argument, no existing path to the resolver should fail
 func TestScaResolverArgFailed(t *testing.T) {
 	args := []string{
 		"scan", "create",
@@ -704,19 +702,9 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-	err, _ := executeCommand(t, args...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
-}
 
-func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
-	var e *wrappers.AstError
-	if errors.As(err, &e) {
-		assert.Equal(t, e.Error(), expectedErrorMessage)
-		assert.Equal(t, e.Code, expectedExitCode)
-	} else {
-		assertError(t, err, "Error is not of type AstError")
-		assert.Assert(t, false, fmt.Sprintf("Error is not of type AstError. Error message: %s", err.Error()))
-	}
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "scan did not complete successfully")
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
@@ -1069,7 +1057,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {

@@ -74,15 +74,14 @@ const (
 	pendingStatus             = "Pending"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
-	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca and " +
-		defaultPdfOptionsDataSections + defaultPdfOprtionsImprovedDataSections
+	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
+		defaultPdfOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	delayValueForReport                     = 10
 	reportNameScanReport                    = "scan-report"
 	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
-	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults with NEW_SAST_SCAN_REPORT_ENABLED feature flag disabled or "
-	defaultPdfOprtionsImprovedDataSections  = "scan-information,results-overview,scan-results,categories,resolved-results,vulnerability-details with the flag enabled"
+	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
 	defaultSbomOption                       = "CycloneDxJson"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
@@ -207,7 +206,7 @@ func resultShowSubCommand(
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1361,14 +1360,7 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 		"executivesummary": "ExecutiveSummary",
 		"scanresults":      "ScanResults",
 	}
-	var pdfOptionsSectionsMapImproved = map[string]string{
-		"scan-information":      "scan-information",
-		"results-overview":      "results-overview",
-		"scan-results":          "scan-results",
-		"categories":            "categories",
-		"resolved-results":      "resolved-results",
-		"vulnerability-details": "vulnerability-details",
-	}
+
 	var pdfOptionsEnginesMap = map[string]string{
 		commonParams.ScaType:  "SCA",
 		commonParams.SastType: "SAST",
@@ -1376,28 +1368,13 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 		commonParams.IacType:  "KICS",
 	}
 
-	var pdfReportOptionsSections = map[string]map[string]string{
-		reportNameImprovedScanReport: pdfOptionsSectionsMapImproved,
-		reportNameScanReport:         pdfOptionsSectionsMap,
-	}
-
-	var pdfReportOptionsEngines = map[string]map[string]string{
-		reportNameImprovedScanReport: pdfOptionsEnginesMap,
-		reportNameScanReport:         pdfOptionsEnginesMap,
-	}
-
 	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
-	// if no options are provided, report service defaults to all values
-	if pdfOptions == "" {
-		return pdfOptionsSections, pdfOptionsSections, nil
-	}
-
 	options := strings.Split(strings.ReplaceAll(pdfOptions, "\n", ""), ",")
 	for _, s := range options {
-		if pdfReportOptionsEngines[reportName][s] != "" {
-			pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][s])
-		} else if pdfReportOptionsSections[reportName][s] != "" {
-			pdfOptionsSections = append(pdfOptionsSections, pdfReportOptionsSections[reportName][s])
+		if pdfOptionsEnginesMap[s] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[s])
+		} else if pdfOptionsSectionsMap[s] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
 		}
@@ -1405,11 +1382,34 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 	if pdfOptionsEngines == nil {
 		for _, engine := range enabledEngines {
 			if pdfOptionsEnginesMap[engine] != "" {
-				pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][engine])
+				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
 			}
 		}
 	}
+
+	if reportName == reportNameImprovedScanReport {
+		pdfOptionsSections = translateReportSectionsForImproved(pdfOptionsSections)
+	}
+
 	return pdfOptionsSections, pdfOptionsEngines, nil
+}
+
+func translateReportSectionsForImproved(sections []string) []string {
+	var resultSections = make([]string, 0)
+
+	var pdfOptionsSectionsImprovedTranslation = map[string][]string{
+		"ScanSummary":      {"scan-information"},
+		"ExecutiveSummary": {"results-overview"},
+		"ScanResults":      {"scan-results", "categories", "resolved-results", "vulnerability-details"},
+	}
+
+	for _, section := range sections {
+		if translatedSections := pdfOptionsSectionsImprovedTranslation[section]; translatedSections != nil {
+			resultSections = append(resultSections, translatedSections...)
+		}
+	}
+
+	return resultSections
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
