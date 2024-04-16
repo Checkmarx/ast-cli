@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"gotest.tools/assert"
 )
 
@@ -20,7 +21,13 @@ func TestNewUtilsCommand(t *testing.T) {
 		mock.TenantConfigurationMockWrapper{},
 		mock.ChatMockWrapper{},
 		nil,
-		nil)
+		nil,
+		&mock.ProjectsMockWrapper{},
+		&mock.UploadsMockWrapper{},
+		&mock.GroupsMockWrapper{},
+		mock.AccessManagementMockWrapper{},
+		&mock.ByorMockWrapper{})
+
 	assert.Assert(t, cmd != nil, "Utils command must exist")
 }
 
@@ -38,7 +45,7 @@ func TestContains(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Contains(tt.array, tt.val); got != tt.exists {
+			if got := utils.Contains(tt.array, tt.val); got != tt.exists {
 				t.Errorf("Contains() = %v, want %v", got, tt.exists)
 			}
 		})

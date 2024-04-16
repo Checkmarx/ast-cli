@@ -3,6 +3,7 @@ package wrappers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -29,11 +30,13 @@ func NewByorHTTPWrapper(path string) ByorWrapper {
 	}
 }
 func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
+
 	req := CreateImportsRequest{
 		ProjectID: projectID,
 		UploadURL: uploadURL,
 	}
 	jsonBytes, _ := json.Marshal(req)
+
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, b.path+importsPath, bytes.NewBuffer(jsonBytes), true, b.clientTimeout)
 	if err != nil {
 		return "", err
@@ -57,6 +60,9 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		}
 		logger.Printf(successfulMessage, projectID, model.ImportID)
 		return model.ImportID, nil
+	case http.StatusNotFound:
+		fmt.Printf("status code: %d b.path+importsPath: %s request: %s\n", http.StatusNotFound, b.path+importsPath, req)
+		return "", errors.Errorf("Import was not successful for project ID %s", projectID)
 	default:
 		return "", errors.Errorf(errorConstants.ImportSarifFileErrorMessage)
 	}
