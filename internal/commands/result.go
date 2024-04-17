@@ -293,7 +293,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID string, scanTypesFlagValue string) ([]ScannerResponse, error) {
+func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID, scanTypesFlagValue string) ([]ScannerResponse, error) {
 	scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedGetting)
@@ -301,8 +301,7 @@ func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID string, scanTyp
 	if errorModel != nil {
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 	}
-	var results []ScannerResponse
-	results = getScannerResponse(scanTypesFlagValue, scanResponseModel)
+	results := getScannerResponse(scanTypesFlagValue, scanResponseModel)
 	return results, nil
 }
 
