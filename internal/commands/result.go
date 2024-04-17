@@ -326,9 +326,9 @@ func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.S
 
 func createRequestedScannersResponse(scanTypes map[string]string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
 	var results []ScannerResponse
-	for _, StatusDetail := range scanResponseModel.StatusDetails {
-		if _, ok := scanTypes[StatusDetail.Name]; ok {
-			results = append(results, createScannerResponse(&StatusDetail))
+	for i := range scanResponseModel.StatusDetails {
+		if _, ok := scanTypes[scanResponseModel.StatusDetails[i].Name]; ok {
+			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
 		}
 	}
 	return results
