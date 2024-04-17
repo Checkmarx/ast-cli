@@ -10,10 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -22,17 +24,18 @@ const (
 	resultsDirectory = "output-results-folder/"
 )
 
-func TestResultsExitCode_OnSuccessfulScan_PrintResultsForAllScanners(t *testing.T) {
+func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
-	args := []string{
-		"results", "exit-code",
-		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypes), "sast,sca",
-	}
+	scansPath := viper.GetString(params.ScansPathKey)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+	results, _ := commands.GetScannerResults(scansWrapper, scanID, "sast,sca")
 
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
+	assert.Equal(t, 1, len(results))
+	assert.Equal(t, wrappers.ScanCompleted, (results[0]).Status)
+	assert.Equal(t, "", (results[0]).Details)
+	assert.Equal(t, "", (results[0]).ErrorCode)
+	assert.Equal(t, "", (results[0]).Name)
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {

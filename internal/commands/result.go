@@ -279,17 +279,11 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 		if scanID == "" {
 			return errors.New(applicationErrors.ScanIDRequired)
 		}
-		scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
-		if err != nil {
-			return errors.Wrapf(err, "%s", failedGetting)
-		}
-		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
-		}
-
-		var results []ScannerResponse
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		results = getScannerResponse(scanTypesFlagValue, scanResponseModel)
+		results, err := GetScannerResults(scanWrapper, scanID, scanTypesFlagValue)
+		if err != nil {
+			return err
+		}
 
 		if len(results) == 0 {
 			return nil
@@ -297,6 +291,19 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 	}
+}
+
+func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID string, scanTypesFlagValue string) ([]ScannerResponse, error) {
+	scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedGetting)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+	}
+	var results []ScannerResponse
+	results = getScannerResponse(scanTypesFlagValue, scanResponseModel)
+	return results, nil
 }
 
 func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
