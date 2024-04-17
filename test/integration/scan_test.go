@@ -202,7 +202,7 @@ func TestScaResolverArg(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
-// Test ScaResolver as argument , no existing path to the resolver should fail
+// Test ScaResolver as argument, no existing path to the resolver should fail
 func TestScaResolverArgFailed(t *testing.T) {
 	args := []string{
 		"scan", "create",
@@ -1071,7 +1071,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,scan-information",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {

@@ -438,7 +438,7 @@ func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetResultsGeneratingPdfReportWithOptionsImproved(t *testing.T) {
+func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: true}}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
@@ -446,7 +446,7 @@ func TestRunGetResultsGeneratingPdfReportWithOptionsImproved(t *testing.T) {
 		"--report-format", "pdf",
 		"--scan-id", "MOCK",
 		"--report-pdf-email", "ab@cd.pt,test@test.pt",
-		"--report-pdf-options", "Iac-Security,Sast,Sca,scan-information")
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scansummary,scanresults")
 	assert.NilError(t, err)
 }
 
@@ -458,8 +458,8 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T
 		"--report-format", "pdf",
 		"--scan-id", "MOCK",
 		"--report-pdf-email", "ab@cd.pt,test@test.pt",
-		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
-	assert.Error(t, err, "report option \"scansummary\" unavailable")
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scan-information")
+	assert.Error(t, err, "report option \"scan-information\" unavailable")
 }
 
 func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
