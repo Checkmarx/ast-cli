@@ -81,6 +81,7 @@ func createProject(
 	return projectID, err
 }
 
+//nolint:gocyclo
 func updateProject(
 	resp *wrappers.ProjectsCollectionResponseModel,
 	cmd *cobra.Command,
