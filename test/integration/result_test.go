@@ -24,6 +24,15 @@ const (
 	resultsDirectory = "output-results-folder/"
 )
 
+func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
+	_, _ = getRootScan(t)
+	scansPath := viper.GetString(params.ScansPathKey)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+	results, _ := commands.GetScannerResults(scansWrapper, "FakeScanId", "sast,sca")
+
+	assert.Equal(t, nil, results)
+}
+
 func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
