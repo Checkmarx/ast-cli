@@ -481,7 +481,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	//return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security   "))
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , scs"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , scs, sca"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -546,10 +546,8 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
 	}
+	addSCSDefaultFlagsToArgs(&args)
 
-	if strings.Contains(scanTypes, params.ScsType) {
-		args = append(args, flag(params.SCSRepoURLFlag), scsRepoURL, flag(params.SCSRepoTokenFlag), scsRepoToken)
-	}
 	return args
 }
 
@@ -689,6 +687,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast, sca, iac-security, scs",
 		flag(params.PresetName), "Checkmarx Invalid",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -794,6 +793,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "main",
+		flag(params.ScanTypes), "sast, sca, iac-security, scs",
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
 		flag(params.IgnorePolicyFlag),

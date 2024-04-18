@@ -53,9 +53,9 @@ type riskDistribution struct {
 
 type SCSOverview struct {
 	Status               ScanStatus             `json:"status"`
-	TotalRisksCount      int                    `json:"totalRisks"`
-	RiskSummary          map[string]int         `json:"riskSummary"`
-	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews"`
+	TotalRisksCount      int                    `json:"totalRisks,omitempty"`
+	RiskSummary          map[string]int         `json:"riskSummary,omitempty"`
+	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews,omitempty"`
 }
 
 type MicroEngineOverview struct {

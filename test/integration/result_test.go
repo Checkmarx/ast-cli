@@ -27,6 +27,7 @@ func TestResultListJson(t *testing.T) {
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
+	//scanID := "5115c417-9116-4ffd-b4a5-15998801d82a"
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting results should pass",
@@ -177,7 +178,8 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
+	//scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	args := []string{
 		"results", "show",
@@ -191,7 +193,8 @@ func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
+	//scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	args := []string{
 		"results", "show",
@@ -205,7 +208,8 @@ func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
+	//scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
@@ -225,7 +229,8 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
+	//scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
 		"results", "show",
@@ -238,7 +243,8 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
-	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
+	scanID, _ := getRootScan(t)
+	//scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -252,7 +258,8 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
-	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
+	scanID, _ := getRootScan(t)
+	//scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -266,7 +273,8 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOM(t *testing.T) {
-	scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
+	scanID, _ := getRootScan(t)
+	//scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
@@ -292,7 +300,8 @@ func TestResultsWrongScanID(t *testing.T) {
 }
 
 func TestResultsCounterJsonOutput(t *testing.T) {
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
+	//scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
 		"results", "show",
