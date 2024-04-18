@@ -18,15 +18,14 @@ import (
 	"strings"
 	"time"
 
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
-	"github.com/checkmarx/ast-cli/internal/shared"
-
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -665,7 +664,7 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	// We need to convert the project name into an ID
-	projectID, findProjectErr := shared.FindProject(
+	projectID, findProjectErr := services.FindProject(
 		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
@@ -766,7 +765,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	}
 	// Checking the response for errors
 	if errorModel != nil {
-		return nil, errors.Errorf(shared.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
 	config := allScansModel.Scans[0].Metadata.Configs
 	engines := allScansModel.Scans[0].Engines
@@ -1387,7 +1386,7 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(shared.ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
@@ -1797,7 +1796,7 @@ func waitForScanCompletion(
 				return errors.Wrapf(err, "%s\n", failedCanceling)
 			}
 			if errorModel != nil {
-				return errors.Errorf(shared.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 
 			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
@@ -1904,7 +1903,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(shared.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			views, err := toScanViews(allScansModel.Scans, sastMetadataWrapper)
 			if err != nil {
@@ -1985,7 +1984,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(shared.ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2006,7 +2005,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			}
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(shared.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 

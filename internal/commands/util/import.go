@@ -8,7 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/shared"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -60,7 +60,7 @@ func runImportCommand(
 			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
 
-		projectID, err := shared.FindProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
+		projectID, err := services.FindProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper)
 		if err != nil {
 			return err
 		}
