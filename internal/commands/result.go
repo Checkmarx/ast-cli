@@ -530,7 +530,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.ScsIssues
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -677,8 +677,9 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf("              ---------------------------------------------------     \n\n")
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Println("              |          High   Medium   Low   Info   Status    |")
 
@@ -1232,8 +1233,21 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
+	var resultsToReport *wrappers.ResultSummary
 	log.Println("Creating summary JSON Report: ", targetFile)
-	resultsJSON, err = json.Marshal(results)
+
+	// Remove SCS Result if it exists
+	_, scsExists := results.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		resultsToReport, err = createReportWithoutScsSummary(results)
+		if err != nil {
+			return err
+		}
+	} else {
+		resultsToReport = results
+	}
+
+	resultsJSON, err = json.Marshal(resultsToReport)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
@@ -1950,4 +1964,26 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	}
 	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
+}
+
+func createReportWithoutScsSummary(results *wrappers.ResultSummary) (*wrappers.ResultSummary, error) {
+	var err error
+	var resultsJSON []byte
+	resultsJSON, err = json.Marshal(results)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to serialize results before removing scs ", failedGettingAll)
+	}
+
+	var resultsWithoutScs *wrappers.ResultSummary
+	err = json.Unmarshal(resultsJSON, &resultsWithoutScs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to deserialize results before removing scs ", failedGettingAll)
+	}
+
+	_, scsExists := resultsWithoutScs.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		delete(resultsWithoutScs.EnginesResult, commonParams.ScsType)
+	}
+
+	return resultsWithoutScs, nil
 }

@@ -96,9 +96,6 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy        = "COMPLETED"
-	nonePolicy             = "NONE"
-	evaluatingPolicy       = "EVALUATING"
 	scsScoreCardType       = "scorecard"
 	scsSecretDetectionType = "secret-detection"
 )
@@ -1060,10 +1057,10 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.SCSType) {
+	if scanTypeEnabled(commonParams.ScsType) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
-		SCSMapConfig[resultsMapType] = commonParams.SCSType
+		SCSMapConfig[resultsMapType] = commonParams.ScsType
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)

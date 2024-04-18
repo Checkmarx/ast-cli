@@ -763,7 +763,7 @@ func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
 		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapType] = commonParams.ScsType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {
@@ -787,7 +787,7 @@ func TestCreateScanWithSCSSecretDetection(t *testing.T) {
 		Twoms: "true",
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapType] = commonParams.ScsType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {
