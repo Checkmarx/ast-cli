@@ -26,7 +26,7 @@ const (
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
-	_, _ = getRootScan(t)
+	bindKeysToEnvAndDefault(t)
 	scansPath := viper.GetString(params.ScansPathKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
 	results, _ := commands.GetScannerResults(scansWrapper, "FakeScanId", "sast,sca")
