@@ -49,8 +49,7 @@ func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
-	_, _ = getRootScan(t)
-
+	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "exit-code",
 		flag(params.ScanTypes), "sast",
@@ -59,6 +58,19 @@ func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, applicationErrors.ScanIDRequired)
 }
+
+func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	args := []string{
+		"results", "exit-code",
+		flag(params.ScanTypes), "sast",
+		flag(params.ScanIDFlag), "FakeScanId",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed showing a scan")
+}
+
 func TestResultListJson(t *testing.T) {
 
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
