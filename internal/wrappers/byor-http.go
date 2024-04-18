@@ -30,13 +30,12 @@ func NewByorHTTPWrapper(path string) ByorWrapper {
 	}
 }
 func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
-
 	req := CreateImportsRequest{
 		ProjectID: projectID,
 		UploadURL: uploadURL,
 	}
-	jsonBytes, _ := json.Marshal(req)
 
+	jsonBytes, _ := json.Marshal(req)
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, b.path+importsPath, bytes.NewBuffer(jsonBytes), true, b.clientTimeout)
 	if err != nil {
 		return "", err
