@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +63,7 @@ func NewCompletionCommand() *cobra.Command {
 		Args: func(cmd *cobra.Command, args []string) error {
 			shellType, _ := cmd.Flags().GetString(shellFlag)
 
-			if shellType == "" || services.Contains(cmd.ValidArgs, shellType) {
+			if shellType == "" || utils.Contains(cmd.ValidArgs, shellType) {
 				return nil
 			}
 

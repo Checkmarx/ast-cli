@@ -8,6 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -224,7 +225,7 @@ func createTagMap(tagListStr string) map[string]string {
 
 func createApplicationIds(applicationID, existingApplicationIds []string) []string {
 	for _, id := range applicationID {
-		if !Contains(existingApplicationIds, id) {
+		if !utils.Contains(existingApplicationIds, id) {
 			existingApplicationIds = append(existingApplicationIds, id)
 		}
 	}

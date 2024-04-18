@@ -18,7 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -1014,7 +1014,7 @@ func enrichScaResults(
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
-	if services.Contains(scan.Engines, commonParams.ScaType) {
+	if utils.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
@@ -1038,7 +1038,7 @@ func enrichScaResults(
 	}
 	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
 
-	if services.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+	if utils.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
 		// Compute SAST results redundancy
 		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
