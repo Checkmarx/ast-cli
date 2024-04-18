@@ -16,6 +16,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
+	testifyAssert "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 )
 
@@ -30,7 +31,7 @@ func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testin
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
 	results, _ := commands.GetScannerResults(scansWrapper, "FakeScanId", "sast,sca")
 
-	assert.Equal(t, nil, results)
+	testifyAssert.Nil(t, results, "results should be nil")
 }
 
 func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing.T) {
