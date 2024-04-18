@@ -262,12 +262,3 @@ func findGroupByName(groups []wrappers.Group, name string) *wrappers.Group {
 	}
 	return nil
 }
-
-func Contains(array []string, val string) bool {
-	for _, e := range array {
-		if e == val {
-			return true
-		}
-	}
-	return false
-}

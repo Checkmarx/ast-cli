@@ -13,10 +13,10 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -371,7 +371,7 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateScanWithSSHKey(t *testing.T) {

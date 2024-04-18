@@ -7,10 +7,9 @@ import (
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 
 	"gotest.tools/assert"
-
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 )
 
 func TestProjectHelp(t *testing.T) {
@@ -178,7 +177,7 @@ func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateProjectWithSSHKey(t *testing.T) {
