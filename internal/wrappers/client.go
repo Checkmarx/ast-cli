@@ -617,7 +617,11 @@ func recreateRequest(oldReq *http.Request, method, redirectURL string, body []by
 		return nil, err
 	}
 
-	newReq.Header = oldReq.Header
+	for key, values := range oldReq.Header {
+		for _, value := range values {
+			newReq.Header.Add(key, value)
+		}
+	}
 
 	return newReq, nil
 }
