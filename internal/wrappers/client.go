@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -595,12 +596,12 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 func handleRedirect(resp *http.Response, req *http.Request, body []byte) (*http.Request, error) {
 	redirectURL := resp.Header.Get("Location")
 	if redirectURL == "" {
-		return nil, fmt.Errorf("redirect URL not found in response")
+		return nil, fmt.Errorf(applicationErrors.RedirectURLNotFound)
 	}
 
 	method := GetHTTPMethod(req)
 	if method == "" {
-		return nil, fmt.Errorf("method not found in request")
+		return nil, fmt.Errorf(applicationErrors.HTTPMethodNotFound)
 	}
 
 	newReq, err := recreateRequest(req, method, redirectURL, body)
