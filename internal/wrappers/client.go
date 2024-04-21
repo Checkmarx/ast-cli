@@ -580,18 +580,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		}
 		if resp != nil && err == nil {
 			if hasRedirectStatusCode(resp) {
-				redirectURL := resp.Header.Get("Location")
-				if redirectURL == "" {
-					return nil, fmt.Errorf("redirect URL not found in response")
-				}
-				method := GetHTTPMethod(req)
-				if method == "" {
-					return nil, fmt.Errorf("method not found in request")
-				}
-				req, err = http.NewRequest(method, redirectURL, bytes.NewReader(body))
-				if err != nil {
-					return nil, err
-				}
+				req, err = handleRedirect(resp, req, body)
 				continue
 			}
 			logger.PrintResponse(resp, responseBody)
@@ -601,6 +590,40 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func handleRedirect(resp *http.Response, req *http.Request, body []byte) (*http.Request, error) {
+	redirectURL := resp.Header.Get("Location")
+	if redirectURL == "" {
+		return nil, fmt.Errorf("redirect URL not found in response")
+	}
+
+	method := GetHTTPMethod(req)
+	if method == "" {
+		return nil, fmt.Errorf("method not found in request")
+	}
+
+	newReq, err := recreateRequest(req, method, redirectURL, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return newReq, nil
+}
+
+func recreateRequest(oldReq *http.Request, method, redirectURL string, body []byte) (*http.Request, error) {
+	newReq, err := http.NewRequest(method, redirectURL, io.NopCloser(bytes.NewBuffer(body)))
+	if err != nil {
+		return nil, err
+	}
+
+	for key, values := range oldReq.Header {
+		for _, value := range values {
+			newReq.Header.Add(key, value)
+		}
+	}
+
+	return newReq, nil
 }
 
 func GetHTTPMethod(req *http.Request) string {
