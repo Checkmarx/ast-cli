@@ -6,4 +6,6 @@ const (
 
 const (
 	FailedToGetApplication = "Failed to get application"
+	RedirectURLNotFound    = "redirect URL not found in response"
+	HTTPMethodNotFound     = "HTTP method not found in request"
 )
