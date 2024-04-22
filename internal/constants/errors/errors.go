@@ -4,6 +4,8 @@ package errorconstants
 const (
 	StatusUnauthorized        = "you are not authorized to make this request"
 	StatusForbidden           = "you are not allowed to make this request"
+	RedirectURLNotFound       = "redirect URL not found in response"
+	HTTPMethodNotFound        = "HTTP method not found in request"
 	StatusInternalServerError = "an error occurred during this request"
 )
 
