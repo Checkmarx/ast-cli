@@ -242,7 +242,6 @@ const (
 	APISecType           = "apisec"
 	ScsType              = "scs"
 	Success              = "success"
-	SCSType              = "scs"
 )
 
 // ScaAgent AST Role

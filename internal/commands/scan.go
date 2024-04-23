@@ -19,7 +19,6 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -96,11 +95,8 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy        = "COMPLETED"
-	nonePolicy             = "NONE"
-	evaluatingPolicy       = "EVALUATING"
-	ScsScoreCardType       = "scorecard"
-	ScsSecretDetectionType = "secret-detection"
+	scsScoreCardType       = "scorecard"
+	scsSecretDetectionType = "secret-detection"
 	ScsRepoRequiredMsg     = "SCS Repo Token and SCS Repo URL are required, if scorecard is enabled"
 )
 
@@ -564,7 +560,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -888,7 +884,7 @@ func setupScanTypeProjectAndConfig(
 
 	var SCSConfig, scsErr = addSCSScan(cmd)
 	if scsErr != nil {
-		return scsErr
+		fmt.Println(string("SCS Repo Token and SCS Repo URL are required, SCS scan will not start"))
 	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
 	}
@@ -904,6 +900,7 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 		params["name"] = applicationName
 		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
+
 			return nil, err
 		}
 		if resp.Applications != nil && len(resp.Applications) > 0 {
@@ -1061,10 +1058,10 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.SCSType) {
+	if scanTypeEnabled(commonParams.ScsType) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
-		SCSMapConfig[resultsMapType] = commonParams.SCSType
+		SCSMapConfig[resultsMapType] = commonParams.ScsType
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
@@ -1073,9 +1070,9 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
-				case ScsSecretDetectionType:
+				case scsSecretDetectionType:
 					SCSConfig.Twoms = trueString
-				case ScsScoreCardType:
+				case scsScoreCardType:
 					SCSConfig.Scorecard = trueString
 				}
 			}
@@ -2021,8 +2018,7 @@ func waitForScanCompletion(
 			if errorModel != nil {
 				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
-
-			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
+			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
 		}
 		i++
 	}
@@ -2070,48 +2066,11 @@ func isScanRunning(
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
-		exitCode := getExitCode(scanResponseModel)
-		return false, wrappers.NewAstError(exitCode, errors.New("scan completed partially"))
+		return false, errors.New("scan completed partially")
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
-		exitCode := getExitCode(scanResponseModel)
-		return false, wrappers.NewAstError(exitCode, errors.New("scan did not complete successfully"))
+		return false, errors.New("scan did not complete successfully")
 	}
 	return false, nil
-}
-
-func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
-	failedStatuses := make([]int, 0)
-	for _, scanner := range scanResponseModel.StatusDetails {
-		scannerNameLowerCase := strings.ToLower(scanner.Name)
-		scannerErrorExitCode, errorCodeByScannerExists := errorCodesByScanner[scannerNameLowerCase]
-		if scanner.Status == wrappers.ScanFailed && scanner.Name != General && errorCodeByScannerExists {
-			failedStatuses = append(failedStatuses, scannerErrorExitCode)
-		}
-	}
-	if len(failedStatuses) == 1 {
-		return failedStatuses[0]
-	}
-
-	return exitCodes.MultipleEnginesFailedExitCode
-}
-
-const (
-	General     = "general"
-	Sast        = "sast"
-	Sca         = "sca"
-	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
-	Kics        = "kics"
-	APISec      = "apisec"
-	Scs         = "scs"
-)
-
-var errorCodesByScanner = map[string]int{
-	General:     exitCodes.MultipleEnginesFailedExitCode,
-	Sast:        exitCodes.SastEngineFailedExitCode,
-	Sca:         exitCodes.ScaEngineFailedExitCode,
-	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
-	Kics:        exitCodes.KicsEngineFailedExitCode,
-	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {

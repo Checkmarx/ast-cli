@@ -76,15 +76,14 @@ const (
 	pendingStatus             = "Pending"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
-	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca and " +
-		defaultPdfOptionsDataSections + defaultPdfOprtionsImprovedDataSections
+	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
+		defaultPdfOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	delayValueForReport                     = 10
 	reportNameScanReport                    = "scan-report"
 	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
-	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults with NEW_SAST_SCAN_REPORT_ENABLED feature flag disabled or "
-	defaultPdfOprtionsImprovedDataSections  = "scan-information,results-overview,scan-results,categories,resolved-results,vulnerability-details with the flag enabled"
+	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
 	defaultSbomOption                       = "CycloneDxJson"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
@@ -209,7 +208,7 @@ func resultShowSubCommand(
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, "", pdfOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -530,7 +529,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal() + summary.ScsIssues
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -677,8 +676,9 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf("              ---------------------------------------------------     \n\n")
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Println("              |          High   Medium   Low   Info   Status    |")
 
@@ -1233,8 +1233,21 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
+	var resultsToReport *wrappers.ResultSummary
 	log.Println("Creating summary JSON Report: ", targetFile)
-	resultsJSON, err = json.Marshal(results)
+
+	// Remove SCS Result if it exists
+	_, scsExists := results.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		resultsToReport, err = createReportWithoutScsSummary(results)
+		if err != nil {
+			return err
+		}
+	} else {
+		resultsToReport = results
+	}
+
+	resultsJSON, err = json.Marshal(resultsToReport)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
@@ -1396,14 +1409,7 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 		"executivesummary": "ExecutiveSummary",
 		"scanresults":      "ScanResults",
 	}
-	var pdfOptionsSectionsMapImproved = map[string]string{
-		"scan-information":      "scan-information",
-		"results-overview":      "results-overview",
-		"scan-results":          "scan-results",
-		"categories":            "categories",
-		"resolved-results":      "resolved-results",
-		"vulnerability-details": "vulnerability-details",
-	}
+
 	var pdfOptionsEnginesMap = map[string]string{
 		commonParams.ScaType:  "SCA",
 		commonParams.SastType: "SAST",
@@ -1411,28 +1417,13 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 		commonParams.IacType:  "KICS",
 	}
 
-	var pdfReportOptionsSections = map[string]map[string]string{
-		reportNameImprovedScanReport: pdfOptionsSectionsMapImproved,
-		reportNameScanReport:         pdfOptionsSectionsMap,
-	}
-
-	var pdfReportOptionsEngines = map[string]map[string]string{
-		reportNameImprovedScanReport: pdfOptionsEnginesMap,
-		reportNameScanReport:         pdfOptionsEnginesMap,
-	}
-
 	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
-	// if no options are provided, report service defaults to all values
-	if pdfOptions == "" {
-		return pdfOptionsSections, pdfOptionsSections, nil
-	}
-
 	options := strings.Split(strings.ReplaceAll(pdfOptions, "\n", ""), ",")
 	for _, s := range options {
-		if pdfReportOptionsEngines[reportName][s] != "" {
-			pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][s])
-		} else if pdfReportOptionsSections[reportName][s] != "" {
-			pdfOptionsSections = append(pdfOptionsSections, pdfReportOptionsSections[reportName][s])
+		if pdfOptionsEnginesMap[s] != "" {
+			pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[s])
+		} else if pdfOptionsSectionsMap[s] != "" {
+			pdfOptionsSections = append(pdfOptionsSections, pdfOptionsSectionsMap[s])
 		} else {
 			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
 		}
@@ -1440,11 +1431,34 @@ func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName stri
 	if pdfOptionsEngines == nil {
 		for _, engine := range enabledEngines {
 			if pdfOptionsEnginesMap[engine] != "" {
-				pdfOptionsEngines = append(pdfOptionsEngines, pdfReportOptionsEngines[reportName][engine])
+				pdfOptionsEngines = append(pdfOptionsEngines, pdfOptionsEnginesMap[engine])
 			}
 		}
 	}
+
+	if reportName == reportNameImprovedScanReport {
+		pdfOptionsSections = translateReportSectionsForImproved(pdfOptionsSections)
+	}
+
 	return pdfOptionsSections, pdfOptionsEngines, nil
+}
+
+func translateReportSectionsForImproved(sections []string) []string {
+	var resultSections = make([]string, 0)
+
+	var pdfOptionsSectionsImprovedTranslation = map[string][]string{
+		"ScanSummary":      {"scan-information"},
+		"ExecutiveSummary": {"results-overview"},
+		"ScanResults":      {"scan-results", "categories", "resolved-results", "vulnerability-details"},
+	}
+
+	for _, section := range sections {
+		if translatedSections := pdfOptionsSectionsImprovedTranslation[section]; translatedSections != nil {
+			resultSections = append(resultSections, translatedSections...)
+		}
+	}
+
+	return resultSections
 }
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
@@ -1951,4 +1965,26 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	}
 	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
+}
+
+func createReportWithoutScsSummary(results *wrappers.ResultSummary) (*wrappers.ResultSummary, error) {
+	var err error
+	var resultsJSON []byte
+	resultsJSON, err = json.Marshal(results)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to serialize results before removing scs ", failedGettingAll)
+	}
+
+	var resultsWithoutScs *wrappers.ResultSummary
+	err = json.Unmarshal(resultsJSON, &resultsWithoutScs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to deserialize results before removing scs ", failedGettingAll)
+	}
+
+	_, scsExists := resultsWithoutScs.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		delete(resultsWithoutScs.EnginesResult, commonParams.ScsType)
+	}
+
+	return resultsWithoutScs, nil
 }

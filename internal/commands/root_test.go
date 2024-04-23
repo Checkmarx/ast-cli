@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
@@ -179,21 +177,9 @@ func TestRootVersion(t *testing.T) {
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
-	args = updateArgsForSCSWhenScanTypeNotPresent(args...)
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	return cmd.Execute()
-}
-
-func updateArgsForSCSWhenScanTypeNotPresent(args ...string) []string {
-	foundScanType := utils.Contains(args, "--scan-types")
-	foundScan := utils.Contains(args, "scan")
-	foundScanCreate := utils.Contains(args, "create")
-	foundScanCreateHelp := utils.Contains(args, "help")
-	if !foundScanType && !foundScanCreateHelp && foundScan && foundScanCreate {
-		args = append(args, "--scs-repo-token", "dummyToken", "--scs-repo-url", "dummyUrl")
-	}
-	return args
 }
 
 func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
@@ -227,7 +213,6 @@ func executeRedirectedOsStdoutTestCommand(cmd *cobra.Command, args ...string) (b
 }
 
 func execCmdNilAssertion(t *testing.T, args ...string) {
-	args = updateArgsForSCSWhenScanTypeNotPresent(args...)
 	err := executeTestCommand(createASTTestCommand(), args...)
 	assert.NilError(t, err)
 }

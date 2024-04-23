@@ -3,17 +3,14 @@
 package commands
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -239,43 +236,6 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, scsArgs...)
 }
 
-func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-scanner-fail", "-s", dummyRepo, "-b", "dummy_branch"}
-	err := execCmdNotNilAssertion(t, append(baseArgs, "--scan-types", Kics)...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
-}
-
-func TestScanCreate_MultipleScannersFail_ReturnGeneralExitCodeAndErrorMessage(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "fake-multiple-scanner-fails", "-s", dummyRepo, "-b", "dummy_branch"}
-	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s", Kics, Sca))
-	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.MultipleEnginesFailedExitCode)
-}
-
-func TestScanCreate_ScaScannersFailPartialScan_ReturnScaExitCodeAndErrorMessage(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "fake-sca-fail-partial", "-s", dummyRepo, "-b", "dummy_branch"}
-	baseArgs = append(baseArgs, "--scan-types", Sca)
-	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan completed partially", exitCodes.ScaEngineFailedExitCode)
-}
-
-func TestScanCreate_MultipleScannersDifferentStatusesOnlyKicsFail_ReturnKicsExitCodeAndErrorMessage(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-fail-sast-canceled", "-s", dummyRepo, "-b", "dummy_branch"}
-	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s,%s", Sca, Sast, Kics))
-	err := execCmdNotNilAssertion(t, baseArgs...)
-	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
-}
-
-func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
-	var e *wrappers.AstError
-	if errors.As(err, &e) {
-		assert.Equal(t, e.Error(), expectedErrorMessage)
-		assert.Equal(t, e.Code, expectedExitCode)
-	} else {
-		assert.Assert(t, false, "Error is not of type AstError")
-	}
-}
-
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
 	baseArgs := []string{"scan", "create", "-s", dummyRepo, "-b", "dummy_branch"}
 	// Cover "createProject" when no project is filtered when finding the provided project
@@ -315,7 +275,7 @@ func TestCreateScanBranches(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
 
 	// Test missing branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "sast", "-s", dummyRepo, "-b")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b")
 	assert.Assert(t, err.Error() == "flag needs an argument: 'b' in -b")
 
 	// Test empty branch value
@@ -340,7 +300,7 @@ func TestScanWorkflowMissingID(t *testing.T) {
 }
 
 func TestCreateScanMissingSSHValue(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
 	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
@@ -768,7 +728,7 @@ func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
 		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapType] = commonParams.ScsType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {
@@ -792,7 +752,7 @@ func TestCreateScanWithSCSSecretDetection(t *testing.T) {
 		Twoms: "true",
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.SCSType
+	scsMapConfig[resultsMapType] = commonParams.ScsType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {
