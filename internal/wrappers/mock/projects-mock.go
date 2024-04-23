@@ -40,33 +40,15 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		filteredTotalCount = 0
 	}
 
-	var model *wrappers.ProjectsCollectionResponseModel
-	switch name := params["names"]; name {
-	case "fake-kics-scanner-fail":
-		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	case "fake-multiple-scanner-fails":
-		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	case "fake-sca-fail-partial":
-		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	case "fake-kics-fail-sast-canceled":
-		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	default:
-		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
-	}
-
-	return model, nil, nil
-}
-
-func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
 	return &wrappers.ProjectsCollectionResponseModel{
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
 			{
-				ID:   id,
-				Name: name,
+				ID:   "MOCK",
+				Name: "MOCK",
 			},
 		},
-	}
+	}, nil, nil
 }
 
 func (p *ProjectsMockWrapper) GetByID(projectID string) (
