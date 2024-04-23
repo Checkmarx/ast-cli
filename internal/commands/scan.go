@@ -96,9 +96,6 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy        = "COMPLETED"
-	nonePolicy             = "NONE"
-	evaluatingPolicy       = "EVALUATING"
 	scsScoreCardType       = "scorecard"
 	scsSecretDetectionType = "secret-detection"
 )
