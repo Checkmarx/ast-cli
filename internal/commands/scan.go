@@ -887,7 +887,7 @@ func setupScanTypeProjectAndConfig(
 
 	var SCSConfig, scsErr = addSCSScan(cmd)
 	if scsErr != nil {
-		return scsErr
+		fmt.Println(string("SCS Repo Token and SCS Repo URL are required, SCS scan will not start"))
 	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
 	}
@@ -1060,10 +1060,10 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 }
 
 func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.SCSType) {
+	if scanTypeEnabled(commonParams.ScsType) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
-		SCSMapConfig[resultsMapType] = commonParams.SCSType
+		SCSMapConfig[resultsMapType] = commonParams.ScsType
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
