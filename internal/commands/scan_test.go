@@ -310,7 +310,7 @@ func TestCreateScanBranches(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
 
 	// Test missing branch value
-	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "sast", "-s", dummyRepo, "-b")
+	err = execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b")
 	assert.Assert(t, err.Error() == "flag needs an argument: 'b' in -b")
 
 	// Test empty branch value
@@ -335,7 +335,7 @@ func TestScanWorkflowMissingID(t *testing.T) {
 }
 
 func TestCreateScanMissingSSHValue(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", "../..", "-b", "dummy_branch"}
 
 	err := execCmdNotNilAssertion(t, append(baseArgs, "--ssh-key")...)
 	assert.Error(t, err, "flag needs an argument: --ssh-key", err.Error())
