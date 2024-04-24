@@ -723,7 +723,6 @@ func GetURL(path, accessToken string) (string, error) {
 
 	cleanURL = strings.Trim(cleanURL, "/")
 	logger.PrintIfVerbose(fmt.Sprintf("Base URI - %s ", cleanURL))
-	cleanURL = "https://dynamic-sast-tPrXk0uM5.engines.cxdevops.com"
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 

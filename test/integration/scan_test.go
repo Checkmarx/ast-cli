@@ -116,16 +116,16 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, nil, "sast,iac-security,sca,scs"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca,scs"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
-	//glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	//if err != nil {
-	//
-	//	return
-	//}
-	//assert.Equal(t, len(glob), 0, "Zip file not removed")
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
 func TestFastScan(t *testing.T) {
@@ -229,18 +229,18 @@ func TestScaResolverArgFailed(t *testing.T) {
 }
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
-//func TestIncrementalScan(t *testing.T) {
-//	projectName := getProjectNameForScanTests()
-//
-//	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
-//	defer deleteProject(t, projectID)
-//	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
-//
-//	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
-//
-//	executeScanAssertions(t, projectID, scanID, map[string]string{})
-//	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
-//}
+func TestIncrementalScan(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+
+	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
+	defer deleteProject(t, projectID)
+	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
+
+	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
+
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
+}
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
@@ -478,8 +478,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	//return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security   "))
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , scs, sca"))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs   "))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -669,8 +668,7 @@ func TestScanLogsKICSDeprecated(t *testing.T) {
 }
 
 func TestScanLogsKICS(t *testing.T) {
-	//scanID, _ := getRootScan(t)
-	scanID := "d71b3d7a-b81f-4d25-a992-e9e210c9f89f"
+	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
@@ -688,7 +686,6 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast, sca, iac-security",
 		flag(params.PresetName), "Checkmarx Invalid",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -782,7 +779,6 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "main",
-		flag(params.ScanTypes), "sast, sca, iac-security",
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
 		flag(params.IgnorePolicyFlag),

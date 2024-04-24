@@ -1630,8 +1630,7 @@ func runCreateScanCommand(
 				return err
 			}
 			// Handling policy response
-			//policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-			policyOverrideFlag := true
+			policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 			if !policyOverrideFlag {
 				policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 				if policyTimeout < 0 {
