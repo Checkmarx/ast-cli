@@ -883,7 +883,7 @@ func setupScanTypeProjectAndConfig(
 
 	var SCSConfig, scsErr = addSCSScan(cmd)
 	if scsErr != nil {
-		fmt.Println(string("SCS Repo Token and SCS Repo URL are required, SCS scan will not start"))
+		return scsErr
 	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
 	}
@@ -1060,6 +1060,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.ScsType
+		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
@@ -1083,7 +1084,12 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 				SCSConfig.RepoToken = SCSRepoToken
 				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
 			} else {
-				return nil, errors.Errorf("SCS Repo Token and SCS Repo URL are required, if scorecard is enabled")
+				if userScanTypes == "" {
+					fmt.Println(string(`SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments:
+--scs-repo-url your_repo_url --scs-repo-token your_repo_token`))
+					return nil, nil
+				}
+				return nil, errors.Errorf("SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: scs-repo-token your_repo_url scs-repo-url your_repo_token")
 			}
 		}
 		SCSMapConfig[resultsMapValue] = &SCSConfig
