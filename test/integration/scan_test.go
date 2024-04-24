@@ -544,7 +544,10 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
 	}
-	addSCSDefaultFlagsToArgs(&args)
+
+	if strings.Contains(scanTypes, "scs") {
+		addSCSDefaultFlagsToArgs(&args)
+	}
 
 	return args
 }
@@ -685,11 +688,10 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast, sca, iac-security, scs",
+		flag(params.ScanTypes), "sast, sca, iac-security",
 		flag(params.PresetName), "Checkmarx Invalid",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-	addSCSDefaultFlagsToArgs(&args)
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "scan completed partially")
@@ -769,7 +771,6 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.SSHKeyFlag), SSHKeyFilePath,
 		flag(params.IgnorePolicyFlag),
 	}
-	addSCSDefaultFlagsToArgs(&args)
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
 }
@@ -781,12 +782,11 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "main",
-		flag(params.ScanTypes), "sast, sca, iac-security, scs",
+		flag(params.ScanTypes), "sast, sca, iac-security",
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
 		flag(params.IgnorePolicyFlag),
 	}
-	addSCSDefaultFlagsToArgs(&args)
 
 	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
 }
@@ -1284,6 +1284,37 @@ func TestScanTypeScs(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
 }
 
+func TestNoScanTypesFlagScsFlagsNotPresent(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", 4*time.Minute, args...)
+	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
+}
+
+func TestNoScanTypesFlagScsFlagsPresent(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", 4*time.Minute, args...)
+	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
+}
+
 func TestScanTypeScsMissingRepoURL(t *testing.T) {
 	_, projectName := getRootProject(t)
 
@@ -1291,7 +1322,7 @@ func TestScanTypeScsMissingRepoURL(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "scs",
+		flag(params.ScanTypes), "sast, scs",
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
@@ -1307,7 +1338,7 @@ func TestScanTypeScsMissingRepoToken(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "scs",
+		flag(params.ScanTypes), "sast, scs",
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 	}
@@ -1324,6 +1355,21 @@ func TestScanTypeScsOnlySecretDetection(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSEnginesFlag), commands.ScsSecretDetectionType,
+	}
+
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
+}
+
+func TestNoScanTypesFlagScsOnlySecretDetection(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
 		flag(params.BranchFlag), "main",
 		flag(params.SCSEnginesFlag), commands.ScsSecretDetectionType,
 	}
