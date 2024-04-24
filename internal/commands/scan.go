@@ -95,8 +95,10 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	scsScoreCardType       = "scorecard"
-	scsSecretDetectionType = "secret-detection"
+	ScsScoreCardType       = "scorecard"
+	ScsSecretDetectionType = "secret-detection"
+	ScsRepoRequiredMsg     = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 var (
@@ -1069,9 +1071,9 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
-				case scsSecretDetectionType:
+				case ScsSecretDetectionType:
 					SCSConfig.Twoms = trueString
-				case scsScoreCardType:
+				case ScsScoreCardType:
 					SCSConfig.Scorecard = trueString
 				}
 			}
@@ -1085,11 +1087,10 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
 			} else {
 				if userScanTypes == "" {
-					fmt.Println(string(`SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments:
---scs-repo-url your_repo_url --scs-repo-token your_repo_token`))
+					fmt.Println(ScsRepoRequiredMsg)
 					return nil, nil
 				}
-				return nil, errors.Errorf("SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: scs-repo-token your_repo_url scs-repo-url your_repo_token")
+				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
 		SCSMapConfig[resultsMapValue] = &SCSConfig
