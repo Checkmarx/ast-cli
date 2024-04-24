@@ -723,6 +723,7 @@ func GetURL(path, accessToken string) (string, error) {
 
 	cleanURL = strings.Trim(cleanURL, "/")
 	logger.PrintIfVerbose(fmt.Sprintf("Base URI - %s ", cleanURL))
+
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 

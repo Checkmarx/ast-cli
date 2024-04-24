@@ -224,7 +224,6 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 	scanID, _ := getRootScan(t)
-
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results show generating PDF report with options should pass",
 		"results", "show",
@@ -238,7 +237,6 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 	scanID, _ := getRootScan(t)
-	//scanID := "2078edd3-64f4-48ef-88cc-ef4408f79101"
 
 	args := []string{
 		"results", "show",
