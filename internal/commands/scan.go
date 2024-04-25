@@ -727,6 +727,10 @@ func updateProject(
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
+	//Project API have a bug with the Association.
+	//TODO: This is a workaround that will need to be removed
+	time.Sleep(10 * time.Second)
+
 	return projectID, nil
 }
 
