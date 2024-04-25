@@ -74,6 +74,7 @@ func Test_createProject(t *testing.T) {
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
 		applicationID           []string
+		projectGroups           string
 	}
 	tests := []struct {
 		name    string
@@ -89,12 +90,22 @@ func Test_createProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			applicationID:           []string{"1"},
+			projectGroups:           "",
 		}, want: "ID-new-project-name", wantErr: false},
+		{name: "When called with a new project name and non existing project groups return error", args: args{
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			applicationID:           []string{"1"},
+			projectGroups:           "grp1,grp2",
+		}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createProject(ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.applicationID)
+			got, err := createProject(ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.applicationID, ttt.args.projectGroups)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
