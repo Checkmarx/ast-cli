@@ -37,10 +37,11 @@ func TestAssignGroupsToProject(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProject(tt.args.projectID, tt.args.projectName, tt.args.groups, tt.args.accessManagement); (err != nil) != tt.wantErr {
-				t.Errorf("AssignGroupsToProject() error = %v, wantErr %v", err, tt.wantErr)
+			if err := AssignGroupsToProject(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
+				t.Errorf("AssignGroupsToProject() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})
 	}
@@ -78,14 +79,15 @@ func TestCreateGroupsMap(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateGroupsMap(tt.args.groupsStr, tt.args.groupsWrapper)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateGroupsMap() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := CreateGroupsMap(ttt.args.groupsStr, ttt.args.groupsWrapper)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("CreateGroupsMap() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateGroupsMap() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("CreateGroupsMap() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -108,9 +110,10 @@ func TestGetGroupIds(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetGroupIds(tt.args.groups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetGroupIds() = %v, want %v", got, tt.want)
+			if got := GetGroupIds(ttt.args.groups); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("GetGroupIds() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -147,9 +150,10 @@ func Test_findGroupByName(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := findGroupByName(tt.args.groups, tt.args.name); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findGroupByName() = %v, want %v", got, tt.want)
+			if got := findGroupByName(ttt.args.groups, ttt.args.name); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("findGroupByName() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -172,10 +176,11 @@ func Test_getGroupsForRequest(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = false
-			if got := getGroupsForRequest(tt.args.groups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getGroupsForRequest() = %v, want %v", got, tt.want)
+			if got := getGroupsForRequest(ttt.args.groups); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -202,9 +207,10 @@ func Test_getGroupsToAssign(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getGroupsToAssign(tt.args.receivedGroups, tt.args.existingGroups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getGroupsToAssign() = %v, want %v", got, tt.want)
+			if got := getGroupsToAssign(ttt.args.receivedGroups, ttt.args.existingGroups); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("getGroupsToAssign() = %v, want %v", got, ttt.want)
 			}
 		})
 	}

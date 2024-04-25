@@ -29,9 +29,10 @@ func Test_createApplicationIds(t *testing.T) {
 			want: []string{"1", "2", "3"}},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := createApplicationIds(tt.args.applicationID, tt.args.existingApplicationIds); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("createApplicationIds() = %v, want %v", got, tt.want)
+			if got := createApplicationIds(ttt.args.applicationID, ttt.args.existingApplicationIds); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("createApplicationIds() = %v, want %v", got, ttt.want)
 			}
 		})
 	}

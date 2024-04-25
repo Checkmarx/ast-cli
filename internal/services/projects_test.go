@@ -52,14 +52,15 @@ func TestFindProject(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FindProject(tt.args.applicationID, tt.args.projectName, tt.args.cmd, tt.args.projectsWrapper, tt.args.groupsWrapper, tt.args.accessManagementWrapper)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FindProject() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := FindProject(ttt.args.applicationID, ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("FindProject() got = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("FindProject() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -91,14 +92,15 @@ func Test_createProject(t *testing.T) {
 		}, want: "ID-new-project-name", wantErr: false},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createProject(tt.args.projectName, tt.args.cmd, tt.args.projectsWrapper, tt.args.groupsWrapper, tt.args.accessManagementWrapper, tt.args.applicationID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("createProject() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := createProject(ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.applicationID)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("createProject() got = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("createProject() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -135,14 +137,15 @@ func Test_updateProject(t *testing.T) {
 		}, want: "ID-project-name", wantErr: false},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateProject(tt.args.resp, tt.args.cmd, tt.args.projectsWrapper, tt.args.groupsWrapper, tt.args.accessManagementWrapper, tt.args.projectName, tt.args.applicationID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("updateProject() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := updateProject(ttt.args.resp, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.projectName, ttt.args.applicationID)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("updateProject() got = %v, want %v", got, tt.want)
+			if got != ttt.want {
+				t.Errorf("updateProject() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}

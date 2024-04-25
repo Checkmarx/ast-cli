@@ -22,9 +22,10 @@ func Test_createTagMap(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := createTagMap(tt.args.tagListStr); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("createTagMap() = %v, want %v", got, tt.want)
+			if got := createTagMap(ttt.args.tagListStr); !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("createTagMap() = %v, want %v", got, ttt.want)
 			}
 		})
 	}
