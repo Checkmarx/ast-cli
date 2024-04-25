@@ -1882,8 +1882,12 @@ func parseThreshold(threshold string) map[string]int {
 			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
 			if len(limit) > 1 {
 				intLimit, err := strconv.Atoi(limit[1])
-				if err != nil {
-					log.Println("Error parsing threshold limit: ", err)
+				if err != nil || intLimit < 1 {
+					if err != nil {
+						log.Println("Error parsing threshold limit:", err)
+					} else {
+						log.Printf("Error [%s]: Skipping threshold check - Threshold limit should be greater or equal to 1\n", engineName)
+					}
 				} else {
 					thresholdMap[engineName] = intLimit
 				}
