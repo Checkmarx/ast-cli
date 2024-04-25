@@ -637,13 +637,6 @@ func createProject(
 
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
-	/*	if !wrappers.FeatureFlags[accessManagementEnabled] {
-		groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-		if err != nil {
-			return "", err
-		}
-		projModel.Groups = getGroupsForRequest(groupsMap)
-	}*/
 	projModel.ApplicationIds = applicationID
 
 	if projectPrivatePackage != "" {
@@ -657,16 +650,30 @@ func createProject(
 	}
 	if err == nil {
 		projectID = resp.ID
-		if applicationID != nil {
-			//todo: replace with a pooling mechanize that check if the application associated with application(only when assign application)
+
+		//todo: replace with a pooling mechanize that check if the application associated with application(only when assign application)
+		if applicationID != nil && len(applicationID) > 0 {
 			time.Sleep(35 * time.Second)
+			logger.PrintIfVerbose("slept 35")
+		}
+
+		if projectGroups != "" {
 			groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
 			if err != nil {
 				return projectID, err
 			}
-			err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
-			if err != nil {
-				return projectID, err
+			if !wrappers.FeatureFlags[accessManagementEnabled] {
+				projModel.Groups = getGroupsForRequest(groupsMap)
+				logger.PrintIfVerbose("Updating project groups")
+				err = projectsWrapper.Update(projectID, &projModel)
+				if err != nil {
+					return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
+				}
+			} else {
+				err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
+				if err != nil {
+					return projectID, err
+				}
 			}
 		}
 	}
@@ -717,16 +724,7 @@ func updateProject(
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
 	projModel.ApplicationIds = projModelResp.ApplicationIds
-	/*	if !wrappers.FeatureFlags[accessManagementEnabled] {
-		if projectGroups != "" {
-			groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
-			if groupErr != nil {
-				return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-			}
-			logger.PrintIfVerbose("Updating project groups")
-			projModel.Groups = getGroupsForRequest(groupsMap)
-		}
-	}*/
+
 	if projectTags != "" {
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
@@ -740,16 +738,30 @@ func updateProject(
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
-	time.Sleep(35 * time.Second)
+	if applicationID != nil && len(applicationID) > 0 {
+		//todo: replace with a pooling mechanize that check if the application associated with application(only when assign application)
+		time.Sleep(35 * time.Second)
+		logger.PrintIfVerbose("slept 35")
+	}
 
 	if projectGroups != "" {
 		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
 		if groupErr != nil {
 			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
 		}
-		err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
-		if err != nil {
-			return "", err
+		groups := append(getGroupsForRequest(groupsMap), projModelResp.Groups...)
+		if !wrappers.FeatureFlags[accessManagementEnabled] {
+			projModel.Groups = groups
+			logger.PrintIfVerbose("Updating project groups")
+			err = projectsWrapper.Update(projectID, &projModel)
+			if err != nil {
+				return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
+			}
+		} else {
+			err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
+			if err != nil {
+				return projectID, err
+			}
 		}
 	}
 	return projectID, nil
