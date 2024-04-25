@@ -62,6 +62,8 @@ func NewUtilsCommand(
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
+	validateCodeCmd := NewValidateCodeCommand()
+
 	utilsCmd.AddCommand(
 		completionCmd,
 		envCheckCmd,
@@ -77,6 +79,7 @@ func NewUtilsCommand(
 		remediationCmd,
 		tenantCmd,
 		maskSecretsCmd,
+		validateCodeCmd,
 	)
 
 	return utilsCmd

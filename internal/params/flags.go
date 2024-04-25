@@ -182,6 +182,12 @@ const (
 	ChatSastScanResultsFile = "scan-results-file"
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
+
+	// Validate Code
+	ValidateCodeSourceFile  = "source-file"
+	ValidateCodeResultsFile = "results-file"
+	ValidateCodeServiceUri  = "validation-service-uri"
+	ValidateCodeServiceKey  = "validation-service-key"
 )
 
 // Parameter values
