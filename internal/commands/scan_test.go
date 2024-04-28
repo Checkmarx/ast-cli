@@ -284,7 +284,7 @@ func TestCreateScanWithProjectGroup(t *testing.T) {
 		t,
 		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup",
 	)
-	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
+	assert.Assert(t, err.Error() == "Failed updating a project: Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
 }
 
 func TestScanWorkflowMissingID(t *testing.T) {
