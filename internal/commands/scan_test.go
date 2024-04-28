@@ -727,15 +727,22 @@ func Test_validateThresholds(t *testing.T) {
 	mockCmdEmptyThreshold := &cobra.Command{}
 	mockCmdValidThreshold := &cobra.Command{}
 	mockCmdInvalidThreshold := &cobra.Command{}
+	mockCmdMissingThreshold := &cobra.Command{}
+
+	mockCmdEmptyThreshold.Flags().String(commonParams.Threshold, "", "")
+	mockCmdValidThreshold.Flags().String(commonParams.Threshold, "", "")
+	mockCmdInvalidThreshold.Flags().String(commonParams.Threshold, "", "")
+	mockCmdMissingThreshold.Flags().String(commonParams.Threshold, "", "")
 
 	err := mockCmdValidThreshold.Flags().Set(commonParams.Threshold, "sast-meDium=5,KICKS-low=10")
 	if err != nil {
 		return
 	}
-	err = mockCmdInvalidThreshold.Flags().Set(commonParams.Threshold, "kics-low=-3")
+	err = mockCmdInvalidThreshold.Flags().Set(commonParams.Threshold, "kics-low=0")
 	if err != nil {
 		return
 	}
+	err = mockCmdMissingThreshold.Flags().Set(commonParams.Threshold, "sast-high=5,kics-medium=")
 
 	tests := []struct {
 		name    string
@@ -753,8 +760,13 @@ func Test_validateThresholds(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Test Invalid Threshold FAIL",
+			name:    "Test Invalid Threshold Fail",
 			args:    mockCmdInvalidThreshold,
+			wantErr: true,
+		},
+		{
+			name:    "Test Missing Threshold values Fail",
+			args:    mockCmdMissingThreshold,
 			wantErr: true,
 		},
 	}

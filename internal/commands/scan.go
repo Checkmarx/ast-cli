@@ -1874,7 +1874,7 @@ func applyThreshold(
 func parseThreshold(threshold string) map[string]int {
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
-		threshold = normalizeThresholds(threshold)
+		threshold = rearrangeUserInputThresholds(threshold)
 		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
 			engineName, intLimit, err := parseThresholdLimit(limits)
@@ -2499,7 +2499,7 @@ func validateThresholds(cmd *cobra.Command) error {
 	if threshold == "" {
 		return nil
 	}
-	threshold = normalizeThresholds(threshold)
+	threshold = rearrangeUserInputThresholds(threshold)
 	thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 	for _, limit := range thresholdLimits {
 		engineName, intLimit, err := parseThresholdLimit(limit)
@@ -2513,18 +2513,19 @@ func validateThresholds(cmd *cobra.Command) error {
 	return nil
 }
 
-func normalizeThresholds(threshold string) string {
+func rearrangeUserInputThresholds(threshold string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
 }
 
 func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
 	parts := strings.Split(limit, "=")
 	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
-	if len(parts) > 1 {
-		intLimit, err = strconv.Atoi(parts[1])
-		if err != nil {
-			err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
-		}
+	if len(parts) <= 1 {
+		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+	}
+	intLimit, err = strconv.Atoi(parts[1])
+	if err != nil {
+		err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
 	}
 	return engineName, intLimit, err
 }
