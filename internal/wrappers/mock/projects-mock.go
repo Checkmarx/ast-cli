@@ -14,6 +14,13 @@ func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
 	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
+	if model.Name == "mock-some-error-model" {
+		return nil, &wrappers.ErrorModel{
+			Message: "some error message",
+			Type:    "",
+			Code:    1,
+		}, fmt.Errorf("some error")
+	}
 	return &wrappers.ProjectResponseModel{
 		ID:             fmt.Sprintf("ID-%s", model.Name),
 		Name:           model.Name,

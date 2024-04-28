@@ -77,6 +77,15 @@ func TestCreateGroupsMap(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "When faking an error upon calling groups wrapper, an error should be returned",
+			args: args{
+				groupsStr:     "fake-group-error",
+				groupsWrapper: &mock.GroupsMockWrapper{},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		ttt := tt

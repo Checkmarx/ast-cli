@@ -38,7 +38,8 @@ func FindProject(
 	}
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationID, projectGroups)
+	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationID, projectGroups, projectPrivatePackage)
 	if err != nil {
 		return "", err
 	}
@@ -53,9 +54,9 @@ func createProject(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationID []string,
 	projectGroups string,
+	projectPrivatePackage string,
 ) (string, error) {
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	groupsMap, err := CreateGroupsMap(projectGroups, groupsWrapper)
 	if err != nil {
 		return "", err

@@ -75,6 +75,7 @@ func Test_createProject(t *testing.T) {
 		accessManagementWrapper wrappers.AccessManagementWrapper
 		applicationID           []string
 		projectGroups           string
+		projectPrivatePackage   string
 	}
 	tests := []struct {
 		name    string
@@ -101,6 +102,34 @@ func Test_createProject(t *testing.T) {
 			applicationID:           []string{"1"},
 			projectGroups:           "grp1,grp2",
 		}, want: "", wantErr: true},
+		{name: "When called with mock fake error model return fake error from project create", args: args{
+			projectName:             "mock-some-error-model",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			applicationID:           []string{"1"},
+			projectGroups:           "",
+		}, want: "", wantErr: true},
+		{name: "When called with mock fake group error return fake error from project create", args: args{
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			applicationID:           []string{"1"},
+			projectGroups:           "fake-group-error",
+		}, want: "", wantErr: true},
+		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			applicationID:           []string{"1"},
+			projectGroups:           "",
+			projectPrivatePackage:   "true",
+		}, want: "ID-new-project-name", wantErr: false},
 	}
 	for _, tt := range tests {
 		ttt := tt
@@ -112,7 +141,8 @@ func Test_createProject(t *testing.T) {
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
 				ttt.args.applicationID,
-				ttt.args.projectGroups)
+				ttt.args.projectGroups,
+				ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
