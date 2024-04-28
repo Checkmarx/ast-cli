@@ -2497,10 +2497,17 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateThresholds(thresholdMap map[string]int) error {
+	var errMsgBuilder strings.Builder
+
 	for engineName, limit := range thresholdMap {
 		if limit < 1 {
-			return errors.Errorf("Invalid value for threshold limit %s. Threshols should be greater or equal to 1.", engineName)
+			errMsgBuilder.WriteString(errors.Errorf("Invalid value for threshold limit %s. Threshold should be greater or equal to 1.\n", engineName).Error())
 		}
+	}
+
+	errMsg := errMsgBuilder.String()
+	if errMsg != "" {
+		return errors.New(errMsg)
 	}
 	return nil
 }
