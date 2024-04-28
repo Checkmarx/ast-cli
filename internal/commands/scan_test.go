@@ -724,60 +724,39 @@ func Test_parseThresholdLimit(t *testing.T) {
 }
 
 func Test_validateThresholds(t *testing.T) {
-	mockCmdEmptyThreshold := &cobra.Command{}
-	mockCmdValidThreshold := &cobra.Command{}
-	mockCmdInvalidThreshold := &cobra.Command{}
-	mockCmdMissingThreshold := &cobra.Command{}
-
-	mockCmdEmptyThreshold.Flags().String(commonParams.Threshold, "", "")
-	mockCmdValidThreshold.Flags().String(commonParams.Threshold, "", "")
-	mockCmdInvalidThreshold.Flags().String(commonParams.Threshold, "", "")
-	mockCmdMissingThreshold.Flags().String(commonParams.Threshold, "", "")
-
-	err := mockCmdValidThreshold.Flags().Set(commonParams.Threshold, "sast-meDium=5,KICKS-low=10")
-	if err != nil {
-		return
-	}
-	err = mockCmdInvalidThreshold.Flags().Set(commonParams.Threshold, "kics-low=0")
-	if err != nil {
-		return
-	}
-	err = mockCmdMissingThreshold.Flags().Set(commonParams.Threshold, "sast-high=5,kics-medium=")
-	if err != nil {
-		return
-	}
-
 	tests := []struct {
-		name    string
-		args    *cobra.Command
-		wantErr bool
+		name         string
+		thresholdMap map[string]int
+		wantErr      bool
 	}{
 		{
-			name:    "Test Empty Threshold Success",
-			args:    mockCmdEmptyThreshold,
+			name: "Valid Thresholds",
+			thresholdMap: map[string]int{
+				"sast-medium": 5,
+				"sast-high":   10,
+			},
 			wantErr: false,
 		},
 		{
-			name:    "Test Valid Threshold Success",
-			args:    mockCmdValidThreshold,
-			wantErr: false,
-		},
-		{
-			name:    "Test Invalid Threshold Fail",
-			args:    mockCmdInvalidThreshold,
+			name: "Invalid Threshold - Negative Limit",
+			thresholdMap: map[string]int{
+				"sca-medium": -3,
+			},
 			wantErr: true,
 		},
 		{
-			name:    "Test Missing Threshold values Fail",
-			args:    mockCmdMissingThreshold,
+			name: "Invalid Threshold - Zero Limit",
+			thresholdMap: map[string]int{
+				"sca-high": 0,
+			},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateThresholds(tt.args); (err != nil) != tt.wantErr {
+			err := validateThresholds(tt.thresholdMap)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

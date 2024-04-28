@@ -1525,6 +1525,12 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
+		threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
+		thresholdMap := parseThreshold(threshold)
+		err = validateThresholds(thresholdMap)
+		if err != nil {
+			return err
+		}
 		scanModel, zipFilePath, err := createScanModel(
 			cmd,
 			uploadsWrapper,
@@ -1588,7 +1594,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
 			if err != nil {
 				return err
 			}
@@ -1830,13 +1836,12 @@ func applyThreshold(
 	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
+	thresholdMap map[string]int,
 ) error {
 	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
 	if strings.TrimSpace(threshold) == "" {
 		return nil
 	}
-
-	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
 	if err != nil {
@@ -1872,6 +1877,9 @@ func applyThreshold(
 }
 
 func parseThreshold(threshold string) map[string]int {
+	if strings.TrimSpace(threshold) == "" {
+		return nil
+	}
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
 		threshold = rearrangeUserInputThresholds(threshold)
@@ -2486,28 +2494,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
-	err = validateThresholds(cmd)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func validateThresholds(cmd *cobra.Command) error {
-	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
-	if threshold == "" {
-		return nil
-	}
-	threshold = rearrangeUserInputThresholds(threshold)
-	thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
-	for _, limit := range thresholdLimits {
-		engineName, intLimit, err := parseThresholdLimit(limit)
-		if err != nil {
-			return err
-		}
-		if intLimit < 1 {
-			return errors.Errorf("%s: Threshold limit should be greater or equal to 1\n", engineName)
+func validateThresholds(thresholdMap map[string]int) error {
+	for engineName, limit := range thresholdMap {
+		if limit < 1 {
+			return errors.Errorf("Invalid value for threshold limit %s. Threshols should be greater or equal to 1.", engineName)
 		}
 	}
 	return nil
