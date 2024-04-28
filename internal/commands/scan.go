@@ -1838,8 +1838,7 @@ func applyThreshold(
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
 ) error {
-	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
-	if strings.TrimSpace(threshold) == "" {
+	if len(thresholdMap) == 0 {
 		return nil
 	}
 
