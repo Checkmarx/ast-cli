@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -654,7 +654,7 @@ func createProject(
 	if err == nil {
 		projectID = resp.ID
 
-		if applicationID != nil && len(applicationID) > 0 {
+		if len(applicationID) > 0 {
 			err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
 			if err != nil {
 				return projectID, err
@@ -686,7 +686,7 @@ func verifyApplicationAssociationDone(applicationID []string, projectID string, 
 		if err != nil {
 			return err
 		} else if time.Since(start) < timeout {
-			return errors.Errorf(ErrorCodeFormat, failedProjectApplicationAssociation)
+			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 		}
 	}
 
@@ -753,7 +753,7 @@ func updateProject(
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
-	if applicationID != nil && len(applicationID) > 0 {
+	if len(applicationID) > 0 {
 		err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
 		if err != nil {
 			return projectID, err
