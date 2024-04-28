@@ -126,6 +126,16 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
 }
 
+func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
+	err, _ := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project",
+	)
+	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name 'project' already exists\n")
+}
+
 // Test list project's branches
 func TestProjectBranches(t *testing.T) {
 
