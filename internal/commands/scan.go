@@ -1881,7 +1881,7 @@ func parseThreshold(threshold string) map[string]int {
 	}
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
-		threshold = rearrangeUserInputThresholds(threshold)
+		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
 		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
 			engineName, intLimit, err := parseThresholdLimit(limits)
@@ -2510,10 +2510,6 @@ func validateThresholds(thresholdMap map[string]int) error {
 		return errors.New(errMsg)
 	}
 	return nil
-}
-
-func rearrangeUserInputThresholds(threshold string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
 }
 
 func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
