@@ -1879,7 +1879,7 @@ func parseThreshold(threshold string) map[string]int {
 		for _, limits := range thresholdLimits {
 			engineName, intLimit, err := parseThresholdLimit(limits)
 			if err != nil {
-				log.Printf("Error parsing threshold: %s", err)
+				log.Printf("%s", err)
 			} else {
 				thresholdMap[engineName] = intLimit
 			}
@@ -2504,7 +2504,7 @@ func validateThresholds(cmd *cobra.Command) error {
 	for _, limit := range thresholdLimits {
 		engineName, intLimit, err := parseThresholdLimit(limit)
 		if err != nil {
-			return errors.Errorf("Error parsing threshold limit: %s\n", err)
+			return err
 		}
 		if intLimit < 1 {
 			return errors.Errorf("%s: Threshold limit should be greater or equal to 1\n", engineName)
