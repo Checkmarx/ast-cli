@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/exp/slices"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -603,6 +604,7 @@ func findProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationWrapper wrappers.ApplicationsWrapper,
 ) (string, error) {
 	params := make(map[string]string)
 	params["names"] = projectName
@@ -613,10 +615,10 @@ func findProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, projectName, applicationID)
+			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, projectName, applicationID)
 		}
 	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationID)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, applicationID)
 	if err != nil {
 		return "", err
 	}
@@ -629,6 +631,7 @@ func createProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	applicationID []string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
@@ -651,33 +654,44 @@ func createProject(
 	if err == nil {
 		projectID = resp.ID
 
-		//todo: replace with a pooling mechanize that check if the application associated with application(only when assign application)
 		if applicationID != nil && len(applicationID) > 0 {
-			time.Sleep(35 * time.Second)
-			logger.PrintIfVerbose("slept 35")
-		}
-
-		if projectGroups != "" {
-			groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
+			err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
 			if err != nil {
 				return projectID, err
 			}
-			if !wrappers.FeatureFlags[accessManagementEnabled] {
-				projModel.Groups = getGroupsForRequest(groupsMap)
-				logger.PrintIfVerbose("Updating project groups")
-				err = projectsWrapper.Update(projectID, &projModel)
-				if err != nil {
-					return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-				}
-			} else {
-				err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
-				if err != nil {
-					return projectID, err
-				}
+		}
+
+		if projectGroups != "" {
+			err = UpsertProjectGroups(projectGroups, groupsWrapper, &projModel, projectsWrapper, projectID, projectName, accessManagementWrapper, nil)
+			if err != nil {
+				return projectID, err
 			}
 		}
 	}
 	return projectID, err
+}
+
+func verifyApplicationAssociationDone(applicationID []string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+	var applicationRes *wrappers.ApplicationsResponseModel
+	var err error
+	params := make(map[string]string)
+	params["id"] = applicationID[0]
+
+	logger.PrintIfVerbose("polling application until project association done or timeout of 2 min")
+	start := time.Now()
+	timeout := 2 * time.Minute
+	for applicationRes != nil && len(applicationRes.Applications) > 0 &&
+		!slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
+		applicationRes, err = applicationsWrapper.Get(params)
+		if err != nil {
+			return err
+		} else if time.Since(start) < timeout {
+			return errors.Errorf(ErrorCodeFormat, failedProjectApplicationAssociation)
+		}
+	}
+
+	logger.PrintIfVerbose("application association done successfully")
+	return nil
 }
 
 func updateProject(
@@ -686,6 +700,7 @@ func updateProject(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectName string,
 	applicationID []string,
 
@@ -739,32 +754,44 @@ func updateProject(
 	}
 
 	if applicationID != nil && len(applicationID) > 0 {
-		//todo: replace with a pooling mechanize that check if the application associated with application(only when assign application)
-		time.Sleep(35 * time.Second)
-		logger.PrintIfVerbose("slept 35")
+		err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
+		if err != nil {
+			return projectID, err
+		}
 	}
 
 	if projectGroups != "" {
-		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
-		if groupErr != nil {
-			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-		}
-		groups := append(getGroupsForRequest(groupsMap), projModelResp.Groups...)
-		if !wrappers.FeatureFlags[accessManagementEnabled] {
-			projModel.Groups = groups
-			logger.PrintIfVerbose("Updating project groups")
-			err = projectsWrapper.Update(projectID, &projModel)
-			if err != nil {
-				return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-			}
-		} else {
-			err = assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
-			if err != nil {
-				return projectID, err
-			}
+		err = UpsertProjectGroups(projectGroups, groupsWrapper, &projModel, projectsWrapper, projectID, projectName, accessManagementWrapper, projModelResp)
+		if err != nil {
+			return projectID, err
 		}
 	}
 	return projectID, nil
+}
+
+func UpsertProjectGroups(projectGroups string, groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper, projectID string, projectName string, accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel) error {
+	groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
+	if groupErr != nil {
+		return errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
+	}
+
+	projModel.Groups = getGroupsForRequest(groupsMap)
+	if projModelResp != nil {
+		groups := append(getGroupsForRequest(groupsMap), projModelResp.Groups...)
+		projModel.Groups = groups
+	}
+
+	err := assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
+	if err != nil {
+		return err
+	}
+
+	logger.PrintIfVerbose("Updating project groups")
+	err = projectsWrapper.Update(projectID, projModel)
+	if err != nil {
+		return errors.Errorf("%s: %v", failedUpdatingProj, err)
+	}
+	return nil
 }
 
 func createApplicationIds(applicationID, existingApplicationIds []string) []string {
@@ -865,6 +892,7 @@ func setupScanTypeProjectAndConfig(
 		projectsWrapper,
 		groupsWrapper,
 		accessManagementWrapper,
+		applicationsWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
