@@ -1874,27 +1874,17 @@ func applyThreshold(
 func parseThreshold(threshold string) map[string]int {
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
-		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
+		threshold = normalizeThresholds(threshold)
 		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
-			limit := strings.Split(limits, "=")
-			engineName := limit[0]
-			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
-			if len(limit) > 1 {
-				intLimit, err := strconv.Atoi(limit[1])
-				if err != nil || intLimit < 1 {
-					if err != nil {
-						log.Println("Error parsing threshold limit:", err)
-					} else {
-						log.Printf("Error [%s]: Skipping threshold check - Threshold limit should be greater or equal to 1\n", engineName)
-					}
-				} else {
-					thresholdMap[engineName] = intLimit
-				}
+			engineName, intLimit, err := parseThresholdLimit(limits)
+			if err != nil {
+				log.Printf("Error parsing threshold: %s", err)
+			} else {
+				thresholdMap[engineName] = intLimit
 			}
 		}
 	}
-
 	return thresholdMap
 }
 
@@ -2496,7 +2486,47 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
+	err = validateThresholds(cmd)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func validateThresholds(cmd *cobra.Command) error {
+	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
+	if threshold == "" {
+		return nil
+	}
+	threshold = normalizeThresholds(threshold)
+	thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
+	for _, limit := range thresholdLimits {
+		engineName, intLimit, err := parseThresholdLimit(limit)
+		if err != nil {
+			return errors.Errorf("Error parsing threshold limit: %s\n", err)
+		}
+		if intLimit < 1 {
+			return errors.Errorf("%s: Threshold limit should be greater or equal to 1\n", engineName)
+		}
+	}
+	return nil
+}
+
+func normalizeThresholds(threshold string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
+}
+
+func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
+	parts := strings.Split(limit, "=")
+	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
+	if len(parts) > 1 {
+		intLimit, err = strconv.Atoi(parts[1])
+		if err != nil {
+			err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
+		}
+	}
+	return engineName, intLimit, err
 }
 
 func validateBooleanString(value string) error {
