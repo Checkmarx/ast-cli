@@ -282,7 +282,7 @@ func TestCreateScanBranches(t *testing.T) {
 func TestCreateScanWithProjectGroup(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup",
+		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
 	)
 	assert.Assert(t, err.Error() == "Failed updating a project: Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
 }
