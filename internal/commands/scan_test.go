@@ -743,6 +743,9 @@ func Test_validateThresholds(t *testing.T) {
 		return
 	}
 	err = mockCmdMissingThreshold.Flags().Set(commonParams.Threshold, "sast-high=5,kics-medium=")
+	if err != nil {
+		return
+	}
 
 	tests := []struct {
 		name    string
