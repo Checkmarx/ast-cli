@@ -678,3 +678,91 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
+
+func Test_parseThresholdLimit(t *testing.T) {
+	type args struct {
+		limit string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantEngineName string
+		wantIntLimit   int
+		wantErr        bool
+	}{
+		{
+			name:           "Test parseThresholdLimit with valid limit Success",
+			args:           args{limit: "sast-low=1"},
+			wantEngineName: "sast-low",
+			wantIntLimit:   1,
+			wantErr:        false,
+		},
+		{
+			name:           "Test parseThresholdLimit with invalid limit Fail",
+			args:           args{limit: "kics-medium=error"},
+			wantEngineName: "iac-security-medium",
+			wantIntLimit:   0,
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotEngineName, gotIntLimit, err := parseThresholdLimit(tt.args.limit)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseThresholdLimit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotEngineName != tt.wantEngineName {
+				t.Errorf("parseThresholdLimit() gotEngineName = %v, want %v", gotEngineName, tt.wantEngineName)
+			}
+			if gotIntLimit != tt.wantIntLimit {
+				t.Errorf("parseThresholdLimit() gotIntLimit = %v, want %v", gotIntLimit, tt.wantIntLimit)
+			}
+		})
+	}
+}
+
+func Test_validateThresholds(t *testing.T) {
+	mockCmdEmptyThreshold := &cobra.Command{}
+	mockCmdValidThreshold := &cobra.Command{}
+	mockCmdInvalidThreshold := &cobra.Command{}
+
+	err := mockCmdValidThreshold.Flags().Set(commonParams.Threshold, "sast-meDium=5,KICKS-low=10")
+	if err != nil {
+		return
+	}
+	err = mockCmdInvalidThreshold.Flags().Set(commonParams.Threshold, "kics-low=-3")
+	if err != nil {
+		return
+	}
+
+	tests := []struct {
+		name    string
+		args    *cobra.Command
+		wantErr bool
+	}{
+		{
+			name:    "Test Empty Threshold Success",
+			args:    mockCmdEmptyThreshold,
+			wantErr: false,
+		},
+		{
+			name:    "Test Valid Threshold Success",
+			args:    mockCmdValidThreshold,
+			wantErr: false,
+		},
+		{
+			name:    "Test Invalid Threshold FAIL",
+			args:    mockCmdInvalidThreshold,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateThresholds(tt.args); (err != nil) != tt.wantErr {
+				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
