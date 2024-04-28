@@ -706,6 +706,7 @@ func Test_parseThresholdLimit(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			gotEngineName, gotIntLimit, err := parseThresholdLimit(tt.args.limit)
 			if (err != nil) != tt.wantErr {
@@ -759,6 +760,7 @@ func Test_validateThresholds(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if err := validateThresholds(tt.args); (err != nil) != tt.wantErr {
 				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
