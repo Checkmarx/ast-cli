@@ -210,11 +210,12 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	mainBranch, _ := cmd.Flags().GetString(commonParams.MainBranchFlag)
 	_ = json.Unmarshal(*input, &info)
-	if projectName != "" {
-		info["name"] = projectName
-	} else {
+	if projectName == "" {
 		return errors.Errorf(errorConstants.ProjectNameIsRequired)
 	}
+
+	info["name"] = projectName
+
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
 	}
