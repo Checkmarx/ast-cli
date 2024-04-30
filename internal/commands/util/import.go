@@ -24,6 +24,10 @@ func NewImportCommand(
 		Use:   "import",
 		Short: "Import SAST scan results",
 		Long:  "The import command enables you to import SAST scan results from an external source into Checkmarx One. The results must be submitted in sarif format.",
+		Example: heredoc.Doc(
+			`
+			$ cx utils import --project-name <project name>  --import-file-path <file path>
+		`),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
