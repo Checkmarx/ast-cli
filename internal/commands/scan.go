@@ -645,11 +645,7 @@ func setupScanTypeProjectAndConfig(
 		return errors.Errorf("Project name is required")
 	}
 
-	applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
-	if err != nil {
-		return err
-	}
-
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var applicationID []string
 	if applicationName != "" {
 		application, getAppErr := getApplication(applicationName, applicationsWrapper)

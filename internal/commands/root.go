@@ -228,10 +228,7 @@ func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 }
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
-	filters, err := cmd.Flags().GetStringSlice(params.FilterFlag)
-	if err != nil {
-		return nil, err
-	}
+	filters, _ := cmd.Flags().GetStringSlice(params.FilterFlag)
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")

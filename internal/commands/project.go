@@ -230,13 +230,8 @@ func runCreateProjectCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
-		if err != nil {
-			return err
-		}
-
+		applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 		var applicationID []string
-
 		if applicationName != "" {
 			application, getAppErr := getApplication(applicationName, applicationsWrapper)
 			if getAppErr != nil {
@@ -249,7 +244,7 @@ func runCreateProjectCommand(
 		}
 
 		var input = []byte("{}")
-		err = updateProjectRequestValues(&input, cmd)
+		err := updateProjectRequestValues(&input, cmd)
 		if err != nil {
 			return err
 		}
