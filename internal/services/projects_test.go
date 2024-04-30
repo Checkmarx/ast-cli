@@ -56,7 +56,14 @@ func TestFindProject(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FindProject(ttt.args.applicationID, ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.applicationsWrapper)
+			got, err := FindProject(
+				ttt.args.applicationID,
+				ttt.args.projectName,
+				ttt.args.cmd,
+				ttt.args.projectsWrapper,
+				ttt.args.groupsWrapper,
+				ttt.args.accessManagementWrapper,
+				ttt.args.applicationsWrapper)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
