@@ -168,13 +168,15 @@ func Test_createProject(t *testing.T) {
 func Test_updateProject(t *testing.T) {
 	type args struct {
 		resp                    *wrappers.ProjectsCollectionResponseModel
-		cmd                     *cobra.Command
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
 		applicationsWrapper     wrappers.ApplicationsWrapper
 		projectName             string
 		applicationID           []string
+		projectGroups           string
+		projectTags             string
+		projectPrivatePackage   string
 	}
 	tests := []struct {
 		name    string
@@ -188,26 +190,86 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
-			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
 			applicationID:           nil,
 		}, want: "ID-project-name", wantErr: false},
+		{name: "without app ID and with project tags", args: args{
+			resp: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "ID-project-name", Name: "project-name"}},
+			},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectName:             "project-name",
+			projectTags:             "tag1,tag2",
+			applicationID:           nil,
+		}, want: "ID-project-name", wantErr: false},
+		{name: "When called with application ID", args: args{
+			resp: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "ID-project-name", Name: "project-name"}},
+			},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectName:             "project-name",
+			applicationID:           []string{"app1"},
+			projectPrivatePackage:   "true",
+		}, want: "ID-project-name", wantErr: false},
+		{name: "When called with application ID", args: args{
+			resp: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "ID-project-name", Name: "project-name"}},
+			},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectName:             "project-name",
+			applicationID:           []string{"app1"},
+			projectTags:             "tag1,tag2",
+		}, want: "ID-project-name", wantErr: false},
+		{name: "When called with application ID", args: args{
+			resp: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "ID-project-name", Name: "project-name"}},
+			},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectName:             "project-name",
+			applicationID:           []string{"app1"},
+			projectGroups:           "grp1,grp2",
+		}, want: "ID-project-name", wantErr: false},
+		{name: "When called with mock fake error model return fake error from project create", args: args{
+			projectName: "mock-some-error-model",
+			resp: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "ID-mock-some-error-model", Name: "mock-some-error-model"}},
+			},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			applicationID:           []string{"1"},
+		}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := updateProject(
 				ttt.args.resp,
-				ttt.args.cmd,
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
 				ttt.args.applicationsWrapper,
 				ttt.args.projectName,
-				ttt.args.applicationID)
+				ttt.args.applicationID,
+				ttt.args.projectGroups,
+				ttt.args.projectTags,
+				ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return

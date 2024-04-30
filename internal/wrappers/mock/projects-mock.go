@@ -64,6 +64,9 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	*wrappers.ProjectResponseModel,
 	*wrappers.ErrorModel,
 	error) {
+	if projectID == "ID-mock-some-error-model" {
+		return nil, &wrappers.ErrorModel{Code: 202, Message: "some-message"}, nil
+	}
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &wrappers.ProjectResponseModel{
 		ID: projectID,

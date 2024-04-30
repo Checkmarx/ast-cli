@@ -39,7 +39,20 @@ func FindProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, projectName, applicationID)
+			projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
+			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+			return updateProject(
+				resp,
+				projectsWrapper,
+				groupsWrapper,
+				accessManagementWrapper,
+				applicationWrapper,
+				projectName,
+				applicationID,
+				projectGroups,
+				projectTags,
+				projectPrivatePackage)
 		}
 	}
 
@@ -122,20 +135,19 @@ func verifyApplicationAssociationDone(applicationID []string, projectID string, 
 //nolint:gocyclo
 func updateProject(
 	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectName string,
 	applicationID []string,
+	projectGroups string,
+	projectTags string,
+	projectPrivatePackage string,
 
 ) (string, error) {
 	var projectID string
 	var projModel = wrappers.Project{}
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
 			projectID = resp.Projects[i].ID
