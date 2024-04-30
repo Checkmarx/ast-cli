@@ -40,8 +40,8 @@ func TestAssignGroupsToProject(t *testing.T) {
 		ttt := tt
 		wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProject(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
-				t.Errorf("AssignGroupsToProject() error = %v, wantErr %v", err, ttt.wantErr)
+			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
+				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})
 	}

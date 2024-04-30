@@ -24,7 +24,6 @@ import (
 const (
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
-
 	projOriginLevel       = "Project"
 	repoConfKey           = "scan.handler.git.repository"
 	sshConfKey            = "scan.handler.git.sshKey"
@@ -283,7 +282,7 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
 		}
-		err = services.AssignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
 		if err != nil {
 			return err
 		}

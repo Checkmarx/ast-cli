@@ -35,6 +35,7 @@ func NewUtilsCommand(
 	uploadsWrapper wrappers.UploadsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	byorWrapper wrappers.ByorWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
@@ -55,7 +56,7 @@ func NewUtilsCommand(
 		},
 	}
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper)
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper)
 
 	envCheckCmd := NewEnvCheckCommand()
 

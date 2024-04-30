@@ -183,6 +183,7 @@ func NewAstCLI(
 		uploadsWrapper,
 		groupsWrapper,
 		accessManagementWrapper,
+		applicationsWrapper,
 		byorWrapper,
 	)
 

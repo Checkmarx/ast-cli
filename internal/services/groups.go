@@ -40,7 +40,7 @@ func getGroupsForRequest(groups []*wrappers.Group) []string {
 	return nil
 }
 
-func AssignGroupsToProject(projectID string, projectName string, groups []*wrappers.Group,
+func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper) error {
 	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		return nil
