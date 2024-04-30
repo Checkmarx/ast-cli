@@ -16,6 +16,7 @@ func TestFindProject(t *testing.T) {
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -33,6 +34,7 @@ func TestFindProject(t *testing.T) {
 				projectsWrapper:         &mock.ProjectsMockWrapper{},
 				groupsWrapper:           &mock.GroupsMockWrapper{},
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
 			},
 			want:    "MOCK",
 			wantErr: false,
@@ -54,7 +56,7 @@ func TestFindProject(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FindProject(ttt.args.applicationID, ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper)
+			got, err := FindProject(ttt.args.applicationID, ttt.args.projectName, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.groupsWrapper, ttt.args.accessManagementWrapper, ttt.args.applicationsWrapper)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -73,6 +75,7 @@ func Test_createProject(t *testing.T) {
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
 		applicationID           []string
 		projectGroups           string
 		projectPrivatePackage   string
@@ -140,6 +143,7 @@ func Test_createProject(t *testing.T) {
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
+				ttt.args.applicationsWrapper,
 				ttt.args.applicationID,
 				ttt.args.projectGroups,
 				ttt.args.projectPrivatePackage)
@@ -161,6 +165,7 @@ func Test_updateProject(t *testing.T) {
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
 		projectName             string
 		applicationID           []string
 	}
@@ -193,6 +198,7 @@ func Test_updateProject(t *testing.T) {
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
+				ttt.args.applicationsWrapper,
 				ttt.args.projectName,
 				ttt.args.applicationID)
 			if (err != nil) != ttt.wantErr {
