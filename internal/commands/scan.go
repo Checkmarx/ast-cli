@@ -667,7 +667,6 @@ func setupScanTypeProjectAndConfig(
 		projectsWrapper,
 		groupsWrapper,
 		accessManagementWrapper,
-		applicationsWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
