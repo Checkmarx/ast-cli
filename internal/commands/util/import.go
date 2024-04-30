@@ -52,10 +52,7 @@ func runImportCommand(
 			return err
 		}
 
-		projectName, err := cmd.Flags().GetString(commonParams.ProjectName)
-		if err != nil {
-			return err
-		}
+		projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 		if projectName == "" {
 			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
@@ -75,10 +72,7 @@ func runImportCommand(
 }
 
 func validateFilePath(cmd *cobra.Command) (string, error) {
-	importFilePath, err := cmd.Flags().GetString(commonParams.ImportFilePath)
-	if err != nil {
-		return "", err
-	}
+	importFilePath, _ := cmd.Flags().GetString(commonParams.ImportFilePath)
 	if importFilePath == "" {
 		return "", errors.Errorf(errorConstants.ImportFilePathIsRequired)
 	}

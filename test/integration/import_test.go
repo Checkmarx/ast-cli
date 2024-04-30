@@ -45,7 +45,7 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 		defer deleteProject(t, projectId)
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), projectName,
 			flag(params.ImportFilePath), ".\\data\\sarif.zip",
 		}
@@ -66,7 +66,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 		defer deleteProjectByName(t, projectName)
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), projectName,
 			flag(params.ImportFilePath), ".\\data\\sarif.sarif",
 		}
@@ -87,7 +87,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 		defer deleteProjectByName(t, projectName)
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), projectName,
 			flag(params.ImportFilePath), ".\\data\\sarif-missing-version.sarif",
 		}
@@ -108,7 +108,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 		projectName := projectNameRandom
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), projectName,
 			flag(params.ImportFilePath), ".\\data\\malformed-sarif.sarif",
 		}
@@ -129,7 +129,7 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 		projectName := projectNameRandom
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), projectName,
 		}
 		err, _ := executeCommand(t, args...)
@@ -147,7 +147,7 @@ func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *t
 	} else {
 
 		args := []string{
-			"utils import",
+			"utils", "import",
 			flag(params.ProjectName), "",
 			flag(params.ImportFilePath), ".\\data\\sarif.sarif",
 		}
