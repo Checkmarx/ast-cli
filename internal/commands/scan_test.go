@@ -282,9 +282,9 @@ func TestCreateScanBranches(t *testing.T) {
 func TestCreateScanWithProjectGroup(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--project-groups", "invalidGroup",
+		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
 	)
-	assert.Assert(t, err.Error() == "Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
+	assert.Assert(t, err.Error() == "Failed updating a project: Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
 }
 
 func TestScanWorkflowMissingID(t *testing.T) {
@@ -677,4 +677,89 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func Test_parseThresholdLimit(t *testing.T) {
+	type args struct {
+		limit string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantEngineName string
+		wantIntLimit   int
+		wantErr        bool
+	}{
+		{
+			name:           "Test parseThresholdLimit with valid limit Success",
+			args:           args{limit: "sast-low=1"},
+			wantEngineName: "sast-low",
+			wantIntLimit:   1,
+			wantErr:        false,
+		},
+		{
+			name:           "Test parseThresholdLimit with invalid limit Fail",
+			args:           args{limit: "kics-medium=error"},
+			wantEngineName: "iac-security-medium",
+			wantIntLimit:   0,
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			gotEngineName, gotIntLimit, err := parseThresholdLimit(tt.args.limit)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseThresholdLimit() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotEngineName != tt.wantEngineName {
+				t.Errorf("parseThresholdLimit() gotEngineName = %v, want %v", gotEngineName, tt.wantEngineName)
+			}
+			if gotIntLimit != tt.wantIntLimit {
+				t.Errorf("parseThresholdLimit() gotIntLimit = %v, want %v", gotIntLimit, tt.wantIntLimit)
+			}
+		})
+	}
+}
+
+func Test_validateThresholds(t *testing.T) {
+	tests := []struct {
+		name         string
+		thresholdMap map[string]int
+		wantErr      bool
+	}{
+		{
+			name: "Valid Thresholds",
+			thresholdMap: map[string]int{
+				"sast-medium": 5,
+				"sast-high":   10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid Threshold - Negative Limit",
+			thresholdMap: map[string]int{
+				"sca-medium": -3,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid Threshold - Zero Limit",
+			thresholdMap: map[string]int{
+				"sca-high": 0,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateThresholds(tt.thresholdMap)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

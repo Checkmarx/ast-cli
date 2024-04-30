@@ -74,7 +74,7 @@ func getGroupIds(groups []*wrappers.Group) []string {
 	return groupIds
 }
 
-func assignGroupsToProject(projectID string, projectName string, groups []*wrappers.Group,
+func assignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper) error {
 	if !wrappers.FeatureFlags[accessManagementEnabled] {
 		return nil
