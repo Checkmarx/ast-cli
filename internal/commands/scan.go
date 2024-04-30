@@ -646,6 +646,7 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
+
 	var applicationID []string
 	if applicationName != "" {
 		application, getAppErr := getApplication(applicationName, applicationsWrapper)
@@ -685,12 +686,9 @@ func setupScanTypeProjectAndConfig(
 		)
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
-		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-		if err != nil {
-			return err
-		}
+		resubmitConfig, _ = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
 	} else if _, ok := info["config"]; !ok {
-		err = json.Unmarshal([]byte("[]"), &configArr)
+		err := json.Unmarshal([]byte("[]"), &configArr)
 		if err != nil {
 			return err
 		}
@@ -713,8 +711,13 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, apiSecConfig)
 	}
 	info["config"] = configArr
-	*input, err = json.Marshal(info)
-	return err
+	var err2 error
+	*input, err2 = json.Marshal(info)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
 }
 
 func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
