@@ -667,7 +667,6 @@ func setupScanTypeProjectAndConfig(
 		projectsWrapper,
 		groupsWrapper,
 		accessManagementWrapper,
-		applicationsWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
@@ -1368,12 +1367,6 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
-		threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
-		thresholdMap := parseThreshold(threshold)
-		err = validateThresholds(thresholdMap)
-		if err != nil {
-			return err
-		}
 		scanModel, zipFilePath, err := createScanModel(
 			cmd,
 			uploadsWrapper,
@@ -1437,7 +1430,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
 			if err != nil {
 				return err
 			}
@@ -1679,11 +1672,13 @@ func applyThreshold(
 	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
-	thresholdMap map[string]int,
 ) error {
-	if len(thresholdMap) == 0 {
+	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
+	if strings.TrimSpace(threshold) == "" {
 		return nil
 	}
+
+	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
 	if err != nil {
@@ -1719,22 +1714,25 @@ func applyThreshold(
 }
 
 func parseThreshold(threshold string) map[string]int {
-	if strings.TrimSpace(threshold) == "" {
-		return nil
-	}
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
 		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
 		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
-			engineName, intLimit, err := parseThresholdLimit(limits)
-			if err != nil {
-				log.Printf("%s", err)
-			} else {
-				thresholdMap[engineName] = intLimit
+			limit := strings.Split(limits, "=")
+			engineName := limit[0]
+			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
+			if len(limit) > 1 {
+				intLimit, err := strconv.Atoi(limit[1])
+				if err != nil {
+					log.Println("Error parsing threshold limit: ", err)
+				} else {
+					thresholdMap[engineName] = intLimit
+				}
 			}
 		}
 	}
+
 	return thresholdMap
 }
 
@@ -2337,35 +2335,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 
 	return nil
-}
-
-func validateThresholds(thresholdMap map[string]int) error {
-	var errMsgBuilder strings.Builder
-
-	for engineName, limit := range thresholdMap {
-		if limit < 1 {
-			errMsgBuilder.WriteString(errors.Errorf("Invalid value for threshold limit %s. Threshold should be greater or equal to 1.\n", engineName).Error())
-		}
-	}
-
-	errMsg := errMsgBuilder.String()
-	if errMsg != "" {
-		return errors.New(errMsg)
-	}
-	return nil
-}
-
-func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
-	parts := strings.Split(limit, "=")
-	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
-	if len(parts) <= 1 {
-		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
-	}
-	intLimit, err = strconv.Atoi(parts[1])
-	if err != nil {
-		err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
-	}
-	return engineName, intLimit, err
 }
 
 func validateBooleanString(value string) error {

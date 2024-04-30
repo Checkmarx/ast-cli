@@ -22,18 +22,14 @@ import (
 )
 
 const (
-	failedCreatingProj                  = "Failed creating a project"
-	failedUpdatingProj                  = "Failed updating a project"
-	failedProjectApplicationAssociation = "Failed association project to application"
-	failedGettingProj                   = "Failed getting a project"
-	failedDeletingProj                  = "Failed deleting a project"
-	failedGettingBranches               = "Failed getting branches for project"
-	failedFindingGroup                  = "Failed finding groups"
-	projOriginLevel                     = "Project"
-	repoConfKey                         = "scan.handler.git.repository"
-	sshConfKey                          = "scan.handler.git.sshKey"
-	mandatoryRepoURLError               = "flag --repo-url is mandatory when --ssh-key is provided"
-	invalidRepoURL                      = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
+	failedDeletingProj    = "Failed deleting a project"
+	failedGettingBranches = "Failed getting branches for project"
+
+	projOriginLevel       = "Project"
+	repoConfKey           = "scan.handler.git.repository"
+	sshConfKey            = "scan.handler.git.sshKey"
+	mandatoryRepoURLError = "flag --repo-url is mandatory when --ssh-key is provided"
+	invalidRepoURL        = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
 )
 
 var (
