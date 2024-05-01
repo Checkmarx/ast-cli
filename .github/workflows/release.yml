@@ -65,8 +65,9 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          brew install docker@4.28
-          colima start
+          brew install docker
+          brew install colima
+          brew services start colima
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
