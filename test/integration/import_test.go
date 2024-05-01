@@ -25,7 +25,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), projectName,
-			flag(params.ImportFilePath), ".\\data\\sarif.sarif",
+			flag(params.ImportFilePath), "data/sarif.sarif",
 		}
 		err, _ := executeCommand(t, args...)
 
@@ -47,7 +47,7 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), projectName,
-			flag(params.ImportFilePath), ".\\data\\sarif.zip",
+			flag(params.ImportFilePath), "data/sarif.zip",
 		}
 		err, _ := executeCommand(t, args...)
 
@@ -68,7 +68,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), projectName,
-			flag(params.ImportFilePath), ".\\data\\sarif.sarif",
+			flag(params.ImportFilePath), "data/sarif.sarif",
 		}
 		err, _ := executeCommand(t, args...)
 
@@ -89,7 +89,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), projectName,
-			flag(params.ImportFilePath), ".\\data\\sarif-missing-version.sarif",
+			flag(params.ImportFilePath), "data/sarif-missing-version.sarif",
 		}
 		err, _ := executeCommand(t, args...)
 
@@ -110,7 +110,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), projectName,
-			flag(params.ImportFilePath), ".\\data\\malformed-sarif.sarif",
+			flag(params.ImportFilePath), "data/malformed-sarif.sarif",
 		}
 		err, _ := executeCommand(t, args...)
 		defer deleteProjectByName(t, projectName)
@@ -149,7 +149,7 @@ func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *t
 		args := []string{
 			"utils", "import",
 			flag(params.ProjectName), "",
-			flag(params.ImportFilePath), ".\\data\\sarif.sarif",
+			flag(params.ImportFilePath), "data/sarif.sarif",
 		}
 		err, _ := executeCommand(t, args...)
 		assertError(t, err, errorConstants.ProjectNameIsRequired)
