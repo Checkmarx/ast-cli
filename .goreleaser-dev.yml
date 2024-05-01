@@ -32,8 +32,6 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-      # Add an additional flag to generate a signing script
-      - -X github.com/checkmarx/ast-cli/internal/params.SignScript={{.BuildDir}}/sign_script.sh
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
