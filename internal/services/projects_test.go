@@ -111,7 +111,7 @@ func Test_createProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			applicationID:           []string{"1"},
 			projectGroups:           "grp1,grp2",
-		}, want: "", wantErr: true},
+		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName:             "mock-some-error-model",
 			cmd:                     &cobra.Command{},
@@ -129,7 +129,7 @@ func Test_createProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			applicationID:           []string{"1"},
 			projectGroups:           "fake-group-error",
-		}, want: "", wantErr: true},
+		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
 			projectName:             "new-project-name",
 			cmd:                     &cobra.Command{},
