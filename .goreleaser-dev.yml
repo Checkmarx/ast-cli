@@ -60,6 +60,7 @@ archives:
       386: x32
     files:
       - LICENSE
+      - ./dist/cx-win/cx.msi
   - id: cx-mac-universal
     builds:
       - cx-mac-universal
@@ -74,6 +75,11 @@ universal_binaries:
     name_template: "cx"
     hooks:
       post: gon gonMac.hcl
+  - id: cx-win
+    replace: true
+    name_template: "cx"
+    hooks:
+      post: gon gonWin.hcl
 
 blobs:
   - provider: s3
