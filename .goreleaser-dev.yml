@@ -47,8 +47,9 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-    hooks:
-      post: gon gonMac.hcl
+signs:
+  - artifacts:
+      - "*.exe"
 
 archives:
   - id: cx
