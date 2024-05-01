@@ -74,7 +74,7 @@ jobs:
         DVMjbYwcYmv4QClRTI2MeC34isyHMc4ZKCfATGjco4fhC+YRQm/T/ietNZiVrsu8
         cQIDAQAB
         -----END PUBLIC KEY-----
-      EXE_PATH: ./dist/cx-win/cx.exe
+      EXE_PATH: ./cx.exe
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -143,6 +143,10 @@ jobs:
           echo "GR_ARGS=${args}" >> $GITHUB_ENV
       - name: Install OpenSSL
         run: brew install openssl
+      - name: Print current directory and list files
+        run: |
+          pwd
+          ls -la
       - name: Sign Windows Executable
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
