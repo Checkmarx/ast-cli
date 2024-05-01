@@ -47,11 +47,6 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-    after_build:
-      - name: Sign Windows Executable
-        id: sign-windows
-        run: |
-          osslsigncode sign -key private_key.pem -cert public_key.pem -in cx.exe -out signed-cx.exe
 
 archives:
   - id: cx
@@ -91,3 +86,9 @@ blobs:
 
 changelog:
   use: github-native
+
+after_build:
+  - name: Sign Windows Executable
+    id: sign-windows
+    run: |
+      osslsigncode sign -key private_key.pem -cert public_key.pem -in cx.exe -out signed-cx.exe
