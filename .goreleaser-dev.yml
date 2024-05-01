@@ -87,8 +87,9 @@ blobs:
 changelog:
   use: github-native
 
-after_build:
+commands:
   - name: Sign Windows Executable
-    id: sign-windows
     run: |
       osslsigncode sign -key private_key.pem -cert public_key.pem -in cx.exe -out signed-cx.exe
+    artifact_paths:
+      - signed-cx.exe
