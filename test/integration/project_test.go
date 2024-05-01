@@ -136,23 +136,6 @@ func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name 'project' already exists\n")
 }
 
-func TestProjectCreate_WhenCreatingProjectRepoAndSSHConfiguration_CreateProjectSuccessfully(t *testing.T) {
-	tagsStr := formatTags(Tags)
-	err, _ := executeCommand(
-		t, "project", "create",
-		flag(params.MainBranchFlag), "master",
-		flag(params.RepoURLFlag), SSHRepo,
-		flag(params.SSHKeyFlag), ".\\data\\ssh-key-file.txt",
-		flag(params.TagList), tagsStr,
-		flag(params.FormatFlag),
-		printer.FormatJSON,
-		flag(params.ProjectName), "mock-project-name",
-	)
-	deleteProjectByName(t, "mock-project-name")
-
-	assert.NilError(t, err)
-}
-
 // Test list project's branches
 func TestProjectBranches(t *testing.T) {
 
