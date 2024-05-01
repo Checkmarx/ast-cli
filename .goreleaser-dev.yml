@@ -8,7 +8,7 @@ builds:
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
-    binary: cx
+  - binary: cx
     id: cx
     goos:
       - linux
@@ -28,6 +28,8 @@ builds:
         goarch: arm
       - goos: windows
         goarch: arm64
+    hooks:
+      post: gon gonMac.hcl
     ldflags:
       - -s
       - -w
@@ -35,7 +37,7 @@ builds:
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
-    binary: cx
+  - binary: cx
     id: cx-mac-universal
     goos:
       - darwin
@@ -47,9 +49,8 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-signs:
-  - artifacts: ["*.exe"]
-    cmd: "./sign.sh ."
+    hooks:
+      post: gon gonMac.hcl
 
 archives:
   - id: cx
