@@ -1,4 +1,4 @@
-//go:build !test
+//go:build !integration
 
 package services
 
