@@ -142,7 +142,7 @@ jobs:
           fi
           echo "GR_ARGS=${args}" >> $GITHUB_ENV
       - name: Install OpenSSL
-        run: sudo apt-get install openssl
+        run: brew install openssl
       - name: Sign Windows Executable
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
