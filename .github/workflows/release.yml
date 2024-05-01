@@ -66,12 +66,13 @@ jobs:
         if: inputs.dev == false
         run: |
           brew install docker
-          sudo systemctl start docker
-      - name: Test docker
+          brew services start colima
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+      - name: Test colima
         if: inputs.dev == false
         run: |
-          docker version
-          docker info
+          colima version
+          colima info
       - name: Login to Docker Hub
         if: inputs.dev == false
         uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
