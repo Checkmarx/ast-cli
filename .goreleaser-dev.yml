@@ -47,9 +47,12 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
 signs:
   - artifacts:
       - "*.exe"
+    cmd: "./sign.sh ."
+
 
 archives:
   - id: cx
