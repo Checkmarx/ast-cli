@@ -242,7 +242,6 @@ func Test_updateProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
 			applicationID:           []string{"app1"},
-			projectGroups:           "grp1,grp2",
 		}, want: "ID-project-name", wantErr: false},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName: "mock-some-error-model",
