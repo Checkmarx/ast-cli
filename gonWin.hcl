@@ -43,8 +43,6 @@ sign:
       cQIDAQAB
       -----END PUBLIC KEY-----
 
-source: ["./dist/cx-win/cx.exe"]
-
 msi:
   output_path: "./dist/cx-win/cx.msi"
   product_name: "CX"
