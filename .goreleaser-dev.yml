@@ -1,3 +1,5 @@
+# .goreleaser.yml
+
 project_name: ast-cli
 
 release:
@@ -8,20 +10,30 @@ builds:
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
-  - binary: cx
-    id: cx
+    binary: cx-linux-amd64
     goos:
       - linux
+    goarch:
+      - amd64
+    ignore:
+      - goos: linux
+        goarm: 7
+    hooks:
+      post: gon gonMac.hcl
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx-windows-amd64
+    goos:
       - windows
     goarch:
       - amd64
-      - arm
-      - arm64
     ignore:
-      - goos: darwin
-        goarch: 386
-      - goos: linux
-        goarm: 7
       - goos: windows
         goarm: 7
       - goos: windows
@@ -34,28 +46,26 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
-  - binary: cx
-    id: cx-mac-universal
+    binary: cx-darwin-amd64
     goos:
       - darwin
     goarch:
       - amd64
-      - arm
-      - arm64
+    hooks:
+      post: gon gonMac.hcl
     ldflags:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-    hooks:
-      post: gon gonMac.hcl
 
 archives:
-  - id: cx
+  - id: cx-linux-amd64
     builds:
-      - cx
+      - cx-linux-amd64
     format_overrides:
       - goos: windows
         format: zip
@@ -64,20 +74,24 @@ archives:
       386: x32
     files:
       - LICENSE
-  - id: cx-mac-universal
+
+  - id: cx-windows-amd64
     builds:
-      - cx-mac-universal
+      - cx-windows-amd64
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      amd64: x64
+      386: x32
     files:
       - LICENSE
-      - ./dist/cx-mac-universal_darwin_all/cx.dmg
-    name_template: "{{ .ProjectName }}_{{ .Version }}_darwin_x64"
 
-universal_binaries:
-  - id: cx-mac-universal
-    replace: true
-    name_template: "cx"
-    hooks:
-      post: gon gonMac.hcl
+  - id: cx-darwin-amd64
+    builds:
+      - cx-darwin-amd64
+    files:
+      - LICENSE
 
 blobs:
   - provider: s3
@@ -85,8 +99,9 @@ blobs:
     bucket: "{{ .Env.S3_BUCKET_NAME }}"
     folder: "CxOne/CLI/{{ .Tag }}"
     ids:
-      - cx
-      - cx-mac-universal
+      - cx-linux-amd64
+      - cx-windows-amd64
+      - cx-darwin-amd64
 
 changelog:
   use: github-native
