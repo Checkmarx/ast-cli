@@ -63,7 +63,7 @@ builds:
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
 archives:
-  - id: cx-linux-amd64
+  - id: cx-linux-amd64-archive
     builds:
       - cx-linux-amd64
     format_overrides:
@@ -75,7 +75,7 @@ archives:
     files:
       - LICENSE
 
-  - id: cx-windows-amd64
+  - id: cx-windows-amd64-archive
     builds:
       - cx-windows-amd64
     format_overrides:
@@ -87,7 +87,7 @@ archives:
     files:
       - LICENSE
 
-  - id: cx-darwin-amd64
+  - id: cx-darwin-amd64-archive
     builds:
       - cx-darwin-amd64
     files:
@@ -99,9 +99,9 @@ blobs:
     bucket: "{{ .Env.S3_BUCKET_NAME }}"
     folder: "CxOne/CLI/{{ .Tag }}"
     ids:
-      - cx-linux-amd64
-      - cx-windows-amd64
-      - cx-darwin-amd64
+      - cx-linux-amd64-archive
+      - cx-windows-amd64-archive
+      - cx-darwin-amd64-archive
 
 changelog:
   use: github-native
