@@ -66,6 +66,7 @@ jobs:
         if: inputs.dev == false
         run: |
           brew install docker
+          brew install colima
           brew services start colima
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test colima
