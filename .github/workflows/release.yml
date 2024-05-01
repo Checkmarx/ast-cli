@@ -65,6 +65,11 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
+          brew tap-new $USER/local-docker
+          brew tap homebrew/core --force
+          brew extract --version=25.0.5 docker $USER/local-docker
+          brew install docker@25.0.5
+          ln -s /usr/local/Cellar/docker@25.0.5/25.0.5/bin/docker@25.0.5 /usr/local/bin/docker
           brew install docker
           colima start
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
