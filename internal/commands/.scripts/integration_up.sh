@@ -14,7 +14,7 @@ go test \
   -tags integration \
   -v \
   -timeout 90m \
-  -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/wrappers \
+  -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
   github.com/checkmarx/ast-cli/test/integration
 
