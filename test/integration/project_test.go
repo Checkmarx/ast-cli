@@ -148,7 +148,7 @@ func TestProjectCreate_WhenCreatingProjectRepoAndSSHConfiguration_CreateProjectS
 		printer.FormatJSON,
 		flag(params.ProjectName), "mock-project-name",
 	)
-	defer deleteProjectByName(t, "mock-project-name")
+	deleteProjectByName(t, "mock-project-name")
 
 	assert.NilError(t, err)
 }
