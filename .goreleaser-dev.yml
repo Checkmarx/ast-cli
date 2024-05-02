@@ -47,14 +47,15 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-    hooks:
-      post build:
-        - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_linux_amd64.sig --detach-sig ./dist/{{ .Artifact }}
-          when:
-            - "build.env.GOOS == 'linux' && build.env.GOARCH == 'amd64'"
-        - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_windows_amd64.sig --detach-sig ./dist/{{ .Artifact }}
-          when:
-            - "build.env.GOOS == 'windows' && build.env.GOARCH == 'amd64'"
+    signs:
+      - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_linux_amd64.sig --detach-sig ./dist/{{ .Binary }}
+        artifacts:
+          - cx
+        info: signing Linux (amd64) binary
+      - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_windows_amd64.sig --detach-sig ./dist/{{ .Binary }}
+        artifacts:
+          - cx.exe
+        info: signing Windows (amd64) binary
 
 archives:
   - id: cx
