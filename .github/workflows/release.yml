@@ -69,10 +69,8 @@ jobs:
           brew tap homebrew/core --force
           brew extract --version=26.0.1 docker $USER/local-docker
           brew install docker@26.0.1
-          ln -s /usr/local/Cellar/docker@25.0.5/25.0.5/bin/docker@26.0.1 /usr/local/bin/docker
-          docker version
           colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          sudo ln -s /usr/local/Cellar/docker@25.0.5/25.0.5/bin/docker@26.0.1 /usr/local/bin/docker
       - name: Test docker
         if: inputs.dev == false
         run: |
