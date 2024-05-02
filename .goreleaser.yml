@@ -47,14 +47,14 @@ builds:
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
-#dockers:
-#  - use: docker
-#    dockerfile: Dockerfile
-#    image_templates:
-#      - "cxsdlc/ast-cli:latest"
-#      - "cxsdlc/ast-cli:{{ .Tag }}"
-#      - "checkmarx/ast-cli:latest"
-#      - "checkmarx/ast-cli:{{ .Tag }}"
+dockers:
+  - use: docker
+    dockerfile: Dockerfile
+    image_templates:
+      - "cxsdlc/ast-cli:latest"
+      - "cxsdlc/ast-cli:{{ .Tag }}"
+      - "checkmarx/ast-cli:latest"
+      - "checkmarx/ast-cli:{{ .Tag }}"
 
 archives:
   - id: cx
