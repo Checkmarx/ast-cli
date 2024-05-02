@@ -91,6 +91,14 @@ jobs:
 #        run: |
 #          docker version
 #          docker info
+      - name: install docker
+        if: inputs.dev == false
+        uses: docker-practice/actions-setup-docker@v1
+        timeout-minutes: 12
+        run: |
+          set -x
+          docker version      
+          docker run --rm hello-world
       - name: Login to Docker Hub
         if: inputs.dev == false
         uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
