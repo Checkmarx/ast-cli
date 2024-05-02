@@ -62,38 +62,9 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
-#      - name: Install and start docker 1
-#        if: inputs.dev == false
-#        run: curl -O https://download.docker.com/mac/static/stable/x86_64/docker-26.0.1.tgz
-#      - name: Install and start docker 2
-#        if: inputs.dev == false
-#        run: tar xzvf ./docker-26.0.1.tgz
-#      - name: Install and start docker 3
-#        if: inputs.dev == false
-#        run: sudo xattr -rc docker
-#      - name: Install and start docker 4
-#        if: inputs.dev == false
-#        run: sudo cp docker/docker /usr/local/bin/
-#      - name: Install and start docker 4.1
-#        if: inputs.dev == false
-#        run: docker/docker
-#      - name: Install and start docker 4.2
-#        if: inputs.dev == false
-#        run: docker/docker version
-#      - name: Install and start docker 5
-#        if: inputs.dev == false
-#        run: colima start
-#      - name: Install and start docker 6
-#        if: inputs.dev == false
-#        run: sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
-#      - name: Test docker
-#        if: inputs.dev == false
-#        run: |
-#          docker version
-#          docker info
       - name: install docker
         if: inputs.dev == false
-        uses: docker-practice/actions-setup-docker@v1
+        uses: papodaca/install-docker-action@v1
         timeout-minutes: 12
       - name: test docker
         if: inputs.dev == false
