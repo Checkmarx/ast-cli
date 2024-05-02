@@ -59,9 +59,10 @@ jobs:
           git config --global pack.window "0"
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew --version
-      - name: Install gon
+      - name: Install gon and apt
         run: |
           brew install Bearer/tap/gon
+          brew install apt
       - name: install docker
         if: inputs.dev == false
         uses: papodaca/install-docker-action@v1
