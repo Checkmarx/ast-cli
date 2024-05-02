@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -65,11 +65,16 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          brew tap-new $USER/local-docker
-          brew tap homebrew/core --force
-          brew extract --version=26.0.1 docker $USER/local-docker
-          brew install docker@26.0.1
-          sudo ln -s /usr/local/Cellar/docker@25.0.5/25.0.5/bin/docker@26.0.1 /usr/local/bin/docker
+        #          sudo apt-get remove docker docker-engine docker.io containerd runc
+        # add the Docker repository:
+          brew install apt
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        #  Install the specific version of Docker
+          sudo apt-get update
+          sudo apt-get install -y docker-ce=<VERSION_STRING> docker-ce-cli=<VERSION_STRING> containerd.io
           colima start
           sudo ln -sf $HOME/.colima/default/docker.sock /usr/local/bin/docker
       - name: Test docker
