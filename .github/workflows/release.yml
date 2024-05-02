@@ -69,9 +69,9 @@ jobs:
           brew install docker
           echo "Docker installed successfully."
           
-          echo "Starting Docker..."
-          brew services start docker
-          echo "Docker started successfully."
+#          echo "Starting Docker..."
+#          brew services start docker
+#          echo "Docker started successfully."
           
           echo "Installing Colima..."
           brew install colima
