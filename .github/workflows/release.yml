@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
