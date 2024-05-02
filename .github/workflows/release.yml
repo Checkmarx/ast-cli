@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -102,7 +102,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: latest
+          version: v1.18.2
           args: ${{ env.GR_ARGS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
