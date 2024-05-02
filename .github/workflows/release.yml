@@ -60,18 +60,15 @@ jobs:
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew --version
       - name: Install gon
-        run: |
-          brew install Bearer/tap/gon
+        run: brew install Bearer/tap/gon
       - name: install docker
-        if: inputs.dev == false
-        uses: docker/setup-buildx-action@v3
-        timeout-minutes: 12
-      - name: test docker
-        if: inputs.dev == false
-        run: |
-          set -x
-          docker version      
-          docker run --rm hello-world
+        run: brew install docker
+#      - name: test docker
+#        if: inputs.dev == false
+#        run: |
+#          set -x
+#          docker version
+#          docker run --rm hello-world
       - name: Login to Docker Hub
         if: inputs.dev == false
         uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
