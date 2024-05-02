@@ -65,22 +65,9 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          brew install docker
-          brew install qemu
-          brew install lima
-          brew install colima
-          colima start --arch aarch64
-          
-          # wait for colima to start
-          sleep 60
-
-          #check version colima
-          colima version
-          #check colima status
-          colima status
-          #change docker context
-          docker context use colima
-
+          brew install docker@26.0.1          
+          colima start
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
         run: |
