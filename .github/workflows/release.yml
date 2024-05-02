@@ -68,6 +68,8 @@ jobs:
           brew install docker
           brew install colima
           brew services start colima
+          colima delete
+          colima start
 
           # wait for cloima to start
           sleep 60
