@@ -62,14 +62,25 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
-      - name: Install and start docker
+      - name: Install Docker
         if: inputs.dev == false
         run: |
+          # Install Docker CLI using Homebrew
           brew install docker
-          dockerd &
-      - name: Test docker
+      - name: Start Docker engine daemon
         if: inputs.dev == false
         run: |
+          # Start Docker engine daemon
+          dockerd &
+      - name: Wait for Docker daemon to start
+        if: inputs.dev == false
+        run: |
+          # Wait for Docker daemon to start
+          sleep 10 
+      - name: Test Docker
+        if: inputs.dev == false
+        run: |
+          # Test Docker installation
           docker version
           docker info
       - name: Login to Docker Hub
