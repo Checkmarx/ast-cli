@@ -47,13 +47,14 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-signs:
-  - cmd: |
-      gpg --output "{{ .Artifact }}.sig" --detach-sig "{{ .Artifact }}"
-    artifacts:
-      - "cx_windows_amd64.zip"
-      - "cx_windows_arm64.zip"
-      - "cx_windows_arm.zip"
+    hooks:
+      post build:
+        - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_linux_amd64.sig --detach-sig ./dist/{{ .Artifact }}
+          when:
+            - "build.env.GOOS == 'linux' && build.env.GOARCH == 'amd64'"
+        - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_windows_amd64.sig --detach-sig ./dist/{{ .Artifact }}
+          when:
+            - "build.env.GOOS == 'windows' && build.env.GOARCH == 'amd64'"
 
 archives:
   - id: cx
