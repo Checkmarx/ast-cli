@@ -66,12 +66,12 @@ jobs:
         if: inputs.dev == false
         run: |
           # Install Docker CLI using Homebrew
-          brew install docker
+          brew install --cask docker
       - name: Start Docker engine daemon
         if: inputs.dev == false
         run: |
           # Start Docker engine daemon
-          dockerd &
+          open -a Docker      
       - name: Wait for Docker daemon to start
         if: inputs.dev == false
         run: |
