@@ -66,8 +66,7 @@ jobs:
         if: inputs.dev == false
         run: |
           brew install docker
-          sudo brew services start docker
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          sudo launchctl start com.docker.service
       - name: Test docker
         if: inputs.dev == false
         run: |
