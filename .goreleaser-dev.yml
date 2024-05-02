@@ -48,7 +48,8 @@ builds:
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 signs:
-  - cmd: "gpg --output {{ .Artifact }}.sig --detach-sig {{ .Artifact }}"
+  - cmd: |
+      gpg --output "{{ .Artifact }}.sig" --detach-sig "{{ .Artifact }}"
     artifacts:
       - cx_windows_amd64.zip
       - cx_windows_arm64.zip
