@@ -55,14 +55,18 @@ func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToCons
 				Details:   "error message from kics scanner",
 				ErrorCode: 1234,
 			},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
 		},
 	}
 
 	results := getScannerResponse("", &model)
 
-	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, len(results), 2, "Scanner results should be empty")
 	assert.Equal(t, results[0].Name, "kics", "")
 	assert.Equal(t, results[0].ErrorCode, "1234", "")
+	assert.Equal(t, results[1].Name, "general", "")
+	assert.Equal(t, results[1].ErrorCode, "1234", "")
+	assert.Equal(t, results[1].Details, "timeout", "")
 }
 
 func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
@@ -72,16 +76,20 @@ func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersIn
 		StatusDetails: []wrappers.StatusInfo{
 			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
 			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
 		},
 	}
 
 	results := getScannerResponse("", &model)
 
-	assert.Equal(t, len(results), 2, "Scanner results should be empty")
+	assert.Equal(t, len(results), 3, "Scanner results should be empty")
 	assert.Equal(t, results[0].Name, "kics", "")
 	assert.Equal(t, results[0].ErrorCode, "2344", "")
 	assert.Equal(t, results[1].Name, "sca", "")
 	assert.Equal(t, results[1].ErrorCode, "4343", "")
+	assert.Equal(t, results[2].Name, "general", "")
+	assert.Equal(t, results[2].ErrorCode, "1234", "")
+	assert.Equal(t, results[2].Details, "timeout", "")
 }
 
 func TestResultsExitCode_OnRequestedFailedScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
@@ -91,6 +99,7 @@ func TestResultsExitCode_OnRequestedFailedScanner_PrintCorrectFailedScannerInfoT
 		StatusDetails: []wrappers.StatusInfo{
 			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
 			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
 		},
 	}
 
@@ -108,6 +117,7 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 		StatusDetails: []wrappers.StatusInfo{
 			{Status: wrappers.ScanCompleted, Name: "sast"},
 			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanCompleted, Name: "general"},
 		},
 	}
 

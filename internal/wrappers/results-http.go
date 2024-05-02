@@ -235,48 +235,6 @@ func (r *ResultsHTTPWrapper) GetResultsURL(projectID string) (string, error) {
 	return baseURI, nil
 }
 
-// GetScanSummariesByScanIDS will no longer be used because it does not support --filters flag
-func (r *ResultsHTTPWrapper) GetScanSummariesByScanIDS(params map[string]string) (
-	*ScanSummariesModel,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, r.scanSummaryPath, params, http.NoBody, clientTimeout)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedTogetScanSummaries)
-		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		model := ScanSummariesModel{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseScanSummaries)
-		}
-
-		return &model, nil, nil
-	default:
-		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
-	}
-}
-
 func DefaultMapValue(params map[string]string, key, value string) {
 	if _, ok := params[key]; !ok {
 		params[key] = value
