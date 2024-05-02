@@ -65,16 +65,22 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          echo "installing docker"
-          brew install docker   
-          echo "docker installed"
-          echo "installing colima"
+          echo "Installing Docker..."
+          brew install docker
+          echo "Docker installed successfully."
+          
+          echo "Installing Colima..."
           brew install colima
-          echo "colima installed"
-          echo "Starting colima"
+          echo "Colima installed successfully."
+          
+          echo "Starting Colima..."
           brew services start colima
-          echo "Colima started"
+          echo "Colima started successfully."
+          
+          echo "Linking Colima socket..."
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          echo "Socket linked successfully."
+
       - name: Test docker
         if: inputs.dev == false
         run: |
