@@ -47,6 +47,13 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+#sign the windows binaries
+signs:
+  - cmd: "gpg --output {{ .Artifact }}.sig --detach-sig {{ .Artifact }}"
+    artifacts:
+      - cx_windows_amd64.zip
+      - cx_windows_arm64.zip
+      - cx_windows_arm.zip
 
 archives:
   - id: cx
@@ -86,11 +93,3 @@ blobs:
 
 changelog:
   use: github-native
-
-signing:
-  ids:
-    - ben.alvo@checkmarx.com
-  artifacts:
-    - sign: true
-      ids:
-        - ben.alvo@checkmarx.com

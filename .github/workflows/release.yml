@@ -62,6 +62,9 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      - name: Install gpg
+        run: |
+          brew install gpg
       - name: Install and start docker
         if: inputs.dev == false
         run: |
