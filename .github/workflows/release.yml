@@ -65,8 +65,12 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          brew install docker-Buildx
+          brew install docker
+          brew install colima
+          brew services start colima
+          colima stop
           colima start
+          export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
