@@ -50,12 +50,10 @@ builds:
 signs:
   - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_linux_amd64.sig --detach-sig ./dist/cx
     artifacts:
-      - ./dist/cx
-    info: signing Linux (amd64) binary
+      - "./dist/cx"
   - cmd: gpg --output ./dist/{{ .ProjectName }}_{{ .Version }}_windows_amd64.sig --detach-sig ./dist/cx.exe
     artifacts:
-      - ./dist/cx.exe
-    info: signing Windows (amd64) binary
+      - "./dist/cx.exe"
 
 archives:
   - id: cx
