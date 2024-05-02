@@ -91,15 +91,6 @@ export GOOS=darwin
 export GOARCH=amd64
 go build -o ./bin/cx-mac ./cmd
 ```
-### Makefile
-For ease of use, a Makefile is provided to build the project for all platforms.
-
-Install Make for Mac: https://formulae.brew.sh/formula/make
-
-Install Make for Windows: https://sourceforge.net/projects/gnuwin32/files/make/3.81/make-3.81.exe/download
-
-Run the following command to build the project:
-``` make build ``` 
 
 ## Contribution
 We appreciate feedback and contribution to the CLI! Before you get started, please see the following:
