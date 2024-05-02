@@ -69,8 +69,8 @@ jobs:
           brew install qemu
           brew install lima
           brew install colima
-          colima start
-
+          colima start --arch aarch64
+          
           # wait for colima to start
           sleep 60
 
