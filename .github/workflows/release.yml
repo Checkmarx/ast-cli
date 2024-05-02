@@ -66,13 +66,7 @@ jobs:
         if: inputs.dev == false
         run: |
           brew install docker
-          brew install qemu
-          brew install lima
-          brew install colima
-          brew services start colima
-          colima stop
-          colima start
-          export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+          sudo brew services start docker
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
