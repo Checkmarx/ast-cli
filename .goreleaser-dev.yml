@@ -86,3 +86,11 @@ blobs:
 
 changelog:
   use: github-native
+
+signing:
+  ids:
+    - ben.alvo@checkmarx.com
+  artifacts:
+    - sign: true
+      ids:
+        - ben.alvo@checkmarx.com
