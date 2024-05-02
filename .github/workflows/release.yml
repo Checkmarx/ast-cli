@@ -69,10 +69,7 @@ jobs:
           brew install qemu
           brew install lima
           brew install colima
-          sudo brew services start colima
-          sleep 30
-          sudo colima delete
-          sudo colima start
+          colima start
 
           # wait for colima to start
           sleep 60
