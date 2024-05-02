@@ -65,13 +65,20 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          curl -O https://download.docker.com/mac/static/stable/x86_64/docker-26.0.1.tgz         
-          tar xzvf ./docker-26.0.1.tgz
-          sudo xattr -rc docker
-          sudo cp docker/docker /usr/local/bin/
-          
-          colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          brew install docker
+          brew install colima
+          brew services start colima
+
+          # wait for cloima to start
+          sleep 60
+
+          #check version colima
+          colima version
+          #check colima status
+          colima status
+          #change docker context
+          docker context use colima
+
       - name: Test docker
         if: inputs.dev == false
         run: |
