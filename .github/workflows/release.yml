@@ -66,12 +66,15 @@ jobs:
         if: inputs.dev == false
         run: |
           brew install docker
+          brew install qemu
+          brew install lima
           brew install colima
-          brew services start colima
+          sudo brew services start colima
+          sleep 30
           sudo colima delete
           sudo colima start
 
-          # wait for cloima to start
+          # wait for colima to start
           sleep 60
 
           #check version colima
