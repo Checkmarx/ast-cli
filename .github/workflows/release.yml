@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -44,13 +44,13 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-#      - name: Import Code-Signing Certificates
-#        uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
-#        with:
-#          # The certificates in a PKCS12 file encoded as a base64 string
-#          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
-#          # The password used to import the PKCS12 file.
-#          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+      - name: Import Code-Signing Certificates
+        uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
+        with:
+          # The certificates in a PKCS12 file encoded as a base64 string
+          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          # The password used to import the PKCS12 file.
+          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Updating and upgrading brew
         run: |
           git config --global pack.windowMemory "100m"
@@ -59,10 +59,9 @@ jobs:
           git config --global pack.window "0"
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           brew --version
-      - name: Install gon and apt
+      - name: Install gon
         run: |
           brew install Bearer/tap/gon
-          brew install apt
       - name: install docker
         if: inputs.dev == false
         uses: docker/setup-buildx-action@v3
