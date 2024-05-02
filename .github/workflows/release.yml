@@ -124,7 +124,8 @@ jobs:
 #        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
         uses: goreleaser/goreleaser-action@v5
         with:
-          version: v1.18.2
+#          version: v1.18.2
+          version: latest
           args: ${{ env.GR_ARGS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
