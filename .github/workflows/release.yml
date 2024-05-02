@@ -74,9 +74,9 @@ jobs:
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
         #  Install the specific version of Docker
           sudo apt-get update
-          sudo apt-get install -y docker-ce=<VERSION_STRING> docker-ce-cli=<VERSION_STRING> containerd.io
+          sudo apt-get install -y docker-ce=<VERSION_STRING> docker-ce-cli=26.0.1 containerd.io
           colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /usr/local/bin/docker
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
         if: inputs.dev == false
         run: |
