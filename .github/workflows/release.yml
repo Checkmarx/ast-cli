@@ -65,9 +65,8 @@ jobs:
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          curl -fsSL https://get.docker.com -o get-docker.sh && \
-          sudo sh get-docker.sh && \
-          sudo launchctl start com.docker.service
+          brew install docker
+          dockerd &
       - name: Test docker
         if: inputs.dev == false
         run: |
