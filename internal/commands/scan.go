@@ -620,6 +620,7 @@ func findProject(
 	}
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, applicationID)
 	if err != nil {
+		logger.PrintIfVerbose("error in creating project!")
 		return "", err
 	}
 	return projectID, nil
@@ -646,7 +647,9 @@ func createProject(
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
 	projModel.Tags = createTagMap(projectTags)
+	logger.PrintIfVerbose("Creating new project")
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
+
 	projectID := ""
 	if errorModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
@@ -678,19 +681,22 @@ func verifyApplicationAssociationDone(applicationID []string, projectID string, 
 	params["id"] = applicationID[0]
 
 	logger.PrintIfVerbose("polling application until project association done or timeout of 2 min")
-	start := time.Now()
-	timeout := 2 * time.Minute
-	for applicationRes != nil && len(applicationRes.Applications) > 0 &&
-		!slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
+	var timeoutDuration = 2 * time.Minute
+	timeout := time.Now().Add(timeoutDuration)
+	for time.Now().Before(timeout) {
 		applicationRes, err = applicationsWrapper.Get(params)
 		if err != nil {
 			return err
-		} else if time.Since(start) < timeout {
+		} else if applicationRes != nil && len(applicationRes.Applications) > 0 &&
+			slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
+			logger.PrintIfVerbose("application association done successfully")
+			return nil
+		} else if time.Now().After(timeout) {
 			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 		}
+		logger.PrintIfVerbose("application association polling - waiting for associating to complete")
 	}
 
-	logger.PrintIfVerbose("application association done successfully")
 	return nil
 }
 
@@ -728,6 +734,8 @@ func updateProject(
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
+
+	logger.PrintIfVerbose("Fetching existing Project for updating")
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
