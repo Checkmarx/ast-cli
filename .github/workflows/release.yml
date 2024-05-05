@@ -76,15 +76,13 @@ jobs:
           sudo cp docker/docker /usr/local/bin/
           sudo cp docker/docker /var/run/
           
-
-          sudo docker dockerd
-          sleep 5
+          sudo docker run hello-world
           echo "docker started"
 
           docker version
           echo "check docker deamon"
           docker info
-          
+
       - name: Test docker
         if: inputs.dev == false
         run: |
