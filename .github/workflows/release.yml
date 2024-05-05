@@ -71,6 +71,10 @@ jobs:
           sudo xattr -rc docker
           docker/docker
           echo "docker installed"
+
+          echo "moving docker to docker workspace"
+          sudo cp docker/docker /usr/local/bin/
+          
           colima start
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Test docker
