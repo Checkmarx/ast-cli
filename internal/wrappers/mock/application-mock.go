@@ -28,7 +28,7 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		Name:        "MOCK",
 		Description: "This is a mock application",
 		Criticality: 2,
-		ProjectIds:  []string{"ProjectID1", "ProjectID2"},
+		ProjectIds:  []string{"ProjectID1", "ProjectID2", "MOCK"},
 		CreatedAt:   time.Now(),
 	}
 
