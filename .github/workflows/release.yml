@@ -77,8 +77,10 @@ jobs:
           sudo cp docker/docker /var/run/
           
           sudo docker run hello-world
+          docker & 
           echo "docker started"
 
+          dockerd
           docker version
           echo "check docker deamon"
           docker info
