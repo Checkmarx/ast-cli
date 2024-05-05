@@ -381,6 +381,7 @@ func TestRunGetResultsByScanIdGLDependencyAndPdfFormat(t *testing.T) {
 	// Run test for gl-dependency and pdf reports type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLDependency))
 }
+
 func Test_addPackageInformation(t *testing.T) {
 	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
