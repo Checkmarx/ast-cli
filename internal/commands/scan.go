@@ -699,7 +699,7 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 		logger.PrintIfVerbose("application association polling - waiting for associating to complete")
 	}
 
-	return nil
+	return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 }
 
 func updateProject(
