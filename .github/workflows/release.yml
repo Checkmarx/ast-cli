@@ -76,10 +76,12 @@ jobs:
           sudo cp docker/docker /usr/local/bin/
           sudo cp docker/docker /var/run/
 
-          docker &
+          sudo dockerd
+          sleep 5
           echo "docker started"
 
           docker version
+          echo "check docker deamon"
           docker info
           
           colima start
