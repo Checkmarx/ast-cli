@@ -83,7 +83,8 @@ jobs:
           echo "Socket linked successfully."
           
           echo "start docker"
-          open -a Docker
+          ls /Applications
+          open -a Docker.app
           echo "docker started successfully."
 
       - name: Test docker
