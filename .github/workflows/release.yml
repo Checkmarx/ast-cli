@@ -92,7 +92,7 @@ jobs:
           git push origin "${tag}"
       - name: Build GoReleaser Args
         run: |
-          args='release --clean --debug'
+          args='release --clean --skip=validate --debug'
           if [ ${{ inputs.dev }} = true ]; then
             args=${args}' --config=".goreleaser-dev.yml"'
           fi
