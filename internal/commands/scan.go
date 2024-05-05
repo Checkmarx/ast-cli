@@ -636,6 +636,7 @@ func createProject(
 	applicationID []string,
 ) (string, error) {
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 
@@ -657,8 +658,8 @@ func createProject(
 	if err == nil {
 		projectID = resp.ID
 
-		if len(applicationID) > 0 {
-			err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
+		if applicationName != "" || len(applicationID) > 0 {
+			err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
 			if err != nil {
 				return projectID, err
 			}
@@ -674,11 +675,11 @@ func createProject(
 	return projectID, err
 }
 
-func verifyApplicationAssociationDone(applicationID []string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+func verifyApplicationAssociationDone(applicationName string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
 	var applicationRes *wrappers.ApplicationsResponseModel
 	var err error
 	params := make(map[string]string)
-	params["id"] = applicationID[0]
+	params["name"] = applicationName
 
 	logger.PrintIfVerbose("polling application until project association done or timeout of 2 min")
 	var timeoutDuration = 2 * time.Minute
@@ -716,6 +717,7 @@ func updateProject(
 	var projModel = wrappers.Project{}
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
@@ -762,8 +764,8 @@ func updateProject(
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
-	if len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
+	if applicationName != "" || len(applicationID) > 0 {
+		err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
 		if err != nil {
 			return projectID, err
 		}
