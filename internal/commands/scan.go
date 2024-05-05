@@ -694,6 +694,7 @@ func verifyApplicationAssociationDone(applicationID []string, projectID string, 
 		} else if time.Now().After(timeout) {
 			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 		}
+		time.Sleep(2 * time.Second)
 		logger.PrintIfVerbose("application association polling - waiting for associating to complete")
 	}
 
