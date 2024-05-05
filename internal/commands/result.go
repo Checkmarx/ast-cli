@@ -1498,11 +1498,8 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	})
 	return glSast
 }
-
 func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
-
 	if result.ScanResultData.ScaPackageCollection != nil {
-
 		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlDepVulnerabilities{
 			ID:          result.ID,
 			Name:        result.VulnerabilityDetails.CveName,
@@ -1529,7 +1526,6 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 	}
 	return glDependencyResult
 }
-
 func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	var location string
 	if result != nil && result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
@@ -1539,18 +1535,16 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	}
 	return (location)
 }
-
 func parseGlDependencyFiles(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil {
 		glDependencyResult.DependencyFiles = append(glDependencyResult.DependencyFiles, wrappers.DependencyFile{
-			Path:           result.ScanResultData.ScaPackageCollection.ID, ///Need to enter correct File path
-			PackageManager: result.ScanResultData.ScaPackageCollection.ID, //Need to enter correct Package_manager
+			Path:           result.ScanResultData.ScaPackageCollection.BestPackageLink,
+			PackageManager: result.ScanResultData.ScaPackageCollection.ID,
 			Dependencies:   collectDependencyFileLocations(result),
 		})
 	}
 	return glDependencyResult
 }
-
 func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.DependencyLocation {
 	allIdentifierLocations := []wrappers.DependencyLocation{}
 	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
@@ -1566,7 +1560,6 @@ func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.Depe
 	}
 	return allIdentifierLocations
 }
-
 func collectDependencyPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
 	allDependencyPackageItemDep := []wrappers.ItemDep{}
 	allDependencyPackageItemDep = append(allDependencyPackageItemDep, wrappers.ItemDep{
@@ -1576,9 +1569,7 @@ func collectDependencyPackageItemsDep(result *wrappers.ScanResult) []wrappers.It
 		StartLine: 0,
 	})
 	return allDependencyPackageItemDep
-
 }
-
 func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
 	allDependencyPackageLinks := []wrappers.LinkDep{}
 	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
@@ -1587,16 +1578,12 @@ func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkD
 			Name: result.ScanResultData.PackageData[i].Type,
 			URL:  result.ScanResultData.PackageData[i].URL,
 		})
-
 	}
 	return allDependencyPackageLinks
-
 }
-
 func collectDependencyPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep {
 	allIdentifierDep := []wrappers.IdentifierDep{}
 	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
-
 		allIdentifierDep = append(allIdentifierDep, wrappers.IdentifierDep{
 			Type:  result.ScanResultData.PackageData[i].Type,
 			Value: result.ScanResultData.PackageData[i].URL,
