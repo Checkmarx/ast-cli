@@ -44,6 +44,7 @@ func FindProject(
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 			return updateProject(
 				resp,
+				cmd,
 				projectsWrapper,
 				groupsWrapper,
 				accessManagementWrapper,
@@ -60,6 +61,7 @@ func FindProject(
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, applicationID, projectGroups, projectPrivatePackage)
 	if err != nil {
+		logger.PrintIfVerbose("error in creating project!")
 		return "", err
 	}
 	return projectID, nil
@@ -77,6 +79,7 @@ func createProject(
 	projectPrivatePackage string,
 ) (string, error) {
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.ApplicationIds = applicationID
@@ -85,6 +88,7 @@ func createProject(
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
 	projModel.Tags = createTagMap(projectTags)
+	logger.PrintIfVerbose("Creating new project")
 	resp, errorModel, err := projectsWrapper.Create(&projModel)
 	projectID := ""
 	if errorModel != nil {
@@ -92,8 +96,8 @@ func createProject(
 	}
 	if err == nil {
 		projectID = resp.ID
-		if len(applicationID) > 0 {
-			err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
+		if applicationName != "" || len(applicationID) > 0 {
+			err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
 			if err != nil {
 				return projectID, err
 			}
@@ -109,32 +113,37 @@ func createProject(
 	return projectID, err
 }
 
-func verifyApplicationAssociationDone(applicationID []string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+func verifyApplicationAssociationDone(applicationName, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
 	var applicationRes *wrappers.ApplicationsResponseModel
 	var err error
 	params := make(map[string]string)
-	params["id"] = applicationID[0]
+	params["name"] = applicationName
 
 	logger.PrintIfVerbose("polling application until project association done or timeout of 2 min")
-	start := time.Now()
-	timeout := 2 * time.Minute
-	for applicationRes != nil && len(applicationRes.Applications) > 0 &&
-		!slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
+	var timeoutDuration = 2 * time.Minute
+	timeout := time.Now().Add(timeoutDuration)
+	for time.Now().Before(timeout) {
 		applicationRes, err = applicationsWrapper.Get(params)
 		if err != nil {
 			return err
-		} else if time.Since(start) < timeout {
+		} else if applicationRes != nil && len(applicationRes.Applications) > 0 &&
+			slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
+			logger.PrintIfVerbose("application association done successfully")
+			return nil
+		} else if time.Now().After(timeout) {
 			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 		}
+		time.Sleep(time.Second)
+		logger.PrintIfVerbose("application association polling - waiting for associating to complete")
 	}
 
-	logger.PrintIfVerbose("application association done successfully")
-	return nil
+	return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 }
 
 //nolint:gocyclo
 func updateProject(
 	resp *wrappers.ProjectsCollectionResponseModel,
+	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -147,6 +156,7 @@ func updateProject(
 
 ) (string, error) {
 	var projectID string
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
@@ -166,6 +176,8 @@ func updateProject(
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
 	}
+
+	logger.PrintIfVerbose("Fetching existing Project for updating")
 	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
 	if errModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, FailedGettingProj, errModel.Code, errModel.Message)
@@ -190,8 +202,8 @@ func updateProject(
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
-	if len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
+	if applicationName != "" || len(applicationID) > 0 {
+		err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
 		if err != nil {
 			return projectID, err
 		}
