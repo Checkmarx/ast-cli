@@ -62,16 +62,11 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      - name: Setup Docker on macOS
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
       - name: Install and start docker
         if: inputs.dev == false
         run: |
-          echo "Installing Docker..."
-          sudo hdiutil attach Docker.dmg
-          sudo /Volumes/Docker/Docker.app/Contents/MacOS/install
-          sudo hdiutil detach /Volumes/Docker
-          sudo ln -s ~/.docker/run/docker.sock /var/run/docker.sock
-          echo "Docker installed successfully."
-
           echo "Installing Colima..."
           brew install colima
           echo "Colima installed successfully."
@@ -83,11 +78,6 @@ jobs:
           echo "Linking Colima socket..."
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
           echo "Socket linked successfully."
-          
-          echo "start docker"
-          brew services start docker
-          echo "docker started successfully."
-
       - name: Test docker
         if: inputs.dev == false
         run: |
