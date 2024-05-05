@@ -447,6 +447,7 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
+
 	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
