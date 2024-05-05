@@ -1090,7 +1090,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 }
 
 func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
-	log.Println("Creating Gl-dependency: ", targetFile)
+	log.Println("Creating Gl-dependency Report: ", targetFile)
 	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
 	err := addScanToGlDependencyReport(summary, glDependencyResult)
 	if err != nil {
