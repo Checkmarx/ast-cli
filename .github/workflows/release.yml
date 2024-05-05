@@ -67,6 +67,7 @@ jobs:
         run: |
           echo "Installing Docker..."
           brew install docker
+          sudo ln -s ~/.docker/run/docker.sock /var/run/docker.sock
           echo "Docker installed successfully."
           
           echo "Installing Colima..."
