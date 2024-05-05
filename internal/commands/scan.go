@@ -675,7 +675,7 @@ func createProject(
 	return projectID, err
 }
 
-func verifyApplicationAssociationDone(applicationName string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+func verifyApplicationAssociationDone(applicationName, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
 	var applicationRes *wrappers.ApplicationsResponseModel
 	var err error
 	params := make(map[string]string)
@@ -695,7 +695,7 @@ func verifyApplicationAssociationDone(applicationName string, projectID string, 
 		} else if time.Now().After(timeout) {
 			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Second)
 		logger.PrintIfVerbose("application association polling - waiting for associating to complete")
 	}
 
