@@ -166,6 +166,7 @@ func Test_createProject(t *testing.T) {
 func Test_updateProject(t *testing.T) {
 	type args struct {
 		resp                    *wrappers.ProjectsCollectionResponseModel
+		cmd                     *cobra.Command
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
@@ -187,6 +188,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -198,6 +200,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -210,6 +213,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -222,6 +226,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -234,6 +239,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-project-name", Name: "project-name"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -246,6 +252,7 @@ func Test_updateProject(t *testing.T) {
 				Projects: []wrappers.ProjectResponseModel{
 					{ID: "ID-mock-some-error-model", Name: "mock-some-error-model"}},
 			},
+			cmd:                     &cobra.Command{},
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
@@ -257,6 +264,7 @@ func Test_updateProject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := updateProject(
 				ttt.args.resp,
+				ttt.args.cmd,
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
