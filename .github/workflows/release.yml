@@ -64,20 +64,6 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         uses: douglascamata/setup-docker-macos-action@v1-alpha
-      - name: Install and start docker
-        if: inputs.dev == false
-        run: |
-          echo "Installing Colima..."
-          brew install colima
-          echo "Colima installed successfully."
-
-          echo "Starting Colima..."
-          brew services start colima
-          echo "Colima started successfully."
-
-          echo "Linking Colima socket..."
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
-          echo "Socket linked successfully."
       - name: Test docker
         if: inputs.dev == false
         run: |
