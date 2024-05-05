@@ -62,37 +62,41 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
-#      - name: Install and start docker
-#        if: inputs.dev == false
-#        run: |
-#          echo "Installing Docker..."
-#          brew install docker
-#          sudo ln -s ~/.docker/run/docker.sock /var/run/docker.sock
-#          echo "Docker installed successfully."
-#
-#          echo "Installing Colima..."
-#          brew install colima
-#          echo "Colima installed successfully."
-#
-#          echo "Starting Colima..."
-#          brew services start colima
-#          echo "Colima started successfully."
-#
-#          echo "Linking Colima socket..."
-#          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
-#          echo "Socket linked successfully."
+      - name: Install and start docker
+        if: inputs.dev == false
+        run: |
+          echo "Installing Docker..."
+          brew install docker
+          sudo ln -s ~/.docker/run/docker.sock /var/run/docker.sock
+          echo "Docker installed successfully."
 
-#      - name: Test docker
-#        if: inputs.dev == false
-#        run: |
-#          docker version
-#          docker info
-#      - name: Login to Docker Hub
-#        if: inputs.dev == false
-#        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
-#        with:
-#          username: ${{ secrets.DOCKER_USERNAME }}
-#          password: ${{ secrets.DOCKER_PASSWORD }}
+          echo "Installing Colima..."
+          brew install colima
+          echo "Colima installed successfully."
+
+          echo "Starting Colima..."
+          brew services start colima
+          echo "Colima started successfully."
+
+          echo "Linking Colima socket..."
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+          echo "Socket linked successfully."
+          
+          echo "start docker"
+          open -a Docker
+          echo "docker started successfully."
+
+      - name: Test docker
+        if: inputs.dev == false
+        run: |
+          docker version
+          docker info
+      - name: Login to Docker Hub
+        if: inputs.dev == false
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
