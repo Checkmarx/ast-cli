@@ -1093,11 +1093,14 @@ func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsC
 	log.Println("Creating Gl-dependency: ", targetFile)
 	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
 	err := addScanToGlDependencyReport(summary, glDependencyResult)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to denerate gl dependency report ", failedListingResults)
+	}
 	convertCxResultToGlDependencyVulnerability(results, glDependencyResult)
 	convertCxResultToGlDependencyFiles(results, glDependencyResult)
 	resultsJSON, err := json.Marshal(glDependencyResult)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to serialize gl dependency report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
@@ -1517,7 +1520,6 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 				Dependency: wrappers.DependencyLocation{
 					Package:                   wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
 					DependencyLocationVersion: "",
-					Iid:                       "",
 					Direct:                    result.ScanResultData.ScaPackageCollection.IsDirectDependency,
 					DependencyPath:            "",
 				},
@@ -1553,7 +1555,6 @@ func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.Depe
 				Name: result.ScanResultData.PackageData[i].Type,
 			},
 			DependencyLocationVersion: result.ScanResultData.PackageData[i].URL,
-			Iid:                       result.ScanResultData.PackageData[i].Type,
 			Direct:                    true,
 			DependencyPath:            result.ScanResultData.PackageData[i].Type,
 		})
@@ -1573,7 +1574,6 @@ func collectDependencyPackageItemsDep(result *wrappers.ScanResult) []wrappers.It
 func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
 	allDependencyPackageLinks := []wrappers.LinkDep{}
 	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
-
 		allDependencyPackageLinks = append(allDependencyPackageLinks, wrappers.LinkDep{
 			Name: result.ScanResultData.PackageData[i].Type,
 			URL:  result.ScanResultData.PackageData[i].URL,
@@ -1589,7 +1589,6 @@ func collectDependencyPackageData(result *wrappers.ScanResult) []wrappers.Identi
 			Value: result.ScanResultData.PackageData[i].URL,
 			Name:  result.ScanResultData.PackageData[i].URL,
 		})
-
 	}
 	return allIdentifierDep
 }

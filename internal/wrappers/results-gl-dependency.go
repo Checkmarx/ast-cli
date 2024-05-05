@@ -92,7 +92,6 @@ type GlDepVulnerabilityLocation struct {
 type DependencyLocation struct {
 	Package                   PackageName `json:"package"`
 	DependencyLocationVersion string      `json:"version"`
-	Iid                       string      `json:"iid"`
 	Direct                    bool        `json:"direct"`
 	DependencyPath            string      `json:"iid"`
 }
