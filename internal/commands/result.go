@@ -1093,8 +1093,8 @@ func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsC
 	log.Println("Creating Gl-dependency: ", targetFile)
 	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
 	err := addScanToGlDependencyReport(summary, glDependencyResult)
-	convertCxResultToGlDependencyVulnerability(results, glDependencyResult, summary.BaseURI)
-	convertCxResultToGlDependencyFiles(results, glDependencyResult, summary.BaseURI)
+	convertCxResultToGlDependencyVulnerability(results, glDependencyResult)
+	convertCxResultToGlDependencyFiles(results, glDependencyResult)
 	resultsJSON, err := json.Marshal(glDependencyResult)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
@@ -1116,12 +1116,12 @@ func addScanToGlDependencyReport(summary *wrappers.ResultSummary, glDependencyRe
 	}
 
 	glDependencyResult.Schema = wrappers.DependencySchema
-	glDependencyResult.Version = "15.0.0"
+	glDependencyResult.Version = wrappers.SchemaVersion
 	glDependencyResult.Scan.Analyzer.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
 	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
 	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Analyzer.Id = wrappers.ScannerId
-	glDependencyResult.Scan.Scanner.Id = wrappers.ScannerId
+	glDependencyResult.Scan.Analyzer.ID = wrappers.ScannerID
+	glDependencyResult.Scan.Scanner.ID = wrappers.ScannerID
 	glDependencyResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
 	glDependencyResult.Scan.Scanner.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
 	glDependencyResult.Scan.Status = commonParams.Success
@@ -1142,8 +1142,8 @@ func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlS
 	}
 
 	glSast.Scan = wrappers.ScanGlReport{}
-	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
-	glSast.Version = "15.0.0"
+	glSast.Schema = wrappers.DependencySchema
+	glSast.Version = wrappers.SchemaVersion
 	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
 	glSast.Scan.Analyzer.Name = wrappers.VendorName
 	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
@@ -1429,7 +1429,7 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 	}
 }
 
-func convertCxResultToGlDependencyVulnerability(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlDependencyVulnerability(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.ScaType {
 			glDependencyResult = parseGlDependencyVulnerability(result, glDependencyResult)
@@ -1437,7 +1437,7 @@ func convertCxResultToGlDependencyVulnerability(results *wrappers.ScanResultsCol
 	}
 }
 
-func convertCxResultToGlDependencyFiles(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlDependencyFiles(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.ScaType {
 			glDependencyResult = parseGlDependencyFiles(result, glDependencyResult)
@@ -1504,7 +1504,7 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 	if result.ScanResultData.ScaPackageCollection != nil {
 
 		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlDepVulnerabilities{
-			Id:          result.ID,
+			ID:          result.ID,
 			Name:        result.VulnerabilityDetails.CveName,
 			Description: result.Description,
 			Severity:    cases.Title(language.English).String(result.Severity),
@@ -1516,7 +1516,7 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 			},
 			Flags: make([]string, 0),
 			LocationDep: wrappers.GlDepVulnerabilityLocation{
-				File: *(result.ScanResultData.ScaPackageCollection.Locations[0]),
+				File: parseGlDependencyLocation(result),
 				Dependency: wrappers.DependencyLocation{
 					Package:                   wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
 					DependencyLocationVersion: "",
@@ -1528,6 +1528,16 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 		})
 	}
 	return glDependencyResult
+}
+
+func parseGlDependencyLocation(result *wrappers.ScanResult) string {
+	var location string
+	if result != nil && result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
+		location = *result.ScanResultData.ScaPackageCollection.Locations[0]
+	} else {
+		location = ""
+	}
+	return (location)
 }
 
 func parseGlDependencyFiles(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
@@ -1575,7 +1585,7 @@ func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkD
 
 		allDependencyPackageLinks = append(allDependencyPackageLinks, wrappers.LinkDep{
 			Name: result.ScanResultData.PackageData[i].Type,
-			Url:  result.ScanResultData.PackageData[i].URL,
+			URL:  result.ScanResultData.PackageData[i].URL,
 		})
 
 	}

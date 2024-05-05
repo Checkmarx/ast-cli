@@ -3,9 +3,10 @@ package wrappers
 const (
 	AnalyzerScaName  = "CxOne"
 	AnalyzerScaID    = AnalyzerScaName + "-SCA"
-	ScannerId        = "SCA"
+	ScannerID        = "SCA"
 	ScannerType      = "dependency_scanning"
 	DependencySchema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
+	SchemaVersion    = "15.0.0"
 )
 
 type GlDependencyResultsCollection struct {
@@ -30,21 +31,21 @@ type ScanGlDepReport struct {
 }
 
 type GlDepAnalyzer struct {
-	Id           string   `json:"id,omitempty"`
+	ID           string   `json:"id,omitempty"`
 	Name         string   `json:"name,omitempty"`
 	VendorGlSCA  GlVendor `json:"vendor"`
 	VersionGlSca string   `json:"version,omitempty"`
 }
 
 type GlDepScanner struct {
-	Id           string   `json:"id,omitempty"`
+	ID           string   `json:"id,omitempty"`
 	Name         string   `json:"name,omitempty"`
 	VersionGlSca string   `json:"version,omitempty"`
 	VendorGlSCA  GlVendor `json:"vendor"`
 }
 
 type GlDepVulnerabilities struct {
-	Id          string                     `json:"id"`
+	ID          string                     `json:"id"`
 	Name        string                     `json:"name"`
 	Description string                     `json:"description"`
 	Severity    string                     `json:"severity"`
@@ -53,7 +54,7 @@ type GlDepVulnerabilities struct {
 	Links       []LinkDep                  `json:"links"`
 	TrackingDep TrackingDep                `json:"tracking"`
 	Flags       []string                   `json:"flags"`
-	LocationDep GlDepVulnerabilityLocation `json:"location"`
+	LocationDep GlDepVulnerabilityLocation `json:"location,omitempty"`
 }
 
 type IdentifierDep struct {
@@ -64,7 +65,7 @@ type IdentifierDep struct {
 
 type LinkDep struct {
 	Name string `json:"name,omitempty"`
-	Url  string `json:"url,omitempty"`
+	URL  string `json:"url,omitempty"`
 }
 
 type TrackingDep struct {
