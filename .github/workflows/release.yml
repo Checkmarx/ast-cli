@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -62,12 +62,9 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
-      - name: Install and start docker
+      - name: Setup Docker on macOS
         if: inputs.dev == false
-        run: |
-          brew install docker
-          colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
       - name: Test docker
         if: inputs.dev == false
         run: |
