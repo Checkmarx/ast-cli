@@ -76,8 +76,15 @@ jobs:
           sudo cp docker/docker /usr/local/bin/
           sudo cp docker/docker /var/run/
           
-          colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+
+          sudo docker dockerd
+          sleep 5
+          echo "docker started"
+
+          docker version
+          echo "check docker deamon"
+          docker info
+          
       - name: Test docker
         if: inputs.dev == false
         run: |
