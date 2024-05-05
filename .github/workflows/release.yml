@@ -75,14 +75,6 @@ jobs:
           echo "moving docker to docker workspace"
           sudo cp docker/docker /usr/local/bin/
           sudo cp docker/docker /var/run/
-
-          sudo dockerd
-          sleep 5
-          echo "docker started"
-
-          docker version
-          echo "check docker deamon"
-          docker info
           
           colima start
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
