@@ -56,3 +56,7 @@ override.tf.json
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*dist/
 /dist
+
+# Ignore CLI configuration files and installation log files
+colima-Darwin-x86_64
+install.log
