@@ -93,7 +93,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 		}
 		err, _ := executeCommand(t, args...)
 
-		assertError(t, err, errorConstants.ImportSarifFileErrorMessage)
+		assertError(t, err, errorConstants.ImportSarifFileError)
 	}
 }
 
@@ -114,7 +114,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 		}
 		err, _ := executeCommand(t, args...)
 		defer deleteProjectByName(t, projectName)
-		assertError(t, err, errorConstants.ImportSarifFileErrorMessage)
+		assertError(t, err, errorConstants.ImportSarifFileError)
 	}
 }
 

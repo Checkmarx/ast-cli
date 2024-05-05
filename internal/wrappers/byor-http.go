@@ -50,12 +50,12 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	case http.StatusUnauthorized:
 		return "", getError(decoder, errorConstants.StatusUnauthorized)
 	case http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		decodeErr := decoder.Decode(&errorModel)
+		byorErrorModel := ByorErrorModel{}
+		decodeErr := decoder.Decode(&byorErrorModel)
 		if decodeErr != nil {
 			return "", errors.Errorf("Parsing error model failed - %s", err.Error())
 		}
-		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessage, errorModel.Code, errorModel.Message))
+		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, byorErrorModel.Code, byorErrorModel.Message))
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
@@ -65,16 +65,22 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		logger.Printf(successfulMessage, projectID, model.ImportID)
 		return model.ImportID, nil
 	default:
-		return "", errors.Errorf("response status code %d", resp.StatusCode)
+		return "", errors.Errorf(errorConstants.ImportSarifFileError)
 	}
 }
 
 func getError(decoder *json.Decoder, errorMessage string) error {
-	errorModel := ErrorModel{}
+	errorModel := ByorErrorModel{}
 	err := decoder.Decode(&errorModel)
 	if err != nil {
 		return errors.Errorf("Parsing error model failed - %s", err.Error())
 	}
 	logger.PrintIfVerbose(errorModel.Message)
 	return errors.Errorf(errorMessage)
+}
+
+type ByorErrorModel struct {
+	Message string   `json:"message"`
+	Code    int      `json:"code"`
+	Details []string `json:"details"`
 }
