@@ -21,7 +21,6 @@ func TestAssignGroupsToProject(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When assigning group to project, no error should be returned",
 			args: args{
@@ -58,7 +57,6 @@ func TestCreateGroupsMap(t *testing.T) {
 		want    []*wrappers.Group
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When creating a group map with existing group, no error should be returned",
 			args: args{
@@ -111,7 +109,6 @@ func TestGetGroupIds(t *testing.T) {
 		args args
 		want []string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When passing a slice of groups, return a slice of group IDs",
 			args: args{groups: []*wrappers.Group{{ID: "group-id-1", Name: "group-name-1"}, {ID: "group-id-2", Name: "group-name-2"}}},
@@ -138,7 +135,6 @@ func Test_findGroupByName(t *testing.T) {
 		args args
 		want *wrappers.Group
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When calling with a group name, return the group with the same name",
 			args: args{
@@ -177,7 +173,6 @@ func Test_getGroupsForRequest(t *testing.T) {
 		args args
 		want []string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When access management is disabled, return group IDs of the groups",
 			args: args{groups: []*wrappers.Group{{ID: "group-id-1", Name: "group-name-1"}, {ID: "group-id-2", Name: "group-name-2"}}},
@@ -205,7 +200,6 @@ func Test_getGroupsToAssign(t *testing.T) {
 		args args
 		want []*wrappers.Group
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When calling with received groups, assign only the non-existing ones",
 			args: args{

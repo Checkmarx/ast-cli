@@ -16,5 +16,5 @@ const (
 	ProjectNotExists                     = "the project name you provided does not match any project"
 	FailedToGetApplication               = "failed to get application"
 	SarifInvalidFileExtension            = "Invalid file extension. Supported extensions are .sarif and .zip containing sarif files."
-	ImportSarifFileErrorMessage          = "There was a problem importing the SARIF file"
+	ImportSarifFileErrorMessage          = "There was a problem importing the SARIF file. Please contact support for further detail with the following error code: %d %s"
 )

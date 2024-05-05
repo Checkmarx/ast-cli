@@ -24,7 +24,6 @@ func TestFindProject(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Testing the update flow",
 			args: args{
@@ -93,7 +92,6 @@ func Test_createProject(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{name: "When called with a new project name return the Id of the newly created project", args: args{
 			projectName:             "new-project-name",
 			cmd:                     &cobra.Command{},
@@ -184,7 +182,6 @@ func Test_updateProject(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
 		{name: "When called with existing project, update the project and return the project Id", args: args{
 			resp: &wrappers.ProjectsCollectionResponseModel{
 				Projects: []wrappers.ProjectResponseModel{

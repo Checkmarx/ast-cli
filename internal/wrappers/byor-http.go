@@ -50,7 +50,12 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	case http.StatusUnauthorized:
 		return "", getError(decoder, errorConstants.StatusUnauthorized)
 	case http.StatusInternalServerError:
-		return "", getError(decoder, errorConstants.StatusInternalServerError)
+		errorModel := ErrorModel{}
+		decodeErr := decoder.Decode(&errorModel)
+		if decodeErr != nil {
+			return "", errors.Errorf("Parsing error model failed - %s", err.Error())
+		}
+		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessage, errorModel.Code, errorModel.Message))
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
@@ -59,11 +64,8 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		}
 		logger.Printf(successfulMessage, projectID, model.ImportID)
 		return model.ImportID, nil
-	case http.StatusNotFound:
-		fmt.Printf("status code: %d b.path+importsPath: %s request: %s\n", http.StatusNotFound, b.path+importsPath, req)
-		return "", errors.Errorf("Import was not successful for project ID %s", projectID)
 	default:
-		return "", errors.Errorf(errorConstants.ImportSarifFileErrorMessage)
+		return "", errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 

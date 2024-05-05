@@ -15,7 +15,6 @@ func Test_createApplicationIds(t *testing.T) {
 		args args
 		want []string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "When adding new application IDs, add them to all applications",
 			args: args{

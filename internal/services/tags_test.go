@@ -14,7 +14,6 @@ func Test_createTagMap(t *testing.T) {
 		args args
 		want map[string]string
 	}{
-		// TODO: Add test cases.
 		{
 			name: "Create tag map from tag string representing a map",
 			args: args{tagListStr: "tag1:val1,tag2:val2"},
