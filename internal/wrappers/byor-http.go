@@ -53,14 +53,14 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		byorErrorModel := ByorErrorModel{}
 		decodeErr := decoder.Decode(&byorErrorModel)
 		if decodeErr != nil {
-			return "", errors.Errorf("Parsing error model failed - %s", err.Error())
+			return "", errors.Errorf(errorConstants.ImportSarifFileError)
 		}
 		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, byorErrorModel.Code, byorErrorModel.Message))
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return model.ImportID, errors.Errorf("Parsing upload model failed - %s", err.Error())
+			return model.ImportID, errors.Errorf(errorConstants.ImportSarifFileError)
 		}
 		logger.Printf(successfulMessage, projectID, model.ImportID)
 		return model.ImportID, nil
