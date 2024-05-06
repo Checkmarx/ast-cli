@@ -1063,6 +1063,7 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating gl-sast Report: ", targetFile)
 	var glSast = new(wrappers.GlSastResultsCollection)
+	glSast.Vulnerabilities = []wrappers.GlVulnerabilities{}
 	err := addScanToGlSastReport(summary, glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
