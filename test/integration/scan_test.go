@@ -23,8 +23,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -189,7 +191,9 @@ func TestScaResolverArg(t *testing.T) {
 		"sast,iac-security",
 		viper.GetString(resolverEnvVar),
 	)
+
 	defer deleteProject(t, projectID)
+
 	assert.Assert(
 		t,
 		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
@@ -684,7 +688,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan completed partially")
+	assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
@@ -702,9 +706,19 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan did not complete successfully")
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
+}
+
+func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
+	var e *wrappers.AstError
+	if errors.As(err, &e) {
+		assert.Equal(t, e.Error(), expectedErrorMessage)
+		assert.Equal(t, e.Code, expectedExitCode)
+	} else {
+		assertError(t, err, "Error is not of type AstError")
+		assert.Assert(t, false, fmt.Sprintf("Error is not of type AstError. Error message: %s", err.Error()))
+	}
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
