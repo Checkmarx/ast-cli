@@ -41,7 +41,6 @@ func TestFindProject(t *testing.T) {
 		{
 			name: "Testing the create flow",
 			args: args{
-				applicationID:           []string{"1"},
 				projectName:             "new-MOCK",
 				cmd:                     &cobra.Command{},
 				projectsWrapper:         &mock.ProjectsMockWrapper{},
@@ -99,7 +98,6 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
 			projectGroups:           "",
 		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and non existing project groups return error", args: args{
@@ -108,7 +106,6 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
 			projectGroups:           "grp1,grp2",
 		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
@@ -117,7 +114,6 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
 			projectGroups:           "",
 		}, want: "", wantErr: true},
 		{name: "When called with mock fake group error return fake error from project create", args: args{
@@ -126,7 +122,6 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
 			projectGroups:           "fake-group-error",
 		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
@@ -135,7 +130,6 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
 			projectGroups:           "",
 			projectPrivatePackage:   "true",
 		}, want: "ID-new-project-name", wantErr: false},
