@@ -42,11 +42,17 @@ func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]strin
 	return &scaPackages, nil, nil
 }
 
-func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
+func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 	*wrappers.ScanResultsCollection,
 	*wrappers.WebError,
 	error,
 ) {
+	if params["scan-id"] == "MOCK_NO_VULNERABILITIES" {
+		return &wrappers.ScanResultsCollection{
+			TotalCount: 0,
+			Results:    nil,
+		}, nil, nil
+	}
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
