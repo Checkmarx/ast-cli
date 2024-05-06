@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -527,6 +528,31 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func TestRunGetResultsByScanIdGLFormat_NoVulnerabilities_Success(t *testing.T) {
+	// Execute the command and perform nil assertion
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sast")
+
+	// Run test for gl-sast report type
+	// Check if the file exists and vulnerabilities is empty, then delete the file
+	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err == nil {
+		t.Logf("File exists: %s.%s", fileName, printer.FormatGL)
+		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL))
+		if err != nil {
+			t.Logf("Failed to read file: %v", err)
+		}
+
+		var results wrappers.GlSastResultsCollection
+		if err := json.Unmarshal(resultsData, &results); err != nil {
+			t.Logf("Failed to unmarshal JSON: %v", err)
+		}
+		assert.Equal(t, len(results.Vulnerabilities), 0, "No vulnerabilities should be found")
+		if err := os.Remove(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err != nil {
+			t.Logf("Failed to delete file: %v", err)
+		}
+		t.Log("File deleted successfully.")
+	}
 }
 
 func Test_addPackageInformation(t *testing.T) {
