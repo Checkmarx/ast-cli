@@ -23,7 +23,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"

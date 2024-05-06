@@ -213,7 +213,6 @@ func Test_updateProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
-			applicationID:           []string{"app1"},
 			projectPrivatePackage:   "true",
 		}, want: "ID-project-name", wantErr: false},
 		{name: "When called with application ID", args: args{

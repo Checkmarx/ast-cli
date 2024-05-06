@@ -12,7 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	errorConstants "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"

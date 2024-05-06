@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"

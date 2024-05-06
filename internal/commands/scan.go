@@ -23,7 +23,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/google/shlex"
