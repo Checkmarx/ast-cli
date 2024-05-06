@@ -47,6 +47,7 @@ func TestFindProject(t *testing.T) {
 				projectsWrapper:         &mock.ProjectsMockWrapper{},
 				groupsWrapper:           &mock.GroupsMockWrapper{},
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
 			},
 			want:    "ID-new-MOCK",
 			wantErr: false,
