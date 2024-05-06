@@ -14,6 +14,7 @@ const (
 	ImportFilePathIsRequired               = "importFilePath is required"
 	ProjectNameIsRequired                  = "project name is required"
 	ProjectNotExists                       = "the project name you provided does not match any project"
+	ScanIDRequired                         = "scan ID is required"
 	FailedToGetApplication                 = "failed to get application"
 	SarifInvalidFileExtension              = "Invalid file extension. Supported extensions are .sarif and .zip containing sarif files."
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."

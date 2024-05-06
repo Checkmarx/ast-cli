@@ -17,7 +17,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
@@ -278,7 +278,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
-			return errors.New(applicationErrors.ScanIDRequired)
+			return errors.New(errorConstants.ScanIDRequired)
 		}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		results, err := GetScannerResults(scanWrapper, scanID, scanTypesFlagValue)

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -184,7 +184,7 @@ func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanI
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "results", "exit-code")
-	assert.Equal(t, err.Error(), applicationErrors.ScanIDRequired, "Wrong expected error message")
+	assert.Equal(t, err.Error(), errorConstants.ScanIDRequired, "Wrong expected error message")
 }
 
 func TestResultsExitCode_OnErrorScan_FailCommandWithError(t *testing.T) {
