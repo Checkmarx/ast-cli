@@ -53,7 +53,7 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 		byorErrorModel := ByorErrorModel{}
 		decodeErr := decoder.Decode(&byorErrorModel)
 		if decodeErr != nil {
-			return "", errors.Errorf(errorConstants.ImportSarifFileError)
+			return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, http.StatusInternalServerError, "Error decoding byor error model"))
 		}
 		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, byorErrorModel.Code, byorErrorModel.Message))
 	case http.StatusOK:
