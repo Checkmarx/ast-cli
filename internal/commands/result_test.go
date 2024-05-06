@@ -5,7 +5,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -382,7 +381,7 @@ func TestRunGetResultsByScanIdGLFormat_NoVulnerabilities_Success(t *testing.T) {
 	// Check if the file exists and vulnerabilities is empty, then delete the file
 	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err == nil {
 		t.Logf("File exists: %s.%s", fileName, printer.FormatGL)
-		resultsData, err := ioutil.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL))
+		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL))
 		if err != nil {
 			t.Fatalf("Failed to read file: %v", err)
 		}
