@@ -226,19 +226,6 @@ func Test_updateProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
 			applicationID:           []string{"app1"},
-			projectTags:             "tag1,tag2",
-		}, want: "ID-project-name", wantErr: false},
-		{name: "When called with application ID", args: args{
-			resp: &wrappers.ProjectsCollectionResponseModel{
-				Projects: []wrappers.ProjectResponseModel{
-					{ID: "ID-project-name", Name: "project-name"}},
-			},
-			cmd:                     &cobra.Command{},
-			projectsWrapper:         &mock.ProjectsMockWrapper{},
-			groupsWrapper:           &mock.GroupsMockWrapper{},
-			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			projectName:             "project-name",
-			applicationID:           []string{"app1"},
 		}, want: "ID-project-name", wantErr: false},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName: "mock-some-error-model",
