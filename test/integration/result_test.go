@@ -23,11 +23,9 @@ const (
 
 // Create a scan and test getting its results
 func TestResultListJson(t *testing.T) {
-
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
-
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting results should pass",
 		"results",

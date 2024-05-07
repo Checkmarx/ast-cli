@@ -26,6 +26,9 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	{
 		CommandName: "cx project create",
 	},
+	{
+		CommandName: "cx results show",
+	},
 }
 
 var FeatureFlags = map[string]bool{}
