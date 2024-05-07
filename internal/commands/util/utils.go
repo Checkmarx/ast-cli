@@ -7,6 +7,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/spf13/cobra"
@@ -30,6 +31,12 @@ func NewUtilsCommand(
 	chatWrapper wrappers.ChatWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	uploadsWrapper wrappers.UploadsWrapper,
+	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
+	byorWrapper wrappers.ByorWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
@@ -48,6 +55,9 @@ func NewUtilsCommand(
 			),
 		},
 	}
+
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper)
+
 	envCheckCmd := NewEnvCheckCommand()
 
 	completionCmd := NewCompletionCommand()
@@ -61,6 +71,10 @@ func NewUtilsCommand(
 	tenantCmd := NewTenantConfigurationCommand(tenantWrapper)
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
+
+	if wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+		utilsCmd.AddCommand(importCmd)
+	}
 
 	utilsCmd.AddCommand(
 		completionCmd,
@@ -83,14 +97,6 @@ func NewUtilsCommand(
 }
 
 // Contains Tests if a string exists in the provided array/**
-func Contains(array []string, val string) bool {
-	for _, e := range array {
-		if e == val {
-			return true
-		}
-	}
-	return false
-}
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)

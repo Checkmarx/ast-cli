@@ -12,7 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -56,7 +56,7 @@ func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, applicationErrors.ScanIDRequired)
+	assert.ErrorContains(t, err, errorConstants.ScanIDRequired)
 }
 
 func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {

@@ -3,6 +3,7 @@ package mock
 import (
 	"fmt"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
@@ -13,7 +14,15 @@ func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
 	*wrappers.ErrorModel,
 	error) {
 	fmt.Println("Called Create in ProjectsMockWrapper")
+	if model.Name == "mock-some-error-model" {
+		return nil, &wrappers.ErrorModel{
+			Message: "some error message",
+			Type:    "",
+			Code:    1,
+		}, fmt.Errorf("some error")
+	}
 	return &wrappers.ProjectResponseModel{
+		ID:             fmt.Sprintf("ID-%s", model.Name),
 		Name:           model.Name,
 		ApplicationIds: model.ApplicationIds,
 	}, nil, nil
@@ -73,9 +82,37 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	*wrappers.ProjectResponseModel,
 	*wrappers.ErrorModel,
 	error) {
+	if projectID == "ID-mock-some-error-model" {
+		return nil, &wrappers.ErrorModel{Code: 202, Message: "some-message"}, nil
+	}
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &wrappers.ProjectResponseModel{
 		ID: projectID,
+		Tags: map[string]string{
+			"a": "b",
+			"c": "d",
+		},
+		Groups: []string{
+			"a",
+			"b",
+		},
+	}, nil, nil
+}
+
+func (p *ProjectsMockWrapper) GetByName(name string) (
+	*wrappers.ProjectResponseModel,
+	*wrappers.ErrorModel,
+	error) {
+	fmt.Println("Called GetByName in ProjectsMockWrapper")
+	if name == "mock-missing-file-path" {
+		return nil, nil, fmt.Errorf(errorConstants.ImportFilePathIsRequired)
+	}
+	if name == "" {
+		return nil, nil, fmt.Errorf(errorConstants.ProjectNameIsRequired)
+	}
+	return &wrappers.ProjectResponseModel{
+		ID:   "MOCK",
+		Name: name,
 		Tags: map[string]string{
 			"a": "b",
 			"c": "d",

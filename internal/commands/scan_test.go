@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-	exitCodes "github.com/checkmarx/ast-cli/internal/errors/exit-codes"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -133,32 +133,32 @@ func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationS
 
 func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusBadRequest, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusInternalServerError, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
@@ -367,7 +367,7 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateScanWithSSHKey(t *testing.T) {

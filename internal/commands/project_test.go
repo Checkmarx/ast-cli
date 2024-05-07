@@ -5,12 +5,11 @@ package commands
 import (
 	"testing"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 
 	"gotest.tools/assert"
-
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 )
 
 func TestProjectHelp(t *testing.T) {
@@ -31,22 +30,22 @@ func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessf
 
 func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusBadRequest)
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeBadRequest400)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeHTTPStatusInternalServerError)
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeInternalServerError500)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create")
-	assert.Assert(t, err.Error() == "Project name is required")
+	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
 }
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
@@ -178,7 +177,7 @@ func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateProjectWithSSHKey(t *testing.T) {

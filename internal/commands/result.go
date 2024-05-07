@@ -17,8 +17,9 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -277,7 +278,7 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
-			return errors.New(applicationErrors.ScanIDRequired)
+			return errors.New(errorConstants.ScanIDRequired)
 		}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		results, err := GetScannerResults(scanWrapper, scanID, scanTypesFlagValue)
@@ -1140,7 +1141,7 @@ func enrichScaResults(
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
-	if util.Contains(scan.Engines, commonParams.ScaType) {
+	if utils.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
@@ -1164,7 +1165,7 @@ func enrichScaResults(
 	}
 	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
 
-	if util.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+	if utils.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
 		// Compute SAST results redundancy
 		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
