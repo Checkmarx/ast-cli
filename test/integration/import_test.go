@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -80,11 +81,9 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
 	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
-		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
 		projectName := projectNameRandom
-		defer deleteProjectByName(t, projectName)
 
 		args := []string{
 			"utils", "import",
@@ -93,7 +92,9 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 		}
 		err, _ := executeCommand(t, args...)
 
-		assertError(t, err, errorConstants.ImportSarifFileError)
+		deleteProjectByName(t, projectName)
+
+		assertError(t, err, fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, 400, ""))
 	}
 }
 
@@ -114,7 +115,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 		}
 		err, _ := executeCommand(t, args...)
 		defer deleteProjectByName(t, projectName)
-		assertError(t, err, errorConstants.ImportSarifFileError)
+		assertError(t, err, fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, 400, ""))
 	}
 }
 
