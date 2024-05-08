@@ -715,6 +715,16 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestCreateScan_WhenFolderIsExcluded_ReturnIsFilteredTrue(t *testing.T) {
+	res, _ := isDirFiltered(".vs", commonParams.BaseExcludeFilters)
+	assert.Equal(t, res, true)
+}
+
+func TestCreateScan_WhenFolderIsNotExcluded_ReturnIsFilteredFalse(t *testing.T) {
+	res, _ := isDirFiltered("some-folder-name", commonParams.BaseExcludeFilters)
+	assert.Equal(t, res, false)
+}
+
 func Test_parseThresholdLimit(t *testing.T) {
 	type args struct {
 		limit string
