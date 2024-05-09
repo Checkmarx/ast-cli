@@ -736,6 +736,15 @@ func Test_isDirFiltered(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "WhenUserDefinedExcludedFolder_DoesNotAffectOtherFolders_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder",
+				filters:  append(commonParams.BaseExcludeFilters, "!exclude-other-folder"),
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
 			name: "WhenFolderIsNotExcluded_ReturnIsFilteredFalse",
 			args: args{
 				filename: "some-folder-name",
