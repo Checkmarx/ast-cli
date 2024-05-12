@@ -1,5 +1,3 @@
-//go:build integration
-
 package integration
 
 import (
@@ -49,6 +47,11 @@ func TestMain(m *testing.M) {
 	//deleteScanAndProject()
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
+}
+
+func TestRootVersion(t *testing.T) {
+	testInstance = t
+	executeCmdNilAssertion(t, "test root version", "version")
 }
 
 // Create or return a scan to be shared between tests

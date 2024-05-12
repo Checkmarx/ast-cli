@@ -127,6 +127,10 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
+}
+
 func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
@@ -494,6 +498,17 @@ func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
 	threshold := " KICS - LoW=1"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
+}
+
+func Test_parseThresholdsSuccess(t *testing.T) {
+	want := make(map[string]int)
+	want["sast-high"] = 1
+	want["sast-medium"] = 1
+	want["sca-high"] = 1
+	threshold := "sast-high=1; sast-medium=1; sca-high=1"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
