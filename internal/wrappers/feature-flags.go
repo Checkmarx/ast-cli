@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
@@ -26,6 +27,19 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	},
 	{
 		CommandName: "cx project create",
+	},
+	{
+		CommandName: "cx import",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    MinioEnabled,
+				Default: true,
+			},
+			{
+				Name:    feature_flags.ByorEnabled,
+				Default: false,
+			},
+		},
 	},
 	{
 		CommandName: "cx results show",

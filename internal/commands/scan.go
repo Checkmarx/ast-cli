@@ -14,17 +14,18 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/constants"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -597,214 +598,6 @@ func scanCreateSubCommand(
 	return createScanCmd
 }
 
-func findProject(
-	applicationID []string,
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationWrapper wrappers.ApplicationsWrapper,
-) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
-	if err != nil {
-		return "", err
-	}
-
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, projectName, applicationID)
-		}
-	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, applicationID)
-	if err != nil {
-		return "", err
-	}
-	return projectID, nil
-}
-
-func createProject(
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
-	applicationID []string,
-) (string, error) {
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-
-	var projModel = wrappers.Project{}
-	projModel.Name = projectName
-	projModel.ApplicationIds = applicationID
-
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModel.Tags = createTagMap(projectTags)
-	resp, errorModel, err := projectsWrapper.Create(&projModel)
-	projectID := ""
-	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
-	}
-	if err == nil {
-		projectID = resp.ID
-
-		if len(applicationID) > 0 {
-			err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
-			if err != nil {
-				return projectID, err
-			}
-		}
-
-		if projectGroups != "" {
-			err = UpsertProjectGroups(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, nil, projectGroups, projectID, projectName)
-			if err != nil {
-				return projectID, err
-			}
-		}
-	}
-	return projectID, err
-}
-
-func verifyApplicationAssociationDone(applicationID []string, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
-	var applicationRes *wrappers.ApplicationsResponseModel
-	var err error
-	params := make(map[string]string)
-	params["id"] = applicationID[0]
-
-	logger.PrintIfVerbose("polling application until project association done or timeout of 2 min")
-	start := time.Now()
-	timeout := 2 * time.Minute
-	for applicationRes != nil && len(applicationRes.Applications) > 0 &&
-		!slices.Contains(applicationRes.Applications[0].ProjectIds, projectID) {
-		applicationRes, err = applicationsWrapper.Get(params)
-		if err != nil {
-			return err
-		} else if time.Since(start) < timeout {
-			return errors.Errorf("%s: %v", failedProjectApplicationAssociation, "timeout of 2 min for association")
-		}
-	}
-
-	logger.PrintIfVerbose("application association done successfully")
-	return nil
-}
-
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
-	projectName string,
-	applicationID []string,
-
-) (string, error) {
-	var projectID string
-	var projModel = wrappers.Project{}
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
-		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
-		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
-		}
-	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
-		return projectID, nil
-	}
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
-	if errModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
-	}
-	if err != nil {
-		return "", err
-	}
-	projModel.Name = projModelResp.Name
-	projModel.Groups = projModelResp.Groups
-	projModel.Tags = projModelResp.Tags
-	projModel.ApplicationIds = projModelResp.ApplicationIds
-
-	if projectTags != "" {
-		logger.PrintIfVerbose("Updating project tags")
-		projModel.Tags = createTagMap(projectTags)
-	}
-	if len(applicationID) > 0 {
-		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
-	}
-	err = projectsWrapper.Update(projectID, &projModel)
-	if err != nil {
-		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-
-	if len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationID, projectID, applicationsWrapper)
-		if err != nil {
-			return projectID, err
-		}
-	}
-
-	if projectGroups != "" {
-		err = UpsertProjectGroups(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName)
-		if err != nil {
-			return projectID, err
-		}
-	}
-	return projectID, nil
-}
-
-func UpsertProjectGroups(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
-	projectGroups string, projectID string, projectName string) error {
-	groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
-	if groupErr != nil {
-		return errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-	}
-
-	projModel.Groups = getGroupsForRequest(groupsMap)
-	if projModelResp != nil {
-		groups := append(getGroupsForRequest(groupsMap), projModelResp.Groups...)
-		projModel.Groups = groups
-	}
-
-	err := assignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
-	if err != nil {
-		return err
-	}
-
-	logger.PrintIfVerbose("Updating project groups")
-	err = projectsWrapper.Update(projectID, projModel)
-	if err != nil {
-		return errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-	return nil
-}
-
-func createApplicationIds(applicationID, existingApplicationIds []string) []string {
-	for _, id := range applicationID {
-		if !util.Contains(existingApplicationIds, id) {
-			existingApplicationIds = append(existingApplicationIds, id)
-		}
-	}
-	return existingApplicationIds
-}
-
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
 	tagListStr, _ := cmd.Flags().GetString(commonParams.TagList)
 	tags := strings.Split(tagListStr, ",")
@@ -826,22 +619,6 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 		}
 	}
 	*input, _ = json.Marshal(info)
-}
-
-func createTagMap(tagListStr string) map[string]string {
-	tagsList := strings.Split(tagListStr, ",")
-	tags := make(map[string]string)
-	for _, tag := range tagsList {
-		if len(tag) > 0 {
-			value := ""
-			keyValuePair := strings.Split(tag, ":")
-			if len(keyValuePair) > 1 {
-				value = keyValuePair[1]
-			}
-			tags[keyValuePair[0]] = value
-		}
-	}
-	return tags
 }
 
 func setupScanTypeProjectAndConfig(
@@ -869,10 +646,7 @@ func setupScanTypeProjectAndConfig(
 		return errors.Errorf("Project name is required")
 	}
 
-	applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
-	if err != nil {
-		return err
-	}
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 
 	var applicationID []string
 	if applicationName != "" {
@@ -881,13 +655,13 @@ func setupScanTypeProjectAndConfig(
 			return getAppErr
 		}
 		if application == nil {
-			return errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
+			return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 		}
 		applicationID = []string{application.ID}
 	}
 
 	// We need to convert the project name into an ID
-	projectID, findProjectErr := findProject(
+	projectID, findProjectErr := services.FindProject(
 		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
@@ -899,6 +673,7 @@ func setupScanTypeProjectAndConfig(
 	if findProjectErr != nil {
 		return findProjectErr
 	}
+
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
@@ -913,12 +688,9 @@ func setupScanTypeProjectAndConfig(
 		)
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
-		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-		if err != nil {
-			return err
-		}
+		resubmitConfig, _ = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
 	} else if _, ok := info["config"]; !ok {
-		err = json.Unmarshal([]byte("[]"), &configArr)
+		err := json.Unmarshal([]byte("[]"), &configArr)
 		if err != nil {
 			return err
 		}
@@ -941,8 +713,13 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, apiSecConfig)
 	}
 	info["config"] = configArr
-	*input, err = json.Marshal(info)
-	return err
+	var err2 error
+	*input, err2 = json.Marshal(info)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
 }
 
 func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
@@ -951,7 +728,6 @@ func getApplication(applicationName string, applicationsWrapper wrappers.Applica
 		params["name"] = applicationName
 		resp, err := applicationsWrapper.Get(params)
 		if err != nil {
-
 			return nil, err
 		}
 		if resp.Applications != nil && len(resp.Applications) > 0 {
@@ -989,7 +765,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	}
 	// Checking the response for errors
 	if errorModel != nil {
-		return nil, errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
 	config := allScansModel.Scans[0].Metadata.Configs
 	engines := allScansModel.Scans[0].Engines
@@ -1546,7 +1322,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 	info, statErr := os.Stat(sourceTrimmed)
 	if !os.IsNotExist(statErr) {
-		if filepath.Ext(sourceTrimmed) == ".zip" {
+		if filepath.Ext(sourceTrimmed) == constants.ZipExtension {
 			zipFile = sourceTrimmed
 		} else if info != nil && info.IsDir() {
 			sourceDir = filepath.ToSlash(sourceTrimmed)
@@ -1616,7 +1392,7 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
@@ -1959,7 +1735,37 @@ func parseThreshold(threshold string) map[string]int {
 			}
 		}
 	}
+
 	return thresholdMap
+}
+
+func validateThresholds(thresholdMap map[string]int) error {
+	var errMsgBuilder strings.Builder
+
+	for engineName, limit := range thresholdMap {
+		if limit < 1 {
+			errMsgBuilder.WriteString(errors.Errorf("Invalid value for threshold limit %s. Threshold should be greater or equal to 1.\n", engineName).Error())
+		}
+	}
+
+	errMsg := errMsgBuilder.String()
+	if errMsg != "" {
+		return errors.New(errMsg)
+	}
+	return nil
+}
+
+func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
+	parts := strings.Split(limit, "=")
+	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
+	if len(parts) <= 1 {
+		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+	}
+	intLimit, err = strconv.Atoi(parts[1])
+	if err != nil {
+		err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
+	}
+	return engineName, intLimit, err
 }
 
 func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
@@ -2021,9 +1827,10 @@ func waitForScanCompletion(
 				return errors.Wrapf(err, "%s\n", failedCanceling)
 			}
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
-			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
+
+			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
 		}
 		i++
 	}
@@ -2068,11 +1875,47 @@ func isScanRunning(
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
-		return false, errors.New("scan completed partially")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan completed partially"))
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
-		return false, errors.New("scan did not complete successfully")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan did not complete successfully"))
 	}
 	return false, nil
+}
+
+func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
+	failedStatuses := make([]int, 0)
+	for _, scanner := range scanResponseModel.StatusDetails {
+		scannerNameLowerCase := strings.ToLower(scanner.Name)
+		scannerErrorExitCode, errorCodeByScannerExists := errorCodesByScanner[scannerNameLowerCase]
+		if scanner.Status == wrappers.ScanFailed && scanner.Name != General && errorCodeByScannerExists {
+			failedStatuses = append(failedStatuses, scannerErrorExitCode)
+		}
+	}
+	if len(failedStatuses) == 1 {
+		return failedStatuses[0]
+	}
+
+	return exitCodes.MultipleEnginesFailedExitCode
+}
+
+const (
+	General     = "general"
+	Sast        = "sast"
+	Sca         = "sca"
+	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
+	Kics        = "kics"
+	APISec      = "apisec"
+)
+
+var errorCodesByScanner = map[string]int{
+	General:     exitCodes.MultipleEnginesFailedExitCode,
+	Sast:        exitCodes.SastEngineFailedExitCode,
+	Sca:         exitCodes.ScaEngineFailedExitCode,
+	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
+	Kics:        exitCodes.KicsEngineFailedExitCode,
+	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
@@ -2091,7 +1934,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
 			views, err := toScanViews(allScansModel.Scans, sastMetadataWrapper)
 			if err != nil {
@@ -2172,7 +2015,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2193,7 +2036,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			}
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2561,35 +2404,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	}
 
 	return nil
-}
-
-func validateThresholds(thresholdMap map[string]int) error {
-	var errMsgBuilder strings.Builder
-
-	for engineName, limit := range thresholdMap {
-		if limit < 1 {
-			errMsgBuilder.WriteString(errors.Errorf("Invalid value for threshold limit %s. Threshold should be greater or equal to 1.\n", engineName).Error())
-		}
-	}
-
-	errMsg := errMsgBuilder.String()
-	if errMsg != "" {
-		return errors.New(errMsg)
-	}
-	return nil
-}
-
-func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
-	parts := strings.Split(limit, "=")
-	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
-	if len(parts) <= 1 {
-		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
-	}
-	intLimit, err = strconv.Atoi(parts[1])
-	if err != nil {
-		err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
-	}
-	return engineName, intLimit, err
 }
 
 func validateBooleanString(value string) error {

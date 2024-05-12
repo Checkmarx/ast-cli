@@ -59,6 +59,7 @@ func createASTTestCommand() *cobra.Command {
 	policyWrapper := &mock.PolicyMockWrapper{}
 	sastMetadataWrapper := &mock.SastMetadataMockWrapper{}
 	accessManagementWrapper := &mock.AccessManagementMockWrapper{}
+	byorWrapper := &mock.ByorMockWrapper{}
 
 	return NewAstCLI(
 		applicationWrapper,
@@ -90,6 +91,7 @@ func createASTTestCommand() *cobra.Command {
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
+		byorWrapper,
 	)
 }
 
