@@ -168,6 +168,7 @@ const (
 	ChatConversationID = "conversation-id"
 	ChatUserInput      = "user-input"
 	ChatModel          = "model"
+	ChatAzureAI        = "azure-ai"
 
 	// Chat (Kics)
 	ChatKicsResultFile          = "result-file"

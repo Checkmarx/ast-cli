@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/message"
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/role"
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/message"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/role"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -35,6 +35,7 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 	chatSastCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
 	chatSastCmd.Flags().String(params.ChatUserInput, "", "User question")
 	chatSastCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
+	chatSastCmd.Flags().Bool(params.ChatAzureAI, false, "Use Azure AI")
 	chatSastCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
 	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
 	chatSastCmd.Flags().String(params.ChatSastResultID, "", "ID of the result to remediate")
@@ -52,14 +53,25 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 		if !isAiGuidedRemediationEnabled(tenantWrapper) {
 			return outputError(cmd, uuid.Nil, errors.Errorf(AiGuidedRemediationDisabledError))
 		}
-		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
-		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
+		chatAzureAI, _ := cmd.Flags().GetBool(params.ChatAzureAI)
 		scanResultsFile, _ := cmd.Flags().GetString(params.ChatSastScanResultsFile)
 		sourceDir, _ := cmd.Flags().GetString(params.ChatSastSourceDir)
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
 
-		statefulWrapper := wrapper.NewStatefulWrapper(connector.NewFileSystemConnector(""), chatAPIKey, chatModel, dropLen, 0)
+		conn := connector.NewFileSystemConnector("")
+
+		var statefulWrapper wrapper.StatefulWrapper
+		if chatAzureAI {
+			customerToken, _ := wrappers.GetAccessToken()
+			azureAiEndPoint, _ := wrappers.GetURL(azureAiRoute, customerToken)
+
+			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, azureAiChatModel, dropLen, 0)
+		} else {
+			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
+			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
+			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
+		}
 
 		newConversation := false
 		var userInput string
