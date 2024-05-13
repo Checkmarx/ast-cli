@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -47,7 +48,6 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 			_ = resp.Body.Close()
 		}
 	}()
-
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		return nil, err
@@ -58,8 +58,9 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 			return nil, err
 		}
 		return &model, nil
-
+	case http.StatusNotFound:
+		return nil, errors.New("feature flags not found")
 	default:
-		return nil, nil
+		return nil, errors.New("failed to load feature flags for tenant")
 	}
 }
