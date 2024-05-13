@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -49,7 +48,6 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 			_ = resp.Body.Close()
 		}
 	}()
-	logger.Printf("Response status code: %d", resp.StatusCode)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		return nil, err
