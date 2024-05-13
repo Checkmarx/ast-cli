@@ -730,6 +730,69 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func Test_isDirFiltered(t *testing.T) {
+	type args struct {
+		filename string
+		filters  []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "WhenUserDefinedExcludedFolder_ReturnIsFilteredTrue",
+			args: args{
+				filename: "user-folder-to-exclude",
+				filters:  append(commonParams.BaseExcludeFilters, "!user-folder-to-exclude"),
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "WhenUserDefinedExcludedFolder_DoesNotAffectOtherFolders_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder",
+				filters:  append(commonParams.BaseExcludeFilters, "!exclude-other-folder"),
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenFolderIsNotExcluded_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder-name",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenDefaultFolderIsExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: ".vs",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := isDirFiltered(ttt.args.filename, ttt.args.filters)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("isDirFiltered() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if got != ttt.want {
+				t.Errorf("isDirFiltered() got = %v, want %v", got, ttt.want)
+			}
+		})
+	}
+}
+
 func Test_parseThresholdLimit(t *testing.T) {
 	type args struct {
 		limit string
