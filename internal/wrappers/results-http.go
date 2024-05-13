@@ -3,6 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -150,13 +151,6 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return nil, &errorModel, nil
 	case http.StatusOK:
 		var model []ScaPackageCollection
 		err = decoder.Decode(&model)
@@ -168,6 +162,9 @@ func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]stri
 		logger.PrintIfVerbose("SCA packages for enrichment not found")
 		return nil, nil, nil
 	default:
+		responseData, _ := io.ReadAll(resp.Body)
+		responseString := string(responseData)
+		logger.PrintIfVerbose("Failed to get SCA packages " + responseString)
 		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }

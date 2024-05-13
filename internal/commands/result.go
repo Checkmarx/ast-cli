@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -19,7 +20,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -906,7 +906,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, scan, params, false)
 		if err != nil {
 			return err
 		}
@@ -1109,6 +1109,7 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
+	isThresholdCheck bool,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
@@ -1124,9 +1125,11 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-		if err != nil {
-			return nil, err
+		if !isThresholdCheck {
+			resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -1141,7 +1144,7 @@ func enrichScaResults(
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
-	if utils.Contains(scan.Engines, commonParams.ScaType) {
+	if slices.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
@@ -1165,7 +1168,7 @@ func enrichScaResults(
 	}
 	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
 
-	if utils.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+	if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
 		// Compute SAST results redundancy
 		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
