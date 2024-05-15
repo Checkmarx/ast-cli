@@ -3,17 +3,20 @@
 package commands
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
+	"github.com/pkg/errors"
 	"gotest.tools/assert"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -124,42 +127,42 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
+}
+
 func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
 func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
-}
-
-func TestScanCreate_ExistingApplication_CreateNewProjectUnderApplicationSuccessfully(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "NewProject", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusBadRequest, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeHTTPStatusInternalServerError, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.FailedToGetApplication)
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
@@ -227,6 +230,43 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
+}
+
+func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-scanner-fail", "-s", dummyRepo, "-b", "dummy_branch"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--scan-types", Kics)...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
+}
+
+func TestScanCreate_MultipleScannersFail_ReturnGeneralExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-multiple-scanner-fails", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s", Kics, Sca))
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.MultipleEnginesFailedExitCode)
+}
+
+func TestScanCreate_ScaScannersFailPartialScan_ReturnScaExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-sca-fail-partial", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", Sca)
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan completed partially", exitCodes.ScaEngineFailedExitCode)
+}
+
+func TestScanCreate_MultipleScannersDifferentStatusesOnlyKicsFail_ReturnKicsExitCodeAndErrorMessage(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "fake-kics-fail-sast-canceled", "-s", dummyRepo, "-b", "dummy_branch"}
+	baseArgs = append(baseArgs, "--scan-types", fmt.Sprintf("%s,%s,%s", Sca, Sast, Kics))
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.KicsEngineFailedExitCode)
+}
+
+func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
+	var e *wrappers.AstError
+	if errors.As(err, &e) {
+		assert.Equal(t, e.Error(), expectedErrorMessage)
+		assert.Equal(t, e.Code, expectedExitCode)
+	} else {
+		assert.Assert(t, false, "Error is not of type AstError")
+	}
 }
 
 func TestCreateScanWithNoFilteredProjects(t *testing.T) {
@@ -331,7 +371,7 @@ func TestCreateScanWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateScanWithSSHKey(t *testing.T) {
@@ -458,6 +498,17 @@ func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
 	threshold := " KICS - LoW=1"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
+}
+
+func Test_parseThresholdsSuccess(t *testing.T) {
+	want := make(map[string]int)
+	want["sast-high"] = 1
+	want["sast-medium"] = 1
+	want["sca-high"] = 1
+	threshold := "sast-high=1; sast-medium=1; sca-high=1"
 	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
@@ -677,6 +728,69 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func Test_isDirFiltered(t *testing.T) {
+	type args struct {
+		filename string
+		filters  []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "WhenUserDefinedExcludedFolder_ReturnIsFilteredTrue",
+			args: args{
+				filename: "user-folder-to-exclude",
+				filters:  append(commonParams.BaseExcludeFilters, "!user-folder-to-exclude"),
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "WhenUserDefinedExcludedFolder_DoesNotAffectOtherFolders_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder",
+				filters:  append(commonParams.BaseExcludeFilters, "!exclude-other-folder"),
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenFolderIsNotExcluded_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder-name",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenDefaultFolderIsExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: ".vs",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := isDirFiltered(ttt.args.filename, ttt.args.filters)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("isDirFiltered() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if got != ttt.want {
+				t.Errorf("isDirFiltered() got = %v, want %v", got, ttt.want)
+			}
+		})
+	}
 }
 
 func Test_parseThresholdLimit(t *testing.T) {

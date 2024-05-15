@@ -19,8 +19,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const ErrorCodeFormat = "%s: CODE: %d, %s\n"
-
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
@@ -52,6 +50,7 @@ func NewAstCLI(
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	byorWrapper wrappers.ByorWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -74,6 +73,7 @@ func NewAstCLI(
 		},
 	}
 
+	setUpFeatureFlags(featureFlagsWrapper)
 	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
@@ -105,15 +105,6 @@ func NewAstCLI(
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
-		}
-
-		if requiredFeatureFlagsCheck(cmd) {
-			err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
 		}
 	}
 	// Link the environment variable to the CLI argument(s).
@@ -162,6 +153,7 @@ func NewAstCLI(
 		accessManagementWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
+
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
@@ -187,7 +179,14 @@ func NewAstCLI(
 		chatWrapper,
 		policyWrapper,
 		scansWrapper,
+		projectsWrapper,
+		uploadsWrapper,
+		groupsWrapper,
+		accessManagementWrapper,
+		applicationsWrapper,
+		byorWrapper,
 	)
+
 	configCmd := util.NewConfigCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
 
@@ -210,16 +209,6 @@ func NewAstCLI(
 	return rootCmd
 }
 
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
-
-	return false
-}
-
 const configFormatString = "%30v: %s"
 
 func PrintConfiguration() {
@@ -230,11 +219,17 @@ func PrintConfiguration() {
 	}
 }
 
-func getFilters(cmd *cobra.Command) (map[string]string, error) {
-	filters, err := cmd.Flags().GetStringSlice(params.FilterFlag)
+func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
+
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
+		os.Exit(1)
 	}
+}
+
+func getFilters(cmd *cobra.Command) (map[string]string, error) {
+	filters, _ := cmd.Flags().GetStringSlice(params.FilterFlag)
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")

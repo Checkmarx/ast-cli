@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -17,6 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -165,10 +167,30 @@ func NewResultsCommand(
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
+	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd,
+		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand,
 	)
 	return resultCmd
+}
+
+func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
+	exitCodeCmd := &cobra.Command{
+		Use:   "exit-code",
+		Short: "Get exit code and details of a scan",
+		Long:  "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One.",
+		Example: heredoc.Doc(
+			`
+			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | sca | iac-security | apisec>
+		`,
+		),
+		RunE: runGetExitCodeCommand(scanWrapper),
+	}
+
+	exitCodeCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID")
+	exitCodeCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+
+	return exitCodeCmd
 }
 
 func resultShowSubCommand(
@@ -253,6 +275,110 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
 
 	return resultBflCmd
+}
+
+func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+		if scanID == "" {
+			return errors.New(errorConstants.ScanIDRequired)
+		}
+		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		results, err := GetScannerResults(scanWrapper, scanID, scanTypesFlagValue)
+		if err != nil {
+			return err
+		}
+
+		if len(results) == 0 {
+			return nil
+		}
+
+		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
+	}
+}
+
+func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID, scanTypesFlagValue string) ([]ScannerResponse, error) {
+	scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedGetting)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+	}
+	results := getScannerResponse(scanTypesFlagValue, scanResponseModel)
+	return results, nil
+}
+
+func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
+
+	if scanResponseModel.Status == wrappers.ScanCanceled ||
+		scanResponseModel.Status == wrappers.ScanRunning ||
+		scanResponseModel.Status == wrappers.ScanQueued ||
+		scanResponseModel.Status == wrappers.ScanCompleted {
+		result := ScannerResponse{
+			ScanID: scanResponseModel.ID,
+			Status: string(scanResponseModel.Status),
+		}
+		results = append(results, result)
+		return results
+	}
+
+	if scanTypesFlagValue == "" {
+		results = createAllFailedScannersResponse(scanResponseModel)
+	} else {
+		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
+		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
+	}
+
+	return results
+}
+
+func createRequestedScannersResponse(scanTypes map[string]string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
+	for i := range scanResponseModel.StatusDetails {
+		if _, ok := scanTypes[scanResponseModel.StatusDetails[i].Name]; ok {
+			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
+		}
+	}
+	return results
+}
+
+func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
+	var results []ScannerResponse
+	for i := range scanResponseModel.StatusDetails {
+		if scanResponseModel.StatusDetails[i].Status == wrappers.ScanFailed {
+			results = append(results, createScannerResponse(&scanResponseModel.StatusDetails[i]))
+		}
+	}
+	return results
+}
+
+func sanitizeScannerNames(scanTypes string) map[string]string {
+	scanTypeSlice := strings.Split(scanTypes, ",")
+	scanTypeMap := make(map[string]string)
+	for i := range scanTypeSlice {
+		lowered := strings.ToLower(scanTypeSlice[i])
+		scanTypeMap[lowered] = lowered
+	}
+
+	return scanTypeMap
+}
+
+func createScannerResponse(statusDetails *wrappers.StatusInfo) ScannerResponse {
+	return ScannerResponse{
+		Name:      statusDetails.Name,
+		Status:    statusDetails.Status,
+		Details:   statusDetails.Details,
+		ErrorCode: stringifyErrorCode(statusDetails.ErrorCode),
+	}
+}
+
+func stringifyErrorCode(errorCode int) string {
+	if errorCode == 0 {
+		return ""
+	}
+	return strconv.Itoa(errorCode)
 }
 
 func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobra.Command, args []string) error {
@@ -783,7 +909,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, scan, params, false)
 		if err != nil {
 			return err
 		}
@@ -904,6 +1030,9 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
 	retrySBOM int) error {
+	if printer.IsFormat(format, printer.FormatIndentedJSON) {
+		return nil
+	}
 	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
 		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
 		return exportSarifResults(sarifRpt, results)
@@ -988,6 +1117,7 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
+	isThresholdCheck bool,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
@@ -1003,9 +1133,11 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-		if err != nil {
-			return nil, err
+		if !isThresholdCheck {
+			resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -1020,7 +1152,7 @@ func enrichScaResults(
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
-	if util.Contains(scan.Engines, commonParams.ScaType) {
+	if slices.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
@@ -1044,7 +1176,7 @@ func enrichScaResults(
 	}
 	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
 
-	if util.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+	if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
 		// Compute SAST results redundancy
 		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
@@ -1071,6 +1203,7 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating gl-sast Report: ", targetFile)
 	var glSast = new(wrappers.GlSastResultsCollection)
+	glSast.Vulnerabilities = []wrappers.GlVulnerabilities{}
 	err := addScanToGlSastReport(summary, glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
@@ -2026,4 +2159,12 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	}
 	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
+}
+
+type ScannerResponse struct {
+	ScanID    string `json:"ScanID,omitempty"`
+	Name      string `json:"Name,omitempty"`
+	Status    string `json:"Status,omitempty"`
+	Details   string `json:"Details,omitempty"`
+	ErrorCode string `json:"ErrorCode,omitempty"`
 }

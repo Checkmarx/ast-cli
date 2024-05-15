@@ -1,8 +1,10 @@
 package mock
 
 const (
-	ApplicationDoesntExist            = "application-doesnt-exist"
-	NoPermissionApp                   = "NoPermissionApp"
-	FakeHTTPStatusBadRequest          = "fake-http-status-bad-request"
-	FakeHTTPStatusInternalServerError = "fake-http-status-internal-server-error"
+	ApplicationDoesntExist     = "application-doesnt-exist"
+	NoPermissionApp            = "NoPermissionApp"
+	FakeBadRequest400          = "fake-http-status-bad-request"
+	FakeUnauthorized401        = "fake-unauthorized-response"
+	FakeForbidden403           = "fake-forbidden-response"
+	FakeInternalServerError500 = "fake--internal-server-error"
 )
