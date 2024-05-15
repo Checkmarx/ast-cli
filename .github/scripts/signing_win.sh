@@ -22,7 +22,7 @@ REMOTE_PATH="/tmp"
 HSM_CREDS=$SIGNING_HSM_CREDS
 
 # Check if OS is windows
-if [ "OS_TYPE" != "windows" ]; then
+if [ "$OS_TYPE" != "windows" ]; then
   echo "The artifact is not a windows binary file, exiting."
   exit 0
 fi
