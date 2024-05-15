@@ -34,7 +34,7 @@ builds:
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
     hooks:
       post:
-        - cmd: [ "{{.Os}}" = "windows" ] && bash .github/scripts/signing_win.sh dist/cx_windows_amd64_v1/cx.exe
+        - cmd: "[ '{{.Os}}' = 'windows' ] && bash .github/scripts/signing_win.sh dist/cx_windows_amd64_v1/cx.exe"
           output: true
           env:
             - SIGNING_REMOTE_SSH_USER={{ .Env.SIGNING_REMOTE_SSH_USER }}
