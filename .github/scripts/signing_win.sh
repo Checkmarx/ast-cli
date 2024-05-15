@@ -9,6 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 FILEPATH=$1
+OS_TYPE=$2
 FILENAME=$(basename "$FILEPATH")
 FILENAME_SIGNED="$FILENAME"_signed
 
@@ -19,6 +20,12 @@ REMOTE_PATH="/tmp"
 
 # HSM credentials
 HSM_CREDS=$SIGNING_HSM_CREDS
+
+# Check if OS is windows
+if [ "OS_TYPE" != "windows" ]; then
+  echo "The artifact is not a windows binary file, exiting."
+  exit 0
+fi
 
 # Check if required variables are set
 if [ -z "$REMOTE_USER" ] || [ -z "$REMOTE_HOST" ] || [ -z "$HSM_CREDS" ] || [ -z "$SIGNING_REMOTE_SSH_PRIVATE_KEY" ]; then
