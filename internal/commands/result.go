@@ -1521,7 +1521,7 @@ func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyRes
 					Package:                   wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
 					DependencyLocationVersion: "",
 					Direct:                    result.ScanResultData.ScaPackageCollection.IsDirectDependency,
-					DependencyPath:            "",
+					DependencyPath:            result.ScanResultData.Line,
 				},
 			},
 		})
@@ -1556,7 +1556,7 @@ func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.Depe
 			},
 			DependencyLocationVersion: result.ScanResultData.PackageData[i].URL,
 			Direct:                    true,
-			DependencyPath:            result.ScanResultData.PackageData[i].Type,
+			DependencyPath:            result.ScanResultData.Line,
 		})
 	}
 	return allIdentifierLocations

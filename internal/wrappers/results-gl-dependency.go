@@ -93,7 +93,7 @@ type DependencyLocation struct {
 	Package                   PackageName `json:"package"`
 	DependencyLocationVersion string      `json:"version"`
 	Direct                    bool        `json:"direct"`
-	DependencyPath            string      `json:"iid"`
+	DependencyPath            uint        `json:"iid"`
 }
 
 type PackageName struct {
