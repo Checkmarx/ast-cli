@@ -35,8 +35,7 @@ builds:
     hooks:
       post:
         - cmd: bash .github/scripts/signing_win.sh cx_windows_amd64_v1/cx.exe
-          dir:
-            "{{ dir .Dist}}"
+          dir: ./dist
           output: true
           env:
             - SIGNING_REMOTE_SSH_USER={{ .Env.SIGNING_REMOTE_SSH_USER }}
