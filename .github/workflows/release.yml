@@ -110,6 +110,10 @@ jobs:
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
+          SIGNING_REMOTE_SSH_USER: ${{ secrets.SIGNING_REMOTE_SSH_USER }}
+          SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
+          SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
+          SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
 
   notify:
     runs-on: ubuntu-latest
