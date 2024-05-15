@@ -1938,7 +1938,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
 
-		allScansModel, errorModel, err = scansWrapper.Get(params)
+		allScansModel, errorModel, err = scansWrapper.GetWithPagination(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
 		}

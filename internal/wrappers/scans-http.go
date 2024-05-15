@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ const (
 	failedToParseGetAll   = "Failed to parse list response"
 	failedToParseTags     = "Failed to parse tags response"
 	failedToParseBranches = "Failed to parse branches response"
+	MaxLimit              = 300
 )
 
 type ScansHTTPWrapper struct {
@@ -81,6 +83,96 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func (s *ScansHTTPWrapper) GetWithPagination(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	userLimit, err := parseLimit(params[commonParams.LimitQueryParam])
+	fetchAll := false
+	userSpecifiedLimit := userLimit != -1
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Determine if all scans should be fetched
+	if !userSpecifiedLimit {
+		fetchAll = true
+		userLimit = MaxLimit
+	}
+
+	// Initialize offset and combined response
+	offset := 0
+	combinedResponse := &ScansCollectionResponseModel{}
+
+	// Loop to fetch scans
+	for {
+		// Calculate current limit based on offset and MaxLimit
+		currentLimit := min(userLimit-offset, MaxLimit)
+		params[commonParams.LimitQueryParam] = fmt.Sprint(currentLimit)
+		params[commonParams.OffsetQueryParam] = fmt.Sprint(offset)
+
+		resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, clientTimeout)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		decoder := json.NewDecoder(resp.Body)
+		defer func() {
+			if err == nil {
+				_ = resp.Body.Close()
+			}
+		}()
+
+		switch resp.StatusCode {
+		case http.StatusBadRequest, http.StatusInternalServerError:
+			errorModel := ErrorModel{}
+			err = decoder.Decode(&errorModel)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+			}
+			return nil, &errorModel, nil
+		case http.StatusOK:
+			model := ScansCollectionResponseModel{}
+			err = decoder.Decode(&model)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, failedToParseGetAll)
+			}
+
+			// Combine the current response with the combined response
+			combinedResponse.Scans = append(combinedResponse.Scans, model.Scans...)
+
+			// Update the offset for the next request
+			offset += len(model.Scans)
+
+			// Check if we need to make another request
+			if len(model.Scans) == 0 || (!fetchAll && offset >= userLimit) {
+				return combinedResponse, nil, nil
+			}
+
+		case http.StatusNotFound:
+			return nil, nil, errors.Errorf("scan not found")
+		default:
+			return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		}
+	}
+}
+
+func parseLimit(limitParam string) (int, error) {
+	if limitParam == "" {
+		return -1, nil
+	}
+
+	limit, err := strconv.Atoi(limitParam)
+	if err != nil {
+		return 0, fmt.Errorf("invalid limit parameter: %v", err)
+	}
+
+	if limit <= 0 {
+		return 0, fmt.Errorf("limit must be a positive integer")
+	}
+
+	return limit, nil
 }
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorModel, error) {
