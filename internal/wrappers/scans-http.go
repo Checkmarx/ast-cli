@@ -88,26 +88,15 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 func (s *ScansHTTPWrapper) GetWithPagination(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	userLimit, err := parseLimit(params[commonParams.LimitQueryParam])
-	fetchAll := false
-	userSpecifiedLimit := userLimit != -1
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Determine if all scans should be fetched
-	if !userSpecifiedLimit {
-		fetchAll = true
-		userLimit = MaxLimit
-	}
-
-	// Initialize offset and combined response
 	offset := 0
 	combinedResponse := &ScansCollectionResponseModel{}
 
-	// Loop to fetch scans
 	for {
-		// Calculate current limit based on offset and MaxLimit
 		currentLimit := min(userLimit-offset, MaxLimit)
 		params[commonParams.LimitQueryParam] = fmt.Sprint(currentLimit)
 		params[commonParams.OffsetQueryParam] = fmt.Sprint(offset)
@@ -146,7 +135,7 @@ func (s *ScansHTTPWrapper) GetWithPagination(params map[string]string) (*ScansCo
 			offset += len(model.Scans)
 
 			// Check if we need to make another request
-			if len(model.Scans) == 0 || (!fetchAll && offset >= userLimit) {
+			if len(model.Scans) == 0 || (offset >= userLimit) {
 				return combinedResponse, nil, nil
 			}
 
