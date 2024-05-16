@@ -32,6 +32,16 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+    hooks:
+      post:
+        - cmd: bash .github/scripts/signing_win.sh dist/cx_windows_amd64_v1/cx.exe {{.Os}}
+          output: true
+          env:
+            - SIGNING_REMOTE_SSH_USER={{ .Env.SIGNING_REMOTE_SSH_USER }}
+            - SIGNING_REMOTE_SSH_HOST={{ .Env.SIGNING_REMOTE_SSH_HOST }}
+            - SIGNING_HSM_CREDS={{ .Env.SIGNING_HSM_CREDS }}
+            - SIGNING_REMOTE_SSH_PRIVATE_KEY={{ .Env.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
+
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
