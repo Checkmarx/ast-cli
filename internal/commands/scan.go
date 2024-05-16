@@ -2138,9 +2138,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		scanIDs[i] = scans[i].ID
 	}
 
-	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
-
-	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
+	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDsInParallel(scanIDs)
 	if err != nil {
 		logger.Printf("error getting sast metadata: %v", err)
 		return nil, err
