@@ -17,6 +17,11 @@ type SastIncrementalHTTPWrapper struct {
 	contentType string
 }
 
+type ResultWithSequence struct {
+	Sequence int
+	Model    *SastMetadataModel
+}
+
 const BatchSize = 200
 
 func NewSastIncrementalHTTPWrapper(path string) SastMetadataWrapper {
@@ -26,7 +31,7 @@ func NewSastIncrementalHTTPWrapper(path string) SastMetadataWrapper {
 	}
 }
 
-func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]string) (*SastMetadataModel, error) {
+func (s *SastIncrementalHTTPWrapper) getSastMetadata(params map[string]string) (*SastMetadataModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, s.path, params, http.NoBody, clientTimeout)
 	if err != nil {
@@ -62,7 +67,7 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]stri
 	}
 }
 
-func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDsInParallel(scanIDs []string) (*SastMetadataModel, error) {
+func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(scanIDs []string) (*SastMetadataModel, error) {
 	totalBatches := (len(scanIDs) + BatchSize - 1) / BatchSize
 
 	var wg sync.WaitGroup
@@ -83,7 +88,7 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDsInParallel(scanIDs []st
 		wg.Add(1)
 		go func(seq int) {
 			defer wg.Done()
-			result, err := s.GetSastMetadataByIDs(batchParams)
+			result, err := s.getSastMetadata(batchParams)
 			if err != nil {
 				errors <- err
 				return
@@ -115,11 +120,6 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDsInParallel(scanIDs []st
 	}
 
 	return finalResult, nil
-}
-
-type ResultWithSequence struct {
-	Sequence int
-	Model    *SastMetadataModel
 }
 
 func sortResults(results []ResultWithSequence) []ResultWithSequence {
