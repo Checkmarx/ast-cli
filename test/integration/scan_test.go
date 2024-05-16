@@ -1280,3 +1280,13 @@ func TestScanListWithFilters(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
+
+func TestScanListWithBigLimit(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "limit=10000",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
