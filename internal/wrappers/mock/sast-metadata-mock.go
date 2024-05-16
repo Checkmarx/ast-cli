@@ -36,7 +36,7 @@ func (s SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) 
 	}, nil
 }
 
-func (s SastMetadataMockWrapper) GetSastMetadataByIDsInParallel(params map[string]string) (
+func (s SastMetadataMockWrapper) GetSastMetadataByIDsInParallel(scanIds []string) (
 	*wrappers.SastMetadataModel,
 	error,
 ) {
