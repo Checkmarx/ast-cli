@@ -1,7 +1,7 @@
 package wrappers
 
 type SastMetadataWrapper interface {
-	GetSastMetadataByIDs(params []string) (*SastMetadataModel, error)
+	GetSastMetadataByIDs(scanIDs []string) (*SastMetadataModel, error)
 }
 
 type SastMetadataModel struct {
