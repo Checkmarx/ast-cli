@@ -118,7 +118,6 @@ type ScansWrapper interface {
 	Delete(scanID string) (*ErrorModel, error)
 	Cancel(scanID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)
-	GetWithPagination(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error)
 }
 
 type SastConfig struct {
