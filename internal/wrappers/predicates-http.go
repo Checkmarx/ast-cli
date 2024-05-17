@@ -51,11 +51,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 	if err != nil {
 		return nil, nil, err
 	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 	return handleResponseWithBody(resp, err)
 }
 

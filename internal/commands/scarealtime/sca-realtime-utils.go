@@ -22,7 +22,6 @@ var GetPackageManagerFromResolvingModuleType = map[string]string{
 	"composer":  "Php",
 	"gomodules": "Go",
 	"pip":       "Python",
-	"poetry":    "Python",
 	"rubygems":  "Ruby",
 	"npm":       "Npm",
 	"yarn":      "Npm",
@@ -35,8 +34,6 @@ var GetPackageManagerFromResolvingModuleType = map[string]string{
 	"swiftpm":   "Ios",
 	"carthage":  "Ios",
 	"cocoapods": "Ios",
-	"nuget":     "Nuget",
-	"cpp":       "Cpp",
 }
 
 // downloadSCAResolverAndHashFileIfNeeded Downloads SCA Realtime if it is not downloaded yet

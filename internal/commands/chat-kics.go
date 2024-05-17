@@ -48,11 +48,10 @@ type OutputModel struct {
 
 func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatKicsCmd := &cobra.Command{
-		Use:    "kics",
-		Short:  "Chat about KICS result with OpenAI models",
-		Long:   "Chat about KICS result with OpenAI models",
-		Hidden: true,
-		RunE:   runChatKics(chatWrapper),
+		Use:   "kics",
+		Short: "Chat about KICS result with OpenAI models",
+		Long:  "Chat about KICS result with OpenAI models",
+		RunE:  runChatKics(chatWrapper),
 	}
 
 	chatKicsCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")

@@ -51,123 +51,22 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(_ map[string]string) (
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
 	return &wrappers.ScanResultsCollection{
-		TotalCount: 7,
+		TotalCount: 3,
 		Results: []*wrappers.ScanResult{
 			{
 				Type:     "sast",
-				ID:       "1",
 				Severity: "high",
 				ScanResultData: wrappers.ScanResultData{
-					LanguageName: "JavaScript",
-					QueryName:    "mock-query-name-1",
 					Nodes: []*wrappers.ScanResultNode{
 						{
-							FileName: "dummy-file-name-1",
+							FileName: "dummy-file-name",
 							Line:     10,
 							Column:   10,
 							Length:   20,
 						},
 						{
-							FileName: "dummy-file-name-1",
-							Line:     11,
-							Column:   3,
-							Length:   10,
-						},
-					},
-				},
-			},
-			{
-				Type:     "sast",
-				ID:       "2",
-				Severity: "high",
-				ScanResultData: wrappers.ScanResultData{
-					LanguageName: "Java",
-					QueryName:    "mock-query-name-2",
-					Nodes: []*wrappers.ScanResultNode{
-						{
-							FileName: "dummy-file-name-2",
-							Line:     10,
-							Column:   10,
-							Length:   20,
-						},
-						{
-							FileName: "dummy-file-name-2",
-							Line:     11,
-							Column:   3,
-							Length:   10,
-						},
-					},
-				},
-			},
-			{
-				Type:     "sast",
-				Severity: "high",
-				ID:       "3",
-				ScanResultData: wrappers.ScanResultData{
-					LanguageName: "Java",
-					QueryName:    "mock-query-name-2",
-					Nodes: []*wrappers.ScanResultNode{
-						{
-							FileName: "dummy-file-name-2",
-							Line:     10,
-							Column:   10,
-							Length:   20,
-						},
-						{
-							FileName: "dummy-file-name-2",
-							Line:     11,
-							Column:   3,
-							Length:   10,
-						},
-						{
-							FileName: "dummy-file-name-2",
-							Line:     12,
-							Column:   3,
-							Length:   10,
-						},
-					},
-				},
-			},
-			{
-				Type:     "sast",
-				ID:       "4",
-				Severity: "high",
-				ScanResultData: wrappers.ScanResultData{
-					LanguageName: "Java",
-					QueryName:    "mock-query-name-3",
-					Nodes: []*wrappers.ScanResultNode{
-						{
-							FileName: "dummy-file-name-3",
-							Line:     10,
-							Column:   10,
-							Length:   20,
-						},
-						{
-							FileName: "dummy-file-name-3",
-							Line:     11,
-							Column:   3,
-							Length:   10,
-						},
-					},
-				},
-			},
-			{
-				Type:     "sast",
-				ID:       "5",
-				Severity: "high",
-				ScanResultData: wrappers.ScanResultData{
-					LanguageName: "Java",
-					QueryName:    "mock-query-name-3",
-					Nodes: []*wrappers.ScanResultNode{
-						{
-							FileName: "dummy-file-name-4",
-							Line:     10,
-							Column:   10,
-							Length:   20,
-						},
-						{
-							FileName: "dummy-file-name-4",
-							Line:     11,
+							FileName: "dummy-file-name",
+							Line:     0,
 							Column:   3,
 							Length:   10,
 						},

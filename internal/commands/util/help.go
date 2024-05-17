@@ -16,10 +16,8 @@ func RootHelpFunc(command *cobra.Command) {
 	var commands []string
 
 	for _, c := range command.Commands() {
-		if !c.Hidden {
-			s := rightPad(c.Name()+":", c.NamePadding()) + c.Short
-			commands = append(commands, s)
-		}
+		s := rightPad(c.Name()+":", c.NamePadding()) + c.Short
+		commands = append(commands, s)
 	}
 
 	type helpEntry struct {

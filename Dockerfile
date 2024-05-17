@@ -1,6 +1,6 @@
-FROM alpine:3.19.1
+FROM alpine:3.19.0
 
-RUN apk add bash
+RUN apk add --no-cache bash
 RUN adduser --system --disabled-password cxuser
 USER cxuser
 

@@ -1,4 +1,4 @@
-package commands
+package chatsast
 
 import (
 	"encoding/json"
@@ -85,6 +85,22 @@ type ScanResults struct {
 	Results    []*Result `json:"results"`
 	TotalCount int       `json:"totalCount"`
 	ScanID     string    `json:"scanID"`
+}
+
+func ReadResultsAll(filename string) (*ScanResults, error) {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the JSON data into the ScanResults struct
+	var scanResults ScanResults
+	err = json.Unmarshal(bytes, &scanResults)
+	if err != nil {
+		return nil, err
+	}
+
+	return &scanResults, nil
 }
 
 func ReadResultsSAST(filename string) (*ScanResults, error) {

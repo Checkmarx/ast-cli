@@ -18,7 +18,6 @@ var (
 	IgnoreProxyKey                      = strings.ToLower(IgnoreProxyEnv)
 	CodeBashingPathKey                  = strings.ToLower(CodeBashingPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
-	ApplicationsPathKey                 = strings.ToLower(ApplicationsPathEnv)
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)
@@ -60,5 +59,4 @@ var (
 	ResultsSbomReportProxyPathKey       = strings.ToLower(ResultsSbomReportProxyPathEnv)
 	FeatureFlagsKey                     = strings.ToLower(FeatureFlagsEnv)
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
-	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 )

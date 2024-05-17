@@ -4,7 +4,6 @@ package params
 const (
 	AgentFlag                     = "agent"
 	AgentFlagUsage                = "Scan origin name"
-	ApplicationName               = "application-name"
 	DefaultAgent                  = "ASTCLI"
 	DebugFlag                     = "debug"
 	DebugUsage                    = "Debug mode with detailed logs"
@@ -135,7 +134,6 @@ const (
 	ExploitablePathFlag      = "sca-exploitable-path"
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
-	SastRedundancyFlag       = "sast-redundancy"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
@@ -224,7 +222,6 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
-	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"

@@ -13,7 +13,6 @@ type Project struct {
 	Tags           map[string]string `json:"tags,omitempty"`
 	Groups         []string          `json:"groups,omitempty"`
 	PrivatePackage bool              `json:"privatePackage,omitempty"`
-	ApplicationIds []string          `json:"applicationIds,omitempty"`
 }
 
 type ProjectsCollectionResponseModel struct {
@@ -23,17 +22,16 @@ type ProjectsCollectionResponseModel struct {
 }
 
 type ProjectResponseModel struct {
-	ID             string            `json:"id"`
-	Name           string            `json:"name"`
-	CreatedAt      time.Time         `json:"createdAt"`
-	UpdatedAt      time.Time         `json:"updatedAt"`
-	Groups         []string          `json:"groups"`
-	Tags           map[string]string `json:"tags"`
-	RepoURL        string            `json:"repoUrl"`
-	MainBranch     string            `json:"mainBranch"`
-	Origin         string            `json:"origin,omitempty"`
-	ScmRepoID      string            `json:"scmRepoId,omitempty"`
-	ApplicationIds []string          `json:"applicationIds"`
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	CreatedAt  time.Time         `json:"createdAt"`
+	UpdatedAt  time.Time         `json:"updatedAt"`
+	Groups     []string          `json:"groups"`
+	Tags       map[string]string `json:"tags"`
+	RepoURL    string            `json:"repoUrl"`
+	MainBranch string            `json:"mainBranch"`
+	Origin     string            `json:"origin,omitempty"`
+	ScmRepoID  string            `json:"scmRepoId,omitempty"`
 }
 
 type ProjectConfiguration struct {

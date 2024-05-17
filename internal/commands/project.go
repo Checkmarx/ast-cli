@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -63,8 +61,7 @@ var (
 	)
 )
 
-func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
+func NewProjectCommand(projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -94,7 +91,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper),
+		RunE: runCreateProjectCommand(projectsWrapper, groupsWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -102,7 +99,6 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	createProjCmd.PersistentFlags().StringP(commonParams.MainBranchFlag, "", "", "Main branch")
 	createProjCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
 	createProjCmd.PersistentFlags().String(commonParams.RepoURLFlag, "", "Repository URL")
-	createProjCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 
 	listProjectsCmd := &cobra.Command{
 		Use:   "list",
@@ -226,37 +222,75 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	return nil
 }
 
+func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers.GroupsWrapper) error {
+	groupListStr, _ := cmd.Flags().GetString(commonParams.GroupList)
+
+	var groupMap []string
+	var info map[string]interface{}
+	_ = json.Unmarshal(*input, &info)
+	if _, ok := info["groups"]; !ok {
+		_ = json.Unmarshal([]byte("[]"), &groupMap)
+		info["groups"] = groupMap
+	}
+	groups, err := createGroupsMap(groupListStr, groupsWrapper)
+	if err != nil {
+		return err
+	}
+
+	info["groups"] = groups
+	*input, _ = json.Marshal(info)
+
+	return nil
+}
+
+func createGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]string, error) {
+	groups := strings.Split(groupsStr, ",")
+	var groupMap []string
+	var groupsNotFound []string
+	for _, group := range groups {
+		if len(group) > 0 {
+			groupIds, err := groupsWrapper.Get(group)
+			if err != nil {
+				groupsNotFound = append(groupsNotFound, group)
+			} else {
+				groupID := findGroupID(groupIds, group)
+				if groupID != "" {
+					groupMap = append(groupMap, groupID)
+				} else {
+					groupsNotFound = append(groupsNotFound, group)
+				}
+			}
+		}
+	}
+
+	if len(groupsNotFound) > 0 {
+		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
+	}
+
+	return groupMap, nil
+}
+
+func findGroupID(groups []wrappers.Group, name string) string {
+	for i := 0; i < len(groups); i++ {
+		if groups[i].Name == name {
+			return groups[i].ID
+		}
+	}
+	return ""
+}
+
 func runCreateProjectCommand(
-	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
-		if err != nil {
-			return err
-		}
-
-		var applicationID []string
-
-		if applicationName != "" {
-			application, getAppErr := getApplication(applicationName, applicationsWrapper)
-			if getAppErr != nil {
-				return getAppErr
-			}
-			if application == nil {
-				return errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
-			}
-			applicationID = []string{application.ID}
-		}
-
 		var input = []byte("{}")
+		var err error
 		err = updateProjectRequestValues(&input, cmd)
 		if err != nil {
 			return err
 		}
-		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
+		err = updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
@@ -266,7 +300,6 @@ func runCreateProjectCommand(
 			return err
 		}
 		var projModel = wrappers.Project{}
-		projModel.ApplicationIds = applicationID
 		var projResponseModel *wrappers.ProjectResponseModel
 		var errorModel *wrappers.ErrorModel
 		// Try to parse to a project model in order to manipulate the request payload
@@ -291,10 +324,7 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", failedCreatingProj)
 			}
 		}
-		err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
-		if err != nil {
-			return err
-		}
+
 		err = updateProjectConfigurationIfNeeded(cmd, projectsWrapper, projResponseModel.ID)
 		if err != nil {
 			return err
@@ -545,22 +575,20 @@ func toProjectViews(models []wrappers.ProjectResponseModel) []projectView {
 
 func toProjectView(model wrappers.ProjectResponseModel) projectView { //nolint:gocritic
 	return projectView{
-		ID:             model.ID,
-		Name:           model.Name,
-		CreatedAt:      model.CreatedAt,
-		UpdatedAt:      model.UpdatedAt,
-		Tags:           model.Tags,
-		Groups:         model.Groups,
-		ApplicationIds: model.ApplicationIds,
+		ID:        model.ID,
+		Name:      model.Name,
+		CreatedAt: model.CreatedAt,
+		UpdatedAt: model.UpdatedAt,
+		Tags:      model.Tags,
+		Groups:    model.Groups,
 	}
 }
 
 type projectView struct {
-	ID             string `format:"name:Project ID"`
-	Name           string
-	CreatedAt      time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
-	UpdatedAt      time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
-	Tags           map[string]string
-	Groups         []string
-	ApplicationIds []string
+	ID        string `format:"name:Project ID"`
+	Name      string
+	CreatedAt time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+	UpdatedAt time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	Tags      map[string]string
+	Groups    []string
 }

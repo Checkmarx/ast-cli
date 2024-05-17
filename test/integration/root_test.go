@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -29,16 +28,9 @@ var Tags = map[string]string{
 	"Integration": "Tests",
 }
 
-var Groups = []string{
-	"it_test_group_1",
-	"it_test_group_2",
-}
-
 var testInstance *testing.T
 var rootScanId string
-var rootEnginesScanId string
 var rootScanProjectId string
-var rootEnginesScanProjectId string
 var rootProjectId string
 var rootProjectName string
 
@@ -52,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 // Create or return a scan to be shared between tests
-func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
+func getRootScan(t *testing.T) (string, string) {
 	testInstance = t
 
 	if len(rootScanId) > 0 {
@@ -60,13 +52,10 @@ func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 		log.Println("Using the projectID: ", rootScanProjectId)
 		return rootScanId, rootScanProjectId
 	}
-	if len(scanTypes) == 0 {
-		rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
-		return rootScanId, rootScanProjectId
-	} else {
-		rootEnginesScanId, rootEnginesScanProjectId = createScanWithEngines(testInstance, Zip, Tags, strings.Join(scanTypes, ","))
-		return rootEnginesScanId, rootEnginesScanProjectId
-	}
+
+	rootScanId, rootScanProjectId = createScan(testInstance, Zip, Tags)
+
+	return rootScanId, rootScanProjectId
 }
 
 // Delete scan and projects
@@ -96,7 +85,7 @@ func getRootProject(t *testing.T) (string, string) {
 		return rootProjectId, rootProjectName
 	}
 
-	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
+	rootProjectId, rootProjectName = createProject(t, Tags)
 
 	return rootProjectId, rootProjectName
 }

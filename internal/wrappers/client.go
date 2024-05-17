@@ -517,10 +517,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	logger.PrintIfVerbose("Using Client ID and secret credentials.")
-	// escape possible characters such as +,%, etc...
-	clientID := url.QueryEscape(accessKeyID)
-	clientSecret := url.QueryEscape(accessKeySecret)
-	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
+	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
 }
 
 func getAPIKeyPayload(astToken string) string {
@@ -530,14 +527,9 @@ func getAPIKeyPayload(astToken string) string {
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	logger.PrintIfVerbose("Using username and password credentials.")
-	// escape possible characters such as +,%, etc...
-	encodedUsername := url.QueryEscape(username)
-	encodedAdminClientID := url.QueryEscape(adminClientID)
-	encodedPassword := url.QueryEscape(password)
-	encodedAdminClientSecret := url.QueryEscape(adminClientSecret)
 	return fmt.Sprintf(
 		"scope=openid&grant_type=password&username=%s&password=%s"+
-			"&client_id=%s&client_secret=%s", encodedUsername, encodedPassword, encodedAdminClientID, encodedAdminClientSecret,
+			"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret,
 	)
 }
 

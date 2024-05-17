@@ -23,7 +23,7 @@ func (r *PolicyMockWrapper) EvaluatePolicy(params map[string]string) (
 
 	var policies []wrappers.Policy
 	policies = append(policies, policy)
-	policyResponseModel.Policies = policies
+	policyResponseModel.Polices = policies
 
 	return &policyResponseModel, nil, nil
 }

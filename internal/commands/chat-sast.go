@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"strconv"
 
+	"github.com/checkmarx/ast-cli/internal/commands/chatsast"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -20,15 +20,13 @@ import (
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
-const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
 
-func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
+func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
-		Use:    "sast",
-		Short:  "OpenAI-based SAST results remediation",
-		Long:   "Use OpenAI models to remediate SAST results and chat about them",
-		Hidden: true,
-		RunE:   runChatSast(chatWrapper, tenantWrapper),
+		Use:   "sast",
+		Short: "OpenAI-based SAST results remediation",
+		Long:  "Use OpenAI models to remediate SAST results and chat about them",
+		RunE:  runChatSast(chatWrapper),
 	}
 
 	chatSastCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
@@ -47,11 +45,8 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 	return chatSastCmd
 }
 
-func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) func(cmd *cobra.Command, args []string) error {
+func runChatSast(chatWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if !isAiGuidedRemediationEnabled(tenantWrapper) {
-			return outputError(cmd, uuid.Nil, errors.Errorf(AiGuidedRemediationDisabledError))
-		}
 		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
@@ -109,8 +104,6 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 
 		responseContent := getMessageContents(response)
 
-		responseContent = addDescriptionForIdentifier(responseContent)
-
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
 			ConversationID: id.String(),
 			Response:       responseContent,
@@ -118,27 +111,8 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 	}
 }
 
-func isAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
-	tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
-	if err != nil {
-		return false
-	}
-	if errorModel != nil {
-		return false
-	}
-	if tenantConfigurationResponse != nil {
-		for _, resp := range *tenantConfigurationResponse {
-			if resp.Key == AiGuidedRemediationEnabled {
-				isEnabled, _ := strconv.ParseBool(resp.Value)
-				return isEnabled
-			}
-		}
-	}
-	return false
-}
-
 func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt, userPrompt string, err error) {
-	scanResults, err := ReadResultsSAST(scanResultsFile)
+	scanResults, err := chatsast.ReadResultsSAST(scanResultsFile)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(ScanResultsFileErrorFormat, scanResultsFile), err)
 	}
@@ -147,22 +121,22 @@ func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt,
 		return "", "", errors.Errorf(fmt.Sprintf("error in build-prompt: currently only --%s is supported", params.ChatSastResultID))
 	}
 
-	sastResult, err := GetResultByID(scanResults, sastResultID)
+	sastResult, err := chatsast.GetResultByID(scanResults, sastResultID)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %w", err)
 	}
 
-	sources, err := GetSourcesForResult(sastResult, sourceDir)
+	sources, err := chatsast.GetSourcesForResult(sastResult, sourceDir)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %w", err)
 	}
 
-	prompt, err := CreateUserPrompt(sastResult, sources)
+	prompt, err := chatsast.CreateUserPrompt(sastResult, sources)
 	if err != nil {
 		return "", "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(CreatePromptErrorFormat, sastResultID), err)
 	}
 
-	return GetSystemPrompt(), prompt, nil
+	return chatsast.GetSystemPrompt(), prompt, nil
 }
 
 func getMessageContents(response []message.Message) []string {

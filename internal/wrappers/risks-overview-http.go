@@ -32,11 +32,7 @@ func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
 		return nil, nil, err
 	}
 
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {

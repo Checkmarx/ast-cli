@@ -112,11 +112,7 @@ func (g *AzureHTTPWrapper) get(
 	if err != nil {
 		return false, err
 	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 
 	logger.PrintResponse(resp, true)
 

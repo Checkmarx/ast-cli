@@ -1,4 +1,4 @@
-package commands
+package chatsast
 
 import (
 	"bufio"
@@ -12,6 +12,26 @@ func GetSourcesForResult(scanResult *Result, sourceDir string) (map[string][]str
 	for i := range scanResult.Data.Nodes {
 		sourceFilename := strings.ReplaceAll(scanResult.Data.Nodes[i].FileName, "\\", "/")
 		sourceFilenames[sourceFilename] = true
+	}
+
+	fileContents, err := GetFileContents(sourceFilenames, sourceDir)
+	if err != nil {
+		return nil, err
+	}
+
+	return fileContents, nil
+}
+
+func GetSourcesForQuery(scanResults *ScanResults, sourceDir, language, query string) (map[string][]string, error) {
+	sourceFilenames := make(map[string]bool)
+	for _, scanResult := range scanResults.Results {
+		if scanResult.Data.LanguageName != language || scanResult.Data.QueryName != query {
+			continue
+		}
+		for i := range scanResult.Data.Nodes {
+			sourceFilename := strings.ReplaceAll(scanResult.Data.Nodes[i].FileName, "\\", "/")
+			sourceFilenames[sourceFilename] = true
+		}
 	}
 
 	fileContents, err := GetFileContents(sourceFilenames, sourceDir)

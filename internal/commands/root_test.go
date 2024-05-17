@@ -30,7 +30,6 @@ func TestMain(m *testing.M) {
 }
 
 func createASTTestCommand() *cobra.Command {
-	applicationWrapper := &mock.ApplicationsMockWrapper{}
 	scansMockWrapper := &mock.ScansMockWrapper{}
 	resultsSbomWrapper := &mock.ResultsSbomWrapper{}
 	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
@@ -58,10 +57,8 @@ func createASTTestCommand() *cobra.Command {
 	featureFlagsMockWrapper := &mock.FeatureFlagsMockWrapper{}
 	policyWrapper := &mock.PolicyMockWrapper{}
 	sastMetadataWrapper := &mock.SastMetadataMockWrapper{}
-	accessManagementWrapper := &mock.AccessManagementMockWrapper{}
 
 	return NewAstCLI(
-		applicationWrapper,
 		scansMockWrapper,
 		resultsSbomWrapper,
 		resultsPdfWrapper,
@@ -89,7 +86,6 @@ func createASTTestCommand() *cobra.Command {
 		featureFlagsMockWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
-		accessManagementWrapper,
 	)
 }
 

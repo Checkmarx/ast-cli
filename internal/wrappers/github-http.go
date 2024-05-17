@@ -163,11 +163,7 @@ func (g *GitHubHTTPWrapper) getTemplates() error {
 func (g *GitHubHTTPWrapper) get(url string, target interface{}) error {
 	resp, err := get(g.client, url, target, map[string]string{})
 	if err != nil {
-		defer func() {
-			if err == nil {
-				_ = resp.Body.Close()
-			}
-		}()
+		defer resp.Body.Close()
 	}
 	return err
 }
@@ -209,11 +205,7 @@ func collectPage(
 		return "", err
 	}
 
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 
 	*pageCollection = append(*pageCollection, holder...)
 	next := getNextPageLink(resp)
@@ -248,11 +240,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 	logger.PrintResponse(resp, true)
 
 	switch resp.StatusCode {

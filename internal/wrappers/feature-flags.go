@@ -7,8 +7,6 @@ import (
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const CVSSV3Enabled = "CVSS_V3_ENABLED"
-const MinioEnabled = "MINIO_ENABLED"
-const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -16,10 +14,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    PackageEnforcementEnabled,
-				Default: true,
-			},
-			{
-				Name:    MinioEnabled,
 				Default: true,
 			},
 		},
@@ -32,9 +26,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Default: false,
 			},
 		},
-	},
-	{
-		CommandName: "cx project create",
 	},
 }
 

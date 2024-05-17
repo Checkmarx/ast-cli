@@ -48,7 +48,6 @@ func TestResultListJson(t *testing.T) {
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
-		flag(params.SastRedundancyFlag),
 	)
 
 	result := wrappers.ScanResultsCollection{}

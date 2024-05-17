@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,7 +22,6 @@ import (
 const (
 	npmPackageFilename        = "package.json"
 	permission                = 0644
-	permission0666            = 0666
 	containerStarting         = "Starting kics container"
 	filesContainerLocation    = "/files/"
 	filesContainerVolume      = ":/files"
@@ -298,7 +298,7 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 }
 
 func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err error) {
-	kicsDir, err = os.MkdirTemp("", "kics")
+	kicsDir, err = ioutil.TempDir("", "kics")
 	if err != nil {
 		return "", "", errors.New(directoryError)
 	}
@@ -307,7 +307,7 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 	if file == "" {
 		return "", "", errors.New(" No results file was provided")
 	}
-	kicsFile, err := os.ReadFile(kicsResultsPath)
+	kicsFile, err := ioutil.ReadFile(kicsResultsPath)
 	if err != nil {
 		return "", "", err
 	}
@@ -317,7 +317,7 @@ func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err err
 		return "", "", err
 	}
 	destinationFile := fmt.Sprintf("%s/%s", kicsDir, file)
-	err = os.WriteFile(destinationFile, kicsFile, permission0666)
+	err = ioutil.WriteFile(destinationFile, kicsFile, 0666)
 	if err != nil {
 		return "", "", errors.New(containerWriteFolderError)
 	}

@@ -60,7 +60,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	viper.AutomaticEnv()
 	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
 	scans := viper.GetString(params.ScansPathKey)
-	applications := viper.GetString(params.ApplicationsPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
@@ -81,10 +80,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
-	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
-	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
 
@@ -111,10 +108,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
-	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 
 	astCli := commands.NewAstCLI(
-		applicationsWrapper,
 		scansWrapper,
 		resultsSbomReportsWrapper,
 		resultsPdfReportsWrapper,
@@ -142,7 +137,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		featureFlagsWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
-		accessManagementWrapper,
 	)
 	return astCli
 }

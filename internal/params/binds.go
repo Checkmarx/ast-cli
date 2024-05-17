@@ -15,7 +15,6 @@ var EnvVarsBinds = []struct {
 	{CodeBashingPathKey, ScansPathEnv, "api/codebashing/lessons"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
 	{ProjectsPathKey, ProjectsPathEnv, "api/projects"},
-	{ApplicationsPathKey, ApplicationsPathEnv, "api/applications"},
 	{GroupsPathKey, GroupsPathEnv, "auth/realms/organization/pip/groups"},
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
 	{ScanSummaryPathKey, ScanSummaryPathEnv, "api/scan-summary"},
@@ -61,5 +60,4 @@ var EnvVarsBinds = []struct {
 	{ResultsSbomReportProxyPathKey, ResultsSbomReportProxyPathEnv, "api/sca/risk-management/risk-reports"},
 	{FeatureFlagsKey, FeatureFlagsEnv, "api/flags"},
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
-	{AccessManagementPathKey, AccessManagementPathEnv, "api/access-management"},
 }

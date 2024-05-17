@@ -23,7 +23,8 @@ const (
 )
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
+	scanID, _ := getRootScan(t)
+
 	args := []string{
 		"utils",
 		"pr",
@@ -64,7 +65,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
+	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"utils",

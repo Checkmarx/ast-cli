@@ -57,38 +57,3 @@ func TestRequiredProjectDir(t *testing.T) {
 	err := cmd.Execute()
 	assert.Error(t, err, "Provided path does not exist: "+invalidProjectPath, err.Error())
 }
-
-func TestCreateDependencyMapFromDependencyResolution_NugetDependencies_Success(t *testing.T) {
-	dependecyResolutionResult := DependencyResolution{
-		Dependencies: []Dependency{
-			NewDependency("8ce2d33f-5783-4fe1-b9a7-3ce2c9a3aae9", "Microsoft. NETCore. Platforms",
-				"1.1.0", "Nuget", []interface{}{"NetStandard20"}),
-			NewDependency("60b40261-18b2-4cf6-bdf5-e23ad408de3b", "NETStandard.Library",
-				"2.0.3", "Nuget", []interface{}{"NetStandard20"}),
-		},
-	}
-	dependencyMap := createDependencyMapFromDependencyResolution(&dependecyResolutionResult)
-	assert.Equal(t, len(dependencyMap), 2)
-	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].PackageManager, "Nuget")
-	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].Version, "2.0.3")
-	assert.Equal(t, dependencyMap["60b40261-18b2-4cf6-bdf5-e23ad408de3b"].PackageName, "NETStandard.Library")
-	assert.Equal(t, dependencyMap["8ce2d33f-5783-4fe1-b9a7-3ce2c9a3aae9"].PackageManager, "Nuget")
-	assert.Equal(t, dependencyMap["8ce2d33f-5783-4fe1-b9a7-3ce2c9a3aae9"].Version, "1.1.0")
-	assert.Equal(t, dependencyMap["8ce2d33f-5783-4fe1-b9a7-3ce2c9a3aae9"].PackageName, "Microsoft. NETCore. Platforms")
-}
-
-func NewDependency(nodeID, name, version, resolvingModuleType string, targetFrameworks []interface{}) Dependency {
-	return Dependency{
-		ID:                  NewID(nodeID, name, version),
-		ResolvingModuleType: resolvingModuleType,
-		TargetFrameworks:    targetFrameworks,
-	}
-}
-
-func NewID(nodeID, name, version string) ID {
-	return ID{
-		NodeID:  nodeID,
-		Name:    name,
-		Version: version,
-	}
-}

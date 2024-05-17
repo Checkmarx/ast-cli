@@ -37,11 +37,7 @@ func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
+	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
