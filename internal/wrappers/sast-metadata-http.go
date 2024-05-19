@@ -69,6 +69,8 @@ func (s *SastIncrementalHTTPWrapper) getSastMetadata(params map[string]string) (
 
 func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(scanIDs []string) (*SastMetadataModel, error) {
 	totalBatches := (len(scanIDs) + BatchSize - 1) / BatchSize
+	maxConcurrentGoroutines := 10
+	semaphore := make(chan struct{}, maxConcurrentGoroutines)
 
 	var wg sync.WaitGroup
 	results := make(chan ResultWithSequence, totalBatches)
@@ -86,8 +88,11 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(scanIDs []string) (*Sa
 		}
 
 		wg.Add(1)
+		semaphore <- struct{}{}
 		go func(seq int) {
 			defer wg.Done()
+			defer func() { <-semaphore }()
+
 			result, err := s.getSastMetadata(batchParams)
 			if err != nil {
 				errors <- err
@@ -97,12 +102,18 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(scanIDs []string) (*Sa
 		}(i)
 	}
 
-	wg.Wait()
-	close(results)
-	close(errors)
+	go func() {
+		wg.Wait()
+		close(results)
+		close(errors)
+	}()
 
-	if len(errors) > 0 {
-		return nil, <-errors
+	var allErrors []error
+	for err := range errors {
+		allErrors = append(allErrors, err)
+	}
+	if len(allErrors) > 0 {
+		return nil, allErrors[0]
 	}
 
 	var sortedResults []ResultWithSequence
