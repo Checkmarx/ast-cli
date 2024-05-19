@@ -108,12 +108,8 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(scanIDs []string) (*Sa
 		close(errors)
 	}()
 
-	var allErrors []error
-	for err := range errors {
-		allErrors = append(allErrors, err)
-	}
-	if len(allErrors) > 0 {
-		return nil, allErrors[0]
+	if len(errors) > 0 {
+		return nil, <-errors
 	}
 
 	var sortedResults []ResultWithSequence
