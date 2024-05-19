@@ -23,7 +23,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			},
 			{
 				Name:    MinioEnabled,
-				Default: true,
+				Default: false,
 			},
 		},
 	},
@@ -35,7 +35,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    MinioEnabled,
-				Default: true,
+				Default: false,
 			},
 			{
 				Name:    feature_flags.ByorEnabled,
