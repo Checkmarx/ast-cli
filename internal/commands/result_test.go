@@ -438,9 +438,33 @@ func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) 
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
-func TestRunResultsShow_AgentIsNotSupported_excludeContainersResult(t *testing.T) {
+func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jet-brains")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
+	assertContainersPresent(t, false)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Eclipse")
+	assertContainersPresent(t, false)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "vs code")
+	assertContainersPresent(t, false)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Visual Studio")
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)

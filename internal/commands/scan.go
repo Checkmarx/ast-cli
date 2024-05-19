@@ -2382,6 +2382,15 @@ func contains(s []string, str string) bool {
 	return false
 }
 
+func containsIgnoreCase(s []string, str string) bool {
+	for _, v := range s {
+		if strings.EqualFold(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
 func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error) {
 	// Open and read the file from the temp folder
 	var resultsModel wrappers.KicsResultsCollection

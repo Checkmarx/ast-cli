@@ -143,8 +143,8 @@ var sonarSeverities = map[string]string{
 	highCx:   highSonar,
 }
 
-var containerSupportedAgents = []string{
-	commonParams.DefaultAgent,
+var containerEngineUnsupportedAgents = []string{
+	"Jetbrains", "VS Code", "Visual Studio", "Eclipse",
 }
 
 func NewResultsCommand(
@@ -774,7 +774,7 @@ func runGetCodeBashingCommand(
 	}
 }
 func setIsContainersEnabled(agent string) {
-	agentSupported := contains(containerSupportedAgents, agent)
+	agentSupported := !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
 	wrappers.IsContainersEnabled = wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && agentSupported
 }
 func CreateScanReport(
