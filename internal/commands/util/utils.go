@@ -73,7 +73,8 @@ func NewUtilsCommand(
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
-	if wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
+	if flagResponse.Status {
 		utilsCmd.AddCommand(importCmd)
 	}
 
