@@ -39,7 +39,7 @@ func TestAssignGroupsToProject(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ttt := tt
-		wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = true
+		wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
 			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
@@ -186,7 +186,7 @@ func Test_getGroupsForRequest(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = false
+			wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = false
 			if got := getGroupsForRequest(ttt.args.groups, featureFlagsWrapper); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}

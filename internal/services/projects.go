@@ -226,10 +226,6 @@ func UpsertProjectGroups(groupsWrapper wrappers.GroupsWrapper, projModel *wrappe
 	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
 	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	groupsMap, _ := CreateGroupsMap(projectGroups, groupsWrapper)
-	//if groupErr != nil {
-	//	return errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-	//}
-
 	projModel.Groups = getGroupsForRequest(groupsMap, featureFlagsWrapper)
 	if projModelResp != nil {
 		groups := append(getGroupsForRequest(groupsMap, featureFlagsWrapper), projModelResp.Groups...)

@@ -16,7 +16,7 @@ import (
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
@@ -37,7 +37,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
@@ -59,7 +59,7 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
@@ -80,7 +80,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
 		projectName := projectNameRandom
@@ -101,7 +101,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
@@ -122,7 +122,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 	// createASTIntegrationTestCommand is called just to load the FF values
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
@@ -142,7 +142,7 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
 
 	createASTIntegrationTestCommand(t)
-	if !wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
+	if !wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] {
 		//t.Skip("BYOR flag is currently disabled")
 		assert.Assert(t, true, "Byor is disabled")
 	} else {
