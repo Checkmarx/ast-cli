@@ -37,6 +37,7 @@ func NewUtilsCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	byorWrapper wrappers.ByorWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
@@ -56,7 +57,7 @@ func NewUtilsCommand(
 		},
 	}
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper)
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper, featureFlagsWrapper)
 
 	envCheckCmd := NewEnvCheckCommand()
 

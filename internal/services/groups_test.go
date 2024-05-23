@@ -1,6 +1,8 @@
 package services
 
 import (
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 	"reflect"
 	"testing"
 
@@ -179,11 +181,13 @@ func Test_getGroupsForRequest(t *testing.T) {
 			want: []string{"group-id-1", "group-id-2"},
 		},
 	}
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = false
-			if got := getGroupsForRequest(ttt.args.groups); !reflect.DeepEqual(got, ttt.want) {
+			if got := getGroupsForRequest(ttt.args.groups, featureFlagsWrapper); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}
 		})

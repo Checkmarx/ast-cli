@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"errors"
 	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
@@ -55,18 +56,62 @@ var FeatureFlagsBaseMap = []CommandFlags{
 }
 
 var FeatureFlags = map[string]bool{}
+var FeatureFlagsSpecific = map[string]bool{}
 
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 	allFlags, err := featureFlagsWrapper.GetAll()
 	if err != nil {
 		loadFeatureFlagsDefaultValues()
-
 		return nil
 	}
 
 	loadFeatureFlagsMap(*allFlags)
-
 	return nil
+}
+
+func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName string) (*FeatureFlagResponseModel, error) {
+	if value, exists := FeatureFlagsSpecific[flagName]; exists {
+		return &FeatureFlagResponseModel{Name: flagName, Status: value}, nil
+	}
+
+	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, 5)
+	if err != nil {
+		updateSpecificFeatureFlagMapWithDefault(flagName)
+		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsSpecific[flagName]}, nil
+	}
+
+	updateSpecificFeatureFlagMap(flagName, *specificFlag)
+	return specificFlag, nil
+}
+
+func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retries int) (*FeatureFlagResponseModel, error) {
+	var flag *FeatureFlagResponseModel
+	var err error
+
+	for i := 0; i < retries; i++ {
+		flag, err = wrapper.GetSpecificFlag(flagName)
+		if err == nil {
+			return flag, nil
+		}
+	}
+
+	return nil, errors.New("failed to get feature flag after retries")
+}
+
+func updateSpecificFeatureFlagMapWithDefault(flagName string) {
+	for _, cmdFlag := range FeatureFlagsBaseMap {
+		for _, flag := range cmdFlag.FeatureFlags {
+			if flag.Name == flagName {
+				FeatureFlagsSpecific[flagName] = flag.Default
+				return
+			}
+		}
+	}
+	FeatureFlagsSpecific[flagName] = false // Default to false if not found in base map
+}
+
+func updateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
+	FeatureFlagsSpecific[flagName] = flag.Status
 }
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
@@ -74,7 +119,7 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 		FeatureFlags[flag.Name] = flag.Status
 	}
 
-	//  Update FeatureFlags map with default values in case it does not exist in all flags response
+	// Update FeatureFlags map with default values in case it does not exist in all flags response
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
 			_, ok := FeatureFlags[flag.Name]
@@ -98,9 +143,14 @@ func loadFeatureFlagsDefaultValues() {
 
 type FeatureFlagsWrapper interface {
 	GetAll() (*FeatureFlagsResponseModel, error)
+	GetSpecificFlag(specificFlag string) (*FeatureFlagResponseModel, error)
 }
 
 type FeatureFlagsResponseModel []struct {
+	Name   string `json:"name"`
+	Status bool   `json:"status"`
+}
+type FeatureFlagResponseModel struct {
 	Name   string `json:"name"`
 	Status bool   `json:"status"`
 }

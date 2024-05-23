@@ -33,8 +33,9 @@ func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupsMap, nil
 }
 
-func getGroupsForRequest(groups []*wrappers.Group) []string {
-	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
+func getGroupsForRequest(groups []*wrappers.Group, featureFlagsWrapper wrappers.FeatureFlagsWrapper) []string {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
+	if !flagResponse.Status {
 		return GetGroupIds(groups)
 	}
 	return nil
