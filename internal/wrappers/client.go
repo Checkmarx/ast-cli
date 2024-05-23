@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -446,6 +447,7 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
+
 	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
@@ -517,7 +519,10 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 	logger.PrintIfVerbose("Using Client ID and secret credentials.")
-	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", accessKeyID, accessKeySecret)
+	// escape possible characters such as +,%, etc...
+	clientID := url.QueryEscape(accessKeyID)
+	clientSecret := url.QueryEscape(accessKeySecret)
+	return fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
 }
 
 func getAPIKeyPayload(astToken string) string {
@@ -527,9 +532,14 @@ func getAPIKeyPayload(astToken string) string {
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
 	logger.PrintIfVerbose("Using username and password credentials.")
+	// escape possible characters such as +,%, etc...
+	encodedUsername := url.QueryEscape(username)
+	encodedAdminClientID := url.QueryEscape(adminClientID)
+	encodedPassword := url.QueryEscape(password)
+	encodedAdminClientSecret := url.QueryEscape(adminClientSecret)
 	return fmt.Sprintf(
 		"scope=openid&grant_type=password&username=%s&password=%s"+
-			"&client_id=%s&client_secret=%s", username, password, adminClientID, adminClientSecret,
+			"&client_id=%s&client_secret=%s", encodedUsername, encodedPassword, encodedAdminClientID, encodedAdminClientSecret,
 	)
 }
 
@@ -571,6 +581,10 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintIfVerbose(err.Error())
 		}
 		if resp != nil && err == nil {
+			if hasRedirectStatusCode(resp) {
+				req, err = handleRedirect(resp, req, body)
+				continue
+			}
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
@@ -578,6 +592,63 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
+}
+
+func handleRedirect(resp *http.Response, req *http.Request, body []byte) (*http.Request, error) {
+	redirectURL := resp.Header.Get("Location")
+	if redirectURL == "" {
+		return nil, fmt.Errorf(applicationErrors.RedirectURLNotFound)
+	}
+
+	method := GetHTTPMethod(req)
+	if method == "" {
+		return nil, fmt.Errorf(applicationErrors.HTTPMethodNotFound)
+	}
+
+	newReq, err := recreateRequest(req, method, redirectURL, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return newReq, nil
+}
+
+func recreateRequest(oldReq *http.Request, method, redirectURL string, body []byte) (*http.Request, error) {
+	newReq, err := http.NewRequest(method, redirectURL, io.NopCloser(bytes.NewBuffer(body)))
+	if err != nil {
+		return nil, err
+	}
+
+	for key, values := range oldReq.Header {
+		for _, value := range values {
+			newReq.Header.Add(key, value)
+		}
+	}
+
+	return newReq, nil
+}
+
+func GetHTTPMethod(req *http.Request) string {
+	switch req.Method {
+	case http.MethodGet:
+		return http.MethodGet
+	case http.MethodPost:
+		return http.MethodPost
+	case http.MethodPut:
+		return http.MethodPut
+	case http.MethodDelete:
+		return http.MethodDelete
+	case http.MethodOptions:
+		return http.MethodOptions
+	case http.MethodPatch:
+		return http.MethodPatch
+	default:
+		return ""
+	}
+}
+
+func hasRedirectStatusCode(resp *http.Response) bool {
+	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
 func getAuthURI() (string, error) {

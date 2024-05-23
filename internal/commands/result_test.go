@@ -3,13 +3,16 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
 
@@ -32,6 +35,162 @@ func flag(f string) string {
 
 func TestResultHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results")
+}
+
+func TestResultsExitCode_CompletedScan_PrintCorrectInfoToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{ID: "MOCK", Status: wrappers.ScanCompleted, Engines: []string{params.ScaType, params.SastType, params.KicsType}}
+	results := getScannerResponse("", &model)
+	assert.Equal(t, len(results), 1, "")
+	assert.Equal(t, results[0].ScanID, "MOCK", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCompleted, "")
+}
+
+func TestResultsExitCode_OnFailedKicsScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-scanner-fail",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{
+				Status:    wrappers.ScanFailed,
+				Name:      "kics",
+				Details:   "error message from kics scanner",
+				ErrorCode: 1234,
+			},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 2, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "kics", "")
+	assert.Equal(t, results[0].ErrorCode, "1234", "")
+	assert.Equal(t, results[1].Name, "general", "")
+	assert.Equal(t, results[1].ErrorCode, "1234", "")
+	assert.Equal(t, results[1].Details, "timeout", "")
+}
+
+func TestResultsExitCode_OnFailedKicsAndScaScanners_PrintCorrectFailedScannersInfoToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-multiple-scanner-fails",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 3, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "kics", "")
+	assert.Equal(t, results[0].ErrorCode, "2344", "")
+	assert.Equal(t, results[1].Name, "sca", "")
+	assert.Equal(t, results[1].ErrorCode, "4343", "")
+	assert.Equal(t, results[2].Name, "general", "")
+	assert.Equal(t, results[2].ErrorCode, "1234", "")
+	assert.Equal(t, results[2].Details, "timeout", "")
+}
+
+func TestResultsExitCode_OnRequestedFailedScanner_PrintCorrectFailedScannerInfoToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-multiple-scanner-fails",
+		Status: wrappers.ScanFailed,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 2344},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanFailed, Name: "general", Details: "timeout", ErrorCode: 1234},
+		},
+	}
+
+	results := getScannerResponse("sca", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "sca", "")
+	assert.Equal(t, results[0].ErrorCode, "4343", "")
+}
+
+func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-sca-fail-partial-id",
+		Status: wrappers.ScanPartial,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanCompleted, Name: "general"},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].Name, "sca", "")
+	assert.Equal(t, results[0].ErrorCode, "4343", "")
+}
+
+func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+}
+
+func TestResultsExitCode_OnCanceledScanWithRequestedSuccessfulScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("sast", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+}
+
+func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
+	model := wrappers.ScanResponseModel{
+		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
+		Status: wrappers.ScanCanceled,
+		StatusDetails: []wrappers.StatusInfo{
+			{Status: wrappers.ScanCompleted, Name: "general"},
+			{Status: wrappers.ScanCompleted, Name: "sast"},
+			{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
+		},
+	}
+
+	results := getScannerResponse("kics", &model)
+
+	assert.Equal(t, len(results), 1, "Scanner results should be empty")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+}
+
+func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "exit-code")
+	assert.Equal(t, err.Error(), errorConstants.ScanIDRequired, "Wrong expected error message")
+}
+
+func TestResultsExitCode_OnErrorScan_FailCommandWithError(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "results", "exit-code", "--scan-id", "fake-error-id")
+	assert.Equal(t, err.Error(), "Failed showing a scan: fake error message", "Wrong expected error message")
 }
 
 func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
@@ -57,6 +216,13 @@ func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+
+	// Remove generated json file
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+}
+
+func TestRunGetResultsByScanIdJsonFormatWithSastRedundancy(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--sast-redundancy")
 
 	// Remove generated json file
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
@@ -242,6 +408,7 @@ func TestRunGetBFLByScanIdAndQueryIdWithFormatList(t *testing.T) {
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -251,6 +418,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -259,7 +427,18 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
 }
 
+func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-options", "scan-information")
+	assert.Equal(t, err.Error(), "report option \"scan-information\" unavailable", "Wrong expected error message")
+}
+
 func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -270,7 +449,32 @@ func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestRunGetResultsGeneratingPdfReporWithOptions(t *testing.T) {
+func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: true}}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scansummary,scanresults")
+	assert.NilError(t, err)
+}
+
+func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: true}}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "pdf",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scan-information")
+	assert.Error(t, err, "report option \"scan-information\" unavailable")
+}
+
+func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.NewScanReportEnabled, Status: false}}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -324,4 +528,64 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func TestRunGetResultsByScanIdGLFormat_NoVulnerabilities_Success(t *testing.T) {
+	// Execute the command and perform nil assertion
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sast")
+
+	// Run test for gl-sast report type
+	// Check if the file exists and vulnerabilities is empty, then delete the file
+	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err == nil {
+		t.Logf("File exists: %s.%s", fileName, printer.FormatGL)
+		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL))
+		if err != nil {
+			t.Logf("Failed to read file: %v", err)
+		}
+
+		var results wrappers.GlSastResultsCollection
+		if err := json.Unmarshal(resultsData, &results); err != nil {
+			t.Logf("Failed to unmarshal JSON: %v", err)
+		}
+		assert.Equal(t, len(results.Vulnerabilities), 0, "No vulnerabilities should be found")
+		if err := os.Remove(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err != nil {
+			t.Logf("Failed to delete file: %v", err)
+		}
+		t.Log("File deleted successfully.")
+	}
+}
+
+func Test_addPackageInformation(t *testing.T) {
+	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
+	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
+	resultsModel := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: "sca", // Assuming this matches commonParams.ScaType
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier: "pkg-123",
+				},
+				ID: "CVE-2021-23-424",
+				VulnerabilityDetails: wrappers.VulnerabilityDetails{
+					CvssScore: 5.0,
+					CveName:   "cwe-789",
+				},
+			},
+		},
+	}
+	scaPackageModel := &[]wrappers.ScaPackageCollection{
+		{
+			ID:                  "pkg-123",
+			FixLink:             "",
+			DependencyPathArray: dependencyArray,
+		},
+	}
+	scaTypeModel := &[]wrappers.ScaTypeCollection{
+		{}}
+
+	resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+
+	expectedFixLink := "https://devhub.checkmarx.com/cve-details/CVE-2021-23-424"
+	actualFixLink := resultsModel.Results[0].ScanResultData.ScaPackageCollection.FixLink
+	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
 }

@@ -78,7 +78,7 @@ func (g *AzureHTTPWrapper) GetRepositories(url, organizationName, projectName, t
 	if err != nil {
 		return rootRepo, err
 	}
-	return rootRepo, err
+	return rootRepo.GetEnabledRepos(), err
 }
 
 func (g *AzureHTTPWrapper) GetProjects(url, organizationName, token string) (AzureRootProject, error) {
@@ -112,7 +112,11 @@ func (g *AzureHTTPWrapper) get(
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	logger.PrintResponse(resp, true)
 

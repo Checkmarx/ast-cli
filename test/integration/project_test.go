@@ -11,11 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
@@ -33,7 +33,7 @@ const SSHKeyFilePath = "ssh-key-file.txt"
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags)
+	projectID, _ := createProject(t, Tags, Groups)
 
 	response := listProjectByID(t, projectID)
 
@@ -43,7 +43,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	assertTags(t, project)
+	assertTagsAndGroups(t, project, Groups)
 
 	deleteProject(t, projectID)
 
@@ -53,7 +53,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 // Assert project contains created tags and groups
-func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
+func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, groups []string) {
 
 	allTags := getAllTags(t, "project")
 
@@ -65,6 +65,8 @@ func assertTags(t *testing.T, project wrappers.ProjectResponseModel) {
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
+
+	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
 // Create a project with empty project name should fail
@@ -90,12 +92,48 @@ func TestCreateAlreadyExistingProject(t *testing.T) {
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
 
+func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testing.T) {
+
+	err, _ := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
+		flag(params.ApplicationName), "application-that-doesnt-exist",
+	)
+
+	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
+}
+
+func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
+
+	err, outBuffer := executeCommand(
+		t, "project", "create", flag(params.FormatFlag),
+		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
+		flag(params.ApplicationName), "my-application",
+	)
+	createdProject := wrappers.ProjectResponseModel{}
+	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+	defer deleteProject(t, createdProject.ID)
+	assert.NilError(t, err)
+	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
+	assert.Assert(t, len(createdProject.ApplicationIds) == 1, "The project must be connected to the application")
+}
+
 func TestCreateWithInvalidGroup(t *testing.T) {
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
 		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
 	)
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
+}
+
+func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
+	err, _ := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project",
+	)
+	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name 'project' already exists\n")
 }
 
 // Test list project's branches
@@ -117,9 +155,10 @@ func TestProjectBranches(t *testing.T) {
 	assert.Assert(t, strings.Contains(string(result), "[]"))
 }
 
-func createProject(t *testing.T, tags map[string]string) (string, string) {
+func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
+	groupsStr := formatGroups(groups)
 
 	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
@@ -129,6 +168,7 @@ func createProject(t *testing.T, tags map[string]string) (string, string) {
 		flag(params.ProjectName), projectName,
 		flag(params.BranchFlag), "master",
 		flag(params.TagList), tagsStr,
+		flag(params.GroupList), groupsStr,
 	)
 
 	createdProject := wrappers.ProjectResponseModel{}
@@ -151,6 +191,14 @@ func deleteProject(t *testing.T, projectID string) {
 		flag(params.ProjectIDFlag),
 		projectID,
 	)
+}
+
+func deleteProjectByName(t *testing.T, projectName string) {
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(viper.GetString(params.ProjectsPathKey))
+	projectModel, _, err := projectsWrapper.GetByName(projectName)
+	if err == nil && projectModel != nil {
+		deleteProject(t, projectModel.ID)
+	}
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {

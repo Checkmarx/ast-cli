@@ -4,6 +4,7 @@ package params
 const (
 	AgentFlag                     = "agent"
 	AgentFlagUsage                = "Scan origin name"
+	ApplicationName               = "application-name"
 	DefaultAgent                  = "ASTCLI"
 	DebugFlag                     = "debug"
 	DebugUsage                    = "Debug mode with detailed logs"
@@ -25,6 +26,7 @@ const (
 	IgnorePolicyFlag              = "ignore-policy"
 	SourceDirFilterFlag           = "file-filter"
 	SourceDirFilterFlagSh         = "f"
+	ImportFilePath                = "import-file-path"
 	IncludeFilterFlag             = "file-include"
 	IncludeFilterFlagSh           = "i"
 	ProjectIDFlag                 = "project-id"
@@ -55,6 +57,7 @@ const (
 	TimeoutFlag                   = "timeout"
 	TimeoutFlagUsage              = "Timeout for network activity, (default 5 seconds)"
 	NtlmProxyDomainFlag           = "proxy-ntlm-domain"
+	SastFastScanFlag              = "sast-fast-scan"
 	NtlmProxyDomainFlagUsage      = "Window domain when using NTLM proxy"
 	BaseURIFlagUsage              = "The base system URI"
 	BaseAuthURIFlag               = "base-auth-uri"
@@ -117,6 +120,7 @@ const (
 	GithubTokenUsage         = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage         = "GitLab OAuth token"
 	BotCount                 = "Note: dependabot is not counted but other bots might be considered as contributors."
+	DisabledReposCount       = "Note: Disabled repositories are not counted."
 	URLFlag                  = "url"
 	GitLabURLFlag            = "url-gitlab"
 	URLFlagUsage             = "API base URL"
@@ -134,6 +138,7 @@ const (
 	ExploitablePathFlag      = "sca-exploitable-path"
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
+	SastRedundancyFlag       = "sast-redundancy"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
@@ -222,6 +227,7 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
+	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"

@@ -1,12 +1,18 @@
 package wrappers
 
 import (
+	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const CVSSV3Enabled = "CVSS_V3_ENABLED"
+const MinioEnabled = "MINIO_ENABLED"
+const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
+const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
+
+var DefaultFFLoad bool = false
 
 var FeatureFlagsBaseMap = []CommandFlags{
 	{
@@ -15,6 +21,35 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    PackageEnforcementEnabled,
 				Default: true,
+			},
+			{
+				Name:    MinioEnabled,
+				Default: true,
+			},
+		},
+	},
+	{
+		CommandName: "cx project create",
+	},
+	{
+		CommandName: "cx import",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    MinioEnabled,
+				Default: true,
+			},
+			{
+				Name:    feature_flags.ByorEnabled,
+				Default: false,
+			},
+		},
+	},
+	{
+		CommandName: "cx results show",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    NewScanReportEnabled,
+				Default: false,
 			},
 		},
 	},
@@ -68,6 +103,7 @@ func loadFeatureFlagsDefaultValues() {
 			FeatureFlags[flag.Name] = flag.Default
 		}
 	}
+	DefaultFFLoad = true
 }
 
 type FeatureFlagsWrapper interface {

@@ -3,9 +3,6 @@ name: Checkmarx One CLI
 on:
   pull_request:
 
-env:
-  GO_VERSION: '1.21.5'
-
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
@@ -15,7 +12,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
       - run: go version
       - name: go test with coverage
         run: |
@@ -42,7 +39,7 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
       - run: go version
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
@@ -66,12 +63,12 @@ jobs:
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
-          PR_GITHUB_NUMBER: 418
+          PR_GITHUB_NUMBER: 419
           PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
-          PR_GITLAB_NAMESPACE: "tiagobcx"
-          PR_GITLAB_REPO_NAME: "testProject"
-          PR_GITLAB_PROJECT_ID: 40227565
-          PR_GITLAB_IID: 19
+          PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
+          PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
+          PR_GITLAB_PROJECT_ID: ${{ secrets.PR_GITLAB_PROJECT_ID }}
+          PR_GITLAB_IID: ${{ secrets.PR_GITLAB_IID }}
           AZURE_ORG: ${{ secrets.AZURE_ORG }}
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_REPOS: ${{ secrets.AZURE_REPOS }}
@@ -113,10 +110,10 @@ jobs:
       - name: Set up Go version
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
       - run: go version
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc #v3
         with:
           skip-pkg-cache: true
           version: v1.54.2
@@ -127,7 +124,7 @@ jobs:
     name: govulncheck
     steps:
       - id: govulncheck
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@7da72f730e37eeaad891fcff0a532d27ed737cd4 #v1
         with:
-          go-version-input: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           go-package: ./...

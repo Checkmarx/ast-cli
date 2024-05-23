@@ -10,9 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
+	testifyAssert "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 )
 
@@ -21,7 +25,52 @@ const (
 	resultsDirectory = "output-results-folder/"
 )
 
-// Create a scan and test getting its results
+func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	scansPath := viper.GetString(params.ScansPathKey)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+	results, _ := commands.GetScannerResults(scansWrapper, "FakeScanId", "sast,sca")
+
+	testifyAssert.Nil(t, results, "results should be nil")
+}
+
+func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	scansPath := viper.GetString(params.ScansPathKey)
+	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+	results, _ := commands.GetScannerResults(scansWrapper, scanID, "sast,sca")
+
+	assert.Equal(t, 1, len(results))
+	assert.Equal(t, wrappers.ScanCompleted, (results[0]).Status)
+	assert.Equal(t, "", (results[0]).Details)
+	assert.Equal(t, "", (results[0]).ErrorCode)
+	assert.Equal(t, "", (results[0]).Name)
+}
+
+func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	args := []string{
+		"results", "exit-code",
+		flag(params.ScanTypes), "sast",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, errorConstants.ScanIDRequired)
+}
+
+func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	args := []string{
+		"results", "exit-code",
+		flag(params.ScanTypes), "sast",
+		flag(params.ScanIDFlag), "FakeScanId",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed showing a scan")
+}
+
 func TestResultListJson(t *testing.T) {
 
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
@@ -35,6 +84,7 @@ func TestResultListJson(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
+				printer.FormatIndentedJSON,
 				printer.FormatSarif,
 				printer.FormatSummary,
 				printer.FormatSummaryConsole,
@@ -48,6 +98,7 @@ func TestResultListJson(t *testing.T) {
 		flag(params.TargetFlag), fileName,
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.SastRedundancyFlag),
 	)
 
 	result := wrappers.ScanResultsCollection{}
@@ -219,7 +270,6 @@ func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-
 }
 
 func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {

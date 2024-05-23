@@ -5,9 +5,11 @@ package commands
 import (
 	"testing"
 
-	"gotest.tools/assert"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"gotest.tools/assert"
 )
 
 func TestProjectHelp(t *testing.T) {
@@ -22,9 +24,28 @@ func TestRunCreateProjectCommandWithFile(t *testing.T) {
 	execCmdNilAssertion(t, "project", "create", "--project-name", "test_project")
 }
 
+func TestProjectCreate_ExistingApplication_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
+	execCmdNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", "MOCK")
+}
+
+func TestProjectCreate_ExistingApplicationWithNoPermission_FailToCreateProject(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.NoPermissionApp)
+	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
+}
+
+func TestProjectCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeBadRequest400)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
+}
+
+func TestProjectCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "project", "create", "--project-name", "test_project", "--application-name", mock.FakeInternalServerError500)
+	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
+}
+
 func TestRunCreateProjectCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "project", "create")
-	assert.Assert(t, err.Error() == "Project name is required")
+	assert.Assert(t, err.Error() == errorConstants.ProjectNameIsRequired)
 }
 
 func TestRunCreateProjectCommandWithInvalidFormat(t *testing.T) {
@@ -156,7 +177,7 @@ func TestCreateProjectWrongSSHKeyPath(t *testing.T) {
 		"open dummy_key: no such file or directory",
 	}
 
-	assert.Assert(t, util.Contains(expectedMessages, err.Error()))
+	assert.Assert(t, utils.Contains(expectedMessages, err.Error()))
 }
 
 func TestCreateProjectWithSSHKey(t *testing.T) {

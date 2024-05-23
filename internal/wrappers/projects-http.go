@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
@@ -33,7 +34,11 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handleProjectResponseWithBody(resp, err, http.StatusCreated)
 }
 
@@ -48,10 +53,16 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	switch resp.StatusCode {
 	case http.StatusNoContent:
 		return nil
+	case http.StatusForbidden:
+		return errors.Errorf("Failed to update project %s, status - %d, %s:", projectID, resp.StatusCode, "No permission")
 	default:
 		return errors.Errorf("failed to update project %s, status - %d", projectID, resp.StatusCode)
 	}
@@ -72,7 +83,11 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -91,7 +106,11 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	}
 	decoder := json.NewDecoder(resp.Body)
 
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		errorModel := ErrorModel{}
@@ -122,8 +141,37 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handleProjectResponseWithBody(resp, err, http.StatusOK)
+}
+
+func (p *ProjectsHTTPWrapper) GetByName(name string) (
+	*ProjectResponseModel,
+	*ErrorModel,
+	error) {
+	params := make(map[string]string)
+	params["name"] = name
+	resp, _, err := p.Get(params)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	projectCount := len(resp.Projects)
+	if resp.Projects == nil || projectCount == 0 {
+		return nil, nil, errors.Errorf(errorConstants.ProjectNotExists)
+	}
+
+	for i := range resp.Projects {
+		if resp.Projects[i].Name == name {
+			return &resp.Projects[i], nil, nil
+		}
+	}
+
+	return nil, nil, errors.Errorf(errorConstants.ProjectNotExists)
 }
 
 func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {
@@ -138,7 +186,11 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -167,7 +219,11 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
@@ -180,7 +236,11 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
 
 	decoder := json.NewDecoder(resp.Body)
 

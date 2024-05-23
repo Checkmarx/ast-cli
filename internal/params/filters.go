@@ -1,6 +1,6 @@
 package params
 
-var BaseFilters = []string{
+var BaseIncludeFilters = []string{
 	"*.javasln",
 	"*.project",
 	"*.java",
@@ -121,6 +121,7 @@ var BaseFilters = []string{
 	"yarn.lock",
 	"requirements.txt",
 	"requirement.txt",
+	"requirement*.txt",
 	"composer.lock",
 	"Dockerfile*",
 	"dock*",
@@ -130,6 +131,14 @@ var BaseFilters = []string{
 	"go.sum",
 	"Podfile",
 	"Podfile.lock",
+	"*.cmp",
+	"Directory.Packages.props",
+}
+
+var BaseExcludeFilters = []string{
+	"!.vs",
+	"!.vscode",
+	"!.idea",
 }
 
 var KicsBaseFilters = []string{

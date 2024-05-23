@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -43,9 +43,9 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: '^1.21.5'
+          go-version-file: go.mod
       - name: Import Code-Signing Certificates
-        uses: Apple-Actions/import-codesign-certs@v1
+        uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
         with:
           # The certificates in a PKCS12 file encoded as a base64 string
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -61,14 +61,10 @@ jobs:
           brew --version
       - name: Install gon
         run: |
-          brew tap mitchellh/gon
-          brew install mitchellh/gon/gon
-      - name: Install and start docker
+          brew install Bearer/tap/gon
+      - name: Setup Docker on macOS
         if: inputs.dev == false
-        run: |
-          brew install docker
-          colima start
-          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -76,12 +72,12 @@ jobs:
           docker info
       - name: Login to Docker Hub
         if: inputs.dev == false
-        uses: docker/login-action@v1
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
@@ -105,7 +101,7 @@ jobs:
       - name: Echo GoReleaser Args
         run: echo ${{ env.GR_ARGS }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
         with:
           version: v1.18.2
           args: ${{ env.GR_ARGS }}
@@ -114,6 +110,10 @@ jobs:
           GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
+          SIGNING_REMOTE_SSH_USER: ${{ secrets.SIGNING_REMOTE_SSH_USER }}
+          SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
+          SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
+          SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
 
   notify:
     runs-on: ubuntu-latest
@@ -131,7 +131,7 @@ jobs:
 
       - name: Converts Markdown to HTML
         id: convert
-        uses: lifepal/markdown-to-html@v1.1
+        uses: lifepal/markdown-to-html@71ed74a56602597c05dd7dd0e561631557158ed5 #v1.1
         with:
           text: "${{ steps.release.outputs.body_release }}"
 
@@ -144,7 +144,7 @@ jobs:
 
       - name: Send a Notification
         id: notify
-        uses: thechetantalwar/teams-notify@v2
+        uses: thechetantalwar/teams-notify@8a78811f5e8f58cdd204efebd79158006428c46b #v2
         with:
           teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
           message: "${{ steps.clean.outputs.clean }}"

@@ -21,12 +21,17 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/constants"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/mssola/user_agent"
@@ -121,6 +126,7 @@ var (
 )
 
 func NewScanCommand(
+	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
@@ -134,6 +140,7 @@ func NewScanCommand(
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -159,6 +166,8 @@ func NewScanCommand(
 		riskOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
+		accessManagementWrapper,
+		applicationsWrapper,
 	)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
@@ -246,16 +255,16 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 	logsCmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Download scan log for selected scan type",
-		Long:  "Accepts a scan-id and scan type (sast, iac-security or sca) and downloads the related scan log",
+		Long:  "Accepts a scan-id and scan type (sast, iac-security) and downloads the related scan log",
 		Example: heredoc.Doc(
 			`
-			$ cx scan logs --scan-id <scan Id> --scan-type <sast | sca | iac-security>
+			$ cx scan logs --scan-id <scan Id> --scan-type <sast | iac-security>
 		`,
 		),
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security or sca.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security.")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -409,6 +418,8 @@ func scanCreateSubCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -437,6 +448,8 @@ func scanCreateSubCommand(
 			risksOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
+			accessManagementWrapper,
+			applicationsWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -511,6 +524,12 @@ func scanCreateSubCommand(
 		[]string{},
 		commonParams.KicsPlatformsFlagUsage,
 	)
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastFastScanFlag,
+		false,
+		"Enable SAST Fast Scan configuration",
+	)
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.IacsPlatformsFlag,
 		[]string{},
@@ -561,6 +580,8 @@ func scanCreateSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+
+	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
 	if err != nil {
@@ -575,122 +596,6 @@ func scanCreateSubCommand(
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	return createScanCmd
-}
-
-func findProject(
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
-	if err != nil {
-		return "", err
-	}
-
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			return updateProject(resp, cmd, projectsWrapper, groupsWrapper, projectName)
-		}
-	}
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper)
-	if err != nil {
-		return "", err
-	}
-	return projectID, nil
-}
-
-func createProject(
-	projectName string,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-) (string, error) {
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	groupsMap, err := createGroupsMap(projectGroups, groupsWrapper)
-	if err != nil {
-		return "", err
-	}
-	var projModel = wrappers.Project{}
-	projModel.Name = projectName
-	projModel.Groups = groupsMap
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModel.Tags = createTagMap(projectTags)
-	resp, errorModel, err := projectsWrapper.Create(&projModel)
-	projectID := ""
-	if errorModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
-	}
-	if err == nil {
-		projectID = resp.ID
-	}
-	return projectID, err
-}
-
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	projectName string,
-
-) (string, error) {
-	var projectID string
-	var projModel = wrappers.Project{}
-	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
-	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
-	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
-		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
-		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
-		}
-	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" {
-		logger.PrintIfVerbose("No groups or tags to update. Skipping project update.")
-		return projectID, nil
-	}
-	if projectPrivatePackage != "" {
-		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
-	}
-	projModelResp, errModel, err := projectsWrapper.GetByID(projectID)
-	if errModel != nil {
-		err = errors.Errorf(ErrorCodeFormat, failedGettingProj, errModel.Code, errModel.Message)
-	}
-	if err != nil {
-		return "", err
-	}
-	projModel.Name = projModelResp.Name
-	projModel.Groups = projModelResp.Groups
-	projModel.Tags = projModelResp.Tags
-	if projectGroups != "" {
-		groupsMap, groupErr := createGroupsMap(projectGroups, groupsWrapper)
-		if groupErr != nil {
-			return "", errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
-		}
-		logger.PrintIfVerbose("Updating project groups")
-		projModel.Groups = groupsMap
-	}
-	if projectTags != "" {
-		logger.PrintIfVerbose("Updating project tags")
-		projModel.Tags = createTagMap(projectTags)
-	}
-	err = projectsWrapper.Update(projectID, &projModel)
-	if err != nil {
-		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-	return projectID, nil
 }
 
 func setupScanTags(input *[]byte, cmd *cobra.Command) {
@@ -716,28 +621,14 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 	*input, _ = json.Marshal(info)
 }
 
-func createTagMap(tagListStr string) map[string]string {
-	tagsList := strings.Split(tagListStr, ",")
-	tags := make(map[string]string)
-	for _, tag := range tagsList {
-		if len(tag) > 0 {
-			value := ""
-			keyValuePair := strings.Split(tag, ":")
-			if len(keyValuePair) > 1 {
-				value = keyValuePair[1]
-			}
-			tags[keyValuePair[0]] = value
-		}
-	}
-	return tags
-}
-
 func setupScanTypeProjectAndConfig(
 	input *[]byte,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 ) error {
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
@@ -754,16 +645,35 @@ func setupScanTypeProjectAndConfig(
 	} else {
 		return errors.Errorf("Project name is required")
 	}
+
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
+
+	var applicationID []string
+	if applicationName != "" {
+		application, getAppErr := getApplication(applicationName, applicationsWrapper)
+		if getAppErr != nil {
+			return getAppErr
+		}
+		if application == nil {
+			return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
+		}
+		applicationID = []string{application.ID}
+	}
+
 	// We need to convert the project name into an ID
-	projectID, err := findProject(
+	projectID, findProjectErr := services.FindProject(
+		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
 		groupsWrapper,
+		accessManagementWrapper,
+		applicationsWrapper,
 	)
-	if err != nil {
-		return err
+	if findProjectErr != nil {
+		return findProjectErr
 	}
+
 	info["project"].(map[string]interface{})["id"] = projectID
 	// Handle the scan configuration
 	var configArr []interface{}
@@ -778,12 +688,9 @@ func setupScanTypeProjectAndConfig(
 		)
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
-		resubmitConfig, err = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-		if err != nil {
-			return err
-		}
+		resubmitConfig, _ = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
 	} else if _, ok := info["config"]; !ok {
-		err = json.Unmarshal([]byte("[]"), &configArr)
+		err := json.Unmarshal([]byte("[]"), &configArr)
 		if err != nil {
 			return err
 		}
@@ -806,8 +713,41 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, apiSecConfig)
 	}
 	info["config"] = configArr
-	*input, err = json.Marshal(info)
-	return err
+	var err2 error
+	*input, err2 = json.Marshal(info)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
+}
+
+func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
+	if applicationName != "" {
+		params := make(map[string]string)
+		params["name"] = applicationName
+		resp, err := applicationsWrapper.Get(params)
+		if err != nil {
+			return nil, err
+		}
+		if resp.Applications != nil && len(resp.Applications) > 0 {
+			application := verifyApplicationNameExactMatch(applicationName, resp)
+
+			return application, nil
+		}
+	}
+	return nil, nil
+}
+
+func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.ApplicationsResponseModel) *wrappers.Application {
+	var application *wrappers.Application
+	for i := range resp.Applications {
+		if resp.Applications[i].Name == applicationName {
+			application = &resp.Applications[i]
+			break
+		}
+	}
+	return application
 }
 
 func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (
@@ -825,7 +765,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	}
 	// Checking the response for errors
 	if errorModel != nil {
-		return nil, errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
 	config := allScansModel.Scans[0].Metadata.Configs
 	engines := allScansModel.Scans[0].Engines
@@ -842,7 +782,9 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig := wrappers.SastConfig{}
 		sastMapConfig[resultsMapType] = commonParams.SastType
 		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
 		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 		for _, config := range resubmitConfig {
@@ -992,7 +934,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
+	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
@@ -1016,11 +958,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
-	return buildFilters(commonParams.BaseFilters, userIncludeFilter)
+	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
 }
 
-func getUserFilters(filterStr string) []string {
-	return buildFilters(nil, filterStr)
+func getExcludeFilters(userExcludeFilter string) []string {
+	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
 }
 
 func buildFilters(base []string, extra string) []string {
@@ -1122,22 +1064,34 @@ func handleDir(
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
-	// Check if the folder is excluded
-	for _, filter := range filters {
-		if filter[0] == '!' {
-			filterStr := strings.TrimSuffix(filepath.ToSlash(filter[1:]), "/")
-			match, err := path.Match(filterStr, file.Name())
-			if err != nil {
-				return err
-			}
-			if match {
-				logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
-				return nil
-			}
-		}
+
+	isFiltered, err := isDirFiltered(file.Name(), filters)
+	if err != nil {
+		return err
+	}
+	if isFiltered {
+		logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
+		return nil
 	}
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+}
+
+func isDirFiltered(filename string, filters []string) (bool, error) {
+	for _, filter := range filters {
+		if filter[0] == '!' {
+			filterStr := strings.TrimSuffix(filepath.ToSlash(filter[1:]), "/")
+			match, err := path.Match(filterStr, filename)
+			if err != nil {
+				return false, err
+			}
+			if match {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (newParent, newBase string) {
@@ -1327,7 +1281,6 @@ func UnzipFile(f string) (string, error) {
 	defer func() {
 		_ = archive.Close()
 	}()
-
 	for _, f := range archive.File {
 		filePath := filepath.Join(tempDir, f.Name)
 		logger.PrintIfVerbose("unzipping file " + filePath + "...")
@@ -1381,7 +1334,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 	info, statErr := os.Stat(sourceTrimmed)
 	if !os.IsNotExist(statErr) {
-		if filepath.Ext(sourceTrimmed) == ".zip" {
+		if filepath.Ext(sourceTrimmed) == constants.ZipExtension {
 			zipFile = sourceTrimmed
 		} else if info != nil && info.IsDir() {
 			sourceDir = filepath.ToSlash(sourceTrimmed)
@@ -1411,6 +1364,8 @@ func runCreateScanCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper)
@@ -1425,12 +1380,20 @@ func runCreateScanCommand(
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
 		}
+		threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
+		thresholdMap := parseThreshold(threshold)
+		err = validateThresholds(thresholdMap)
+		if err != nil {
+			return err
+		}
 		scanModel, zipFilePath, err := createScanModel(
 			cmd,
 			uploadsWrapper,
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			accessManagementWrapper,
+			applicationsWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1441,7 +1404,7 @@ func runCreateScanCommand(
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedCreating, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
@@ -1474,7 +1437,7 @@ func runCreateScanCommand(
 				if policyTimeout < 0 {
 					return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
 				}
-				policyResponseModel, err = handlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel, cmd)
+				policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID, cmd)
 				if err != nil {
 					return err
 				}
@@ -1486,7 +1449,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel)
+			err = applyThreshold(resultsWrapper, scanResponseModel, thresholdMap)
 			if err != nil {
 				return err
 			}
@@ -1499,7 +1462,7 @@ func runCreateScanCommand(
 
 		cleanUpTempZip(zipFilePath)
 		// verify break build from policy
-		if policyResponseModel != nil && len(policyResponseModel.Polices) > 0 && policyResponseModel.BreakBuild {
+		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
 			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
@@ -1524,11 +1487,13 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
+	applicationsWrapper wrappers.ApplicationsWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1669,29 +1634,6 @@ func handleWait(
 	return nil
 }
 
-func handlePolicyWait(
-	waitDelay,
-	timeoutMinutes int,
-	policyWrapper wrappers.PolicyWrapper,
-	scanResponseModel *wrappers.ScanResponseModel,
-	cmd *cobra.Command,
-) (*wrappers.PolicyResponseModel, error) {
-	policyResponseModel, err := waitForPolicyCompletion(
-		waitDelay,
-		timeoutMinutes,
-		policyWrapper,
-		scanResponseModel,
-		cmd)
-	if err != nil {
-		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
-		if verboseFlag {
-			logger.PrintIfVerbose("Policy evaluation failed")
-		}
-		return nil, err
-	}
-	return policyResponseModel, nil
-}
-
 func createReportsAfterScan(
 	cmd *cobra.Command,
 	scanID string,
@@ -1746,16 +1688,13 @@ func createReportsAfterScan(
 }
 
 func applyThreshold(
-	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
+	thresholdMap map[string]int,
 ) error {
-	threshold, _ := cmd.Flags().GetString(commonParams.Threshold)
-	if strings.TrimSpace(threshold) == "" {
+	if len(thresholdMap) == 0 {
 		return nil
 	}
-
-	thresholdMap := parseThreshold(threshold)
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel)
 	if err != nil {
@@ -1791,21 +1730,19 @@ func applyThreshold(
 }
 
 func parseThreshold(threshold string) map[string]int {
+	if strings.TrimSpace(threshold) == "" {
+		return nil
+	}
 	thresholdMap := make(map[string]int)
 	if threshold != "" {
 		threshold = strings.ReplaceAll(strings.ReplaceAll(threshold, " ", ""), ",", ";")
 		thresholdLimits := strings.Split(strings.ToLower(threshold), ";")
 		for _, limits := range thresholdLimits {
-			limit := strings.Split(limits, "=")
-			engineName := limit[0]
-			engineName = strings.Replace(engineName, commonParams.KicsType, commonParams.IacType, 1)
-			if len(limit) > 1 {
-				intLimit, err := strconv.Atoi(limit[1])
-				if err != nil {
-					log.Println("Error parsing threshold limit: ", err)
-				} else {
-					thresholdMap[engineName] = intLimit
-				}
+			engineName, intLimit, err := parseThresholdLimit(limits)
+			if err != nil {
+				log.Printf("%s", err)
+			} else {
+				thresholdMap[engineName] = intLimit
 			}
 		}
 	}
@@ -1813,11 +1750,40 @@ func parseThreshold(threshold string) map[string]int {
 	return thresholdMap
 }
 
+func validateThresholds(thresholdMap map[string]int) error {
+	var errMsgBuilder strings.Builder
+
+	for engineName, limit := range thresholdMap {
+		if limit < 1 {
+			errMsgBuilder.WriteString(errors.Errorf("Invalid value for threshold limit %s. Threshold should be greater or equal to 1.\n", engineName).Error())
+		}
+	}
+
+	errMsg := errMsgBuilder.String()
+	if errMsg != "" {
+		return errors.New(errMsg)
+	}
+	return nil
+}
+
+func parseThresholdLimit(limit string) (engineName string, intLimit int, err error) {
+	parts := strings.Split(limit, "=")
+	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
+	if len(parts) <= 1 {
+		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+	}
+	intLimit, err = strconv.Atoi(parts[1])
+	if err != nil {
+		err = errors.Errorf("%s: Error parsing threshold limit: %v\n", engineName, err)
+	}
+	return engineName, intLimit, err
+}
+
 func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel) (
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string), true)
 	if err != nil {
 		return nil, err
 	}
@@ -1872,52 +1838,14 @@ func waitForScanCompletion(
 				return errors.Wrapf(err, "%s\n", failedCanceling)
 			}
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
-			return errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes)
+
+			return wrappers.NewAstError(exitCodes.MultipleEnginesFailedExitCode, errors.Errorf("Timeout of %d minute(s) for scan reached", timeoutMinutes))
 		}
 		i++
 	}
 	return nil
-}
-
-func waitForPolicyCompletion(
-	waitDelay int,
-	timeoutMinutes int,
-	policyWrapper wrappers.PolicyWrapper,
-	scanResponseModel *wrappers.ScanResponseModel,
-	cmd *cobra.Command,
-) (*wrappers.PolicyResponseModel, error) {
-	logger.PrintIfVerbose("Waiting for policy evaluation to complete for scanID:" + scanResponseModel.ID + " and projectID:" + scanResponseModel.ProjectID)
-	var policyResponseModel *wrappers.PolicyResponseModel
-	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
-	fixedWait := time.Duration(waitDelay) * time.Second
-	i := uint64(0)
-	if !cmd.Flags().Changed(commonParams.RetryDelayFlag) {
-		viper.Set(commonParams.RetryDelayFlag, commonParams.RetryDelayPollingDefault)
-	}
-	for {
-		variableWait := time.Duration(math.Min(float64(i/uint64(waitDelay)), maxPollingWaitTime)) * time.Second
-		waitDuration := fixedWait + variableWait
-		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
-		time.Sleep(waitDuration)
-		evaluated := false
-		var err error
-		evaluated, policyResponseModel, err = isPolicyEvaluated(policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID)
-		if err != nil {
-			return nil, err
-		}
-		if evaluated {
-			break
-		}
-		if timeoutMinutes > 0 && time.Now().After(timeout) {
-			logger.PrintfIfVerbose("Timeout of %d minute(s) for policy evaluation reached", timeoutMinutes)
-			return nil, nil
-		}
-		i++
-	}
-	logger.PrintIfVerbose("Policy evaluation completed with status" + policyResponseModel.Status)
-	return policyResponseModel, nil
 }
 
 func isScanRunning(
@@ -1958,45 +1886,47 @@ func isScanRunning(
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
-		return false, errors.New("scan completed partially")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan completed partially"))
 	} else if scanResponseModel.Status != wrappers.ScanCompleted {
-		return false, errors.New("scan did not complete successfully")
+		exitCode := getExitCode(scanResponseModel)
+		return false, wrappers.NewAstError(exitCode, errors.New("scan did not complete successfully"))
 	}
 	return false, nil
 }
 
-func isPolicyEvaluated(
-	policyWrapper wrappers.PolicyWrapper,
-	scanID,
-	projectID string,
-) (bool, *wrappers.PolicyResponseModel, error) {
-	var errorModel *wrappers.WebError
-	var err error
-	var policyResponseModel *wrappers.PolicyResponseModel
-	var params = make(map[string]string)
-
-	params["scanId"] = scanID
-	params["astProjectId"] = projectID
-
-	policyResponseModel, errorModel, err = policyWrapper.EvaluatePolicy(params)
-	if err != nil {
-		return false, nil, err
-	}
-	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
-	} else if policyResponseModel != nil {
-		if policyResponseModel.Status == evaluatingPolicy {
-			log.Println("Policy status: ", policyResponseModel.Status)
-			return false, nil, nil
+func getExitCode(scanResponseModel *wrappers.ScanResponseModel) int {
+	failedStatuses := make([]int, 0)
+	for _, scanner := range scanResponseModel.StatusDetails {
+		scannerNameLowerCase := strings.ToLower(scanner.Name)
+		scannerErrorExitCode, errorCodeByScannerExists := errorCodesByScanner[scannerNameLowerCase]
+		if scanner.Status == wrappers.ScanFailed && scanner.Name != General && errorCodeByScannerExists {
+			failedStatuses = append(failedStatuses, scannerErrorExitCode)
 		}
 	}
-	// Case the policy is evaluated or None
-	logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
-	if policyResponseModel.Status == completedPolicy || policyResponseModel.Status == nonePolicy {
-		logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
-		return true, policyResponseModel, nil
+	if len(failedStatuses) == 1 {
+		return failedStatuses[0]
 	}
-	return true, nil, nil
+
+	return exitCodes.MultipleEnginesFailedExitCode
+}
+
+const (
+	General     = "general"
+	Sast        = "sast"
+	Sca         = "sca"
+	IacSecurity = "iac-security" // We get 'kics' from AST. Added for forward compatibility
+	Kics        = "kics"
+	APISec      = "apisec"
+)
+
+var errorCodesByScanner = map[string]int{
+	General:     exitCodes.MultipleEnginesFailedExitCode,
+	Sast:        exitCodes.SastEngineFailedExitCode,
+	Sca:         exitCodes.ScaEngineFailedExitCode,
+	IacSecurity: exitCodes.IacSecurityEngineFailedExitCode,
+	Kics:        exitCodes.KicsEngineFailedExitCode,
+	APISec:      exitCodes.ApisecEngineFailedExitCode,
 }
 
 func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
@@ -2015,9 +1945,13 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = printByFormat(cmd, toScanViews(allScansModel.Scans, sastMetadataWrapper))
+			views, err := toScanViews(allScansModel.Scans, sastMetadataWrapper)
+			if err != nil {
+				return err
+			}
+			err = printByFormat(cmd, views)
 			if err != nil {
 				return err
 			}
@@ -2092,7 +2026,7 @@ func runDeleteScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedDeleting, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2113,7 +2047,7 @@ func runCancelScanCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			}
 			// Checking the response
 			if errorModel != nil {
-				return errors.Errorf(ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
+				return errors.Errorf(services.ErrorCodeFormat, failedCanceling, errorModel.Code, errorModel.Message)
 			}
 		}
 
@@ -2195,7 +2129,7 @@ type scanView struct {
 	Engines         []string
 }
 
-func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) []*scanView {
+func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrappers.SastMetadataWrapper) ([]*scanView, error) {
 	scanIDs := make([]string, len(scans))
 	for i := range scans {
 		scanIDs[i] = scans[i].ID
@@ -2206,7 +2140,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
 	if err != nil {
 		logger.Printf("error getting sast metadata: %v", err)
-		return nil
+		return nil, err
 	}
 
 	metadataMap := make(map[string]bool)
@@ -2220,7 +2154,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		scans[i].SastIncremental = strconv.FormatBool(metadataMap[scans[i].ID])
 		views[i] = toScanView(&scans[i])
 	}
-	return views
+	return views, nil
 }
 
 func toScanView(scan *wrappers.ScanResponseModel) *scanView {
