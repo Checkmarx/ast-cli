@@ -283,7 +283,7 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
 		}
-		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper, featureFlagsWrapper)
+		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
 		if err != nil {
 			return err
 		}
