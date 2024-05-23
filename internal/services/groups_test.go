@@ -41,7 +41,7 @@ func TestAssignGroupsToProject(t *testing.T) {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath) //need check new featureFlag
 	for _, tt := range tests {
 		ttt := tt
-		wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = true
+		wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
 			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement, featureFlagsWrapper); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
