@@ -232,7 +232,7 @@ func UpsertProjectGroups(groupsWrapper wrappers.GroupsWrapper, projModel *wrappe
 		projModel.Groups = groups
 	}
 
-	err := AssignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper)
+	err := AssignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper, featureFlagsWrapper)
 	if err != nil {
 		return err
 	}

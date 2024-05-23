@@ -42,15 +42,12 @@ func getGroupsForRequest(groups []*wrappers.Group, featureFlagsWrapper wrappers.
 }
 
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
-	accessManagement wrappers.AccessManagementWrapper) error {
-	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
+	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
+
+	if !flagResponse.Status {
 		return nil
 	}
-	//flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	//
-	//if !flagResponse.Status {
-	//	return nil
-	//}
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)
 	if err != nil {
 		return err
