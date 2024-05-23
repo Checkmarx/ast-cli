@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"fmt"
 	"os/exec"
 
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
-
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-var ScaResolverResultsFileNameDir = ScaResolverWorkingDir + "/cx-sca-realtime-results.json"
+var ScaResolverResultsFileName = "cx-sca-realtime-results.json"
 
 const scaResolverFailedStatus = "failedtoresolve"
 const scaResolverProjectName = "cx-cli-sca-realtime-project"
@@ -73,7 +74,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 		fmt.Println("Running SCA Realtime...")
 
 		// Handle SCA Resolver. Checks if it already exists and if it is in the latest version
-		err = downloadSCAResolverAndHashFileIfNeeded(&Params)
+		err = osinstaller.DownloadRealTimeInstallationAndHashFileIfNeeded(&Params)
 		if err != nil {
 			return err
 		}
@@ -103,12 +104,12 @@ func executeSCAResolver(projectPath string) error {
 		"-n",
 		scaResolverProjectName,
 		"-r",
-		ScaResolverResultsFileNameDir,
+		filepath.Join(Params.WorkingDir(), ScaResolverResultsFileName),
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running SCA resolver with args: %v \n", args))
 
-	out, err := exec.Command(Params.ExecutableFilePath, args...).Output()
+	out, err := exec.Command(Params.ExecutableFilePath(), args...).Output()
 	logger.PrintIfVerbose(string(out))
 	if err != nil {
 		return err
@@ -293,7 +294,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel, resol
 func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
 	logger.PrintIfVerbose("Checking if provided project path exists...")
 	projectDirPath, _ := cmd.Flags().GetString(commonParams.ScaRealtimeProjectDir)
-	pathExists, err := fileExists(projectDirPath)
+	pathExists, err := osinstaller.FileExists(projectDirPath)
 	if err != nil {
 		return "", err
 	}
@@ -307,7 +308,8 @@ func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
 
 // readSCAResolverResultsFromFile Get SCA Resolver results from file to build SCA API request body
 func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
-	file, err := os.ReadFile(ScaResolverResultsFileNameDir)
+	scaResolverResultsFileNameDir := filepath.Join(Params.WorkingDir(), ScaResolverResultsFileName)
+	file, err := os.ReadFile(scaResolverResultsFileNameDir)
 	if err != nil {
 		return ScaResultsFile{}, err
 	}

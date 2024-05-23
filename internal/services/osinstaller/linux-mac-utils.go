@@ -1,6 +1,6 @@
 //go:build linux || darwin
 
-package scarealtime
+package osinstaller
 
 import (
 	"archive/tar"
@@ -15,16 +15,18 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
+var DirDefault = os.FileMode(0755)
+
 // UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles() error {
-	logger.PrintIfVerbose("Extracting files in: " + ScaResolverWorkingDir)
-	gzipStream, err := os.Open(filepath.Join(ScaResolverWorkingDir, Params.SCAResolverFileName))
+func UnzipOrExtractFiles(installableRealtime *InstallableRealTime) error {
+	logger.PrintIfVerbose("Extracting files in: " + installableRealtime.WorkingDir())
+	gzipStream, err := os.Open(filepath.Join(installableRealtime.WorkingDir(), installableRealtime.FileName))
 	if err != nil {
 		fmt.Println("error")
 	}
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed")
+		log.Fatal("ExtractTarGz: NewReader failed", err)
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
@@ -42,11 +44,16 @@ func UnzipOrExtractFiles() error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, 0755); err != nil { //nolint:gomnd
+			if err := os.Mkdir(header.Name, DirDefault); err != nil {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			extractedFilePath := filepath.Join(ScaResolverWorkingDir, header.Name)
+			//TODO: delete
+			if header.Name == "dist/cx-mac-universal_darwin_all/cx.dmg" {
+				// Skip the cx.dmg file
+				continue
+			}
+			extractedFilePath := filepath.Join(installableRealtime.WorkingDir(), header.Name)
 			outFile, err := os.Create(extractedFilePath)
 			if err != nil {
 				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())

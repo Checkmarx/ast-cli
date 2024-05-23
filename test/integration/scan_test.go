@@ -891,14 +891,14 @@ func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	downloadURL := realtime.Params.SCAResolverDownloadURL
-	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
+	downloadURL := realtime.Params.DownloadURL
+	realtime.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
 
-	realtime.Params.SCAResolverDownloadURL = downloadURL
-	realtime.Params.SCAResolverHashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	realtime.Params.DownloadURL = downloadURL
+	realtime.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))

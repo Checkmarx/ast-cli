@@ -3,14 +3,14 @@
 package scarealtime
 
 import (
-	"path/filepath"
+	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 )
 
-var Params = ScaRealTime{
-	ExecutableFilePath:         filepath.Join(ScaResolverWorkingDir, "ScaResolver"),
-	HashFilePath:               filepath.Join(ScaResolverWorkingDir, "ScaResolver.tar.gz.sha256sum"),
-	SCAResolverDownloadURL:     "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz",
-	SCAResolverHashDownloadURL: "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz.sha256sum",
-	SCAResolverFileName:        "ScaResolver.tar.gz",
-	SCAResolverHashFileName:    "ScaResolver.tar.gz.sha256sum",
+var Params = osinstaller.InstallableRealTime{
+	ExecutableFile:  "ScaResolver",
+	DownloadURL:     "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz",
+	HashDownloadURL: "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-macos64.tar.gz.sha256sum",
+	FileName:        "ScaResolver.tar.gz",
+	HashFileName:    "ScaResolver.tar.gz.sha256sum",
+	WorkingDirName:  "SCARealtime",
 }

@@ -2,15 +2,6 @@ package scarealtime
 
 import "time"
 
-type ScaRealTime struct {
-	ExecutableFilePath         string
-	HashFilePath               string
-	SCAResolverDownloadURL     string
-	SCAResolverHashDownloadURL string
-	SCAResolverFileName        string
-	SCAResolverHashFileName    string
-}
-
 type ScaResultsFile struct {
 	ScanMetadata struct {
 		StartTime     time.Time `json:"StartTime"`

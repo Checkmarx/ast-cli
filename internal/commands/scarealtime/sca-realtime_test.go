@@ -15,6 +15,7 @@ var (
 	projectDirectory = filepath.Dir(b)
 )
 
+// TODO: add test to check first installation
 func TestRunScaRealtime(t *testing.T) {
 	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
 	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
@@ -32,6 +33,7 @@ func TestRunScaRealtime(t *testing.T) {
 	// Run second time to cover SCA Resolver download not needed code
 	err = cmd.Execute()
 	assert.NilError(t, err)
+
 }
 
 func copyResultsToTempDir() error {
@@ -41,7 +43,8 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(ScaResolverResultsFileNameDir, data, 0644)
+	scaResolverResultsFileNameDir := filepath.Join(Params.WorkingDir(), ScaResolverResultsFileName)
+	err = ioutil.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}
