@@ -103,15 +103,18 @@ func updateSpecificFeatureFlagMapWithDefault(flagName string) {
 		for _, flag := range cmdFlag.FeatureFlags {
 			if flag.Name == flagName {
 				FeatureFlagsSpecific[flagName] = flag.Default
+				FeatureFlags[flagName] = flag.Default
 				return
 			}
 		}
 	}
 	FeatureFlagsSpecific[flagName] = false // Default to false if not found in base map
+	FeatureFlags[flagName] = false         // Ensure FeatureFlags is also updated
 }
 
 func updateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
 	FeatureFlagsSpecific[flagName] = flag.Status
+	FeatureFlags[flagName] = flag.Status
 }
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
