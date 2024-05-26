@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//func TestMicroSastWrapper_Scan(t *testing.T) {
+// func TestMicroSastWrapper_Scan(t *testing.T) {
 //	port := 8080
 //	client := NewMicroSastService(port)
 //	scanResult, err := client.Scan("/Users/benalvo/CxDev/workspace/Pheonix-workspace/CxCodeProbe/testdata/Java/samples/Cookies.java")
 //	assert.NotNil(t, scanResult)
 //	assert.Nil(t, err)
-//}
+// }
 
 func TestReplaceCurlyApostrophe(t *testing.T) {
 	type args struct {
@@ -50,6 +50,7 @@ func TestReplaceCurlyApostrophe(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, replaceCurlyApostrophe(tt.args.data), "ReplaceCurlyApostrophe(%v)", tt.args.data)
 		})
@@ -92,13 +93,14 @@ func TestReplaceEnDashWithHyphen(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, replaceEnDashWithHyphen(tt.args.data), "ReplaceEnDashWithHyphen(%v)", tt.args.data)
 		})
 	}
 }
 
-//func TestCheckHealth(t *testing.T) {
+// func TestCheckHealth(t *testing.T) {
 //	port := 8080
 //	client := NewMicroSastService(port)
 //
@@ -108,4 +110,4 @@ func TestReplaceEnDashWithHyphen(t *testing.T) {
 //
 //	assert.Nil(t, err)
 //	assert.Less(t, duration.Milliseconds(), int64(50), "CheckHealth took too long")
-//}
+// }

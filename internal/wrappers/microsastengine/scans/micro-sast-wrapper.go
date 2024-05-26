@@ -37,10 +37,7 @@ func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult,
 	conn, err := grpc.NewClient(localhostAddress, options...)
 
 	defer func(conn *grpc.ClientConn) {
-		err := conn.Close()
-		if err != nil {
-
-		}
+		_ = conn.Close()
 	}(conn)
 
 	if err != nil {
