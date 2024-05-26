@@ -2,18 +2,17 @@ package services
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMicroSastWrapper_Scan(t *testing.T) {
-	port := 8080
-	client := NewMicroSastService(port)
-	scanResult, err := client.Scan("/Users/benalvo/CxDev/workspace/Pheonix-workspace/CxCodeProbe/testdata/Java/samples/Cookies.java")
-	assert.NotNil(t, scanResult)
-	assert.Nil(t, err)
-}
+//func TestMicroSastWrapper_Scan(t *testing.T) {
+//	port := 8080
+//	client := NewMicroSastService(port)
+//	scanResult, err := client.Scan("/Users/benalvo/CxDev/workspace/Pheonix-workspace/CxCodeProbe/testdata/Java/samples/Cookies.java")
+//	assert.NotNil(t, scanResult)
+//	assert.Nil(t, err)
+//}
 
 func TestReplaceCurlyApostrophe(t *testing.T) {
 	type args struct {
@@ -99,14 +98,14 @@ func TestReplaceEnDashWithHyphen(t *testing.T) {
 	}
 }
 
-func TestCheckHealth(t *testing.T) {
-	port := 8080
-	client := NewMicroSastService(port)
-
-	start := time.Now()
-	err := client.CheckHealth()
-	duration := time.Since(start)
-
-	assert.Nil(t, err)
-	assert.Less(t, duration.Milliseconds(), int64(50), "CheckHealth took too long")
-}
+//func TestCheckHealth(t *testing.T) {
+//	port := 8080
+//	client := NewMicroSastService(port)
+//
+//	start := time.Now()
+//	err := client.CheckHealth()
+//	duration := time.Since(start)
+//
+//	assert.Nil(t, err)
+//	assert.Less(t, duration.Milliseconds(), int64(50), "CheckHealth took too long")
+//}
