@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -41,7 +42,7 @@ func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult,
 	}(conn)
 
 	if err != nil {
-		log.Fatalf("grpc.NewClient(%q): %v", localhostAddress, err)
+		logger.Printf("grpc.NewClient(%q): %v", localhostAddress, err)
 	}
 
 	client := NewScanServiceClient(conn)
@@ -79,7 +80,7 @@ func (s *MicroSastWrapper) CheckHealth() error {
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.Dial(localhostAddress, options...)
 	if err != nil {
-		log.Fatalf("grpc.Dial(%q): %v", localhostAddress, err)
+		logger.Printf("grpc.Dial(%q): %v", localhostAddress, err)
 	}
 
 	defer func(conn *grpc.ClientConn) {
@@ -88,7 +89,7 @@ func (s *MicroSastWrapper) CheckHealth() error {
 
 	healthRes, healthErr := checkHealth("MicroSastEngine", conn)
 	if healthErr != nil {
-		log.Printf("Health Check Failed: %v", healthErr)
+		logger.Printf("Health Check Failed: %v", healthErr)
 		return healthErr
 	}
 
