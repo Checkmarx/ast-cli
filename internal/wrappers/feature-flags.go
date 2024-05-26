@@ -61,7 +61,7 @@ var FeatureFlagsSpecific = map[string]bool{}
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 	allFlags, err := featureFlagsWrapper.GetAll()
 	if err != nil {
-		loadFeatureFlagsDefaultValues()
+		LoadFeatureFlagsDefaultValues()
 		return nil
 	}
 
@@ -76,11 +76,11 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, 5)
 	if err != nil {
-		updateSpecificFeatureFlagMapWithDefault(flagName)
+		UpdateSpecificFeatureFlagMapWithDefault(flagName)
 		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsSpecific[flagName]}, nil
 	}
 
-	updateSpecificFeatureFlagMap(flagName, *specificFlag)
+	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)
 	return specificFlag, nil
 }
 
@@ -98,22 +98,20 @@ func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retr
 	return nil, errors.New("failed to get feature flag after retries")
 }
 
-func updateSpecificFeatureFlagMapWithDefault(flagName string) {
+func UpdateSpecificFeatureFlagMapWithDefault(flagName string) {
 	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
 			if flag.Name == flagName {
 				FeatureFlagsSpecific[flagName] = flag.Default
-				FeatureFlags[flagName] = flag.Default
 				return
 			}
 		}
 	}
 }
 
-func updateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
+func UpdateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
 	FeatureFlagsSpecific[flagName] = flag.Status
-	FeatureFlags[flagName] = flag.Status
 }
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
@@ -132,7 +130,7 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 	}
 }
 
-func loadFeatureFlagsDefaultValues() {
+func LoadFeatureFlagsDefaultValues() {
 	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
 
 	for _, cmdFlag := range FeatureFlagsBaseMap {
