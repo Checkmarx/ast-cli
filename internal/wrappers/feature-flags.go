@@ -99,6 +99,7 @@ func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retr
 }
 
 func updateSpecificFeatureFlagMapWithDefault(flagName string) {
+	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
 			if flag.Name == flagName {
@@ -108,8 +109,6 @@ func updateSpecificFeatureFlagMapWithDefault(flagName string) {
 			}
 		}
 	}
-	FeatureFlagsSpecific[flagName] = false // Default to false if not found in base map
-	FeatureFlags[flagName] = false         // Ensure FeatureFlags is also updated
 }
 
 func updateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {

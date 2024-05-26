@@ -37,11 +37,13 @@ func TestAssignGroupsToProject(t *testing.T) {
 			wantErr: false,
 		},
 	}
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath) //need check new featureFlag
 	for _, tt := range tests {
 		ttt := tt
 		wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
+			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement, featureFlagsWrapper); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})

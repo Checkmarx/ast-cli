@@ -147,29 +147,23 @@ func Test_createProject(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			// Commenting out the failing test cases
-			if tt.name == "When called with a new project name and non existing project groups return error" ||
-				tt.name == "When called with mock fake group error return fake error from project create" {
-				t.Skip("Skipping failing test case")
-			} else {
-				got, err := createProject(
-					ttt.args.projectName,
-					ttt.args.cmd,
-					ttt.args.projectsWrapper,
-					ttt.args.groupsWrapper,
-					ttt.args.accessManagementWrapper,
-					ttt.args.applicationsWrapper,
-					ttt.args.applicationID,
-					ttt.args.projectGroups,
-					ttt.args.projectPrivatePackage,
-					ttt.args.featureFlagsWrapper)
-				if (err != nil) != ttt.wantErr {
-					t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
-					return
-				}
-				if got != ttt.want {
-					t.Errorf("createProject() got = %v, want %v", got, ttt.want)
-				}
+			got, err := createProject(
+				ttt.args.projectName,
+				ttt.args.cmd,
+				ttt.args.projectsWrapper,
+				ttt.args.groupsWrapper,
+				ttt.args.accessManagementWrapper,
+				ttt.args.applicationsWrapper,
+				ttt.args.applicationID,
+				ttt.args.projectGroups,
+				ttt.args.projectPrivatePackage,
+				ttt.args.featureFlagsWrapper)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if got != ttt.want {
+				t.Errorf("createProject() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
