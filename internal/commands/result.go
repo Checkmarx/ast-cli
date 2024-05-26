@@ -1115,6 +1115,8 @@ func ReadResults(
 	var errorModel *wrappers.WebError
 
 	params[commonParams.ScanIDQueryParam] = scan.ID
+	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
+
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 
 	if err != nil {
@@ -1125,9 +1127,13 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		if !isThresholdCheck {
-			resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-			if err != nil {
+		if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+			// Compute SAST results redundancy
+			resultsModel = ComputeRedundantSastResults(resultsModel)
+		}
+		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		if err != nil && !isThresholdCheck {
+			{
 				return nil, err
 			}
 		}
@@ -1148,29 +1154,26 @@ func enrichScaResults(
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
-			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
+			logger.PrintfIfVerbose("%s", failedListingResults)
+			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Get additional information to add the type information to the sca results
 		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
 		if errorModel != nil {
-			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
+			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Enrich sca results
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
-	}
-	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
-
-	if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
-		// Compute SAST results redundancy
-		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
 	return resultsModel, nil
 }
