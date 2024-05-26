@@ -29,7 +29,6 @@ func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 }
 
 func ExecuteLightweightScan(sourceFlag, engineUpdateVersion string) (*ScanResult, error) {
-
 	if sourceFlag == "" {
 		return nil, errors.Errorf(errorConstants.SourceCodeIsRequired)
 	}
@@ -110,9 +109,3 @@ type Error struct {
 }
 
 type ErrorCode int32
-
-const (
-	UNKNOWN_ERROR   ErrorCode = 0
-	INVALID_REQUEST ErrorCode = 1
-	INTERNAL_ERROR  ErrorCode = 2
-)

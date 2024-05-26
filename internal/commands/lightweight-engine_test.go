@@ -64,16 +64,17 @@ func Test_executeLightweightScan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ExecuteLightweightScan(tt.args.sourceFlag, tt.args.engineUpdateVersion)
-			if (err != nil) != tt.wantErr {
+			ttt := tt
+			got, err := ExecuteLightweightScan(ttt.args.sourceFlag, ttt.args.engineUpdateVersion)
+			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeLightweightScan() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.wantErrMsg {
-				t.Errorf("executeLightweightScan() error message = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
+				t.Errorf("executeLightweightScan() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("executeLightweightScan() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("executeLightweightScan() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
@@ -118,19 +119,20 @@ func Test_runScanLightweightCommand(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		ttt := tt
+		t.Run(ttt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			cmd.Flags().String(commonParams.SourcesFlag, tt.sourceFlag, "")
-			cmd.Flags().String(commonParams.LightweightUpdateVersion, tt.engineFlag, "")
+			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
+			cmd.Flags().String(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatTable, "")
 			runFunc := runScanLightweightCommand()
 			err := runFunc(cmd, []string{})
-			if (err != nil) != tt.wantErr {
-				t.Errorf("runScanLightweightCommand() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("runScanLightweightCommand() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
-			if tt.wantErr && err.Error() != tt.wantErrMsg {
-				t.Errorf("runScanLightweightCommand() error message = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
+				t.Errorf("runScanLightweightCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 		})
 	}
