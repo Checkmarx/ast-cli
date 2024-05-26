@@ -283,7 +283,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 
 // Create a scan with the sources
 // Assert the scan completes
-func TestScanCreateWithThreshold(t *testing.T) {
+func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
