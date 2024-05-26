@@ -30,22 +30,22 @@ func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 
 func ExecuteLightweightScan(sourceFlag, engineUpdateVersion string) (*ScanResult, error) {
 	if sourceFlag == "" {
-		return nil, errors.Errorf(errorConstants.SourceCodeIsRequired)
+		return nil, errors.Errorf(errorConstants.FileSourceFlagIsRequired)
 	}
 
 	if engineUpdateVersion == "" {
-		return nil, errors.Errorf(errorConstants.EngineVersionIsRequired)
+		return nil, errors.Errorf(errorConstants.LightweightUpdateVersionFlagIsRequired)
 	}
 
 	if filepath.Ext(sourceFlag) == "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
 
-	successfulScan := returnSuccessfulResponseMock()
+	successfulScan := ReturnSuccessfulResponseMock()
 	return successfulScan, nil
 }
 
-func returnSuccessfulResponseMock() *ScanResult {
+func ReturnSuccessfulResponseMock() *ScanResult {
 	return &ScanResult{
 		RequestID: "1234567890",
 		Status:    true,

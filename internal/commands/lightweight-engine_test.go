@@ -30,7 +30,7 @@ func Test_executeLightweightScan(t *testing.T) {
 			},
 			want:       nil,
 			wantErr:    true,
-			wantErrMsg: errorConstants.SourceCodeIsRequired,
+			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
 		},
 		{
 			name: "Test with empty engineUpdateVersion",
@@ -40,7 +40,7 @@ func Test_executeLightweightScan(t *testing.T) {
 			},
 			want:       nil,
 			wantErr:    true,
-			wantErrMsg: errorConstants.EngineVersionIsRequired,
+			wantErrMsg: errorConstants.LightweightUpdateVersionFlagIsRequired,
 		},
 		{
 			name: "Test with file without extension",
@@ -53,12 +53,12 @@ func Test_executeLightweightScan(t *testing.T) {
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
-			name: "Test with empty engineUpdateVersion",
+			name: "Test with correct flags",
 			args: args{
 				sourceFlag:          "source.cs",
 				engineUpdateVersion: "1.0.0",
 			},
-			want:    returnSuccessfulResponseMock(),
+			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 	}
@@ -94,14 +94,14 @@ func Test_runScanLightweightCommand(t *testing.T) {
 			sourceFlag: "",
 			engineFlag: "1.0.0",
 			wantErr:    true,
-			wantErrMsg: errorConstants.SourceCodeIsRequired,
+			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
 		},
 		{
 			name:       "Test with empty engineFlag",
 			sourceFlag: "source.cs",
 			engineFlag: "",
 			wantErr:    true,
-			wantErrMsg: errorConstants.EngineVersionIsRequired,
+			wantErrMsg: errorConstants.LightweightUpdateVersionFlagIsRequired,
 		},
 		{
 			name:       "Test with file without extension",

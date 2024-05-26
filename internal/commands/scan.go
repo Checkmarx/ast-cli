@@ -395,7 +395,7 @@ func scanLightweightSubCommand() *cobra.Command {
 		Long:   "Lightweight scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan lightweight
+			$ cx scan lightweight --file-source <path to code file> --lightweight-update-version <version number>
 		`,
 		),
 		Annotations: map[string]string{
