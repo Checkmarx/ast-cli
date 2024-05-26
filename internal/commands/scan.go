@@ -1449,7 +1449,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
 			if err != nil {
 				return err
 			}
@@ -1688,6 +1688,7 @@ func createReportsAfterScan(
 }
 
 func applyThreshold(
+	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
@@ -1783,7 +1784,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, make(map[string]string), true)
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
 	if err != nil {
 		return nil, err
 	}
