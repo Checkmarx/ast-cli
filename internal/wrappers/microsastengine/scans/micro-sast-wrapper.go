@@ -73,12 +73,13 @@ func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.Healt
 }
 
 func (s *MicroSastWrapper) CheckHealth() error {
+	timeout := 10 * time.Second
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithDefaultServiceConfig(serviceConfig),
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.DialContext(ctx, localhostAddress, options...)
