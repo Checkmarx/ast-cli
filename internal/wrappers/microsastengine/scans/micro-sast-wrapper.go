@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"google.golang.org/grpc"
@@ -77,14 +78,19 @@ func (s *MicroSastWrapper) CheckHealth() error {
 		grpc.WithBlock(),
 		grpc.WithDefaultServiceConfig(serviceConfig),
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
-	conn, err := grpc.Dial(localhostAddress, options...)
+	conn, err := grpc.DialContext(ctx, localhostAddress, options...)
 	if err != nil {
 		logger.Printf("grpc.Dial(%q): %v", localhostAddress, err)
+		return err
 	}
 
 	defer func(conn *grpc.ClientConn) {
-		_ = conn.Close()
+		if conn != nil {
+			_ = conn.Close()
+		}
 	}(conn)
 
 	healthRes, healthErr := checkHealth("MicroSastEngine", conn)
