@@ -1133,9 +1133,7 @@ func ReadResults(
 		}
 		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
 		if err != nil && !isThresholdCheck {
-			{
-				return nil, err
-			}
+			return nil, err
 		}
 
 		resultsModel.ScanID = scan.ID
