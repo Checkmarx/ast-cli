@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	testifyAssert "github.com/stretchr/testify/assert"
+	testifyAssert "github.com/stretchr/testify/assert" //nolint:depguard
 )
 
 // func TestMicroSastWrapper_Scan(t *testing.T) {

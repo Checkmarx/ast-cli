@@ -58,7 +58,7 @@ func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult,
 	return client.Scan(context.Background(), request)
 }
 
-func checkHealth(service string, conn *grpc.ClientConn) (*healthpb.HealthCheckResponse, error) {
+func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.HealthCheckResponse, error) {
 	req := &healthpb.HealthCheckRequest{
 		Service: service,
 	}
