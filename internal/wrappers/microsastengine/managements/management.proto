@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package cx.microsast.service.v1.managements;
+
+option go_package = "github.com/checkmarxdev/cxcodeprobe/microsastengine/golang/managements";
+
+// Represents a request to perform a shutdown.
+message ShutdownRequest {
+}
+
+// Represents the result of a shutdown.
+message ShutdownResponse {
+  string message = 1;
+}
+
+// Service definition for management operations.
+service ManagementService {
+  // Performs a graceful shutdown to the grpc server.
+  rpc Shutdown(ShutdownRequest) returns ( ShutdownResponse);
+}
