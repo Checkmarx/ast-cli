@@ -63,11 +63,11 @@ func Test_executeLightweightScan(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ttt := tt
+		ttt := tt
+		t.Run(ttt.name, func(t *testing.T) {
 			got, err := ExecuteLightweightScan(ttt.args.sourceFlag, ttt.args.engineUpdateVersion)
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("executeLightweightScan() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("executeLightweightScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
