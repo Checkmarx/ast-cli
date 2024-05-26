@@ -1166,6 +1166,7 @@ func enrichScaResults(
 			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
 		if err != nil {
+			logger.PrintfIfVerbose("%s", failedListingResults)
 			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Enrich sca results
