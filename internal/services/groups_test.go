@@ -9,7 +9,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
+func setup() {
+	wrappers.FeatureFlagsSpecific = map[string]bool{}
+}
+
 func TestAssignGroupsToProject(t *testing.T) {
+	setup() // Clear the map before starting this test
 	type args struct {
 		projectID           string
 		projectName         string
@@ -167,6 +172,7 @@ func Test_findGroupByName(t *testing.T) {
 }
 
 func Test_getGroupsForRequest(t *testing.T) {
+	setup() // Clear the map before starting this test
 	type args struct {
 		groups []*wrappers.Group
 	}
@@ -183,8 +189,8 @@ func Test_getGroupsForRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ttt := tt
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: "ACCESS_MANAGEMENT_ENABLED", Status: false} // Mock the feature flag
 		t.Run(tt.name, func(t *testing.T) {
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: false}
 			if got := getGroupsForRequest(ttt.args.groups, &mock.FeatureFlagsMockWrapper{}); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}
