@@ -174,6 +174,8 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
+	scanLightweightCmd := scanLightweightSubCommand()
+
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
 	deleteScanCmd := scanDeleteSubCommand(scansWrapper)
@@ -189,14 +191,15 @@ func NewScanCommand(
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		printer.FormatTable, printer.FormatList, printer.FormatJSON,
+		[]*cobra.Command{scanLightweightCmd, listScansCmd, showScanCmd, workflowScanCmd},
+		printer.FormatTable, printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
 		createScanCmd, printer.FormatList, printer.FormatTable, printer.FormatJSON,
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
+		scanLightweightCmd,
 		showScanCmd,
 		workflowScanCmd,
 		listScansCmd,
@@ -382,6 +385,37 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	}
 	addScanIDFlag(showScanCmd, "Scan ID to show.")
 	return showScanCmd
+}
+
+func scanLightweightSubCommand() *cobra.Command {
+	lightweightScanCmd := &cobra.Command{
+		Use:    "lightweight",
+		Hidden: true,
+		Short:  "Run a lightweight scan",
+		Long:   "Lightweight scan is able to scan a single file fast and efficiently.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan lightweight
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://checkmarx.com/resource/documents/en/link-to-cxone-documentation
+			`,
+			),
+		},
+		RunE: runScanLightweightCommand(),
+	}
+
+	lightweightScanCmd.PersistentFlags().String(commonParams.LightweightUpdateVersion, "", "Desired lightweight engine version")
+	lightweightScanCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The source should be a single file",
+	)
+	return lightweightScanCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
