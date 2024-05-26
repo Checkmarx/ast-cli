@@ -886,7 +886,7 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-	err := os.RemoveAll(realtime.ScaResolverWorkingDir)
+	err := os.RemoveAll(realtime.Params.WorkingDir())
 	assert.NilError(t, err)
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
@@ -911,7 +911,7 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(realtime.ScaResolverResultsFileNameDir, data, 0644)
+	err = ioutil.WriteFile(realtime.Params.WorkingDir(), data, 0644)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,5 @@
 package scarealtime
 
-//var ScaResolverWorkingDir = filepath.Join(os.TempDir(), "SCARealtime")
-
 var GetPackageManagerFromResolvingModuleType = map[string]string{
 	"composer":  "Php",
 	"gomodules": "Go",
