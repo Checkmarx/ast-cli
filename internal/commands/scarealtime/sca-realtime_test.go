@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfiguration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
@@ -17,7 +18,7 @@ var (
 )
 
 func TestRunScaRealtime(t *testing.T) {
-	err := os.RemoveAll(Params.WorkingDir())
+	err := os.RemoveAll(scaconfiguration.Params.WorkingDir())
 	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
 	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
 	cmd.SetArgs(args)
@@ -44,7 +45,7 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	scaResolverResultsFileNameDir := filepath.Join(Params.WorkingDir(), ScaResolverResultsFileName)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfiguration.Params.WorkingDir(), ScaResolverResultsFileName)
 	err = ioutil.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err

@@ -1,6 +1,6 @@
 //go:build darwin
 
-package scarealtime
+package scaconfiguration
 
 import (
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"

@@ -20,6 +20,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfiguration"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -886,19 +887,19 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-	err := os.RemoveAll(realtime.Params.WorkingDir())
+	err := os.RemoveAll(scaconfiguration.Params.WorkingDir())
 	assert.NilError(t, err)
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	downloadURL := realtime.Params.DownloadURL
-	realtime.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
+	downloadURL := scaconfiguration.Params.DownloadURL
+	scaconfiguration.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
 
-	realtime.Params.DownloadURL = downloadURL
-	realtime.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	scaconfiguration.Params.DownloadURL = downloadURL
+	scaconfiguration.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
@@ -911,7 +912,7 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(realtime.Params.WorkingDir(), data, 0644)
+	err = ioutil.WriteFile(scaconfiguration.Params.WorkingDir(), data, 0644)
 	if err != nil {
 		return err
 	}
