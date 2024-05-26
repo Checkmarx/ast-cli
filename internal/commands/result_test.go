@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -528,6 +527,13 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+}
+
+func TestRunGetResultsWithExcludeNotExploitableFlag(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--filter",
+		"state=TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable")
+	// Run test for exclude not_exploitable state
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 }
 
 func Test_addPackageInformation(t *testing.T) {

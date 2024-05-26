@@ -230,13 +230,25 @@ func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	filters, _ := cmd.Flags().GetStringSlice(params.FilterFlag)
+	extraFilter := make(map[string]map[string]string)
+	extraFilter, _ = addValue(filters, extraFilter)
 	allFilters := make(map[string]string)
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
 		if len(filterKeyVal) != params.KeyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
-
+		//Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMEDURGENT" if user sent that flag
+		for filterKey, extraFilters := range extraFilter {
+			if filterKeyVal[0] == filterKey {
+				for privateFilter, value := range extraFilters {
+					if strings.Contains(filterKeyVal[1], privateFilter) {
+						logger.PrintIfVerbose("Set filter state for next states : " + strings.ToLower(value))
+						filterKeyVal[1] = strings.Replace(filterKeyVal[1], filterKeyVal[1], value, -1)
+					}
+				}
+			}
+		}
 		allFilters[filterKeyVal[0]] = strings.Replace(
 			filterKeyVal[1], ";", ",",
 			strings.Count(filterKeyVal[1], ";"),
@@ -245,6 +257,21 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	return allFilters, nil
 }
 
+// Function to add a new value to the nested map
+func addValue(filters []string, extraFilter map[string]map[string]string) (map[string]map[string]string, error) {
+	for _, filter := range filters {
+		filterParts := strings.Split(filter, "=")
+		if len(filterParts) != 2 {
+			return nil, fmt.Errorf("Invalid filter format: %s", filter)
+		}
+		filterName := filterParts[0]
+		if extraFilter[filterName] == nil {
+			extraFilter[filterName] = make(map[string]string)
+		}
+		extraFilter[filterName]["exclude_not_exploitable"] = "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
+	}
+	return extraFilter, nil
+}
 func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
 	for _, c := range commands {
 		addFormatFlag(c, defaultFormat, otherAvailableFormats...)
