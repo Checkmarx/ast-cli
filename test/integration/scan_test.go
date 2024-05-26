@@ -277,8 +277,6 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	//executeCommand(t, args...)
-	///assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 	args[11] = "*js"
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
@@ -301,6 +299,24 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
+}
+
+func TestScanCreateWithThreshold(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=100;",
+		flag(params.KicsFilterFlag), "!Dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
 }
 
 // Create a scan with the sources
