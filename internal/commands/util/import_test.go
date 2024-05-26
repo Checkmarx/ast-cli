@@ -3,23 +3,17 @@
 package util
 
 import (
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
-	//wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] = true
-
-	//option 1
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
-
-	//option 2
-	//mock.Flag = wrappers.FeatureFlagResponseModel{Name: "BYOR_ENABLED", Status: true}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
@@ -36,7 +30,8 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
+
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -52,7 +47,8 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 }
 
 func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
+
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -68,7 +64,7 @@ func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWit
 }
 
 func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -84,7 +80,7 @@ func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsError
 }
 
 func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -100,7 +96,7 @@ func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsError
 }
 
 func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -116,7 +112,7 @@ func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNe
 }
 
 func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -132,7 +128,7 @@ func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorW
 }
 
 func TestImport_ImportSarifFileMissingExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -148,19 +144,19 @@ func TestImport_ImportSarifFileMissingExtension_CreateImportReturnsErrorWithCorr
 }
 
 func TestImporFileFunction_FakeUnauthorizedHttpStatusCode_ReturnRelevantError(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	err := importFile(mock.FakeUnauthorized401, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 	assert.Assert(t, err.Error() == errorConstants.StatusUnauthorized)
 }
 
 func TestImporFileFunction_FakeForbiddenHttpStatusCode_ReturnRelevantError(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	err := importFile(mock.FakeForbidden403, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 	assert.Assert(t, err.Error() == errorConstants.StatusForbidden)
 }
 
 func TestImporFileFunction_FakeInternalServerErrorHttpStatusCode_ReturnRelevantError(t *testing.T) {
-	wrappers.FeatureFlagsSpecific[featureFlagsConstants.ByorEnabled] = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.ByorEnabled, Status: true}
 	err := importFile(mock.FakeInternalServerError500, "importFilePath", &mock.UploadsMockWrapper{}, &mock.ByorMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 	assert.Assert(t, err.Error() == errorConstants.StatusInternalServerError)
 }

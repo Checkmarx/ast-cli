@@ -1,22 +1,21 @@
 package services
 
 import (
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"reflect"
 	"testing"
 
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
 func TestAssignGroupsToProject(t *testing.T) {
 	type args struct {
-		projectID        string
-		projectName      string
-		groups           []*wrappers.Group
-		accessManagement wrappers.AccessManagementWrapper
+		projectID           string
+		projectName         string
+		groups              []*wrappers.Group
+		accessManagement    wrappers.AccessManagementWrapper
+		featureFlagsWrapper wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -32,18 +31,17 @@ func TestAssignGroupsToProject(t *testing.T) {
 					ID:   "group-id-to-assign",
 					Name: "group-name-to-assign",
 				}},
-				accessManagement: &mock.AccessManagementMockWrapper{},
+				accessManagement:    &mock.AccessManagementMockWrapper{},
+				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 			},
 			wantErr: false,
 		},
 	}
-	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
-	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath) //need check new featureFlag
 	for _, tt := range tests {
 		ttt := tt
-		wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = true
+		mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement, featureFlagsWrapper); (err != nil) != ttt.wantErr {
+			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})
@@ -183,13 +181,11 @@ func Test_getGroupsForRequest(t *testing.T) {
 			want: []string{"group-id-1", "group-id-2"},
 		},
 	}
-	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
-	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	for _, tt := range tests {
 		ttt := tt
+		mock.Flag = wrappers.FeatureFlagResponseModel{Name: "ACCESS_MANAGEMENT_ENABLED", Status: false} // Mock the feature flag
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.FeatureFlagsSpecific[featureFlagsConstants.AccessManagementEnabled] = false
-			if got := getGroupsForRequest(ttt.args.groups, featureFlagsWrapper); !reflect.DeepEqual(got, ttt.want) {
+			if got := getGroupsForRequest(ttt.args.groups, &mock.FeatureFlagsMockWrapper{}); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}
 		})
