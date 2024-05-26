@@ -127,6 +127,10 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
+}
+
 func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
@@ -499,6 +503,17 @@ func Test_parseThresholdSuccess(t *testing.T) {
 	}
 }
 
+func Test_parseThresholdsSuccess(t *testing.T) {
+	want := make(map[string]int)
+	want["sast-high"] = 1
+	want["sast-medium"] = 1
+	want["sca-high"] = 1
+	threshold := "sast-high=1; sast-medium=1; sca-high=1"
+	if got := parseThreshold(threshold); !reflect.DeepEqual(got, want) {
+		t.Errorf("parseThreshold() = %v, want %v", got, want)
+	}
+}
+
 func Test_parseThresholdParseError(t *testing.T) {
 	want := make(map[string]int)
 	threshold := " KICS - LoW=error"
@@ -713,6 +728,69 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func Test_isDirFiltered(t *testing.T) {
+	type args struct {
+		filename string
+		filters  []string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "WhenUserDefinedExcludedFolder_ReturnIsFilteredTrue",
+			args: args{
+				filename: "user-folder-to-exclude",
+				filters:  append(commonParams.BaseExcludeFilters, "!user-folder-to-exclude"),
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "WhenUserDefinedExcludedFolder_DoesNotAffectOtherFolders_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder",
+				filters:  append(commonParams.BaseExcludeFilters, "!exclude-other-folder"),
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenFolderIsNotExcluded_ReturnIsFilteredFalse",
+			args: args{
+				filename: "some-folder-name",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "WhenDefaultFolderIsExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: ".vs",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := isDirFiltered(ttt.args.filename, ttt.args.filters)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("isDirFiltered() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if got != ttt.want {
+				t.Errorf("isDirFiltered() got = %v, want %v", got, ttt.want)
+			}
+		})
+	}
 }
 
 func Test_parseThresholdLimit(t *testing.T) {

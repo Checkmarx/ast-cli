@@ -934,7 +934,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getUserFilters(filter), getIncludeFilters(userIncludeFilter))
+	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
@@ -958,11 +958,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
-	return buildFilters(commonParams.BaseFilters, userIncludeFilter)
+	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
 }
 
-func getUserFilters(filterStr string) []string {
-	return buildFilters(nil, filterStr)
+func getExcludeFilters(userExcludeFilter string) []string {
+	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
 }
 
 func buildFilters(base []string, extra string) []string {
@@ -1064,22 +1064,34 @@ func handleDir(
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
-	// Check if the folder is excluded
-	for _, filter := range filters {
-		if filter[0] == '!' {
-			filterStr := strings.TrimSuffix(filepath.ToSlash(filter[1:]), "/")
-			match, err := path.Match(filterStr, file.Name())
-			if err != nil {
-				return err
-			}
-			if match {
-				logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
-				return nil
-			}
-		}
+
+	isFiltered, err := isDirFiltered(file.Name(), filters)
+	if err != nil {
+		return err
+	}
+	if isFiltered {
+		logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
+		return nil
 	}
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+}
+
+func isDirFiltered(filename string, filters []string) (bool, error) {
+	for _, filter := range filters {
+		if filter[0] == '!' {
+			filterStr := strings.TrimSuffix(filepath.ToSlash(filter[1:]), "/")
+			match, err := path.Match(filterStr, filename)
+			if err != nil {
+				return false, err
+			}
+			if match {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (newParent, newBase string) {
@@ -1437,7 +1449,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(resultsWrapper, scanResponseModel, thresholdMap)
 			if err != nil {
 				return err
 			}
@@ -1676,7 +1688,6 @@ func createReportsAfterScan(
 }
 
 func applyThreshold(
-	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
@@ -1772,7 +1783,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, make(map[string]string))
+	results, err := ReadResults(resultsWrapper, scan, make(map[string]string), true)
 	if err != nil {
 		return nil, err
 	}
