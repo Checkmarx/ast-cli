@@ -2,6 +2,7 @@ package scarealtime
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -15,12 +16,12 @@ var (
 	projectDirectory = filepath.Dir(b)
 )
 
-// TODO: add test to check first installation
 func TestRunScaRealtime(t *testing.T) {
+	err := os.RemoveAll(Params.WorkingDir())
 	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
 	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
 	cmd.SetArgs(args)
-	err := cmd.Execute()
+	err = cmd.Execute()
 	assert.NilError(t, err)
 
 	// Ensure we have results to read

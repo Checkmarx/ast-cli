@@ -23,7 +23,7 @@ func downloadFile(downloadURLPath, filePath string) error {
 
 	response, err := wrappers.SendHTTPRequestByFullURL(http.MethodGet, downloadURLPath, http.NoBody, false, 0, "", true)
 	if err != nil {
-		return errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
+		return errors.Errorf("Invoking HTTP request to download file failed - %s", err.Error())
 	}
 	defer func() {
 		_ = response.Body.Close()
@@ -48,8 +48,10 @@ func downloadFile(downloadURLPath, filePath string) error {
 	return nil
 }
 
-// DownloadRealTimeInstallationAndHashFileIfNeeded Downloads RealTime installation if it is not downloaded yet
-func DownloadRealTimeInstallationAndHashFileIfNeeded(installableRealTime *InstallableRealTime) error {
+// DownloadAndExtractIfNeeded Checks the version according to the hash file.,
+// downloads the RealTime installation if the version is not up to date,
+// Extracts the RealTime installation according to the operating system type
+func DownloadAndExtractIfNeeded(installableRealTime *InstallableRealTime) error {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
 	if downloadNotNeeded(installableRealTime) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
@@ -74,7 +76,7 @@ func DownloadRealTimeInstallationAndHashFileIfNeeded(installableRealTime *Instal
 		return err
 	}
 
-	// Unzip or extract downloaded zip depending on which OS it is running
+	// Unzip or extract downloaded zip depending on which OS is running
 	err = UnzipOrExtractFiles(installableRealTime)
 	if err != nil {
 		return err
@@ -105,7 +107,7 @@ func downloadNotNeeded(installableRealTime *InstallableRealTime) bool {
 
 	logger.PrintIfVerbose("RealTime installation exists. Checking if it is the latest version...")
 
-	isLastVersion, _ := isLastVersion(installableRealTime.HashFilePath(), installableRealTime.HashDownloadURL, installableRealTime.HashFileName)
+	isLastVersion, _ := isLastVersion(installableRealTime.HashFilePath(), installableRealTime.HashDownloadURL, installableRealTime.HashFilePath())
 
 	return isLastVersion
 }
@@ -113,19 +115,15 @@ func downloadNotNeeded(installableRealTime *InstallableRealTime) bool {
 // isLastVersion Checks if the RealTime Installation is updated by comparing hashes
 func isLastVersion(hashFilePath, hashURL, zipFileNameHash string) (bool, error) {
 	existingHash, _ := getHashValue(hashFilePath)
-
 	// Download hash file
 	err := downloadHashFile(hashURL, zipFileNameHash)
 	if err != nil {
 		return false, err
 	}
-
 	currentHash, _ := getHashValue(hashFilePath)
-
 	if !bytes.Equal(existingHash, currentHash) {
 		logger.PrintIfVerbose("The RealTime installation is out of date.")
 	}
-
 	return bytes.Equal(existingHash, currentHash), nil
 }
 

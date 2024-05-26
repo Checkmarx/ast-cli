@@ -14,7 +14,7 @@ import (
 )
 
 // UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles(installableRealTime *osinstaller.InstallableRealTime) error {
+func UnzipOrExtractFiles(installableRealTime *InstallableRealTime) error {
 	logger.PrintIfVerbose("Unzipping files in:  " + installableRealTime.WorkingDir())
 	r, err := zip.OpenReader(filepath.Join(installableRealTime.WorkingDir(), installableRealTime.FileName))
 	if err != nil {

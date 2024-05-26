@@ -26,11 +26,19 @@ func UnzipOrExtractFiles(installableRealtime *InstallableRealTime) error {
 	}
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed", err)
+		log.Fatal("ExtractTarGz: NewReader failed ", err)
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
 
+	err = extractFiles(installableRealtime, tarReader)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func extractFiles(installableRealtime *InstallableRealTime, tarReader *tar.Reader) error {
 	for {
 		header, err := tarReader.Next()
 
@@ -48,11 +56,6 @@ func UnzipOrExtractFiles(installableRealtime *InstallableRealTime) error {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			//TODO: delete
-			if header.Name == "dist/cx-mac-universal_darwin_all/cx.dmg" {
-				// Skip the cx.dmg file
-				continue
-			}
 			extractedFilePath := filepath.Join(installableRealtime.WorkingDir(), header.Name)
 			outFile, err := os.Create(extractedFilePath)
 			if err != nil {
@@ -76,6 +79,5 @@ func UnzipOrExtractFiles(installableRealtime *InstallableRealTime) error {
 				header.Name)
 		}
 	}
-
 	return nil
 }
