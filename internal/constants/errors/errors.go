@@ -20,7 +20,7 @@ const (
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
 
-	//Lightweight Engine
+	// Lightweight Engine
 	SourceCodeIsRequired    = "source code is required"
 	EngineVersionIsRequired = "engine version is required"
 	FileExtensionIsRequired = "file must have an extension"
