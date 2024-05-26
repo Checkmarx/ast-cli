@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	testifyAssert "github.com/stretchr/testify/assert"
 )
 
 // func TestMicroSastWrapper_Scan(t *testing.T) {
@@ -52,7 +52,7 @@ func TestReplaceCurlyApostrophe(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, replaceCurlyApostrophe(tt.args.data), "ReplaceCurlyApostrophe(%v)", tt.args.data)
+			testifyAssert.Equalf(t, tt.want, replaceCurlyApostrophe(tt.args.data), "ReplaceCurlyApostrophe(%v)", tt.args.data)
 		})
 	}
 }
@@ -95,7 +95,7 @@ func TestReplaceEnDashWithHyphen(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, replaceEnDashWithHyphen(tt.args.data), "ReplaceEnDashWithHyphen(%v)", tt.args.data)
+			testifyAssert.Equalf(t, tt.want, replaceEnDashWithHyphen(tt.args.data), "ReplaceEnDashWithHyphen(%v)", tt.args.data)
 		})
 	}
 }
