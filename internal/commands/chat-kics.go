@@ -39,12 +39,11 @@ const userInputFormat = `The user question is:
 // dropLen number of messages to drop when limit is reached, 4 due to 2 from prompt, 1 from user question, 1 from reply
 const dropLen = 4
 
-// chatModel model to use when calling the Checkmarx AzureAI
-const azureAiChatModel = "GPT4"
-
 const FileErrorFormat = "It seems that %s is not available for AI Guided Remediation. Please ensure that you have opened the correct workspace or the relevant file."
 
-const azureAiRoute = "/api/ai-proxy"
+// chatModel model to use when calling the CheckmarxAI
+const checkmarxAiChatModel = "GPT4"
+const checkmarxAiRoute = "/api/ai-proxy"
 
 type OutputModel struct {
 	ConversationID string   `json:"conversationId"`
@@ -64,7 +63,7 @@ func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	chatKicsCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
 	chatKicsCmd.Flags().String(params.ChatUserInput, "", "User question")
 	chatKicsCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatKicsCmd.Flags().Bool(params.ChatAzureAI, false, "Use Azure AI")
+	chatKicsCmd.Flags().Bool(params.ChatCheckmarxAI, false, "Use Checkmarx AI")
 	chatKicsCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
 	chatKicsCmd.Flags().String(params.ChatKicsResultLine, "", "IaC result line")
 	chatKicsCmd.Flags().String(params.ChatKicsResultSeverity, "", "IaC result severity")
@@ -84,24 +83,24 @@ func runChatKics(chatKicsWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, 
 	return func(cmd *cobra.Command, args []string) error {
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
 
-		chatAzureAI, _ := cmd.Flags().GetBool(params.ChatAzureAI)
+		chatCheckmarxAI, _ := cmd.Flags().GetBool(params.ChatCheckmarxAI)
 		chatResultFile, _ := cmd.Flags().GetString(params.ChatKicsResultFile)
 		chatResultLine, _ := cmd.Flags().GetString(params.ChatKicsResultLine)
 		chatResultSeverity, _ := cmd.Flags().GetString(params.ChatKicsResultSeverity)
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatKicsResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
+		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 
 		conn := connector.NewFileSystemConnector("")
 
 		var statefulWrapper wrapper.StatefulWrapper
 
-		if chatAzureAI {
+		if chatCheckmarxAI {
 			customerToken, _ := wrappers.GetAccessToken()
-			azureAiEndPoint, _ := wrappers.GetURL(azureAiRoute, customerToken)
+			azureAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
 
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, azureAiChatModel, dropLen, 0)
+			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
 		} else {
-			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
 		}

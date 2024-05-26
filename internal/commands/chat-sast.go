@@ -35,7 +35,7 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 	chatSastCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
 	chatSastCmd.Flags().String(params.ChatUserInput, "", "User question")
 	chatSastCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatSastCmd.Flags().Bool(params.ChatAzureAI, false, "Use Azure AI")
+	chatSastCmd.Flags().Bool(params.ChatCheckmarxAI, false, "Use Checkmarx AI")
 	chatSastCmd.Flags().String(params.ChatSastScanResultsFile, "", "Results file in JSON format containing SAST scan results")
 	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
 	chatSastCmd.Flags().String(params.ChatSastResultID, "", "ID of the result to remediate")
@@ -54,21 +54,21 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 			return outputError(cmd, uuid.Nil, errors.Errorf(AiGuidedRemediationDisabledError))
 		}
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
-		chatAzureAI, _ := cmd.Flags().GetBool(params.ChatAzureAI)
+		chatCheckmarxAI, _ := cmd.Flags().GetBool(params.ChatCheckmarxAI)
 		scanResultsFile, _ := cmd.Flags().GetString(params.ChatSastScanResultsFile)
 		sourceDir, _ := cmd.Flags().GetString(params.ChatSastSourceDir)
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
+		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 
 		conn := connector.NewFileSystemConnector("")
 
 		var statefulWrapper wrapper.StatefulWrapper
-		if chatAzureAI {
+		if chatCheckmarxAI {
 			customerToken, _ := wrappers.GetAccessToken()
-			azureAiEndPoint, _ := wrappers.GetURL(azureAiRoute, customerToken)
+			azureAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
+			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
 
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, azureAiChatModel, dropLen, 0)
 		} else {
-			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
 		}
