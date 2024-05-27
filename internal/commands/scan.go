@@ -540,6 +540,9 @@ func scanCreateSubCommand(
 		return nil
 	}
 	createScanCmd.PersistentFlags().String(commonParams.ScaFilterFlag, "", commonParams.ScaFilterUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false, fmt.Sprintf(
+		"Populate SAST results 'data.redundancy' with values '%s' (to fix) or '%s' (no need to fix)", fixLabel, redundantLabel))
+
 	addResultFormatFlag(
 		createScanCmd,
 		printer.FormatSummaryConsole,
