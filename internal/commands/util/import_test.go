@@ -3,8 +3,9 @@
 package util
 
 import (
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"testing"
+
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
