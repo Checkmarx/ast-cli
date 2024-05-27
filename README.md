@@ -122,7 +122,6 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 
 © 2022 Checkmarx Ltd. All Rights Reserved. 
 
-
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
 [docker-url]:https://hub.docker.com/r/checkmarx/ast-cli
 [documentation-shield]: https://img.shields.io/badge/docs-viewdocs-blue.svg
