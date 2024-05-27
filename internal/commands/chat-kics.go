@@ -97,9 +97,9 @@ func runChatKics(chatKicsWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, 
 
 		if chatCheckmarxAI {
 			customerToken, _ := wrappers.GetAccessToken()
-			azureAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
+			CheckmarxAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
 
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
+			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, CheckmarxAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
 		} else {
 			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
