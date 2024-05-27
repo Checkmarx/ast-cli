@@ -15,30 +15,33 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-var DirDefault = os.FileMode(0755)
+const dirDefault int = 0755
 
-// UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles(installableRealtime *InstallableRealTime) error {
-	logger.PrintIfVerbose("Extracting files in: " + installableRealtime.WorkingDir())
-	gzipStream, err := os.Open(filepath.Join(installableRealtime.WorkingDir(), installableRealtime.FileName))
+// UnzipOrExtractFiles Extracts all the files from the tar.gz file
+func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) error {
+	logger.PrintIfVerbose("Extracting files in: " + installationConfiguration.WorkingDir())
+	filePath := filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName)
+	gzipStream, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println("error")
+		fmt.Println("error when open file ", filePath, err)
+		return err
 	}
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed ", err)
+		log.Println("ExtractTarGz: NewReader failed ", err)
+		return err
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
 
-	err = extractFiles(installableRealtime, tarReader)
+	err = extractFiles(installationConfiguration, tarReader)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func extractFiles(installableRealtime *InstallableRealTime, tarReader *tar.Reader) error {
+func extractFiles(installationConfiguration *InstallationConfiguration, tarReader *tar.Reader) error {
 	for {
 		header, err := tarReader.Next()
 
@@ -52,11 +55,11 @@ func extractFiles(installableRealtime *InstallableRealTime, tarReader *tar.Reade
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, DirDefault); err != nil {
+			if err := os.Mkdir(header.Name, os.FileMode(dirDefault)); err != nil {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			extractedFilePath := filepath.Join(installableRealtime.WorkingDir(), header.Name)
+			extractedFilePath := filepath.Join(installationConfiguration.WorkingDir(), header.Name)
 			outFile, err := os.Create(extractedFilePath)
 			if err != nil {
 				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())

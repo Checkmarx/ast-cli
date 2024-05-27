@@ -18,11 +18,11 @@ var (
 )
 
 func TestRunScaRealtime(t *testing.T) {
-	err := os.RemoveAll(scaconfiguration.Params.WorkingDir())
+	os.RemoveAll(scaconfiguration.Params.WorkingDir())
 	args := []string{"scan", "sca-realtime", "--project-dir", projectDirectory}
 	cmd := NewScaRealtimeCommand(mock.ScaRealTimeHTTPMockWrapper{})
 	cmd.SetArgs(args)
-	err = cmd.Execute()
+	err := cmd.Execute()
 	assert.NilError(t, err)
 
 	// Ensure we have results to read

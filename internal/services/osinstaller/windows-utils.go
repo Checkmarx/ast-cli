@@ -13,10 +13,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-// UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles(installableRealTime *InstallableRealTime) error {
-	logger.PrintIfVerbose("Unzipping files in:  " + installableRealTime.WorkingDir())
-	r, err := zip.OpenReader(filepath.Join(installableRealTime.WorkingDir(), installableRealTime.FileName))
+// UnzipOrExtractFiles Extracts files from the zip file
+func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) error {
+	logger.PrintIfVerbose("Unzipping files in:  " + installationConfiguration.WorkingDir())
+	r, err := zip.OpenReader(filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName))
 	if err != nil {
 		return err
 	}
@@ -38,10 +38,10 @@ func UnzipOrExtractFiles(installableRealTime *InstallableRealTime) error {
 			}
 		}()
 
-		path := filepath.Join(installableRealTime.WorkingDir(), f.Name)
+		path := filepath.Join(installationConfiguration.WorkingDir(), f.Name)
 
 		// Check for ZipSlip (Directory traversal)
-		if !strings.HasPrefix(path, filepath.Clean(installableRealTime.WorkingDir())+string(os.PathSeparator)) {
+		if !strings.HasPrefix(path, filepath.Clean(installationConfiguration.WorkingDir())+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", path)
 		}
 

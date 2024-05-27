@@ -48,36 +48,36 @@ func downloadFile(downloadURLPath, filePath string) error {
 	return nil
 }
 
-// DownloadAndExtractIfNeeded Checks the version according to the hash file.,
-// downloads the RealTime installation if the version is not up to date,
+// InstallOrUpgrade Checks the version according to the hash file,
+// downloads the RealTime installation if the version is not up-to-date,
 // Extracts the RealTime installation according to the operating system type
-func DownloadAndExtractIfNeeded(installableRealTime *InstallableRealTime) error {
+func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) error {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
-	if downloadNotNeeded(installableRealTime) {
+	if downloadNotNeeded(installationConfiguration) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
 		return nil
 	}
 
 	// Create temporary working directory if not exists
-	err := createWorkingDirectory(installableRealTime)
+	err := createWorkingDirectory(installationConfiguration)
 	if err != nil {
 		return err
 	}
 
 	// Download RealTime installation
-	err = downloadFile(installableRealTime.DownloadURL, filepath.Join(installableRealTime.WorkingDir(), installableRealTime.FileName))
+	err = downloadFile(installationConfiguration.DownloadURL, filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName))
 	if err != nil {
 		return err
 	}
 
 	// Download hash file
-	err = downloadHashFile(installableRealTime.HashDownloadURL, installableRealTime.HashFilePath())
+	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
 		return err
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
-	err = UnzipOrExtractFiles(installableRealTime)
+	err = UnzipOrExtractFiles(installationConfiguration)
 	if err != nil {
 		return err
 	}
@@ -86,9 +86,9 @@ func DownloadAndExtractIfNeeded(installableRealTime *InstallableRealTime) error 
 }
 
 // createWorkingDirectory Creates a working directory to handle Realtime functionality
-func createWorkingDirectory(installableRealTime *InstallableRealTime) error {
+func createWorkingDirectory(installationConfiguration *InstallationConfiguration) error {
 	logger.PrintIfVerbose("Creating temporary directory to handle Realtime...")
-	err := os.MkdirAll(installableRealTime.WorkingDir(), fs.ModePerm)
+	err := os.MkdirAll(installationConfiguration.WorkingDir(), fs.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -96,10 +96,10 @@ func createWorkingDirectory(installableRealTime *InstallableRealTime) error {
 	return nil
 }
 
-// downloadNotNeeded Checks if RealTime installation is already available and if there is no need to download a new version
-func downloadNotNeeded(installableRealTime *InstallableRealTime) bool {
+// downloadNotNeeded Checks if the installation is already available and if it is up-to-date
+func downloadNotNeeded(installationConfiguration *InstallationConfiguration) bool {
 	logger.PrintIfVerbose("Checking if RealTime installation already exists...")
-	executableFileExists, _ := FileExists(installableRealTime.ExecutableFilePath())
+	executableFileExists, _ := FileExists(installationConfiguration.ExecutableFilePath())
 
 	if !executableFileExists {
 		return false
@@ -107,12 +107,12 @@ func downloadNotNeeded(installableRealTime *InstallableRealTime) bool {
 
 	logger.PrintIfVerbose("RealTime installation exists. Checking if it is the latest version...")
 
-	isLastVersion, _ := isLastVersion(installableRealTime.HashFilePath(), installableRealTime.HashDownloadURL, installableRealTime.HashFilePath())
+	isLastVersion, _ := isLastVersion(installationConfiguration.HashFilePath(), installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 
 	return isLastVersion
 }
 
-// isLastVersion Checks if the RealTime Installation is updated by comparing hashes
+// isLastVersion Checks if the Installation is updated by comparing hashes
 func isLastVersion(hashFilePath, hashURL, zipFileNameHash string) (bool, error) {
 	existingHash, _ := getHashValue(hashFilePath)
 	// Download hash file

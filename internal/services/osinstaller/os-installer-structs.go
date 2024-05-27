@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-type InstallableRealTime struct {
+type InstallationConfiguration struct {
 	ExecutableFile  string
 	DownloadURL     string
 	HashDownloadURL string
@@ -14,14 +14,14 @@ type InstallableRealTime struct {
 	WorkingDirName  string
 }
 
-func (i *InstallableRealTime) ExecutableFilePath() string {
+func (i *InstallationConfiguration) ExecutableFilePath() string {
 	return filepath.Join(os.TempDir(), i.WorkingDirName, i.ExecutableFile)
 }
 
-func (i *InstallableRealTime) HashFilePath() string {
+func (i *InstallationConfiguration) HashFilePath() string {
 	return filepath.Join(os.TempDir(), i.WorkingDirName, i.HashFileName)
 }
 
-func (i *InstallableRealTime) WorkingDir() string {
+func (i *InstallationConfiguration) WorkingDir() string {
 	return filepath.Join(os.TempDir(), i.WorkingDirName)
 }
