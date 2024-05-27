@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/cobra"
@@ -106,6 +107,7 @@ func Test_runScanLightweightCommand(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().String(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
+			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
 			runFunc := runScanLightweightCommand()
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {

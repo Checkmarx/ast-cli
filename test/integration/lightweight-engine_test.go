@@ -18,7 +18,7 @@ func TestScanLightweight_NoFileSourceSent_FailCommandWithError(t *testing.T) {
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.LightweightUpdateVersion), "1.0.0",
-		flag(commonParams.FormatFlag), printer.FormatTable,
+		flag(commonParams.FormatFlag), printer.FormatJSON,
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -31,7 +31,7 @@ func TestScanLightweight_NoLightWeightUpdateVersionFlagSent_FailCommandWithError
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "my-file.cs",
 		flag(commonParams.LightweightUpdateVersion), "",
-		flag(commonParams.FormatFlag), printer.FormatTable,
+		flag(commonParams.FormatFlag), printer.FormatJSON,
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -44,7 +44,7 @@ func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testin
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "my-file",
 		flag(commonParams.LightweightUpdateVersion), "1.0.0",
-		flag(commonParams.FormatFlag), printer.FormatTable,
+		flag(commonParams.FormatFlag), printer.FormatJSON,
 	}
 
 	err, _ := executeCommand(t, args...)

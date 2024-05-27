@@ -191,8 +191,8 @@ func NewScanCommand(
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
-		printer.FormatTable, printer.FormatList, printer.FormatJSON,
+		[]*cobra.Command{scanLightweightCmd, listScansCmd, showScanCmd, workflowScanCmd},
+		printer.FormatJSON, printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
 		createScanCmd, printer.FormatList, printer.FormatTable, printer.FormatJSON,
