@@ -17,7 +17,7 @@ func TestScanLightweight_NoFileSourceSent_FailCommandWithError(t *testing.T) {
 	args := []string{
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.LightweightUpdateVersion), false,
+		flag(commonParams.LightweightUpdateVersion), "false",
 		flag(commonParams.FormatFlag), printer.FormatJSON,
 	}
 
@@ -30,7 +30,7 @@ func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testin
 	args := []string{
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "my-file",
-		flag(commonParams.LightweightUpdateVersion), false,
+		flag(commonParams.LightweightUpdateVersion), "false",
 		flag(commonParams.FormatFlag), printer.FormatJSON,
 	}
 
@@ -40,7 +40,7 @@ func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testin
 
 func TestExecuteLightweightScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteLightweightScan("source.cs", true)
+	scanResult, _ := commands.ExecuteLightweightScan("source.cs", "true")
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 
 	assert.DeepEqual(t, scanResult, expectedMockResult)
