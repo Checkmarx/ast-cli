@@ -40,7 +40,7 @@ func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testin
 
 func TestExecuteLightweightScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteLightweightScan("source.cs", "true")
+	scanResult, _ := commands.ExecuteLightweightScan("source.cs", true)
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 
 	assert.DeepEqual(t, scanResult, expectedMockResult)
