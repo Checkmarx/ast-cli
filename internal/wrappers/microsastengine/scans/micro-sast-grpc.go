@@ -16,13 +16,6 @@ type MicroSastWrapper struct {
 	port int
 }
 
-var serviceConfig = `{
-	"loadBalancingPolicy": "round_robin",
-	"healthCheckConfig": {
-		"serviceName": "MicroSastEngine"
-	}
-}`
-
 func NewMicroSastWrapper(port int) *MicroSastWrapper {
 	return &MicroSastWrapper{
 		port: port,
@@ -33,7 +26,6 @@ func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult,
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
-		grpc.WithDefaultServiceConfig(serviceConfig),
 	}
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.NewClient(localhostAddress, options...)
@@ -73,11 +65,10 @@ func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.Healt
 }
 
 func (s *MicroSastWrapper) CheckHealth() error {
-	timeout := 10 * time.Second
+	timeout := 1 * time.Second
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
-		grpc.WithDefaultServiceConfig(serviceConfig),
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
