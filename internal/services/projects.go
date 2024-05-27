@@ -61,7 +61,8 @@ func FindProject(
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper, applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper,
+		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper)
 	if err != nil {
 		logger.PrintIfVerbose("error in creating project!")
 		return "", err

@@ -1,9 +1,10 @@
 package services
 
 import (
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"reflect"
 	"testing"
+
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -46,7 +47,8 @@ func TestAssignGroupsToProject(t *testing.T) {
 		ttt := tt
 		mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
+			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
+				ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})

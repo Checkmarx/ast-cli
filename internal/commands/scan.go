@@ -1454,7 +1454,8 @@ func runCreateScanCommand(
 			} else {
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+				resultsWrapper, risksOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1464,7 +1465,8 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, nil, featureFlagsWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+				resultsWrapper, risksOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}

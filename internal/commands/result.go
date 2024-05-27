@@ -1360,7 +1360,8 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 	}
 	return nil
 }
-func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
+	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)

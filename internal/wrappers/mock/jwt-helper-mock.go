@@ -1,8 +1,9 @@
 package mock
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"strings"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type JWTMockWrapper struct{}

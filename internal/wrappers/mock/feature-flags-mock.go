@@ -20,5 +20,4 @@ func (f FeatureFlagsMockWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, 
 func (f FeatureFlagsMockWrapper) GetSpecificFlag(specificFlag string) (*wrappers.FeatureFlagResponseModel, error) {
 	fmt.Println("Called GetSpecificFlag in FeatureFlagsMockWrapper with flag:", specificFlag)
 	return &Flag, nil
-
 }

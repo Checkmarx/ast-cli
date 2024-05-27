@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"errors"
+
 	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
@@ -11,6 +12,7 @@ const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
+const maxRetries = 5
 
 var DefaultFFLoad bool = false
 
@@ -74,7 +76,7 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 		return &FeatureFlagResponseModel{Name: flagName, Status: value}, nil
 	}
 
-	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, 5)
+	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
 		UpdateSpecificFeatureFlagMapWithDefault(flagName)
 		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsSpecific[flagName]}, nil
