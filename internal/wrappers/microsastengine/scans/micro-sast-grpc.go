@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -47,7 +48,7 @@ func (s *MicroSastWrapper) Scan(filePath string) (*ScanResult, error) {
 
 	request := &SingleScanRequest{
 		ScanRequest: &ScanRequest{
-			Id:         "idForTheScan",
+			Id:         uuid.New().String(),
 			FileName:   filePath,
 			SourceCode: string(data),
 		},
