@@ -16,12 +16,23 @@ INCLUDE_PACKAGES=(
   "github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-EXCLUDE_PACKAGE="github.com/checkmarx/ast-cli/internal/wrappers/microsastengine"
+# Define the packages to exclude
+EXCLUDE_PACKAGES=(
+  "github.com/checkmarx/ast-cli/internal/wrappers/microsastengine"
+  "github.com/checkmarx/ast-cli/internal/commands/util/help.go"
+  "github.com/checkmarx/ast-cli/internal/services/microsast.go"
+  "github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
+  "github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
+)
+
+# Convert the list of exclude packages to a pattern
+EXCLUDE_PATTERN=$(printf "|%s" "${EXCLUDE_PACKAGES[@]}")
+EXCLUDE_PATTERN=${EXCLUDE_PATTERN:1}
 
 COVERPKG=""
 for pkg in "${INCLUDE_PACKAGES[@]}"; do
   for subpkg in $(go list ${pkg}/...); do
-    if [[ ${subpkg} != ${EXCLUDE_PACKAGE}* ]]; then
+    if ! [[ $subpkg =~ $EXCLUDE_PATTERN ]]; then
       COVERPKG="${COVERPKG},${subpkg}"
     fi
   done
