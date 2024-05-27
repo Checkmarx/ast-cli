@@ -11,7 +11,7 @@ import (
 
 func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		engineUpdateVersion, _ := cmd.Flags().GetString(commonParams.LightweightUpdateVersion)
+		engineUpdateVersion, _ := cmd.Flags().GetBool(commonParams.LightweightUpdateVersion)
 		sourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 
 		scanResult, err := ExecuteLightweightScan(sourceFlag, engineUpdateVersion)
@@ -28,13 +28,9 @@ func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func ExecuteLightweightScan(sourceFlag, engineUpdateVersion string) (*ScanResult, error) {
+func ExecuteLightweightScan(sourceFlag string, _ bool) (*ScanResult, error) {
 	if sourceFlag == "" {
 		return nil, errors.Errorf(errorConstants.FileSourceFlagIsRequired)
-	}
-
-	if engineUpdateVersion == "" {
-		return nil, errors.Errorf(errorConstants.LightweightUpdateVersionFlagIsRequired)
 	}
 
 	if filepath.Ext(sourceFlag) == "" {

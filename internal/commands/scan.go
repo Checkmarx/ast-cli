@@ -191,8 +191,8 @@ func NewScanCommand(
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{scanLightweightCmd, listScansCmd, showScanCmd, workflowScanCmd},
-		printer.FormatTable, printer.FormatTable, printer.FormatList, printer.FormatJSON,
+		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
+		printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
 		createScanCmd, printer.FormatList, printer.FormatTable, printer.FormatJSON,
@@ -408,7 +408,7 @@ func scanLightweightSubCommand() *cobra.Command {
 		RunE: runScanLightweightCommand(),
 	}
 
-	lightweightScanCmd.PersistentFlags().String(commonParams.LightweightUpdateVersion, "", "Desired lightweight engine version")
+	lightweightScanCmd.PersistentFlags().Bool(commonParams.LightweightUpdateVersion, false, "Set to true to update to latest version")
 	lightweightScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,

@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ import (
 func Test_executeLightweightScan(t *testing.T) {
 	type args struct {
 		sourceFlag          string
-		engineUpdateVersion string
+		engineUpdateVersion bool
 	}
 	tests := []struct {
 		name       string
@@ -26,27 +25,17 @@ func Test_executeLightweightScan(t *testing.T) {
 			name: "Test with empty sourceFlag",
 			args: args{
 				sourceFlag:          "",
-				engineUpdateVersion: "1.0.0",
+				engineUpdateVersion: true,
 			},
 			want:       nil,
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
 		},
 		{
-			name: "Test with empty engineUpdateVersion",
-			args: args{
-				sourceFlag:          "source.cs",
-				engineUpdateVersion: "",
-			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: errorConstants.LightweightUpdateVersionFlagIsRequired,
-		},
-		{
 			name: "Test with file without extension",
 			args: args{
 				sourceFlag:          "source",
-				engineUpdateVersion: "1.0.0",
+				engineUpdateVersion: false,
 			},
 			want:       nil,
 			wantErr:    true,
@@ -56,7 +45,7 @@ func Test_executeLightweightScan(t *testing.T) {
 			name: "Test with correct flags",
 			args: args{
 				sourceFlag:          "source.cs",
-				engineUpdateVersion: "1.0.0",
+				engineUpdateVersion: true,
 			},
 			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
@@ -92,28 +81,21 @@ func Test_runScanLightweightCommand(t *testing.T) {
 		{
 			name:       "Test with empty sourceFlag",
 			sourceFlag: "",
-			engineFlag: "1.0.0",
+			engineFlag: "true",
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
 		},
 		{
-			name:       "Test with empty engineFlag",
-			sourceFlag: "source.cs",
-			engineFlag: "",
-			wantErr:    true,
-			wantErrMsg: errorConstants.LightweightUpdateVersionFlagIsRequired,
-		},
-		{
 			name:       "Test with file without extension",
 			sourceFlag: "source",
-			engineFlag: "1.0.0",
+			engineFlag: "true",
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
 			name:       "Test with valid sourceFlag and engineFlag",
 			sourceFlag: "source.cs",
-			engineFlag: "1.0.0",
+			engineFlag: "false",
 			want:       nil,
 			wantErr:    false,
 		},
@@ -124,7 +106,6 @@ func Test_runScanLightweightCommand(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().String(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
-			cmd.Flags().String(commonParams.FormatFlag, printer.FormatTable, "")
 			runFunc := runScanLightweightCommand()
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
