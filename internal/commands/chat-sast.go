@@ -67,7 +67,6 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 			customerToken, _ := wrappers.GetAccessToken()
 			azureAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
 			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, azureAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
-
 		} else {
 			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
