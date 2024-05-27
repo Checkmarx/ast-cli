@@ -10,28 +10,30 @@ wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.g
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
 
+# Define the packages to include
 INCLUDE_PACKAGES=(
   "github.com/checkmarx/ast-cli/internal/commands"
   "github.com/checkmarx/ast-cli/internal/services"
   "github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-# Define the packages to exclude
-EXCLUDE_PACKAGES=(
+# Define the files and folders to exclude
+EXCLUDE_PATHS=(
   "github.com/checkmarx/ast-cli/internal/wrappers/microsastengine"
-  "github.com/checkmarx/ast-cli/internal/commands/util/help.go"
-  "github.com/checkmarx/ast-cli/internal/services/microsast.go"
+  "github.com/checkmarx/ast-cli/internal/commands/util"
+  "github.com/checkmarx/ast-cli/internal/services/microsast"
   "github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
   "github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 )
 
-# Convert the list of exclude packages to a pattern
-EXCLUDE_PATTERN=$(printf "|%s" "${EXCLUDE_PACKAGES[@]}")
-EXCLUDE_PATTERN=${EXCLUDE_PATTERN:1}
+# Convert the list of exclude paths to a pattern
+EXCLUDE_PATTERN=$(IFS="|"; echo "${EXCLUDE_PATHS[*]}")
+EXCLUDE_PATTERN=$(echo "${EXCLUDE_PATTERN}" | sed 's/\//\\\//g') # Escape slashes for regex
 
 COVERPKG=""
 for pkg in "${INCLUDE_PACKAGES[@]}"; do
   for subpkg in $(go list ${pkg}/...); do
+    # Check if the subpackage matches the exclude pattern
     if ! [[ $subpkg =~ $EXCLUDE_PATTERN ]]; then
       COVERPKG="${COVERPKG},${subpkg}"
     fi

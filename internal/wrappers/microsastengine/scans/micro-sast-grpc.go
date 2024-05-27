@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -22,10 +23,14 @@ func NewMicroSastWrapper(port int) *MicroSastWrapper {
 	}
 }
 
-func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult, error) {
+func (s *MicroSastWrapper) Scan(filePath string) (*ScanResult, error) {
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Print(err)
 	}
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.NewClient(localhostAddress, options...)
@@ -44,7 +49,7 @@ func (s *MicroSastWrapper) Scan(filePath string, dataBytes []byte) (*ScanResult,
 		ScanRequest: &ScanRequest{
 			Id:         "idForTheScan",
 			FileName:   filePath,
-			SourceCode: string(dataBytes),
+			SourceCode: string(data),
 		},
 	}
 
