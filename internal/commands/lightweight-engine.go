@@ -3,6 +3,7 @@ package commands
 import (
 	"path/filepath"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
@@ -19,7 +20,7 @@ func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		err = printByFormat(cmd, scanResult)
+		err = printer.Print(cmd.OutOrStdout(), scanResult, printer.FormatJSON)
 		if err != nil {
 			return err
 		}

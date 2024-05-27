@@ -6,19 +6,17 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
-	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"gotest.tools/assert"
 )
 
 func TestScanLightweight_NoFileSourceSent_FailCommandWithError(t *testing.T) {
-	bindKeysToEnvAndDefault(t)
+	//bindKeysToEnvAndDefault(t)
 	args := []string{
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.LightweightUpdateVersion), "false",
-		flag(commonParams.FormatFlag), printer.FormatJSON,
+		flag(commonParams.LightweightUpdateVersion),
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -30,8 +28,7 @@ func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testin
 	args := []string{
 		"scan", "lightweight",
 		flag(commonParams.SourcesFlag), "my-file",
-		flag(commonParams.LightweightUpdateVersion), "false",
-		flag(commonParams.FormatFlag), printer.FormatJSON,
+		flag(commonParams.LightweightUpdateVersion),
 	}
 
 	err, _ := executeCommand(t, args...)

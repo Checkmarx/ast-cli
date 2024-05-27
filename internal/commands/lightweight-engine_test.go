@@ -74,7 +74,7 @@ func Test_runScanLightweightCommand(t *testing.T) {
 	tests := []struct {
 		name       string
 		sourceFlag string
-		engineFlag string
+		engineFlag bool
 		wantErr    bool
 		want       *ScanResult
 		wantErrMsg string
@@ -82,21 +82,21 @@ func Test_runScanLightweightCommand(t *testing.T) {
 		{
 			name:       "Test with empty sourceFlag",
 			sourceFlag: "",
-			engineFlag: "true",
+			engineFlag: true,
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
 		},
 		{
 			name:       "Test with file without extension",
 			sourceFlag: "source",
-			engineFlag: "true",
+			engineFlag: true,
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
 			name:       "Test with valid sourceFlag and engineFlag",
 			sourceFlag: "source.cs",
-			engineFlag: "false",
+			engineFlag: false,
 			want:       nil,
 			wantErr:    false,
 		},
@@ -106,7 +106,7 @@ func Test_runScanLightweightCommand(t *testing.T) {
 		t.Run(ttt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
-			cmd.Flags().String(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
+			cmd.Flags().Bool(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
 			runFunc := runScanLightweightCommand()
 			err := runFunc(cmd, []string{})
