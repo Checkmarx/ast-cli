@@ -395,7 +395,7 @@ func scanVorpalSubCommand() *cobra.Command {
 		Long:   "vorpal scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan vorpal --file-source <path to code file> --vorpal-update-version <use latest Vorpal available version>
+			$ cx scan vorpal --file-source <path to code file> --vorpal-latest-version <use latest Vorpal available version>
 		`,
 		),
 		Annotations: map[string]string{
