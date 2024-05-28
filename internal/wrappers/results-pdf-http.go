@@ -49,7 +49,7 @@ func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 }
 
 func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfReportsResponse, *WebError, error) {
-	clientTimeout := 7
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
@@ -107,7 +107,7 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 }
 
 func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	clientTimeout := uint(7 * 60)
 	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
