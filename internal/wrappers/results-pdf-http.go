@@ -107,7 +107,7 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 }
 
 func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
-	clientTimeout := uint(7 * 60)
+	var clientTimeout = uint(7 * 60)
 	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
