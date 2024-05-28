@@ -35,7 +35,6 @@ func TestRunScaRealtime(t *testing.T) {
 	// Run second time to cover SCA Resolver download not needed code
 	err = cmd.Execute()
 	assert.NilError(t, err)
-
 }
 
 func copyResultsToTempDir() error {
