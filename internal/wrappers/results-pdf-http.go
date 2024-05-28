@@ -42,6 +42,8 @@ type PdfHTTPWrapper struct {
 	path string
 }
 
+const downloadTimeoutMinutes = 7
+
 func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 	return &PdfHTTPWrapper{
 		path: path,
@@ -107,7 +109,7 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 }
 
 func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
-	var clientTimeout = uint(7 * 60)
+	clientTimeout := uint(downloadTimeoutMinutes * 60)
 	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
