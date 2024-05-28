@@ -31,7 +31,7 @@ func TestHandleFeatureFlagsIntegration(t *testing.T) {
 
 func TestGetSpecificFeatureFlagIntegration(t *testing.T) {
 	createASTIntegrationTestCommand(t)
-	featureFlagsPath := viper.GetString("featureFlagsPath")
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	flagName := featureFlagsConstants.ByorEnabled
@@ -42,8 +42,7 @@ func TestGetSpecificFeatureFlagIntegration(t *testing.T) {
 
 func TestGetSpecificFeatureFlagWithRetryIntegration(t *testing.T) {
 	createASTIntegrationTestCommand(t)
-
-	featureFlagsPath := viper.GetString("featureFlagsPath")
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	flagName := featureFlagsConstants.ByorEnabled
@@ -67,13 +66,13 @@ func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
 		{
 			CommandName: "cx scan create",
 			FeatureFlags: []wrappers.FlagBase{
-				{Name: flagName, Default: false},
+				{Name: flagName, Default: true},
 			},
 		},
 	}
 
 	wrappers.UpdateSpecificFeatureFlagMapWithDefault(flagName)
-	assert.Equal(t, false, wrappers.FeatureFlagsSpecific[flagName], "Feature flag status should be updated to default")
+	assert.Equal(t, true, wrappers.FeatureFlagsSpecific[flagName], "Feature flag status should be updated to default")
 }
 
 func TestLoadFeatureFlagsDefaultValuesIntegration(t *testing.T) {
