@@ -221,18 +221,20 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 		return nil, err
 	}
 	// transform into the PR model for violated policies
-	violatedPolicies := policiesToPrPolicies(policyResponseModel.Policies)
+	violatedPolicies := policiesToPrPolicies(policyResponseModel)
 	return violatedPolicies, nil
 }
 
-func policiesToPrPolicies(policies []wrappers.Policy) []wrappers.PrPolicy {
+func policiesToPrPolicies(policy *wrappers.PolicyResponseModel) []wrappers.PrPolicy {
 	var prPolicies []wrappers.PrPolicy
-	for _, policy := range policies {
-		prPolicy := wrappers.PrPolicy{}
-		prPolicy.Name = policy.Name
-		prPolicy.BreakBuild = policy.BreakBuild
-		prPolicy.RulesNames = policy.RulesViolated
-		prPolicies = append(prPolicies, prPolicy)
+	if policy != nil {
+		for _, policy := range policy.Policies {
+			prPolicy := wrappers.PrPolicy{}
+			prPolicy.Name = policy.Name
+			prPolicy.BreakBuild = policy.BreakBuild
+			prPolicy.RulesNames = policy.RulesViolated
+			prPolicies = append(prPolicies, prPolicy)
+		}
 	}
 	return prPolicies
 }
