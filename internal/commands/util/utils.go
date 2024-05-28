@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 
@@ -74,6 +75,8 @@ func NewUtilsCommand(
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
+	log.Printf("check ByorEnabled Name: %s status: %t\n", flagResponse.Name, flagResponse.Status)
+
 	if flagResponse.Status {
 		utilsCmd.AddCommand(importCmd)
 	}
