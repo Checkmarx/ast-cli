@@ -49,7 +49,7 @@ func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 }
 
 func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfReportsResponse, *WebError, error) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	clientTimeout := 7
 	params, err := json.Marshal(payload)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
