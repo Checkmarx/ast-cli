@@ -191,8 +191,8 @@ func NewScanCommand(
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{scanVorpalCmd, listScansCmd, showScanCmd, workflowScanCmd},
-		printer.FormatJSON, printer.FormatTable, printer.FormatList, printer.FormatJSON,
+		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
+		printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
 		createScanCmd, printer.FormatList, printer.FormatTable, printer.FormatJSON,
@@ -395,7 +395,7 @@ func scanVorpalSubCommand() *cobra.Command {
 		Long:   "vorpal scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan vorpal --file-source <path to code file> --vorpal-update-version <version number>
+			$ cx scan vorpal --file-source <path to code file> --vorpal-update-version <use latest Vorpal available version>
 		`,
 		),
 		Annotations: map[string]string{
