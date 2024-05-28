@@ -278,15 +278,13 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	//executeCommand(t, args...)
-	///assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 	args[11] = "*js"
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
 // Create a scan with the sources
 // Assert the scan completes
-func TestScanCreateWithThreshold(t *testing.T) {
+func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -304,6 +302,24 @@ func TestScanCreateWithThreshold(t *testing.T) {
 	assertError(t, err, "Threshold check finished with status Failed")
 }
 
+func TestScanCreateWithThreshold(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=100;",
+		flag(params.KicsFilterFlag), "!Dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
+
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
@@ -313,9 +329,9 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=error",
+		flag(params.Threshold), "sast-high=error; sca-high=error;",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -332,9 +348,10 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.SastRedundancyFlag),
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-high=1;sast-low=1; sca-high=1",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json",
 		flag(params.TargetPathFlag), "/tmp/",
