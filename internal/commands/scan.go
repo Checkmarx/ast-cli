@@ -174,7 +174,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanLightweightCmd := scanLightweightSubCommand()
+	scanVorpalCmd := scanVorpalSubCommand()
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -191,7 +191,7 @@ func NewScanCommand(
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
 	addFormatFlagToMultipleCommands(
-		[]*cobra.Command{scanLightweightCmd, listScansCmd, showScanCmd, workflowScanCmd},
+		[]*cobra.Command{scanVorpalCmd, listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatJSON, printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
 	addScanInfoFormatFlag(
@@ -199,7 +199,7 @@ func NewScanCommand(
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
-		scanLightweightCmd,
+		scanVorpalCmd,
 		showScanCmd,
 		workflowScanCmd,
 		listScansCmd,
@@ -387,15 +387,15 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanLightweightSubCommand() *cobra.Command {
-	lightweightScanCmd := &cobra.Command{
-		Use:    "lightweight",
+func scanVorpalSubCommand() *cobra.Command {
+	scanVorpalCmd := &cobra.Command{
+		Use:    "vorpal",
 		Hidden: true,
-		Short:  "Run a lightweight scan",
-		Long:   "Lightweight scan is able to scan a single file fast and efficiently.",
+		Short:  "Run a vorpal scan",
+		Long:   "vorpal scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan lightweight --file-source <path to code file> --lightweight-update-version <version number>
+			$ cx scan vorpal --file-source <path to code file> --vorpal-update-version <version number>
 		`,
 		),
 		Annotations: map[string]string{
@@ -405,17 +405,17 @@ func scanLightweightSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: runScanLightweightCommand(),
+		RunE: runScanVorpalCommand(),
 	}
 
-	lightweightScanCmd.PersistentFlags().Bool(commonParams.LightweightUpdateVersion, false, "Set to true to update to latest version")
-	lightweightScanCmd.PersistentFlags().StringP(
+	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalUpdateVersion, false, "Set to true to update to latest version")
+	scanVorpalCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
 		"The source should be a single file",
 	)
-	return lightweightScanCmd
+	return scanVorpalCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {

@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
+func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		engineUpdateVersion, _ := cmd.Flags().GetBool(commonParams.LightweightUpdateVersion)
+		engineUpdateVersion, _ := cmd.Flags().GetBool(commonParams.VorpalUpdateVersion)
 		sourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 
-		scanResult, err := ExecuteLightweightScan(sourceFlag, engineUpdateVersion)
+		scanResult, err := ExecuteVorpalScan(sourceFlag, engineUpdateVersion)
 		if err != nil {
 			return err
 		}
@@ -29,7 +29,7 @@ func runScanLightweightCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func ExecuteLightweightScan(sourceFlag string, _ bool) (*ScanResult, error) {
+func ExecuteVorpalScan(sourceFlag string, _ bool) (*ScanResult, error) {
 	if sourceFlag == "" {
 		return nil, errors.Errorf(errorConstants.FileSourceFlagIsRequired)
 	}

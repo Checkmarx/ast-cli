@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_executeLightweightScan(t *testing.T) {
+func Test_executeVorpalScan(t *testing.T) {
 	type args struct {
 		sourceFlag          string
 		engineUpdateVersion bool
@@ -55,22 +55,22 @@ func Test_executeLightweightScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			got, err := ExecuteLightweightScan(ttt.args.sourceFlag, ttt.args.engineUpdateVersion)
+			got, err := ExecuteVorpalScan(ttt.args.sourceFlag, ttt.args.engineUpdateVersion)
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("executeLightweightScan() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("executeLightweightScan() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("executeVorpalScan() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 			if !reflect.DeepEqual(got, ttt.want) {
-				t.Errorf("executeLightweightScan() got = %v, want %v", got, ttt.want)
+				t.Errorf("executeVorpalScan() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
 }
 
-func Test_runScanLightweightCommand(t *testing.T) {
+func Test_runScanVorpalCommand(t *testing.T) {
 	tests := []struct {
 		name       string
 		sourceFlag string
@@ -106,16 +106,16 @@ func Test_runScanLightweightCommand(t *testing.T) {
 		t.Run(ttt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
-			cmd.Flags().Bool(commonParams.LightweightUpdateVersion, ttt.engineFlag, "")
+			cmd.Flags().Bool(commonParams.VorpalUpdateVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := runScanLightweightCommand()
+			runFunc := runScanVorpalCommand()
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("runScanLightweightCommand() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("runScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("runScanLightweightCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("runScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 		})
 	}

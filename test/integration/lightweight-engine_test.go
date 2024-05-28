@@ -11,33 +11,33 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestScanLightweight_NoFileSourceSent_FailCommandWithError(t *testing.T) {
+func TestScanVorpal_NoFileSourceSent_FailCommandWithError(t *testing.T) {
 	//bindKeysToEnvAndDefault(t)
 	args := []string{
-		"scan", "lightweight",
+		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.LightweightUpdateVersion),
+		flag(commonParams.VorpalUpdateVersion),
 	}
 
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, errorConstants.FileSourceFlagIsRequired)
 }
 
-func TestScanLightweight_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
+func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
 	bindKeysToEnvAndDefault(t)
 	args := []string{
-		"scan", "lightweight",
+		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "my-file",
-		flag(commonParams.LightweightUpdateVersion),
+		flag(commonParams.VorpalUpdateVersion),
 	}
 
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, errorConstants.FileExtensionIsRequired)
 }
 
-func TestExecuteLightweightScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
+func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteLightweightScan("source.cs", true)
+	scanResult, _ := commands.ExecuteVorpalScan("source.cs", true)
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 
 	assert.DeepEqual(t, scanResult, expectedMockResult)
