@@ -42,6 +42,8 @@ type PdfHTTPWrapper struct {
 	path string
 }
 
+const downloadTimeout = 420
+
 func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 	return &PdfHTTPWrapper{
 		path: path,
@@ -107,7 +109,7 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 }
 
 func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	clientTimeout := uint(downloadTimeout)
 	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
