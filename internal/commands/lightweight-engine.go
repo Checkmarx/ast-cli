@@ -106,3 +106,9 @@ type Error struct {
 }
 
 type ErrorCode int32
+
+const (
+	UnknownError   = 0
+	InvalidRequest = 1
+	InternalError  = 2
+)
