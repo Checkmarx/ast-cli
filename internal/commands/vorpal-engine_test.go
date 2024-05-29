@@ -13,7 +13,7 @@ import (
 func Test_executeVorpalScan(t *testing.T) {
 	type args struct {
 		sourceFlag          string
-		engineUpdateVersion bool
+		vorpalUpdateVersion bool
 	}
 	tests := []struct {
 		name       string
@@ -26,7 +26,7 @@ func Test_executeVorpalScan(t *testing.T) {
 			name: "Test with empty sourceFlag",
 			args: args{
 				sourceFlag:          "",
-				engineUpdateVersion: true,
+				vorpalUpdateVersion: true,
 			},
 			want:       nil,
 			wantErr:    true,
@@ -36,7 +36,7 @@ func Test_executeVorpalScan(t *testing.T) {
 			name: "Test with file without extension",
 			args: args{
 				sourceFlag:          "source",
-				engineUpdateVersion: false,
+				vorpalUpdateVersion: false,
 			},
 			want:       nil,
 			wantErr:    true,
@@ -46,7 +46,7 @@ func Test_executeVorpalScan(t *testing.T) {
 			name: "Test with correct flags",
 			args: args{
 				sourceFlag:          "source.cs",
-				engineUpdateVersion: true,
+				vorpalUpdateVersion: true,
 			},
 			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
@@ -55,7 +55,7 @@ func Test_executeVorpalScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			got, err := ExecuteVorpalScan(ttt.args.sourceFlag, ttt.args.engineUpdateVersion)
+			got, err := ExecuteVorpalScan(ttt.args.sourceFlag, ttt.args.vorpalUpdateVersion)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -106,7 +106,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		t.Run(ttt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
-			cmd.Flags().Bool(commonParams.VorpalUpdateVersion, ttt.engineFlag, "")
+			cmd.Flags().Bool(commonParams.VorpalLatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
 			runFunc := runScanVorpalCommand()
 			err := runFunc(cmd, []string{})

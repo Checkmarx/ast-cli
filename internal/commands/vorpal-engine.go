@@ -12,10 +12,10 @@ import (
 
 func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		engineUpdateVersion, _ := cmd.Flags().GetBool(commonParams.VorpalUpdateVersion)
+		vorpalLatestVersion, _ := cmd.Flags().GetBool(commonParams.VorpalLatestVersion)
 		sourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 
-		scanResult, err := ExecuteVorpalScan(sourceFlag, engineUpdateVersion)
+		scanResult, err := ExecuteVorpalScan(sourceFlag, vorpalLatestVersion)
 		if err != nil {
 			return err
 		}
@@ -29,7 +29,7 @@ func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func ExecuteVorpalScan(sourceFlag string, _ bool) (*ScanResult, error) {
+func ExecuteVorpalScan(sourceFlag string, vorpalUpdateVersion bool) (*ScanResult, error) {
 	if sourceFlag == "" {
 		return nil, errors.Errorf(errorConstants.FileSourceFlagIsRequired)
 	}
@@ -38,8 +38,10 @@ func ExecuteVorpalScan(sourceFlag string, _ bool) (*ScanResult, error) {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
 
-	successfulScan := ReturnSuccessfulResponseMock()
-	return successfulScan, nil
+	if vorpalUpdateVersion {
+		return ReturnSuccessfulResponseMock(), nil
+	}
+	return ReturnFailureResponseMock(), nil
 }
 
 func ReturnSuccessfulResponseMock() *ScanResult {
@@ -70,6 +72,15 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 	}
 }
 
+func ReturnFailureResponseMock() *ScanResult {
+	return &ScanResult{
+		RequestID: "1111",
+		Status:    false,
+		Message:   "Scan failed.",
+		Error:     &Error{InternalError, "An internal error occurred."},
+	}
+}
+
 type ScanRequest struct {
 	ID         string `json:"id"`
 	FileName   string `json:"file_name"`
@@ -85,7 +96,7 @@ type ScanResult struct {
 	Status      bool         `json:"status"`
 	Message     string       `json:"message"`
 	ScanDetails []ScanDetail `json:"scan_details"`
-	Error       Error        `json:"error"`
+	Error       *Error       `json:"error"`
 }
 
 type ScanDetail struct {

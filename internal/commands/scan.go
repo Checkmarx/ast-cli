@@ -408,7 +408,7 @@ func scanVorpalSubCommand() *cobra.Command {
 		RunE: runScanVorpalCommand(),
 	}
 
-	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalUpdateVersion, false, "Set to true to update to latest version")
+	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false, "Set to true to update to latest version")
 	scanVorpalCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,

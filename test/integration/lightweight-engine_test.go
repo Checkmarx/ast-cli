@@ -16,7 +16,7 @@ func TestScanVorpal_NoFileSourceSent_FailCommandWithError(t *testing.T) {
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.VorpalUpdateVersion),
+		flag(commonParams.VorpalLatestVersion),
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -28,7 +28,7 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "my-file",
-		flag(commonParams.VorpalUpdateVersion),
+		flag(commonParams.VorpalLatestVersion),
 	}
 
 	err, _ := executeCommand(t, args...)
