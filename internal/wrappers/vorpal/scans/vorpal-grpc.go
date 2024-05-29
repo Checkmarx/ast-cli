@@ -35,19 +35,24 @@ func (s *VorpalWrapper) Scan(filePath string) (*protos.ScanResult, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 	}
+
+	timeout := 1 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Print(err)
 	}
-	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
-	conn, err := grpc.NewClient(localhostAddress, options...)
 
+	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
+	conn, err := grpc.DialContext(ctx, localhostAddress, options...)
 	defer func(conn *grpc.ClientConn) {
 		_ = conn.Close()
 	}(conn)
 
 	if err != nil {
-		logger.Printf("grpc.NewClient(%q): %v", localhostAddress, err)
+		logger.Printf("grpc.DialContext(%q): %v", localhostAddress, err)
 		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
 	}
 
