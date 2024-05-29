@@ -12,10 +12,6 @@ import (
 func TestInstallOrUpgrade_firstInstallation_Success(t *testing.T) {
 	err := firstInstallation()
 	assert.NilError(t, err, "Error on first installation of vorpal")
-	assertFilesExist(t)
-}
-
-func assertFilesExist(t *testing.T) {
 	fileExists, _ := osinstaller.FileExists(vorpalconfiguration.Params.ExecutableFilePath())
 	assert.Assert(t, fileExists, "Executable file not found")
 	fileExists, _ = osinstaller.FileExists(vorpalconfiguration.Params.HashFilePath())
@@ -41,7 +37,10 @@ func TestInstallOrUpgrade_installationIsNotUpToDate_Success(t *testing.T) {
 	changeHashFile()
 	err = osinstaller.InstallOrUpgrade(&vorpalconfiguration.Params)
 	assert.NilError(t, err, "Error when need to upgrade")
-	assertFilesExist(t)
+	fileExists, _ := osinstaller.FileExists(vorpalconfiguration.Params.ExecutableFilePath())
+	assert.Assert(t, fileExists, "Executable file not found")
+	fileExists, _ = osinstaller.FileExists(vorpalconfiguration.Params.HashFilePath())
+	assert.Assert(t, fileExists, "Hash file not found")
 }
 
 func changeHashFile() {
