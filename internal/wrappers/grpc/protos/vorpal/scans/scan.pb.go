@@ -4,7 +4,7 @@
 // 	protoc        v4.25.3
 // source: scans/scan.vorpal
 
-package protos
+package scans
 
 import (
 	reflect "reflect"
