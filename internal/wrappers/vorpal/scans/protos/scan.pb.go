@@ -2,15 +2,16 @@
 // versions:
 // 	protoc-gen-go v1.34.1
 // 	protoc        v4.25.3
-// source: scans/scan.microsastengine
+// source: scans/scan.vorpal
 
-package scans
+package protos
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cx.microsast.service.v1.managements;
 
-option go_package = "github.com/checkmarxdev/cxcodeprobe/microsastengine/golang/managements";
+option go_package = "github.com/checkmarxdev/cxcodeprobe/vorpal/golang/managements";
 
 // Represents a request to perform a shutdown.
 message ShutdownRequest {

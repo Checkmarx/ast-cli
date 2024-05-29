@@ -3,28 +3,34 @@ package scans
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/vorpal/scans/protos"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type MicroSastWrapper struct {
+type VorpalWrapper struct {
 	port int
 }
 
-func NewMicroSastWrapper(port int) *MicroSastWrapper {
-	return &MicroSastWrapper{
+var (
+	vorpalScanErrMsg = "Vorpal scan failed for file %s"
+	grpcConnErrMsg   = "Error occurred while creating the grpc client in address %q. error: %v"
+)
+
+func NewVorpalWrapper(port int) *VorpalWrapper {
+	return &VorpalWrapper{
 		port: port,
 	}
 }
 
-func (s *MicroSastWrapper) Scan(filePath string) (*ScanResult, error) {
+func (s *VorpalWrapper) Scan(filePath string) (*protos.ScanResult, error) {
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -42,19 +48,25 @@ func (s *MicroSastWrapper) Scan(filePath string) (*ScanResult, error) {
 
 	if err != nil {
 		logger.Printf("grpc.NewClient(%q): %v", localhostAddress, err)
+		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
 	}
 
-	client := NewScanServiceClient(conn)
+	client := protos.NewScanServiceClient(conn)
 
-	request := &SingleScanRequest{
-		ScanRequest: &ScanRequest{
+	request := &protos.SingleScanRequest{
+		ScanRequest: &protos.ScanRequest{
 			Id:         uuid.New().String(),
 			FileName:   filePath,
 			SourceCode: string(data),
 		},
 	}
 
-	return client.Scan(context.Background(), request)
+	scanResultResponse, err := client.Scan(context.Background(), request)
+	if err != nil {
+		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
+	}
+
+	return scanResultResponse, nil
 }
 
 func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.HealthCheckResponse, error) {
@@ -70,7 +82,7 @@ func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.Healt
 	return rsp, nil
 }
 
-func (s *MicroSastWrapper) CheckHealth() error {
+func (s *VorpalWrapper) CheckHealth() error {
 	timeout := 1 * time.Second
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -81,7 +93,7 @@ func (s *MicroSastWrapper) CheckHealth() error {
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.DialContext(ctx, localhostAddress, options...)
 	if err != nil {
-		logger.Printf("grpc.Dial(%q): %v", localhostAddress, err)
+		logger.Printf(grpcConnErrMsg, localhostAddress, err)
 		return err
 	}
 
@@ -98,7 +110,7 @@ func (s *MicroSastWrapper) CheckHealth() error {
 	}
 
 	if healthRes.Status == healthpb.HealthCheckResponse_SERVING {
-		log.Printf("End of Health Check! Status: %v", healthRes.Status)
+		logger.Printf("End of Health Check! Status: %v", healthRes.Status)
 		return nil
 	}
 
