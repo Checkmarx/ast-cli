@@ -913,13 +913,13 @@ func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
 	scaconfiguration.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 
 	scaconfiguration.Params.DownloadURL = downloadURL
 	scaconfiguration.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 }
 
 func copyResultsToTempDir() error {
@@ -929,7 +929,8 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(scaconfiguration.Params.WorkingDir(), data, 0644)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfiguration.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
+	err = ioutil.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}
