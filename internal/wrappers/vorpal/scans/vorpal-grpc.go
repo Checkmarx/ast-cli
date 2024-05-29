@@ -3,7 +3,6 @@ package scans
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -30,7 +29,7 @@ func NewVorpalWrapper(port int) *VorpalWrapper {
 	}
 }
 
-func (s *VorpalWrapper) Scan(filePath string) (*protos.ScanResult, error) {
+func (s *VorpalWrapper) Scan(filePath, sourceCode string) (*protos.ScanResult, error) {
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -39,11 +38,6 @@ func (s *VorpalWrapper) Scan(filePath string) (*protos.ScanResult, error) {
 	timeout := 1 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		fmt.Print(err)
-	}
 
 	localhostAddress := fmt.Sprintf("0.0.0.0:%d", s.port)
 	conn, err := grpc.DialContext(ctx, localhostAddress, options...)
@@ -62,11 +56,11 @@ func (s *VorpalWrapper) Scan(filePath string) (*protos.ScanResult, error) {
 		ScanRequest: &protos.ScanRequest{
 			Id:         uuid.New().String(),
 			FileName:   filePath,
-			SourceCode: string(data),
+			SourceCode: sourceCode,
 		},
 	}
 
-	scanResultResponse, err := client.Scan(context.Background(), request)
+	scanResultResponse, err := client.Scan(ctx, request)
 	if err != nil {
 		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
 	}
