@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -37,11 +38,12 @@ func (s *VorpalWrapper) callScan(filePath string) (*protos.ScanResult, error) {
 		logger.Printf("Error reading file %s: %v", filePath, err)
 		return nil, err
 	}
+	_, fileName := filepath.Split(filePath)
 	sourceCode := string(data)
-	return s.Scan(filePath, sourceCode)
+	return s.Scan(fileName, sourceCode)
 }
 
-func (s *VorpalWrapper) Scan(filePath, sourceCode string) (*protos.ScanResult, error) {
+func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*protos.ScanResult, error) {
 	options := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -59,7 +61,7 @@ func (s *VorpalWrapper) Scan(filePath, sourceCode string) (*protos.ScanResult, e
 
 	if err != nil {
 		logger.Printf("grpc.DialContext(%q): %v", localhostAddress, err)
-		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
+		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName)
 	}
 
 	client := protos.NewScanServiceClient(conn)
@@ -67,24 +69,23 @@ func (s *VorpalWrapper) Scan(filePath, sourceCode string) (*protos.ScanResult, e
 	request := &protos.SingleScanRequest{
 		ScanRequest: &protos.ScanRequest{
 			Id:         uuid.New().String(),
-			FileName:   filePath,
+			FileName:   fileName,
 			SourceCode: sourceCode,
 		},
 	}
 
 	scanResultResponse, err := client.Scan(ctx, request)
 	if err != nil {
-		return nil, errors.Wrapf(err, vorpalScanErrMsg, filePath)
+		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName)
 	}
 
 	return scanResultResponse, nil
 }
 
-func checkHealth(service string, conn grpc.ClientConnInterface) (*healthpb.HealthCheckResponse, error) {
+func checkHealth(ctx context.Context, service string, conn grpc.ClientConnInterface) (*healthpb.HealthCheckResponse, error) {
 	req := &healthpb.HealthCheckRequest{
 		Service: service,
 	}
-	ctx := context.Background()
 	rsp, err := healthpb.NewHealthClient(conn).Check(ctx, req)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func (s *VorpalWrapper) CheckHealth() error {
 		}
 	}(conn)
 
-	healthRes, healthErr := checkHealth("MicroSastEngine", conn)
+	healthRes, healthErr := checkHealth(ctx, "MicroSastEngine", conn)
 	if healthErr != nil {
 		logger.Printf("Health Check Failed: %v", healthErr)
 		return healthErr
