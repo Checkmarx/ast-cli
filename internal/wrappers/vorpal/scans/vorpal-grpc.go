@@ -3,6 +3,7 @@ package scans
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -27,6 +28,17 @@ func NewVorpalWrapper(port int) *VorpalWrapper {
 	return &VorpalWrapper{
 		port: port,
 	}
+}
+
+// TODO: This function should move to vorpal service when it is implemented
+func (s *VorpalWrapper) callScan(filePath string) (*protos.ScanResult, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		logger.Printf("Error reading file %s: %v", filePath, err)
+		return nil, err
+	}
+	sourceCode := string(data)
+	return s.Scan(filePath, sourceCode)
 }
 
 func (s *VorpalWrapper) Scan(filePath, sourceCode string) (*protos.ScanResult, error) {
