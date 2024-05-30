@@ -276,7 +276,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 }
 
 func validateExtraFilters(filterKeyVal []string) []string {
-	//Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT" if user sent that flag
+	// Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
 	for filterKey, extraFilters := range extraFilter {
 		if filterKeyVal[0] == filterKey {
 			for privateFilter, value := range extraFilters {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -138,4 +139,29 @@ func execCmdNotNilAssertion(t *testing.T, args ...string) error {
 func assertError(t *testing.T, err error, expectedMessage string) {
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
+}
+func Test_validateExtraFilters(t *testing.T) {
+	type args struct {
+		filterKeyVal []string
+	}
+	tests := []struct {
+		filterName      string
+		extraFilterName args
+		replaceValue    []string
+		expectedLog     string
+	}{
+		{
+			filterName:      "Test exclude-not-exploitable",
+			extraFilterName: args{filterKeyVal: []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable"}},
+			replaceValue:    []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"},
+			expectedLog:     "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.filterName, func(t *testing.T) { // Reset the log output for each test
+			if got := validateExtraFilters(tt.extraFilterName.filterKeyVal); !reflect.DeepEqual(got, tt.replaceValue) {
+				t.Errorf("validateExtraFilters() = %v, want %v", got, tt.replaceValue)
+			}
+		})
+	}
 }
