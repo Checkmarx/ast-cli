@@ -314,6 +314,7 @@ func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.S
 	if scanResponseModel.Status == wrappers.ScanCanceled ||
 		scanResponseModel.Status == wrappers.ScanRunning ||
 		scanResponseModel.Status == wrappers.ScanQueued ||
+		scanResponseModel.Status == wrappers.ScanPartial ||
 		scanResponseModel.Status == wrappers.ScanCompleted {
 		result := ScannerResponse{
 			ScanID: scanResponseModel.ID,
