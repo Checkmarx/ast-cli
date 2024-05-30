@@ -22,7 +22,7 @@ type VorpalWrapper struct {
 
 const (
 	vorpalScanErrMsg = "Vorpal scan failed for file %s"
-	localHostAddress = "0.0.0.0:%d"
+	localHostAddress = "127.0.0.1:%d"
 	serviceName      = "VorpalEngine"
 )
 
