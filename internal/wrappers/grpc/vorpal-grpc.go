@@ -22,9 +22,16 @@ type VorpalWrapper struct {
 
 const (
 	vorpalScanErrMsg = "Vorpal scan failed for file %s"
+	localHostAddress = "0.0.0.0:%d"
+	serviceName      = "VorpalEngine"
+)
+
+var (
+	grpcClient *ClientWithTimeout
 )
 
 func NewVorpalWrapper(port int) *VorpalWrapper {
+	grpcClient = NewGRPCClientWithTimeout(fmt.Sprintf(localHostAddress, port), 1*time.Second).(*ClientWithTimeout)
 	return &VorpalWrapper{
 		port: port,
 	}
@@ -43,7 +50,6 @@ func (s *VorpalWrapper) callScan(filePath string) (*scans2.ScanResult, error) {
 }
 
 func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*scans2.ScanResult, error) {
-	grpcClient := NewGRPCClientWithTimeout(s.port, 1*time.Second)
 	conn, connErr := grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, s.port, connErr)
@@ -85,7 +91,6 @@ func checkHealth(ctx context.Context, service string, conn grpc.ClientConnInterf
 }
 
 func (s *VorpalWrapper) CheckHealth() error {
-	grpcClient := NewGRPCClientWithTimeout(s.port, 1*time.Second)
 	conn, connErr := grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, s.port, connErr)
@@ -96,7 +101,7 @@ func (s *VorpalWrapper) CheckHealth() error {
 		_ = conn.Close()
 	}(conn)
 
-	healthRes, healthErr := checkHealth(grpcClient.GetContext(), "VorpalEngine", conn)
+	healthRes, healthErr := checkHealth(grpcClient.GetContext(), serviceName, conn)
 	if healthErr != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Health Check Failed: %v", healthErr))
 		return healthErr
@@ -111,7 +116,6 @@ func (s *VorpalWrapper) CheckHealth() error {
 }
 
 func (s *VorpalWrapper) ShutDown() error {
-	grpcClient := NewGRPCClientWithTimeout(s.port, 1*time.Second)
 	conn, connErr := grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, s.port, connErr)
@@ -126,5 +130,6 @@ func (s *VorpalWrapper) ShutDown() error {
 	if shutdownErr != nil {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
+	logger.PrintfIfVerbose("Vorpal service is shutting down")
 	return nil
 }

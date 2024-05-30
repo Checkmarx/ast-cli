@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
@@ -10,8 +9,7 @@ import (
 )
 
 const (
-	LocalhostAddress = "0.0.0.0:%d"
-	ConnErrMsg       = "Error occurred while creating the gRPC client at address %q: %v"
+	ConnErrMsg = "Error occurred while creating the gRPC client at address %q: %v"
 )
 
 type Client interface {
@@ -20,11 +18,11 @@ type Client interface {
 }
 
 type BaseClient struct {
-	port int
-	ctx  context.Context
+	hostAddress string
+	ctx         context.Context
 }
 
-func (c *BaseClient) dialOptions() []grpc.DialOption {
+func dialOptions() []grpc.DialOption {
 	return []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -32,7 +30,7 @@ func (c *BaseClient) dialOptions() []grpc.DialOption {
 }
 
 func (c *BaseClient) dialContext(ctx context.Context) (*grpc.ClientConn, error) {
-	return grpc.DialContext(ctx, fmt.Sprintf(LocalhostAddress, c.port), c.dialOptions()...)
+	return grpc.DialContext(ctx, c.hostAddress, dialOptions()...)
 }
 
 type ClientWithTimeout struct {
@@ -40,8 +38,8 @@ type ClientWithTimeout struct {
 	timeout time.Duration
 }
 
-func NewGRPCClientWithTimeout(port int, timeout time.Duration) Client {
-	return &ClientWithTimeout{BaseClient: BaseClient{port: port, ctx: context.Background()}, timeout: timeout}
+func NewGRPCClientWithTimeout(hostAddress string, timeout time.Duration) Client {
+	return &ClientWithTimeout{BaseClient: BaseClient{hostAddress: hostAddress, ctx: context.Background()}, timeout: timeout}
 }
 
 func (c *ClientWithTimeout) CreateClientConn() (*grpc.ClientConn, error) {
