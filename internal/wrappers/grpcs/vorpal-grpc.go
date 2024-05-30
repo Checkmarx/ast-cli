@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/managements"
-	scans2 "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/scans"
+	vorpalManagement "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/managements"
+	vorpalScan "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/scans"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -38,7 +38,7 @@ func NewVorpalWrapper(port int) *VorpalWrapper {
 }
 
 // CallScan TODO: This function should move to vorpal service when it is implemented
-func (s *VorpalWrapper) CallScan(filePath string) (*scans2.ScanResult, error) {
+func (s *VorpalWrapper) CallScan(filePath string) (*vorpalScan.ScanResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		logger.Printf("Error reading file %s: %v", filePath, err)
@@ -49,7 +49,7 @@ func (s *VorpalWrapper) CallScan(filePath string) (*scans2.ScanResult, error) {
 	return s.Scan(fileName, sourceCode)
 }
 
-func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*scans2.ScanResult, error) {
+func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResult, error) {
 	conn, connErr := grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, s.port, connErr)
@@ -60,10 +60,10 @@ func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*scans2.ScanResult, e
 		_ = conn.Close()
 	}(conn)
 
-	client := scans2.NewScanServiceClient(conn)
+	client := vorpalScan.NewScanServiceClient(conn)
 
-	request := &scans2.SingleScanRequest{
-		ScanRequest: &scans2.ScanRequest{
+	request := &vorpalScan.SingleScanRequest{
+		ScanRequest: &vorpalScan.ScanRequest{
 			Id:         uuid.New().String(),
 			FileName:   fileName,
 			SourceCode: sourceCode,
@@ -125,8 +125,8 @@ func (s *VorpalWrapper) ShutDown() error {
 		_ = conn.Close()
 	}(conn)
 
-	managementClient := managements.NewManagementServiceClient(conn)
-	_, shutdownErr := managementClient.Shutdown(grpcClient.GetContext(), &managements.ShutdownRequest{})
+	managementClient := vorpalManagement.NewManagementServiceClient(conn)
+	_, shutdownErr := managementClient.Shutdown(grpcClient.GetContext(), &vorpalManagement.ShutdownRequest{})
 	if shutdownErr != nil {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
