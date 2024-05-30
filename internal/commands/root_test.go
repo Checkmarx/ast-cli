@@ -160,7 +160,7 @@ func Test_validateExtraFilters(t *testing.T) {
 	for _, filtername := range tests {
 		t.Run(filtername.filterName, func(t *testing.T) { // Reset the log output for each test
 			if got := validateExtraFilters(filtername.extraFilterName.filterKeyVal); !reflect.DeepEqual(got, filtername.replaceValue) {
-				t.Errorf("validateExtraFilters() = %v, want %v", got, filtername.replaceValue)
+				t.Errorf("validateExtraFilters() = ", got, " want ", filtername.replaceValue)
 			}
 		})
 	}
