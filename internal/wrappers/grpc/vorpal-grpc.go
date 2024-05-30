@@ -37,8 +37,8 @@ func NewVorpalWrapper(port int) *VorpalWrapper {
 	}
 }
 
-// TODO: This function should move to vorpal service when it is implemented
-func (s *VorpalWrapper) callScan(filePath string) (*scans2.ScanResult, error) {
+// CallScan TODO: This function should move to vorpal service when it is implemented
+func (s *VorpalWrapper) CallScan(filePath string) (*scans2.ScanResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		logger.Printf("Error reading file %s: %v", filePath, err)
