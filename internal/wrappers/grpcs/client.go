@@ -17,7 +17,7 @@ const (
 
 type Client interface {
 	CreateClientConn() (*grpc.ClientConn, error)
-	HealthCheck(serviceName string) error
+	HealthCheck(client Client, serviceName string) error
 }
 
 type BaseClient struct {
@@ -45,8 +45,8 @@ func (c *BaseClient) dialContext(ctx context.Context) (*grpc.ClientConn, error) 
 	return grpc.DialContext(ctx, c.hostAddress, dialOptions()...)
 }
 
-func (c *BaseClient) HealthCheck(serviceName string) error {
-	conn, connErr := c.CreateClientConn()
+func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
+	conn, connErr := client.CreateClientConn()
 	if connErr != nil {
 		return connErr
 	}

@@ -15,7 +15,8 @@ import (
 )
 
 type VorpalWrapper struct {
-	grpcClient *ClientWithTimeout
+	grpcClient      *ClientWithTimeout
+	fullHostAddress string
 }
 
 const (
@@ -24,14 +25,11 @@ const (
 	serviceName      = "VorpalEngine"
 )
 
-var (
-	fullHostAddress string
-)
-
 func NewVorpalWrapper(port int) *VorpalWrapper {
-	fullHostAddress = fmt.Sprintf(localHostAddress, port)
+	fullHostAddress := fmt.Sprintf(localHostAddress, port)
 	return &VorpalWrapper{
-		grpcClient: NewGRPCClientWithTimeout(fullHostAddress, 1*time.Second).(*ClientWithTimeout),
+		grpcClient:      NewGRPCClientWithTimeout(fullHostAddress, 1*time.Second).(*ClientWithTimeout),
+		fullHostAddress: fullHostAddress,
 	}
 }
 
@@ -50,7 +48,7 @@ func (v *VorpalWrapper) CallScan(filePath string) (*vorpalScan.ScanResult, error
 func (v *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResult, error) {
 	conn, connErr := v.grpcClient.CreateClientConn()
 	if connErr != nil {
-		logger.Printf(ConnErrMsg, fullHostAddress, connErr)
+		logger.Printf(ConnErrMsg, v.fullHostAddress, connErr)
 		return nil, connErr
 	}
 
@@ -77,18 +75,18 @@ func (v *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 }
 
 func (v *VorpalWrapper) HealthCheck() error {
-	err := v.grpcClient.HealthCheck(serviceName)
+	err := v.grpcClient.HealthCheck(v.grpcClient, serviceName)
 	if err != nil {
 		return err
 	}
-	logger.PrintIfVerbose(fmt.Sprintf("End of Health Check! Status: Serving, Host Address: %v", fullHostAddress))
+	logger.PrintIfVerbose(fmt.Sprintf("End of Health Check! Status: Serving, Host Address: %v", v.fullHostAddress))
 	return nil
 }
 
 func (v *VorpalWrapper) ShutDown() error {
 	conn, connErr := v.grpcClient.CreateClientConn()
 	if connErr != nil {
-		logger.Printf(ConnErrMsg, fullHostAddress, connErr)
+		logger.Printf(ConnErrMsg, v.fullHostAddress, connErr)
 		return connErr
 	}
 	defer func(conn *grpc.ClientConn) {
