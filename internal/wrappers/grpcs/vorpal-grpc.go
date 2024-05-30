@@ -1,4 +1,4 @@
-package grpc
+package grpcs
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers/grpc/protos/vorpal/managements"
-	scans2 "github.com/checkmarx/ast-cli/internal/wrappers/grpc/protos/vorpal/scans"
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/managements"
+	scans2 "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/scans"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
