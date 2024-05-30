@@ -1,7 +1,6 @@
 package grpcs
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type VorpalWrapper struct {
@@ -27,11 +25,13 @@ const (
 )
 
 var (
-	grpcClient *ClientWithTimeout
+	grpcClient      *ClientWithTimeout
+	fullHostAddress string
 )
 
 func NewVorpalWrapper(port int) *VorpalWrapper {
-	grpcClient = NewGRPCClientWithTimeout(fmt.Sprintf(localHostAddress, port), 1*time.Second).(*ClientWithTimeout)
+	fullHostAddress = fmt.Sprintf(localHostAddress, port)
+	grpcClient = NewGRPCClientWithTimeout(fullHostAddress, 1*time.Second).(*ClientWithTimeout)
 	return &VorpalWrapper{
 		port: port,
 	}
@@ -60,7 +60,7 @@ func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 		_ = conn.Close()
 	}(conn)
 
-	client := vorpalScan.NewScanServiceClient(conn)
+	scanClient := vorpalScan.NewScanServiceClient(conn)
 
 	request := &vorpalScan.SingleScanRequest{
 		ScanRequest: &vorpalScan.ScanRequest{
@@ -70,7 +70,7 @@ func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 		},
 	}
 
-	scanResultResponse, err := client.Scan(grpcClient.GetContext(), request)
+	scanResultResponse, err := scanClient.Scan(grpcClient.ctx, request)
 	if err != nil {
 		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName)
 	}
@@ -78,41 +78,13 @@ func (s *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 	return scanResultResponse, nil
 }
 
-func checkHealth(ctx context.Context, service string, conn grpc.ClientConnInterface) (*healthpb.HealthCheckResponse, error) {
-	req := &healthpb.HealthCheckRequest{
-		Service: service,
-	}
-	rsp, err := healthpb.NewHealthClient(conn).Check(ctx, req)
+func (s *VorpalWrapper) HealthCheck() error {
+	err := grpcClient.HealthCheck(serviceName)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	return rsp, nil
-}
-
-func (s *VorpalWrapper) CheckHealth() error {
-	conn, connErr := grpcClient.CreateClientConn()
-	if connErr != nil {
-		logger.Printf(ConnErrMsg, s.port, connErr)
-		return connErr
-	}
-
-	defer func(conn *grpc.ClientConn) {
-		_ = conn.Close()
-	}(conn)
-
-	healthRes, healthErr := checkHealth(grpcClient.GetContext(), serviceName, conn)
-	if healthErr != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Health Check Failed: %v", healthErr))
-		return healthErr
-	}
-
-	if healthRes.Status == healthpb.HealthCheckResponse_SERVING {
-		logger.PrintIfVerbose(fmt.Sprintf("End of Health Check! Status: %v, Port: %v", healthRes.Status, s.port))
-		return nil
-	}
-
-	return fmt.Errorf("service not serving, status: %v", healthRes.Status)
+	logger.PrintIfVerbose(fmt.Sprintf("End of Health Check! Status: Serving, Host Address: %s", fullHostAddress))
+	return nil
 }
 
 func (s *VorpalWrapper) ShutDown() error {
@@ -126,7 +98,7 @@ func (s *VorpalWrapper) ShutDown() error {
 	}(conn)
 
 	managementClient := vorpalManagement.NewManagementServiceClient(conn)
-	_, shutdownErr := managementClient.Shutdown(grpcClient.GetContext(), &vorpalManagement.ShutdownRequest{})
+	_, shutdownErr := managementClient.Shutdown(grpcClient.ctx, &vorpalManagement.ShutdownRequest{})
 	if shutdownErr != nil {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
