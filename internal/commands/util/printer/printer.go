@@ -29,7 +29,7 @@ const (
 	FormatSbom            = "sbom"
 	FormatXML             = "xml"
 	FormatGL              = "gl-sast"
-	FormatGLDependency    = "gl-dependency"
+	FormatGLSca           = "gl-sca"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {

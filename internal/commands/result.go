@@ -41,7 +41,7 @@ const (
 	infoLabel                 = "info"
 	sonarTypeLabel            = "_sonar"
 	glSastTypeLabel           = ".gl-sast-report"
-	glDependencyTypeLabel     = ".gl-dependency-report"
+	glScaTypeLabel            = ".gl-sca-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
 	lowSonar                  = "MINOR"
@@ -106,7 +106,7 @@ var summaryFormats = []string{
 	printer.FormatSummaryMarkdown,
 	printer.FormatSbom,
 	printer.FormatGL,
-	printer.FormatGLDependency,
+	printer.FormatGLSca,
 }
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -224,7 +224,7 @@ func resultShowSubCommand(
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
 		printer.FormatGL,
-		printer.FormatGLDependency,
+		printer.FormatGLSca,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
@@ -1050,8 +1050,8 @@ func createReport(format,
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
-	if printer.IsFormat(format, printer.FormatGLDependency) {
-		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glDependencyTypeLabel), targetPath, printer.FormatJSON)
+	if printer.IsFormat(format, printer.FormatGLSca) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glScaTypeLabel), targetPath, printer.FormatJSON)
 		return exportGlDependencyResults(jsonRpt, results, summary)
 	}
 
@@ -1226,7 +1226,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 }
 
 func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
-	log.Println("Creating Gl-dependency Report: ", targetFile)
+	log.Println("Creating Gl-sca Report: ", targetFile)
 	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
 	err := addScanToGlDependencyReport(summary, glDependencyResult)
 	if err != nil {
