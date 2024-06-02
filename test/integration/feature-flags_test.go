@@ -42,16 +42,16 @@ func TestGetSpecificFeatureFlagIntegration(t *testing.T) {
 
 func TestUpdateSpecificFeatureFlagMapIntegration(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
-	wrappers.FeatureFlagsSpecific[flagName] = false
+	wrappers.FeatureFlagsCache[flagName] = false
 
 	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: true}
 	wrappers.UpdateSpecificFeatureFlagMap(flagName, flag)
-	assert.Equal(t, wrappers.FeatureFlagsSpecific[flagName], flag.Status, "Feature flag status should be updated")
+	assert.Equal(t, wrappers.FeatureFlagsCache[flagName], flag.Status, "Feature flag status should be updated")
 }
 
 func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
-	wrappers.FeatureFlagsSpecific[flagName] = true
+	wrappers.FeatureFlagsCache[flagName] = true
 
 	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: false}
 	// Ensure the default is set to false for testing purposes
@@ -65,7 +65,7 @@ func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
 	}
 
 	wrappers.UpdateSpecificFeatureFlagMapWithDefault(flagName)
-	assert.Equal(t, wrappers.FeatureFlagsSpecific[flagName], flag.Status, "Feature flag status should be updated to default")
+	assert.Equal(t, wrappers.FeatureFlagsCache[flagName], flag.Status, "Feature flag status should be updated to default")
 }
 
 func TestLoadFeatureFlagsDefaultValuesIntegration(t *testing.T) {

@@ -58,7 +58,7 @@ var FeatureFlagsBaseMap = []CommandFlags{
 }
 
 var FeatureFlags = map[string]bool{}
-var FeatureFlagsSpecific = map[string]bool{}
+var FeatureFlagsCache = map[string]bool{}
 
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 	allFlags, err := featureFlagsWrapper.GetAll()
@@ -72,14 +72,14 @@ func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 }
 
 func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName string) (*FeatureFlagResponseModel, error) {
-	if value, exists := FeatureFlagsSpecific[flagName]; exists {
+	if value, exists := FeatureFlagsCache[flagName]; exists {
 		return &FeatureFlagResponseModel{Name: flagName, Status: value}, nil
 	}
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
 		UpdateSpecificFeatureFlagMapWithDefault(flagName)
-		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsSpecific[flagName]}, nil
+		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsCache[flagName]}, nil
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)
@@ -95,8 +95,10 @@ func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retr
 		if err == nil {
 			return flag, nil
 		}
+		logger.PrintfIfVerbose("Retry %d/%d for flag %s failed with error: %v", i+1, retries, flagName, err)
 	}
 
+	logger.PrintfIfVerbose("Failed to get feature flag %s after %d retries", flagName, retries)
 	return nil, errors.New("failed to get feature flag after retries")
 }
 
@@ -105,7 +107,7 @@ func UpdateSpecificFeatureFlagMapWithDefault(flagName string) {
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
 			if flag.Name == flagName {
-				FeatureFlagsSpecific[flagName] = flag.Default
+				FeatureFlagsCache[flagName] = flag.Default
 				return
 			}
 		}
@@ -113,7 +115,7 @@ func UpdateSpecificFeatureFlagMapWithDefault(flagName string) {
 }
 
 func UpdateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
-	FeatureFlagsSpecific[flagName] = flag.Status
+	FeatureFlagsCache[flagName] = flag.Status
 }
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {

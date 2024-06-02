@@ -11,7 +11,7 @@ import (
 )
 
 func setup() {
-	wrappers.FeatureFlagsSpecific = map[string]bool{}
+	wrappers.FeatureFlagsCache = map[string]bool{}
 }
 
 func TestAssignGroupsToProject(t *testing.T) {
