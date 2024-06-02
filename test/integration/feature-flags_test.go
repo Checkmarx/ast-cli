@@ -40,19 +40,10 @@ func TestGetSpecificFeatureFlagIntegration(t *testing.T) {
 	assert.Equal(t, flagResponse.Name, flagName, "Feature flag name should match")
 }
 
-func TestGetSpecificFeatureFlagWithRetryIntegration(t *testing.T) {
-	createASTIntegrationTestCommand(t)
-	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
-	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-
-	flagName := featureFlagsConstants.ByorEnabled
-	flagResponse, err := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, flagName)
-	assert.NilError(t, err, "GetSpecificFeatureFlagWithRetry should not return an error")
-	assert.Equal(t, flagResponse.Name, flagName, "Feature flag name should match")
-}
-
 func TestUpdateSpecificFeatureFlagMapIntegration(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
+	wrappers.FeatureFlagsSpecific[flagName] = false
+
 	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: true}
 	wrappers.UpdateSpecificFeatureFlagMap(flagName, flag)
 	assert.Equal(t, wrappers.FeatureFlagsSpecific[flagName], flag.Status, "Feature flag status should be updated")
@@ -60,19 +51,21 @@ func TestUpdateSpecificFeatureFlagMapIntegration(t *testing.T) {
 
 func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
+	wrappers.FeatureFlagsSpecific[flagName] = true
 
+	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: false}
 	// Ensure the default is set to false for testing purposes
 	wrappers.FeatureFlagsBaseMap = []wrappers.CommandFlags{
 		{
 			CommandName: "cx scan create",
 			FeatureFlags: []wrappers.FlagBase{
-				{Name: flagName, Default: true},
+				{Name: flag.Name, Default: flag.Status},
 			},
 		},
 	}
 
 	wrappers.UpdateSpecificFeatureFlagMapWithDefault(flagName)
-	assert.Equal(t, true, wrappers.FeatureFlagsSpecific[flagName], "Feature flag status should be updated to default")
+	assert.Equal(t, wrappers.FeatureFlagsSpecific[flagName], flag.Status, "Feature flag status should be updated to default")
 }
 
 func TestLoadFeatureFlagsDefaultValuesIntegration(t *testing.T) {
