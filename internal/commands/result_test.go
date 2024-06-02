@@ -529,6 +529,12 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
 }
 
+func TestRunGetResultsByScanIdGLScaFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sca")
+	// Run test for gl-sca report type
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSca))
+}
+
 func Test_addPackageInformation(t *testing.T) {
 	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}

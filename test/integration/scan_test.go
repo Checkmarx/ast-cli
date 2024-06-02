@@ -1297,3 +1297,37 @@ func TestScanListWithFilters(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
+
+func TestCreateScanGLSASTReportFormat(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), printer.FormatGL,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Creating Gl SAST report")
+}
+
+func TestCreateScanGLSCAReportFormat(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), printer.FormatGLSca,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Creating Gl SCA report")
+}
