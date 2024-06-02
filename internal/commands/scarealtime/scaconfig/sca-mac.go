@@ -1,6 +1,6 @@
 //go:build darwin
 
-package scaconfiguration
+package scaconfig
 
 import (
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"

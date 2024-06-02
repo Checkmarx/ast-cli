@@ -20,7 +20,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
-	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfiguration"
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -904,19 +904,19 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-	err := os.RemoveAll(scaconfiguration.Params.WorkingDir())
+	err := os.RemoveAll(scaconfig.Params.WorkingDir())
 	assert.NilError(t, err)
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	downloadURL := scaconfiguration.Params.DownloadURL
-	scaconfiguration.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
+	downloadURL := scaconfig.Params.DownloadURL
+	scaconfig.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 
-	scaconfiguration.Params.DownloadURL = downloadURL
-	scaconfiguration.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	scaconfig.Params.DownloadURL = downloadURL
+	scaconfig.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
@@ -929,7 +929,7 @@ func copyResultsToTempDir() error {
 		return err
 	}
 	// Write data to dst
-	scaResolverResultsFileNameDir := filepath.Join(scaconfiguration.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfig.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
 	err = ioutil.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err

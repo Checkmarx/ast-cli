@@ -12,7 +12,7 @@ import (
 	"os/exec"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfiguration"
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
@@ -75,7 +75,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 		fmt.Println("Running SCA Realtime...")
 
 		// Handle SCA Resolver. Checks if it already exists and if it is in the latest version
-		err = osinstaller.InstallOrUpgrade(&scaconfiguration.Params)
+		err = osinstaller.InstallOrUpgrade(&scaconfig.Params)
 		if err != nil {
 			return err
 		}
@@ -105,12 +105,12 @@ func executeSCAResolver(projectPath string) error {
 		"-n",
 		scaResolverProjectName,
 		"-r",
-		filepath.Join(scaconfiguration.Params.WorkingDir(), ScaResolverResultsFileName),
+		filepath.Join(scaconfig.Params.WorkingDir(), ScaResolverResultsFileName),
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running SCA resolver with args: %v \n", args))
 
-	out, err := exec.Command(scaconfiguration.Params.ExecutableFilePath(), args...).Output()
+	out, err := exec.Command(scaconfig.Params.ExecutableFilePath(), args...).Output()
 	logger.PrintIfVerbose(string(out))
 	if err != nil {
 		return err
@@ -309,7 +309,7 @@ func validateProvidedProjectDirectory(cmd *cobra.Command) (string, error) {
 
 // readSCAResolverResultsFromFile Get SCA Resolver results from file to build SCA API request body
 func readSCAResolverResultsFromFile() (ScaResultsFile, error) {
-	scaResolverResultsFileNameDir := filepath.Join(scaconfiguration.Params.WorkingDir(), ScaResolverResultsFileName)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfig.Params.WorkingDir(), ScaResolverResultsFileName)
 	file, err := os.ReadFile(scaResolverResultsFileNameDir)
 	if err != nil {
 		return ScaResultsFile{}, err

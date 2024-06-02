@@ -1,16 +1,16 @@
-//go:build linux
+//go:build windows
 
-package vorpalconfiguration
+package vorpalconfig
 
 import (
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 )
 
 var Params = osinstaller.InstallationConfiguration{
-	ExecutableFile:  "cxcodeprobe_linux_x64",
-	DownloadURL:     "https://download.checkmarx.com/cxcodeprobe-binary/cxcodeprobe_linux_x64.tar.gz",
+	ExecutableFile:  "cxcodeprobe_windows_x64.exe",
+	DownloadURL:     "https://download.checkmarx.com/cxcodeprobe-binary/cxcodeprobe_windows_x64.zip",
 	HashDownloadURL: "https://download.checkmarx.com/cxcodeprobe-binary/hash.txt",
-	FileName:        "vorpal.tar.gz",
+	FileName:        "vorpal.zip",
 	HashFileName:    "hash.txt",
 	WorkingDirName:  "CxVorpal",
 }
