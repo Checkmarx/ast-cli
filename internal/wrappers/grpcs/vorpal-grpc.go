@@ -57,11 +57,11 @@ func (v *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 	}(conn)
 
 	scanClient := vorpalScan.NewScanServiceClient(conn)
-	scanId := uuid.New().String()
+	scanID := uuid.New().String()
 
 	request := &vorpalScan.SingleScanRequest{
 		ScanRequest: &vorpalScan.ScanRequest{
-			Id:         scanId,
+			Id:         scanID,
 			FileName:   fileName,
 			SourceCode: sourceCode,
 		},
@@ -69,7 +69,7 @@ func (v *VorpalWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResul
 
 	scanResultResponse, err := scanClient.Scan(v.grpcClient.ctx, request)
 	if err != nil {
-		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName, scanId)
+		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName, scanID)
 	}
 
 	return scanResultResponse, nil

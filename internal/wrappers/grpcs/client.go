@@ -35,9 +35,9 @@ func NewGRPCClientWithTimeout(hostAddress string, timeout time.Duration) Client 
 	return &ClientWithTimeout{BaseClient: BaseClient{hostAddress: hostAddress, ctx: context.Background()}, timeout: timeout}
 }
 
-func dialOptions(credentials credentials.TransportCredentials) []grpc.DialOption {
+func dialOptions(userCredentials credentials.TransportCredentials) []grpc.DialOption {
 	return []grpc.DialOption{
-		grpc.WithTransportCredentials(credentials),
+		grpc.WithTransportCredentials(userCredentials),
 		grpc.WithBlock(),
 	}
 }
