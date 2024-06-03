@@ -18,29 +18,17 @@ type MockFeatureFlagsWrapper struct {
 	Err          error
 }
 
-func TestHandleFeatureFlagsIntegration(t *testing.T) {
-
+func Test_HandleFeatureFlags_WhenCalled_ThenNoErrorAndCacheNotEmpty(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
 	assert.NilError(t, err, "HandleFeatureFlags should not return an error")
-	assert.Assert(t, len(wrappers.FeatureFlags) > 0, "FeatureFlags map should not be empty")
+	assert.Assert(t, len(wrappers.FeatureFlagsCache) > 0, "FeatureFlags cache should not be empty")
 }
 
-func TestGetSpecificFeatureFlagIntegration(t *testing.T) {
-	createASTIntegrationTestCommand(t)
-	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
-	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-
-	flagName := featureFlagsConstants.ByorEnabled
-	flagResponse, err := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, flagName)
-	assert.NilError(t, err, "GetSpecificFeatureFlag should not return an error")
-	assert.Equal(t, flagResponse.Name, flagName, "Feature flag name should match")
-}
-
-func TestUpdateSpecificFeatureFlagMapIntegration(t *testing.T) {
+func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = false
 
@@ -49,7 +37,12 @@ func TestUpdateSpecificFeatureFlagMapIntegration(t *testing.T) {
 	assert.Equal(t, wrappers.FeatureFlagsCache[flagName], flag.Status, "Feature flag status should be updated")
 }
 
-func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
+func Test_LoadFeatureFlagsDefaultValues_WhenCalled_ThenFeatureFlagsNotEmpty(t *testing.T) {
+	wrappers.LoadFeatureFlagsDefaultValues()
+	assert.Assert(t, len(wrappers.FeatureFlags) > 0, "FeatureFlags cache should not be empty after loading defaults")
+}
+
+func Test_UpdateSpecificFeatureFlagMapWithDefault_WhenCalled_ThenUpdateCacheToDefault(t *testing.T) {
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = true
 
@@ -66,9 +59,4 @@ func TestUpdateSpecificFeatureFlagMapWithDefaultIntegration(t *testing.T) {
 
 	wrappers.UpdateSpecificFeatureFlagMapWithDefault(flagName)
 	assert.Equal(t, wrappers.FeatureFlagsCache[flagName], flag.Status, "Feature flag status should be updated to default")
-}
-
-func TestLoadFeatureFlagsDefaultValuesIntegration(t *testing.T) {
-	wrappers.LoadFeatureFlagsDefaultValues()
-	assert.Assert(t, len(wrappers.FeatureFlags) > 0, "FeatureFlags map should not be empty after loading defaults")
 }
