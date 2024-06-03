@@ -25,7 +25,7 @@ const (
 	serviceName      = "VorpalEngine"
 )
 
-func NewVorpalWrapper(port int) VorpalWrapper {
+func NewVorpalGrpcWrapper(port int) VorpalWrapper {
 	serverHostAddress := fmt.Sprintf(localHostAddress, port)
 	return &VorpalGrpcWrapper{
 		grpcClient:  NewGRPCClientWithTimeout(serverHostAddress, 1*time.Second).(*ClientWithTimeout),
