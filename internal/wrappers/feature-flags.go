@@ -78,8 +78,8 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
-		UpdateSpecificFeatureFlagMapWithDefault(flagName)
-		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlagsCache[flagName]}, nil
+		//Take the value from FeatureFlags
+		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlags[flagName]}, nil
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)
@@ -100,18 +100,6 @@ func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retr
 
 	logger.PrintfIfVerbose("Failed to get feature flag %s after %d retries", flagName, retries)
 	return nil, errors.New("failed to get feature flag after retries")
-}
-
-func UpdateSpecificFeatureFlagMapWithDefault(flagName string) {
-	logger.PrintIfVerbose("Get feature flags failed. Loading defaults...")
-	for _, cmdFlag := range FeatureFlagsBaseMap {
-		for _, flag := range cmdFlag.FeatureFlags {
-			if flag.Name == flagName {
-				FeatureFlagsCache[flagName] = flag.Default
-				return
-			}
-		}
-	}
 }
 
 func UpdateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
