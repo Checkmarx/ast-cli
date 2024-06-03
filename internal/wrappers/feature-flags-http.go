@@ -92,7 +92,7 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 	}
 }
 
-func (f FeatureFlagsHTTPWrapper) getTenantDetails() (map[string]string, uint, error) {
+func (f FeatureFlagsHTTPWrapper) getTenantDetails() (params map[string]string, clientTimeout uint, err error) {
 	accessToken, tokenError := GetAccessToken()
 	if tokenError != nil {
 		return nil, 0, tokenError
@@ -105,8 +105,8 @@ func (f FeatureFlagsHTTPWrapper) getTenantDetails() (map[string]string, uint, er
 
 	tenantID := strings.Split(tenantIDFromClaims, "::")[1]
 
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params := map[string]string{
+	clientTimeout = viper.GetUint(commonParams.ClientTimeoutKey)
+	params = map[string]string{
 		"filter": tenantID,
 	}
 	return params, clientTimeout, nil
