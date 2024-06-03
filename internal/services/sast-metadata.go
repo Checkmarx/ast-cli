@@ -70,9 +70,7 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 	// sort results by sequence - we need to keep the order of the scans as they were requested
 	sortedResults = sortResults(sortedResults)
 
-	finalResult := makeSastMetadataModelFromResults(sortedResults)
-
-	return finalResult, nil
+	return makeSastMetadataModelFromResults(sortedResults), nil
 }
 
 func sortResults(results []ResultWithSequence) []ResultWithSequence {
