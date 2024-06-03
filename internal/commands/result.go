@@ -1415,7 +1415,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if pollingResp.Status != completedStatus {
 		return errors.Errorf("PDF generating failed - Current status: %s", pollingResp.Status)
 	}
-	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
+	err = pdfWrapper.DownloadPdfReport(pollingResp.URL, summaryRpt)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}

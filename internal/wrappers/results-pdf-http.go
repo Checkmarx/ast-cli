@@ -56,6 +56,7 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
 	}
+
 	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -108,10 +109,11 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 	}
 }
 
-func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
+func (r *PdfHTTPWrapper) DownloadPdfReport(url, targetFile string) error {
 	clientTimeout := uint(downloadTimeout)
-	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
-	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
+	useAccessToken := FeatureFlags[MinioEnabled]
+	resp, err := SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeout, "", true)
+
 	if err != nil {
 		return err
 	}
