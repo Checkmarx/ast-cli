@@ -47,6 +47,7 @@ func (c *BaseClient) dialContext(ctx context.Context) (*grpc.ClientConn, error) 
 }
 
 // HealthCheck serviceName refers to the name of the service for which you are requesting a health check.
+// The service name is defined in the server-side implementation and it's case-sensitive.
 func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
 	conn, connErr := client.CreateClientConn()
 	if connErr != nil {
@@ -69,8 +70,9 @@ func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
 	if healthRes.Status == healthpb.HealthCheckResponse_SERVING {
 		return nil
 	}
-
-	return fmt.Errorf("service not serving, status: %v, Host Address: %s", healthRes.Status, c.hostAddress)
+	err := fmt.Errorf("service not serving, status: %v, Host Address: %s", healthRes.Status, c.hostAddress)
+	logger.PrintfIfVerbose(err.Error())
+	return err
 }
 
 func (c *ClientWithTimeout) CreateClientConn() (*grpc.ClientConn, error) {
