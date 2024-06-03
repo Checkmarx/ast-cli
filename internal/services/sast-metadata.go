@@ -70,12 +70,7 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 	// sort results by sequence - we need to keep the order of the scans as they were requested
 	sortedResults = sortResults(sortedResults)
 
-	finalResult := &wrappers.SastMetadataModel{}
-	for _, result := range sortedResults {
-		finalResult.TotalCount += result.Model.TotalCount
-		finalResult.Scans = append(finalResult.Scans, result.Model.Scans...)
-		finalResult.Missing = append(finalResult.Missing, result.Model.Missing...)
-	}
+	finalResult := makeSastMetadataModelFromResults(sortedResults)
 
 	return finalResult, nil
 }
@@ -91,4 +86,14 @@ func sortResults(results []ResultWithSequence) []ResultWithSequence {
 		return 0
 	})
 	return results
+}
+
+func makeSastMetadataModelFromResults(results []ResultWithSequence) *wrappers.SastMetadataModel {
+	finalResult := &wrappers.SastMetadataModel{}
+	for _, result := range results {
+		finalResult.TotalCount += result.Model.TotalCount
+		finalResult.Scans = append(finalResult.Scans, result.Model.Scans...)
+		finalResult.Missing = append(finalResult.Missing, result.Model.Missing...)
+	}
+	return finalResult
 }
