@@ -59,7 +59,8 @@ func createScanIDs(count int) []string {
 func checkAllScanExists(scans []wrappers.Scans, prefix string, count int) bool {
 	existingScans := make(map[int]bool)
 
-	for _, scan := range scans {
+	for i := range scans {
+		scan := &scans[i]
 		if strings.HasPrefix(scan.ScanID, prefix) {
 			scanNumberStr := scan.ScanID[len(prefix):]
 			if scanNumber, err := strconv.Atoi(scanNumberStr); err == nil {
