@@ -34,7 +34,7 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 
 		wg.Add(1)
 		semaphore <- struct{}{}
-		go func(seq int) {
+		go func() {
 			defer wg.Done()
 			defer func() { <-semaphore }()
 
@@ -44,7 +44,7 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 				return
 			}
 			results <- *result
-		}(i)
+		}()
 	}
 
 	go func() {
