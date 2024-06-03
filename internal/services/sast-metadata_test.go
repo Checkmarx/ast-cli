@@ -1,14 +1,51 @@
 package services
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	asserts "github.com/stretchr/testify/assert"
 )
 
 func TestGetSastMetadataByIDs(t *testing.T) {
+	tests := []struct {
+		name    string
+		scanIDs []string
+	}{
+		{
+			name:    "Multiple batches",
+			scanIDs: createScanIDs(2000),
+		},
+		{
+			name:    "Single batch",
+			scanIDs: createScanIDs(100),
+		},
+		{
+			name:    "Empty slice",
+			scanIDs: []string{},
+		},
+	}
 
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			wrapper := &mock.SastMetadataMockWrapper{}
+			actual, err := GetSastMetadataByIDs(wrapper, tt.scanIDs)
+			if err != nil {
+				t.Errorf("GetSastMetadataByIDs(%v) returned an error: %v", tt.scanIDs, err)
+			}
+			for i, scan := range actual.Scans {
+				expectedScanID := fmt.Sprintf("ConcurrentTest%d", i)
+				if scan.ScanID != expectedScanID {
+					t.Errorf("GetSastMetadataByIDs(%v) returned scan with ScanID %s, expected %s", tt.scanIDs, scan.ScanID, expectedScanID)
+				}
+			}
+			asserts.Equal(t, len(tt.scanIDs), len(actual.Scans))
+		})
+	}
 }
-
 func TestSortResults(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -83,4 +120,12 @@ func TestSortResults(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createScanIDs(count int) []string {
+	scanIDs := make([]string, count)
+	for i := 0; i < count; i++ {
+		scanIDs[i] = fmt.Sprintf("ConcurrentTest%d", i)
+	}
+	return scanIDs
 }
