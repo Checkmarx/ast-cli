@@ -78,7 +78,7 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
-		//Take the value from FeatureFlags
+		// Take the value from FeatureFlags
 		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlags[flagName]}, nil
 	}
 
