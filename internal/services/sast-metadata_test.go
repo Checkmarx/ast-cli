@@ -26,6 +26,10 @@ func TestGetSastMetadataByIDs(t *testing.T) {
 			name:    "Empty slice",
 			scanIDs: []string{},
 		},
+		{
+			name:    "Multiple batches with partial last batch",
+			scanIDs: createScanIDs(893),
+		},
 	}
 
 	for _, tt := range tests {
