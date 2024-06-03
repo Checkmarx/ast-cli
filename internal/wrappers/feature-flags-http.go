@@ -23,15 +23,11 @@ func NewFeatureFlagsHTTPWrapper(path string) FeatureFlagsWrapper {
 }
 
 func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
-	tenantID, err := f.getTenantID()
+	params, clientTimeout, err := f.getTenantDetails()
 	if err != nil {
 		return nil, err
 	}
 
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params := map[string]string{
-		"filter": tenantID,
-	}
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, f.path, params, nil, clientTimeout)
 	if err != nil {
 		return nil, err
@@ -61,15 +57,11 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 }
 
 func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagResponseModel, error) {
-	tenantID, err := f.getTenantID()
+	params, clientTimeout, err := f.getTenantDetails()
 	if err != nil {
 		return nil, err
 	}
 
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params := map[string]string{
-		"filter": tenantID,
-	}
 	path := fmt.Sprintf("%s/%s", f.path, flagName) // Adjusting the path to include the flag name
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
@@ -100,17 +92,22 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 	}
 }
 
-func (f FeatureFlagsHTTPWrapper) getTenantID() (string, error) {
+func (f FeatureFlagsHTTPWrapper) getTenantDetails() (map[string]string, uint, error) {
 	accessToken, tokenError := GetAccessToken()
 	if tokenError != nil {
-		return "", tokenError
+		return nil, 0, tokenError
 	}
 
 	tenantIDFromClaims, extractError := extractFromTokenClaims(accessToken, tenantIDClaimKey)
 	if extractError != nil {
-		return "", extractError
+		return nil, 0, extractError
 	}
 
 	tenantID := strings.Split(tenantIDFromClaims, "::")[1]
-	return tenantID, nil
+
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	params := map[string]string{
+		"filter": tenantID,
+	}
+	return params, clientTimeout, nil
 }
