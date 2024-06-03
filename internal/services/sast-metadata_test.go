@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	asserts "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert" //nolint:depguard
 )
 
 func TestGetSastMetadataByIDs(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGetSastMetadataByIDs(t *testing.T) {
 					t.Errorf("GetSastMetadataByIDs(%v) returned scan with ScanID %s, expected %s", tt.scanIDs, scan.ScanID, expectedScanID)
 				}
 			}
-			asserts.Equal(t, len(tt.scanIDs), len(actual.Scans))
+			assert.Equal(t, len(tt.scanIDs), len(actual.Scans))
 		})
 	}
 }
