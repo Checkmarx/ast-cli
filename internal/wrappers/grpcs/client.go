@@ -7,6 +7,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
@@ -34,17 +35,18 @@ func NewGRPCClientWithTimeout(hostAddress string, timeout time.Duration) Client 
 	return &ClientWithTimeout{BaseClient: BaseClient{hostAddress: hostAddress, ctx: context.Background()}, timeout: timeout}
 }
 
-func dialOptions() []grpc.DialOption {
+func dialOptions(credentials credentials.TransportCredentials) []grpc.DialOption {
 	return []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(credentials),
 		grpc.WithBlock(),
 	}
 }
 
 func (c *BaseClient) dialContext(ctx context.Context) (*grpc.ClientConn, error) {
-	return grpc.DialContext(ctx, c.hostAddress, dialOptions()...)
+	return grpc.DialContext(ctx, c.hostAddress, dialOptions(insecure.NewCredentials())...)
 }
 
+// HealthCheck serviceName refers to the name of the service for which you are requesting a health check.
 func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
 	conn, connErr := client.CreateClientConn()
 	if connErr != nil {
@@ -60,7 +62,7 @@ func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
 
 	healthRes, healthErr := healthpb.NewHealthClient(conn).Check(c.ctx, req)
 	if healthErr != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Health Check Failed: %v", healthErr))
+		logger.PrintIfVerbose(fmt.Sprintf("Health Check Failed: %v, Host Address: %s", healthErr, c.hostAddress))
 		return healthErr
 	}
 
@@ -68,7 +70,7 @@ func (c *BaseClient) HealthCheck(client Client, serviceName string) error {
 		return nil
 	}
 
-	return fmt.Errorf("service not serving, status: %v", healthRes.Status)
+	return fmt.Errorf("service not serving, status: %v, Host Address: %s", healthRes.Status, c.hostAddress)
 }
 
 func (c *ClientWithTimeout) CreateClientConn() (*grpc.ClientConn, error) {
