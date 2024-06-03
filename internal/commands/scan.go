@@ -391,17 +391,17 @@ func scanVorpalSubCommand() *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
 		Use:    "vorpal",
 		Hidden: true,
-		Short:  "Run a vorpal scan",
-		Long:   "vorpal scan is able to scan a single file fast and efficiently.",
+		Short:  "Run a Vorpal scan",
+		Long:   "Vorpal scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan vorpal --file-source <path to code file> --vorpal-latest-version <use latest Vorpal available version>
+			$ cx scan vorpal --file-source <path to code file> --vorpal-latest-version <use latest available version of Vorpal engine.>
 		`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.com/resource/documents/en/link-to-cxone-documentation
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
 			`,
 			),
 		},

@@ -31,13 +31,14 @@ func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 
 func ExecuteVorpalScan(sourceFlag string, vorpalUpdateVersion bool) (*ScanResult, error) {
 	if sourceFlag == "" {
-		return nil, errors.Errorf(errorConstants.FileSourceFlagIsRequired)
+		return nil, nil
 	}
 
 	if filepath.Ext(sourceFlag) == "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
 
+	//TODO: add vorpal scan logic here
 	if vorpalUpdateVersion {
 		return ReturnSuccessfulResponseMock(), nil
 	}
@@ -79,16 +80,6 @@ func ReturnFailureResponseMock() *ScanResult {
 		Message:   "Scan failed.",
 		Error:     &Error{InternalError, "An internal error occurred."},
 	}
-}
-
-type ScanRequest struct {
-	ID         string `json:"id"`
-	FileName   string `json:"file_name"`
-	SourceCode string `json:"source_code"`
-}
-
-type SingleScanRequest struct {
-	ScanRequest ScanRequest `json:"scan_request"`
 }
 
 type ScanResult struct {

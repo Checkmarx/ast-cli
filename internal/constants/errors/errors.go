@@ -21,6 +21,5 @@ const (
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
 
 	// Vorpal Engine
-	FileSourceFlagIsRequired = "--file-source flag is required"
-	FileExtensionIsRequired  = "file must have an extension"
+	FileExtensionIsRequired = "file must have an extension"
 )

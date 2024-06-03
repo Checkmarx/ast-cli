@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_executeVorpalScan(t *testing.T) {
+func Test_ExecuteVorpalScan(t *testing.T) {
 	type args struct {
 		sourceFlag          string
 		vorpalUpdateVersion bool
@@ -28,9 +28,8 @@ func Test_executeVorpalScan(t *testing.T) {
 				sourceFlag:          "",
 				vorpalUpdateVersion: true,
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
+			want:    nil,
+			wantErr: false,
 		},
 		{
 			name: "Test with file without extension",
@@ -83,8 +82,8 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			name:       "Test with empty sourceFlag",
 			sourceFlag: "",
 			engineFlag: true,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileSourceFlagIsRequired,
+			wantErr:    false,
+			want:       nil,
 		},
 		{
 			name:       "Test with file without extension",

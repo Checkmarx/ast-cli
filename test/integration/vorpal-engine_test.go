@@ -20,7 +20,7 @@ func TestScanVorpal_NoFileSourceSent_FailCommandWithError(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, errorConstants.FileSourceFlagIsRequired)
+	assert.NilError(t, err, "Sending empty source file should not fail")
 }
 
 func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
