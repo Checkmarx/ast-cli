@@ -11,8 +11,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestScanVorpal_NoFileSourceSent_FailCommandWithError(t *testing.T) {
-	//bindKeysToEnvAndDefault(t)
+func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",
@@ -27,7 +26,7 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"scan", "vorpal",
-		flag(commonParams.SourcesFlag), "my-file",
+		flag(commonParams.SourcesFlag), "data/python-vul-file",
 		flag(commonParams.VorpalLatestVersion),
 	}
 
@@ -35,9 +34,25 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 	assert.ErrorContains(t, err, errorConstants.FileExtensionIsRequired)
 }
 
+func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData(t *testing.T) {
+
+	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
+	expectedMockResult := commands.ReturnSuccessfulResponseMock()
+
+	assert.DeepEqual(t, scanResult, expectedMockResult)
+}
+
+func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_SuccessfullyReturnMockData(t *testing.T) {
+
+	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", false)
+	expectedMockResult := commands.ReturnFailureResponseMock()
+
+	assert.DeepEqual(t, scanResult, expectedMockResult)
+}
+
 func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteVorpalScan("source.cs", true)
+	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 
 	assert.DeepEqual(t, scanResult, expectedMockResult)

@@ -13,9 +13,9 @@ import (
 func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		vorpalLatestVersion, _ := cmd.Flags().GetBool(commonParams.VorpalLatestVersion)
-		sourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 
-		scanResult, err := ExecuteVorpalScan(sourceFlag, vorpalLatestVersion)
+		scanResult, err := ExecuteVorpalScan(fileSourceFlag, vorpalLatestVersion)
 		if err != nil {
 			return err
 		}
@@ -29,12 +29,12 @@ func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func ExecuteVorpalScan(sourceFlag string, vorpalUpdateVersion bool) (*ScanResult, error) {
-	if sourceFlag == "" {
+func ExecuteVorpalScan(fileSourceFlag string, vorpalUpdateVersion bool) (*ScanResult, error) {
+	if fileSourceFlag == "" {
 		return nil, nil
 	}
 
-	if filepath.Ext(sourceFlag) == "" {
+	if filepath.Ext(fileSourceFlag) == "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
 
@@ -42,6 +42,7 @@ func ExecuteVorpalScan(sourceFlag string, vorpalUpdateVersion bool) (*ScanResult
 	if vorpalUpdateVersion {
 		return ReturnSuccessfulResponseMock(), nil
 	}
+	//TODO: returning mock failure just to test the vorpalUpdateVersion flag for now
 	return ReturnFailureResponseMock(), nil
 }
 
@@ -52,22 +53,22 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 		Message:   "Scan completed successfully.",
 		ScanDetails: []ScanDetail{
 			{
-				Language:    "Java",
-				QueryName:   "SQL Injection",
+				Language:    "Python",
+				QueryName:   "Stored XSS",
 				Severity:    "High",
-				FileName:    "Main.java",
-				Line:        42,
-				Remediation: "Use prepared statements or parameterized queries to prevent SQL injection.",
-				Description: "This vulnerability allows an attacker to execute malicious SQL queries.",
+				FileName:    "dsvw.py",
+				Line:        37,
+				Remediation: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
+				Description: "The method undefined embeds untrusted data in generated output with write, at line 80 of /dsvw.py. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page. The attacker would be able to alter the returned web page by saving malicious data in a data-store ahead of time. The attacker's modified data is then read from the database by the undefined method with read, at line 37 of /dsvw.py. This untrusted data then flows through the code straight to the output web page, without sanitization.  This can enable a Stored Cross-Site Scripting (XSS) attack.",
 			},
 			{
-				Language:    "JavaScript",
-				QueryName:   "Cross-Site Scripting (XSS)",
+				Language:    "Python",
+				QueryName:   "Missing HSTS Header",
 				Severity:    "Medium",
-				FileName:    "index.js",
-				Line:        27,
-				Remediation: "Escape or sanitize user input before rendering it in HTML to prevent XSS attacks.",
-				Description: "This vulnerability allows an attacker to inject malicious scripts into web pages viewed by other users.",
+				FileName:    "dsvw.py",
+				Line:        76,
+				Remediation: "Before setting the HSTS header - consider the implications it may have: Forcing HTTPS will prevent any future use of HTTP",
+				Description: "The web-application does not define an HSTS header, leaving it vulnerable to attack.",
 			},
 		},
 	}
@@ -75,7 +76,7 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 
 func ReturnFailureResponseMock() *ScanResult {
 	return &ScanResult{
-		RequestID: "1111",
+		RequestID: "some-request-id",
 		Status:    false,
 		Message:   "Scan failed.",
 		Error:     &Error{InternalError, "An internal error occurred."},

@@ -389,10 +389,9 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 
 func scanVorpalSubCommand() *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
-		Use:    "vorpal",
-		Hidden: true,
-		Short:  "Run a Vorpal scan",
-		Long:   "Vorpal scan is able to scan a single file fast and efficiently.",
+		Use:   "vorpal",
+		Short: "Run a Vorpal scan",
+		Long:  "Vorpal scan is able to scan a single file fast and efficiently.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan vorpal --file-source <path to code file> --vorpal-latest-version <use latest available version of Vorpal engine.>
@@ -408,12 +407,12 @@ func scanVorpalSubCommand() *cobra.Command {
 		RunE: runScanVorpalCommand(),
 	}
 
-	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false, "Set to true to update to latest version")
+	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false, "Use latest Vorapl version")
 	scanVorpalCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
-		"The source should be a single file",
+		"Path to source file",
 	)
 	return scanVorpalCmd
 }

@@ -12,7 +12,7 @@ import (
 
 func Test_ExecuteVorpalScan(t *testing.T) {
 	type args struct {
-		sourceFlag          string
+		fileSourceFlag      string
 		vorpalUpdateVersion bool
 	}
 	tests := []struct {
@@ -23,18 +23,18 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "Test with empty sourceFlag",
+			name: "Test with empty fileSource flag should not return error",
 			args: args{
-				sourceFlag:          "",
+				fileSourceFlag:      "",
 				vorpalUpdateVersion: true,
 			},
 			want:    nil,
 			wantErr: false,
 		},
 		{
-			name: "Test with file without extension",
+			name: "Test path to file without extension",
 			args: args{
-				sourceFlag:          "source",
+				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: false,
 			},
 			want:       nil,
@@ -42,10 +42,28 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
-			name: "Test with correct flags",
+			name: "Test with valid flags. vorpalUpdateVersion set to true",
 			args: args{
-				sourceFlag:          "source.cs",
+				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: true,
+			},
+			want:    ReturnSuccessfulResponseMock(),
+			wantErr: false,
+		},
+		{
+			name: "Test with valid flags. vorpalUpdateVersion set to false",
+			args: args{
+				fileSourceFlag:      "data/python-vul-file.py",
+				vorpalUpdateVersion: false,
+			},
+			want:    ReturnFailureResponseMock(),
+			wantErr: false,
+		},
+		{
+			name: "Test with valid flags and no vulnerabilities in file",
+			args: args{
+				fileSourceFlag:      "data/csharp-no-vul.cs",
+				vorpalUpdateVersion: false,
 			},
 			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
@@ -54,7 +72,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			got, err := ExecuteVorpalScan(ttt.args.sourceFlag, ttt.args.vorpalUpdateVersion)
+			got, err := ExecuteVorpalScan(ttt.args.fileSourceFlag, ttt.args.vorpalUpdateVersion)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -79,7 +97,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name:       "Test with empty sourceFlag",
+			name:       "Test with empty fileSourceFlag",
 			sourceFlag: "",
 			engineFlag: true,
 			wantErr:    false,
@@ -87,15 +105,22 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		},
 		{
 			name:       "Test with file without extension",
-			sourceFlag: "source",
+			sourceFlag: "data/python-vul-file.py",
 			engineFlag: true,
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
-			name:       "Test with valid sourceFlag and engineFlag",
-			sourceFlag: "source.cs",
+			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set false ",
+			sourceFlag: "data/python-vul-file.py",
 			engineFlag: false,
+			want:       nil,
+			wantErr:    false,
+		},
+		{
+			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set true ",
+			sourceFlag: "data/python-vul-file.py",
+			engineFlag: true,
 			want:       nil,
 			wantErr:    false,
 		},
