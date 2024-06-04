@@ -8,7 +8,6 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"golang.org/x/sync/semaphore"
-	_ "golang.org/x/sync/semaphore"
 )
 
 const (
