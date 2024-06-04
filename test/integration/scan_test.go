@@ -1297,3 +1297,31 @@ func TestScanListWithFilters(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
+
+func TestCreateScan(t *testing.T) {
+	apikey := os.Getenv("CX_APIKEY")
+	_ = viper.BindEnv("CX_APIKEY", "cx_apikey")
+	_ = viper.BindEnv("CX_CLIENT_SECRET", "cx_client_secret")
+	_ = viper.BindEnv("CX_CLIENT_ID", "cx_client_id")
+	_ = viper.BindEnv("CX_USERNAME", "cx_username")
+	_ = viper.BindEnv("CX_PASSWORD", "cx_password")
+	_ = viper.BindEnv("CX_BASE_URI", "cx_base_uri")
+	viper.Set("cx_apikey", "")
+	viper.Set("cx_client_secret", "")
+	viper.Set("cx_client_id", "")
+	viper.Set("cx_username", "")
+	viper.Set("cx_password", "")
+	viper.Set("cx_base_uri", "")
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "hi",
+		flag(params.SourcesFlag), "/Users/benalvo/CxDev/workspace/Pheonix-workspace/ast-cli/test/integration/data/insecure.zip",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AstAPIKeyFlag), apikey,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
