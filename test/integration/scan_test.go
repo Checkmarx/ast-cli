@@ -1318,7 +1318,7 @@ func TestScanStateOnlyExcludeNotExploitable(t *testing.T) {
 	assert.NilError(t, err, "")
 }
 
-func TestScanStateWithFilters(t *testing.T) {
+func TestScanStateWithFiltersExcludeNotExploitable(t *testing.T) {
 	args := []string{
 		"scan", "state",
 		flag(params.FilterFlag), "state=TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable",
@@ -1328,7 +1328,7 @@ func TestScanStateWithFilters(t *testing.T) {
 	assert.NilError(t, err, "")
 }
 
-func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+func TestScanCreateWithExcludeNotExploitableFilterProjectGroups(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
