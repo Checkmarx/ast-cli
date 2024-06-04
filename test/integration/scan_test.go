@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -748,7 +747,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 		flag(params.IgnorePolicyFlag),
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
-	file, err := ioutil.ReadFile("cx_result.json")
+	file, err := os.ReadFile("cx_result.json")
 	defer func() {
 		_ = os.Remove("cx_result.json")
 	}()
@@ -780,7 +779,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
-	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
 	defer func() { _ = os.Remove(SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
@@ -924,13 +923,13 @@ func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
 
 func copyResultsToTempDir() error {
 	// Read all content of src to data, may cause OOM for a large file.
-	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
+	data, err := os.ReadFile("./data/cx-sca-realtime-results.json")
 	if err != nil {
 		return err
 	}
 	// Write data to dst
 	scaResolverResultsFileNameDir := filepath.Join(scaconfig.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
-	err = ioutil.WriteFile(scaResolverResultsFileNameDir, data, 0644)
+	err = os.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}
