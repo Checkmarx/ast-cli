@@ -12,7 +12,7 @@ const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
-const maxRetries = 5
+const maxRetries = 3
 
 var DefaultFFLoad bool = false
 
