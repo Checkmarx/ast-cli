@@ -18,7 +18,7 @@ func TestGetSastMetadataByIDs(t *testing.T) {
 	}{
 		{
 			name:    "Multiple batches",
-			scanIDs: createScanIDs(2000),
+			scanIDs: createScanIDs(5000),
 		},
 		{
 			name:    "Single batch",
