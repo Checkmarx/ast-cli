@@ -1674,7 +1674,7 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	return (location)
 }
 func parseGlDependencyFiles(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
-	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations[0] != nil {
+	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
 		glDependencyResult.DependencyFiles = append(glDependencyResult.DependencyFiles, wrappers.DependencyFile{
 			Path:           *result.ScanResultData.ScaPackageCollection.Locations[0],
 			PackageManager: result.ScanResultData.ScaPackageCollection.ID,
