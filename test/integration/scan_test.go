@@ -1307,3 +1307,37 @@ func TestScanStateWithFilters(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
+
+func TestScanStateOnlyExcludeNotExploitable(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
+
+func TestScanStateWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "state",
+		flag(params.FilterFlag), "state=TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
+
+func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.FilterFlag), "state=TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Create report for all state exclude Not_Exploitable ")
+}
