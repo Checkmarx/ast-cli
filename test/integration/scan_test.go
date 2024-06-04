@@ -1297,3 +1297,13 @@ func TestScanListWithFilters(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
+
+func TestScanStateWithFilters(t *testing.T) {
+	args := []string{
+		"scan", "list",
+		flag(params.FilterFlag), "state=TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
