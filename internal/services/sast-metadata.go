@@ -1,11 +1,14 @@
 package services
 
 import (
+	"context"
 	"strings"
 	"sync"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"golang.org/x/sync/semaphore"
+	_ "golang.org/x/sync/semaphore"
 )
 
 const (
@@ -14,12 +17,13 @@ const (
 
 func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scanIDs []string) (*wrappers.SastMetadataModel, error) {
 	totalBatches := (len(scanIDs) + BatchSize - 1) / BatchSize
-	maxConcurrentGoroutines := 10
-	semaphore := make(chan struct{}, maxConcurrentGoroutines)
+	maxConcurrentGoRoutines := 10
+	sem := semaphore.NewWeighted(int64(maxConcurrentGoRoutines))
 
 	var wg sync.WaitGroup
 	results := make(chan wrappers.SastMetadataModel, totalBatches)
 	errors := make(chan error, totalBatches)
+	ctx := context.Background()
 
 	for i := 0; i < totalBatches; i++ {
 		start := i * BatchSize
@@ -33,10 +37,13 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 		}
 
 		wg.Add(1)
-		semaphore <- struct{}{}
+		err := sem.Acquire(ctx, 1)
+		if err != nil {
+			return nil, err
+		}
 		go func() {
 			defer wg.Done()
-			defer func() { <-semaphore }()
+			defer sem.Release(1)
 
 			result, err := sastMetaDataWrapper.GetSastMetadataByIDs(batchParams)
 			if err != nil {
