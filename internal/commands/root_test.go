@@ -156,6 +156,18 @@ func Test_validateExtraFilters(t *testing.T) {
 			replaceValue:    []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"},
 			expectedLog:     "",
 		},
+		{
+			filterName:      "Test exclude-not-exploitable",
+			extraFilterName: args{filterKeyVal: []string{"state", "exclude_not_exploitable"}},
+			replaceValue:    []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"},
+			expectedLog:     "",
+		},
+		{
+			filterName:      "Test exclude-not-exploitable",
+			extraFilterName: args{filterKeyVal: []string{"state", ""}},
+			replaceValue:    []string{"state", ""},
+			expectedLog:     "",
+		},
 	}
 	for _, test := range tests {
 		test := test
