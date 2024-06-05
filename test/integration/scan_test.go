@@ -347,6 +347,17 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -359,6 +370,7 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 		flag(params.TargetFormatFlag), "json",
 		flag(params.TargetPathFlag), "/tmp/",
 		flag(params.TargetFlag), "results",
+		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
