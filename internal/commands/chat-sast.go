@@ -51,15 +51,19 @@ func runChatSast(
 	chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		if !isAiGuidedRemediationEnabled(tenantWrapper) {
+		tenantConfigurationResponses, err := GetTenantConfigurationResponses(tenantWrapper)
+		if err != nil {
+			return outputError(cmd, uuid.Nil, err)
+		}
+		if !isAiGuidedRemediationEnabled(tenantConfigurationResponses) {
 			return outputError(cmd, uuid.Nil, errors.Errorf(AiGuidedRemediationDisabledError))
 		}
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
 		scanResultsFile, _ := cmd.Flags().GetString(params.ChatSastScanResultsFile)
 		sourceDir, _ := cmd.Flags().GetString(params.ChatSastSourceDir)
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
-		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantWrapper)
-		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantWrapper)
+		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		conn := connector.NewFileSystemConnector("")
 
@@ -71,7 +75,7 @@ func runChatSast(
 			aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
 			var model string
 			if azureAiEnabled {
-				model, _ = GetAzureAiModel(tenantWrapper)
+				model, _ = GetAzureAiModel(tenantConfigurationResponses)
 			} else {
 				model = checkmarxAiChatModel
 			}
@@ -125,8 +129,8 @@ func runChatSast(
 
 		var response []message.Message
 		if azureAiEnabled {
-			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantWrapper)
-			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantWrapper)
+			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
+			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: "???",
@@ -171,16 +175,20 @@ func runChatSast(
 	}
 }
 
-func GetTenantConfiguration(tenantWrapper wrappers.TenantConfigurationWrapper, configKey string) (string, error) {
+func GetTenantConfigurationResponses(tenantWrapper wrappers.TenantConfigurationWrapper) (*[]*wrappers.TenantConfigurationResponse, error) {
 	tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if errorModel != nil {
-		return "", errors.New(errorModel.Message)
+		return nil, errors.New(errorModel.Message)
 	}
-	if tenantConfigurationResponse != nil {
-		for _, resp := range *tenantConfigurationResponse {
+	return tenantConfigurationResponse, nil
+}
+
+func GetTenantConfiguration(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, configKey string) (string, error) {
+	if tenantConfigurationResponses != nil {
+		for _, resp := range *tenantConfigurationResponses {
 			if resp.Key == configKey {
 				return resp.Value, nil
 			}
@@ -189,48 +197,48 @@ func GetTenantConfiguration(tenantWrapper wrappers.TenantConfigurationWrapper, c
 	return "", errors.New(configKey + " not found")
 }
 
-func GetTenantConfigurationBool(tenantWrapper wrappers.TenantConfigurationWrapper, configKey string) (bool, error) {
-	value, err := GetTenantConfiguration(tenantWrapper, configKey)
+func GetTenantConfigurationBool(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, configKey string) (bool, error) {
+	value, err := GetTenantConfiguration(tenantConfigurationResponses, configKey)
 	if err != nil {
 		return false, err
 	}
 	return strconv.ParseBool(value)
 }
 
-func isAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantWrapper, AiGuidedRemediationEnabled)
+func isAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, AiGuidedRemediationEnabled)
 	if err != nil {
 		return false
 	}
 	return isEnabled
 }
 
-func isAzureAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantWrapper, AzureAiGuidedRemediationEnabled)
+func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, AzureAiGuidedRemediationEnabled)
 	if err != nil {
 		return false
 	}
 	return isEnabled
 }
 
-func isCheckmarxAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrapper) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantWrapper, CheckmarxAiGuidedRemediationEnabled)
+func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, CheckmarxAiGuidedRemediationEnabled)
 	if err != nil {
 		return false
 	}
 	return isEnabled
 }
 
-func GetAzureAiEndPoint(tenantWrapper wrappers.TenantConfigurationWrapper) (string, error) {
-	return GetTenantConfiguration(tenantWrapper, AzureAiEndPoint)
+func GetAzureAiEndPoint(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
+	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiEndPoint)
 }
 
-func GetAzureAiModel(tenantWrapper wrappers.TenantConfigurationWrapper) (string, error) {
-	return GetTenantConfiguration(tenantWrapper, AzureAiModel)
+func GetAzureAiModel(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
+	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiModel)
 }
 
-func GetAzureAiAPIKey(tenantWrapper wrappers.TenantConfigurationWrapper) (string, error) {
-	return GetTenantConfiguration(tenantWrapper, AzureAiApiKey)
+func GetAzureAiAPIKey(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
+	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiAPIKey)
 }
 
 func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt, userPrompt string, err error) {

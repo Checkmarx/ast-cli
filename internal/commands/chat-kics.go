@@ -92,8 +92,13 @@ func runChatKics(
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatKicsResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantWrapper)
-		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantWrapper)
+		tenantConfigurationResponses, err := GetTenantConfigurationResponses(tenantWrapper)
+		if err != nil {
+			return outputError(cmd, uuid.Nil, err)
+		}
+
+		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		conn := connector.NewFileSystemConnector("")
 
@@ -105,7 +110,7 @@ func runChatKics(
 			aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
 			var model string
 			if azureAiEnabled {
-				model, _ = GetAzureAiModel(tenantWrapper)
+				model, _ = GetAzureAiModel(tenantConfigurationResponses)
 			} else {
 				model = checkmarxAiChatModel
 			}
@@ -135,8 +140,8 @@ func runChatKics(
 
 		var response []message.Message
 		if azureAiEnabled {
-			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantWrapper)
-			azureAiApiKey, _ := GetAzureAiAPIKey(tenantWrapper)
+			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
+			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: "???",
@@ -144,7 +149,7 @@ func runChatKics(
 				Feature:   guidedRemediationFeatureNameKics,
 				ExternalModel: &message.ExternalAzure{
 					Endpoint: azureAiEndPoint,
-					ApiKey:   azureAiApiKey,
+					ApiKey:   azureAiAPIKey,
 				},
 			}
 			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
