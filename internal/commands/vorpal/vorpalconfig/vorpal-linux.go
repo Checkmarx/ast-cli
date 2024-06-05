@@ -7,9 +7,9 @@ import (
 )
 
 var Params = osinstaller.InstallationConfiguration{
-	ExecutableFile:  "cxcodeprobe_linux_x64",
-	DownloadURL:     "https://download.checkmarx.com/cxcodeprobe-binary/cxcodeprobe_linux_x64.tar.gz",
-	HashDownloadURL: "https://download.checkmarx.com/cxcodeprobe-binary/hash.txt",
+	ExecutableFile:  "vorpal_linux_x64",
+	DownloadURL:     "https://download.checkmarx.com/vorpal-binary/vorpal_linux_x64.tar.gz",
+	HashDownloadURL: "https://download.checkmarx.com/vorpal-binary/hash.txt",
 	FileName:        "vorpal.tar.gz",
 	HashFileName:    "hash.txt",
 	WorkingDirName:  "CxVorpal",
