@@ -117,7 +117,7 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 		Status: wrappers.ScanPartial,
 		StatusDetails: []wrappers.StatusInfo{
 			{Status: wrappers.ScanCompleted, Name: "sast"},
-			{Status: wrappers.ScanFailed, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
+			{Status: wrappers.ScanCanceled, Name: "sca", Details: "error message from sca scanner", ErrorCode: 4343},
 			{Status: wrappers.ScanCompleted, Name: "general"},
 		},
 	}
@@ -125,8 +125,8 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 	results := getScannerResponse("", &model)
 
 	assert.Equal(t, len(results), 1, "Scanner results should be empty")
-	assert.Equal(t, results[0].Name, "sca", "")
-	assert.Equal(t, results[0].ErrorCode, "4343", "")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-sca-fail-partial-id", "")
+	assert.Equal(t, results[0].Status, "Partial", "")
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
