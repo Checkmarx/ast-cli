@@ -18,6 +18,13 @@ func (c ChatHTTPWrapper) Call(w gptWrapper.StatefulWrapper, id uuid.UUID, messag
 	return w.Call(id, messages)
 }
 
+func (c ChatHTTPWrapper) SecureCall(w gptWrapper.StatefulWrapper, id uuid.UUID, messages []gptWrapperMessage.Message, metaData *gptWrapperMessage.MetaData, cxAuth string) (
+	[]gptWrapperMessage.Message,
+	error,
+) {
+	return w.SecureCall(cxAuth, metaData, id, messages)
+}
+
 func NewChatWrapper() ChatWrapper {
 	return ChatHTTPWrapper{}
 }

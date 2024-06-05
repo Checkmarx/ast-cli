@@ -28,3 +28,13 @@ func (c ChatMockWrapper) Call(_ gptWrapper.StatefulWrapper, _ uuid.UUID, _ []gpt
 		Content: "Mock message",
 	}}, nil
 }
+
+func (c ChatMockWrapper) SecureCall(w gptWrapper.StatefulWrapper, id uuid.UUID, messages []gptWrapperMessage.Message, metaData *gptWrapperMessage.MetaData, cxAuth string) (
+	[]gptWrapperMessage.Message,
+	error,
+) {
+	return []gptWrapperMessage.Message{{
+		Role:    gptWrapperRole.Assistant,
+		Content: "Mock message",
+	}}, nil
+}

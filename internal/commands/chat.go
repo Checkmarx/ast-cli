@@ -6,8 +6,13 @@ import (
 )
 
 const (
-	ConversationIDErrorFormat  = "Invalid conversation ID %s"
-	AiGuidedRemediationEnabled = "scan.config.plugins.aiGuidedRemediation"
+	ConversationIDErrorFormat           = "Invalid conversation ID %s"
+	AiGuidedRemediationEnabled          = "scan.config.plugins.aiGuidedRemediation"
+	AzureAiGuidedRemediationEnabled     = "scan.config.plugins.azureAiGuidedRemediation"     // todo: check final value
+	AzureAiEndPoint                     = "scan.config.plugins.azureAiEndPoint"              // todo: check final value
+	AzureAiApiKey                       = "scan.config.plugins.azureAiApiKey"                // todo: check final value
+	AzureAiModel                        = "scan.config.plugins.azureAiModel"                 // todo: check final value
+	CheckmarxAiGuidedRemediationEnabled = "scan.config.plugins.checkmarxAiGuidedRemediation" // todo: check final value // final value
 )
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
@@ -17,7 +22,7 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Ten
 		Long:   "Chat with OpenAI models regarding KICS or SAST results",
 		Hidden: true,
 	}
-	chatKicsCmd := ChatKicsSubCommand(chatWrapper)
+	chatKicsCmd := ChatKicsSubCommand(chatWrapper, tenantWrapper)
 	chatSastCmd := ChatSastSubCommand(chatWrapper, tenantWrapper)
 
 	chatCmd.AddCommand(chatKicsCmd, chatSastCmd)

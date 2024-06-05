@@ -43,27 +43,29 @@ const FileErrorFormat = "It seems that %s is not available for AI Guided Remedia
 
 // chatModel model to use when calling the CheckmarxAI
 const checkmarxAiChatModel = "GPT4"
-const checkmarxAiRoute = "/api/ai-proxy"
+const aiProxyRoute = "/api/ai-proxy"
+const tenantIDClaimKey = "tenant_id"
+const guidedRemediationFeatureNameKics = "cli-guided-remediation-kics"
+const guidedRemediationFeatureNameSast = "cli-guided-remediation-sast"
 
 type OutputModel struct {
 	ConversationID string   `json:"conversationId"`
 	Response       []string `json:"response"`
 }
 
-func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
+func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatKicsCmd := &cobra.Command{
 		Use:    "kics",
 		Short:  "Chat about KICS result with OpenAI models",
 		Long:   "Chat about KICS result with OpenAI models",
 		Hidden: true,
-		RunE:   runChatKics(chatWrapper),
+		RunE:   runChatKics(chatWrapper, tenantWrapper),
 	}
 
 	chatKicsCmd.Flags().String(params.ChatAPIKey, "", "OpenAI API key")
 	chatKicsCmd.Flags().String(params.ChatConversationID, "", "ID of existing conversation")
 	chatKicsCmd.Flags().String(params.ChatUserInput, "", "User question")
 	chatKicsCmd.Flags().String(params.ChatModel, "", "OpenAI model version")
-	chatKicsCmd.Flags().Bool(params.ChatCheckmarxAI, false, "Use Checkmarx AI")
 	chatKicsCmd.Flags().String(params.ChatKicsResultFile, "", "IaC result code file")
 	chatKicsCmd.Flags().String(params.ChatKicsResultLine, "", "IaC result line")
 	chatKicsCmd.Flags().String(params.ChatKicsResultSeverity, "", "IaC result severity")
@@ -79,32 +81,40 @@ func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper) *cobra.Command {
 	return chatKicsCmd
 }
 
-func runChatKics(chatKicsWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, args []string) error {
+func runChatKics(
+	chatKicsWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		chatConversationID, _ := cmd.Flags().GetString(params.ChatConversationID)
-
-		chatCheckmarxAI, _ := cmd.Flags().GetBool(params.ChatCheckmarxAI)
 		chatResultFile, _ := cmd.Flags().GetString(params.ChatKicsResultFile)
 		chatResultLine, _ := cmd.Flags().GetString(params.ChatKicsResultLine)
 		chatResultSeverity, _ := cmd.Flags().GetString(params.ChatKicsResultSeverity)
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatKicsResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
-		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
+
+		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantWrapper)
+		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantWrapper)
 
 		conn := connector.NewFileSystemConnector("")
 
 		var statefulWrapper wrapper.StatefulWrapper
+		customerToken, _ := wrappers.GetAccessToken()
+		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
 
-		if chatCheckmarxAI {
-			customerToken, _ := wrappers.GetAccessToken()
-			CheckmarxAiEndPoint, _ := wrappers.GetURL(checkmarxAiRoute, customerToken)
-
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, CheckmarxAiEndPoint, customerToken, checkmarxAiChatModel, dropLen, 0)
+		if azureAiEnabled || checkmarxAiEnabled {
+			aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
+			var model string
+			if azureAiEnabled {
+				model, _ = GetAzureAiModel(tenantWrapper)
+			} else {
+				model = checkmarxAiChatModel
+			}
+			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
 		} else {
+			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
 			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
 		}
-
 		if chatConversationID == "" {
 			chatConversationID = statefulWrapper.GenerateId().String()
 		}
@@ -122,9 +132,42 @@ func runChatKics(chatKicsWrapper wrappers.ChatWrapper) func(cmd *cobra.Command, 
 		}
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
-		response, err := chatKicsWrapper.Call(statefulWrapper, id, newMessages)
-		if err != nil {
-			return outputError(cmd, id, err)
+
+		var response []message.Message
+		if azureAiEnabled {
+			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantWrapper)
+			azureAiApiKey, _ := GetAzureAiAPIKey(tenantWrapper)
+			metadata := message.MetaData{
+				TenantID:  tenantID,
+				RequestID: "???",
+				UserAgent: params.DefaultAgent,
+				Feature:   guidedRemediationFeatureNameKics,
+				ExternalModel: &message.ExternalAzure{
+					Endpoint: azureAiEndPoint,
+					ApiKey:   azureAiApiKey,
+				},
+			}
+			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
+			if err != nil {
+				return outputError(cmd, id, err)
+			}
+		} else if checkmarxAiEnabled {
+			metadata := message.MetaData{
+				TenantID:      tenantID,
+				RequestID:     "???",
+				UserAgent:     params.DefaultAgent,
+				Feature:       guidedRemediationFeatureNameKics,
+				ExternalModel: nil,
+			}
+			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
+			if err != nil {
+				return outputError(cmd, id, err)
+			}
+		} else {
+			response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
+			if err != nil {
+				return outputError(cmd, id, err)
+			}
 		}
 
 		responseContent := getMessageContents(response)

@@ -9,5 +9,6 @@ import (
 
 type ChatWrapper interface {
 	Call(gptWrapper.StatefulWrapper, uuid.UUID, []gptWrapperMessage.Message) ([]gptWrapperMessage.Message, error)
+	SecureCall(gptWrapper.StatefulWrapper, uuid.UUID, []gptWrapperMessage.Message, *gptWrapperMessage.MetaData, string) ([]gptWrapperMessage.Message, error)
 	MaskSecrets(gptWrapper.StatefulWrapper, string) (*gptWrapperMaskedSecret.MaskedEntry, error)
 }

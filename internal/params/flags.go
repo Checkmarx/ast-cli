@@ -169,7 +169,6 @@ const (
 	ChatConversationID = "conversation-id"
 	ChatUserInput      = "user-input"
 	ChatModel          = "model"
-	ChatCheckmarxAI    = "checkmarx-ai"
 
 	// Chat (Kics)
 	ChatKicsResultFile          = "result-file"

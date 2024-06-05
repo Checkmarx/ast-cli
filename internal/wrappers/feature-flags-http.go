@@ -27,7 +27,7 @@ func (f FeatureFlagsHTTPWrapper) GetAll() (*FeatureFlagsResponseModel, error) {
 		return nil, tokenError
 	}
 
-	tenantIDFromClaims, extractError := extractFromTokenClaims(accessToken, tenantIDClaimKey)
+	tenantIDFromClaims, extractError := ExtractFromTokenClaims(accessToken, tenantIDClaimKey)
 	if extractError != nil {
 		return nil, extractError
 	}
