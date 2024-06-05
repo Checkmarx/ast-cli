@@ -1308,7 +1308,7 @@ func TestCreateScanGLSASTReportFormat(t *testing.T) {
 		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.TargetFormatFlag), printer.FormatGL,
+		flag(params.TargetFormatFlag), printer.FormatGLSast,
 	}
 
 	err, _ := executeCommand(t, args...)

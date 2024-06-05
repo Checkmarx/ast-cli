@@ -28,7 +28,7 @@ const (
 	FormatSummaryMarkdown = "markdown"
 	FormatSbom            = "sbom"
 	FormatXML             = "xml"
-	FormatGL              = "gl-sast"
+	FormatGLSast          = "gl-sast"
 	FormatGLSca           = "gl-sca"
 )
 

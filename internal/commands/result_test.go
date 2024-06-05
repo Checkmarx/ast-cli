@@ -526,7 +526,7 @@ func TestSBOMReportXMLWithProxy(t *testing.T) {
 func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
-	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGL))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
 
 func TestRunGetResultsByScanIdGLScaFormat(t *testing.T) {

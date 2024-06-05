@@ -1,27 +1,27 @@
 package wrappers
 
 const (
-	AnalyzerScaName  = "CxOne"
-	AnalyzerScaID    = AnalyzerScaName + "-SCA"
-	ScannerID        = "SCA"
-	ScannerType      = "dependency_scanning"
-	DependencySchema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
-	SchemaVersion    = "15.0.0"
+	AnalyzerScaName = "CxOne"
+	AnalyzerScaID   = AnalyzerScaName + "-SCA"
+	ScannerID       = "SCA"
+	ScannerType     = "dependency_scanning"
+	ScaSchema       = "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/blob/master/dist/dependency-scanning-report-format.json"
+	SchemaVersion   = "15.0.0"
 )
 
-type GlDependencyResultsCollection struct {
-	Scan            ScanGlDepReport        `json:"scan"`
-	Schema          string                 `json:"schema"`
-	Version         string                 `json:"version"`
-	Vulnerabilities []GlDepVulnerabilities `json:"vulnerabilities"`
-	DependencyFiles []DependencyFile       `json:"dependency_files"`
+type GlScaResultsCollection struct {
+	Scan               ScanGlScaDepReport        `json:"scan"`
+	Schema             string                    `json:"schema"`
+	Version            string                    `json:"version"`
+	Vulnerabilities    []GlScaDepVulnerabilities `json:"vulnerabilities"`
+	ScaDependencyFiles []ScaDependencyFile       `json:"dependency_files"`
 }
 
 type GlVendor struct {
 	VendorGlname string `json:"name"`
 }
 
-type ScanGlDepReport struct {
+type ScanGlScaDepReport struct {
 	EndTime   string        `json:"end_time,omitempty"`
 	Analyzer  GlDepAnalyzer `json:"analyzer,omitempty"`
 	Scanner   GlDepScanner  `json:"scanner,omitempty"`
@@ -44,17 +44,17 @@ type GlDepScanner struct {
 	VendorGlSCA  GlVendor `json:"vendor"`
 }
 
-type GlDepVulnerabilities struct {
-	ID          string                     `json:"id"`
-	Name        string                     `json:"name"`
-	Description string                     `json:"description"`
-	Severity    string                     `json:"severity"`
-	Solution    interface{}                `json:"solution"`
-	Identifiers []IdentifierDep            `json:"identifiers"`
-	Links       []LinkDep                  `json:"links"`
-	TrackingDep TrackingDep                `json:"tracking"`
-	Flags       []string                   `json:"flags"`
-	LocationDep GlDepVulnerabilityLocation `json:"location,omitempty"`
+type GlScaDepVulnerabilities struct {
+	ID          string                        `json:"id"`
+	Name        string                        `json:"name"`
+	Description string                        `json:"description"`
+	Severity    string                        `json:"severity"`
+	Solution    interface{}                   `json:"solution"`
+	Identifiers []IdentifierDep               `json:"identifiers"`
+	Links       []LinkDep                     `json:"links"`
+	TrackingDep TrackingDep                   `json:"tracking"`
+	Flags       []string                      `json:"flags"`
+	LocationDep GlScaDepVulnerabilityLocation `json:"location,omitempty"`
 }
 
 type IdentifierDep struct {
@@ -84,24 +84,24 @@ type SignatureDep struct {
 	Value     string `json:"value"`
 }
 
-type GlDepVulnerabilityLocation struct {
-	File       string             `json:"file"`
-	Dependency DependencyLocation `json:"dependency"`
+type GlScaDepVulnerabilityLocation struct {
+	File       string                `json:"file"`
+	Dependency ScaDependencyLocation `json:"dependency"`
 }
 
-type DependencyLocation struct {
-	Package                   PackageName `json:"package"`
-	DependencyLocationVersion string      `json:"version"`
-	Direct                    bool        `json:"direct"`
-	DependencyPath            uint        `json:"iid,omitempty"`
+type ScaDependencyLocation struct {
+	Package                      PackageName `json:"package"`
+	ScaDependencyLocationVersion string      `json:"version"`
+	Direct                       bool        `json:"direct"`
+	ScaDependencyPath            uint        `json:"iid,omitempty"`
 }
 
 type PackageName struct {
 	Name string `json:"name"`
 }
 
-type DependencyFile struct {
-	Path           string               `json:"path"`
-	PackageManager string               `json:"package_manager"`
-	Dependencies   []DependencyLocation `json:"dependencies"`
+type ScaDependencyFile struct {
+	Path           string                  `json:"path"`
+	PackageManager string                  `json:"package_manager"`
+	Dependencies   []ScaDependencyLocation `json:"dependencies"`
 }

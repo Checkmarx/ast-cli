@@ -552,7 +552,7 @@ func scanCreateSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
-		printer.FormatGL,
+		printer.FormatGLSast,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumentationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)

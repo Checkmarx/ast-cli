@@ -105,7 +105,7 @@ var summaryFormats = []string{
 	printer.FormatPDF,
 	printer.FormatSummaryMarkdown,
 	printer.FormatSbom,
-	printer.FormatGL,
+	printer.FormatGLSast,
 	printer.FormatGLSca,
 }
 
@@ -223,7 +223,7 @@ func resultShowSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
-		printer.FormatGL,
+		printer.FormatGLSast,
 		printer.FormatGLSca,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
@@ -1046,13 +1046,13 @@ func createReport(format,
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatGL) {
+	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
 	if printer.IsFormat(format, printer.FormatGLSca) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glScaTypeLabel), targetPath, printer.FormatJSON)
-		return exportGlDependencyResults(jsonRpt, results, summary)
+		return exportGlScaResults(jsonRpt, results, summary)
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
@@ -1209,12 +1209,12 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	glSast.Vulnerabilities = []wrappers.GlVulnerabilities{}
 	err := addScanToGlSastReport(summary, glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to add scan to gl-sast report", failedListingResults)
 	}
-	convertCxResultToGlVulnerability(results, glSast, summary.BaseURI)
+	convertCxResultToGlSastVulnerability(results, glSast, summary.BaseURI)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
@@ -1225,18 +1225,18 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	return nil
 }
 
-func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
+func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Gl-sca Report: ", targetFile)
-	var glDependencyResult = new(wrappers.GlDependencyResultsCollection)
-	err := addScanToGlDependencyReport(summary, glDependencyResult)
+	glScaResult := &wrappers.GlScaResultsCollection{}
+	err := addScanToGlScaReport(summary, glScaResult)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to denerate gl dependency report ", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to denerate GL-Sca report ", failedListingResults)
 	}
-	convertCxResultToGlDependencyVulnerability(results, glDependencyResult)
-	convertCxResultToGlDependencyFiles(results, glDependencyResult)
-	resultsJSON, err := json.Marshal(glDependencyResult)
+	convertCxResultToGlScaVulnerability(results, glScaResult)
+	convertCxResultToGlScaFiles(results, glScaResult)
+	resultsJSON, err := json.Marshal(glScaResult)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize gl dependency report ", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to serialize GL-Sca report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
@@ -1248,28 +1248,28 @@ func exportGlDependencyResults(targetFile string, results *wrappers.ScanResultsC
 	return nil
 }
 
-func addScanToGlDependencyReport(summary *wrappers.ResultSummary, glDependencyResult *wrappers.GlDependencyResultsCollection) error {
+func addScanToGlScaReport(summary *wrappers.ResultSummary, glScaResult *wrappers.GlScaResultsCollection) error {
 	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
 	if err != nil {
 		return err
 	}
 
-	glDependencyResult.Schema = wrappers.DependencySchema
-	glDependencyResult.Version = wrappers.SchemaVersion
-	glDependencyResult.Scan.Analyzer.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Analyzer.ID = wrappers.ScannerID
-	glDependencyResult.Scan.Scanner.ID = wrappers.ScannerID
-	glDependencyResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Scanner.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Status = commonParams.Success
-	glDependencyResult.Scan.Type = wrappers.ScannerType
-	glDependencyResult.Scan.StartTime = createdAt.Format(glTimeFormat)
-	glDependencyResult.Scan.EndTime = createdAt.Format(glTimeFormat)
-	glDependencyResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
-	glDependencyResult.Scan.Scanner.VersionGlSca = commonParams.Version
-	glDependencyResult.Scan.Analyzer.VersionGlSca = commonParams.Version
+	glScaResult.Schema = wrappers.ScaSchema
+	glScaResult.Version = wrappers.SchemaVersion
+	glScaResult.Scan.Analyzer.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.ID = wrappers.ScannerID
+	glScaResult.Scan.Scanner.ID = wrappers.ScannerID
+	glScaResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Scanner.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glScaResult.Scan.Status = commonParams.Success
+	glScaResult.Scan.Type = wrappers.ScannerType
+	glScaResult.Scan.StartTime = createdAt.Format(glTimeFormat)
+	glScaResult.Scan.EndTime = createdAt.Format(glTimeFormat)
+	glScaResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Scanner.VersionGlSca = commonParams.Version
+	glScaResult.Scan.Analyzer.VersionGlSca = commonParams.Version
 
 	return nil
 }
@@ -1281,8 +1281,8 @@ func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlS
 	}
 
 	glSast.Scan = wrappers.ScanGlReport{}
-	glSast.Schema = wrappers.DependencySchema
-	glSast.Version = wrappers.SchemaVersion
+	glSast.Schema = wrappers.SastSchema
+	glSast.Version = wrappers.SastSchemaVersion
 	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
 	glSast.Scan.Analyzer.Name = wrappers.VendorName
 	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
@@ -1560,7 +1560,7 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI)
@@ -1568,18 +1568,18 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 	}
 }
 
-func convertCxResultToGlDependencyVulnerability(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection) {
+func convertCxResultToGlScaVulnerability(results *wrappers.ScanResultsCollection, glScaResult *wrappers.GlScaResultsCollection) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.ScaType {
-			glDependencyResult = parseGlDependencyVulnerability(result, glDependencyResult)
+			glScaResult = parseGlscaVulnerability(result, glScaResult)
 		}
 	}
 }
 
-func convertCxResultToGlDependencyFiles(results *wrappers.ScanResultsCollection, glDependencyResult *wrappers.GlDependencyResultsCollection) {
+func convertCxResultToGlScaFiles(results *wrappers.ScanResultsCollection, glScaResult *wrappers.GlScaResultsCollection) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.ScaType {
-			glDependencyResult = parseGlDependencyFiles(result, glDependencyResult)
+			glScaResult = parseGlScaFiles(result, glScaResult)
 		}
 	}
 }
@@ -1637,27 +1637,27 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	})
 	return glSast
 }
-func parseGlDependencyVulnerability(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
+func parseGlscaVulnerability(result *wrappers.ScanResult, glDependencyResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil {
-		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlDepVulnerabilities{
+		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlScaDepVulnerabilities{
 			ID:          result.ID,
 			Name:        result.VulnerabilityDetails.CveName,
 			Description: result.Description,
 			Severity:    cases.Title(language.English).String(result.Severity),
 			Solution:    result.ScanResultData.RecommendedVersion,
-			Identifiers: collectDependencyPackageData(result),
-			Links:       collectDependencyPackageLinks(result),
+			Identifiers: collectScaPackageData(result),
+			Links:       collectScaPackageLinks(result),
 			TrackingDep: wrappers.TrackingDep{
-				Items: collectDependencyPackageItemsDep(result),
+				Items: collectScaPackageItemsDep(result),
 			},
 			Flags: make([]string, 0),
-			LocationDep: wrappers.GlDepVulnerabilityLocation{
+			LocationDep: wrappers.GlScaDepVulnerabilityLocation{
 				File: parseGlDependencyLocation(result),
-				Dependency: wrappers.DependencyLocation{
-					Package:                   wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
-					DependencyLocationVersion: "",
-					Direct:                    result.ScanResultData.ScaPackageCollection.IsDirectDependency,
-					DependencyPath:            result.ScanResultData.Line,
+				Dependency: wrappers.ScaDependencyLocation{
+					Package:                      wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
+					ScaDependencyLocationVersion: "",
+					Direct:                       result.ScanResultData.ScaPackageCollection.IsDirectDependency,
+					ScaDependencyPath:            result.ScanResultData.Line,
 				},
 			},
 		})
@@ -1673,57 +1673,57 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	}
 	return (location)
 }
-func parseGlDependencyFiles(result *wrappers.ScanResult, glDependencyResult *wrappers.GlDependencyResultsCollection) *wrappers.GlDependencyResultsCollection {
+func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
-		glDependencyResult.DependencyFiles = append(glDependencyResult.DependencyFiles, wrappers.DependencyFile{
+		glScaResult.ScaDependencyFiles = append(glScaResult.ScaDependencyFiles, wrappers.ScaDependencyFile{
 			Path:           *result.ScanResultData.ScaPackageCollection.Locations[0],
 			PackageManager: result.ScanResultData.ScaPackageCollection.ID,
-			Dependencies:   collectDependencyFileLocations(result),
+			Dependencies:   collectScaFileLocations(result),
 		})
 	}
-	return glDependencyResult
+	return glScaResult
 }
-func collectDependencyFileLocations(result *wrappers.ScanResult) []wrappers.DependencyLocation {
-	allIdentifierLocations := []wrappers.DependencyLocation{}
-	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
-		allIdentifierLocations = append(allIdentifierLocations, wrappers.DependencyLocation{
+func collectScaFileLocations(result *wrappers.ScanResult) []wrappers.ScaDependencyLocation {
+	allScaIdentifierLocations := []wrappers.ScaDependencyLocation{}
+	for _, packageInfo := range result.ScanResultData.PackageData {
+		allScaIdentifierLocations = append(allScaIdentifierLocations, wrappers.ScaDependencyLocation{
 			Package: wrappers.PackageName{
-				Name: result.ScanResultData.PackageData[i].Type,
+				Name: packageInfo.Type,
 			},
-			DependencyLocationVersion: result.ScanResultData.PackageData[i].URL,
-			Direct:                    true,
-			DependencyPath:            result.ScanResultData.Line,
+			ScaDependencyLocationVersion: packageInfo.URL,
+			Direct:                       true,
+			ScaDependencyPath:            result.ScanResultData.Line,
 		})
 	}
-	return allIdentifierLocations
+	return allScaIdentifierLocations
 }
-func collectDependencyPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
-	allDependencyPackageItemDep := []wrappers.ItemDep{}
-	allDependencyPackageItemDep = append(allDependencyPackageItemDep, wrappers.ItemDep{
+func collectScaPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
+	allScaPackageItemDep := []wrappers.ItemDep{}
+	allScaPackageItemDep = append(allScaPackageItemDep, wrappers.ItemDep{
 		Signature: []wrappers.SignatureDep{{Algorithm: "SCA-Algorithm ", Value: "NA"}},
 		File:      result.VulnerabilityDetails.CveName,
 		EndLine:   0,
 		StartLine: 0,
 	})
-	return allDependencyPackageItemDep
+	return allScaPackageItemDep
 }
-func collectDependencyPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
-	allDependencyPackageLinks := []wrappers.LinkDep{}
-	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
-		allDependencyPackageLinks = append(allDependencyPackageLinks, wrappers.LinkDep{
-			Name: result.ScanResultData.PackageData[i].Type,
-			URL:  result.ScanResultData.PackageData[i].URL,
+func collectScaPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
+	allScaPackageLinks := []wrappers.LinkDep{}
+	for _, packageInfo := range result.ScanResultData.PackageData {
+		allScaPackageLinks = append(allScaPackageLinks, wrappers.LinkDep{
+			Name: packageInfo.Type,
+			URL:  packageInfo.URL,
 		})
 	}
-	return allDependencyPackageLinks
+	return allScaPackageLinks
 }
-func collectDependencyPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep {
+func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep {
 	allIdentifierDep := []wrappers.IdentifierDep{}
-	for i := 0; i < len(result.ScanResultData.PackageData); i++ {
+	for _, packageInfo := range result.ScanResultData.PackageData {
 		allIdentifierDep = append(allIdentifierDep, wrappers.IdentifierDep{
-			Type:  result.ScanResultData.PackageData[i].Type,
-			Value: result.ScanResultData.PackageData[i].URL,
-			Name:  result.ScanResultData.PackageData[i].URL,
+			Type:  packageInfo.Type,
+			Value: packageInfo.URL,
+			Name:  packageInfo.URL,
 		})
 	}
 	return allIdentifierDep
