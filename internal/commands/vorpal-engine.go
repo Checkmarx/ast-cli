@@ -59,7 +59,11 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 				FileName:    "python-vul-file.py",
 				Line:        37,
 				Remediation: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
-				Description: "The method undefined embeds untrusted data in generated output with write, at line 80 of /dsvw.py. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page. The attacker would be able to alter the returned web page by saving malicious data in a data-store ahead of time. The attacker's modified data is then read from the database by the undefined method with read, at line 37 of /dsvw.py. This untrusted data then flows through the code straight to the output web page, without sanitization.  This can enable a Stored Cross-Site Scripting (XSS) attack.",
+				Description: "The method undefined embeds untrusted data in generated output with write, at line 80 of /python-vul-file.py." +
+					"This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page." +
+					"The attacker would be able to alter the returned web page by saving malicious data in a data-store ahead of time." +
+					"The attacker's modified data is then read from the database by the undefined method with read, at line 37 of /python-vul-file.py." +
+					"This untrusted data then flows through the code straight to the output web page, without sanitization.  This can enable a Stored Cross-Site Scripting (XSS) attack.",
 			},
 			{
 				Language:    "Python",
