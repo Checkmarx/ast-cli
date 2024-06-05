@@ -1330,7 +1330,7 @@ func TestCreateScan_WithOnlyValidApikeyLabel_Success(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
 	}
@@ -1354,7 +1354,7 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -1378,7 +1378,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -1402,7 +1402,7 @@ func TestCreateScan_WithOnlyInvalidApikeyLabel_Fail(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.AstAPIKeyFlag), "invalid_apikey",
 	}
@@ -1427,7 +1427,7 @@ func TestCreateScan_WithValidClientCredentialsLabel_Success(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.AccessKeyIDFlag), originals[params.AccessKeyIDEnv],
 		flag(params.AccessKeySecretFlag), originals[params.AccessKeySecretEnv],
@@ -1454,7 +1454,7 @@ func TestCreateScan_WithInvalidClientCredentialsLabel_Fail(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.AccessKeyIDFlag), "invalid_client_ID",
 		flag(params.AccessKeySecretFlag), "invalid_client_secret",
@@ -1477,7 +1477,7 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -1501,7 +1501,7 @@ func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), "project",
 		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
