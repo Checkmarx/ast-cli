@@ -377,7 +377,8 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
-	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	file, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.Assert(t, file.Size() > 5000, "Report file should be bigger than 5KB")
 	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
