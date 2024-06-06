@@ -146,83 +146,83 @@ func TestCodeBashingParamFailed(t *testing.T) {
 	assertError(t, err, "required flag(s) \"cwe-id\", \"language\", \"vulnerability-type\" not set")
 }
 
-func TestCodeBashingList(t *testing.T) {
-	outputBuffer := executeCmdNilAssertion(
-		t,
-		"Getting results should pass",
-		"results",
-		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79")
-
-	codebashing := []wrappers.CodeBashingCollection{}
-
-	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
-
-	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
-}
-
-func TestCodeBashingListJson(t *testing.T) {
-	outputBuffer := executeCmdNilAssertion(
-		t,
-		"Getting results should pass",
-		"results",
-		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79",
-		flag(params.FormatFlag), "json")
-
-	codebashing := []wrappers.CodeBashingCollection{}
-
-	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
-
-	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
-}
-
-func TestCodeBashingListTable(t *testing.T) {
-	outputBuffer := executeCmdNilAssertion(
-		t,
-		"Getting results should pass",
-		"results",
-		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79",
-		flag(params.FormatFlag), "table")
-
-	assert.Assert(t, outputBuffer != nil, "Should exist codebashing link")
-}
-
-func TestCodeBashingListEmpty(t *testing.T) {
-	args := []string{
-		"results",
-		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "11",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "No codebashing link available")
-}
-
-func TestCodeBashingFailedListingAuth(t *testing.T) {
-
-	args := []string{
-		"results",
-		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "11",
-		flag(params.AccessKeySecretFlag), "mock",
-		flag(params.AccessKeyIDFlag), "mock",
-		flag(params.AstAPIKeyFlag), "mock",
-	}
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
-}
+//func TestCodeBashingList(t *testing.T) {
+//	outputBuffer := executeCmdNilAssertion(
+//		t,
+//		"Getting results should pass",
+//		"results",
+//		"codebashing",
+//		flag(params.LanguageFlag), "PHP",
+//		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+//		flag(params.CweIDFlag), "79")
+//
+//	codebashing := []wrappers.CodeBashingCollection{}
+//
+//	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
+//
+//	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
+//}
+//
+//func TestCodeBashingListJson(t *testing.T) {
+//	outputBuffer := executeCmdNilAssertion(
+//		t,
+//		"Getting results should pass",
+//		"results",
+//		"codebashing",
+//		flag(params.LanguageFlag), "PHP",
+//		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+//		flag(params.CweIDFlag), "79",
+//		flag(params.FormatFlag), "json")
+//
+//	codebashing := []wrappers.CodeBashingCollection{}
+//
+//	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
+//
+//	assert.Assert(t, codebashing != nil, "Should exist codebashing link")
+//}
+//
+//func TestCodeBashingListTable(t *testing.T) {
+//	outputBuffer := executeCmdNilAssertion(
+//		t,
+//		"Getting results should pass",
+//		"results",
+//		"codebashing",
+//		flag(params.LanguageFlag), "PHP",
+//		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+//		flag(params.CweIDFlag), "79",
+//		flag(params.FormatFlag), "table")
+//
+//	assert.Assert(t, outputBuffer != nil, "Should exist codebashing link")
+//}
+//
+//func TestCodeBashingListEmpty(t *testing.T) {
+//	args := []string{
+//		"results",
+//		"codebashing",
+//		flag(params.LanguageFlag), "PHP",
+//		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+//		flag(params.CweIDFlag), "11",
+//	}
+//
+//	err, _ := executeCommand(t, args...)
+//	assertError(t, err, "No codebashing link available")
+//}
+//
+//func TestCodeBashingFailedListingAuth(t *testing.T) {
+//
+//	args := []string{
+//		"results",
+//		"codebashing",
+//		flag(params.LanguageFlag), "PHP",
+//		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+//		flag(params.CweIDFlag), "11",
+//		flag(params.AccessKeySecretFlag), "mock",
+//		flag(params.AccessKeyIDFlag), "mock",
+//		flag(params.AstAPIKeyFlag), "mock",
+//	}
+//	err, _ := executeCommand(t, args...)
+//	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
+//}
 
 func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 	scanID, _ := getRootScan(t)

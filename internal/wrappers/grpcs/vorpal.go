@@ -25,7 +25,7 @@ type ScanDetail struct {
 	Line            uint32 `json:"line"`
 	ProblematicLine string `json:"problematicLine"`
 	Length          uint32 `json:"length"`
-	Remediation     string `json:"remediation"`
+	Remediation     string `json:"remediationAdvise"`
 	Description     string `json:"description"`
 }
 
