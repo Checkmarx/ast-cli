@@ -34,7 +34,7 @@ func NewVorpalGrpcWrapper(port int) VorpalWrapper {
 }
 
 // CreateVorpalScanRequest TODO: This function should move to vorpal service when it is implemented
-func (v *VorpalGrpcWrapper) CreateVorpalScanRequest(filePath string) (*vorpalScan.ScanResult, error) {
+func (v *VorpalGrpcWrapper) CreateVorpalScanRequest(filePath string) (*ScanResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		logger.Printf("Error reading file %v: %v", filePath, err)
@@ -42,7 +42,38 @@ func (v *VorpalGrpcWrapper) CreateVorpalScanRequest(filePath string) (*vorpalSca
 	}
 	_, fileName := filepath.Split(filePath)
 	sourceCode := string(data)
-	return v.Scan(fileName, sourceCode)
+	resp, err := v.Scan(fileName, sourceCode)
+	if err != nil {
+		return nil, err
+	}
+	return &ScanResult{
+		RequestID:   resp.RequestId,
+		Status:      resp.Status,
+		Message:     resp.Message,
+		ScanDetails: convertScanDetails(resp.ScanDetails),
+		Error: &Error{
+			Code:        ErrorCode(resp.Error.Code),
+			Description: resp.Error.Description,
+		},
+	}, nil
+}
+
+// convertScanDetails TODO: This function should move to vorpal service when it is implemented
+func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetail {
+	var scanDetails []ScanDetail
+	for _, detail := range details {
+		scanDetails = append(scanDetails, ScanDetail{
+			RuleID:      detail.RuleId,
+			Language:    detail.Language,
+			Severity:    detail.Severity,
+			FileName:    detail.FileName,
+			Line:        detail.Line,
+			Length:      detail.Length,
+			Remediation: detail.RemediationAdvise,
+			Description: detail.Description,
+		})
+	}
+	return scanDetails
 }
 
 func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResult, error) {
