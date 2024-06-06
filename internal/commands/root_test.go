@@ -140,34 +140,8 @@ func assertError(t *testing.T, err error, expectedMessage string) {
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
 }
-func Test_validateExtraFiltersForStateExcludeNotExploitableAndOther(t *testing.T) {
-	type args struct {
-		filterKeyVal []string
-	}
-	tests := []struct {
-		filterName      string
-		extraFilterName args
-		replaceValue    []string
-		expectedLog     string
-	}{
-		{
-			filterName:      "Test exclude-not-exploitable",
-			extraFilterName: args{filterKeyVal: []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT;exclude_not_exploitable"}},
-			replaceValue:    []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"},
-			expectedLog:     "",
-		},
-	}
-	for _, test := range tests {
-		test := test
-		t.Run(test.filterName, func(t *testing.T) { // Reset the log output for each test
-			if got := validateExtraFilters(test.extraFilterName.filterKeyVal); !reflect.DeepEqual(got, test.replaceValue) {
-				assert.Assert(t, strings.Contains(strings.ToLower(got[1]), strings.ToLower(test.replaceValue[1])))
-			}
-		})
-	}
-}
 
-func Test_validateExtraFiltersForStateOnlyExcludeNotExploitable(t *testing.T) {
+func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t *testing.T) {
 	type args struct {
 		filterKeyVal []string
 	}
@@ -178,19 +152,19 @@ func Test_validateExtraFiltersForStateOnlyExcludeNotExploitable(t *testing.T) {
 		expectedLog     string
 	}{
 		{
-			filterName:      "Test State exclude-not-exploitable and others",
+			filterName:      "State has some values and exclude-not-exploitable",
 			extraFilterName: args{filterKeyVal: []string{"state", "exclude_not_exploitable;TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED"}},
 			replaceValue:    []string{"state", "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"},
 			expectedLog:     "",
 		},
 		{
-			filterName:      "Test State Empty exclude-not-exploitable",
+			filterName:      "State has no values ",
 			extraFilterName: args{filterKeyVal: []string{"state", ""}},
 			replaceValue:    []string{"state", ""},
 			expectedLog:     "",
 		},
 		{
-			filterName:      "Test State Only exclude-not-exploitable",
+			filterName:      "State has Only exclude-not-exploitable value",
 			extraFilterName: args{filterKeyVal: []string{"state", "exclude_not_exploitable"}},
 			replaceValue:    []string{"state", ""},
 			expectedLog:     "",

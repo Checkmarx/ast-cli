@@ -276,13 +276,11 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 
 func validateExtraFilters(filterKeyVal []string) []string {
 	// Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
-	for filterKey, extraFilters := range extraFilter {
-		if filterKeyVal[0] == filterKey {
-			for privateFilter, value := range extraFilters {
-				if strings.Contains(filterKeyVal[1], privateFilter) {
-					logger.PrintIfVerbose("Set filter state for next states : " + strings.ToLower(value))
-					filterKeyVal[1] = strings.Replace(filterKeyVal[1], filterKeyVal[1], value, -1)
-				}
+	if extraFilter[filterKeyVal[0]] != nil {
+		for privateFilter, value := range extraFilter[filterKeyVal[0]] {
+			if strings.Contains(filterKeyVal[1], privateFilter) {
+				logger.PrintfIfVerbose("Set filter from extra filters: [%s,%s]", filterKeyVal[0], value)
+				filterKeyVal[1] = strings.Replace(filterKeyVal[1], filterKeyVal[1], value, -1)
 			}
 		}
 	}
