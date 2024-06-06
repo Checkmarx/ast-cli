@@ -99,7 +99,7 @@ func runChatKics(
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
-		
+
 		if chatConversationID == "" {
 			chatConversationID = statefulWrapper.GenerateId().String()
 		}

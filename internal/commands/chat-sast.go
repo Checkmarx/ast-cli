@@ -158,11 +158,11 @@ func runChatSast(
 	}
 }
 
-func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (wrapper.StatefulWrapper, string) {
+func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (
+	statefulWrapper wrapper.StatefulWrapper, customerToken string) {
 	conn := connector.NewFileSystemConnector("")
 
-	var statefulWrapper wrapper.StatefulWrapper
-	customerToken, _ := wrappers.GetAccessToken()
+	customerToken, _ = wrappers.GetAccessToken()
 
 	if azureAiEnabled || checkmarxAiEnabled {
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
