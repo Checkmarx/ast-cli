@@ -47,6 +47,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: true,
 			},
+			//TODO: update mocks when there's a real engine
 			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
@@ -56,6 +57,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: false,
 			},
+			//TODO: update mocks when there's a real engine
 			want:    ReturnFailureResponseMock(),
 			wantErr: false,
 		},
@@ -65,6 +67,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "data/csharp-no-vul.cs",
 				vorpalUpdateVersion: false,
 			},
+			//TODO: update mocks when there's a real engine
 			want:    ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},

@@ -53,12 +53,12 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 		Message:   "Scan completed successfully.",
 		ScanDetails: []ScanDetail{
 			{
-				Language:    "Python",
-				QueryName:   "Stored XSS",
-				Severity:    "High",
-				FileName:    "python-vul-file.py",
-				Line:        37,
-				Remediation: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
+				Language:          "Python",
+				RuleName:          "Stored XSS",
+				Severity:          "High",
+				FileName:          "python-vul-file.py",
+				Line:              37,
+				RemediationAdvise: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
 				Description: "The method undefined embeds untrusted data in generated output with write, at line 80 of /python-vul-file.py." +
 					"This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page." +
 					"The attacker would be able to alter the returned web page by saving malicious data in a data-store ahead of time." +
@@ -66,13 +66,13 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 					"This untrusted data then flows through the code straight to the output web page, without sanitization.  This can enable a Stored Cross-Site Scripting (XSS) attack.",
 			},
 			{
-				Language:    "Python",
-				QueryName:   "Missing HSTS Header",
-				Severity:    "Medium",
-				FileName:    "python-vul-file.py",
-				Line:        76,
-				Remediation: "Before setting the HSTS header - consider the implications it may have: Forcing HTTPS will prevent any future use of HTTP",
-				Description: "The web-application does not define an HSTS header, leaving it vulnerable to attack.",
+				Language:          "Python",
+				RuleName:          "Missing HSTS Header",
+				Severity:          "Medium",
+				FileName:          "python-vul-file.py",
+				Line:              76,
+				RemediationAdvise: "Before setting the HSTS header - consider the implications it may have: Forcing HTTPS will prevent any future use of HTTP",
+				Description:       "The web-application does not define an HSTS header, leaving it vulnerable to attack.",
 			},
 		},
 	}
@@ -96,15 +96,16 @@ type ScanResult struct {
 }
 
 type ScanDetail struct {
-	RuleID      uint32 `json:"rule_id"`
-	Language    string `json:"language"`
-	QueryName   string `json:"query_name"`
-	Severity    string `json:"severity"`
-	FileName    string `json:"file_name"`
-	Line        uint32 `json:"line"`
-	Length      uint32 `json:"length"`
-	Remediation string `json:"remediation"`
-	Description string `json:"description"`
+	RuleID            uint32 `json:"rule_id"`
+	Language          string `json:"language"`
+	RuleName          string `json:"query_name"`
+	Severity          string `json:"severity"`
+	FileName          string `json:"file_name"`
+	Line              uint32 `json:"line"`
+	Length            uint32 `json:"length"`
+	ProblematicLine   uint32 `json:"problematic_line"`
+	RemediationAdvise string `json:"remediation"`
+	Description       string `json:"description"`
 }
 
 type Error struct {

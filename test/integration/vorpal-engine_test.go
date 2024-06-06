@@ -38,7 +38,7 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData
 
 	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
-
+	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
 
@@ -46,7 +46,7 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_SuccessfullyReturnMockDat
 
 	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", false)
 	expectedMockResult := commands.ReturnFailureResponseMock()
-
+	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
 
@@ -54,6 +54,6 @@ func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testin
 
 	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
-
+	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
