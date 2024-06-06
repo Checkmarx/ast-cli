@@ -63,14 +63,16 @@ func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetai
 	var scanDetails []ScanDetail
 	for _, detail := range details {
 		scanDetails = append(scanDetails, ScanDetail{
-			RuleID:      detail.RuleId,
-			Language:    detail.Language,
-			Severity:    detail.Severity,
-			FileName:    detail.FileName,
-			Line:        detail.Line,
-			Length:      detail.Length,
-			Remediation: detail.RemediationAdvise,
-			Description: detail.Description,
+			RuleID:          detail.RuleId,
+			RuleName:        detail.RuleName,
+			Language:        detail.Language,
+			Severity:        detail.Severity,
+			FileName:        detail.FileName,
+			Line:            detail.Line,
+			ProblematicLine: detail.ProblematicLine,
+			Length:          detail.Length,
+			Remediation:     detail.RemediationAdvise,
+			Description:     detail.Description,
 		})
 	}
 	return scanDetails
