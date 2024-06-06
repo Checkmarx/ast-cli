@@ -1315,7 +1315,7 @@ func TestScanListWithFilters(t *testing.T) {
 	assert.NilError(t, err, "")
 }
 
-func TestCreateScan_WithOnlyValidApikeyLabel_Success(t *testing.T) {
+func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1387,7 +1387,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 }
 
-func TestCreateScan_WithOnlyInvalidApikeyLabel_Fail(t *testing.T) {
+func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1412,7 +1412,7 @@ func TestCreateScan_WithOnlyInvalidApikeyLabel_Fail(t *testing.T) {
 	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 }
 
-func TestCreateScan_WithValidClientCredentialsLabel_Success(t *testing.T) {
+func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1439,7 +1439,7 @@ func TestCreateScan_WithValidClientCredentialsLabel_Success(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestCreateScan_WithInvalidClientCredentialsLabel_Fail(t *testing.T) {
+func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
