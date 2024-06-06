@@ -43,7 +43,7 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
-	SCSScoreCardError             = "SCS Repo Token and SCS Repo URL are required, if scorecard is enabled"
+	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: --scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 func TestScanHelp(t *testing.T) {
