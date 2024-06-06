@@ -31,7 +31,7 @@ func NewVorpalGrpcWrapper(port int) VorpalWrapper {
 	}
 }
 
-func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanResult, error) {
+func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, error) {
 	conn, connErr := v.grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, v.hostAddress, connErr)
@@ -53,12 +53,40 @@ func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*vorpalScan.ScanR
 		},
 	}
 
-	scanResultResponse, err := scanClient.Scan(v.grpcClient.ctx, request)
+	resp, err := scanClient.Scan(v.grpcClient.ctx, request)
 	if err != nil {
 		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName, scanID)
 	}
 
-	return scanResultResponse, nil
+	return &ScanResult{
+		RequestID:   resp.RequestId,
+		Status:      resp.Status,
+		Message:     resp.Message,
+		ScanDetails: convertScanDetails(resp.ScanDetails),
+		Error: &Error{
+			Code:        ErrorCode(resp.Error.Code),
+			Description: resp.Error.Description,
+		},
+	}, nil
+}
+
+func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetail {
+	var scanDetails []ScanDetail
+	for _, detail := range details {
+		scanDetails = append(scanDetails, ScanDetail{
+			RuleID:          detail.RuleId,
+			RuleName:        detail.RuleName,
+			Language:        detail.Language,
+			Severity:        detail.Severity,
+			FileName:        detail.FileName,
+			Line:            detail.Line,
+			ProblematicLine: detail.ProblematicLine,
+			Length:          detail.Length,
+			Remediation:     detail.RemediationAdvise,
+			Description:     detail.Description,
+		})
+	}
+	return scanDetails
 }
 
 func (v *VorpalGrpcWrapper) HealthCheck() error {
