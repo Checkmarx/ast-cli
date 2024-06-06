@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/message"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/role"
-	"github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -100,26 +98,8 @@ func runChatKics(
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
-		conn := connector.NewFileSystemConnector("")
-
-		var statefulWrapper wrapper.StatefulWrapper
-		customerToken, _ := wrappers.GetAccessToken()
-		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
-
-		if azureAiEnabled || checkmarxAiEnabled {
-			aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
-			var model string
-			if azureAiEnabled {
-				model, _ = GetAzureAiModel(tenantConfigurationResponses)
-			} else {
-				model = checkmarxAiChatModel
-			}
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
-		} else {
-			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
-			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
-			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
-		}
+		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
+		
 		if chatConversationID == "" {
 			chatConversationID = statefulWrapper.GenerateId().String()
 		}
@@ -137,6 +117,7 @@ func runChatKics(
 		}
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
+		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
 
 		var response []message.Message
 		if azureAiEnabled {

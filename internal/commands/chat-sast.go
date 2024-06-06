@@ -65,26 +65,7 @@ func runChatSast(
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
-		conn := connector.NewFileSystemConnector("")
-
-		var statefulWrapper wrapper.StatefulWrapper
-		customerToken, _ := wrappers.GetAccessToken()
-		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
-
-		if azureAiEnabled || checkmarxAiEnabled {
-			aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
-			var model string
-			if azureAiEnabled {
-				model, _ = GetAzureAiModel(tenantConfigurationResponses)
-			} else {
-				model = checkmarxAiChatModel
-			}
-			statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
-		} else {
-			chatModel, _ := cmd.Flags().GetString(params.ChatModel)
-			chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
-			statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
-		}
+		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
 		newConversation := false
 		var userInput string
@@ -126,6 +107,8 @@ func runChatSast(
 				Content: userInput,
 			})
 		}
+
+		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
 
 		var response []message.Message
 		if azureAiEnabled {
@@ -173,6 +156,29 @@ func runChatSast(
 			Response:       responseContent,
 		}, printer.FormatJSON)
 	}
+}
+
+func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (wrapper.StatefulWrapper, string) {
+	conn := connector.NewFileSystemConnector("")
+
+	var statefulWrapper wrapper.StatefulWrapper
+	customerToken, _ := wrappers.GetAccessToken()
+
+	if azureAiEnabled || checkmarxAiEnabled {
+		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
+		var model string
+		if azureAiEnabled {
+			model, _ = GetAzureAiModel(tenantConfigurationResponses)
+		} else {
+			model = checkmarxAiChatModel
+		}
+		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
+	} else {
+		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
+		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
+		statefulWrapper = wrapper.NewStatefulWrapper(conn, chatAPIKey, chatModel, dropLen, 0)
+	}
+	return statefulWrapper, customerToken
 }
 
 func GetTenantConfigurationResponses(tenantWrapper wrappers.TenantConfigurationWrapper) (*[]*wrappers.TenantConfigurationResponse, error) {
