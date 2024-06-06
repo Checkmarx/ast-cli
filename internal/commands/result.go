@@ -1217,10 +1217,10 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
-	defer f.Close()
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
+	defer f.Close()
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	return nil
 }
