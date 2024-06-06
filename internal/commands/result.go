@@ -1217,11 +1217,11 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
+	defer f.Close()
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
-	defer f.Close()
 	return nil
 }
 
@@ -1729,7 +1729,6 @@ func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep
 	return allIdentifierDep
 }
 
-// func IdentifiersPackageData
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
 	sonar.Results = parseResultsSonar(results)
