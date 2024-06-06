@@ -34,7 +34,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test path to file without extension",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file.py",
+				fileSourceFlag:      "data/python-vul-file",
 				vorpalUpdateVersion: false,
 			},
 			want:       nil,
@@ -68,7 +68,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				vorpalUpdateVersion: false,
 			},
 			//TODO: update mocks when there's a real engine
-			want:    ReturnSuccessfulResponseMock(),
+			want:    ReturnFailureResponseMock(),
 			wantErr: false,
 		},
 	}
@@ -108,7 +108,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		},
 		{
 			name:       "Test with file without extension",
-			sourceFlag: "data/python-vul-file.py",
+			sourceFlag: "data/python-vul-file",
 			engineFlag: true,
 			wantErr:    true,
 			wantErrMsg: errorConstants.FileExtensionIsRequired,
