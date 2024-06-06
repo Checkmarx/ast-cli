@@ -33,7 +33,6 @@ func CreateVorpalScanRequest(vorpalWrapper grpcs.VorpalWrapper, filePath string)
 	}, nil
 }
 
-// convertScanDetails TODO: This function should move to vorpal service when it is implemented
 func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []grpcs.ScanDetail {
 	var scanDetails []grpcs.ScanDetail
 	for _, detail := range details {
