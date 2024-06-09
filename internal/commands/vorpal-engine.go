@@ -98,13 +98,13 @@ type ScanResult struct {
 type ScanDetail struct {
 	RuleID            uint32 `json:"rule_id"`
 	Language          string `json:"language"`
-	RuleName          string `json:"query_name"`
+	RuleName          string `json:"rule_name"`
 	Severity          string `json:"severity"`
 	FileName          string `json:"file_name"`
 	Line              uint32 `json:"line"`
 	Length            uint32 `json:"length"`
 	ProblematicLine   uint32 `json:"problematic_line"`
-	RemediationAdvise string `json:"remediation"`
+	RemediationAdvise string `json:"remediation_advise"`
 	Description       string `json:"description"`
 }
 
