@@ -81,6 +81,7 @@ func TestResultListJson(t *testing.T) {
 		t, "Getting results should pass",
 		"results",
 		"show",
+		"--debug",
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
@@ -92,7 +93,8 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
-				printer.FormatGL,
+				printer.FormatGLSast,
+				printer.FormatGLSca,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -113,7 +115,7 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
+	extensions := []string{printer.FormatGLSca, printer.FormatGLSast, printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))

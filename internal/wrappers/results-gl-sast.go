@@ -1,10 +1,12 @@
 package wrappers
 
 const (
-	AnalyzerName = "CxOne"
-	AnalyzerID   = AnalyzerName + "-SAST"
-	AnalyzerURL  = "https://checkmarx.com/"
-	VendorName   = "Checkmarx"
+	AnalyzerName      = "CxOne"
+	AnalyzerID        = AnalyzerName + "-SAST"
+	AnalyzerURL       = "https://checkmarx.com/"
+	VendorName        = "Checkmarx"
+	SastSchema        = "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/blob/master/dist/sast-report-format.json"
+	SastSchemaVersion = "15.0"
 )
 
 type GlSastResultsCollection struct {
