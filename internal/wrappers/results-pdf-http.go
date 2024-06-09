@@ -112,7 +112,14 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 func (r *PdfHTTPWrapper) DownloadPdfReport(url, targetFile string) error {
 	clientTimeout := uint(downloadTimeout)
 	useAccessToken := FeatureFlags[MinioEnabled]
-	resp, err := SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeout, "", true)
+	var resp *http.Response
+	var err error
+	if useAccessToken {
+		customURL := fmt.Sprintf("%s/%s/download", r.path, url)
+		resp, err = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
+	} else {
+		resp, err = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeout, "", true)
+	}
 
 	if err != nil {
 		return err
