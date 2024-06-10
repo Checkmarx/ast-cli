@@ -109,6 +109,7 @@ func runChatSast(
 		}
 
 		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
+		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
 		if azureAiEnabled {
@@ -116,7 +117,7 @@ func runChatSast(
 			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
-				RequestID: "???",
+				RequestID: requestID,
 				UserAgent: params.DefaultAgent,
 				Feature:   guidedRemediationFeatureNameSast,
 				ExternalModel: &message.ExternalAzure{
@@ -124,6 +125,8 @@ func runChatSast(
 					ApiKey:   azureAiAPIKey,
 				},
 			}
+
+			logger.PrintIfVerbose("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
@@ -131,16 +134,18 @@ func runChatSast(
 		} else if checkmarxAiEnabled {
 			metadata := message.MetaData{
 				TenantID:      tenantID,
-				RequestID:     "???",
+				RequestID:     requestID,
 				UserAgent:     params.DefaultAgent,
 				Feature:       guidedRemediationFeatureNameSast,
 				ExternalModel: nil,
 			}
+			logger.PrintIfVerbose("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
 		} else {
+			logger.PrintIfVerbose("Sending message to ChatGPT model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.Call(statefulWrapper, id, newMessages)
 			if err != nil {
 				return outputError(cmd, id, err)

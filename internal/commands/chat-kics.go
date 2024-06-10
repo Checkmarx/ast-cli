@@ -118,6 +118,7 @@ func runChatKics(
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
 		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
+		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
 		if azureAiEnabled {
@@ -125,7 +126,7 @@ func runChatKics(
 			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
-				RequestID: "???",
+				RequestID: requestID,
 				UserAgent: params.DefaultAgent,
 				Feature:   guidedRemediationFeatureNameKics,
 				ExternalModel: &message.ExternalAzure{
@@ -133,6 +134,8 @@ func runChatKics(
 					ApiKey:   azureAiAPIKey,
 				},
 			}
+			logger.PrintIfVerbose("Sending message to Azure AI model for KICS guided remediation. RequestID: " + requestID)
+
 			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
@@ -140,16 +143,18 @@ func runChatKics(
 		} else if checkmarxAiEnabled {
 			metadata := message.MetaData{
 				TenantID:      tenantID,
-				RequestID:     "???",
+				RequestID:     requestID,
 				UserAgent:     params.DefaultAgent,
 				Feature:       guidedRemediationFeatureNameKics,
 				ExternalModel: nil,
 			}
+			logger.PrintIfVerbose("Sending message to Checkmarx AI model for KICS guided remediation. RequestID: " + requestID)
 			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
 		} else {
+			logger.PrintIfVerbose("Sending message to ChatGPT model for KICS guided remediation. RequestID: " + requestID)
 			response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
 			if err != nil {
 				return outputError(cmd, id, err)
