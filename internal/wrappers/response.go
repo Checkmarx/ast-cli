@@ -20,11 +20,7 @@ func handleScanResponseWithNoBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError, http.StatusNotFound:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, errors.Wrapf(err, failedToParseErr)
-		}
+		errorModel := GetError(decoder)
 		return &errorModel, nil
 	case successStatusCode:
 		return nil, nil
@@ -43,11 +39,7 @@ func handleScanResponseWithBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responseScanParsingFailed(err)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case successStatusCode:
 		model := ScanResponseModel{}
@@ -73,11 +65,7 @@ func handleProjectResponseWithNoBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, errors.Wrapf(err, failedToParseErr)
-		}
+		errorModel := GetError(decoder)
 		return &errorModel, nil
 	case successStatusCode:
 		return nil, nil
@@ -102,11 +90,7 @@ func handleProjectResponseWithBody(resp *http.Response, err error,
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responseProjectParsingFailed(err)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusNotFound:
 		return nil, nil, errors.Errorf("project not found")

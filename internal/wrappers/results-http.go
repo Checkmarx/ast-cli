@@ -102,11 +102,7 @@ func getResultsByOffset(resultPath string, params map[string]string, clientTimeo
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, false, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, false, &errorModel, nil
 	case http.StatusOK:
 		model := ScanResultsCollection{}
@@ -198,11 +194,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		var model []ScaTypeCollection

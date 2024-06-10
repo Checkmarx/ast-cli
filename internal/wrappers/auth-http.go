@@ -54,10 +54,7 @@ func (a *AuthHTTPWrapper) CreateOauth2Client(
 	case http.StatusBadRequest:
 		decoder := json.NewDecoder(res.Body)
 		errorMsg := ErrorMsg{}
-		err = decoder.Decode(&errorMsg)
-		if err != nil {
-			return nil, errors.Wrap(err, failedToParseCreateClientResult)
-		}
+		DecodeErrorModel(decoder, &errorMsg)
 		return &errorMsg, nil
 	case http.StatusOK:
 		return nil, nil

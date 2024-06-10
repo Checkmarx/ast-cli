@@ -88,11 +88,7 @@ func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, errors.Errorf("Parsing error model failed - %s", err.Error())
-		}
+		errorModel := GetError(decoder)
 		return nil, errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 
 	case http.StatusOK:

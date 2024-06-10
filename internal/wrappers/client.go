@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ const (
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
+	FailedToParse           = "Failed to parse response"
 )
 
 type ClientCredentialsInfo struct {
@@ -740,4 +742,27 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 		return "", errors.Errorf(jwtError, claim)
 	}
 	return value, nil
+}
+
+func GetError(decoder *json.Decoder) ErrorModel {
+	errorModel := ErrorModel{}
+	DecodeErrorModel(decoder, &errorModel)
+	return errorModel
+}
+
+func GetWebError(decoder *json.Decoder) WebError {
+	errorModel := WebError{}
+	DecodeErrorModel(decoder, &errorModel)
+	return errorModel
+}
+
+func DecodeErrorModel(decoder *json.Decoder, errorModel interface{}) {
+	err := decoder.Decode(errorModel)
+	if err != nil {
+		logger.PrintfIfVerbose("Parsing error model failed - %s", err.Error())
+		val := reflect.ValueOf(errorModel).Elem()
+		val.FieldByName("Code").SetInt(http.StatusInternalServerError)
+		val.FieldByName("Message").SetString(FailedToParse)
+	}
+	logger.PrintfIfVerbose("error model: %v", errorModel)
 }

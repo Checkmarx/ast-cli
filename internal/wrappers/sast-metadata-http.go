@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -38,12 +39,8 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]stri
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, fmt.Errorf("%v %s", err, failedToParseGetAll)
-		}
-		return nil, err
+		errorModel := GetError(decoder)
+		return nil, errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 	case http.StatusOK:
 		model := SastMetadataModel{}
 		err = decoder.Decode(&model)

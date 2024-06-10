@@ -41,11 +41,7 @@ func (r *RisksOverviewHTTPWrapper) GetAllAPISecRisksByScanID(scanID string) (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := APISecResult{}

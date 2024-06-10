@@ -84,11 +84,7 @@ func handlePRResponseWithBody(resp *http.Response, err error) (string, *WebError
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return "", nil, errors.Wrapf(err, failedToParsePRDecorationResponse)
-		}
+		errorModel := GetWebError(decoder)
 		return "", &errorModel, nil
 	case http.StatusCreated:
 		body, err := io.ReadAll(resp.Body)

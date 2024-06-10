@@ -130,11 +130,7 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return responsePredicateParsingFailed(err)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := PredicatesCollectionResponseModel{}

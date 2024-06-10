@@ -45,11 +45,7 @@ func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorMsg := ErrorMsg{}
-		err = decoder.Decode(&errorMsg)
-		if err != nil {
-			return nil, errors.Wrapf(err, err.Error())
-		}
+		errorMsg := GetError(decoder)
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedToGetGroups, errorMsg.Code, errorMsg.Message)
 	case http.StatusOK:
 		var groups []Group

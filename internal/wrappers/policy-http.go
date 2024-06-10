@@ -44,11 +44,7 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToGetPolicies)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := PolicyResponseModel{}
