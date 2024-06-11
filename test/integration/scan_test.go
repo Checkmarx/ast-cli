@@ -41,6 +41,10 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
+	invalidClientID       = "invalidClientID"
+	invalidClientSecret   = "invalidClientSecret"
+	invalidAPIKey         = "invalidAPI"
+	invalidTenant         = "invalidTenant"
 )
 
 var (
@@ -343,6 +347,17 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -355,13 +370,15 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 		flag(params.TargetFormatFlag), "json",
 		flag(params.TargetPathFlag), "/tmp/",
 		flag(params.TargetFlag), "results",
+		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
-	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	file, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.Assert(t, file.Size() > 5000, "Report file should be bigger than 5KB")
 	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
@@ -1296,4 +1313,214 @@ func TestScanListWithFilters(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
+}
+
+func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AstAPIKeyFlag), "invalid_apikey",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AccessKeyIDFlag), originals[params.AccessKeyIDEnv],
+		flag(params.AccessKeySecretFlag), originals[params.AccessKeySecretEnv],
+		flag(params.TenantFlag), originals[params.TenantEnv],
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AccessKeyIDFlag), "invalid_client_ID",
+		flag(params.AccessKeySecretFlag), "invalid_client_secret",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv: "",
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
+}
+
+func getOriginalEnvVars() map[string]string {
+	return map[string]string{
+		params.AstAPIKeyEnv:       os.Getenv(params.AstAPIKeyEnv),
+		params.AccessKeyIDEnv:     os.Getenv(params.AccessKeyIDEnv),
+		params.AccessKeySecretEnv: os.Getenv(params.AccessKeySecretEnv),
+		params.TenantEnv:          os.Getenv(params.TenantEnv),
+	}
+}
+
+func setEnvVars(envVars map[string]string) {
+	for key, value := range envVars {
+		os.Setenv(key, value)
+	}
 }
