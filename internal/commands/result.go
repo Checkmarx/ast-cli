@@ -20,12 +20,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -1415,7 +1415,15 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if pollingResp.Status != completedStatus {
 		return errors.Errorf("PDF generating failed - Current status: %s", pollingResp.Status)
 	}
-	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
+
+	minioEnabled := wrappers.FeatureFlags[wrappers.MinioEnabled]
+	infoPathType := ""
+	if minioEnabled {
+		infoPathType = pdfReportID.ReportID
+	} else {
+		infoPathType = pollingResp.URL
+	}
+	err = pdfWrapper.DownloadPdfReport(infoPathType, summaryRpt)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}
