@@ -147,7 +147,6 @@ func TestCodeBashingParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingList(t *testing.T) {
-	t.Skip("skipping test until codebashing is fixed")
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -165,7 +164,6 @@ func TestCodeBashingList(t *testing.T) {
 }
 
 func TestCodeBashingListJson(t *testing.T) {
-	t.Skip("skipping test until codebashing is fixed")
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -184,7 +182,6 @@ func TestCodeBashingListJson(t *testing.T) {
 }
 
 func TestCodeBashingListTable(t *testing.T) {
-	t.Skip("skipping test until codebashing is fixed")
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -199,7 +196,6 @@ func TestCodeBashingListTable(t *testing.T) {
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
-	t.Skip("skipping test until codebashing is fixed")
 	args := []string{
 		"results",
 		"codebashing",
@@ -213,7 +209,6 @@ func TestCodeBashingListEmpty(t *testing.T) {
 }
 
 func TestCodeBashingFailedListingAuth(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",
