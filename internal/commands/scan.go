@@ -389,9 +389,10 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 
 func scanVorpalSubCommand() *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
-		Use:   "vorpal",
-		Short: "Run a Vorpal scan",
-		Long:  "Running a Vorpal scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Hidden: true,
+		Use:    "vorpal",
+		Short:  "Run a Vorpal scan",
+		Long:   "Running a Vorpal scan is a fast and efficient way to identify vulnerabilities in a specific file.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan vorpal --file-source <path to a single file> --vorpal-latest-version
