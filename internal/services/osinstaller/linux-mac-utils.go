@@ -1,6 +1,6 @@
 //go:build linux || darwin
 
-package scarealtime
+package osinstaller
 
 import (
 	"archive/tar"
@@ -15,20 +15,33 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-// UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles() error {
-	logger.PrintIfVerbose("Extracting files in: " + ScaResolverWorkingDir)
-	gzipStream, err := os.Open(filepath.Join(ScaResolverWorkingDir, Params.SCAResolverFileName))
+const dirDefault int = 0755
+
+// UnzipOrExtractFiles Extracts all the files from the tar.gz file
+func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) error {
+	logger.PrintIfVerbose("Extracting files in: " + installationConfiguration.WorkingDir())
+	filePath := filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName)
+	gzipStream, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println("error")
+		fmt.Println("error when open file ", filePath, err)
+		return err
 	}
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
-		log.Fatal("ExtractTarGz: NewReader failed")
+		log.Println("ExtractTarGz: NewReader failed ", err)
+		return err
 	}
 
 	tarReader := tar.NewReader(uncompressedStream)
 
+	err = extractFiles(installationConfiguration, tarReader)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func extractFiles(installationConfiguration *InstallationConfiguration, tarReader *tar.Reader) error {
 	for {
 		header, err := tarReader.Next()
 
@@ -42,11 +55,11 @@ func UnzipOrExtractFiles() error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, 0755); err != nil { //nolint:gomnd
+			if err := os.Mkdir(header.Name, os.FileMode(dirDefault)); err != nil {
 				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
 			}
 		case tar.TypeReg:
-			extractedFilePath := filepath.Join(ScaResolverWorkingDir, header.Name)
+			extractedFilePath := filepath.Join(installationConfiguration.WorkingDir(), header.Name)
 			outFile, err := os.Create(extractedFilePath)
 			if err != nil {
 				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
@@ -69,6 +82,5 @@ func UnzipOrExtractFiles() error {
 				header.Name)
 		}
 	}
-
 	return nil
 }
