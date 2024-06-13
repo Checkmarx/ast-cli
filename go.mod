@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.22.3
+go 1.22.4
 
 require (
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240604122751-06e7809dc352
@@ -18,8 +18,9 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	golang.org/x/crypto v0.22.0
 	golang.org/x/text v0.14.0
+	google.golang.org/grpc v1.63.2
+	google.golang.org/protobuf v1.33.0
 	gotest.tools v2.2.0+incompatible
-
 )
 
 require (
@@ -40,6 +41,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/net v0.23.0 // indirect
