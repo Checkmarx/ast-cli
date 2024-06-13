@@ -5,4 +5,3 @@ tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
 # ignore mock and wrappers packages, as they checked by integration tests
 go test $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger") -timeout 940.000s -coverprofile cover.out
-export GG_IGNORE_PATHS="../commands/data/python-vul-file.py,../../test/integration/data/python-vul-file.py"
