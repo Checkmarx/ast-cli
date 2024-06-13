@@ -1061,7 +1061,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) {
 		SCSMapConfig := make(map[string]interface{})
 		SCSConfig := wrappers.SCSConfig{}
-		SCSMapConfig[resultsMapType] = commonParams.ScsType
+		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
@@ -2328,6 +2328,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	} else {
 		scanTimeOut = "NONE"
 	}
+	scan.ReplaceMicroEnginesWithSCS()
 
 	return &scanView{
 		ID:              scan.ID,

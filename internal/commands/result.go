@@ -359,6 +359,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		return nil, errors.New(failedCreatingSummary)
 	}
 
+	scanInfo.ReplaceMicroEnginesWithSCS()
+
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0

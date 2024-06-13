@@ -241,6 +241,7 @@ const (
 	ScaType              = "sca"
 	APISecType           = "apisec"
 	ScsType              = "scs"
+	MicroEnginesType     = "microengines" // the scs scan type for scans API
 	Success              = "success"
 )
 
