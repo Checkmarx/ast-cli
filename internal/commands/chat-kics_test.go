@@ -2,12 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"io"
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/google/uuid"
 	"gotest.tools/assert"
 )
