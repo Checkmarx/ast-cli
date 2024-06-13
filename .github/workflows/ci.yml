@@ -30,9 +30,18 @@ jobs:
           else
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
-          fi
+
   integration-tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file: [test/integration/auth_test.go, test/integration/bfl_test.go, test/integration/chat_test.go, test/integration/feature-flags_test.go,
+               test/integration/import_test.go, test/integration/learnmore_test.go, test/integration/pr_test.go, test/integration/predicate_test.go,
+               test/integration/project_test.go, test/integration/result_test.go, test/integration/root_test.go, test/integration/scan_test.go,
+               test/integration/tenant_test.go, test/integration/user-count-azure_test.go, test/integration/user-count-bitbucket_test.go,
+               test/integration/user-count-github_test.go, test/integration/user-count-gitlab_test.go, test/integration/util_test.go,
+               test/integration/util_command_test.go, test/integration/util_remediation_test.go, test/integration/util_test.go,
+               test/integration/vorpal-engine_test.go]
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -80,7 +89,7 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_up.sh ${{ matrix.file }}
           ./internal/commands/.scripts/integration_down.sh
 
       - name: Coverage report
@@ -101,7 +110,6 @@ jobs:
           else
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
-          fi
   lint:
     name: lint
     runs-on: ubuntu-latest

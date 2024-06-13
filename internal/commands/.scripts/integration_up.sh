@@ -1,3 +1,7 @@
+#!/bin/bash
+
+TEST_FILE=$1
+
 docker run \
   --name squid \
   -d \
@@ -10,14 +14,16 @@ wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.g
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
 
+# Run the appropriate integration test
 go test \
   -tags integration \
   -v \
   -timeout 210m \
   -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
-  github.com/checkmarx/ast-cli/test/integration
+  $TEST_FILE
 
+# Check the status and handle coverage report
 status=$?
 echo "status value after tests $status"
 if [ $status -ne 0 ]; then
