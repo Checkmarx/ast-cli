@@ -176,6 +176,8 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
+	scanVorpalCmd := scanVorpalSubCommand()
+
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
 	deleteScanCmd := scanDeleteSubCommand(scansWrapper)
@@ -199,6 +201,7 @@ func NewScanCommand(
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
+		scanVorpalCmd,
 		showScanCmd,
 		workflowScanCmd,
 		listScansCmd,
@@ -384,6 +387,39 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	}
 	addScanIDFlag(showScanCmd, "Scan ID to show.")
 	return showScanCmd
+}
+
+func scanVorpalSubCommand() *cobra.Command {
+	scanVorpalCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "vorpal",
+		Short:  "Run a Vorpal scan",
+		Long:   "Running a Vorpal scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan vorpal --file-source <path to a single file> --vorpal-latest-version
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+			`,
+			),
+		},
+		RunE: runScanVorpalCommand(),
+	}
+
+	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
+		"Use this flag to update to the latest version of the Vorpal scanner."+
+			"Otherwise, we will check if there is an existing installation that can be used.")
+	scanVorpalCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file",
+	)
+	return scanVorpalCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
