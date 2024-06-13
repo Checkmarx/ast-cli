@@ -63,4 +63,5 @@ var EnvVarsBinds = []struct {
 	{FeatureFlagsKey, FeatureFlagsEnv, "api/flags"},
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
 	{AccessManagementPathKey, AccessManagementPathEnv, "api/access-management"},
+	{ByorPathKey, ByorPathEnv, "api/byor"},
 }

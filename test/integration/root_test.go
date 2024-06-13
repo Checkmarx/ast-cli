@@ -51,6 +51,11 @@ func TestMain(m *testing.M) {
 	os.Exit(exitVal)
 }
 
+func TestRootVersion(t *testing.T) {
+	testInstance = t
+	executeCmdNilAssertion(t, "test root version", "version")
+}
+
 // Create or return a scan to be shared between tests
 func getRootScan(t *testing.T, scanTypes ...string) (string, string) {
 	testInstance = t

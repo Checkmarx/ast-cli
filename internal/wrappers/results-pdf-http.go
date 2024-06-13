@@ -42,6 +42,8 @@ type PdfHTTPWrapper struct {
 	path string
 }
 
+const downloadTimeout = 420
+
 func NewResultsPdfReportsHTTPWrapper(path string) ResultsPdfWrapper {
 	return &PdfHTTPWrapper{
 		path: path,
@@ -54,6 +56,7 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
 	}
+
 	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
@@ -106,10 +109,18 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 	}
 }
 
-func (r *PdfHTTPWrapper) DownloadPdfReport(reportID, targetFile string) error {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	customURL := fmt.Sprintf("%s/%s/download", r.path, reportID)
-	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
+func (r *PdfHTTPWrapper) DownloadPdfReport(url, targetFile string) error {
+	clientTimeout := uint(downloadTimeout)
+	useAccessToken := FeatureFlags[MinioEnabled]
+	var resp *http.Response
+	var err error
+	if useAccessToken {
+		customURL := fmt.Sprintf("%s/%s/download", r.path, url)
+		resp, err = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
+	} else {
+		resp, err = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeout, "", true)
+	}
+
 	if err != nil {
 		return err
 	}
