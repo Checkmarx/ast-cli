@@ -14,7 +14,6 @@ go test \
   -tags integration \
   -v \
   -timeout 210m \
-  -parallel=$(nproc) \ # הריצה במקביל עם מספר התהליכים של המערכת
   -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
 
