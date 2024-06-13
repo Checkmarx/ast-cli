@@ -62,6 +62,7 @@ type ScanWorkflowResponse struct {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -75,6 +76,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -89,6 +91,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 }
 
 func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -105,6 +108,7 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 }
 
 func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
@@ -120,6 +124,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
+	t.Parallel()
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
@@ -133,6 +138,7 @@ func TestScansE2E(t *testing.T) {
 }
 
 func TestFastScan(t *testing.T) {
+	t.Parallel()
 	projectName := getProjectNameForScanTests()
 	// Create a scan
 	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
@@ -146,6 +152,7 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 }
 
 func TestScansUpdateProjectGroups(t *testing.T) {
+	t.Parallel()
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
 	response := listScanByID(t, scanID)
 	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
@@ -161,6 +168,7 @@ func TestScansUpdateProjectGroups(t *testing.T) {
 }
 
 func TestInvalidSource(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TestProject",
 		flag(params.SourcesFlag), "invalidSource",
@@ -172,6 +180,7 @@ func TestInvalidSource(t *testing.T) {
 }
 
 func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "show", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan: Please provide a scan ID"))
@@ -181,6 +190,7 @@ func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
 }
 
 func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
@@ -188,6 +198,7 @@ func TestRequiredScanIdToGetScanShow(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
+	t.Parallel()
 	scanID, projectID := createScanScaWithResolver(
 		t,
 		Dir,
@@ -208,6 +219,7 @@ func TestScaResolverArg(t *testing.T) {
 
 // Test ScaResolver as argument, no existing path to the resolver should fail
 func TestScaResolverArgFailed(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "resolver",
@@ -236,6 +248,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
+	t.Parallel()
 	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
@@ -250,6 +263,7 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
+	t.Parallel()
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
 	defer deleteProject(t, projectID)
@@ -268,6 +282,7 @@ func TestCancelScan(t *testing.T) {
 // Create a scan with the sources from the integration package, excluding go files and including zips
 // Assert the scan completes
 func TestScanCreateIncludeFilter(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -288,6 +303,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -306,6 +322,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 }
 
 func TestScanCreateWithThreshold(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -326,6 +343,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -345,6 +363,7 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	originals := getOriginalEnvVars()
@@ -385,6 +404,7 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 // Create a scan ignoring the exclusion of the .git directory
 // Assert the folder is included in the logs
 func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -426,6 +446,7 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 
 // Test the timeout for a long scan
 func TestScanTimeout(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -450,6 +471,7 @@ func TestScanTimeout(t *testing.T) {
 }
 
 func TestBrokenLinkScan(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -663,6 +685,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Get a scan workflow and assert it fails
 func TestScanWorkflow(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "workflow",
@@ -675,6 +698,7 @@ func TestScanWorkflow(t *testing.T) {
 }
 
 func TestScanLogsSAST(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -687,6 +711,7 @@ func TestScanLogsSAST(t *testing.T) {
 }
 
 func TestScanLogsKICSDeprecated(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -699,6 +724,7 @@ func TestScanLogsKICSDeprecated(t *testing.T) {
 }
 
 func TestScanLogsKICS(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -711,6 +737,7 @@ func TestScanLogsKICS(t *testing.T) {
 }
 
 func TestPartialScanWithWrongPreset(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -726,6 +753,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -777,6 +805,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 }
 
 func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
+	t.Parallel()
 	insecurePath := "data/insecure.zip"
 	args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
 	args = append(args, flag(params.SastFilterFlag), "!*.java", flag(params.IgnorePolicyFlag))
@@ -793,6 +822,7 @@ func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 }
 
 func TestScanCreateWithSSHKey(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
@@ -814,6 +844,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 }
 
 func TestCreateScanFilterZipFile(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -829,6 +860,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 }
 
 func TestRunKicsScan(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -839,6 +871,7 @@ func TestRunKicsScan(t *testing.T) {
 }
 
 func TestRunKicsScanWithouResults(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -848,6 +881,7 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 }
 
 func TestRunKicsScanWithoutFileSources(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 	}
@@ -856,6 +890,7 @@ func TestRunKicsScanWithoutFileSources(t *testing.T) {
 }
 
 func TestRunKicsScanWithEngine(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -867,6 +902,7 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
@@ -878,6 +914,7 @@ func TestRunKicsScanWithInvalidEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -890,6 +927,7 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
 	err, _ := executeCommand(t, args...)
@@ -908,6 +946,7 @@ func TestRunScaRealtimeScan(t *testing.T) {
 }
 
 func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "sca-realtime"}
 
 	err, _ := executeCommand(t, args...)
@@ -920,6 +959,7 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+	t.Parallel()
 	err := os.RemoveAll(scaconfig.Params.WorkingDir())
 	assert.NilError(t, err)
 
@@ -955,6 +995,7 @@ func copyResultsToTempDir() error {
 }
 
 func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv("CX_APIKEY")
 	apiKey := viper.GetString("CX_APIKEY")
 
@@ -974,6 +1015,7 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 }
 
 func TestScanCreateResubmit(t *testing.T) {
+	t.Parallel()
 	projectName := getProjectNameForScanTests()
 	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
 	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
@@ -992,6 +1034,7 @@ func TestScanCreateResubmit(t *testing.T) {
 
 // TestScanTypesValidation must return an error because the user is not allowed to use some scanType
 func TestScanTypesValidation(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1008,6 +1051,7 @@ func TestScanTypesValidation(t *testing.T) {
 }
 
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 	args := []string{
 		"scan", "create",
@@ -1024,6 +1068,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 
 // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
 func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1041,6 +1086,7 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 }
 
 func TestScanGeneratingPdfToEmailReport(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1059,6 +1105,7 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 }
 
 func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1077,6 +1124,7 @@ func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 }
 
 func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1095,6 +1143,7 @@ func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1139,6 +1188,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 //}
 
 func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1155,6 +1205,7 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 	assertError(t, err, "Failed finding groups")
 }
 func TestScanCreateExploitablePath(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1174,6 +1225,7 @@ func TestScanCreateExploitablePath(t *testing.T) {
 }
 
 func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1192,6 +1244,7 @@ func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
 	assertError(t, err, "must enable SAST scan type")
 }
 func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1211,6 +1264,7 @@ func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
 }
 
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1230,6 +1284,7 @@ func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 }
 
 func TestCreateScanProjectPrivatePackage(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1247,6 +1302,7 @@ func TestCreateScanProjectPrivatePackage(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1265,6 +1321,7 @@ func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
 }
 
 func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1283,6 +1340,7 @@ func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
 }
 
 func TestScanWithPolicy(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1295,6 +1353,7 @@ func TestScanWithPolicy(t *testing.T) {
 }
 
 func TestScanWithPolicyTimeout(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1307,6 +1366,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 }
 
 func TestScanListWithFilters(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=100",
@@ -1317,6 +1377,7 @@ func TestScanListWithFilters(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1342,6 +1403,7 @@ func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1365,6 +1427,7 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1389,6 +1452,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1414,6 +1478,7 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1441,6 +1506,7 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1467,6 +1533,7 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1488,6 +1555,7 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{

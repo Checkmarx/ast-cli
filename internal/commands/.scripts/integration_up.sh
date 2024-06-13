@@ -14,10 +14,10 @@ go test \
   -tags integration \
   -v \
   -timeout 210m \
+  -parallel=$(nproc) \
   -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
   -coverprofile cover.out \
-  github.com/checkmarx/ast-cli/test/integration/auth_test
-
+  github.com/checkmarx/ast-cli/test/integration
 
 status=$?
 echo "status value after tests $status"
