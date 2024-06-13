@@ -33,8 +33,12 @@ func (c ChatMockWrapper) SecureCall(w gptWrapper.StatefulWrapper, id uuid.UUID, 
 	[]gptWrapperMessage.Message,
 	error,
 ) {
+	externalModelState := "externalModel is not nil"
+	if metaData.ExternalModel == nil {
+		externalModelState = "externalModel is nil"
+	}
 	return []gptWrapperMessage.Message{{
 		Role:    gptWrapperRole.Assistant,
-		Content: "Mock message",
+		Content: "Mock message from SecureCall with externalModel: " + externalModelState,
 	}}, nil
 }

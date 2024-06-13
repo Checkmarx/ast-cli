@@ -122,6 +122,60 @@ func TestChatSastFirstMessageCorrectResponse(t *testing.T) {
 	assert.Assert(t, strings.Contains(s, "mock"), s)
 }
 
+func TestChatSastAzureAIFirstMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.azureAiGuidedRemediation",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
+	buffer, err := executeRedirectedTestCommand("chat", "sast",
+		"--scan-results-file", "./data/cx_result.json",
+		"--source-dir", "./data",
+		"--sast-result-id", "13588362")
+	assert.NilError(t, err)
+	output, err := io.ReadAll(buffer)
+	assert.NilError(t, err)
+	s := strings.ToLower(string(output))
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
+	assert.Assert(t, strings.Contains(s, "mock"), s)
+}
+
+func TestChatSastCheckmarxAIFirstMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.checkmarxAiGuidedRemediation",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
+	buffer, err := executeRedirectedTestCommand("chat", "sast",
+		"--scan-results-file", "./data/cx_result.json",
+		"--source-dir", "./data",
+		"--sast-result-id", "13588362")
+	assert.NilError(t, err)
+	output, err := io.ReadAll(buffer)
+	assert.NilError(t, err)
+	s := strings.ToLower(string(output))
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
+	assert.Assert(t, strings.Contains(s, "mock"), s)
+}
+
 func TestChatSastSecondMessageCorrectResponse(t *testing.T) {
 	buffer, err := executeRedirectedTestCommand("chat", "sast",
 		"--chat-apikey", "apiKey",
@@ -134,5 +188,63 @@ func TestChatSastSecondMessageCorrectResponse(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
+	assert.Assert(t, strings.Contains(s, "mock"), s)
+}
+
+func TestChatSastAzureAISecondMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.azureAiGuidedRemediation",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
+	buffer, err := executeRedirectedTestCommand("chat", "sast",
+		"--scan-results-file", "./data/cx_result.json",
+		"--source-dir", "./data",
+		"--sast-result-id", "13588362",
+		"--conversation-id", uuid.New().String(),
+		"--user-input", "userInput")
+	assert.NilError(t, err)
+	output, err := io.ReadAll(buffer)
+	assert.NilError(t, err)
+	s := strings.ToLower(string(output))
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
+	assert.Assert(t, strings.Contains(s, "mock"), s)
+}
+
+func TestChatSastCheckmarxAISecondMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.checkmarxAiGuidedRemediation",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
+	buffer, err := executeRedirectedTestCommand("chat", "sast",
+		"--scan-results-file", "./data/cx_result.json",
+		"--source-dir", "./data",
+		"--sast-result-id", "13588362",
+		"--conversation-id", uuid.New().String(),
+		"--user-input", "userInput")
+	assert.NilError(t, err)
+	output, err := io.ReadAll(buffer)
+	assert.NilError(t, err)
+	s := strings.ToLower(string(output))
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
 	assert.Assert(t, strings.Contains(s, "mock"), s)
 }

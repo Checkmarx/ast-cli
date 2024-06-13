@@ -70,7 +70,6 @@ func ChatKicsSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 	chatKicsCmd.Flags().String(params.ChatKicsResultVulnerability, "", "IaC result vulnerability name")
 
 	_ = chatKicsCmd.MarkFlagRequired(params.ChatUserInput)
-	_ = chatKicsCmd.MarkFlagRequired(params.ChatAPIKey)
 	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultFile)
 	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultLine)
 	_ = chatKicsCmd.MarkFlagRequired(params.ChatKicsResultSeverity)
@@ -97,6 +96,7 @@ func runChatKics(
 
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		chatGptEnabled := isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
@@ -123,7 +123,6 @@ func runChatKics(
 		var response []message.Message
 		if azureAiEnabled {
 			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
-			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: requestID,
@@ -131,7 +130,6 @@ func runChatKics(
 				Feature:   guidedRemediationFeatureNameKics,
 				ExternalModel: &message.ExternalAzure{
 					Endpoint: azureAiEndPoint,
-					ApiKey:   azureAiAPIKey,
 				},
 			}
 			logger.PrintIfVerbose("Sending message to Azure AI model for KICS guided remediation. RequestID: " + requestID)
@@ -153,12 +151,14 @@ func runChatKics(
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
-		} else {
+		} else if chatGptEnabled {
 			logger.PrintIfVerbose("Sending message to ChatGPT model for KICS guided remediation. RequestID: " + requestID)
 			response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
+		} else {
+			return outputError(cmd, id, errors.New(AllOptionsDisabledError))
 		}
 
 		responseContent := getMessageContents(response)

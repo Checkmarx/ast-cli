@@ -8,9 +8,9 @@ import (
 const (
 	ConversationIDErrorFormat           = "Invalid conversation ID %s"
 	AiGuidedRemediationEnabled          = "scan.config.plugins.aiGuidedRemediation"
+	ChatGPTGuidedRemediationEnabled     = "scan.config.plugins.chatGPTGuidedRemediation"     // todo: check final value
 	AzureAiGuidedRemediationEnabled     = "scan.config.plugins.azureAiGuidedRemediation"     // todo: check final value
 	AzureAiEndPoint                     = "scan.config.plugins.azureAiEndPoint"              // todo: check final value
-	AzureAiAPIKey                       = "scan.config.plugins.azureAiApiKey"                // todo: check final value
 	AzureAiModel                        = "scan.config.plugins.azureAiModel"                 // todo: check final value
 	CheckmarxAiGuidedRemediationEnabled = "scan.config.plugins.checkmarxAiGuidedRemediation" // todo: check final value // final value
 )

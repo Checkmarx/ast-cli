@@ -21,6 +21,7 @@ const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
 const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
+const AllOptionsDisabledError = "All AI Guided Remediation options are disabled in your tenant account" // check final value
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
@@ -39,7 +40,6 @@ func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers
 	chatSastCmd.Flags().String(params.ChatSastSourceDir, "", "Source code root directory relevant for the results file")
 	chatSastCmd.Flags().String(params.ChatSastResultID, "", "ID of the result to remediate")
 
-	_ = chatSastCmd.MarkFlagRequired(params.ChatAPIKey)
 	_ = chatSastCmd.MarkFlagRequired(params.ChatSastScanResultsFile)
 	_ = chatSastCmd.MarkFlagRequired(params.ChatSastSourceDir)
 	_ = chatSastCmd.MarkFlagRequired(params.ChatSastResultID)
@@ -64,6 +64,7 @@ func runChatSast(
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		chatGptEnabled := isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
@@ -114,7 +115,6 @@ func runChatSast(
 		var response []message.Message
 		if azureAiEnabled {
 			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
-			azureAiAPIKey, _ := GetAzureAiAPIKey(tenantConfigurationResponses)
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: requestID,
@@ -122,7 +122,6 @@ func runChatSast(
 				Feature:   guidedRemediationFeatureNameSast,
 				ExternalModel: &message.ExternalAzure{
 					Endpoint: azureAiEndPoint,
-					ApiKey:   azureAiAPIKey,
 				},
 			}
 
@@ -144,12 +143,14 @@ func runChatSast(
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
-		} else {
+		} else if chatGptEnabled {
 			logger.PrintIfVerbose("Sending message to ChatGPT model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.Call(statefulWrapper, id, newMessages)
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
+		} else {
+			return outputError(cmd, uuid.Nil, errors.Errorf(AllOptionsDisabledError))
 		}
 
 		responseContent := getMessageContents(response)
@@ -240,16 +241,20 @@ func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrap
 	return isEnabled
 }
 
+func isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, ChatGPTGuidedRemediationEnabled)
+	if err != nil {
+		return false
+	}
+	return isEnabled
+}
+
 func GetAzureAiEndPoint(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
 	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiEndPoint)
 }
 
 func GetAzureAiModel(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
 	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiModel)
-}
-
-func GetAzureAiAPIKey(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
-	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiAPIKey)
 }
 
 func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt, userPrompt string, err error) {
