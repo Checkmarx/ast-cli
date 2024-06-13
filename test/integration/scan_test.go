@@ -1489,6 +1489,7 @@ func copyResultsToTempDir() error {
 //}
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
