@@ -2,12 +2,14 @@ package mock
 
 import (
 	"strings"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type JWTMockWrapper struct{}
 
 // GetAllowedEngines mock for tests
-func (*JWTMockWrapper) GetAllowedEngines() (allowedEngines map[string]bool, err error) {
+func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	allowedEngines = make(map[string]bool)
 	engines := []string{"sast", "iac-security", "sca", "api-security"}
 	for _, value := range engines {

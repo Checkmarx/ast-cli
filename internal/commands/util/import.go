@@ -20,7 +20,8 @@ func NewImportCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper) *cobra.Command {
+	applicationsWrapper wrappers.ApplicationsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
@@ -36,7 +37,7 @@ func NewImportCommand(
 			`,
 			),
 		},
-		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, byorWrapper),
+		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, byorWrapper, featureFlagsWrapper),
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
@@ -51,7 +52,8 @@ func runImportCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
-	byorWrapper wrappers.ByorWrapper) func(cmd *cobra.Command, args []string) error {
+	byorWrapper wrappers.ByorWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFilePath, err := validateFilePath(cmd)
 		if err != nil {
@@ -63,12 +65,12 @@ func runImportCommand(
 			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
 
-		projectID, err := services.FindProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper)
+		projectID, err := services.FindProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
 
-		err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper)
+		err = importFile(projectID, importFilePath, uploadsWrapper, byorWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -99,8 +101,8 @@ func validateFileExtension(importFilePath string) error {
 }
 
 func importFile(projectID string, path string,
-	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper) error {
-	uploadURL, err := uploadsWrapper.UploadFile(path)
+	uploadsWrapper wrappers.UploadsWrapper, byorWrapper wrappers.ByorWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	uploadURL, err := uploadsWrapper.UploadFile(path, featureFlagsWrapper)
 	if err != nil {
 		return err
 	}
