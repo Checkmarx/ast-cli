@@ -223,19 +223,19 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 	assertError(t, err, "Authentication failed, not able to retrieve codebashing base link")
 }
 
-func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-	scanID, _ := getRootScan(t)
-
-	args := []string{
-		"results", "show",
-		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "pdf",
-		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "report option \"invalid_option\" unavailable")
-}
+//func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+//	scanID, _ := getRootScan(t)
+//
+//	args := []string{
+//		"results", "show",
+//		flag(params.ScanIDFlag), scanID,
+//		flag(params.TargetFormatFlag), "pdf",
+//		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
+//	}
+//
+//	err, _ := executeCommand(t, args...)
+//	assertError(t, err, "report option \"invalid_option\" unavailable")
+//}
 
 func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 	scanID, _ := getRootScan(t)

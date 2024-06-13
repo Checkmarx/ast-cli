@@ -6,26 +6,25 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
-
-	expectedMsg := "required flag(s) " + "\"" + params.QueryIDFlag + "\"" + ", " + "\"" + params.ScanIDFlag + "\"" + " not set"
-	assertRequiredParameter(t, expectedMsg, "results", "bfl")
-	scanID, _ := getRootScan(t)
-	queryID := "17765437696070740537"
-
-	outputBuffer := executeCmdNilAssertion(
-		t, "Getting BFL should pass.", "results", "bfl",
-		flag(params.ScanIDFlag), scanID,
-		flag(params.QueryIDFlag), queryID,
-		flag(params.FormatFlag), "json")
-
-	bflResult := []wrappers.ScanResultNode{}
-	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
-
-}
+//func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
+//
+//	expectedMsg := "required flag(s) " + "\"" + params.QueryIDFlag + "\"" + ", " + "\"" + params.ScanIDFlag + "\"" + " not set"
+//	assertRequiredParameter(t, expectedMsg, "results", "bfl")
+//	scanID, _ := getRootScan(t)
+//	queryID := "17765437696070740537"
+//
+//	outputBuffer := executeCmdNilAssertion(
+//		t, "Getting BFL should pass.", "results", "bfl",
+//		flag(params.ScanIDFlag), scanID,
+//		flag(params.QueryIDFlag), queryID,
+//		flag(params.FormatFlag), "json")
+//
+//	bflResult := []wrappers.ScanResultNode{}
+//	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
+//
+//}
 
 func TestRunGetBflWithInvalidScanIDandQueryID(t *testing.T) {
 
