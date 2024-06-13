@@ -89,14 +89,25 @@ func runChatKics(
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatKicsResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		tenantConfigurationResponses, err := GetTenantConfigurationResponses(tenantWrapper)
-		if err != nil {
-			return outputError(cmd, uuid.Nil, err)
-		}
+		var chatGptEnabled, azureAiEnabled, checkmarxAiEnabled bool
+		var tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse
 
-		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
-		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
-		chatGptEnabled := isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		if !isCxOneApiKeyAvailable() {
+			chatGptEnabled = true
+			azureAiEnabled = false
+			checkmarxAiEnabled = false
+			logger.Printf("CxOne API key is not available, ChatGPT model will be used for guided remediation.")
+		} else {
+			var err error
+			tenantConfigurationResponses, err = GetTenantConfigurationResponses(tenantWrapper)
+			if err != nil {
+				return outputError(cmd, uuid.Nil, err)
+			}
+
+			azureAiEnabled = isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
+			checkmarxAiEnabled = isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
+			chatGptEnabled = isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		}
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 

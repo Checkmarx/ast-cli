@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"strconv"
 
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
@@ -11,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -223,6 +225,11 @@ func isAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.Tena
 		return false
 	}
 	return isEnabled
+}
+
+func isCxOneApiKeyAvailable() bool {
+	apiKey := viper.GetString(commonParams.AstAPIKey)
+	return apiKey != ""
 }
 
 func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
