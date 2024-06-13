@@ -18,8 +18,6 @@ import (
 	"strings"
 	"time"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -99,9 +97,9 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
+	completedPolicy        = "COMPLETED"
+	nonePolicy             = "NONE"
+	evaluatingPolicy       = "EVALUATING"
 	ScsScoreCardType       = "scorecard"
 	ScsSecretDetectionType = "secret-detection"
 	ScsRepoRequiredMsg     = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
@@ -1959,7 +1957,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper,scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -2021,7 +2019,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
-			risksOverViewWrapper, nil, featureFlagsWrapper) // check this partial case, how to handle it
+			nil, featureFlagsWrapper) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
