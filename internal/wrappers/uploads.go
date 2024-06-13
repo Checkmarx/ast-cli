@@ -1,5 +1,5 @@
 package wrappers
 
 type UploadsWrapper interface {
-	UploadFile(sourcesFile string) (*string, error)
+	UploadFile(sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (*string, error)
 }
