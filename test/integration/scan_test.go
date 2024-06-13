@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -764,7 +764,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 		flag(params.IgnorePolicyFlag),
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
-	file, err := ioutil.ReadFile("cx_result.json")
+	file, err := os.ReadFile("cx_result.json")
 	defer func() {
 		_ = os.Remove("cx_result.json")
 	}()
@@ -796,7 +796,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
-	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
 	defer func() { _ = os.Remove(SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
@@ -920,32 +920,33 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-	err := os.RemoveAll(realtime.ScaResolverWorkingDir)
+	err := os.RemoveAll(scaconfig.Params.WorkingDir())
 	assert.NilError(t, err)
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	downloadURL := realtime.Params.SCAResolverDownloadURL
-	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
+	downloadURL := scaconfig.Params.DownloadURL
+	scaconfig.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 
-	realtime.Params.SCAResolverDownloadURL = downloadURL
-	realtime.Params.SCAResolverHashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	scaconfig.Params.DownloadURL = downloadURL
+	scaconfig.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 }
 
 func copyResultsToTempDir() error {
 	// Read all content of src to data, may cause OOM for a large file.
-	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
+	data, err := os.ReadFile("./data/cx-sca-realtime-results.json")
 	if err != nil {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(realtime.ScaResolverResultsFileNameDir, data, 0644)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfig.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
+	err = os.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}

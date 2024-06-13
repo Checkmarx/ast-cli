@@ -1,6 +1,6 @@
 //go:build windows
 
-package scarealtime
+package osinstaller
 
 import (
 	"archive/zip"
@@ -13,19 +13,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
-var Params = ScaRealTime{
-	ExecutableFilePath:         filepath.Join(ScaResolverWorkingDir, "ScaResolver.exe"),
-	HashFilePath:               filepath.Join(ScaResolverWorkingDir, "ScaResolver.zip.sha256sum"),
-	SCAResolverDownloadURL:     "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-win64.zip",
-	SCAResolverHashDownloadURL: "https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-win64.zip.sha256sum",
-	SCAResolverFileName:        "ScaResolver.zip",
-	SCAResolverHashFileName:    "ScaResolver.zip.sha256sum",
-}
-
-// UnzipOrExtractFiles Extracts SCA Resolver files
-func UnzipOrExtractFiles() error {
-	logger.PrintIfVerbose("Unzipping files in:  " + ScaResolverWorkingDir)
-	r, err := zip.OpenReader(filepath.Join(ScaResolverWorkingDir, Params.SCAResolverFileName))
+// UnzipOrExtractFiles Extracts files from the zip file
+func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) error {
+	logger.PrintIfVerbose("Unzipping files in:  " + installationConfiguration.WorkingDir())
+	r, err := zip.OpenReader(filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName))
 	if err != nil {
 		return err
 	}
@@ -47,10 +38,10 @@ func UnzipOrExtractFiles() error {
 			}
 		}()
 
-		path := filepath.Join(ScaResolverWorkingDir, f.Name)
+		path := filepath.Join(installationConfiguration.WorkingDir(), f.Name)
 
 		// Check for ZipSlip (Directory traversal)
-		if !strings.HasPrefix(path, filepath.Clean(ScaResolverWorkingDir)+string(os.PathSeparator)) {
+		if !strings.HasPrefix(path, filepath.Clean(installationConfiguration.WorkingDir())+string(os.PathSeparator)) {
 			return fmt.Errorf("illegal file path: %s", path)
 		}
 
