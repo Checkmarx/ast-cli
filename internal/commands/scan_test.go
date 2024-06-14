@@ -46,7 +46,8 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
-	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: --scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -774,7 +775,7 @@ func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
 		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.ScsType
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {
@@ -798,7 +799,7 @@ func TestCreateScanWithSCSSecretDetection(t *testing.T) {
 		Twoms: "true",
 	}
 	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.ScsType
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
 	scsMapConfig[resultsMapValue] = &scsConfig
 
 	if !reflect.DeepEqual(result, scsMapConfig) {

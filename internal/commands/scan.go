@@ -97,9 +97,6 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy        = "COMPLETED"
-	nonePolicy             = "NONE"
-	evaluatingPolicy       = "EVALUATING"
 	ScsScoreCardType       = "scorecard"
 	ScsSecretDetectionType = "secret-detection"
 	ScsRepoRequiredMsg     = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
@@ -1957,7 +1954,8 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
