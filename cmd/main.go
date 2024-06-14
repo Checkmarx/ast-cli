@@ -52,6 +52,7 @@ func main() {
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
+	byorPath := viper.GetString(params.ByorPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -83,6 +84,7 @@ func main() {
 	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
+	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -115,6 +117,7 @@ func main() {
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
+		byorWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

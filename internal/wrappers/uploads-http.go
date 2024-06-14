@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -18,7 +19,7 @@ type UploadsHTTPWrapper struct {
 	path string
 }
 
-func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
+func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (*string, error) {
 	preSignedURL, err := u.getPresignedURLForUploading()
 	if err != nil {
 		return nil, errors.Errorf("Failed creating pre-signed URL - %s", err.Error())
@@ -29,6 +30,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	}
 	*preSignedURL = string(preSignedURLBytes)
 	viper.Set(commonParams.UploadURLEnv, *preSignedURL)
+
 	file, err := os.Open(sourcesFile)
 	if err != nil {
 		return nil, errors.Errorf("Failed to open file %s: %s", sourcesFile, err.Error())
@@ -51,7 +53,8 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed to stat file %s: %s", sourcesFile, err.Error())
 	}
-	useAccessToken := FeatureFlags[MinioEnabled]
+	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, MinioEnabled)
+	useAccessToken := flagResponse.Status
 	resp, err := SendHTTPRequestByFullURLContentLength(http.MethodPut, *preSignedURL, file, stat.Size(), useAccessToken, NoTimeout, accessToken, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
@@ -62,6 +65,8 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	}()
 
 	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
 	case http.StatusOK:
 		return preSignedURL, nil
 	default:

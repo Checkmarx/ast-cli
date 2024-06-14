@@ -62,4 +62,5 @@ var (
 	FeatureFlagsKey                     = strings.ToLower(FeatureFlagsEnv)
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
 	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
+	ByorPathKey                         = strings.ToLower(ByorPathEnv)
 )

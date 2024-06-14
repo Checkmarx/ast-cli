@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
-
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/spf13/viper"
 
 	"github.com/pkg/errors"
@@ -22,13 +22,8 @@ import (
 )
 
 const (
-	failedCreatingProj = "Failed creating a project"
-	failedUpdatingProj = "Failed updating a project"
-
-	failedGettingProj     = "Failed getting a project"
 	failedDeletingProj    = "Failed deleting a project"
 	failedGettingBranches = "Failed getting branches for project"
-	failedFindingGroup    = "Failed finding groups"
 	projOriginLevel       = "Project"
 	repoConfKey           = "scan.handler.git.repository"
 	sshConfKey            = "scan.handler.git.sshKey"
@@ -64,7 +59,7 @@ var (
 )
 
 func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
+	accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -94,7 +89,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -214,11 +209,12 @@ func updateProjectRequestValues(input *[]byte, cmd *cobra.Command) error {
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	mainBranch, _ := cmd.Flags().GetString(commonParams.MainBranchFlag)
 	_ = json.Unmarshal(*input, &info)
-	if projectName != "" {
-		info["name"] = projectName
-	} else {
-		return errors.Errorf("Project name is required")
+	if projectName == "" {
+		return errors.Errorf(errorConstants.ProjectNameIsRequired)
 	}
+
+	info["name"] = projectName
+
 	if mainBranch != "" {
 		info["mainBranch"] = mainBranch
 	}
@@ -231,32 +227,28 @@ func runCreateProjectCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		applicationName, err := cmd.Flags().GetString(commonParams.ApplicationName)
-		if err != nil {
-			return err
-		}
-
+		applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 		var applicationID []string
-
 		if applicationName != "" {
 			application, getAppErr := getApplication(applicationName, applicationsWrapper)
 			if getAppErr != nil {
 				return getAppErr
 			}
 			if application == nil {
-				return errors.Errorf(applicationErrors.ApplicationDoesntExistOrNoPermission)
+				return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
 			}
 			applicationID = []string{application.ID}
 		}
 
 		var input = []byte("{}")
-		err = updateProjectRequestValues(&input, cmd)
+		err := updateProjectRequestValues(&input, cmd)
 		if err != nil {
 			return err
 		}
-		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -272,26 +264,26 @@ func runCreateProjectCommand(
 		// Try to parse to a project model in order to manipulate the request payload
 		err = json.Unmarshal(input, &projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s: Input in bad format", failedCreatingProj)
+			return errors.Wrapf(err, "%s: Input in bad format", services.FailedCreatingProj)
 		}
 		var payload []byte
 		payload, _ = json.Marshal(projModel)
 		logger.PrintIfVerbose(fmt.Sprintf("Payload to projects service: %s\n", string(payload)))
 		projResponseModel, errorModel, err = projectsWrapper.Create(&projModel)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedCreatingProj)
+			return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 		}
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedCreatingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, services.FailedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s", failedCreatingProj)
+				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
 		}
-		err = assignGroupsToProject(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
+		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -413,7 +405,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
 			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
@@ -431,15 +423,15 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		var err error
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		if projectID == "" {
-			return errors.Errorf("%s: Please provide a project ID", failedGettingProj)
+			return errors.Errorf("%s: Please provide a project ID", services.FailedGettingProj)
 		}
 		projectResponseModel, errorModel, err = projectsWrapper.GetByID(projectID)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedGettingProj)
+			return errors.Wrapf(err, "%s", services.FailedGettingProj)
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf("%s: CODE: %d, %s", failedGettingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf("%s: CODE: %d, %s", services.FailedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
 			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
@@ -504,7 +496,7 @@ func runDeleteProjectCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd 
 		}
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(ErrorCodeFormat, failedDeletingProj, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedDeletingProj, errorModel.Code, errorModel.Message)
 		}
 		return nil
 	}

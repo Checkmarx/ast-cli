@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,11 +19,14 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
+	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -40,6 +42,10 @@ const (
 	scanList              = "list"
 	projectIDParams       = "project-id="
 	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
+	invalidClientID       = "invalidClientID"
+	invalidClientSecret   = "invalidClientSecret"
+	invalidAPIKey         = "invalidAPI"
+	invalidTenant         = "invalidTenant"
 )
 
 var (
@@ -111,7 +117,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
@@ -191,7 +197,9 @@ func TestScaResolverArg(t *testing.T) {
 		"sast,iac-security",
 		viper.GetString(resolverEnvVar),
 	)
+
 	defer deleteProject(t, projectID)
+
 	assert.Assert(
 		t,
 		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
@@ -275,15 +283,13 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	//executeCommand(t, args...)
-	///assertError(t, err, "scan did not complete successfully") // Creating a scan with !*go,!*Dockerfile should fail
 	args[11] = "*js"
 	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
 }
 
 // Create a scan with the sources
 // Assert the scan completes
-func TestScanCreateWithThreshold(t *testing.T) {
+func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -301,6 +307,24 @@ func TestScanCreateWithThreshold(t *testing.T) {
 	assertError(t, err, "Threshold check finished with status Failed")
 }
 
+func TestScanCreateWithThreshold(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.Threshold), "sast-high=100;",
+		flag(params.KicsFilterFlag), "!Dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "")
+}
+
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
@@ -310,9 +334,9 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sast, sca",
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=error",
+		flag(params.Threshold), "sast-high=error; sca-high=error;",
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
@@ -325,24 +349,38 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	_, projectName := getRootProject(t)
 
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.SastRedundancyFlag),
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-high=1;sast-low=1; sca-high=1",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json",
 		flag(params.TargetPathFlag), "/tmp/",
 		flag(params.TargetFlag), "results",
+		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
-	err := executeWithTimeout(cmd, 2*time.Minute, args...)
+	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
-	_, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	file, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
+	assert.Assert(t, file.Size() > 5000, "Report file should be bigger than 5KB")
 	assert.NilError(t, fileError, "Report file should exist for extension")
 }
 
@@ -691,7 +729,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan completed partially")
+	assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
@@ -709,9 +747,19 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
-
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "scan did not complete successfully")
+	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
+}
+
+func assertAstError(t *testing.T, err error, expectedErrorMessage string, expectedExitCode int) {
+	var e *wrappers.AstError
+	if errors.As(err, &e) {
+		assert.Equal(t, e.Error(), expectedErrorMessage)
+		assert.Equal(t, e.Code, expectedExitCode)
+	} else {
+		assertError(t, err, "Error is not of type AstError")
+		assert.Assert(t, false, fmt.Sprintf("Error is not of type AstError. Error message: %s", err.Error()))
+	}
 }
 
 func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResultsCollection, error) {
@@ -723,7 +771,7 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 		flag(params.IgnorePolicyFlag),
 	}
 	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
-	file, err := ioutil.ReadFile("cx_result.json")
+	file, err := os.ReadFile("cx_result.json")
 	defer func() {
 		_ = os.Remove("cx_result.json")
 	}()
@@ -755,7 +803,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
-	_ = ioutil.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
 	defer func() { _ = os.Remove(SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
@@ -879,32 +927,33 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-	err := os.RemoveAll(realtime.ScaResolverWorkingDir)
+	err := os.RemoveAll(scaconfig.Params.WorkingDir())
 	assert.NilError(t, err)
 
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	downloadURL := realtime.Params.SCAResolverDownloadURL
-	realtime.Params.SCAResolverDownloadURL = "https://www.invalid-sca-resolver.com"
+	downloadURL := scaconfig.Params.DownloadURL
+	scaconfig.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 
-	realtime.Params.SCAResolverDownloadURL = downloadURL
-	realtime.Params.SCAResolverHashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+	scaconfig.Params.DownloadURL = downloadURL
+	scaconfig.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
 	err, _ = executeCommand(t, args...)
 	assert.Assert(t, err != nil)
-	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to upload file failed")))
+	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 }
 
 func copyResultsToTempDir() error {
 	// Read all content of src to data, may cause OOM for a large file.
-	data, err := ioutil.ReadFile("./data/cx-sca-realtime-results.json")
+	data, err := os.ReadFile("./data/cx-sca-realtime-results.json")
 	if err != nil {
 		return err
 	}
 	// Write data to dst
-	err = ioutil.WriteFile(realtime.ScaResolverResultsFileNameDir, data, 0644)
+	scaResolverResultsFileNameDir := filepath.Join(scaconfig.Params.WorkingDir(), realtime.ScaResolverResultsFileName)
+	err = os.WriteFile(scaResolverResultsFileNameDir, data, 0644)
 	if err != nil {
 		return err
 	}
@@ -1398,6 +1447,216 @@ func TestScanListWithFilters(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
+}
+
+func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AstAPIKeyFlag), "invalid_apikey",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AccessKeyIDFlag), originals[params.AccessKeyIDEnv],
+		flag(params.AccessKeySecretFlag), originals[params.AccessKeySecretEnv],
+		flag(params.TenantFlag), originals[params.TenantEnv],
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       invalidAPIKey,
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.AccessKeyIDFlag), "invalid_client_ID",
+		flag(params.AccessKeySecretFlag), "invalid_client_secret",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+}
+
+func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv: "",
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
+}
+
+func getOriginalEnvVars() map[string]string {
+	return map[string]string{
+		params.AstAPIKeyEnv:       os.Getenv(params.AstAPIKeyEnv),
+		params.AccessKeyIDEnv:     os.Getenv(params.AccessKeyIDEnv),
+		params.AccessKeySecretEnv: os.Getenv(params.AccessKeySecretEnv),
+		params.TenantEnv:          os.Getenv(params.TenantEnv),
+	}
+}
+
+func setEnvVars(envVars map[string]string) {
+	for key, value := range envVars {
+		os.Setenv(key, value)
+	}
 }
 
 func addSCSDefaultFlagsToArgs(args *[]string) {

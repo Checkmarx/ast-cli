@@ -11,12 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	applicationErrors "github.com/checkmarx/ast-cli/internal/errors"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 
 	"gotest.tools/assert"
@@ -101,7 +100,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 		flag(params.ApplicationName), "application-that-doesnt-exist",
 	)
 
-	assertError(t, err, applicationErrors.ApplicationDoesntExistOrNoPermission)
+	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
@@ -125,6 +124,16 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
 	)
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
+}
+
+func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
+	err, _ := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project",
+	)
+	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name 'project' already exists\n")
 }
 
 // Test list project's branches
@@ -182,6 +191,14 @@ func deleteProject(t *testing.T, projectID string) {
 		flag(params.ProjectIDFlag),
 		projectID,
 	)
+}
+
+func deleteProjectByName(t *testing.T, projectName string) {
+	projectsWrapper := wrappers.NewHTTPProjectsWrapper(viper.GetString(params.ProjectsPathKey))
+	projectModel, _, err := projectsWrapper.GetByName(projectName)
+	if err == nil && projectModel != nil {
+		deleteProject(t, projectModel.ID)
+	}
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
