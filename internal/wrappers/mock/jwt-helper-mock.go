@@ -23,7 +23,7 @@ func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFla
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 	if j.AIEnabled == 1 {
-		return true, nil
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
