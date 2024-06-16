@@ -9,11 +9,12 @@ import (
 
 func TestCreateVorpalScanRequest(t *testing.T) {
 	vorpalParams := VorpalScanParams{
-		FilePath:            "/Users/benalvo/CxDev/workspace/Pheonix-workspace/CxCodeProbe/testdata/Java/samples/Cookies.java",
+		FilePath:            "data/python-vul-file.py",
 		VorpalUpdateVersion: false,
 		IsDefaultAgent:      true,
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+		VorpalWrapper:       &mock.VorpalMockWrapper{},
 	}
 	sr, err := CreateVorpalScanRequest(vorpalParams)
 	if err != nil {
