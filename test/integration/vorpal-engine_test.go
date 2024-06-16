@@ -9,6 +9,8 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -59,11 +61,14 @@ func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testin
 }
 
 func generateVorpalParams(filePath string, vorpalUpdateVersion, isDefaultagent bool) services.VorpalScanParams {
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+	jwtWrapper := wrappers.NewJwtWrapper()
 	return services.VorpalScanParams{
 		FilePath:            filePath,
 		VorpalUpdateVersion: vorpalUpdateVersion,
 		IsDefaultAgent:      isDefaultagent,
-		JwtWrapper:          &commands.JWTMockWrapper{},
-		FeatureFlagsWrapper: &commands.FeatureFlagsMockWrapper{},
+		JwtWrapper:          jwtWrapper,
+		FeatureFlagsWrapper: featureFlagsWrapper,
 	}
 }
