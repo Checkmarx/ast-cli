@@ -2,15 +2,15 @@ package commands
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"io"
 	"strings"
 	"testing"
 
-	params "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
