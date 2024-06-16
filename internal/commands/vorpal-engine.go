@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -71,7 +72,10 @@ func getAvailablePort() (int, error) {
 func setConfigPropertyQuiet(propName string, propValue int) {
 	viper.Set(propName, propValue)
 	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
-		_ = viper.WriteConfig()
+		err := viper.WriteConfig()
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
