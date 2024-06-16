@@ -84,7 +84,7 @@ func ReturnFailureResponseMock() *grpcs.ScanResult {
 		RequestID: "some-request-id",
 		Status:    false,
 		Message:   "Scan failed.",
-		Error:     &grpcs.Error{InternalError, "An internal error occurred."},
+		Error:     &grpcs.Error{Code: InternalError, Description: "An internal error occurred."},
 	}
 }
 
