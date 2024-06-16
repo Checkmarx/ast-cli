@@ -29,7 +29,7 @@ type VorpalScanParams struct {
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, error) {
 	installedLatestVersion := false
-	vorpalWrapper, err := configureVorpalWrapper(vorpalParams)
+	vorpalWrapper, err := configureVorpalWrapper(vorpalParams.VorpalWrapper)
 	if err != nil {
 		return nil, err
 	}
@@ -91,20 +91,20 @@ func getAvailablePort() (int, error) {
 	return port.Port, nil
 }
 
-func configureVorpalWrapper(vorpalParams VorpalScanParams) (grpcs.VorpalWrapper, error) {
-	port := vorpalParams.VorpalWrapper.GetPort()
+func configureVorpalWrapper(existingVorpalWrapper grpcs.VorpalWrapper) (grpcs.VorpalWrapper, error) {
+	port := existingVorpalWrapper.GetPort()
 	if port == 0 {
 		return grpcs.NewVorpalGrpcWrapper(port), nil
 	}
 
-	if err := vorpalParams.VorpalWrapper.HealthCheck(); err != nil {
+	if err := existingVorpalWrapper.HealthCheck(); err != nil {
 		port, portErr := findVorpalPort()
 		if portErr != nil {
 			return nil, portErr
 		}
 		return grpcs.NewVorpalGrpcWrapper(port), nil
 	}
-	return vorpalParams.VorpalWrapper, nil
+	return existingVorpalWrapper, nil
 }
 
 func setConfigPropertyQuiet(propName string, propValue int) {
