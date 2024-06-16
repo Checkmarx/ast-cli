@@ -6,7 +6,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/services/vorpalengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/pkg/errors"
@@ -21,7 +21,7 @@ func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		var port = viper.GetInt(commonParams.VorpalPortKey)
 		vorpalWrapper := grpcs.NewVorpalGrpcWrapper(port)
-		vorpalParams := services.VorpalScanParams{
+		vorpalParams := vorpalengine.VorpalScanParams{
 			FilePath:            fileSourceFlag,
 			VorpalUpdateVersion: vorpalLatestVersion,
 			IsDefaultAgent:      agent == commonParams.DefaultAgent,
@@ -43,9 +43,9 @@ func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 	}
 }
 
-func ExecuteVorpalScan(vorpalParams services.VorpalScanParams) (*grpcs.ScanResult, error) {
+func ExecuteVorpalScan(vorpalParams vorpalengine.VorpalScanParams) (*grpcs.ScanResult, error) {
 	if filepath.Ext(vorpalParams.FilePath) == "" && vorpalParams.FilePath != "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
-	return services.CreateVorpalScanRequest(vorpalParams)
+	return vorpalengine.CreateVorpalScanRequest(vorpalParams)
 }

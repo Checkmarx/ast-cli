@@ -1,4 +1,4 @@
-package services
+package vorpalengine
 
 import (
 	"fmt"

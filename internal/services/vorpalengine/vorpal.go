@@ -1,4 +1,4 @@
-package services
+package vorpalengine
 
 import (
 	"fmt"
@@ -156,7 +156,7 @@ func readSourceCode(filePath string) (string, error) {
 }
 
 func RunVorpalEngine(port int) error {
-	dialTimeout := 2 * time.Second
+	dialTimeout := 1 * time.Second
 	args := []string{
 		"-listen",
 		fmt.Sprintf("%d", port),
@@ -165,6 +165,8 @@ func RunVorpalEngine(port int) error {
 	logger.PrintIfVerbose(fmt.Sprintf("Running vorpal engine with args: %v \n", args))
 
 	cmd := exec.Command(vorpalconfig.Params.ExecutableFilePath(), args...)
+
+	configureIndependentProcess(cmd)
 
 	err := cmd.Start()
 	if err != nil {

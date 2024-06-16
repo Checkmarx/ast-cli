@@ -3,12 +3,13 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/services/vorpalengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -17,6 +18,7 @@ import (
 )
 
 func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
+	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",
@@ -28,7 +30,7 @@ func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 }
 
 func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
-	bindKeysToEnvAndDefault(t)
+	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "data/python-vul-file",
@@ -40,27 +42,28 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 }
 
 func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_Success(t *testing.T) {
-	args := []string{
-		"scan", "vorpal",
-		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.VorpalLatestVersion),
-	}
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "Sending empty source file should not fail")
-}
-
-func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_SuccessfullyReturnMockData(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "vorpal",
-		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.VorpalLatestVersion),
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+}
+
+func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_Success(t *testing.T) {
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "vorpal",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, fmt.Sprintf("Should not fail with error: %v", err))
 }
 
 func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
@@ -70,11 +73,11 @@ func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testin
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
 
-func generateVorpalParams(filePath string, vorpalUpdateVersion, isDefaultagent bool) services.VorpalScanParams {
+func generateVorpalParams(filePath string, vorpalUpdateVersion, isDefaultagent bool) vorpalengine.VorpalScanParams {
 	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
-	return services.VorpalScanParams{
+	return vorpalengine.VorpalScanParams{
 		FilePath:            filePath,
 		VorpalUpdateVersion: vorpalUpdateVersion,
 		IsDefaultAgent:      isDefaultagent,
