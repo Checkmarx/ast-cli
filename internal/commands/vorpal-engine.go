@@ -1,15 +1,11 @@
 package commands
 
 import (
-	"path/filepath"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +21,7 @@ func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 			JwtWrapper:          jwtWrapper,
 			FeatureFlagsWrapper: featureFlagsWrapper,
 		}
-		scanResult, err := ExecuteVorpalScan(vorpalParams)
+		scanResult, err := services.CreateVorpalScanRequest(vorpalParams)
 		if err != nil {
 			return err
 		}
@@ -37,18 +33,6 @@ func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 
 		return nil
 	}
-}
-
-func ExecuteVorpalScan(vorpalParams services.VorpalScanParams) (*grpcs.ScanResult, error) {
-	if vorpalParams.FilePath == "" {
-		return nil, nil
-	}
-
-	if filepath.Ext(vorpalParams.FilePath) == "" {
-		return nil, errors.New(errorConstants.FileExtensionIsRequired)
-	}
-
-	return services.CreateVorpalScanRequest(vorpalParams)
 }
 
 func ReturnSuccessfulResponseMock() *grpcs.ScanResult {
@@ -93,7 +77,5 @@ func ReturnFailureResponseMock() *grpcs.ScanResult {
 }
 
 const (
-	UnknownError   = 0
-	InvalidRequest = 1
-	InternalError  = 2
+	InternalError = 2
 )

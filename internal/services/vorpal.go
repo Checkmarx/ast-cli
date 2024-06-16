@@ -34,10 +34,6 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 	}
 	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(port)
 
-	if exists, _ := osinstaller.FileExists(vorpalParams.FilePath); !exists {
-		return nil, fmt.Errorf("file %s does not exist", vorpalParams.FilePath)
-	}
-
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 	if !vorpalInstalled {
 		logger.PrintIfVerbose("Vorpal is not installed. Installing...")
@@ -60,14 +56,13 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 		}
 	}
 
-	err = checkLicense(vorpalParams.IsDefaultAgent, vorpalParams.JwtWrapper)
+	err = ensureVorpalServiceRunning(vorpalWrapper, port, vorpalParams)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ensureVorpalServiceRunning(vorpalWrapper, port)
-	if err != nil {
-		return nil, err
+	if exists, _ := osinstaller.FileExists(vorpalParams.FilePath); !exists {
+		return &grpcs.ScanResult{}, nil
 	}
 
 	sourceCode, err := readSourceCode(vorpalParams.FilePath)
@@ -92,11 +87,17 @@ func getVorpalPort() (int, error) {
 	return port, nil
 }
 
-func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int) error {
+func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int, vorpalParams VorpalScanParams) error {
 	if err := vorpalWrapper.HealthCheck(); err != nil {
+		err = checkLicense(vorpalParams.IsDefaultAgent, vorpalParams.JwtWrapper)
+		if err != nil {
+			return err
+		}
+
 		if err := RunVorpalEngine(port); err != nil {
 			return err
 		}
+
 		if err := vorpalWrapper.HealthCheck(); err != nil {
 			return err
 		}
@@ -106,6 +107,7 @@ func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int) err
 
 func checkLicense(isDefaultAgent bool, jwtWrapper wrappers.JWTWrapper) error {
 	if !isDefaultAgent {
+		// TODO: check enforcement
 		allowed, err := jwtWrapper.IsAllowedEngine(params.AIProtectionType)
 		if err != nil {
 			return err
