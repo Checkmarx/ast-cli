@@ -76,6 +76,7 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 	}
+	origAPIKey := viper.GetString(params.AstAPIKey)
 	viper.Set(params.AstAPIKey, "SomeKey")
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
@@ -91,7 +92,7 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 	s := strings.ToLower(string(output))
 
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	viper.Set(params.AstAPIKey, "")
+	viper.Set(params.AstAPIKey, origAPIKey)
 
 	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is not nil"), s)
 }
@@ -107,6 +108,7 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 	}
+	origAPIKey := viper.GetString(params.AstAPIKey)
 	viper.Set(params.AstAPIKey, "SomeKey")
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
@@ -123,7 +125,7 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 	s := strings.ToLower(string(output))
 
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	viper.Set(params.AstAPIKey, "")
+	viper.Set(params.AstAPIKey, origAPIKey)
 
 	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is nil"), s)
 }
