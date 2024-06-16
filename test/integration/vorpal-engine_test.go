@@ -10,6 +10,7 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
@@ -48,14 +49,14 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData
 func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_SuccessfullyReturnMockData(t *testing.T) {
 
 	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", false, true))
-	expectedMockResult := mocks.ReturnFailureResponseMock()
+	expectedMockResult := mock.ReturnFailureResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
 
 func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", true, true))
-	expectedMockResult := mocks.ReturnSuccessfulResponseMock()
+	expectedMockResult := mock.ReturnSuccessfulResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
