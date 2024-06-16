@@ -12,7 +12,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -227,8 +226,8 @@ func isAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.Tena
 	return isEnabled
 }
 
-func isCxOneApiKeyAvailable() bool {
-	apiKey := viper.GetString(commonParams.AstAPIKey)
+func isCxOneAPIKeyAvailable() bool {
+	apiKey := viper.GetString(params.AstAPIKey)
 	return apiKey != ""
 }
 

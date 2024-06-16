@@ -92,7 +92,7 @@ func runChatKics(
 		var chatGptEnabled, azureAiEnabled, checkmarxAiEnabled bool
 		var tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse
 
-		if !isCxOneApiKeyAvailable() {
+		if !isCxOneAPIKeyAvailable() {
 			chatGptEnabled = true
 			azureAiEnabled = false
 			checkmarxAiEnabled = false
