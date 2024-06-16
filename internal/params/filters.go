@@ -119,6 +119,8 @@ var BaseIncludeFilters = []string{
 	"build.gradle",
 	"build.sbt",
 	"yarn.lock",
+	"pyproject.toml",
+	"poetry.lock",
 	"requirements.txt",
 	"requirement.txt",
 	"requirement*.txt",
