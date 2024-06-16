@@ -15,6 +15,7 @@ import (
 type VorpalGrpcWrapper struct {
 	grpcClient  *ClientWithTimeout
 	hostAddress string
+	port        int
 }
 
 const (
@@ -28,6 +29,7 @@ func NewVorpalGrpcWrapper(port int) VorpalWrapper {
 	return &VorpalGrpcWrapper{
 		grpcClient:  NewGRPCClientWithTimeout(serverHostAddress, 1*time.Second).(*ClientWithTimeout),
 		hostAddress: serverHostAddress,
+		port:        port,
 	}
 }
 
@@ -119,4 +121,8 @@ func (v *VorpalGrpcWrapper) ShutDown() error {
 	}
 	logger.PrintfIfVerbose("Vorpal service is shutting down")
 	return nil
+}
+
+func (v *VorpalGrpcWrapper) GetPort() int {
+	return v.port
 }

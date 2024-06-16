@@ -31,7 +31,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "",
 				vorpalUpdateVersion: true,
 			},
-			want:    nil,
+			want:    &grpcs.ScanResult{},
 			wantErr: false,
 		},
 		{
@@ -50,8 +50,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: true,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnSuccessfulResponseMock(),
+			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
@@ -60,18 +59,16 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "data/python-vul-file.py",
 				vorpalUpdateVersion: false,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnFailureResponseMock(),
+			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags and no vulnerabilities in file",
+			name: "Test with valid flags. vorpal scan failed",
 			args: args{
 				fileSourceFlag:      "data/csharp-no-vul.cs",
 				vorpalUpdateVersion: false,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnFailureResponseMock(),
+			want:    mock.ReturnFailureResponseMock(),
 			wantErr: false,
 		},
 	}
@@ -84,6 +81,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				IsDefaultAgent:      true,
 				JwtWrapper:          &mock.JWTMockWrapper{},
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				VorpalWrapper:       &mock.VorpalMockWrapper{},
 			}
 			got, err := ExecuteVorpalScan(vorpalParams)
 			if (err != nil) != ttt.wantErr {

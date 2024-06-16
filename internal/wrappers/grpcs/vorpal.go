@@ -4,6 +4,7 @@ type VorpalWrapper interface {
 	Scan(fileName, sourceCode string) (*ScanResult, error)
 	HealthCheck() error
 	ShutDown() error
+	GetPort() int
 }
 
 type ScanResult struct {

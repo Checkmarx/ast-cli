@@ -14,8 +14,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
-	getport "github.com/jsumners/go-getport"
-	"github.com/spf13/viper"
 )
 
 type VorpalScanParams struct {
@@ -24,15 +22,13 @@ type VorpalScanParams struct {
 	IsDefaultAgent      bool
 	JwtWrapper          wrappers.JWTWrapper
 	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
+	VorpalWrapper       grpcs.VorpalWrapper
 }
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, error) {
 	installedLatestVersion := false
-	port, err := getVorpalPort()
-	if err != nil {
-		return nil, err
-	}
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(port)
+	var err error
+	vorpalWrapper := vorpalParams.VorpalWrapper
 
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 	if !vorpalInstalled {
@@ -56,7 +52,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 		}
 	}
 
-	err = ensureVorpalServiceRunning(vorpalWrapper, port, vorpalParams)
+	err = ensureVorpalServiceRunning(vorpalWrapper, vorpalWrapper.GetPort(), vorpalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -72,19 +68,6 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 
 	_, fileName := filepath.Split(vorpalParams.FilePath)
 	return vorpalWrapper.Scan(fileName, sourceCode)
-}
-
-func getVorpalPort() (int, error) {
-	port := viper.GetInt(params.VorpalPortKey)
-	if port == 0 {
-		var err error
-		port, err = getAvailablePort()
-		if err != nil {
-			return 0, err
-		}
-		setConfigPropertyQuiet(params.VorpalPortKey, port)
-	}
-	return port, nil
 }
 
 func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int, vorpalParams VorpalScanParams) error {
@@ -126,21 +109,6 @@ func readSourceCode(filePath string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
-}
-
-func getAvailablePort() (int, error) {
-	port, err := getport.GetTcpPort()
-	if err != nil {
-		return 0, err
-	}
-	return port.Port, nil
-}
-
-func setConfigPropertyQuiet(propName string, propValue int) {
-	viper.Set(propName, propValue)
-	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
-		_ = viper.WriteConfig()
-	}
 }
 
 func RunVorpalEngine(port int) error {
