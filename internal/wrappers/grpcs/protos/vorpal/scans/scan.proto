@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package cx.microsast.service.v1.scan;
+
+option go_package = "github.com/checkmarxdev/cxcodeprobe/protogen/golang/scans";
+
+// Represents a request to perform a scan.
+message ScanRequest {
+  string id = 1;
+  string file_name = 2;  // Name of the file being scanned.SERVICE_AUTH_KEY
+  string source_code = 3;  // Source code content to be scanned.
+}
+
+// Represents a single scan request.
+message SingleScanRequest {
+  ScanRequest scan_request = 1;
+}
+
+// Represents the result of a scan.
+message ScanResult {
+  // Represents details of a vulnerability found during scanning.
+  message ScanDetail {
+    uint32 rule_id = 1;
+    string language = 2;
+    string rule_name = 3;
+    string severity = 4;
+    string file_name = 5;
+    uint32 line = 6;
+    uint32 length = 7;
+    string problematicLine = 8;
+    string remediationAdvise = 9;
+    string description = 10;
+  }
+  string request_id = 1;
+  bool status = 2;  // Indicates whether the scan was successful.
+  string message = 3;  // Additional message in case of error.
+  repeated ScanDetail scan_details = 4;  // Details of vulnerabilities found.
+
+  // Represents an error that occurred during scanning.
+  message Error {
+    enum ErrorCode {
+      UNKNOWN_ERROR = 0;
+      INVALID_REQUEST = 1;
+      INTERNAL_ERROR = 2;
+      // Add more specific error codes as needed.
+    }
+    ErrorCode code = 1;  // Error code indicating the type of error.
+    string description = 2;  // Description of the error.
+  }
+  Error error = 5;  // Error details in case of failure.
+}
+
+// Service definition for scan operations.
+service ScanService {
+  // Performs a scan based on the provided request.
+  rpc Scan(SingleScanRequest) returns (ScanResult);
+}

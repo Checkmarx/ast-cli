@@ -209,7 +209,6 @@ func TestCodeBashingListEmpty(t *testing.T) {
 }
 
 func TestCodeBashingFailedListingAuth(t *testing.T) {
-
 	args := []string{
 		"results",
 		"codebashing",

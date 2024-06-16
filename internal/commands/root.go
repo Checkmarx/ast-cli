@@ -161,8 +161,9 @@ func NewAstCLI(
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
+		featureFlagsWrapper,
 	)
-	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper)
+	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -173,6 +174,7 @@ func NewAstCLI(
 		bflWrapper,
 		risksOverviewWrapper,
 		policyWrapper,
+		featureFlagsWrapper,
 	)
 
 	versionCmd := util.NewVersionCommand()
@@ -195,6 +197,7 @@ func NewAstCLI(
 		accessManagementWrapper,
 		applicationsWrapper,
 		byorWrapper,
+		featureFlagsWrapper,
 	)
 
 	configCmd := util.NewConfigCommand()
@@ -315,7 +318,6 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
-
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
