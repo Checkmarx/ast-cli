@@ -41,7 +41,7 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData(t *testing.T) {
 
 	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", true, true))
-	expectedMockResult := mocks.ReturnSuccessfulResponseMock()
+	expectedMockResult := mock.ReturnSuccessfulResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
