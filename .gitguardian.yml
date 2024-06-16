@@ -1,0 +1,4 @@
+enabled: true
+exclude_paths:
+  - internal/commands/data/python-vul-file.py
+  - test/integration/data/python-vul-file.py
