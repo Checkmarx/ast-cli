@@ -8,6 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"gotest.tools/assert"
 )
 
@@ -36,7 +37,7 @@ func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) 
 
 func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
+	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", true, true))
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
@@ -44,16 +45,25 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_SuccessfullyReturnMockData
 
 func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_SuccessfullyReturnMockData(t *testing.T) {
 
-	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", false)
+	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", false, true))
 	expectedMockResult := commands.ReturnFailureResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
 }
 
 func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
-
-	scanResult, _ := commands.ExecuteVorpalScan("data/python-vul-file.py", true)
+	scanResult, _ := commands.ExecuteVorpalScan(generateVorpalParams("data/python-vul-file.py", true, true))
 	expectedMockResult := commands.ReturnSuccessfulResponseMock()
 	//TODO: update mocks when there's a real engine
 	assert.DeepEqual(t, scanResult, expectedMockResult)
+}
+
+func generateVorpalParams(filePath string, vorpalUpdateVersion, isDefaultagent bool) services.VorpalScanParams {
+	return services.VorpalScanParams{
+		FilePath:            filePath,
+		VorpalUpdateVersion: vorpalUpdateVersion,
+		IsDefaultAgent:      isDefaultagent,
+		JwtWrapper:          &commands.JWTMockWrapper{},
+		FeatureFlagsWrapper: &commands.FeatureFlagsMockWrapper{},
+	}
 }

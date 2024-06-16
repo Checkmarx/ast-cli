@@ -41,7 +41,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 	if !vorpalInstalled {
 		logger.PrintIfVerbose("Vorpal is not installed. Installing...")
-		err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+		err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
 		installedLatestVersion = true
 		if err != nil {
 			return nil, err
@@ -49,7 +49,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 	}
 	if vorpalParams.VorpalUpdateVersion && !installedLatestVersion {
 		if !isLastVersion() {
-			err := vorpalWrapper.HealthCheck()
+			err = vorpalWrapper.HealthCheck()
 			if err == nil {
 				_ = vorpalWrapper.ShutDown()
 			}
@@ -142,6 +142,7 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 }
 
 func RunVorpalEngine(port int) error {
+	dialTimeout := 2 * time.Second
 	args := []string{
 		"-listen",
 		fmt.Sprintf("%d", port),
@@ -156,7 +157,7 @@ func RunVorpalEngine(port int) error {
 		return err
 	}
 
-	ready := waitForServer(fmt.Sprintf("localhost:%d", port), 2*time.Second)
+	ready := waitForServer(fmt.Sprintf("localhost:%d", port), dialTimeout)
 	if !ready {
 		return fmt.Errorf("server did not become ready in time")
 	}
@@ -167,6 +168,7 @@ func RunVorpalEngine(port int) error {
 }
 
 func waitForServer(address string, timeout time.Duration) bool {
+	waitingDuration := 50 * time.Millisecond
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		conn, err := net.Dial("tcp", address)
@@ -174,7 +176,7 @@ func waitForServer(address string, timeout time.Duration) bool {
 			_ = conn.Close()
 			return true
 		}
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(waitingDuration)
 	}
 	return false
 }
