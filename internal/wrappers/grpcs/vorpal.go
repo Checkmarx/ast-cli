@@ -5,6 +5,7 @@ type VorpalWrapper interface {
 	HealthCheck() error
 	ShutDown() error
 	GetPort() int
+	ConfigurePort(port int)
 }
 
 type ScanResult struct {

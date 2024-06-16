@@ -6,7 +6,9 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-type JWTMockWrapper struct{}
+type JWTMockWrapper struct {
+	AIEnabled int
+}
 
 // GetAllowedEngines mock for tests
 func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
@@ -19,6 +21,9 @@ func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFla
 }
 
 // IsAllowedEngine mock for tests
-func (*JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
-	return true, nil
+func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
+	if j.AIEnabled == 1 {
+		return true, nil
+	}
+	return false, nil
 }

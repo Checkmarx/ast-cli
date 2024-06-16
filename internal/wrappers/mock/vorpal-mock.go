@@ -1,8 +1,21 @@
 package mock
 
-import "github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+import (
+	"fmt"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+)
+
+var (
+	specialErrorPortNumber = 1
+)
 
 type VorpalMockWrapper struct {
+	Port int
+}
+
+func NewVorpalMockWrapper(port int) *VorpalMockWrapper {
+	return &VorpalMockWrapper{Port: port}
 }
 
 func (v *VorpalMockWrapper) Scan(fileName, sourceCode string) (*grpcs.ScanResult, error) {
@@ -13,6 +26,9 @@ func (v *VorpalMockWrapper) Scan(fileName, sourceCode string) (*grpcs.ScanResult
 }
 
 func (v *VorpalMockWrapper) HealthCheck() error {
+	if v.Port == specialErrorPortNumber {
+		return fmt.Errorf("error %d", InternalError)
+	}
 	return nil
 }
 
@@ -21,8 +37,7 @@ func (v *VorpalMockWrapper) ShutDown() error {
 }
 
 func (v *VorpalMockWrapper) GetPort() int {
-	port := 1234
-	return port
+	return v.Port
 }
 
 func ReturnSuccessfulResponseMock() *grpcs.ScanResult {
@@ -64,6 +79,10 @@ func ReturnFailureResponseMock() *grpcs.ScanResult {
 		Message:   "Scan failed.",
 		Error:     &grpcs.Error{Code: InternalError, Description: "An internal error occurred."},
 	}
+}
+
+func (v *VorpalMockWrapper) ConfigurePort(port int) {
+
 }
 
 const (

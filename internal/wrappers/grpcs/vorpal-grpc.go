@@ -126,3 +126,9 @@ func (v *VorpalGrpcWrapper) ShutDown() error {
 func (v *VorpalGrpcWrapper) GetPort() int {
 	return v.port
 }
+
+func (v *VorpalGrpcWrapper) ConfigurePort(port int) {
+	v.port = port
+	v.hostAddress = fmt.Sprintf(localHostAddress, port)
+	v.grpcClient = NewGRPCClientWithTimeout(v.hostAddress, 1*time.Second).(*ClientWithTimeout)
+}

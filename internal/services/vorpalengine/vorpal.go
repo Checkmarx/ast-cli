@@ -92,17 +92,12 @@ func getAvailablePort() (int, error) {
 }
 
 func configureVorpalWrapper(existingVorpalWrapper grpcs.VorpalWrapper) (grpcs.VorpalWrapper, error) {
-	port := existingVorpalWrapper.GetPort()
-	if port == 0 {
-		return grpcs.NewVorpalGrpcWrapper(port), nil
-	}
-
 	if err := existingVorpalWrapper.HealthCheck(); err != nil {
 		port, portErr := findVorpalPort()
 		if portErr != nil {
 			return nil, portErr
 		}
-		return grpcs.NewVorpalGrpcWrapper(port), nil
+		existingVorpalWrapper.ConfigurePort(port)
 	}
 	return existingVorpalWrapper, nil
 }
