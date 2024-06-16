@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"strconv"
 
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
@@ -16,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
