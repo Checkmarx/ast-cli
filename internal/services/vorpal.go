@@ -103,9 +103,8 @@ func configureVorpalWrapper(vorpalParams VorpalScanParams) (grpcs.VorpalWrapper,
 			return nil, portErr
 		}
 		return grpcs.NewVorpalGrpcWrapper(port), nil
-	} else {
-		return vorpalParams.VorpalWrapper, nil
 	}
+	return vorpalParams.VorpalWrapper, nil
 }
 
 func setConfigPropertyQuiet(propName string, propValue int) {
