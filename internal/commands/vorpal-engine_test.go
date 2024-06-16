@@ -7,6 +7,9 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +21,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		want       *ScanResult
+		want       *grpcs.ScanResult
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -75,7 +78,14 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			got, err := ExecuteVorpalScan(ttt.args.fileSourceFlag, ttt.args.vorpalUpdateVersion)
+			vorpalParams := services.VorpalScanParams{
+				FilePath:            ttt.args.fileSourceFlag,
+				VorpalUpdateVersion: ttt.args.vorpalUpdateVersion,
+				IsDefaultAgent:      true,
+				JwtWrapper:          &mock.JWTMockWrapper{},
+				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			}
+			got, err := ExecuteVorpalScan(vorpalParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -96,7 +106,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		sourceFlag string
 		engineFlag bool
 		wantErr    bool
-		want       *ScanResult
+		want       *grpcs.ScanResult
 		wantErrMsg string
 	}{
 		{
@@ -135,7 +145,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.VorpalLatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := runScanVorpalCommand()
+			runFunc := runScanVorpalCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("runScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)

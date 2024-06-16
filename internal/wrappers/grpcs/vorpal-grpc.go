@@ -58,15 +58,19 @@ func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, erro
 		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName, scanID)
 	}
 
+	var scanError *Error
+	if resp.Error != nil {
+		scanError = &Error{
+			Code:        ErrorCode(resp.Error.Code),
+			Description: resp.Error.Description,
+		}
+	}
 	return &ScanResult{
 		RequestID:   resp.RequestId,
 		Status:      resp.Status,
 		Message:     resp.Message,
 		ScanDetails: convertScanDetails(resp.ScanDetails),
-		Error: &Error{
-			Code:        ErrorCode(resp.Error.Code),
-			Description: resp.Error.Description,
-		},
+		Error:       scanError,
 	}, nil
 }
 

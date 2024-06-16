@@ -17,3 +17,8 @@ func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFla
 	}
 	return allowedEngines, nil
 }
+
+// IsAllowedEngine mock for tests
+func (*JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
+	return true, nil
+}

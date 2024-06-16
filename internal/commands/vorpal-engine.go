@@ -6,16 +6,26 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
+func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		vorpalLatestVersion, _ := cmd.Flags().GetBool(commonParams.VorpalLatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-
-		scanResult, err := ExecuteVorpalScan(fileSourceFlag, vorpalLatestVersion)
+		agent, _ := cmd.PersistentFlags().GetString(commonParams.AgentFlag)
+		vorpalParams := services.VorpalScanParams{
+			FilePath:            fileSourceFlag,
+			VorpalUpdateVersion: vorpalLatestVersion,
+			IsDefaultAgent:      agent == commonParams.DefaultAgent,
+			JwtWrapper:          jwtWrapper,
+			FeatureFlagsWrapper: featureFlagsWrapper,
+		}
+		scanResult, err := ExecuteVorpalScan(vorpalParams)
 		if err != nil {
 			return err
 		}
@@ -29,36 +39,31 @@ func runScanVorpalCommand() func(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func ExecuteVorpalScan(fileSourceFlag string, vorpalUpdateVersion bool) (*ScanResult, error) {
-	if fileSourceFlag == "" {
+func ExecuteVorpalScan(vorpalParams services.VorpalScanParams) (*grpcs.ScanResult, error) {
+	if vorpalParams.FilePath == "" {
 		return nil, nil
 	}
 
-	if filepath.Ext(fileSourceFlag) == "" {
+	if filepath.Ext(vorpalParams.FilePath) == "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
 
-	//TODO: add vorpal scan logic here
-	if vorpalUpdateVersion {
-		return ReturnSuccessfulResponseMock(), nil
-	}
-	//TODO: returning mock failure just to test the vorpalUpdateVersion flag for now
-	return ReturnFailureResponseMock(), nil
+	return services.CreateVorpalScanRequest(vorpalParams)
 }
 
-func ReturnSuccessfulResponseMock() *ScanResult {
-	return &ScanResult{
+func ReturnSuccessfulResponseMock() *grpcs.ScanResult {
+	return &grpcs.ScanResult{
 		RequestID: "1234567890",
 		Status:    true,
 		Message:   "Scan completed successfully.",
-		ScanDetails: []ScanDetail{
+		ScanDetails: []grpcs.ScanDetail{
 			{
-				Language:          "Python",
-				RuleName:          "Stored XSS",
-				Severity:          "High",
-				FileName:          "python-vul-file.py",
-				Line:              37,
-				RemediationAdvise: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
+				Language:    "Python",
+				RuleName:    "Stored XSS",
+				Severity:    "High",
+				FileName:    "python-vul-file.py",
+				Line:        37,
+				Remediation: "Fully encode all dynamic data, regardless of source, before embedding it in output.",
 				Description: "The method undefined embeds untrusted data in generated output with write, at line 80 of /python-vul-file.py." +
 					"This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page." +
 					"The attacker would be able to alter the returned web page by saving malicious data in a data-store ahead of time." +
@@ -66,54 +71,26 @@ func ReturnSuccessfulResponseMock() *ScanResult {
 					"This untrusted data then flows through the code straight to the output web page, without sanitization.  This can enable a Stored Cross-Site Scripting (XSS) attack.",
 			},
 			{
-				Language:          "Python",
-				RuleName:          "Missing HSTS Header",
-				Severity:          "Medium",
-				FileName:          "python-vul-file.py",
-				Line:              76,
-				RemediationAdvise: "Before setting the HSTS header - consider the implications it may have: Forcing HTTPS will prevent any future use of HTTP",
-				Description:       "The web-application does not define an HSTS header, leaving it vulnerable to attack.",
+				Language:    "Python",
+				RuleName:    "Missing HSTS Header",
+				Severity:    "Medium",
+				FileName:    "python-vul-file.py",
+				Line:        76,
+				Remediation: "Before setting the HSTS header - consider the implications it may have: Forcing HTTPS will prevent any future use of HTTP",
+				Description: "The web-application does not define an HSTS header, leaving it vulnerable to attack.",
 			},
 		},
 	}
 }
 
-func ReturnFailureResponseMock() *ScanResult {
-	return &ScanResult{
+func ReturnFailureResponseMock() *grpcs.ScanResult {
+	return &grpcs.ScanResult{
 		RequestID: "some-request-id",
 		Status:    false,
 		Message:   "Scan failed.",
-		Error:     &Error{InternalError, "An internal error occurred."},
+		Error:     &grpcs.Error{InternalError, "An internal error occurred."},
 	}
 }
-
-type ScanResult struct {
-	RequestID   string       `json:"request_id"`
-	Status      bool         `json:"status"`
-	Message     string       `json:"message"`
-	ScanDetails []ScanDetail `json:"scan_details"`
-	Error       *Error       `json:"error"`
-}
-
-type ScanDetail struct {
-	RuleID            uint32 `json:"rule_id"`
-	Language          string `json:"language"`
-	RuleName          string `json:"rule_name"`
-	Severity          string `json:"severity"`
-	FileName          string `json:"file_name"`
-	Line              uint32 `json:"line"`
-	Length            uint32 `json:"length"`
-	ProblematicLine   uint32 `json:"problematic_line"`
-	RemediationAdvise string `json:"remediation_advise"`
-	Description       string `json:"description"`
-}
-
-type Error struct {
-	Code        ErrorCode `json:"code"`
-	Description string    `json:"description"`
-}
-
-type ErrorCode int32
 
 const (
 	UnknownError   = 0

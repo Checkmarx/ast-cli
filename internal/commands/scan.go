@@ -176,7 +176,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanVorpalCmd := scanVorpalSubCommand()
+	scanVorpalCmd := scanVorpalSubCommand(jwtWrapper, featureFlagsWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -389,7 +389,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanVorpalSubCommand() *cobra.Command {
+func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "vorpal",
@@ -407,7 +407,7 @@ func scanVorpalSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: runScanVorpalCommand(),
+		RunE: runScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
