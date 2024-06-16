@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 	"io"
 	"strings"
 	"testing"
@@ -74,6 +76,8 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 	}
+	viper.Set(params.AstAPIKey, "SomeKey")
+
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--user-input", "userInput",
@@ -85,7 +89,10 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
+
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
+	viper.Set(params.AstAPIKey, "")
+
 	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is not nil"), s)
 }
 
@@ -100,6 +107,8 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 	}
+	viper.Set(params.AstAPIKey, "SomeKey")
+
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
 		"--chat-apikey", "apiKey",
@@ -112,6 +121,9 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 	output, err := io.ReadAll(buffer)
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
+
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
+	viper.Set(params.AstAPIKey, "")
+
 	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is nil"), s)
 }
