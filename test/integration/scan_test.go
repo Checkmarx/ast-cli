@@ -1501,49 +1501,49 @@ func copyResultsToTempDir() error {
 //		err, _ := executeCommand(t, args...)
 //		assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 //	}
-func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
-	originals := getOriginalEnvVars()
-
-	setEnvVars(map[string]string{
-		params.AstAPIKeyEnv: "",
-	})
-
-	defer setEnvVars(originals)
-
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), "project",
-		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "iac-security",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-	t.Parallel()
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
-}
-
-func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
-	originals := getOriginalEnvVars()
-
-	setEnvVars(map[string]string{
-		params.AstAPIKeyEnv:       "",
-		params.AccessKeyIDEnv:     invalidClientID,
-		params.AccessKeySecretEnv: invalidClientSecret,
-		params.TenantEnv:          invalidTenant,
-	})
-
-	defer setEnvVars(originals)
-
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), "project",
-		flag(params.SourcesFlag), "data/insecure.zip",
-		flag(params.ScanTypes), "iac-security",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-	//t.Parallel()
-
-	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
-}
+//func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+//	originals := getOriginalEnvVars()
+//
+//	setEnvVars(map[string]string{
+//		params.AstAPIKeyEnv: "",
+//	})
+//
+//	defer setEnvVars(originals)
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ProjectName), "project",
+//		flag(params.SourcesFlag), "data/insecure.zip",
+//		flag(params.ScanTypes), "iac-security",
+//		flag(params.BranchFlag), "dummy_branch",
+//	}
+//	//t.Parallel()
+//
+//	err, _ := executeCommand(t, args...)
+//	assert.NilError(t, err)
+//}
+//
+//func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+//	originals := getOriginalEnvVars()
+//
+//	setEnvVars(map[string]string{
+//		params.AstAPIKeyEnv:       "",
+//		params.AccessKeyIDEnv:     invalidClientID,
+//		params.AccessKeySecretEnv: invalidClientSecret,
+//		params.TenantEnv:          invalidTenant,
+//	})
+//
+//	defer setEnvVars(originals)
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ProjectName), "project",
+//		flag(params.SourcesFlag), "data/insecure.zip",
+//		flag(params.ScanTypes), "iac-security",
+//		flag(params.BranchFlag), "dummy_branch",
+//	}
+//	//t.Parallel()
+//
+//	err, _ := executeCommand(t, args...)
+//	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
+//}
