@@ -34,7 +34,7 @@ func TestByorEnabled_Flag_should_be_true(t *testing.T) {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	flagName := featureFlagsConstants.ByorEnabled
-	//t.Parallel()
+	t.Parallel()
 
 	flagResponse, err := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, flagName)
 	assert.NilError(t, err, "GetSpecificFeatureFlag should not return an error")
@@ -46,7 +46,7 @@ func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) 
 	//t.Parallel()
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = false
-	//t.Parallel()
+	t.Parallel()
 
 	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: true}
 	wrappers.UpdateSpecificFeatureFlagMap(flagName, flag)
