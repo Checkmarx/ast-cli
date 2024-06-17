@@ -7,7 +7,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services/vorpalengine"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/cobra"
@@ -75,12 +75,12 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			vorpalParams := vorpalengine.VorpalScanParams{
+			vorpalParams := services.VorpalScanParams{
 				FilePath:            ttt.args.fileSourceFlag,
 				VorpalUpdateVersion: ttt.args.vorpalUpdateVersion,
 				IsDefaultAgent:      true,
 			}
-			wrapperParams := vorpalengine.VorpalWrappersParam{
+			wrapperParams := services.VorpalWrappersParam{
 				JwtWrapper:          &mock.JWTMockWrapper{},
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 				VorpalWrapper:       &mock.VorpalMockWrapper{},

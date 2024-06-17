@@ -1,4 +1,4 @@
-package vorpalengine
+package services
 
 import (
 	"fmt"
@@ -164,7 +164,7 @@ func RunVorpalEngine(port int) error {
 
 	cmd := exec.Command(vorpalconfig.Params.ExecutableFilePath(), args...)
 
-	configureIndependentProcess(cmd)
+	osinstaller.ConfigureIndependentProcess(cmd)
 
 	err := cmd.Start()
 	if err != nil {

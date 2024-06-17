@@ -6,7 +6,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services/vorpalengine"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/pkg/errors"
@@ -21,12 +21,12 @@ func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		var port = viper.GetInt(commonParams.VorpalPortKey)
 		vorpalWrapper := grpcs.NewVorpalGrpcWrapper(port)
-		vorpalParams := vorpalengine.VorpalScanParams{
+		vorpalParams := services.VorpalScanParams{
 			FilePath:            fileSourceFlag,
 			VorpalUpdateVersion: vorpalLatestVersion,
 			IsDefaultAgent:      agent == commonParams.DefaultAgent,
 		}
-		wrapperParams := vorpalengine.VorpalWrappersParam{
+		wrapperParams := services.VorpalWrappersParam{
 			JwtWrapper:          jwtWrapper,
 			FeatureFlagsWrapper: featureFlagsWrapper,
 			VorpalWrapper:       vorpalWrapper,
@@ -45,9 +45,9 @@ func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 	}
 }
 
-func executeVorpalScan(vorpalParams vorpalengine.VorpalScanParams, wrapperParams vorpalengine.VorpalWrappersParam) (*grpcs.ScanResult, error) {
+func executeVorpalScan(vorpalParams services.VorpalScanParams, wrapperParams services.VorpalWrappersParam) (*grpcs.ScanResult, error) {
 	if filepath.Ext(vorpalParams.FilePath) == "" && vorpalParams.FilePath != "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
-	return vorpalengine.CreateVorpalScanRequest(vorpalParams, wrapperParams)
+	return services.CreateVorpalScanRequest(vorpalParams, wrapperParams)
 }

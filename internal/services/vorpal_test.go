@@ -1,4 +1,4 @@
-package vorpalengine
+package services
 
 import (
 	"fmt"
@@ -13,11 +13,13 @@ func TestCreateVorpalScanRequest_DefaultAgent_Success(t *testing.T) {
 		FilePath:            "data/python-vul-file.py",
 		VorpalUpdateVersion: false,
 		IsDefaultAgent:      true,
+	}
+	wrapperParams := VorpalWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       mock.NewVorpalMockWrapper(1234),
 	}
-	sr, err := CreateVorpalScanRequest(vorpalParams)
+	sr, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
 	if err != nil {
 		t.Fatalf("Failed to create vorpal scan request: %v", err)
 	}
@@ -32,11 +34,13 @@ func TestCreateVorpalScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *tes
 		FilePath:            "data/python-vul-file.py",
 		VorpalUpdateVersion: true,
 		IsDefaultAgent:      true,
+	}
+	wrapperParams := VorpalWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       mock.NewVorpalMockWrapper(1234),
 	}
-	sr, err := CreateVorpalScanRequest(vorpalParams)
+	sr, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
 	if err != nil {
 		t.Fatalf("Failed to create vorpal scan request: %v", err)
 	}
@@ -53,10 +57,12 @@ func TestCreateVorpalScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
 		FilePath:            "data/python-vul-file.py",
 		VorpalUpdateVersion: true,
 		IsDefaultAgent:      false,
+	}
+	wrapperParams := VorpalWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: aiDisabled},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       &mock.VorpalMockWrapper{Port: specialErrorPort},
 	}
-	_, err := CreateVorpalScanRequest(vorpalParams)
+	_, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
 	assert.Error(t, err)
 }
