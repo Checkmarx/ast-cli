@@ -21,6 +21,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/commands/vorpal"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
@@ -407,7 +408,7 @@ func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 			`,
 			),
 		},
-		RunE: runScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: vorpal.RunScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,

@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -100,9 +101,22 @@ func TestExecuteVorpalScan_InitializeAndRun_Success(t *testing.T) {
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
-	err1, bytes := executeCommand(t, args...)
-	fmt.Println(bytes.String())
+	err, _ = executeCommand(t, args...)
+	assert.NilError(t, err, "Scan should not fail with error")
+}
 
-	assert.NilError(t, err1, "Sending empty source file should not fail")
+func TestExecuteVorpalScan_UnsupportedLanguage_Fail(t *testing.T) {
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "vorpal",
+		flag(commonParams.SourcesFlag), "data/positive1.tf",
+		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
+	}
 
+	err, bytes := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan should not fail with error")
+	var scanResult grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResult)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Equal(t, scanResult.Error.Description, "The file extension is not supported.")
 }

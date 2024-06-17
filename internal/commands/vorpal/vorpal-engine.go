@@ -1,4 +1,4 @@
-package commands
+package vorpal
 
 import (
 	"path/filepath"
@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func runScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		vorpalLatestVersion, _ := cmd.Flags().GetBool(commonParams.VorpalLatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)

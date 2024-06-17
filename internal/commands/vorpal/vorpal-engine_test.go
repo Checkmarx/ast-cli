@@ -1,4 +1,4 @@
-package commands
+package vorpal
 
 import (
 	"reflect"
@@ -143,14 +143,14 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.VorpalLatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := runScanVorpalCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
+			runFunc := RunScanVorpalCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("runScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("RunScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("runScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("RunScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 		})
 	}
