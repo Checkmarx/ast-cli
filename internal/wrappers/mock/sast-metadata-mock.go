@@ -43,7 +43,7 @@ func (s SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) 
 				FileCount:               70,
 				IsIncremental:           false,
 				IsIncrementalCanceled:   true,
-				IncrementalCancelReason: "Some reason",
+				IncrementalCancelReason: "some reason",
 				BaseID:                  "baseID",
 				DeletedFilesCount:       3,
 			},
