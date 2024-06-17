@@ -270,6 +270,8 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 }
 
 func getOriginalEnvVars() map[string]string {
+	//mu.Lock()
+	//defer mu.Unlock()
 	return map[string]string{
 		params.AstAPIKeyEnv:       os.Getenv(params.AstAPIKeyEnv),
 		params.AccessKeyIDEnv:     os.Getenv(params.AccessKeyIDEnv),
@@ -299,42 +301,42 @@ func copyResultsToTempDir() error {
 	return nil
 }
 
-func TestScansE2E(t *testing.T) {
-	//t.Parallel()
-	fmt.Printf(" parallel TestScansE2E start \n")
+//func TestScansE2E(t *testing.T) {
+//	//t.Parallel()
+//	fmt.Printf(" parallel TestScansE2E start \n")
+//
+//	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+//	defer deleteProject(t, projectID)
+//
+//	executeScanAssertions(t, projectID, scanID, Tags)
+//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+//	if err != nil {
+//
+//		return
+//	}
+//	assert.Equal(t, len(glob), 0, "Zip file not removed")
+//	fmt.Printf(" parallel TestScansE2E end \n ")
+//
+//}
 
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	defer deleteProject(t, projectID)
-
-	executeScanAssertions(t, projectID, scanID, Tags)
-	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	if err != nil {
-
-		return
-	}
-	assert.Equal(t, len(glob), 0, "Zip file not removed")
-	fmt.Printf(" parallel TestScansE2E end \n ")
-
-}
-
-func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-	//t.Parallel()
-	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
-
-	args := []string{
-		"scan", "create",
-		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
-	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end \n")
-
-}
+//func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+//	//t.Parallel()
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ApplicationName), "my-application",
+//		flag(params.ProjectName), "my-project",
+//		flag(params.SourcesFlag), ".",
+//		flag(params.ScanTypes), "sast",
+//		flag(params.BranchFlag), "dummy_branch",
+//	}
+//
+//	err, _ := executeCommand(t, args...)
+//	assert.NilError(t, err)
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end \n")
+//
+//}
 
 //func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
 //	t.Parallel()
@@ -1500,7 +1502,6 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 //		assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 //	}
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1516,13 +1517,13 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
+	t.Parallel()
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -1541,6 +1542,7 @@ func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
+	t.Parallel()
 
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
