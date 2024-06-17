@@ -298,7 +298,7 @@ func copyResultsToTempDir() error {
 
 func TestScansE2E(t *testing.T) {
 	t.Parallel()
-	fmt.Printf(" parallel TestScansE2E start ")
+	fmt.Printf(" parallel TestScansE2E start \n")
 
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
@@ -310,13 +310,13 @@ func TestScansE2E(t *testing.T) {
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
-	fmt.Printf(" parallel TestScansE2E end ")
+	fmt.Printf(" parallel TestScansE2E end \n ")
 
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
 	t.Parallel()
-	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start ")
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
 
 	args := []string{
 		"scan", "create",
@@ -329,7 +329,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
-	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end ")
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end \n")
 
 }
 
