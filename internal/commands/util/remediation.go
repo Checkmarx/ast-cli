@@ -160,7 +160,7 @@ func RemediationKicsCommand() *cobra.Command {
 	return kicsRemediateCmd
 }
 
-func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error {
+func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error { //rrr
 	return func(cmd *cobra.Command, args []string) error {
 		// Check if input file is supported
 		filePaths, _ := cmd.Flags().GetStringSlice(commonParams.RemediationFiles)

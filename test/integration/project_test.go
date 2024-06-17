@@ -197,6 +197,8 @@ func deleteProjectByName(t *testing.T, projectName string) {
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
+	mu.Lock()
+	defer mu.Unlock()
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 	fmt.Println("Listing project for id ", projectID)
 	outputBuffer := executeCmdNilAssertion(
@@ -214,6 +216,8 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 }
 
 func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
+	mu.Lock()
+	defer mu.Unlock()
 	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
 
 	outputBuffer := executeCmdNilAssertion(

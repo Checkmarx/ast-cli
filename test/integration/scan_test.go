@@ -176,6 +176,8 @@ func deleteScan(t *testing.T, scanID string) {
 }
 
 func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
+	mu.Lock()
+	defer mu.Unlock()
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -633,7 +635,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 //	assert.Assert(t, file.Size() > 5000, "Report file should be bigger than 5KB")
 //	assert.NilError(t, fileError, "Report file should exist for extension")
 //}
-//
+
 //// Create a scan ignoring the exclusion of the .git directory
 //// Assert the folder is included in the logs
 //func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
@@ -675,7 +677,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 //		fmt.Printf("%s \n", line)
 //	}
 //}
-//
+
 //// Test the timeout for a long scan
 //func TestScanTimeout(t *testing.T) {
 //	_, projectName := getRootProject(t)
