@@ -85,7 +85,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 				VorpalWrapper:       &mock.VorpalMockWrapper{},
 			}
-			got, err := ExecuteVorpalScan(vorpalParams, wrapperParams)
+			got, err := executeVorpalScan(vorpalParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return

@@ -31,7 +31,7 @@ func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 			FeatureFlagsWrapper: featureFlagsWrapper,
 			VorpalWrapper:       vorpalWrapper,
 		}
-		scanResult, err := ExecuteVorpalScan(vorpalParams, wrapperParams)
+		scanResult, err := executeVorpalScan(vorpalParams, wrapperParams)
 		if err != nil {
 			return err
 		}
@@ -45,7 +45,7 @@ func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 	}
 }
 
-func ExecuteVorpalScan(vorpalParams vorpalengine.VorpalScanParams, wrapperParams vorpalengine.VorpalWrappersParam) (*grpcs.ScanResult, error) {
+func executeVorpalScan(vorpalParams vorpalengine.VorpalScanParams, wrapperParams vorpalengine.VorpalWrappersParam) (*grpcs.ScanResult, error) {
 	if filepath.Ext(vorpalParams.FilePath) == "" && vorpalParams.FilePath != "" {
 		return nil, errors.New(errorConstants.FileExtensionIsRequired)
 	}
