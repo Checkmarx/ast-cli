@@ -300,7 +300,7 @@ func copyResultsToTempDir() error {
 }
 
 func TestScansE2E(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	fmt.Printf(" parallel TestScansE2E start \n")
 
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
@@ -318,7 +318,7 @@ func TestScansE2E(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
 
 	args := []string{
@@ -679,861 +679,869 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 //	}
 //}
 
-//// Test the timeout for a long scan
-//func TestScanTimeout(t *testing.T) {
-//	_, projectName := getRootProject(t)
+// // Test the timeout for a long scan
 //
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), SlowRepo,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "develop",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//		flag(params.ScanTimeoutFlag), "1",
+//	func TestScanTimeout(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), SlowRepo,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.BranchFlag), "develop",
+//			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+//			flag(params.ScanTimeoutFlag), "1",
+//		}
+//
+//		cmd, buffer := createRedirectedTestCommand(t)
+//		err := execute(cmd, args...)
+//
+//		assert.Assert(t, err != nil, "scan should time out")
+//
+//		createdScan := wrappers.ScanResponseModel{}
+//		_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
+//
+//		assert.Assert(t, pollScanUntilStatus(t, createdScan.ID, wrappers.ScanCanceled, 120, 15), "Scan should be canceled")
 //	}
 //
-//	cmd, buffer := createRedirectedTestCommand(t)
-//	err := execute(cmd, args...)
+//	func TestBrokenLinkScan(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//	assert.Assert(t, err != nil, "scan should time out")
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), ".",
+//			flag(params.ScanTypes), "sast",
+//			flag(params.BranchFlag), "main",
+//			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+//			flag(params.IncludeFilterFlag), "broken_link.txt",
+//			flag(params.DebugFlag),
+//		}
 //
-//	createdScan := wrappers.ScanResponseModel{}
-//	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
+//		var buf bytes.Buffer
+//		log.SetOutput(&buf)
+//		defer func() {
+//			log.SetOutput(os.Stderr)
+//		}()
 //
-//	assert.Assert(t, pollScanUntilStatus(t, createdScan.ID, wrappers.ScanCanceled, 120, 15), "Scan should be canceled")
-//}
+//		cmd := createASTIntegrationTestCommand(t)
+//		err := execute(cmd, args...)
 //
-//func TestBrokenLinkScan(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//		assert.NilError(t, err)
 //
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "main",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//		flag(params.IncludeFilterFlag), "broken_link.txt",
-//		flag(params.DebugFlag),
+//		output, err := io.ReadAll(&buf)
+//
+//		assert.NilError(t, err)
+//
+//		assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
 //	}
 //
-//	var buf bytes.Buffer
-//	log.SetOutput(&buf)
-//	defer func() {
-//		log.SetOutput(os.Stderr)
-//	}()
+// // Get a scan workflow and assert it fails
 //
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//
-//	assert.NilError(t, err)
-//
-//	output, err := io.ReadAll(&buf)
-//
-//	assert.NilError(t, err)
-//
-//	assert.Assert(t, strings.Contains(string(output), commands.DanglingSymlinkError))
-//}
-//
-//// Get a scan workflow and assert it fails
-//func TestScanWorkflow(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//	args := []string{
-//		"scan", "workflow",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.FormatFlag), printer.FormatJSON,
-//	}
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//	assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
-//}
-//
-//func TestScanLogsSAST(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//	args := []string{
-//		"scan", "logs",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.ScanTypeFlag), "sast",
-//	}
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//	assert.Assert(t, err != nil, "response status code 404")
-//}
-//
-//func TestScanLogsKICSDeprecated(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//	args := []string{
-//		"scan", "logs",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.ScanTypeFlag), "kics",
-//	}
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//	assert.Assert(t, err != nil, "response status code 404")
-//}
-//
-//func TestScanLogsKICS(t *testing.T) {
-//	scanID, _ := getRootScan(t)
-//	args := []string{
-//		"scan", "logs",
-//		flag(params.ScanIDFlag), scanID,
-//		flag(params.ScanTypeFlag), "iac-security",
-//	}
-//	cmd := createASTIntegrationTestCommand(t)
-//	err := execute(cmd, args...)
-//	assert.Assert(t, err != nil, "response status code 404")
-//}
-//
-//func TestPartialScanWithWrongPreset(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.PresetName), "Checkmarx Invalid",
-//		flag(params.BranchFlag), "dummy_branch",
+//	func TestScanWorkflow(t *testing.T) {
+//		scanID, _ := getRootScan(t)
+//		args := []string{
+//			"scan", "workflow",
+//			flag(params.ScanIDFlag), scanID,
+//			flag(params.FormatFlag), printer.FormatJSON,
+//		}
+//		cmd := createASTIntegrationTestCommand(t)
+//		err := execute(cmd, args...)
+//		assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
-//}
-//
-//func TestFailedScanWithWrongPreset(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.PresetName), "Checkmarx Invalid",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//		flag(params.IgnorePolicyFlag),
-//		flag(params.PolicyTimeoutFlag),
-//		"999999",
+//	func TestScanLogsSAST(t *testing.T) {
+//		scanID, _ := getRootScan(t)
+//		args := []string{
+//			"scan", "logs",
+//			flag(params.ScanIDFlag), scanID,
+//			flag(params.ScanTypeFlag), "sast",
+//		}
+//		cmd := createASTIntegrationTestCommand(t)
+//		err := execute(cmd, args...)
+//		assert.Assert(t, err != nil, "response status code 404")
 //	}
-//	err, _ := executeCommand(t, args...)
-//	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
-//}
 //
-//func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
-//	insecurePath := "data/insecure.zip"
-//	args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
-//	args = append(args, flag(params.SastFilterFlag), "!*.java", flag(params.IgnorePolicyFlag))
-//	scanId, projectId := executeCreateScan(t, args)
-//	assert.Assert(t, scanId != "", "Scan ID should not be empty")
-//	assert.Assert(t, projectId != "", "Project ID should not be empty")
-//	results, err := retrieveResultsFromScanId(t, scanId)
-//	assert.Assert(t, err == nil, "Results retrieved should not throw an error")
-//	for _, result := range results.Results {
-//		for _, node := range result.ScanResultData.Nodes {
-//			assert.Assert(t, !strings.HasSuffix(node.FileName, "java"), "File name should not contain java")
+//	func TestScanLogsKICSDeprecated(t *testing.T) {
+//		scanID, _ := getRootScan(t)
+//		args := []string{
+//			"scan", "logs",
+//			flag(params.ScanIDFlag), scanID,
+//			flag(params.ScanTypeFlag), "kics",
+//		}
+//		cmd := createASTIntegrationTestCommand(t)
+//		err := execute(cmd, args...)
+//		assert.Assert(t, err != nil, "response status code 404")
+//	}
+//
+//	func TestScanLogsKICS(t *testing.T) {
+//		scanID, _ := getRootScan(t)
+//		args := []string{
+//			"scan", "logs",
+//			flag(params.ScanIDFlag), scanID,
+//			flag(params.ScanTypeFlag), "iac-security",
+//		}
+//		cmd := createASTIntegrationTestCommand(t)
+//		err := execute(cmd, args...)
+//		assert.Assert(t, err != nil, "response status code 404")
+//	}
+//
+//	func TestPartialScanWithWrongPreset(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.PresetName), "Checkmarx Invalid",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
+//	}
+//
+//	func TestFailedScanWithWrongPreset(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.PresetName), "Checkmarx Invalid",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+//			flag(params.IgnorePolicyFlag),
+//			flag(params.PolicyTimeoutFlag),
+//			"999999",
+//		}
+//		err, _ := executeCommand(t, args...)
+//		assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
+//	}
+//
+//	func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
+//		insecurePath := "data/insecure.zip"
+//		args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
+//		args = append(args, flag(params.SastFilterFlag), "!*.java", flag(params.IgnorePolicyFlag))
+//		scanId, projectId := executeCreateScan(t, args)
+//		assert.Assert(t, scanId != "", "Scan ID should not be empty")
+//		assert.Assert(t, projectId != "", "Project ID should not be empty")
+//		results, err := retrieveResultsFromScanId(t, scanId)
+//		assert.Assert(t, err == nil, "Results retrieved should not throw an error")
+//		for _, result := range results.Results {
+//			for _, node := range result.ScanResultData.Nodes {
+//				assert.Assert(t, !strings.HasSuffix(node.FileName, "java"), "File name should not contain java")
+//			}
 //		}
 //	}
-//}
 //
-//func TestScanCreateWithSSHKey(t *testing.T) {
-//	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
-//	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
+//	func TestScanCreateWithSSHKey(t *testing.T) {
+//		_ = viper.BindEnv("CX_SCAN_SSH_KEY")
+//		sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 //
-//	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
-//	defer func() { _ = os.Remove(SSHKeyFilePath) }()
+//		_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+//		defer func() { _ = os.Remove(SSHKeyFilePath) }()
 //
-//	_, projectName := getRootProject(t)
+//		_, projectName := getRootProject(t)
 //
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), SSHRepo,
-//		flag(params.BranchFlag), "main",
-//		flag(params.SSHKeyFlag), SSHKeyFilePath,
-//		flag(params.IgnorePolicyFlag),
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), SSHRepo,
+//			flag(params.BranchFlag), "main",
+//			flag(params.SSHKeyFlag), SSHKeyFilePath,
+//			flag(params.IgnorePolicyFlag),
+//		}
+//
+//		executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
 //	}
 //
-//	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
-//}
+//	func TestCreateScanFilterZipFile(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScanFilterZipFile(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.BranchFlag), "main",
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.SourceDirFilterFlag), "!*.html",
+//			flag(params.IgnorePolicyFlag),
+//		}
 //
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.BranchFlag), "main",
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.SourceDirFilterFlag), "!*.html",
-//		flag(params.IgnorePolicyFlag),
+//		executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
 //	}
 //
-//	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
-//}
+//	func TestRunKicsScan(t *testing.T) {
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Runing KICS real-time command should pass",
+//			scanCommand, kicsRealtimeCommand,
+//			flag(params.KicsRealtimeFile), fileSourceValueVul,
+//		)
 //
-//func TestRunKicsScan(t *testing.T) {
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Runing KICS real-time command should pass",
-//		scanCommand, kicsRealtimeCommand,
-//		flag(params.KicsRealtimeFile), fileSourceValueVul,
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestRunKicsScanWithouResults(t *testing.T) {
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Runing KICS real-time command should pass",
-//		scanCommand, kicsRealtimeCommand,
-//		flag(params.KicsRealtimeFile), fileSourceValue,
-//	)
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestRunKicsScanWithoutFileSources(t *testing.T) {
-//	args := []string{
-//		scanCommand, kicsRealtimeCommand,
-//	}
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "required flag(s) \"file\" not set")
-//}
-//
-//func TestRunKicsScanWithEngine(t *testing.T) {
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Runing KICS real-time with engine command should pass",
-//		scanCommand, kicsRealtimeCommand,
-//		flag(params.KicsRealtimeFile), fileSourceValueVul,
-//		flag(params.KicsRealtimeEngine), engineValue,
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestRunKicsScanWithInvalidEngine(t *testing.T) {
-//	args := []string{
-//		scanCommand, kicsRealtimeCommand,
-//		flag(params.KicsRealtimeFile), fileSourceValueVul,
-//		flag(params.KicsRealtimeEngine), invalidEngineValue,
-//	}
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err,
-//		util.InvalidEngineMessage)
-//}
-//
-//func TestRunKicsScanWithAdditionalParams(t *testing.T) {
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Runing KICS real-time with additional params command should pass",
-//		scanCommand, kicsRealtimeCommand,
-//		flag(params.KicsRealtimeFile), fileSourceValueVul,
-//		flag(params.KicsRealtimeEngine), engineValue,
-//		flag(params.KicsRealtimeAdditionalParams), additionalParamsValue,
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestRunScaRealtimeScan(t *testing.T) {
-//	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//
-//	// Ensure we have results to read
-//	err = copyResultsToTempDir()
-//	assert.NilError(t, err)
-//
-//	err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper())
-//	assert.NilError(t, err)
-//
-//	// Run second time to cover SCA Resolver download not needed code
-//	err, _ = executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-//
-//func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
-//	args := []string{scanCommand, "sca-realtime"}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
-//
-//	args = []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory + "/missingFolder"}
-//
-//	err, _ = executeCommand(t, args...)
-//	assert.Error(t, err, "Provided path does not exist: "+projectDirectory+"/missingFolder", "Sca realtime should fail due invalid project directory path")
-//}
-//
-//func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
-//	err := os.RemoveAll(scaconfig.Params.WorkingDir())
-//	assert.NilError(t, err)
-//
-//	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
-//
-//	downloadURL := scaconfig.Params.DownloadURL
-//	scaconfig.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
-//	err, _ = executeCommand(t, args...)
-//	assert.Assert(t, err != nil)
-//	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
-//
-//	scaconfig.Params.DownloadURL = downloadURL
-//	scaconfig.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
-//	err, _ = executeCommand(t, args...)
-//	assert.Assert(t, err != nil)
-//	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
-//}
-//
-//func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
-//	_ = viper.BindEnv("CX_APIKEY")
-//	apiKey := viper.GetString("CX_APIKEY")
-//
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Scan create with API key and no tenant should pass",
-//		scanCommand, "create",
-//		flag(params.ProjectName), getProjectNameForScanTests(),
-//		flag(params.SourcesFlag), "./data/sources.zip",
-//		flag(params.BranchFlag), "main",
-//		flag(params.AstAPIKeyFlag), apiKey,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.DebugFlag),
-//		flag(params.AsyncFlag),
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestScanCreateResubmit(t *testing.T) {
-//	projectName := getProjectNameForScanTests()
-//	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
-//	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
-//	args := []string{
-//		scanCommand, scanList,
-//		flag(params.FormatFlag), printer.FormatJSON,
-//		flag(params.FilterFlag), projectIDParams + projectID,
-//	}
-//	err, outputBuffer := executeCommand(t, args...)
-//	scan := []wrappers.ScanResponseModel{}
-//	_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
-//	engines := strings.Join(scan[0].Engines, ",")
-//	log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
-//	assert.Assert(t, err == nil && engines == "sast", "")
-//}
-//
-//// TestScanTypesValidation must return an error because the user is not allowed to use some scanType
-//func TestScanTypesValidation(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast,invalid_scan_type",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "It looks like the")
-//}
-//
-//func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "api-security",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
+//	func TestRunKicsScanWithouResults(t *testing.T) {
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Runing KICS real-time command should pass",
+//			scanCommand, kicsRealtimeCommand,
+//			flag(params.KicsRealtimeFile), fileSourceValue,
+//		)
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err, "Create a scan should be created only with api security. ")
-//}
-//
-//// TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
-//func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sca,invalid_scan_type",
-//		flag(params.AstAPIKeyFlag), "invalidAPIKey",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
+//	func TestRunKicsScanWithoutFileSources(t *testing.T) {
+//		args := []string{
+//			scanCommand, kicsRealtimeCommand,
+//		}
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "required flag(s) \"file\" not set")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Error validating scan types")
-//}
+//	func TestRunKicsScanWithEngine(t *testing.T) {
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Runing KICS real-time with engine command should pass",
+//			scanCommand, kicsRealtimeCommand,
+//			flag(params.KicsRealtimeFile), fileSourceValueVul,
+//			flag(params.KicsRealtimeEngine), engineValue,
+//		)
 //
-//func TestScanGeneratingPdfToEmailReport(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Scan create with API key generating PDF to email report should pass",
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.TargetFormatFlag), "pdf",
-//		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com",
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//
-//func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.TargetFormatFlag), "pdf",
-//		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,invalid_email",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Report not sent, invalid email address: invalid_email")
-//}
-//
-//func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.TargetFormatFlag), "pdf",
-//		flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
+//	func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+//		args := []string{
+//			scanCommand, kicsRealtimeCommand,
+//			flag(params.KicsRealtimeFile), fileSourceValueVul,
+//			flag(params.KicsRealtimeEngine), invalidEngineValue,
+//		}
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err,
+//			util.InvalidEngineMessage)
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "report option \"invalid_option\" unavailable")
-//}
+//	func TestRunKicsScanWithAdditionalParams(t *testing.T) {
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Runing KICS real-time with additional params command should pass",
+//			scanCommand, kicsRealtimeCommand,
+//			flag(params.KicsRealtimeFile), fileSourceValueVul,
+//			flag(params.KicsRealtimeEngine), engineValue,
+//			flag(params.KicsRealtimeAdditionalParams), additionalParamsValue,
+//		)
 //
-//func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Scan create with API key generating PDF report with options should pass",
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.TargetFormatFlag), "pdf",
-//		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
-//		flag(params.TargetFlag), fileName,
-//	)
-//	defer func() {
-//		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
-//		log.Println("test file removed!")
-//	}()
-//	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
-//	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//
-//}
-//
-////func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
-////	_, projectName := getRootProject(t)
-////
-////	//outputBuffer := executeCmdNilAssertion(
-////	//	t, "Scan create with API key using project groups and project tags should pass",
-////	//	scanCommand, "create",
-////	//	flag(params.ProjectName), projectName,
-////	//	flag(params.SourcesFlag), Zip,
-////	//	flag(params.ScanTypes), "sast",
-////	//	flag(params.PresetName), "Checkmarx Default",
-////	//	flag(params.BranchFlag), "dummy_branch",
-////	//	flag(params.ProjectTagList), "integration",
-////	//	flag(params.ProjectGroupList), "test",
-////	//)
-////
-////	//assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-////
-////}
-//
-//func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectGroupList), "wrong_group",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Failed finding groups")
-//}
-//func TestScanCreateExploitablePath(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//	func TestRunScaRealtimeScan(t *testing.T) {
+//		args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 //
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Scan create should pass",
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ExploitablePathFlag), "true",
-//		flag(params.LastSastScanTime), "1",
-//	)
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err)
 //
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
+//		// Ensure we have results to read
+//		err = copyResultsToTempDir()
+//		assert.NilError(t, err)
 //
-//func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//		err = realtime.GetSCAVulnerabilities(wrappers.NewHTTPScaRealTimeWrapper())
+//		assert.NilError(t, err)
 //
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sca",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ExploitablePathFlag), "true",
-//		flag(params.LastSastScanTime), "1",
+//		// Run second time to cover SCA Resolver download not needed code
+//		err, _ = executeCommand(t, args...)
+//		assert.NilError(t, err)
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "must enable SAST scan type")
-//}
-//func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//	func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
+//		args := []string{scanCommand, "sca-realtime"}
 //
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sca,sast",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ExploitablePathFlag), "nottrueorfalse",
-//		flag(params.LastSastScanTime), "1",
+//		err, _ := executeCommand(t, args...)
+//		assert.Error(t, err, "required flag(s) \"project-dir\" not set", "Sca realtime should fail due missing project directory path")
+//
+//		args = []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory + "/missingFolder"}
+//
+//		err, _ = executeCommand(t, args...)
+//		assert.Error(t, err, "Provided path does not exist: "+projectDirectory+"/missingFolder", "Sca realtime should fail due invalid project directory path")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Invalid value for --sca-exploitable-path flag")
-//}
+//	func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+//		err := os.RemoveAll(scaconfig.Params.WorkingDir())
+//		assert.NilError(t, err)
 //
-//func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//		args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 //
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sca,sast",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ExploitablePathFlag), "false",
-//		flag(params.LastSastScanTime), "notanumber",
+//		downloadURL := scaconfig.Params.DownloadURL
+//		scaconfig.Params.DownloadURL = "https://www.invalid-sca-resolver.com"
+//		err, _ = executeCommand(t, args...)
+//		assert.Assert(t, err != nil)
+//		assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
+//
+//		scaconfig.Params.DownloadURL = downloadURL
+//		scaconfig.Params.HashDownloadURL = "https://www.invalid-sca-resolver-hash.com"
+//		err, _ = executeCommand(t, args...)
+//		assert.Assert(t, err != nil)
+//		assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower("Invoking HTTP request to download file failed")))
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Invalid value for --sca-last-sast-scan-time flag")
-//}
+//	func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
+//		_ = viper.BindEnv("CX_APIKEY")
+//		apiKey := viper.GetString("CX_APIKEY")
 //
-//func TestCreateScanProjectPrivatePackage(t *testing.T) {
-//	_, projectName := getRootProject(t)
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Scan create with API key and no tenant should pass",
+//			scanCommand, "create",
+//			flag(params.ProjectName), getProjectNameForScanTests(),
+//			flag(params.SourcesFlag), "./data/sources.zip",
+//			flag(params.BranchFlag), "main",
+//			flag(params.AstAPIKeyFlag), apiKey,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.DebugFlag),
+//			flag(params.AsyncFlag),
+//		)
 //
-//	outputBuffer := executeCmdNilAssertion(
-//		t, "Scan create should pass",
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "kics",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ProjecPrivatePackageFlag), "true",
-//	)
-//
-//	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
-//}
-//func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "kics",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.ProjecPrivatePackageFlag), "nottrueorfalse",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Invalid value for --project-private-package flag")
-//}
-//
-//func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
-//	_, projectName := getRootProject(t)
-//
-//	args := []string{
-//		scanCommand, "create",
-//		flag(params.ProjectName), projectName,
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "kics",
-//		flag(params.PresetName), "Checkmarx Default",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ProjectTagList), "integration",
-//		flag(params.TargetFormatFlag), "sbom",
+//	func TestScanCreateResubmit(t *testing.T) {
+//		projectName := getProjectNameForScanTests()
+//		executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
+//		_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
+//		args := []string{
+//			scanCommand, scanList,
+//			flag(params.FormatFlag), printer.FormatJSON,
+//			flag(params.FilterFlag), projectIDParams + projectID,
+//		}
+//		err, outputBuffer := executeCommand(t, args...)
+//		scan := []wrappers.ScanResponseModel{}
+//		_ = unmarshall(t, outputBuffer, &scan, "Reading scan response JSON should pass")
+//		engines := strings.Join(scan[0].Engines, ",")
+//		log.Printf("ProjectID for resubmit: %s with engines: %s\n", projectID, engines)
+//		assert.Assert(t, err == nil && engines == "sast", "")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "SCA engine must be enabled on scan summary")
-//}
+// // TestScanTypesValidation must return an error because the user is not allowed to use some scanType
 //
-//func TestScanWithPolicy(t *testing.T) {
-//	args := []string{scanCommand, "create",
-//		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "main",
-//		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
+//	func TestScanTypesValidation(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast,invalid_scan_type",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
 //
-//func TestScanWithPolicyTimeout(t *testing.T) {
-//	args := []string{scanCommand, "create",
-//		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
-//		flag(params.SourcesFlag), Zip,
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "main",
-//		flag(params.PolicyTimeoutFlag), "-1"}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
-//}
-//
-//func TestScanListWithFilters(t *testing.T) {
-//	args := []string{
-//		"scan", "list",
-//		flag(params.FilterFlag), "limit=100",
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "It looks like the")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err, "")
-//}
+//	func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "api-security",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
 //
-//func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
-//	originals := getOriginalEnvVars()
-//
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       invalidAPIKey,
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err, "Create a scan should be created only with api security. ")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
+// // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
 //
-//func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//	func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//	setEnvVars(map[string]string{
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sca,invalid_scan_type",
+//			flag(params.AstAPIKeyFlag), "invalidAPIKey",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
 //
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Error validating scan types")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
+//	func TestScanGeneratingPdfToEmailReport(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Scan create with API key generating PDF to email report should pass",
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.TargetFormatFlag), "pdf",
+//			flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com",
+//		)
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       invalidAPIKey,
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
-//}
+//	func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.TargetFormatFlag), "pdf",
+//			flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,invalid_email",
+//		}
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       "",
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.AstAPIKeyFlag), "invalid_apikey",
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Report not sent, invalid email address: invalid_email")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
-//}
+//	func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.TargetFormatFlag), "pdf",
+//			flag(params.ReportFormatPdfOptionsFlag), "invalid_option",
+//		}
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       "",
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.AccessKeyIDFlag), originals[params.AccessKeyIDEnv],
-//		flag(params.AccessKeySecretFlag), originals[params.AccessKeySecretEnv],
-//		flag(params.TenantFlag), originals[params.TenantEnv],
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "report option \"invalid_option\" unavailable")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
+//	func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Scan create with API key generating PDF report with options should pass",
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.TargetFormatFlag), "pdf",
+//			flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+//			flag(params.TargetFlag), fileName,
+//		)
+//		defer func() {
+//			os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+//			log.Println("test file removed!")
+//		}()
+//		_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+//		assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       invalidAPIKey,
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
+// }
 //
-//	defer setEnvVars(originals)
+// //func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
+// //	_, projectName := getRootProject(t)
+// //
+// //	//outputBuffer := executeCmdNilAssertion(
+// //	//	t, "Scan create with API key using project groups and project tags should pass",
+// //	//	scanCommand, "create",
+// //	//	flag(params.ProjectName), projectName,
+// //	//	flag(params.SourcesFlag), Zip,
+// //	//	flag(params.ScanTypes), "sast",
+// //	//	flag(params.PresetName), "Checkmarx Default",
+// //	//	flag(params.BranchFlag), "dummy_branch",
+// //	//	flag(params.ProjectTagList), "integration",
+// //	//	flag(params.ProjectGroupList), "test",
+// //	//)
+// //
+// //	//assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+// //
+// //}
 //
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.AccessKeyIDFlag), "invalid_client_ID",
-//		flag(params.AccessKeySecretFlag), "invalid_client_secret",
+//	func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectGroupList), "wrong_group",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Failed finding groups")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
-//}
+//	func TestScanCreateExploitablePath(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Scan create should pass",
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ExploitablePathFlag), "true",
+//			flag(params.LastSastScanTime), "1",
+//		)
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv: "",
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
+//	func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+//		_, projectName := getRootProject(t)
 //
-//func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
-//	originals := getOriginalEnvVars()
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sca",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ExploitablePathFlag), "true",
+//			flag(params.LastSastScanTime), "1",
+//		}
 //
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv:       "",
-//		params.AccessKeyIDEnv:     invalidClientID,
-//		params.AccessKeySecretEnv: invalidClientSecret,
-//		params.TenantEnv:          invalidTenant,
-//	})
-//
-//	defer setEnvVars(originals)
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "project",
-//		flag(params.SourcesFlag), "data/insecure.zip",
-//		flag(params.ScanTypes), "iac-security",
-//		flag(params.BranchFlag), "dummy_branch",
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "must enable SAST scan type")
 //	}
 //
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
-//}
+//	func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sca,sast",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ExploitablePathFlag), "nottrueorfalse",
+//			flag(params.LastSastScanTime), "1",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Invalid value for --sca-exploitable-path flag")
+//	}
+//
+//	func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sca,sast",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ExploitablePathFlag), "false",
+//			flag(params.LastSastScanTime), "notanumber",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Invalid value for --sca-last-sast-scan-time flag")
+//	}
+//
+//	func TestCreateScanProjectPrivatePackage(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		outputBuffer := executeCmdNilAssertion(
+//			t, "Scan create should pass",
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "kics",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ProjecPrivatePackageFlag), "true",
+//		)
+//
+//		assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+//	}
+//
+//	func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "kics",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.ProjecPrivatePackageFlag), "nottrueorfalse",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "Invalid value for --project-private-package flag")
+//	}
+//
+//	func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
+//		_, projectName := getRootProject(t)
+//
+//		args := []string{
+//			scanCommand, "create",
+//			flag(params.ProjectName), projectName,
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "kics",
+//			flag(params.PresetName), "Checkmarx Default",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.ProjectTagList), "integration",
+//			flag(params.TargetFormatFlag), "sbom",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assertError(t, err, "SCA engine must be enabled on scan summary")
+//	}
+//
+//	func TestScanWithPolicy(t *testing.T) {
+//		args := []string{scanCommand, "create",
+//			flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.BranchFlag), "main",
+//			flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err)
+//	}
+//
+//	func TestScanWithPolicyTimeout(t *testing.T) {
+//		args := []string{scanCommand, "create",
+//			flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
+//			flag(params.SourcesFlag), Zip,
+//			flag(params.ScanTypes), "sast",
+//			flag(params.BranchFlag), "main",
+//			flag(params.PolicyTimeoutFlag), "-1"}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
+//	}
+//
+//	func TestScanListWithFilters(t *testing.T) {
+//		args := []string{
+//			"scan", "list",
+//			flag(params.FilterFlag), "limit=100",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err, "")
+//	}
+//
+//	func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AstAPIKeyEnv:       invalidAPIKey,
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.AstAPIKeyFlag), originals[params.AstAPIKeyEnv],
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err)
+//	}
+//
+//	func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err)
+//	}
+//
+//	func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AstAPIKeyEnv:       invalidAPIKey,
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+//	}
+//
+//	func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AstAPIKeyEnv:       "",
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.AstAPIKeyFlag), "invalid_apikey",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+//	}
+//
+//	func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AstAPIKeyEnv:       "",
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.AccessKeyIDFlag), originals[params.AccessKeyIDEnv],
+//			flag(params.AccessKeySecretFlag), originals[params.AccessKeySecretEnv],
+//			flag(params.TenantFlag), originals[params.TenantEnv],
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.NilError(t, err)
+//	}
+//
+//	func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+//		originals := getOriginalEnvVars()
+//
+//		setEnvVars(map[string]string{
+//			params.AstAPIKeyEnv:       invalidAPIKey,
+//			params.AccessKeyIDEnv:     invalidClientID,
+//			params.AccessKeySecretEnv: invalidClientSecret,
+//			params.TenantEnv:          invalidTenant,
+//		})
+//
+//		defer setEnvVars(originals)
+//
+//		args := []string{
+//			"scan", "create",
+//			flag(params.ProjectName), "project",
+//			flag(params.SourcesFlag), "data/insecure.zip",
+//			flag(params.ScanTypes), "iac-security",
+//			flag(params.BranchFlag), "dummy_branch",
+//			flag(params.AccessKeyIDFlag), "invalid_client_ID",
+//			flag(params.AccessKeySecretFlag), "invalid_client_secret",
+//		}
+//
+//		err, _ := executeCommand(t, args...)
+//		assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+//	}
+func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	t.Parallel()
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv: "",
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	t.Parallel()
+	originals := getOriginalEnvVars()
+
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv:       "",
+		params.AccessKeyIDEnv:     invalidClientID,
+		params.AccessKeySecretEnv: invalidClientSecret,
+		params.TenantEnv:          invalidTenant,
+	})
+
+	defer setEnvVars(originals)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
+}

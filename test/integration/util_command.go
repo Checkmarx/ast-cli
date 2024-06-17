@@ -57,8 +57,8 @@ func bindProxy(t *testing.T) {
 
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	fmt.Printf("after lock befor reateASTIntegrationTestCommand \n ")
 
 	bindProxy(t)
