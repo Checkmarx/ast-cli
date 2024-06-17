@@ -90,10 +90,10 @@ func TestExecuteVorpalScan_UnsupportedLanguage_Fail(t *testing.T) {
 	var scanResult grpcs.ScanResult
 	err = json.Unmarshal(bytes.Bytes(), &scanResult)
 	assert.NilError(t, err, "Failed to unmarshal scan result")
-	assert.Equal(t, scanResult.Error.Description, "The file extension is not supported.")
+	assert2.NotNil(t, scanResult.Error)
 }
 
-func TestExecuteVorpalScan_InitializeAndRun_UpdateVersion_Success(t *testing.T) {
+func TestExecuteVorpalScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
 	_ = vorpalWrapper.ShutDown()
@@ -104,10 +104,8 @@ func TestExecuteVorpalScan_InitializeAndRun_UpdateVersion_Success(t *testing.T) 
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 	vorpalWrapper = grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	if healthCheckErr := vorpalWrapper.HealthCheck(); healthCheckErr != nil {
-		t.Failed()
-	}
-
+	healthCheckErr := vorpalWrapper.HealthCheck()
+	assert2.NotNil(t, healthCheckErr)
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
 

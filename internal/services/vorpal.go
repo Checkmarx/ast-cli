@@ -54,12 +54,16 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams Vorpal
 		return &grpcs.ScanResult{}, nil
 	}
 
-	sourceCode, err := readSourceCode(vorpalParams.FilePath)
+	return executeScan(wrapperParams.VorpalWrapper, vorpalParams.FilePath)
+}
+
+func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.ScanResult, error) {
+	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	_, fileName := filepath.Split(vorpalParams.FilePath)
+	_, fileName := filepath.Split(filePath)
 	return vorpalWrapper.Scan(fileName, sourceCode)
 }
 

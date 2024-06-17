@@ -37,7 +37,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test path to file without extension",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file",
+				fileSourceFlag:      "../data/python-vul-file",
 				vorpalUpdateVersion: false,
 			},
 			want:       nil,
@@ -47,7 +47,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test with valid flags. vorpalUpdateVersion set to true",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file.py",
+				fileSourceFlag:      "../data/python-vul-file.py",
 				vorpalUpdateVersion: true,
 			},
 			want:    mock.ReturnSuccessfulResponseMock(),
@@ -56,7 +56,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test with valid flags. vorpalUpdateVersion set to false",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file.py",
+				fileSourceFlag:      "../data/python-vul-file.py",
 				vorpalUpdateVersion: false,
 			},
 			want:    mock.ReturnSuccessfulResponseMock(),
@@ -65,7 +65,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test with valid flags. vorpal scan failed",
 			args: args{
-				fileSourceFlag:      "data/csharp-no-vul.cs",
+				fileSourceFlag:      "../data/csharp-no-vul.cs",
 				vorpalUpdateVersion: false,
 			},
 			want:    mock.ReturnFailureResponseMock(),
