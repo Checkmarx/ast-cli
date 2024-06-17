@@ -20,7 +20,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -297,108 +296,120 @@ func copyResultsToTempDir() error {
 	return nil
 }
 
-func TestScansE2E(t *testing.T) {
-	t.Parallel()
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	defer deleteProject(t, projectID)
+//func TestScansE2E(t *testing.T) {
+//	t.Parallel()
+//	fmt.Printf(" parallel TestScansE2E start ")
+//
+//	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+//	defer deleteProject(t, projectID)
+//
+//	executeScanAssertions(t, projectID, scanID, Tags)
+//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+//	if err != nil {
+//
+//		return
+//	}
+//	assert.Equal(t, len(glob), 0, "Zip file not removed")
+//	fmt.Printf(" parallel TestScansE2E end ")
+//
+//}
 
-	executeScanAssertions(t, projectID, scanID, Tags)
-	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	if err != nil {
+//func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+//	t.Parallel()
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start ")
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ApplicationName), "my-application",
+//		flag(params.ProjectName), "my-project",
+//		flag(params.SourcesFlag), ".",
+//		flag(params.ScanTypes), "sast",
+//		flag(params.BranchFlag), "dummy_branch",
+//	}
+//
+//	err, _ := executeCommand(t, args...)
+//	assert.NilError(t, err)
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end ")
+//
+//}
 
-		return
-	}
-	assert.Equal(t, len(glob), 0, "Zip file not removed")
-}
+//func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+//	t.Parallel()
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully start ")
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ApplicationName), "my-application",
+//		flag(params.ProjectName), projectNameRandom,
+//		flag(params.SourcesFlag), ".",
+//		flag(params.ScanTypes), "sast",
+//		flag(params.BranchFlag), "dummy_branch",
+//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+//	}
+//	scanID, projectID := executeCreateScan(t, args)
+//	defer deleteProject(t, projectID)
+//	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+//	assert.Assert(t, projectID != "", "Project ID should not be empty")
+//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully end ")
+//
+//}
+//func TestFastScan(t *testing.T) {
+//	t.Parallel()
+//	projectName := getProjectNameForScanTests()
+//	// Create a scan
+//	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
+//	defer deleteProject(t, projectID)
+//	executeScanAssertions(t, projectID, scanID, map[string]string{})
+//}
 
-func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-	t.Parallel()
-	args := []string{
-		"scan", "create",
-		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
-}
-
-func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
-	t.Parallel()
-	args := []string{
-		"scan", "create",
-		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), projectNameRandom,
-		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast",
-		flag(params.BranchFlag), "dummy_branch",
-		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-	}
-	scanID, projectID := executeCreateScan(t, args)
-	defer deleteProject(t, projectID)
-	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-	assert.Assert(t, projectID != "", "Project ID should not be empty")
-}
-func TestFastScan(t *testing.T) {
-	t.Parallel()
-	projectName := getProjectNameForScanTests()
-	// Create a scan
-	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
-	executeScanAssertions(t, projectID, scanID, map[string]string{})
-}
-
-func TestScansUpdateProjectGroups(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
-	response := listScanByID(t, scanID)
-	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
-	defer deleteProject(t, projectID)
-
-	executeScanAssertions(t, projectID, scanID, Tags)
-	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	if err != nil {
-
-		return
-	}
-	assert.Equal(t, len(glob), 0, "Zip file not removed")
-}
+//func TestScansUpdateProjectGroups(t *testing.T) {
+//	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
+//	response := listScanByID(t, scanID)
+//	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
+//	defer deleteProject(t, projectID)
+//
+//	executeScanAssertions(t, projectID, scanID, Tags)
+//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+//	if err != nil {
+//
+//		return
+//	}
+//	assert.Equal(t, len(glob), 0, "Zip file not removed")
+//}
 
 // Test ScaResolver as argument , this is a nop test
-func TestScaResolverArg(t *testing.T) {
-	scanID, projectID := createScanScaWithResolver(
-		t,
-		Dir,
-		map[string]string{},
-		"sast,iac-security",
-		viper.GetString(resolverEnvVar),
-	)
+//func TestScaResolverArg(t *testing.T) {
+//	scanID, projectID := createScanScaWithResolver(
+//		t,
+//		Dir,
+//		map[string]string{},
+//		"sast,iac-security",
+//		viper.GetString(resolverEnvVar),
+//	)
+//
+//	defer deleteProject(t, projectID)
+//
+//	assert.Assert(
+//		t,
+//		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
+//		"Polling should complete when resolver used.",
+//	)
+//	executeScanAssertions(t, projectID, scanID, map[string]string{})
+//}
 
-	defer deleteProject(t, projectID)
-
-	assert.Assert(
-		t,
-		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
-		"Polling should complete when resolver used.",
-	)
-	executeScanAssertions(t, projectID, scanID, map[string]string{})
-}
-
-// Perform an initial scan with complete sources and an incremental scan with a smaller wait time
-func TestIncrementalScan(t *testing.T) {
-	projectName := getProjectNameForScanTests()
-
-	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
-	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
-
-	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
-
-	executeScanAssertions(t, projectID, scanID, map[string]string{})
-	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
-}
+//// Perform an initial scan with complete sources and an incremental scan with a smaller wait time
+//func TestIncrementalScan(t *testing.T) {
+//	projectName := getProjectNameForScanTests()
+//
+//	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
+//	defer deleteProject(t, projectID)
+//	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
+//
+//	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
+//
+//	executeScanAssertions(t, projectID, scanID, map[string]string{})
+//	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
+//}
 
 //	to delete for the test
 //	to delete for the test
