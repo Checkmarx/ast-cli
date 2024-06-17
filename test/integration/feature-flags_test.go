@@ -22,7 +22,7 @@ func Test_HandleFeatureFlags_WhenCalled_ThenNoErrorAndCacheNotEmpty(t *testing.T
 	createASTIntegrationTestCommand(t)
 	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	//t.Parallel()
+	t.Parallel()
 	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
 	assert.NilError(t, err, "HandleFeatureFlags should not return an error")
 	assert.Assert(t, len(wrappers.FeatureFlagsCache) > 0, "FeatureFlags cache should not be empty")
