@@ -79,11 +79,13 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				FilePath:            ttt.args.fileSourceFlag,
 				VorpalUpdateVersion: ttt.args.vorpalUpdateVersion,
 				IsDefaultAgent:      true,
+			}
+			wrapperParams := vorpalengine.VorpalWrappersParam{
 				JwtWrapper:          &mock.JWTMockWrapper{},
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 				VorpalWrapper:       &mock.VorpalMockWrapper{},
 			}
-			got, err := ExecuteVorpalScan(vorpalParams)
+			got, err := ExecuteVorpalScan(vorpalParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
