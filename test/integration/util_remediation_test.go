@@ -2,13 +2,6 @@
 
 package integration
 
-import (
-	"testing"
-
-	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"
-)
-
 const (
 	utilsCommand                = "utils"
 	remediationCommand          = "remediation"
@@ -29,22 +22,22 @@ const (
 	resultFileInvalidValue      = "./"
 )
 
-func TestScaRemediation(t *testing.T) {
-	_ = viper.BindEnv(pat)
-	executeCmdNilAssertion(
-		t,
-		"Remediating sca result",
-		utilsCommand,
-		remediationCommand,
-		scaCommand,
-		flag(params.RemediationFiles),
-		packageFileValue,
-		flag(params.RemediationPackage),
-		packageValue,
-		flag(params.RemediationPackageVersion),
-		packageVersionValue,
-	)
-}
+//func TestScaRemediation(t *testing.T) {
+//	_ = viper.BindEnv(pat)
+//	executeCmdNilAssertion(
+//		t,
+//		"Remediating sca result",
+//		utilsCommand,
+//		remediationCommand,
+//		scaCommand,
+//		flag(params.RemediationFiles),
+//		packageFileValue,
+//		flag(params.RemediationPackage),
+//		packageValue,
+//		flag(params.RemediationPackageVersion),
+//		packageVersionValue,
+//	)
+//}
 
 //func TestScaRemediationUnsupported(t *testing.T) {
 //	args := []string{

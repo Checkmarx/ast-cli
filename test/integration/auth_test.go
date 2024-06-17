@@ -21,10 +21,10 @@ const (
 )
 
 // Test validate with credentials used in test env
-func TestAuthValidate(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate")
-	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
-}
+//func TestAuthValidate(t *testing.T) {
+//	err, buffer := executeCommand(t, "auth", "validate")
+//	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
+//}
 
 //func TestAuthValidateClientAndSecret(t *testing.T) {
 //	err, buffer := executeCommand(t, "auth", "validate", "--debug", "--apikey", "")

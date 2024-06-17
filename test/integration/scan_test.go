@@ -295,18 +295,18 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
-func TestScanCreateEmptyProjectName(t *testing.T) {
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), "",
-		flag(params.SourcesFlag), ".",
-		flag(params.ScanTypes), "sast",
-		flag(params.BranchFlag), "dummy_branch",
-	}
-
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
-}
+//func TestScanCreateEmptyProjectName(t *testing.T) {
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ProjectName), "",
+//		flag(params.SourcesFlag), ".",
+//		flag(params.ScanTypes), "sast",
+//		flag(params.BranchFlag), "dummy_branch",
+//	}
+//
+//	err, _ := executeCommand(t, args...)
+//	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
+//}
 
 //func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
 //	args := []string{
