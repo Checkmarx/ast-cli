@@ -23,25 +23,28 @@ type VorpalScanParams struct {
 	FilePath            string
 	VorpalUpdateVersion bool
 	IsDefaultAgent      bool
+}
+
+type VorpalWrappersParam struct {
 	JwtWrapper          wrappers.JWTWrapper
 	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
 	VorpalWrapper       grpcs.VorpalWrapper
 }
 
-func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, error) {
+func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
 	var err error
-	vorpalParams.VorpalWrapper, err = configureVorpalWrapper(vorpalParams.VorpalWrapper)
-	vorpalWrapper := vorpalParams.VorpalWrapper
+	wrapperParams.VorpalWrapper, err = configureVorpalWrapper(wrapperParams.VorpalWrapper)
+	vorpalWrapper := wrapperParams.VorpalWrapper
 	if err != nil {
 		return nil, err
 	}
 
-	err = manageVorpalInstallation(vorpalParams)
+	err = manageVorpalInstallation(vorpalParams, wrapperParams.VorpalWrapper)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ensureVorpalServiceRunning(vorpalWrapper, vorpalWrapper.GetPort(), vorpalParams)
+	err = ensureVorpalServiceRunning(wrapperParams, vorpalWrapper.GetPort(), vorpalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +63,12 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 	return vorpalWrapper.Scan(fileName, sourceCode)
 }
 
-func manageVorpalInstallation(vorpalParams VorpalScanParams) error {
+func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
 	if vorpalParams.VorpalUpdateVersion && !vorpalInstalled {
-		if err := vorpalParams.VorpalWrapper.HealthCheck(); err == nil {
-			_ = vorpalParams.VorpalWrapper.ShutDown()
+		if err := vorpalWrapper.HealthCheck(); err == nil {
+			_ = vorpalWrapper.ShutDown()
 		}
 		if err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
 			return err
@@ -109,9 +112,9 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int, vorpalParams VorpalScanParams) error {
-	if err := vorpalWrapper.HealthCheck(); err != nil {
-		err = checkLicense(vorpalParams.IsDefaultAgent, vorpalParams.JwtWrapper)
+func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vorpalParams VorpalScanParams) error {
+	if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
+		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam.JwtWrapper)
 		if err != nil {
 			return err
 		}
@@ -120,7 +123,7 @@ func ensureVorpalServiceRunning(vorpalWrapper grpcs.VorpalWrapper, port int, vor
 			return err
 		}
 
-		if err := vorpalWrapper.HealthCheck(); err != nil {
+		if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
 			return err
 		}
 	}
