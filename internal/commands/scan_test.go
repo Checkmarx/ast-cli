@@ -234,7 +234,7 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
 
-	baseArgs := append(baseArgs, flag(commonParams.ScanTypes), "scs",
+	baseArgs = append(baseArgs, flag(commonParams.ScanTypes), "scs",
 		flag(commonParams.SCSRepoURLFlag), "dummyURL",
 		flag(commonParams.SCSRepoTokenFlag), "dummyToken")
 	execCmdNilAssertion(t, baseArgs...)
