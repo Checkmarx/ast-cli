@@ -34,8 +34,6 @@ var mu sync.Mutex
 
 // Bind environment vars and their defaults to viper
 func bindKeysToEnvAndDefault(t *testing.T) {
-	mu.Lock()
-	defer mu.Unlock()
 	for _, b := range params.EnvVarsBinds {
 		err := viper.BindEnv(b.Key, b.Env)
 		if t != nil {
@@ -46,8 +44,6 @@ func bindKeysToEnvAndDefault(t *testing.T) {
 }
 
 func bindProxy(t *testing.T) {
-	mu.Lock()
-	defer mu.Unlock()
 	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
 	if err != nil {
 		assert.NilError(t, err)
@@ -166,8 +162,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 // Create a test command by calling createASTIntegrationTestCommand
 // Redirect stdout of the command to a buffer and return the buffer with the command
 func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	outputBuffer := bytes.NewBufferString("")
 	cmd := createASTIntegrationTestCommand(t)
 	cmd.SetOut(outputBuffer)
