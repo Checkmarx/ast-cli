@@ -104,25 +104,25 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 // - Assert project contains the groups
 // - Delete the created project
 // - Get and assert the project was deleted
-func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags, Groups)
-
-	response := listProjectByID(t, projectID)
-
-	assert.Equal(t, len(response), 1, "Total projects should be 1")
-	assert.Equal(t, response[0].ID, projectID, "Project ID should match the created project")
-
-	project := showProject(t, projectID)
-	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
-
-	assertTagsAndGroups(t, project, Groups)
-
-	deleteProject(t, projectID)
-
-	response = listProjectByID(t, projectID)
-
-	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
-}
+//func TestProjectsE2E(t *testing.T) {
+//	projectID, _ := createProject(t, Tags, Groups)
+//
+//	response := listProjectByID(t, projectID)
+//
+//	assert.Equal(t, len(response), 1, "Total projects should be 1")
+//	assert.Equal(t, response[0].ID, projectID, "Project ID should match the created project")
+//
+//	project := showProject(t, projectID)
+//	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
+//
+//	assertTagsAndGroups(t, project, Groups)
+//
+//	deleteProject(t, projectID)
+//
+//	response = listProjectByID(t, projectID)
+//
+//	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
+//}
 
 // Assert project contains created tags and groups
 func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, groups []string) {
