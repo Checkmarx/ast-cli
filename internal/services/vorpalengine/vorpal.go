@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/vorpal/vorpalconfig"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
@@ -135,7 +136,7 @@ func checkLicense(isDefaultAgent bool, jwtWrapper wrappers.JWTWrapper) error {
 			return err
 		}
 		if !allowed {
-			return fmt.Errorf("AI protection is not enabled for this user")
+			return fmt.Errorf(errorconstants.NoVorpalLicense)
 		}
 	}
 	return nil
