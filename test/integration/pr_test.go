@@ -24,6 +24,7 @@ const (
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
 	//t.Parallel()
+	//t.Parallel()
 	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
