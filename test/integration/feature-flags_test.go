@@ -22,7 +22,7 @@ func Test_HandleFeatureFlags_WhenCalled_ThenNoErrorAndCacheNotEmpty(t *testing.T
 	createASTIntegrationTestCommand(t)
 	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	t.Parallel()
+	//t.Parallel()
 	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
 	assert.NilError(t, err, "HandleFeatureFlags should not return an error")
 	assert.Assert(t, len(wrappers.FeatureFlagsCache) > 0, "FeatureFlags cache should not be empty")
@@ -34,7 +34,7 @@ func TestByorEnabled_Flag_should_be_true(t *testing.T) {
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
 
 	flagName := featureFlagsConstants.ByorEnabled
-	t.Parallel()
+	//t.Parallel()
 
 	flagResponse, err := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, flagName)
 	assert.NilError(t, err, "GetSpecificFeatureFlag should not return an error")
@@ -43,10 +43,10 @@ func TestByorEnabled_Flag_should_be_true(t *testing.T) {
 }
 
 func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = false
-	t.Parallel()
+	//t.Parallel()
 
 	flag := wrappers.FeatureFlagResponseModel{Name: flagName, Status: true}
 	wrappers.UpdateSpecificFeatureFlagMap(flagName, flag)
@@ -54,7 +54,7 @@ func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) 
 }
 
 func Test_LoadFeatureFlagsDefaultValues_WhenCalled_ThenFeatureFlagsNotEmpty(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	wrappers.LoadFeatureFlagsDefaultValues()
 	assert.Assert(t, len(wrappers.FeatureFlags) > 0, "FeatureFlags cache should not be empty after loading defaults")
 }
