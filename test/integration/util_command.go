@@ -63,6 +63,8 @@ func bindProxy(t *testing.T) {
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	mu.Lock()
 	defer mu.Unlock()
+	fmt.Printf(" apter lock  v1 createASTIntegrationTestCommand \n ")
+
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
@@ -156,6 +158,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 	)
+	fmt.Printf(" apter lock  v2 createASTIntegrationTestCommand \n ")
+
 	return astCli
 }
 
