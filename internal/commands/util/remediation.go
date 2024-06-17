@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -52,6 +53,7 @@ var (
 	kicsSimilarityFilter []string
 	kicsErrorCodes       = []string{"70"}
 )
+var mu sync.Mutex
 
 func NewRemediationCommand() *cobra.Command {
 	remediationCmd := &cobra.Command{
@@ -199,6 +201,8 @@ func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error { //rr
 }
 
 func readPackageFile(filename string) (string, error) {
+	mu.Lock()
+	defer mu.Unlock()
 	fileBuffer, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err

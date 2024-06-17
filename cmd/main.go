@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
@@ -22,6 +23,8 @@ const (
 	failureExitCode    = 1
 	killCommand        = "kill"
 )
+
+var mu sync.Mutex
 
 func main() {
 	var err error
@@ -136,6 +139,8 @@ func exitIfError(err error) {
 }
 
 func bindKeysToEnvAndDefault() {
+	mu.Lock()
+	defer mu.Unlock()
 	for _, b := range params.EnvVarsBinds {
 		err := viper.BindEnv(b.Key, b.Env)
 		if err != nil {

@@ -59,6 +59,8 @@ func bindProxy(t *testing.T) {
 
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	mu.Lock()
+	defer mu.Unlock()
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)

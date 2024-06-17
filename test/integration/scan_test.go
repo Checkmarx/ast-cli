@@ -153,6 +153,7 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 }
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
+
 	buffer := executeScanGetBuffer(t, args)
 
 	createdScan := wrappers.ScanResponseModel{}

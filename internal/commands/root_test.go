@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -19,6 +20,8 @@ const (
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
 )
+
+var mu sync.Mutex
 
 func TestMain(m *testing.M) {
 	log.Println("Commands tests started")
@@ -116,6 +119,8 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 }
 
 func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
+	mu.Lock()
+	defer mu.Unlock()
 	buffer := bytes.NewBufferString("")
 	cmd := createASTTestCommand()
 	cmd.SetArgs(args)

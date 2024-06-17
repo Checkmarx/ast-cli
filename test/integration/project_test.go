@@ -154,7 +154,8 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 	groupsStr := formatGroups(groups)
-
+	mu.Lock()
+	defer mu.Unlock()
 	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
 		t, "Creating a project should pass",
