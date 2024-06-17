@@ -13,8 +13,8 @@ import (
 
 // Read and unmarshall json from 'src' into 'dest'
 func unmarshall(t *testing.T, src *bytes.Buffer, dest interface{}, msg string) []byte {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	var responseJson []byte
 
 	responseJson, err := ioutil.ReadAll(src)

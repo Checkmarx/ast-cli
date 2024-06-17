@@ -201,8 +201,8 @@ func runRemediationScaCmd() func(cmd *cobra.Command, args []string) error { //rr
 }
 
 func readPackageFile(filename string) (string, error) {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	fileBuffer, err := os.ReadFile(filename)
 	if err != nil {
 		return "", err

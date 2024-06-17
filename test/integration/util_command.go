@@ -160,8 +160,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 // Create a test command by calling createASTIntegrationTestCommand
 // Redirect stdout of the command to a buffer and return the buffer with the command
 func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	outputBuffer := bytes.NewBufferString("")
 	cmd := createASTIntegrationTestCommand(t)
 	cmd.SetOut(outputBuffer)
@@ -191,8 +191,8 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 
 // Execute a CLI command with nil error assertion
 func executeCmdNilAssertion(t *testing.T, infoMsg string, args ...string) *bytes.Buffer {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	cmd, outputBuffer := createRedirectedTestCommand(t)
 
 	err := execute(cmd, args...)
@@ -207,8 +207,8 @@ func executeCmdWithTimeOutNilAssertion(
 	timeout time.Duration,
 	args ...string,
 ) *bytes.Buffer {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	cmd, outputBuffer := createRedirectedTestCommand(t)
 	err := executeWithTimeout(cmd, timeout, args...)
 	assert.NilError(t, err, infoMsg)

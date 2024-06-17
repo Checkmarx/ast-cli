@@ -195,8 +195,8 @@ const (
 
 // assert success authentication
 func assertSuccessAuthentication(t *testing.T, err error, buffer *bytes.Buffer, assertionMessage string) {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	assert.NilError(t, err, assertionMessage)
 
 	result, readingError := io.ReadAll(buffer)

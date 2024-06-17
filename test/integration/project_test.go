@@ -154,8 +154,8 @@ func createProject(t *testing.T, tags map[string]string, groups []string) (strin
 	projectName := getProjectNameForTest() + "_for_project"
 	tagsStr := formatTags(tags)
 	groupsStr := formatGroups(groups)
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	fmt.Printf("Creating project : %s \n", projectName)
 	outBuffer := executeCmdNilAssertion(
 		t, "Creating a project should pass",
@@ -198,8 +198,8 @@ func deleteProjectByName(t *testing.T, projectName string) {
 }
 
 func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseModel {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	idFilter := fmt.Sprintf("ids=%s", projectID)
 	fmt.Println("Listing project for id ", projectID)
 	outputBuffer := executeCmdNilAssertion(
@@ -217,8 +217,8 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 }
 
 func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
 
 	outputBuffer := executeCmdNilAssertion(

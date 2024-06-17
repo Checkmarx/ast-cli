@@ -177,8 +177,8 @@ func deleteScan(t *testing.T, scanID string) {
 }
 
 func listScanByID(t *testing.T, scanID string) []wrappers.ScanResponseModel {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	scanFilter := fmt.Sprintf("scan-ids=%s", scanID)
 
 	outputBuffer := executeCmdNilAssertion(

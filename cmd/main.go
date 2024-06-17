@@ -139,8 +139,8 @@ func exitIfError(err error) {
 }
 
 func bindKeysToEnvAndDefault() {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	for _, b := range params.EnvVarsBinds {
 		err := viper.BindEnv(b.Key, b.Env)
 		if err != nil {

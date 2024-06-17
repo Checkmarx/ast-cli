@@ -119,8 +119,8 @@ func executeTestCommand(cmd *cobra.Command, args ...string) error {
 }
 
 func executeRedirectedTestCommand(args ...string) (*bytes.Buffer, error) {
-	mu.Lock()
-	defer mu.Unlock()
+	//mu.Lock()
+	//defer mu.Unlock()
 	buffer := bytes.NewBufferString("")
 	cmd := createASTTestCommand()
 	cmd.SetArgs(args)
