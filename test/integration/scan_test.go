@@ -315,7 +315,7 @@ func copyResultsToTempDir() error {
 //}
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start ")
 
 	args := []string{
