@@ -301,23 +301,23 @@ func copyResultsToTempDir() error {
 	return nil
 }
 
-//func TestScansE2E(t *testing.T) {
-//	//t.Parallel()
-//	fmt.Printf(" parallel TestScansE2E start \n")
-//
-//	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-//	defer deleteProject(t, projectID)
-//
-//	executeScanAssertions(t, projectID, scanID, Tags)
-//	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-//	if err != nil {
-//
-//		return
-//	}
-//	assert.Equal(t, len(glob), 0, "Zip file not removed")
-//	fmt.Printf(" parallel TestScansE2E end \n ")
-//
-//}
+func TestScansE2E(t *testing.T) {
+	//t.Parallel()
+	fmt.Printf(" parallel TestScansE2E start \n")
+
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	defer deleteProject(t, projectID)
+
+	executeScanAssertions(t, projectID, scanID, Tags)
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+
+		return
+	}
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+	fmt.Printf(" parallel TestScansE2E end \n ")
+
+}
 
 //func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
 //	//t.Parallel()
