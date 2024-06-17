@@ -154,7 +154,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 	)
-	fmt.Printf("apter lock after createASTIntegrationTestCommand \n ")
+	fmt.Printf("after lock after createASTIntegrationTestCommand \n ")
 
 	return astCli
 }

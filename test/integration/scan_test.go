@@ -1542,7 +1542,7 @@ func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-	t.Parallel()
+	//t.Parallel()
 
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "Error validating scan types: 404 Provided Tenant Name is invalid \n")
