@@ -41,7 +41,7 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
-	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
+	scsRepoURL            = "https://github.com/Checkmarx/secret-scanners-comparison"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
