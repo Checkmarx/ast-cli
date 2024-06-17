@@ -136,7 +136,6 @@ func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vor
 
 func checkLicense(isDefaultAgent bool, wrapperParams VorpalWrappersParam) error {
 	if !isDefaultAgent {
-		// TODO: check enforcement
 		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
 		if err != nil {
 			return err
