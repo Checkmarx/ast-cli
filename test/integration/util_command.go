@@ -59,7 +59,7 @@ func bindProxy(t *testing.T) {
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	mu.Lock()
 	defer mu.Unlock()
-	fmt.Printf(" apter lock  v1 createASTIntegrationTestCommand \n ")
+	fmt.Printf("after lock befor reateASTIntegrationTestCommand \n ")
 
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
@@ -154,7 +154,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 	)
-	fmt.Printf(" apter lock  v2 createASTIntegrationTestCommand \n ")
+	fmt.Printf("apter lock after createASTIntegrationTestCommand \n ")
 
 	return astCli
 }
