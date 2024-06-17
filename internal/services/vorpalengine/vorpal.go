@@ -29,32 +29,16 @@ type VorpalScanParams struct {
 }
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, error) {
-	installedLatestVersion := false
-	vorpalWrapper, err := configureVorpalWrapper(vorpalParams.VorpalWrapper)
+	var err error
+	vorpalParams.VorpalWrapper, err = configureVorpalWrapper(vorpalParams.VorpalWrapper)
+	vorpalWrapper := vorpalParams.VorpalWrapper
 	if err != nil {
 		return nil, err
 	}
 
-	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
-	if !vorpalInstalled {
-		logger.PrintIfVerbose("Vorpal is not installed. Installing...")
-		err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
-		installedLatestVersion = true
-		if err != nil {
-			return nil, err
-		}
-	}
-	if vorpalParams.VorpalUpdateVersion && !installedLatestVersion {
-		if !isLastVersion() {
-			err = vorpalWrapper.HealthCheck()
-			if err == nil {
-				_ = vorpalWrapper.ShutDown()
-			}
-			err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
-			if err != nil {
-				return nil, err
-			}
-		}
+	err = manageVorpalInstallation(vorpalParams)
+	if err != nil {
+		return nil, err
 	}
 
 	err = ensureVorpalServiceRunning(vorpalWrapper, vorpalWrapper.GetPort(), vorpalParams)
@@ -63,6 +47,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 	}
 
 	if exists, _ := osinstaller.FileExists(vorpalParams.FilePath); !exists {
+		logger.PrintIfVerbose(fmt.Sprintf("file %v not exist or not provided", vorpalParams.FilePath))
 		return &grpcs.ScanResult{}, nil
 	}
 
@@ -73,6 +58,20 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams) (*grpcs.ScanResult, 
 
 	_, fileName := filepath.Split(vorpalParams.FilePath)
 	return vorpalWrapper.Scan(fileName, sourceCode)
+}
+
+func manageVorpalInstallation(vorpalParams VorpalScanParams) error {
+	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
+
+	if vorpalParams.VorpalUpdateVersion && !vorpalInstalled {
+		if err := vorpalParams.VorpalWrapper.HealthCheck(); err == nil {
+			_ = vorpalParams.VorpalWrapper.ShutDown()
+		}
+		if err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func findVorpalPort() (int, error) {
@@ -191,13 +190,4 @@ func waitForServer(address string, timeout time.Duration) bool {
 		time.Sleep(waitingDuration)
 	}
 	return false
-}
-
-func isLastVersion() bool {
-	ans, err := osinstaller.IsLastVersion(vorpalconfig.Params.HashFilePath(), vorpalconfig.Params.HashDownloadURL, vorpalconfig.Params.HashFilePath())
-	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Error checking if the installation is up-to-date: %v", err))
-		return false
-	}
-	return ans
 }
