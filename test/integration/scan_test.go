@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
