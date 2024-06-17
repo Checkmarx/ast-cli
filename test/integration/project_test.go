@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"

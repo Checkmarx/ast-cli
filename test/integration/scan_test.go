@@ -4,6 +4,8 @@ package integration
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +19,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"gotest.tools/assert"
 )
 
