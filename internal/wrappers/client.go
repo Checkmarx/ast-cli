@@ -482,12 +482,14 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
+		logger.Printf("StatusBadRequest | Failed to authenticate - url: %s \n paylod: %v", authServerURI, payload)
 		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 	if res.StatusCode == http.StatusNotFound {
 		return "", errors.Errorf("%d %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
+		logger.Printf("StatusUnauthorized | Failed to authenticate - url: %s \n paylod: %v", authServerURI, payload)
 		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 
