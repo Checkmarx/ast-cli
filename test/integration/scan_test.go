@@ -167,7 +167,8 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 	})
 
 	defer setEnvVars(originals)
-	fmt.Println("originals", originals)
+	name := fmt.Sprintf("project: %s \n name: %s", originals[params.AccessKeyIDFlag], originals[params.AccessKeySecretFlag])
+	fmt.Println(name)
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "project",
