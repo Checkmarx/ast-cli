@@ -157,7 +157,6 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
-	t.Skip("Skipping test due to invalid credentials")
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -211,7 +210,6 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
-	t.Skip("Skipping test due to invalid credentials")
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
