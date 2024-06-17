@@ -314,24 +314,24 @@ func copyResultsToTempDir() error {
 //
 //}
 
-//func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-//	t.Parallel()
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start ")
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ApplicationName), "my-application",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end ")
-//
-//}
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start ")
+
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end ")
+
+}
 
 //func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
 //	t.Parallel()
