@@ -118,7 +118,7 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 
 func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vorpalParams VorpalScanParams) error {
 	if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
-		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam.JwtWrapper)
+		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
 			return err
 		}
@@ -134,10 +134,10 @@ func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vor
 	return nil
 }
 
-func checkLicense(isDefaultAgent bool, jwtWrapper wrappers.JWTWrapper) error {
+func checkLicense(isDefaultAgent bool, wrapperParams VorpalWrappersParam) error {
 	if !isDefaultAgent {
 		// TODO: check enforcement
-		allowed, err := jwtWrapper.IsAllowedEngine(params.AIProtectionType)
+		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
 		if err != nil {
 			return err
 		}
