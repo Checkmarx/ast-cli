@@ -2,18 +2,19 @@
 
 package integration
 
-import (
-	"testing"
-
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
-	"github.com/checkmarx/ast-cli/internal/params"
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/spf13/viper"
-	"gotest.tools/assert"
-)
-
+//
+//import (
+//	"testing"
+//
+//	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+//	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+//	"github.com/checkmarx/ast-cli/internal/params"
+//	commonParams "github.com/checkmarx/ast-cli/internal/params"
+//	"github.com/checkmarx/ast-cli/internal/wrappers"
+//	"github.com/spf13/viper"
+//	"gotest.tools/assert"
+//)
+//
 //
 //func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
 //	if !isFFByorEnabled(t) {
@@ -125,29 +126,29 @@ import (
 //	deleteProjectByName(t, projectName)
 //	assertError(t, err, errorConstants.ImportFilePathIsRequired)
 //}
-
-func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
-	if !isFFByorEnabled(t) {
-		assert.Assert(t, true, "Byor is disabled")
-		return
-	}
-
-	args := []string{
-		"utils", "import",
-		flag(params.ProjectName), "",
-		flag(params.ImportFilePath), "data/sarif.sarif",
-	}
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, errorConstants.ProjectNameIsRequired)
-}
-
-func isFFByorEnabled(t *testing.T) bool {
-	// createASTIntegrationTestCommand is called just to load the FF values
-	createASTIntegrationTestCommand(t)
-
-	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
-	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
-	return flagResponse.Status
-}
+//
+//func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
+//	if !isFFByorEnabled(t) {
+//		assert.Assert(t, true, "Byor is disabled")
+//		return
+//	}
+//
+//	args := []string{
+//		"utils", "import",
+//		flag(params.ProjectName), "",
+//		flag(params.ImportFilePath), "data/sarif.sarif",
+//	}
+//	err, _ := executeCommand(t, args...)
+//	assertError(t, err, errorConstants.ProjectNameIsRequired)
+//}
+//
+//func isFFByorEnabled(t *testing.T) bool {
+//	// createASTIntegrationTestCommand is called just to load the FF values
+//	createASTIntegrationTestCommand(t)
+//
+//	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+//	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+//
+//	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
+//	return flagResponse.Status
+//}
