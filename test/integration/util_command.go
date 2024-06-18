@@ -158,10 +158,13 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 // Create a test command by calling createASTIntegrationTestCommand
 // Redirect stdout of the command to a buffer and return the buffer with the command
 func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
+	mutex.Lock()
 	outputBuffer := bytes.NewBufferString("")
 	cmd := createASTIntegrationTestCommand(t)
 	cmd.SetOut(outputBuffer)
+	mutex.Unlock()
 	return cmd, outputBuffer
+
 }
 
 /*
@@ -209,7 +212,8 @@ func executeCmdWithTimeOutNilAssertion(
 }
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
-
+	mutex.Lock()
+	defer mutex.Unlock()
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)

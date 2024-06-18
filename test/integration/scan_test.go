@@ -49,51 +49,51 @@ type ScanWorkflowResponse struct {
 	Information string    `json:"info"`
 }
 
-//// Create a scan with an empty project name
-//// Assert the scan fails with correct message
-//func TestScanCreateEmptyProjectName(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ProjectName), "",
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
-//}
-//
-//func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ApplicationName), "my-application",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//}
-//
-//func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ApplicationName), "my-application",
-//		flag(params.ProjectName), projectNameRandom,
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//	}
-//	scanID, projectID := executeCreateScan(t, args)
-//	defer deleteProject(t, projectID)
-//	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-//	assert.Assert(t, projectID != "", "Project ID should not be empty")
-//}
-//
+// Create a scan with an empty project name
+// Assert the scan fails with correct message
+func TestScanCreateEmptyProjectName(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
+}
+
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), projectNameRandom,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, args)
+	defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+}
+
 //func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 //	args := []string{
 //		"scan", "create",

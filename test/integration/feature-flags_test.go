@@ -43,6 +43,8 @@ func TestByorEnabled_Flag_should_be_true(t *testing.T) {
 }
 
 func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) {
+	t.Parallel()
+
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = false
 
@@ -52,6 +54,7 @@ func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) 
 }
 
 func Test_LoadFeatureFlagsDefaultValues_WhenCalled_ThenFeatureFlagsNotEmpty(t *testing.T) {
+	t.Parallel()
 	wrappers.LoadFeatureFlagsDefaultValues()
 	assert.Assert(t, len(wrappers.FeatureFlags) > 0, "FeatureFlags cache should not be empty after loading defaults")
 }
