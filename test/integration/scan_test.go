@@ -179,7 +179,6 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 		flag(params.TenantFlag), originals[params.TenantEnv],
 	}
 
-	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
 	if err != nil {
 		log.Println("Error occurred:", err)
@@ -209,7 +208,6 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 		flag(params.AccessKeySecretFlag), "invalid_client_secret",
 	}
 
-	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
 	if err != nil {
 		log.Println("Error occurred:", err)
@@ -234,7 +232,6 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
 	if err != nil {
 		log.Println("Error occurred:", err)
@@ -293,7 +290,6 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
 	if err != nil {
 		log.Println("Error occurred:", err)
@@ -312,7 +308,6 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
-	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
 	if err != nil {
 		log.Println("Error occurred:", err)
@@ -523,6 +518,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -541,6 +537,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 }
 
 func TestScanCreateWithThreshold(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -561,6 +558,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -946,6 +944,7 @@ func TestScanLogsKICS(t *testing.T) {
 }
 
 func TestPartialScanWithWrongPreset(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -961,6 +960,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1227,6 +1227,7 @@ func TestScanCreateResubmit(t *testing.T) {
 
 // TestScanTypesValidation must return an error because the user is not allowed to use some scanType
 func TestScanTypesValidation(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1243,6 +1244,7 @@ func TestScanTypesValidation(t *testing.T) {
 }
 
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 	args := []string{
 		"scan", "create",
@@ -1259,6 +1261,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 
 // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
 func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1294,6 +1297,7 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 }
 
 func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
+	t.Parallel()
 	_, projectName := getRootProject(t)
 
 	args := []string{
