@@ -2002,7 +2002,6 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
-
 		allScansModel, errorModel, err = scansWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
@@ -2200,9 +2199,7 @@ func toScanViews(scans []wrappers.ScanResponseModel, sastMetadataWrapper wrapper
 		scanIDs[i] = scans[i].ID
 	}
 
-	paramsToSast := map[string]string{"scan-ids": strings.Join(scanIDs, ",")}
-
-	sastMetadata, err := sastMetadataWrapper.GetSastMetadataByIDs(paramsToSast)
+	sastMetadata, err := services.GetSastMetadataByIDs(sastMetadataWrapper, scanIDs)
 	if err != nil {
 		logger.Printf("error getting sast metadata: %v", err)
 		return nil, err
