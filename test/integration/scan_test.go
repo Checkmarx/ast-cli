@@ -183,7 +183,11 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 		flag(params.TenantFlag), originals[params.TenantEnv],
 	}
 
+	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
@@ -210,7 +214,11 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 		flag(params.AccessKeySecretFlag), "invalid_client_secret",
 	}
 
+	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 }
 
@@ -232,7 +240,11 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
+	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
@@ -288,7 +300,11 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
+	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
@@ -303,7 +319,11 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 		flag(params.BranchFlag), "dummy_branch",
 	}
 
+	log.Println("Executing command with arguments:", args)
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
