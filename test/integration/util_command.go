@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,6 +29,8 @@ const (
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
 	pat          = "PERSONAL_ACCESS_TOKEN"
 )
+
+var mutex = sync.Mutex{}
 
 // Bind environment vars and their defaults to viper
 func bindKeysToEnvAndDefault(t *testing.T) {
@@ -172,11 +175,11 @@ func execute(cmd *cobra.Command, args ...string) error {
 
 // Execute a CLI command expecting an error and buffer to execute post assertions
 func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
-
+	mutex.Lock()
+	defer mutex.Unlock()
 	cmd, buffer := createRedirectedTestCommand(t)
 
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
-
 	return err, buffer
 }
 

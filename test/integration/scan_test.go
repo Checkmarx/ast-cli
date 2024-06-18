@@ -85,6 +85,7 @@ func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -108,6 +109,7 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -132,6 +134,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -157,6 +160,7 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -184,6 +188,7 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -210,6 +215,7 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -231,6 +237,7 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -272,6 +279,7 @@ func setEnvVars(envVars map[string]string) {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -285,6 +293,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -315,6 +324,7 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 }
 
 func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
@@ -371,6 +381,7 @@ func TestScansUpdateProjectGroups(t *testing.T) {
 }
 
 func TestInvalidSource(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TestProject",
 		flag(params.SourcesFlag), "invalidSource",
@@ -391,6 +402,7 @@ func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
 }
 
 func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
@@ -1493,6 +1505,7 @@ func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
 }
 
 func TestScanWithPolicy(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1505,6 +1518,7 @@ func TestScanWithPolicy(t *testing.T) {
 }
 
 func TestScanWithPolicyTimeout(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1517,6 +1531,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 }
 
 func TestScanListWithFilters(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=100",
@@ -1527,6 +1542,7 @@ func TestScanListWithFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000,project-id=6cd7afbd-3d21-44b9-a72f-8a7eb351b5a5,branch=develop",
@@ -1537,6 +1553,7 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimit(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000",
