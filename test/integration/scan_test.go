@@ -52,6 +52,7 @@ type ScanWorkflowResponse struct {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -65,6 +66,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
