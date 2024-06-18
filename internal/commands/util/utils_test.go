@@ -27,8 +27,7 @@ func TestNewUtilsCommand(t *testing.T) {
 		&mock.GroupsMockWrapper{},
 		mock.AccessManagementMockWrapper{},
 		mock.ApplicationsMockWrapper{},
-		&mock.ByorMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{})
+		&mock.ByorMockWrapper{})
 
 	assert.Assert(t, cmd != nil, "Utils command must exist")
 }

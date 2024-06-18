@@ -150,7 +150,6 @@ func NewResultsCommand(
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -163,7 +162,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -199,7 +198,6 @@ func resultShowSubCommand(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -210,7 +208,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -770,7 +768,6 @@ func runGetResultCommand(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -834,8 +831,7 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
-			params,
-			featureFlagsWrapper)
+			params)
 	}
 }
 
@@ -895,7 +891,6 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	params map[string]string,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
@@ -926,7 +921,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM, featureFlagsWrapper)
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM)
 		if err != nil {
 			return err
 		}
@@ -1032,8 +1027,7 @@ func createReport(format,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
-	retrySBOM int,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	retrySBOM int) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1068,7 +1062,7 @@ func createReport(format,
 	}
 	if printer.IsFormat(format, printer.FormatPDF) && isValidScanStatus(summary.Status, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
-		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions, featureFlagsWrapper)
+		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryMarkdown) {
 		summaryRpt := createTargetName(targetFile, targetPath, "md")
@@ -1363,12 +1357,11 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 	}
 	return nil
 }
-func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
-	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
-	newScanReportEnabled := flagResponse.Status
+	newScanReportEnabled := wrappers.FeatureFlags[wrappers.NewScanReportEnabled]
+
 	if newScanReportEnabled {
 		pdfReportsPayload.ReportName = reportNameImprovedScanReport
 	} else {

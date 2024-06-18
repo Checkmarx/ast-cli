@@ -17,7 +17,6 @@ func TestFindProject(t *testing.T) {
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
 		applicationsWrapper     wrappers.ApplicationsWrapper
-		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -35,7 +34,6 @@ func TestFindProject(t *testing.T) {
 				groupsWrapper:           &mock.GroupsMockWrapper{},
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
-				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "MOCK",
 			wantErr: false,
@@ -49,7 +47,6 @@ func TestFindProject(t *testing.T) {
 				groupsWrapper:           &mock.GroupsMockWrapper{},
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
-				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "ID-new-MOCK",
 			wantErr: false,
@@ -65,8 +62,7 @@ func TestFindProject(t *testing.T) {
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
-				ttt.args.applicationsWrapper,
-				ttt.args.featureFlagsWrapper)
+				ttt.args.applicationsWrapper)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -89,7 +85,6 @@ func Test_createProject(t *testing.T) {
 		applicationID           []string
 		projectGroups           string
 		projectPrivatePackage   string
-		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -104,7 +99,6 @@ func Test_createProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and non existing project groups return error", args: args{
 			projectName:             "new-project-name",
@@ -113,7 +107,6 @@ func Test_createProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "grp1,grp2",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName:             "mock-some-error-model",
@@ -122,7 +115,6 @@ func Test_createProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "", wantErr: true},
 		{name: "When called with mock fake group error return fake error from project create", args: args{
 			projectName:             "new-project-name",
@@ -131,7 +123,6 @@ func Test_createProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "fake-group-error",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: true},
 		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
 			projectName:             "new-project-name",
@@ -141,7 +132,6 @@ func Test_createProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "",
 			projectPrivatePackage:   "true",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
 	}
 	for _, tt := range tests {
@@ -156,8 +146,7 @@ func Test_createProject(t *testing.T) {
 				ttt.args.applicationsWrapper,
 				ttt.args.applicationID,
 				ttt.args.projectGroups,
-				ttt.args.projectPrivatePackage,
-				ttt.args.featureFlagsWrapper)
+				ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -182,7 +171,6 @@ func Test_updateProject(t *testing.T) {
 		projectGroups           string
 		projectTags             string
 		projectPrivatePackage   string
-		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -201,7 +189,6 @@ func Test_updateProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
 			applicationID:           nil,
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-project-name", wantErr: false},
 		{name: "without app ID and with project tags", args: args{
 			resp: &wrappers.ProjectsCollectionResponseModel{
@@ -215,7 +202,6 @@ func Test_updateProject(t *testing.T) {
 			projectName:             "project-name",
 			projectTags:             "tag1,tag2",
 			applicationID:           nil,
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-project-name", wantErr: false},
 		{name: "When called with application ID", args: args{
 			resp: &wrappers.ProjectsCollectionResponseModel{
@@ -228,7 +214,6 @@ func Test_updateProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectName:             "project-name",
 			projectPrivatePackage:   "true",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-project-name", wantErr: false},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName: "mock-some-error-model",
@@ -241,7 +226,6 @@ func Test_updateProject(t *testing.T) {
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			applicationID:           []string{"1"},
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
@@ -258,8 +242,7 @@ func Test_updateProject(t *testing.T) {
 				ttt.args.applicationID,
 				ttt.args.projectGroups,
 				ttt.args.projectTags,
-				ttt.args.projectPrivatePackage,
-				ttt.args.featureFlagsWrapper)
+				ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return

@@ -5,23 +5,16 @@ import (
 	"testing"
 
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
-
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
-func setup() {
-	wrappers.FeatureFlagsCache = map[string]bool{}
-}
-
 func TestAssignGroupsToProject(t *testing.T) {
-	setup() // Clear the map before starting this test
 	type args struct {
-		projectID           string
-		projectName         string
-		groups              []*wrappers.Group
-		accessManagement    wrappers.AccessManagementWrapper
-		featureFlagsWrapper wrappers.FeatureFlagsWrapper
+		projectID        string
+		projectName      string
+		groups           []*wrappers.Group
+		accessManagement wrappers.AccessManagementWrapper
 	}
 	tests := []struct {
 		name    string
@@ -37,18 +30,16 @@ func TestAssignGroupsToProject(t *testing.T) {
 					ID:   "group-id-to-assign",
 					Name: "group-name-to-assign",
 				}},
-				accessManagement:    &mock.AccessManagementMockWrapper{},
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				accessManagement: &mock.AccessManagementMockWrapper{},
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		ttt := tt
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
+		wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = true
 		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
-				ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
+			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups, ttt.args.accessManagement); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
 			}
 		})
@@ -174,7 +165,6 @@ func Test_findGroupByName(t *testing.T) {
 }
 
 func Test_getGroupsForRequest(t *testing.T) {
-	setup() // Clear the map before starting this test
 	type args struct {
 		groups []*wrappers.Group
 	}
@@ -192,8 +182,8 @@ func Test_getGroupsForRequest(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: false}
-			if got := getGroupsForRequest(ttt.args.groups, &mock.FeatureFlagsMockWrapper{}); !reflect.DeepEqual(got, ttt.want) {
+			wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] = false
+			if got := getGroupsForRequest(ttt.args.groups); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
 			}
 		})

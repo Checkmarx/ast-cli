@@ -59,7 +59,7 @@ var (
 )
 
 func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	accessManagementWrapper wrappers.AccessManagementWrapper) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -89,7 +89,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 			`,
 			),
 		},
-		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper),
+		RunE: runCreateProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper),
 	}
 	createProjCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createProjCmd.PersistentFlags().String(commonParams.GroupList, "", "List of groups, ex: (PowerUsers,etc)")
@@ -227,7 +227,6 @@ func runCreateProjectCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
@@ -248,7 +247,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		groups, err := updateGroupValues(&input, cmd, groupsWrapper, featureFlagsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
@@ -283,7 +282,7 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
 		}
-		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper, featureFlagsWrapper)
+		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper)
 		if err != nil {
 			return err
 		}

@@ -33,18 +33,16 @@ func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	return groupsMap, nil
 }
 
-func getGroupsForRequest(groups []*wrappers.Group, featureFlagsWrapper wrappers.FeatureFlagsWrapper) []string {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	if !flagResponse.Status {
+func getGroupsForRequest(groups []*wrappers.Group) []string {
+	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		return GetGroupIds(groups)
 	}
 	return nil
 }
 
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
-	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	if !flagResponse.Status {
+	accessManagement wrappers.AccessManagementWrapper) error {
+	if !wrappers.FeatureFlags[featureFlagsConstants.AccessManagementEnabled] {
 		return nil
 	}
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)

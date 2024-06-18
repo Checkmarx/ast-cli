@@ -1,15 +1,11 @@
 package mock
 
-import (
-	"fmt"
-
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-)
+import "fmt"
 
 type UploadsMockWrapper struct {
 }
 
-func (u *UploadsMockWrapper) UploadFile(_ string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (*string, error) {
+func (u *UploadsMockWrapper) UploadFile(_ string) (*string, error) {
 	fmt.Println("Called Create in UploadsMockWrapper")
 	url := "/path/to/nowhere"
 	return &url, nil

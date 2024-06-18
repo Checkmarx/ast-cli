@@ -37,7 +37,6 @@ func NewUtilsCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	byorWrapper wrappers.ByorWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
@@ -57,7 +56,7 @@ func NewUtilsCommand(
 		},
 	}
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper, featureFlagsWrapper)
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper)
 
 	envCheckCmd := NewEnvCheckCommand()
 
@@ -73,8 +72,7 @@ func NewUtilsCommand(
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
-	if flagResponse.Status {
+	if wrappers.FeatureFlags[featureFlagsConstants.ByorEnabled] {
 		utilsCmd.AddCommand(importCmd)
 	}
 
