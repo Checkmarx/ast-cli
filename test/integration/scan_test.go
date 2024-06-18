@@ -319,45 +319,46 @@ func TestScansE2E(t *testing.T) {
 
 }
 
-//func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-//	//t.Parallel()
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ApplicationName), "my-application",
-//		flag(params.ProjectName), "my-project",
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//	}
-//
-//	err, _ := executeCommand(t, args...)
-//	assert.NilError(t, err)
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end \n")
-//
-//}
+func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully start \n")
 
-//func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
-//	t.Parallel()
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully start ")
-//
-//	args := []string{
-//		"scan", "create",
-//		flag(params.ApplicationName), "my-application",
-//		flag(params.ProjectName), projectNameRandom,
-//		flag(params.SourcesFlag), ".",
-//		flag(params.ScanTypes), "sast",
-//		flag(params.BranchFlag), "dummy_branch",
-//		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-//	}
-//	scanID, projectID := executeCreateScan(t, args)
-//	defer deleteProject(t, projectID)
-//	assert.Assert(t, scanID != "", "Scan ID should not be empty")
-//	assert.Assert(t, projectID != "", "Project ID should not be empty")
-//	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully end ")
-//
-//}
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully end \n")
+
+}
+
+func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully start ")
+
+	args := []string{
+		"scan", "create",
+		flag(params.ApplicationName), "my-application",
+		flag(params.ProjectName), projectNameRandom,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), "sast",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, args)
+	defer deleteProject(t, projectID)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+	fmt.Printf(" parallel TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully end ")
+
+}
+
 //func TestFastScan(t *testing.T) {
 //	t.Parallel()
 //	projectName := getProjectNameForScanTests()
