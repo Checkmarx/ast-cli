@@ -212,8 +212,8 @@ func executeCmdWithTimeOutNilAssertion(
 }
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+	//mutex.Lock()
+	//defer mutex.Unlock()
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
