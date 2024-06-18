@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,6 +29,8 @@ const (
 	ProxyURLTmpl = "http://%s:%s@%s:%d"
 	pat          = "PERSONAL_ACCESS_TOKEN"
 )
+
+var mutex = sync.Mutex{}
 
 // Bind environment vars and their defaults to viper
 func bindKeysToEnvAndDefault(t *testing.T) {
@@ -54,6 +57,7 @@ func bindProxy(t *testing.T) {
 
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
+	mutex.Lock()
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
@@ -147,6 +151,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 	)
+	mutex.Unlock()
 	return astCli
 }
 
