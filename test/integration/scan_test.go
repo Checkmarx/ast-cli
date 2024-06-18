@@ -85,7 +85,6 @@ func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -109,7 +108,6 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -134,7 +132,6 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -160,7 +157,6 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -192,7 +188,6 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -223,7 +218,6 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -249,7 +243,6 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
-	t.Parallel()
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
