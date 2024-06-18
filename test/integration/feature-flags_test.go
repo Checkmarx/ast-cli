@@ -44,7 +44,6 @@ func TestByorEnabled_Flag_should_be_true(t *testing.T) {
 
 func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) {
 	t.Parallel()
-
 	flagName := featureFlagsConstants.ByorEnabled
 	wrappers.FeatureFlagsCache[flagName] = false
 

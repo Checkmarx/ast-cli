@@ -1,4 +1,4 @@
-//go:build integrationzz
+//go:build integration
 
 package integration
 

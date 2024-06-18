@@ -58,6 +58,7 @@ func bindProxy(t *testing.T) {
 // Create a command to execute in tests
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	mutex.Lock()
+	defer mutex.Unlock()
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
 	_ = viper.BindEnv(pat)
@@ -151,7 +152,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 	)
-	mutex.Unlock()
 	return astCli
 }
 
@@ -162,7 +162,6 @@ func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 	cmd := createASTIntegrationTestCommand(t)
 	cmd.SetOut(outputBuffer)
 	return cmd, outputBuffer
-
 }
 
 /*
@@ -210,8 +209,7 @@ func executeCmdWithTimeOutNilAssertion(
 }
 
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
-	//mutex.Lock()
-	//defer mutex.Unlock()
+
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
 	args = appendProxyArgs(args)
 	cmd.SetArgs(args)
