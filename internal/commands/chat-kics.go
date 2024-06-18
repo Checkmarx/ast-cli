@@ -41,7 +41,8 @@ const FileErrorFormat = "It seems that %s is not available for AI Guided Remedia
 
 // chatModel model to use when calling the CheckmarxAI
 const checkmarxAiChatModel = "GPT4"
-const aiProxyRoute = "/api/ai-proxy"
+const aiProxyAzureAIRoute = "/api/ai-proxy/redirect/externalAzure"
+const aiProxyCheckmarxAIRoute = "/api/ai-proxy/redirect/azure"
 const tenantIDClaimKey = "tenant_id"
 const guidedRemediationFeatureNameKics = "cli-guided-remediation-kics"
 const guidedRemediationFeatureNameSast = "cli-guided-remediation-sast"
@@ -132,32 +133,19 @@ func runChatKics(
 		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
-		if azureAiEnabled {
-			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
+		if azureAiEnabled || checkmarxAiEnabled {
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: requestID,
 				UserAgent: params.DefaultAgent,
 				Feature:   guidedRemediationFeatureNameKics,
-				ExternalModel: &message.ExternalAzure{
-					Endpoint: azureAiEndPoint,
-				},
 			}
-			logger.PrintIfVerbose("Sending message to Azure AI model for KICS guided remediation. RequestID: " + requestID)
+			if azureAiEnabled {
+				logger.PrintIfVerbose("Sending message to Azure AI model for KICS guided remediation. RequestID: " + requestID)
 
-			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
-			if err != nil {
-				return outputError(cmd, id, err)
+			} else {
+				logger.PrintIfVerbose("Sending message to Checkmarx AI model for KICS guided remediation. RequestID: " + requestID)
 			}
-		} else if checkmarxAiEnabled {
-			metadata := message.MetaData{
-				TenantID:      tenantID,
-				RequestID:     requestID,
-				UserAgent:     params.DefaultAgent,
-				Feature:       guidedRemediationFeatureNameKics,
-				ExternalModel: nil,
-			}
-			logger.PrintIfVerbose("Sending message to Checkmarx AI model for KICS guided remediation. RequestID: " + requestID)
 			response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
@@ -169,7 +157,7 @@ func runChatKics(
 				return outputError(cmd, id, err)
 			}
 		} else {
-			return outputError(cmd, id, errors.New(AllOptionsDisabledError))
+			return outputError(cmd, uuid.Nil, errors.Errorf(AllOptionsDisabledError))
 		}
 
 		responseContent := getMessageContents(response)

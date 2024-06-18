@@ -114,32 +114,19 @@ func runChatSast(
 		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
-		if azureAiEnabled {
-			azureAiEndPoint, _ := GetAzureAiEndPoint(tenantConfigurationResponses)
+		if azureAiEnabled || checkmarxAiEnabled {
 			metadata := message.MetaData{
 				TenantID:  tenantID,
 				RequestID: requestID,
 				UserAgent: params.DefaultAgent,
 				Feature:   guidedRemediationFeatureNameSast,
-				ExternalModel: &message.ExternalAzure{
-					Endpoint: azureAiEndPoint,
-				},
 			}
+			if azureAiEnabled {
+				logger.PrintIfVerbose("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
 
-			logger.PrintIfVerbose("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
-			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
-			if err != nil {
-				return outputError(cmd, id, err)
+			} else {
+				logger.PrintIfVerbose("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
 			}
-		} else if checkmarxAiEnabled {
-			metadata := message.MetaData{
-				TenantID:      tenantID,
-				RequestID:     requestID,
-				UserAgent:     params.DefaultAgent,
-				Feature:       guidedRemediationFeatureNameSast,
-				ExternalModel: nil,
-			}
-			logger.PrintIfVerbose("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
@@ -171,14 +158,13 @@ func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnable
 
 	customerToken, _ = wrappers.GetAccessToken()
 
-	if azureAiEnabled || checkmarxAiEnabled {
-		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyRoute, customerToken)
-		var model string
-		if azureAiEnabled {
-			model, _ = GetAzureAiModel(tenantConfigurationResponses)
-		} else {
-			model = checkmarxAiChatModel
-		}
+	if azureAiEnabled {
+		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyAzureAIRoute, customerToken)
+		model, _ := GetAzureAiModel(tenantConfigurationResponses)
+		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
+	} else if checkmarxAiEnabled {
+		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyCheckmarxAIRoute, customerToken)
+		model := checkmarxAiChatModel
 		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
 	} else {
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
@@ -253,10 +239,6 @@ func isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappe
 		return false
 	}
 	return isEnabled
-}
-
-func GetAzureAiEndPoint(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
-	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiEndPoint)
 }
 
 func GetAzureAiModel(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
