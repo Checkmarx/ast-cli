@@ -142,7 +142,6 @@ func runChatKics(
 			}
 			if azureAiEnabled {
 				logger.PrintIfVerbose("Sending message to Azure AI model for KICS guided remediation. RequestID: " + requestID)
-
 			} else {
 				logger.PrintIfVerbose("Sending message to Checkmarx AI model for KICS guided remediation. RequestID: " + requestID)
 			}
