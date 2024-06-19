@@ -66,9 +66,12 @@ func TestMain(m *testing.M) {
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
 }
+
 func recordDuration(t *testing.T, name string, start time.Time) {
 	duration := time.Since(start)
-	file, err := os.OpenFile("test_durations.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	filePath := "test_durations.txt"
+	fmt.Println("Saving durations to:", filePath)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
 	}
