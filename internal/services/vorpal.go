@@ -70,7 +70,7 @@ func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.Sca
 func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
-	if vorpalParams.VorpalUpdateVersion && !vorpalInstalled {
+	if vorpalParams.VorpalUpdateVersion || !vorpalInstalled {
 		if err := vorpalWrapper.HealthCheck(); err == nil {
 			_ = vorpalWrapper.ShutDown()
 		}
