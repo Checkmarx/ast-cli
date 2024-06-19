@@ -16,6 +16,7 @@ type VorpalGrpcWrapper struct {
 	grpcClient  *ClientWithTimeout
 	hostAddress string
 	port        int
+	serving     bool
 }
 
 const (
@@ -96,11 +97,14 @@ func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetai
 }
 
 func (v *VorpalGrpcWrapper) HealthCheck() error {
-	err := v.grpcClient.HealthCheck(v.grpcClient, serviceName)
-	if err != nil {
-		return err
+	if !v.serving {
+		err := v.grpcClient.HealthCheck(v.grpcClient, serviceName)
+		if err != nil {
+			return err
+		}
+		logger.PrintIfVerbose(fmt.Sprintf("End of Health Check. Status: Serving, Host Address: %v", v.hostAddress))
+		v.serving = true
 	}
-	logger.PrintIfVerbose(fmt.Sprintf("End of Health Check. Status: Serving, Host Address: %v", v.hostAddress))
 	return nil
 }
 
@@ -120,6 +124,7 @@ func (v *VorpalGrpcWrapper) ShutDown() error {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
 	logger.PrintfIfVerbose("Vorpal service is shutting down")
+	v.serving = false
 	return nil
 }
 
@@ -131,4 +136,5 @@ func (v *VorpalGrpcWrapper) ConfigurePort(port int) {
 	v.port = port
 	v.hostAddress = fmt.Sprintf(localHostAddress, port)
 	v.grpcClient = NewGRPCClientWithTimeout(v.hostAddress, 1*time.Second).(*ClientWithTimeout)
+	v.serving = false
 }
