@@ -141,7 +141,7 @@ func checkLicense(isDefaultAgent bool, wrapperParams VorpalWrappersParam) error 
 			return err
 		}
 		if !allowed {
-			return fmt.Errorf(errorconstants.NoVorpalLicense)
+			return fmt.Errorf(fmt.Sprintf("%s", errorconstants.NoVorpalLicense))
 		}
 	}
 	return nil
