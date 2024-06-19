@@ -184,5 +184,5 @@ func TestExecuteVorpalScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 		flag(commonParams.AgentFlag), "JetBrains",
 	}
 	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "Should not fail - user have license")
+	assert.ErrorContains(t, err, errorConstants.NoVorpalLicense)
 }
