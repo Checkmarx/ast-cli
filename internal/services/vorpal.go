@@ -157,7 +157,7 @@ func readSourceCode(filePath string) (string, error) {
 }
 
 func RunVorpalEngine(port int) error {
-	dialTimeout := 2 * time.Second
+	dialTimeout := 5 * time.Second
 	args := []string{
 		"-listen",
 		fmt.Sprintf("%d", port),
