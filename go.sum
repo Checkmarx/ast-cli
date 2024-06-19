@@ -1,5 +1,7 @@
 github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240604122751-06e7809dc352 h1:jxRmRax3Stz7+64Rh83u4rQDa1duYcfsNrUdk9wxyFU=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240604122751-06e7809dc352/go.mod h1:Lu4bJHWIHPrh1eyfJN0BVvTdHC3C3X4aGtBxekYXtGM=
+github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240619053350-1df5b4050291 h1:EafjD2GOcdCcUusFPOHjjwppqOFPeU7MQBy+jYRx8vs=
+github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240619053350-1df5b4050291/go.mod h1:Lu4bJHWIHPrh1eyfJN0BVvTdHC3C3X4aGtBxekYXtGM=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
