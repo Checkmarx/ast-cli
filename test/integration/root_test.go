@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -22,6 +24,7 @@ const (
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
+	outputDir             = "C:\\Users\\elchanana\\temp"
 )
 
 var Tags = map[string]string{
@@ -45,10 +48,58 @@ var rootProjectName string
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
+
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		fmt.Println("Failed to create directory:", err)
+		os.Exit(1)
+	}
+
+	filePath := filepath.Join(outputDir, "test_durations.txt")
+	log.Println("Attempting to open file at path:", filePath) // Debug line
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Failed to open file:", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	log.Println("File path of test_durations is: ", filePath)
+
+	start := time.Now()
 	exitVal := m.Run()
-	//deleteScanAndProject()
-	log.Println("CLI integration tests done")
+	duration := time.Since(start)
+
+	_, err = file.WriteString(fmt.Sprintf("Total time: %s\n", duration))
+	if err != nil {
+		fmt.Println("Failed to write to file:", err)
+	}
+
+	log.Println("CLI integration tests done. Durations file saved at: ", filePath)
 	os.Exit(exitVal)
+}
+
+func recordDuration(t *testing.T, name string, start time.Time) {
+	duration := time.Since(start)
+	filePath := filepath.Join(outputDir, "test_durations.txt")
+
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+
+	log.Println("Attempting to open file at path:", filePath) // Debug line
+
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(fmt.Sprintf("%s = %s\n", name, duration))
+	if err != nil {
+		t.Fatalf("Failed to write to file: %v", err)
+	}
 }
 
 func TestRootVersion(t *testing.T) {
