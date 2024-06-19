@@ -307,7 +307,6 @@ func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
 	}
-	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "TestResultsGeneratingSBOMWithProxy")
 }
