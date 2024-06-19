@@ -217,7 +217,7 @@ func TestChatSastAzureAISecondMessageCorrectResponse(t *testing.T) {
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	assert.Assert(t, strings.Contains(s, "mock"), s)
+	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }
 
 func TestChatSastCheckmarxAISecondMessageCorrectResponse(t *testing.T) {
@@ -246,5 +246,5 @@ func TestChatSastCheckmarxAISecondMessageCorrectResponse(t *testing.T) {
 	assert.NilError(t, err)
 	s := strings.ToLower(string(output))
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	assert.Assert(t, strings.Contains(s, "mock"), s)
+	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }

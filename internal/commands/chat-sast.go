@@ -122,16 +122,16 @@ func runChatSast(
 				Feature:   guidedRemediationFeatureNameSast,
 			}
 			if azureAiEnabled {
-				logger.PrintIfVerbose("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
+				logger.Printf("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
 			} else {
-				logger.PrintIfVerbose("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
+				logger.Printf("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
 			}
 			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 			if err != nil {
 				return outputError(cmd, id, err)
 			}
 		} else if chatGptEnabled {
-			logger.PrintIfVerbose("Sending message to ChatGPT model for SAST guided remediation. RequestID: " + requestID)
+			logger.Printf("Sending message to ChatGPT model for SAST guided remediation. RequestID: " + requestID)
 			response, err = chatWrapper.Call(statefulWrapper, id, newMessages)
 			if err != nil {
 				return outputError(cmd, id, err)

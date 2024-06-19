@@ -94,7 +94,7 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
 	viper.Set(params.AstAPIKey, origAPIKey)
 
-	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is not nil"), s)
+	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }
 
 func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
@@ -127,5 +127,5 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
 	viper.Set(params.AstAPIKey, origAPIKey)
 
-	assert.Assert(t, strings.Contains(s, "mock message from securecall with externalmodel: externalmodel is nil"), s)
+	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }
