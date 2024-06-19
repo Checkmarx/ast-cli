@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -142,7 +141,7 @@ func checkLicense(isDefaultAgent bool, wrapperParams VorpalWrappersParam) error 
 			return err
 		}
 		if !allowed {
-			return errors.New(errorconstants.NoVorpalLicense)
+			return fmt.Errorf("%v", errorconstants.NoVorpalLicense)
 		}
 	}
 	return nil
