@@ -174,6 +174,8 @@ func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
 
 func TestExecuteVorpalScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 	configuration.LoadConfiguration()
+	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
+	_ = vorpalWrapper.ShutDown()
 	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
 	args := []string{
 		"scan", "vorpal",
