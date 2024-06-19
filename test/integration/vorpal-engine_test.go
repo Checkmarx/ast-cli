@@ -12,13 +12,13 @@ import (
 )
 
 func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.VorpalLatestVersion),
 	}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
 }

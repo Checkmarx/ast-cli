@@ -23,7 +23,6 @@ const (
 )
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
@@ -40,6 +39,7 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 		flag(params.RepoNameFlag),
 		os.Getenv(prGithubRepoName),
 	}
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Error should be nil")
 }
@@ -65,7 +65,6 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t, params.SastType)
 
 	args := []string{
@@ -85,6 +84,7 @@ func TestPRGitlabDecorationSuccessCase(t *testing.T) {
 		flag(params.PRIidFlag),
 		os.Getenv(prGitlabIid),
 	}
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Error should be nil")
 }
