@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ const (
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
+	outputDir             = "C:\\temp"
 )
 
 var Tags = map[string]string{
@@ -47,12 +49,14 @@ func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 
-	file, err := os.OpenFile("test_durations.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	filePath := filepath.Join(outputDir, "test_durations.txt")
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Failed to open file:", err)
 		os.Exit(1)
 	}
 	defer file.Close()
+	log.Println("File path of test_durations is: ", filePath)
 
 	start := time.Now()
 	exitVal := m.Run()
@@ -63,14 +67,13 @@ func TestMain(m *testing.M) {
 		fmt.Println("Failed to write to file:", err)
 	}
 
-	log.Println("CLI integration tests done")
+	log.Println("CLI integration tests done. Durations file saved at: ", filePath)
 	os.Exit(exitVal)
 }
 
 func recordDuration(t *testing.T, name string, start time.Time) {
 	duration := time.Since(start)
-	filePath := "test_durations.txt"
-	fmt.Println("Saving durations to:", filePath)
+	filePath := filepath.Join(outputDir, "test_durations.txt")
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
