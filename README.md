@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
+```<img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
 <br />
 <div  align="center" >
 
@@ -116,7 +116,7 @@ Find all Checkmarx One CLI integrations [here](https://github.com/Checkmarx/ci-c
 
 
 ## Contact
-Checkmarx One Integrations Team
+Checkmarx One Integrations  Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
