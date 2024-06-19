@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -52,17 +53,16 @@ func TestCreateVorpalScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *tes
 
 func TestCreateVorpalScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
 	specialErrorPort := 1
-	aiDisabled := 0
 	vorpalParams := VorpalScanParams{
 		FilePath:            "data/python-vul-file.py",
 		VorpalUpdateVersion: true,
 		IsDefaultAgent:      false,
 	}
 	wrapperParams := VorpalWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: aiDisabled},
+		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       &mock.VorpalMockWrapper{Port: specialErrorPort},
 	}
 	_, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
-	assert.Error(t, err)
+	assert.ErrorContains(t, err, errorconstants.NoVorpalLicense)
 }
