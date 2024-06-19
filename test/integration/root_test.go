@@ -24,7 +24,7 @@ const (
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
-	outputDir             = "C:\\temp"
+	outputDir             = "C:\\Users\\elchanana\\temp"
 )
 
 var Tags = map[string]string{
@@ -49,7 +49,15 @@ func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		fmt.Println("Failed to create directory:", err)
+		os.Exit(1)
+	}
+
 	filePath := filepath.Join(outputDir, "test_durations.txt")
+	log.Println("Attempting to open file at path:", filePath) // Debug line
+
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println("Failed to open file:", err)
@@ -74,6 +82,14 @@ func TestMain(m *testing.M) {
 func recordDuration(t *testing.T, name string, start time.Time) {
 	duration := time.Since(start)
 	filePath := filepath.Join(outputDir, "test_durations.txt")
+
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		t.Fatalf("Failed to create directory: %v", err)
+	}
+
+	log.Println("Attempting to open file at path:", filePath) // Debug line
+
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		t.Fatalf("Failed to open file: %v", err)
