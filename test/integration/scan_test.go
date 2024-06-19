@@ -60,6 +60,9 @@ type ScanWorkflowResponse struct {
 }
 
 func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithOnlyValidApikeyFlag_Success", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -85,6 +88,9 @@ func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithOnlyValidApikeyEnvVar_Success", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -108,6 +114,9 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -132,6 +141,9 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithOnlyInvalidApikeyFlag_Fail", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -157,6 +169,9 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithValidClientCredentialsFlag_Success", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -184,6 +199,9 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithInvalidClientCredentialsFlag_Fail", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -210,6 +228,9 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithValidClientCredentialsEnvVars_Success", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -231,6 +252,9 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail", start)
+
 	originals := getOriginalEnvVars()
 
 	setEnvVars(map[string]string{
@@ -272,6 +296,9 @@ func setEnvVars(envVars map[string]string) {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateEmptyProjectName", start)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -285,6 +312,9 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully", start)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -299,6 +329,9 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 }
 
 func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully", start)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -315,6 +348,9 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 }
 
 func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreate_ApplicationDoesntExist_FailScanWithError", start)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
@@ -330,6 +366,9 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScansE2E", start)
+
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
@@ -343,6 +382,9 @@ func TestScansE2E(t *testing.T) {
 }
 
 func TestFastScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestFastScan", start)
+
 	projectName := getProjectNameForScanTests()
 	// Create a scan
 	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
@@ -356,6 +398,9 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 }
 
 func TestScansUpdateProjectGroups(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScansUpdateProjectGroups", start)
+
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
 	response := listScanByID(t, scanID)
 	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
@@ -371,6 +416,9 @@ func TestScansUpdateProjectGroups(t *testing.T) {
 }
 
 func TestInvalidSource(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestInvalidSource", start)
+
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TestProject",
 		flag(params.SourcesFlag), "invalidSource",
@@ -382,6 +430,9 @@ func TestInvalidSource(t *testing.T) {
 }
 
 func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanShowRequiredOrInvalidScanId", start)
+
 	args := []string{scanCommand, "show", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan: Please provide a scan ID"))
@@ -391,6 +442,9 @@ func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
 }
 
 func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRequiredScanIdToGetScanShow", start)
+
 	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
@@ -398,6 +452,9 @@ func TestRequiredScanIdToGetScanShow(t *testing.T) {
 
 // Test ScaResolver as argument , this is a nop test
 func TestScaResolverArg(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScaResolverArg", start)
+
 	scanID, projectID := createScanScaWithResolver(
 		t,
 		Dir,
@@ -418,6 +475,9 @@ func TestScaResolverArg(t *testing.T) {
 
 // Test ScaResolver as argument, no existing path to the resolver should fail
 func TestScaResolverArgFailed(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScaResolverArgFailed", start)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "resolver",
@@ -446,6 +506,9 @@ func TestScaResolverArgFailed(t *testing.T) {
 
 // Perform an initial scan with complete sources and an incremental scan with a smaller wait time
 func TestIncrementalScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestIncrementalScan", start)
+
 	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
@@ -460,6 +523,9 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCancelScan", start)
+
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
 	defer deleteProject(t, projectID)
@@ -478,6 +544,9 @@ func TestCancelScan(t *testing.T) {
 // Create a scan with the sources from the integration package, excluding go files and including zips
 // Assert the scan completes
 func TestScanCreateIncludeFilter(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateIncludeFilter", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -498,6 +567,9 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithThresholdShouldBlock", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -516,6 +588,9 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 }
 
 func TestScanCreateWithThreshold(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithThreshold", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -536,6 +611,9 @@ func TestScanCreateWithThreshold(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithThresholdParseError", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -555,6 +633,9 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithThresholdAndReportGenerate", start)
+
 	_, projectName := getRootProject(t)
 
 	originals := getOriginalEnvVars()
@@ -595,6 +676,9 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 // Create a scan ignoring the exclusion of the .git directory
 // Assert the folder is included in the logs
 func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateIgnoreExclusionFolders", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -636,6 +720,9 @@ func TestScanCreateIgnoreExclusionFolders(t *testing.T) {
 
 // Test the timeout for a long scan
 func TestScanTimeout(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanTimeout", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -660,6 +747,9 @@ func TestScanTimeout(t *testing.T) {
 }
 
 func TestBrokenLinkScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestBrokenLinkScan", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -873,6 +963,9 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Get a scan workflow and assert it fails
 func TestScanWorkflow(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanWorkflow", start)
+
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "workflow",
@@ -885,6 +978,9 @@ func TestScanWorkflow(t *testing.T) {
 }
 
 func TestScanLogsSAST(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanLogsSAST", start)
+
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -897,6 +993,9 @@ func TestScanLogsSAST(t *testing.T) {
 }
 
 func TestScanLogsKICSDeprecated(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanLogsKICSDeprecated", start)
+
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -909,6 +1008,9 @@ func TestScanLogsKICSDeprecated(t *testing.T) {
 }
 
 func TestScanLogsKICS(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanLogsKICS", start)
+
 	scanID, _ := getRootScan(t)
 	args := []string{
 		"scan", "logs",
@@ -921,6 +1023,9 @@ func TestScanLogsKICS(t *testing.T) {
 }
 
 func TestPartialScanWithWrongPreset(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestPartialScanWithWrongPreset", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -936,6 +1041,9 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 }
 
 func TestFailedScanWithWrongPreset(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestFailedScanWithWrongPreset", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -987,6 +1095,9 @@ func retrieveResultsFromScanId(t *testing.T, scanId string) (wrappers.ScanResult
 }
 
 func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanWorkFlowWithSastEngineFilter", start)
+
 	insecurePath := "data/insecure.zip"
 	args := getCreateArgsWithName(insecurePath, Tags, getProjectNameForScanTests(), "sast")
 	args = append(args, flag(params.SastFilterFlag), "!*.java", flag(params.IgnorePolicyFlag))
@@ -1003,6 +1114,9 @@ func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 }
 
 func TestScanCreateWithSSHKey(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithSSHKey", start)
+
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
@@ -1024,6 +1138,9 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 }
 
 func TestCreateScanFilterZipFile(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScanFilterZipFile", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1039,6 +1156,9 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 }
 
 func TestRunKicsScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScan", start)
+
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1049,6 +1169,9 @@ func TestRunKicsScan(t *testing.T) {
 }
 
 func TestRunKicsScanWithouResults(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScanWithouResults", start)
+
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1058,6 +1181,9 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 }
 
 func TestRunKicsScanWithoutFileSources(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScanWithoutFileSources", start)
+
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 	}
@@ -1066,6 +1192,9 @@ func TestRunKicsScanWithoutFileSources(t *testing.T) {
 }
 
 func TestRunKicsScanWithEngine(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScanWithEngine", start)
+
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1077,6 +1206,9 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScanWithInvalidEngine", start)
+
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
@@ -1088,6 +1220,9 @@ func TestRunKicsScanWithInvalidEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunKicsScanWithAdditionalParams", start)
+
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1100,6 +1235,9 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestRunScaRealtimeScan", start)
+
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
 	err, _ := executeCommand(t, args...)
@@ -1118,6 +1256,9 @@ func TestRunScaRealtimeScan(t *testing.T) {
 }
 
 func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScaRealtimeRequiredAndWrongProjectDir", start)
+
 	args := []string{scanCommand, "sca-realtime"}
 
 	err, _ := executeCommand(t, args...)
@@ -1130,6 +1271,9 @@ func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
 }
 
 func TestScaRealtimeScaResolverWrongDownloadLink(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScaRealtimeScaResolverWrongDownloadLink", start)
+
 	err := os.RemoveAll(scaconfig.Params.WorkingDir())
 	assert.NilError(t, err)
 
@@ -1165,6 +1309,9 @@ func copyResultsToTempDir() error {
 }
 
 func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateWithAPIKeyNoTenant", start)
+
 	_ = viper.BindEnv("CX_APIKEY")
 	apiKey := viper.GetString("CX_APIKEY")
 
@@ -1184,6 +1331,9 @@ func TestScanCreateWithAPIKeyNoTenant(t *testing.T) {
 }
 
 func TestScanCreateResubmit(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateResubmit", start)
+
 	projectName := getProjectNameForScanTests()
 	executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, params.SastType)))
 	_, projectID := executeCreateScan(t, append(getCreateArgsWithName(Zip, nil, projectName, ""), flag(params.ScanResubmit)))
@@ -1202,6 +1352,9 @@ func TestScanCreateResubmit(t *testing.T) {
 
 // TestScanTypesValidation must return an error because the user is not allowed to use some scanType
 func TestScanTypesValidation(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanTypesValidation", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1218,6 +1371,9 @@ func TestScanTypesValidation(t *testing.T) {
 }
 
 func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanTypeApiSecurityWithoutSast", start)
+
 	_, projectName := getRootProject(t)
 	args := []string{
 		"scan", "create",
@@ -1234,6 +1390,9 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 
 // TestValidateScanTypesUsingInvalidAPIKey error when running a scan with scan-types flag using an invalid api key
 func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestValidateScanTypesUsingInvalidAPIKey", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1251,6 +1410,9 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 }
 
 func TestScanGeneratingPdfToEmailReport(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanGeneratingPdfToEmailReport", start)
+
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1269,6 +1431,9 @@ func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 }
 
 func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanGeneratingPdfToEmailReportInvalidEmail", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1287,6 +1452,9 @@ func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 }
 
 func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanGeneratingPdfReportWithInvalidPdfOptions", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1305,6 +1473,9 @@ func TestScanGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanGeneratingPdfReportWithPdfOptions", start)
+
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1349,6 +1520,9 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 //}
 
 func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateUsingWrongProjectGroups", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1365,6 +1539,9 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 	assertError(t, err, "Failed finding groups")
 }
 func TestScanCreateExploitablePath(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateExploitablePath", start)
+
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1384,6 +1561,9 @@ func TestScanCreateExploitablePath(t *testing.T) {
 }
 
 func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateExploitablePathWithoutSAST", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1402,6 +1582,9 @@ func TestScanCreateExploitablePathWithoutSAST(t *testing.T) {
 	assertError(t, err, "must enable SAST scan type")
 }
 func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateExploitablePathWithWrongValue", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1421,6 +1604,9 @@ func TestScanCreateExploitablePathWithWrongValue(t *testing.T) {
 }
 
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanCreateLastSastScanTimeWithInvalidValue", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1440,6 +1626,9 @@ func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 }
 
 func TestCreateScanProjectPrivatePackage(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScanProjectPrivatePackage", start)
+
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1457,6 +1646,9 @@ func TestCreateScanProjectPrivatePackage(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScanProjectPrivatePackageWithInvalidValue", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1475,6 +1667,9 @@ func TestCreateScanProjectPrivatePackageWithInvalidValue(t *testing.T) {
 }
 
 func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestCreateScanSBOMReportFormatWithoutSCA", start)
+
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1493,6 +1688,9 @@ func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
 }
 
 func TestScanWithPolicy(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanWithPolicy", start)
+
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1505,6 +1703,9 @@ func TestScanWithPolicy(t *testing.T) {
 }
 
 func TestScanWithPolicyTimeout(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanWithPolicyTimeout", start)
+
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1517,6 +1718,9 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 }
 
 func TestScanListWithFilters(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanListWithFilters", start)
+
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=100",
@@ -1527,6 +1731,9 @@ func TestScanListWithFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanListWithBigLimitAndOtherFilters", start)
+
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000,project-id=6cd7afbd-3d21-44b9-a72f-8a7eb351b5a5,branch=develop",
@@ -1537,6 +1744,9 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimit(t *testing.T) {
+	start := time.Now()
+	defer recordDuration(t, "TestScanListWithBigLimit", start)
+
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000",

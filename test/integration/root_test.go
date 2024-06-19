@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -45,10 +46,38 @@ var rootProjectName string
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
+
+	file, err := os.OpenFile("test_durations.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Failed to open file:", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	start := time.Now()
 	exitVal := m.Run()
-	//deleteScanAndProject()
+	duration := time.Since(start)
+
+	_, err = file.WriteString(fmt.Sprintf("Total time: %s\n", duration))
+	if err != nil {
+		fmt.Println("Failed to write to file:", err)
+	}
+
 	log.Println("CLI integration tests done")
 	os.Exit(exitVal)
+}
+func recordDuration(t *testing.T, name string, start time.Time) {
+	duration := time.Since(start)
+	file, err := os.OpenFile("test_durations.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(fmt.Sprintf("%s = %s\n", name, duration))
+	if err != nil {
+		t.Fatalf("Failed to write to file: %v", err)
+	}
 }
 
 func TestRootVersion(t *testing.T) {
