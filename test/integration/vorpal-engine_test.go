@@ -171,3 +171,16 @@ func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
 	err = vorpalWrapper.HealthCheck()
 	asserts.NotNil(t, err)
 }
+
+func TestExecuteVorpalScan_EngineNotRunningWithLicense_Success(t *testing.T) {
+	configuration.LoadConfiguration()
+	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
+	args := []string{
+		"scan", "vorpal",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.DebugFlag),
+		flag(commonParams.AgentFlag), "JetBrains",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Should not fail - user have license")
+}
