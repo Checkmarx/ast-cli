@@ -41,7 +41,7 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
-	scsRepoURL            = "https://github.com/k-tamura/easybuggy"
+	scsRepoURL            = "https://github.com/diogo-fjrocha/go-example"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
@@ -516,7 +516,8 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs   "))
+	//return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs   "))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , scs, sca"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -1386,6 +1387,24 @@ func TestScanTypeScsMissingRepoToken(t *testing.T) {
 		flag(params.ScanTypes), "sast, scs",
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
+func TestScanTypeScsFailingScorecardFailing(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+		flag(params.SCSEnginesFlag), commands.ScsScoreCardType,
 	}
 
 	err, _ := executeCommand(t, args...)

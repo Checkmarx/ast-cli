@@ -52,7 +52,7 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
 		return allowedEngines, nil
 	}
-
+	delete(allowedEngines, "api-security")
 	return defaultEngines, nil
 }
 

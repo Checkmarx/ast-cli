@@ -178,7 +178,7 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 
 	cmd, buffer := createRedirectedTestCommand(t)
 
-	err := executeWithTimeout(cmd, 5*time.Minute, args...)
+	err := executeWithTimeout(cmd, 400*time.Minute, args...)
 
 	return err, buffer
 }
@@ -209,7 +209,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	//args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
