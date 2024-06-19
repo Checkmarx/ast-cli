@@ -100,6 +100,29 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_Success(t *testing.T) {
 	asserts.NotNil(t, scanResult.ScanDetails)
 }
 
+func TestExecuteVorpalScan_NoEngineInstalledAndVorpalLatestVersionSetFalse_Success(t *testing.T) {
+	configuration.LoadConfiguration()
+
+	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
+	_ = vorpalWrapper.ShutDown()
+	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
+
+	args := []string{
+		"scan", "vorpal",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
+	}
+
+	err, scanResults := executeCommand(t, args...)
+	assert.NilError(t, err, fmt.Sprintf("Should not fail with error: %v", err))
+	asserts.NotNil(t, scanResults)
+	var scanResult grpcs.ScanResult
+	err = json.Unmarshal(scanResults.Bytes(), &scanResult)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	asserts.Nil(t, scanResult.Error)
+	asserts.NotNil(t, scanResult.ScanDetails)
+}
+
 func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
