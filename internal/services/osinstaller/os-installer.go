@@ -107,13 +107,13 @@ func downloadNotNeeded(installationConfiguration *InstallationConfiguration) boo
 
 	logger.PrintIfVerbose("RealTime installation exists. Checking if it is the latest version...")
 
-	isLastVersion, _ := IsLastVersion(installationConfiguration.HashFilePath(), installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
+	isLastVersion, _ := isLastVersion(installationConfiguration.HashFilePath(), installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 
 	return isLastVersion
 }
 
-// IsLastVersion Checks if the Installation is updated by comparing hashes
-func IsLastVersion(hashFilePath, hashURL, zipFileNameHash string) (bool, error) {
+// isLastVersion Checks if the Installation is updated by comparing hashes
+func isLastVersion(hashFilePath, hashURL, zipFileNameHash string) (bool, error) {
 	existingHash, _ := getHashValue(hashFilePath)
 	// Download hash file
 	err := downloadHashFile(hashURL, zipFileNameHash)
