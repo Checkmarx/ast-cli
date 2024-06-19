@@ -12,6 +12,7 @@ import (
 )
 
 func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "vorpal",
 		flag(commonParams.SourcesFlag), "",

@@ -299,6 +299,7 @@ func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWithProxy(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t)
 
 	args := []string{

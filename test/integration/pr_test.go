@@ -23,6 +23,7 @@ const (
 )
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
@@ -64,6 +65,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
+	t.Parallel()
 	scanID, _ := getRootScan(t, params.SastType)
 
 	args := []string{
