@@ -120,7 +120,7 @@ Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
-© 2022 Checkmarx Ltd. All Rights Reserved. 
+© 2022 Checkmarx Ltd.  All Rights Reserved. 
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
@@ -137,3 +137,4 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
+
