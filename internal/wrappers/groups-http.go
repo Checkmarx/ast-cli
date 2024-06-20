@@ -29,7 +29,10 @@ func NewHTTPGroupsWrapper(path string) GroupsWrapper {
 
 func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	tenant := viper.GetString(commonParams.TenantKey)
+	tenant, tenantErr := NewJwtWrapper().ExtractTenantFromToken()
+	if tenantErr != nil {
+		return nil, tenantErr
+	}
 	tenantPath := strings.Replace(g.path, "organization", strings.ToLower(tenant), 1)
 	groupMap := make(map[string]string)
 	groupMap["groupName"] = groupName
