@@ -177,7 +177,7 @@ func execute(cmd *cobra.Command, args ...string) error {
 func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 	mutex.Lock()
 	cmd, buffer := createRedirectedTestCommand(t)
-	defer mutex.Unlock()
+	mutex.Unlock()
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 	return err, buffer
 }
