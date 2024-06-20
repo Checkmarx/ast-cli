@@ -140,6 +140,8 @@ const (
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
 	SastRedundancyFlag       = "sast-redundancy"
+	ContainerImagesFlag      = "container-images"
+	ContainersTypeFlag       = "container-security"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
@@ -228,13 +230,13 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
-	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
+	ContainersType       = "containers"
 	Success              = "success"
 )
 

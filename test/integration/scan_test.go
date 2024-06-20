@@ -328,6 +328,106 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
+func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ContainerImagesFlag), "nginx:alpine",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/empty-folder",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.ContainerImagesFlag), "nginx:",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+		err, _ := executeCommand(t, testArgs...)
+		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	}
+}
+
+func assertZipFileRemoved(t *testing.T) {
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	assert.NilError(t, err)
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
+
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
@@ -724,7 +824,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security   "))
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security , container-security "))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {

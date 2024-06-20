@@ -127,6 +127,42 @@ func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
 }
 
+func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+}
+
+func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
+}
+
+func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
+}
+
+func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
+	// When no container scan type is provided, we will ignore the container images flag and its value
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+}
+
+func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
+	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
+}
+
+func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+}
+
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
 }
@@ -873,6 +909,57 @@ func Test_validateThresholds(t *testing.T) {
 			err := validateThresholds(tt.thresholdMap)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateContainerImageFormat(t *testing.T) {
+	testCases := []struct {
+		name           string
+		containerImage string
+		expectedError  error
+	}{
+		{
+			name:           "Valid container image format",
+			containerImage: "nginx:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Missing image name",
+			containerImage: ":latest",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Missing image tag",
+			containerImage: "nginx:",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Empty image name and tag",
+			containerImage: ":",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Extra colon",
+			containerImage: "nginx:latest:extra",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateContainerImageFormat(tc.containerImage)
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
+				t.Errorf("Expected error %v, but got %v", tc.expectedError, err)
+			}
+			if err == nil && tc.expectedError != nil {
+				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
 		})
 	}

@@ -54,6 +54,11 @@ const (
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
 	highCx                    = "HIGH"
+	tableResultsFormat        = "              | %-10s   %4d   %6d   %4d   %4d   %-9s  |\n"
+	stringTableResultsFormat  = "              | %-10s   %4s   %6s   %4s   %4s   %5s      |\n"
+	TableTitleFormat          = "              | %-11s   %4s    %6s  %4s   %4s   %6s    |\n"
+	twoNewLines               = "\n\n"
+	tableLine                 = "              ---------------------------------------------------------     "
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "-"
@@ -139,6 +144,10 @@ var sonarSeverities = map[string]string{
 	lowCx:    lowSonar,
 	mediumCx: mediumSonar,
 	highCx:   highSonar,
+}
+
+var containerEngineUnsupportedAgents = []string{
+	"Jetbrains", "VS Code", "Visual Studio", "Eclipse",
 }
 
 func NewResultsCommand(
@@ -486,11 +495,17 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
+	var containersIssues *int
 	enginesStatusCode := map[string]int{
 		commonParams.SastType:   0,
 		commonParams.ScaType:    0,
 		commonParams.KicsType:   0,
 		commonParams.APISecType: 0,
+	}
+	if wrappers.IsContainersEnabled {
+		containersIssues = new(int)
+		*containersIssues = 0
+		enginesStatusCode[commonParams.ContainersType] = 0
 	}
 
 	if len(scanInfo.StatusDetails) > 0 {
@@ -502,6 +517,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
+					*containersIssues = notAvailableNumber
 				}
 			}
 			switch statusDetailItem.Status {
@@ -513,23 +530,24 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		}
 	}
 	summary := &wrappers.ResultSummary{
-		ScanID:         scanInfo.ID,
-		Status:         string(scanInfo.Status),
-		CreatedAt:      scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
-		ProjectID:      scanInfo.ProjectID,
-		RiskStyle:      "",
-		RiskMsg:        "",
-		HighIssues:     0,
-		MediumIssues:   0,
-		LowIssues:      0,
-		InfoIssues:     0,
-		SastIssues:     sastIssues,
-		KicsIssues:     kicsIssues,
-		ScaIssues:      scaIssues,
-		Tags:           scanInfo.Tags,
-		ProjectName:    scanInfo.ProjectName,
-		BranchName:     scanInfo.Branch,
-		EnginesEnabled: scanInfo.Engines,
+		ScanID:           scanInfo.ID,
+		Status:           string(scanInfo.Status),
+		CreatedAt:        scanInfo.CreatedAt.Format("2006-01-02, 15:04:05"),
+		ProjectID:        scanInfo.ProjectID,
+		RiskStyle:        "",
+		RiskMsg:          "",
+		HighIssues:       0,
+		MediumIssues:     0,
+		LowIssues:        0,
+		InfoIssues:       0,
+		SastIssues:       sastIssues,
+		KicsIssues:       kicsIssues,
+		ScaIssues:        scaIssues,
+		ContainersIssues: containersIssues,
+		Tags:             scanInfo.Tags,
+		ProjectName:      scanInfo.ProjectName,
+		BranchName:       scanInfo.Branch,
+		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
 			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
 			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
@@ -537,7 +555,9 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
 		},
 	}
-
+	if wrappers.IsContainersEnabled {
+		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
+	}
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
@@ -581,6 +601,9 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
+	if wrappers.IsContainersEnabled {
+		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
+	}
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -624,6 +647,9 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
+	if wrappers.IsContainersEnabled {
+		summary.TotalIssues += *summary.ContainersIssues
+	}
 }
 
 func writeHTMLSummary(targetFile string, summary *wrappers.ResultSummary) error {
@@ -689,7 +715,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 }
 
 func printPoliciesSummary(summary *wrappers.ResultSummary) {
-	fmt.Printf("              --------------------------------------     \n")
+	fmt.Printf(tableLine + "\n")
 	if summary.Policies.BreakBuild {
 		fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
 	} else {
@@ -715,22 +741,19 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 	if summary.HasAPISecurityDocumentation() {
 		fmt.Printf("              APIS DOCUMENTATION: %*d \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
 	}
-	fmt.Printf("              --------------------------------------------------     \n\n")
+	fmt.Printf(tableLine + twoNewLines)
 }
 
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
-	formatString := "              | %-4s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
-
 	switch statusNumber {
 	case notAvailableNumber:
-		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(stringTableResultsFormat, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	case scanFailedNumber:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	default:
-		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
 	}
 }
 
@@ -739,20 +762,23 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Printf(tableLine + twoNewLines)
 	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Println("              |          High   Medium   Low   Info   Status    |")
+	fmt.Println(tableLine)
+	fmt.Printf(TableTitleFormat, "   ", "High", "Medium", "Low", "Info", "Status")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+	if wrappers.IsContainersEnabled {
+		printTableRow("CONTAINERS", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
+	}
 
-	fmt.Println("              ---------------------------------------------------     ")
-	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
-		fmt.Sprintf(boldFormat, "TOTAL"), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
-	fmt.Printf("              ---------------------------------------------------     \n\n")
+	fmt.Println(tableLine)
+	fmt.Printf(tableResultsFormat,
+		"TOTAL", totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+	fmt.Printf(tableLine + twoNewLines)
 }
 
 func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
@@ -782,6 +808,7 @@ func runGetResultCommand(
 		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
+		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -814,7 +841,6 @@ func runGetResultCommand(
 		} else {
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
-
 		if sastRedundancy {
 			params[commonParams.SastRedundancyFlag] = ""
 		}
@@ -834,6 +860,7 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
+			agent,
 			params,
 			featureFlagsWrapper)
 	}
@@ -878,7 +905,10 @@ func runGetCodeBashingCommand(
 		return nil
 	}
 }
-
+func setIsContainersEnabled(agent string) {
+	agentSupported := !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
+	wrappers.IsContainersEnabled = wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && agentSupported
+}
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -894,12 +924,13 @@ func CreateScanReport(
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
+	agent string,
 	params map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-
+	setIsContainersEnabled(agent)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
 		return err
@@ -947,14 +978,22 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		} else if engineType == commonParams.KicsType {
 			summary.KicsIssues++
 			summary.TotalIssues++
+		} else if engineType == commonParams.ContainersType {
+			if wrappers.IsContainersEnabled {
+				*summary.ContainersIssues++
+				summary.TotalIssues++
+			} else {
+				return
+			}
 		}
-		if severity == highLabel {
+		switch severity {
+		case highLabel:
 			summary.HighIssues++
-		} else if severity == lowLabel {
-			summary.LowIssues++
-		} else if severity == mediumLabel {
+		case mediumLabel:
 			summary.MediumIssues++
-		} else if severity == infoLabel {
+		case lowLabel:
+			summary.LowIssues++
+		case infoLabel:
 			summary.InfoIssues++
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
@@ -1181,7 +1220,22 @@ func enrichScaResults(
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
 	}
+	if util.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
+		resultsModel = removeContainerResults(resultsModel)
+	}
 	return resultsModel, nil
+}
+
+func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+	var newResults []*wrappers.ScanResult
+	for _, result := range model.Results {
+		if result.Type != commonParams.ContainersType {
+			newResults = append(newResults, result)
+		}
+	}
+	model.Results = newResults
+	model.TotalCount = uint(len(newResults))
+	return model
 }
 
 func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollection) error {
@@ -1631,10 +1685,26 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if engineType == commonParams.ScaType {
 				sonarIssuesByLocation := parseScaSonarLocations(result)
 				sonarIssues = append(sonarIssues, sonarIssuesByLocation...)
+			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
+				auxIssue.PrimaryLocation = parseContainersSonar(result)
+				sonarIssues = append(sonarIssues, auxIssue)
 			}
 		}
 	}
 	return sonarIssues
+}
+
+func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
+	var auxLocation wrappers.SonarLocation
+	auxLocation.FilePath = result.ScanResultData.ImageFilePath
+	auxLocation.Message = result.Description
+	var textRange wrappers.SonarTextRange
+	textRange.StartColumn = 1
+	textRange.EndColumn = 2
+	textRange.StartLine = 1
+	textRange.EndLine = 2
+	auxLocation.TextRange = textRange
+	return auxLocation
 }
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
@@ -1830,12 +1900,29 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultKics(result, scanResults)
 	} else if result.Type == commonParams.ScaType {
 		scanResults = parseSarifResultsSca(result, scanResults)
+	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
+		scanResults = parseSarifResultsContainers(result, scanResults)
 	}
 
 	if len(scanResults) > 0 {
 		return scanResults
 	}
 	return nil
+}
+
+func parseSarifResultsContainers(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	var scanResult = initSarifResult(result)
+	var scanLocation wrappers.SarifLocation
+
+	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.ImageFilePath
+	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+	scanLocation.PhysicalLocation.Region.StartLine = 1
+	scanLocation.PhysicalLocation.Region.StartColumn = 1
+	scanLocation.PhysicalLocation.Region.EndColumn = 2
+	scanResult.Locations = append(scanResult.Locations, scanLocation)
+
+	scanResults = append(scanResults, scanResult)
+	return scanResults
 }
 
 func parseSarifResultsSca(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
@@ -1913,6 +2000,8 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 		summary.SastIssues = 0
 	} else if summary.ScaIssues == notAvailableNumber {
 		summary.ScaIssues = 0
+	} else if wrappers.IsContainersEnabled && *summary.ContainersIssues == notAvailableNumber {
+		*summary.ContainersIssues = 0
 	}
 }
 

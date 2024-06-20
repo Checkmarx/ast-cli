@@ -72,11 +72,9 @@ func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
 }
 
 func TestResultListJson(t *testing.T) {
-
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
-
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting results should pass",
 		"results",
