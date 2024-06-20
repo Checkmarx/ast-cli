@@ -20,12 +20,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -156,6 +156,7 @@ func NewResultsCommand(
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -168,7 +169,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -204,6 +205,7 @@ func resultShowSubCommand(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -214,7 +216,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -318,6 +320,7 @@ func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.S
 	if scanResponseModel.Status == wrappers.ScanCanceled ||
 		scanResponseModel.Status == wrappers.ScanRunning ||
 		scanResponseModel.Status == wrappers.ScanQueued ||
+		scanResponseModel.Status == wrappers.ScanPartial ||
 		scanResponseModel.Status == wrappers.ScanCompleted {
 		result := ScannerResponse{
 			ScanID: scanResponseModel.ID,
@@ -779,6 +782,7 @@ func runGetResultCommand(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -842,7 +846,8 @@ func runGetResultCommand(
 			formatSbomOptions,
 			targetFile,
 			targetPath,
-			params)
+			params,
+			featureFlagsWrapper)
 	}
 }
 
@@ -902,6 +907,7 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	params map[string]string,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
@@ -932,7 +938,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM)
+			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -1040,7 +1046,8 @@ func createReport(format,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	useSCALocalFlow bool,
-	retrySBOM int) error {
+	retrySBOM int,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1076,7 +1083,7 @@ func createReport(format,
 	}
 	if printer.IsFormat(format, printer.FormatPDF) && isValidScanStatus(summary.Status, printer.FormatPDF) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatPDF)
-		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions)
+		return exportPdfResults(resultsPdfReportsWrapper, summary, summaryRpt, formatPdfToEmail, formatPdfOptions, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryMarkdown) {
 		summaryRpt := createTargetName(targetFile, targetPath, "md")
@@ -1130,6 +1137,8 @@ func ReadResults(
 	var errorModel *wrappers.WebError
 
 	params[commonParams.ScanIDQueryParam] = scan.ID
+	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
+
 	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
 
 	if err != nil {
@@ -1140,11 +1149,13 @@ func ReadResults(
 	}
 
 	if resultsModel != nil {
-		if !isThresholdCheck {
-			resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-			if err != nil {
-				return nil, err
-			}
+		if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
+			// Compute SAST results redundancy
+			resultsModel = ComputeRedundantSastResults(resultsModel)
+		}
+		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		if err != nil && !isThresholdCheck {
+			return nil, err
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -1163,29 +1174,27 @@ func enrichScaResults(
 		// Get additional information to enrich sca results
 		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
 		if errorModel != nil {
-			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
+			logger.PrintfIfVerbose("%s", failedListingResults)
+			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Get additional information to add the type information to the sca results
 		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
 		if errorModel != nil {
-			return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "%s", failedListingResults)
+			logger.PrintfIfVerbose("%s", failedListingResults)
+			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Enrich sca results
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
-	}
-	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
-
-	if slices.Contains(scan.Engines, commonParams.SastType) && sastRedundancy {
-		// Compute SAST results redundancy
-		resultsModel = ComputeRedundantSastResults(resultsModel)
 	}
 	return resultsModel, nil
 }
@@ -1369,11 +1378,12 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 	}
 	return nil
 }
-func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail, pdfOptions string) error {
+func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
+	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-	newScanReportEnabled := wrappers.FeatureFlags[wrappers.NewScanReportEnabled]
-
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
+	newScanReportEnabled := flagResponse.Status
 	if newScanReportEnabled {
 		pdfReportsPayload.ReportName = reportNameImprovedScanReport
 	} else {
@@ -1427,7 +1437,15 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	if pollingResp.Status != completedStatus {
 		return errors.Errorf("PDF generating failed - Current status: %s", pollingResp.Status)
 	}
-	err = pdfWrapper.DownloadPdfReport(pdfReportID.ReportID, summaryRpt)
+
+	minioEnabled := wrappers.FeatureFlags[wrappers.MinioEnabled]
+	infoPathType := ""
+	if minioEnabled {
+		infoPathType = pdfReportID.ReportID
+	} else {
+		infoPathType = pollingResp.URL
+	}
+	err = pdfWrapper.DownloadPdfReport(infoPathType, summaryRpt)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}

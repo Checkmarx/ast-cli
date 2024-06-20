@@ -19,7 +19,7 @@ type UploadsHTTPWrapper struct {
 	path string
 }
 
-func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
+func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (*string, error) {
 	preSignedURL, err := u.getPresignedURLForUploading()
 	if err != nil {
 		return nil, errors.Errorf("Failed creating pre-signed URL - %s", err.Error())
@@ -53,7 +53,8 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string) (*string, error) {
 	if err != nil {
 		return nil, errors.Errorf("Failed to stat file %s: %s", sourcesFile, err.Error())
 	}
-	useAccessToken := FeatureFlags[MinioEnabled]
+	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, MinioEnabled)
+	useAccessToken := flagResponse.Status
 	resp, err := SendHTTPRequestByFullURLContentLength(http.MethodPut, *preSignedURL, file, stat.Size(), useAccessToken, NoTimeout, accessToken, true)
 	if err != nil {
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
