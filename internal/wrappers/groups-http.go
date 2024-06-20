@@ -29,10 +29,7 @@ func NewHTTPGroupsWrapper(path string) GroupsWrapper {
 
 func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	tenant, tenantErr := NewJwtWrapper().ExtractTenantFromToken()
-	if tenantErr != nil {
-		return nil, tenantErr
-	}
+	tenant := getTenant()
 	tenantPath := strings.Replace(g.path, "organization", strings.ToLower(tenant), 1)
 	groupMap := make(map[string]string)
 	groupMap["groupName"] = groupName
@@ -64,4 +61,12 @@ func (g *GroupsHTTPWrapper) Get(groupName string) ([]Group, error) {
 	default:
 		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func getTenant() string {
+	tenant, tenantErr := NewJwtWrapper().ExtractTenantFromToken()
+	if tenantErr != nil {
+		return viper.GetString(commonParams.TenantKey)
+	}
+	return tenant
 }
