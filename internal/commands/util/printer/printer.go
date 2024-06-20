@@ -183,6 +183,7 @@ func toEntities(view interface{}) []*entity {
 		e := newEntity(viewVal)
 		entities = append(entities, e)
 	}
+	fmt.Printf("entities: %v", entities)
 	return entities
 }
 
