@@ -174,7 +174,7 @@ func NewScanCommand(
 		featureFlagsWrapper,
 	)
 	containerResolver = containerResolverWrapper
-	userAllowedEngines, _ = jwtWrapper.GetAllowedEngines()
+	userAllowedEngines, _ = jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
@@ -1008,7 +1008,7 @@ func compressFolder(sourceDir string, filter, userIncludeFilter []string, scaRes
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), userIncludeFilter)
+	err = addDirFiles(zipWriter, "", sourceDir, filter, userIncludeFilter)
 	if err != nil {
 		return "", err
 	}
@@ -1298,7 +1298,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 		} else {
-			zipFilePath, dirPathErr = compressFolder(directoryPath, getUserFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
+			zipFilePath, dirPathErr = compressFolder(directoryPath, getExcludeFilters(sourceDirFilter), getIncludeFilters(userIncludeFilter), scaResolver)
 		}
 
 		if dirPathErr != nil {

@@ -1220,7 +1220,7 @@ func enrichScaResults(
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
 	}
-	if util.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
+	if slices.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
 		resultsModel = removeContainerResults(resultsModel)
 	}
 	return resultsModel, nil
