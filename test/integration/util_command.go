@@ -175,9 +175,9 @@ func execute(cmd *cobra.Command, args ...string) error {
 
 // Execute a CLI command expecting an error and buffer to execute post assertions
 func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
-	mutex.Lock()
 	cmd, buffer := createRedirectedTestCommand(t)
-	mutex.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
 	return err, buffer
 }
