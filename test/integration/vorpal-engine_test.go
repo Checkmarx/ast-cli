@@ -18,6 +18,7 @@ func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 		flag(commonParams.VorpalLatestVersion),
 	}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
 }

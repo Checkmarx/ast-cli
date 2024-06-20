@@ -180,6 +180,9 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
@@ -206,6 +209,9 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
 }
 
@@ -227,6 +233,9 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
@@ -279,8 +288,11 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
@@ -293,8 +305,11 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
+	if err != nil {
+		log.Println("Error occurred:", err)
+	}
 	assert.NilError(t, err)
 }
 
@@ -323,7 +338,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
@@ -376,7 +391,7 @@ func TestInvalidSource(t *testing.T) {
 		flag(params.SourcesFlag), "invalidSource",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch"}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Failed creating a scan: Input in bad format: Sources input has bad format: invalidSource")
 }
@@ -391,6 +406,7 @@ func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
 }
 
 func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
@@ -510,7 +526,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 }
@@ -528,7 +544,7 @@ func TestScanCreateWithThreshold(t *testing.T) {
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
@@ -537,7 +553,6 @@ func TestScanCreateWithThreshold(t *testing.T) {
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
 	_, projectName := getRootProject(t)
-
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -547,7 +562,7 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 		flag(params.Threshold), "sast-high=error; sca-high=error;",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
@@ -930,7 +945,7 @@ func TestPartialScanWithWrongPreset(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Invalid",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertAstError(t, err, "scan completed partially", exitCodes.SastEngineFailedExitCode)
 }
@@ -950,6 +965,7 @@ func TestFailedScanWithWrongPreset(t *testing.T) {
 		flag(params.PolicyTimeoutFlag),
 		"999999",
 	}
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertAstError(t, err, "scan did not complete successfully", exitCodes.SastEngineFailedExitCode)
 }
@@ -1212,7 +1228,7 @@ func TestScanTypesValidation(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "It looks like the")
 }
@@ -1227,7 +1243,7 @@ func TestScanTypeApiSecurityWithoutSast(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Create a scan should be created only with api security. ")
 }
@@ -1245,7 +1261,7 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Error validating scan types")
 }
@@ -1281,7 +1297,7 @@ func TestScanGeneratingPdfToEmailReportInvalidEmail(t *testing.T) {
 		flag(params.TargetFormatFlag), "pdf",
 		flag(params.ReportFormatPdfToEmailFlag), "test@checkmarx.com,invalid_email",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "Report not sent, invalid email address: invalid_email")
 }
@@ -1500,6 +1516,7 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -1512,6 +1529,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.PolicyTimeoutFlag), "-1"}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
@@ -1522,6 +1540,7 @@ func TestScanListWithFilters(t *testing.T) {
 		flag(params.FilterFlag), "limit=100",
 	}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
@@ -1532,6 +1551,7 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 		flag(params.FilterFlag), "limit=10000,project-id=6cd7afbd-3d21-44b9-a72f-8a7eb351b5a5,branch=develop",
 	}
 
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
@@ -1541,7 +1561,7 @@ func TestScanListWithBigLimit(t *testing.T) {
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000",
 	}
-
+	t.Parallel()
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
 }
