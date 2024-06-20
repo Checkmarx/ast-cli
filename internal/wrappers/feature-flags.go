@@ -9,6 +9,7 @@ import (
 
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
+const CVSSV3Enabled = "CVSS_V3_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
@@ -51,6 +52,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    NewScanReportEnabled,
+				Default: false,
+			},
+		},
+	},
+	{
+		CommandName: "cx triage update",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    CVSSV3Enabled,
 				Default: false,
 			},
 		},
