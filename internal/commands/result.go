@@ -648,7 +648,9 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
-		summary.TotalIssues += *summary.ContainersIssues
+		if *summary.ContainersIssues >= 0 {
+			summary.TotalIssues += *summary.ContainersIssues
+		}
 	}
 }
 
