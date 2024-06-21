@@ -23,7 +23,6 @@ func NewSastIncrementalHTTPWrapper(path string) SastMetadataWrapper {
 
 func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]string) (*SastMetadataModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, s.path, params, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, err
