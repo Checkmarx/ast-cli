@@ -59,6 +59,6 @@ func getProjectNameForTest() string {
 }
 
 func getScsRepoToken() string {
-	_ = viper.BindEnv("SCS_ACCESS_TOKEN")
-	return viper.GetString("SCS_ACCESS_TOKEN")
+	_ = viper.BindEnv("PERSONAL_ACCESS_TOKEN")
+	return viper.GetString("PERSONAL_ACCESS_TOKEN")
 }
