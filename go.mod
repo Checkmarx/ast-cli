@@ -3,7 +3,7 @@ module github.com/checkmarx/ast-cli
 go 1.22.4
 
 require (
-	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240619053350-1df5b4050291
+	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240623072149-3ad82f7be6fb
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
