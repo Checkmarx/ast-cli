@@ -22,6 +22,10 @@ func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFla
 	return allowedEngines, nil
 }
 
+func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
+	return "test-tenant", nil
+}
+
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string, featureFlagWrapper wrappers.FeatureFlagsWrapper) (bool, error) {
 	if j.AIEnabled == AIProtectionDisabled {

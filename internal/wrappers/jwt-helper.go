@@ -11,6 +11,7 @@ import (
 
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
+	Tenant     string `json:"tenant_name"`
 	AstLicense struct {
 		LicenseData struct {
 			AllowedEngines []string `json:"allowedEngines"`
@@ -31,6 +32,7 @@ var defaultEngines = map[string]bool{
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
 	IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error)
+	ExtractTenantFromToken() (tenant string, err error)
 }
 
 func NewJwtWrapper() JWTWrapper {
@@ -104,4 +106,12 @@ func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
 	}
 
 	return claims, nil
+}
+
+func (*JWTStruct) ExtractTenantFromToken() (tenant string, err error) {
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return "", err
+	}
+	return jwtStruct.Tenant, nil
 }
