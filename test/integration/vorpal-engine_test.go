@@ -26,8 +26,9 @@ func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 		flag(commonParams.VorpalLatestVersion),
 	}
 
-	err, _ := executeCommand(t, args...)
+	err, emptyScanResults := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	asserts.NotNil(t, emptyScanResults)
 }
 
 func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
@@ -186,12 +187,10 @@ func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
 	assert.NilError(t, err, "Sending empty source file should not fail")
 	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
 	if healthCheckErr := vorpalWrapper.HealthCheck(); healthCheckErr != nil {
-		fmt.Println("Health check failed with error: ", healthCheckErr)
-		t.Failed()
+		assert.Assert(t, healthCheckErr == nil, "Health check failed with error: ", healthCheckErr)
 	}
 	if shutdownErr := vorpalWrapper.ShutDown(); shutdownErr != nil {
-		fmt.Println("Shutdown failed with error: ", shutdownErr)
-		t.Failed()
+		assert.Assert(t, shutdownErr == nil, "Shutdown failed with error: ", shutdownErr)
 	}
 	err = vorpalWrapper.HealthCheck()
 	asserts.NotNil(t, err)
@@ -209,5 +208,5 @@ func TestExecuteVorpalScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 		flag(commonParams.AgentFlag), "JetBrains",
 	}
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, errorConstants.NoVorpalLicense)
+	assert.NilError(t, err, "User has license, should not fail")
 }
