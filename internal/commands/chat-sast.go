@@ -112,7 +112,7 @@ func runChatSast(
 		}
 
 		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
-		if !strings.Contains(tenantID, "::") {
+		if strings.Contains(tenantID, "::") {
 			tenantID = tenantID[strings.LastIndex(tenantID, "::")+2:]
 		}
 		requestID := statefulWrapper.GenerateId().String()
