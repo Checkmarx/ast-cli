@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/message"
@@ -111,6 +112,9 @@ func runChatSast(
 		}
 
 		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
+		if !strings.Contains(tenantID, "::") {
+			tenantID = tenantID[strings.LastIndex(tenantID, "::")+2:]
+		}
 		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
