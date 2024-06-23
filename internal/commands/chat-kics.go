@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/message"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/role"
@@ -130,6 +131,11 @@ func runChatKics(
 
 		newMessages := buildMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
 		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
+		// remove from tenant id all the string before ::
+		if !strings.Contains(tenantID, "::") {
+			tenantID = tenantID[strings.LastIndex(tenantID, "::")+2:]
+		}
+
 		requestID := statefulWrapper.GenerateId().String()
 
 		var response []message.Message
