@@ -17,3 +17,7 @@ func (*JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFla
 	}
 	return allowedEngines, nil
 }
+
+func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
+	return "test-tenant", nil
+}
