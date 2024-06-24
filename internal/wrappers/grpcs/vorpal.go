@@ -17,16 +17,16 @@ type ScanResult struct {
 }
 
 type ScanDetail struct {
-	RuleID          uint32 `json:"rule_id,omitempty"`
-	Language        string `json:"language,omitempty"`
-	RuleName        string `json:"rule_name,omitempty"`
-	Severity        string `json:"severity,omitempty"`
-	FileName        string `json:"file_name,omitempty"`
-	Line            uint32 `json:"line,omitempty"`
-	ProblematicLine string `json:"problematicLine,omitempty"`
-	Length          uint32 `json:"length,omitempty"`
-	Remediation     string `json:"remediationAdvise,omitempty"`
-	Description     string `json:"description,omitempty"`
+	RuleID          uint32 `json:"rule_id"`
+	Language        string `json:"language"`
+	RuleName        string `json:"rule_name"`
+	Severity        string `json:"severity"`
+	FileName        string `json:"file_name"`
+	Line            uint32 `json:"line"`
+	ProblematicLine string `json:"problematicLine"`
+	Length          uint32 `json:"length"`
+	Remediation     string `json:"remediationAdvise"`
+	Description     string `json:"description"`
 }
 
 type Error struct {
