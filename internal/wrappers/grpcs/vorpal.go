@@ -9,29 +9,29 @@ type VorpalWrapper interface {
 }
 
 type ScanResult struct {
-	RequestID   string       `json:"request_id"`
-	Status      bool         `json:"status"`
-	Message     string       `json:"message"`
-	ScanDetails []ScanDetail `json:"scan_details"`
-	Error       *Error       `json:"error"`
+	RequestID   string       `json:"request_id,omitempty"`
+	Status      bool         `json:"status,omitempty"`
+	Message     string       `json:"message,omitempty"`
+	ScanDetails []ScanDetail `json:"scan_details,omitempty"`
+	Error       *Error       `json:"error,omitempty"`
 }
 
 type ScanDetail struct {
-	RuleID          uint32 `json:"rule_id"`
-	Language        string `json:"language"`
-	RuleName        string `json:"rule_name"`
-	Severity        string `json:"severity"`
-	FileName        string `json:"file_name"`
-	Line            uint32 `json:"line"`
-	ProblematicLine string `json:"problematicLine"`
-	Length          uint32 `json:"length"`
-	Remediation     string `json:"remediationAdvise"`
-	Description     string `json:"description"`
+	RuleID          uint32 `json:"rule_id,omitempty"`
+	Language        string `json:"language,omitempty"`
+	RuleName        string `json:"rule_name,omitempty"`
+	Severity        string `json:"severity,omitempty"`
+	FileName        string `json:"file_name,omitempty"`
+	Line            uint32 `json:"line,omitempty"`
+	ProblematicLine string `json:"problematicLine,omitempty"`
+	Length          uint32 `json:"length,omitempty"`
+	Remediation     string `json:"remediationAdvise,omitempty"`
+	Description     string `json:"description,omitempty"`
 }
 
 type Error struct {
-	Code        ErrorCode `json:"code"`
-	Description string    `json:"description"`
+	Code        ErrorCode `json:"code,omitempty"`
+	Description string    `json:"description,omitempty"`
 }
 
 type ErrorCode int32

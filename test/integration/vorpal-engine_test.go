@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/vorpal/vorpalconfig"
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/spf13/viper"
@@ -26,21 +26,12 @@ func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 		flag(commonParams.VorpalLatestVersion),
 	}
 
-	err, emptyScanResults := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
-	asserts.NotNil(t, emptyScanResults)
-}
-
-func TestScanVorpal_SentFileWithoutExtension_FailCommandWithError(t *testing.T) {
-	configuration.LoadConfiguration()
-	args := []string{
-		"scan", "vorpal",
-		flag(commonParams.SourcesFlag), "data/python-vul-file",
-		flag(commonParams.VorpalLatestVersion),
-	}
-
-	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, errorConstants.FileExtensionIsRequired)
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
 func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_Success(t *testing.T) {
@@ -52,8 +43,12 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_Success(t *testing.T) {
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
-	err, _ := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
 func TestExecuteVorpalScan_NoSourceAndVorpalLatestVersionSetFalse_Success(t *testing.T) {
@@ -67,20 +62,28 @@ func TestExecuteVorpalScan_NoSourceAndVorpalLatestVersionSetFalse_Success(t *tes
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
-	err, _ := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
 func TestExecuteVorpalScan_NotExistingFile_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "vorpal",
-		flag(commonParams.SourcesFlag), "",
+		flag(commonParams.SourcesFlag), "not-existing-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
-	err, _ := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Error.Description == fmt.Sprintf(services.FileNotFound, "not-existing-file.py"), "should return error: ", services.FileNotFound)
 }
 
 func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_Success(t *testing.T) {
@@ -171,8 +174,12 @@ func TestExecuteVorpalScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 	vorpalWrapper = grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
 	healthCheckErr := vorpalWrapper.HealthCheck()
 	asserts.NotNil(t, healthCheckErr)
-	err, _ := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
 func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
@@ -183,8 +190,13 @@ func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 		flag(commonParams.DebugFlag),
 	}
-	err, _ := executeCommand(t, args...)
+	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
+	var scanResults grpcs.ScanResult
+	err = json.Unmarshal(bytes.Bytes(), &scanResults)
+	assert.NilError(t, err, "Failed to unmarshal scan result")
+	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
+
 	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
 	if healthCheckErr := vorpalWrapper.HealthCheck(); healthCheckErr != nil {
 		assert.Assert(t, healthCheckErr == nil, "Health check failed with error: ", healthCheckErr)

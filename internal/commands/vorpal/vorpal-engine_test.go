@@ -31,18 +31,10 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "",
 				vorpalUpdateVersion: true,
 			},
-			want:    &grpcs.ScanResult{},
-			wantErr: false,
-		},
-		{
-			name: "Test path to file without extension",
-			args: args{
-				fileSourceFlag:      "../data/python-vul-file",
-				vorpalUpdateVersion: false,
+			want: &grpcs.ScanResult{
+				Message: services.FilePathNotProvided,
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileExtensionIsRequired,
+			wantErr: false,
 		},
 		{
 			name: "Test with valid flags. vorpalUpdateVersion set to true",
@@ -85,7 +77,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 				VorpalWrapper:       &mock.VorpalMockWrapper{},
 			}
-			got, err := executeVorpalScan(vorpalParams, wrapperParams)
+			got, err := services.CreateVorpalScanRequest(vorpalParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return

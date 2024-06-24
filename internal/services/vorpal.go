@@ -19,6 +19,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	FilePathNotProvided = "File path not provided, Vorpal engine is running successfully."
+	FileNotFound        = "File %s not found"
+)
+
 type VorpalScanParams struct {
 	FilePath            string
 	VorpalUpdateVersion bool
@@ -49,12 +54,33 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams Vorpal
 		return nil, err
 	}
 
-	if exists, _ := osinstaller.FileExists(vorpalParams.FilePath); !exists {
-		logger.PrintIfVerbose(fmt.Sprintf("file %v not exist or not provided", vorpalParams.FilePath))
-		return &grpcs.ScanResult{}, nil
+	emptyResults := validateFilePath(vorpalParams.FilePath)
+	if emptyResults != nil {
+		return emptyResults, nil
 	}
 
 	return executeScan(wrapperParams.VorpalWrapper, vorpalParams.FilePath)
+}
+
+func validateFilePath(filePath string) *grpcs.ScanResult {
+	if filePath == "" {
+		logger.PrintIfVerbose(FilePathNotProvided)
+		return &grpcs.ScanResult{
+			Message: FilePathNotProvided,
+		}
+	}
+
+	if exists, _ := osinstaller.FileExists(filePath); !exists {
+		fileNotFoundMsg := fmt.Sprintf(FileNotFound, filePath)
+		logger.PrintIfVerbose(fileNotFoundMsg)
+		return &grpcs.ScanResult{
+			Error: &grpcs.Error{
+				Description: fileNotFoundMsg,
+			},
+		}
+	}
+
+	return nil
 }
 
 func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.ScanResult, error) {
