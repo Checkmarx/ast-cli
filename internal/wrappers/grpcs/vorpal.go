@@ -4,14 +4,16 @@ type VorpalWrapper interface {
 	Scan(fileName, sourceCode string) (*ScanResult, error)
 	HealthCheck() error
 	ShutDown() error
+	GetPort() int
+	ConfigurePort(port int)
 }
 
 type ScanResult struct {
-	RequestID   string       `json:"request_id"`
-	Status      bool         `json:"status"`
-	Message     string       `json:"message"`
+	RequestID   string       `json:"request_id,omitempty"`
+	Status      bool         `json:"status,omitempty"`
+	Message     string       `json:"message,omitempty"`
 	ScanDetails []ScanDetail `json:"scan_details"`
-	Error       *Error       `json:"error"`
+	Error       *Error       `json:"error,omitempty"`
 }
 
 type ScanDetail struct {
@@ -28,8 +30,8 @@ type ScanDetail struct {
 }
 
 type Error struct {
-	Code        ErrorCode `json:"code"`
-	Description string    `json:"description"`
+	Code        ErrorCode `json:"code,omitempty"`
+	Description string    `json:"description,omitempty"`
 }
 
 type ErrorCode int32
