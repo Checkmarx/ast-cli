@@ -12,7 +12,7 @@ type ScanResult struct {
 	RequestID   string       `json:"request_id,omitempty"`
 	Status      bool         `json:"status,omitempty"`
 	Message     string       `json:"message,omitempty"`
-	ScanDetails []ScanDetail `json:"scan_details,omitempty"`
+	ScanDetails []ScanDetail `json:"scan_details"`
 	Error       *Error       `json:"error,omitempty"`
 }
 
