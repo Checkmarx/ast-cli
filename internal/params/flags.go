@@ -230,13 +230,14 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
+	AIProtectionType     = "AI Protection"
+	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
 	IacLabel             = "IaC Security"
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
-	ContainersType       = "containers"
 	Success              = "success"
 )
 

@@ -32,6 +32,7 @@ var defaultEngines = map[string]bool{
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
+	IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 }
 
@@ -43,11 +44,7 @@ func NewJwtWrapper() JWTWrapper {
 func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
 	if flagResponse.Status {
-		accessToken, err := GetAccessToken()
-		if err != nil {
-			return nil, err
-		}
-		jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
+		jwtStruct, err := getJwtStruct()
 		if err != nil {
 			return nil, err
 		}
@@ -59,6 +56,32 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 	}
 
 	return defaultEngines, nil
+}
+
+func getJwtStruct() (*JWTStruct, error) {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	return extractFromTokenToJwtStruct(accessToken)
+}
+
+// IsAllowedEngine will return if the engine is allowed in the user license
+func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error) {
+	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
+	if flagResponse.Status {
+		jwtStruct, err := getJwtStruct()
+		if err != nil {
+			return false, err
+		}
+
+		for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
+			if strings.EqualFold(allowedEngine, engine) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func prepareEngines(engines []string) map[string]bool {
@@ -93,11 +116,7 @@ func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
 }
 
 func (*JWTStruct) ExtractTenantFromToken() (tenant string, err error) {
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return "", err
-	}
-	jwtStruct, err := extractFromTokenToJwtStruct(accessToken)
+	jwtStruct, err := getJwtStruct()
 	if err != nil {
 		return "", err
 	}

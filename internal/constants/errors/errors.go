@@ -19,6 +19,7 @@ const (
 	SarifInvalidFileExtension              = "Invalid file extension. Supported extensions are .sarif and .zip containing sarif files."
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
+	NoVorpalLicense                        = "User doesn't have \"AI Protection\" license"
 
 	// Vorpal Engine
 	FileExtensionIsRequired = "file must have an extension"

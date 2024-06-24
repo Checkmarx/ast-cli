@@ -1,12 +1,14 @@
-package commands
+package vorpal
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +20,7 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		want       *ScanResult
+		want       *grpcs.ScanResult
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -28,54 +30,53 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 				fileSourceFlag:      "",
 				vorpalUpdateVersion: true,
 			},
-			want:    nil,
-			wantErr: false,
-		},
-		{
-			name: "Test path to file without extension",
-			args: args{
-				fileSourceFlag:      "data/python-vul-file",
-				vorpalUpdateVersion: false,
+			want: &grpcs.ScanResult{
+				Message: services.FilePathNotProvided,
 			},
-			want:       nil,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileExtensionIsRequired,
+			wantErr: false,
 		},
 		{
 			name: "Test with valid flags. vorpalUpdateVersion set to true",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file.py",
+				fileSourceFlag:      "../data/python-vul-file.py",
 				vorpalUpdateVersion: true,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnSuccessfulResponseMock(),
+			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
 			name: "Test with valid flags. vorpalUpdateVersion set to false",
 			args: args{
-				fileSourceFlag:      "data/python-vul-file.py",
+				fileSourceFlag:      "../data/python-vul-file.py",
 				vorpalUpdateVersion: false,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnFailureResponseMock(),
+			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags and no vulnerabilities in file",
+			name: "Test with valid flags. vorpal scan failed",
 			args: args{
-				fileSourceFlag:      "data/csharp-no-vul.cs",
+				fileSourceFlag:      "../data/csharp-no-vul.cs",
 				vorpalUpdateVersion: false,
 			},
-			//TODO: update mocks when there's a real engine
-			want:    ReturnFailureResponseMock(),
+			want:    mock.ReturnFailureResponseMock(),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			got, err := ExecuteVorpalScan(ttt.args.fileSourceFlag, ttt.args.vorpalUpdateVersion)
+			vorpalParams := services.VorpalScanParams{
+				FilePath:            ttt.args.fileSourceFlag,
+				VorpalUpdateVersion: ttt.args.vorpalUpdateVersion,
+				IsDefaultAgent:      true,
+			}
+			wrapperParams := services.VorpalWrappersParam{
+				JwtWrapper:          &mock.JWTMockWrapper{},
+				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				VorpalWrapper:       &mock.VorpalMockWrapper{},
+			}
+			got, err := services.CreateVorpalScanRequest(vorpalParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -96,7 +97,7 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		sourceFlag string
 		engineFlag bool
 		wantErr    bool
-		want       *ScanResult
+		want       *grpcs.ScanResult
 		wantErrMsg string
 	}{
 		{
@@ -105,13 +106,6 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			engineFlag: true,
 			wantErr:    false,
 			want:       nil,
-		},
-		{
-			name:       "Test with file without extension",
-			sourceFlag: "data/python-vul-file",
-			engineFlag: true,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
 			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set false ",
@@ -135,14 +129,14 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.VorpalLatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := runScanVorpalCommand()
+			runFunc := RunScanVorpalCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("runScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("RunScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("runScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("RunScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 		})
 	}

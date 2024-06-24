@@ -1,4 +1,4 @@
-package scarealtime
+package vorpal
 
 import (
 	"os"

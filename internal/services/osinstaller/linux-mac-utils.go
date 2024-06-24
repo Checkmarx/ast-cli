@@ -10,7 +10,9 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
@@ -83,4 +85,10 @@ func extractFiles(installationConfiguration *InstallationConfiguration, tarReade
 		}
 	}
 	return nil
+}
+
+func ConfigureIndependentProcess(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
 }
