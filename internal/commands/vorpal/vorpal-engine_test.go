@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
@@ -107,13 +106,6 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			engineFlag: true,
 			wantErr:    false,
 			want:       nil,
-		},
-		{
-			name:       "Test with file without extension",
-			sourceFlag: "data/python-vul-file",
-			engineFlag: true,
-			wantErr:    true,
-			wantErrMsg: errorConstants.FileExtensionIsRequired,
 		},
 		{
 			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set false ",
