@@ -22,6 +22,10 @@ func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
 				Key:   "scan.config.plugins.aiGuidedRemediation",
 				Value: "true",
 			},
+			{
+				Key:   "scan.config.plugins.chatGPTGuidedRemediation",
+				Value: "true",
+			},
 		}
 	}
 	return &TenantConfiguration, nil, nil

@@ -26,7 +26,7 @@ func TestChatKicsInvalidAPIKey(t *testing.T) {
 	assert.NilError(t, err)
 	outputModel := commands.OutputModel{}
 	unmarshall(t, respBuffer, &outputModel, "Reading results should pass")
-	assert.Assert(t, strings.Contains(outputModel.Response[0], "Incorrect API key provided"), "Expecting incorrect api key error")
+	assert.Assert(t, strings.Contains(outputModel.Response[0], "Incorrect API key provided"), "Expecting incorrect api key error. Got: "+outputModel.Response[0])
 }
 
 func TestChatSastInvalidAPIKey(t *testing.T) {
@@ -41,5 +41,5 @@ func TestChatSastInvalidAPIKey(t *testing.T) {
 	assert.NilError(t, err)
 	outputModel := commands.OutputModel{}
 	unmarshall(t, respBuffer, &outputModel, "Reading results should pass")
-	assert.Assert(t, strings.Contains(outputModel.Response[0], "Incorrect API key provided"), "Expecting incorrect api key error")
+	assert.Assert(t, strings.Contains(outputModel.Response[0], "Incorrect API key provided"), "Expecting incorrect api key error. Got: "+outputModel.Response[0])
 }
