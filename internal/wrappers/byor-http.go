@@ -45,17 +45,9 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	}()
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
-	case http.StatusForbidden:
-		return "", getError(decoder, errorConstants.StatusForbidden)
-	case http.StatusUnauthorized:
-		return "", getError(decoder, errorConstants.StatusUnauthorized)
-	case http.StatusInternalServerError:
-		byorErrorModel := ByorErrorModel{}
-		decodeErr := decoder.Decode(&byorErrorModel)
-		if decodeErr != nil {
-			return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, http.StatusInternalServerError, "Error decoding byor error model"))
-		}
-		return "", errors.Errorf(fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, byorErrorModel.Code, byorErrorModel.Message))
+	case http.StatusForbidden, http.StatusUnauthorized, http.StatusInternalServerError:
+		byorError := getByorError(decoder)
+		return "", errors.Errorf("%d - %s", byorError.Code, byorError.Message)
 	case http.StatusOK:
 		model := CreateImportsResponse{}
 		err = decoder.Decode(&model)
@@ -69,14 +61,10 @@ func (b *ByorHTTPWrapper) Import(projectID, uploadURL string) (string, error) {
 	}
 }
 
-func getError(decoder *json.Decoder, errorMessage string) error {
+func getByorError(decoder *json.Decoder) ByorErrorModel {
 	errorModel := ByorErrorModel{}
-	err := decoder.Decode(&errorModel)
-	if err != nil {
-		return errors.Errorf("Parsing error model failed - %s", err.Error())
-	}
-	logger.PrintIfVerbose(errorModel.Message)
-	return errors.Errorf(errorMessage)
+	DecodeErrorModel(decoder, &errorModel)
+	return errorModel
 }
 
 type ByorErrorModel struct {

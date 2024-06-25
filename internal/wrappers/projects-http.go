@@ -113,11 +113,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	}()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := ProjectsCollectionResponseModel{}
@@ -194,11 +190,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseBranches)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		var branches []string
@@ -246,11 +238,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseTags)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		tags := map[string][]string{}

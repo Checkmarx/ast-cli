@@ -36,11 +36,7 @@ func (l *LogsHTTPWrapper) GetLog(scanID, scanType string) (string, error) {
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := &WebError{}
-		err = decoder.Decode(errorModel)
-		if err != nil {
-			return "", errors.Wrapf(err, failedToDecodeLogErr)
-		}
+		errorModel := GetWebError(decoder)
 		return "", errors.Errorf("%s: CODE: %d, %s", failedDownloadingLog, errorModel.Code, errorModel.Message)
 	case http.StatusOK:
 		bodyBytes, err := ioutil.ReadAll(resp.Body)

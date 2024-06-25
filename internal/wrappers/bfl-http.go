@@ -53,11 +53,7 @@ func handleBflResponseWithBody(resp *http.Response, err error) (*BFLResponseMode
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseBflResponse)
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := BFLResponseModel{}
