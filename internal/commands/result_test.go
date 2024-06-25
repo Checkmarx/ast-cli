@@ -529,6 +529,12 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
+func TestRunGetResultsByScanIdGLSastAndAScaFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast,gl-sca")
+	// Run test for gl-sast report type
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSca))
+}
 
 func TestRunGetResultsByScanIdGLScaFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sca")

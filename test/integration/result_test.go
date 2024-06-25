@@ -23,6 +23,7 @@ import (
 const (
 	fileName         = "result-test"
 	resultsDirectory = "output-results-folder/"
+	fileExtention    = "report.json"
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
@@ -93,8 +94,6 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
-				printer.FormatGLSast,
-				printer.FormatGLSca,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -115,10 +114,58 @@ func TestResultListJson(t *testing.T) {
 
 // assert all files were created
 func assertResultFilesCreated(t *testing.T) {
-	extensions := []string{printer.FormatGLSca, printer.FormatGLSast, printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
+	extensions := []string{printer.FormatJSON, printer.FormatSarif, printer.FormatHTML, printer.FormatJSON, printer.FormatPDF, printer.FormatMarkdown}
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
+		assert.NilError(t, err, "Report file should exist for extension "+e)
+	}
+
+	// delete directory in the end
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+}
+
+func TestResultListForGlReports(t *testing.T) {
+
+	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
+
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Getting results should pass",
+		"results",
+		"show",
+		"--debug",
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatGLSast,
+				printer.FormatGLSca,
+			}, ",",
+		),
+		flag(params.TargetFlag), fileName,
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.SastRedundancyFlag),
+	)
+
+	result := wrappers.ScanResultsCollection{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+
+	assertGlResultFilesCreated(t)
+
+	deleteScanAndProject()
+}
+
+func assertGlResultFilesCreated(t *testing.T) {
+	extensions := []string{printer.FormatGLSast,
+		printer.FormatGLSca}
+
+	for _, e := range extensions {
+		_, err := os.Stat(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, e, fileExtention))
 		assert.NilError(t, err, "Report file should exist for extension "+e)
 	}
 
