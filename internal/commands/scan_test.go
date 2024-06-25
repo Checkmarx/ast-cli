@@ -738,7 +738,7 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestCreateScanWithSCSScorecardShouldFail(t *testing.T) {
+func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
 		"scan",
@@ -757,7 +757,7 @@ func TestCreateScanWithSCSScorecardShouldFail(t *testing.T) {
 	assert.Assert(t, err.Error() == SCSScoreCardError)
 }
 
-func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
+func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a project",
@@ -788,7 +788,7 @@ func TestCreateScanWithSCSSecretDetectionAndScorecard(t *testing.T) {
 	}
 }
 
-func TestCreateScanWithSCSSecretDetection(t *testing.T) {
+func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a project",

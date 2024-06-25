@@ -593,7 +593,7 @@ func Test_addPackageInformation(t *testing.T) {
 	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
 }
 
-func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsNotScanned(t *testing.T) {
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(false, false, false),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
@@ -612,7 +612,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsNotScanned(t *testing.T
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
 }
 
-func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsPartial(t *testing.T) {
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport(t *testing.T) {
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, true, true),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
@@ -639,7 +639,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsPartial(t *testing.T) {
 		"Expected Scorecard summary:"+scorecardSummary)
 }
 
-func TestRunGetResultsByScanIdSummaryConsoleFormatWithScsScorecardNotScanned(t *testing.T) {
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_ScorecardMissingInReport(t *testing.T) {
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, false, false),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)

@@ -68,7 +68,7 @@ jobs:
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
           PR_GITLAB_PROJECT_ID: ${{ secrets.PR_GITLAB_PROJECT_ID }}
-          PR_GITLAB_IID: ${{ secrets.PR_GITLAB_IID }}F
+          PR_GITLAB_IID: ${{ secrets.PR_GITLAB_IID }}
           AZURE_ORG: ${{ secrets.AZURE_ORG }}
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_REPOS: ${{ secrets.AZURE_REPOS }}

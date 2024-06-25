@@ -1523,7 +1523,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
 
-func TestScanTypeScs(t *testing.T) {
+func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1539,7 +1539,7 @@ func TestScanTypeScs(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
 }
 
-func TestNoScanTypesFlagScsFlagsNotPresent(t *testing.T) {
+func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1554,7 +1554,7 @@ func TestNoScanTypesFlagScsFlagsNotPresent(t *testing.T) {
 	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
 }
 
-func TestNoScanTypesFlagScsFlagsPresent(t *testing.T) {
+func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1566,11 +1566,11 @@ func TestNoScanTypesFlagScsFlagsPresent(t *testing.T) {
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
 
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", 4*time.Minute, args...)
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and scs-repo flags are present", 4*time.Minute, args...)
 	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
 }
 
-func TestScanTypeScsMissingRepoURL(t *testing.T) {
+func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1586,7 +1586,7 @@ func TestScanTypeScsMissingRepoURL(t *testing.T) {
 	assert.Error(t, err, commands.ScsRepoRequiredMsg)
 }
 
-func TestScanTypeScsMissingRepoToken(t *testing.T) {
+func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1602,7 +1602,7 @@ func TestScanTypeScsMissingRepoToken(t *testing.T) {
 	assert.Error(t, err, commands.ScsRepoRequiredMsg)
 }
 
-func TestScanTypeScsOnlySecretDetection(t *testing.T) {
+func TestCreateScan_WithTypeScsOnlySecretDetection_Success(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1618,7 +1618,7 @@ func TestScanTypeScsOnlySecretDetection(t *testing.T) {
 		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
 }
 
-func TestNoScanTypesFlagScsOnlySecretDetection(t *testing.T) {
+func TestCreateScan_WithNoScanTypesFlagScsAndOnlySecretDetection_Success(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1633,7 +1633,7 @@ func TestNoScanTypesFlagScsOnlySecretDetection(t *testing.T) {
 		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
 }
 
-func TestScanTypeScsOnlyScorecardMissingRepoFlags(t *testing.T) {
+func TestCreateScan_WithScanTypesScsAndOnlyScorecardMissingRepoFlags_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
