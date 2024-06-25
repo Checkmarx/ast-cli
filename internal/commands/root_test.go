@@ -110,20 +110,24 @@ func TestRootVersion(t *testing.T) {
 }
 
 func TestFilterTag(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", "state=exclude_not_exploitable", "--debug"}
+	stateValues := "state=exclude_not_exploitable"
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
 
 func TestFilterTagAllStateValues(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", "state=exclude_not_exploitable;TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT", "--debug"}
+	stateValues := "state=exclude_not_exploitable;TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
+
 func TestFilterTagStateAndSeverityValues(t *testing.T) {
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", "state=exclude_not_exploitable;TO_VERIFY,severity=High", "--debug"}
+	stateAndSeverityValues := "state=exclude_not_exploitable;TO_VERIFY,severity=High"
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateAndSeverityValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
