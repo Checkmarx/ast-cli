@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
@@ -81,4 +83,10 @@ func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) e
 	}
 
 	return nil
+}
+
+func ConfigureIndependentProcess(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: syscall.CREATE_NEW_PROCESS_GROUP,
+	}
 }

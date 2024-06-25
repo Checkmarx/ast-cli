@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -143,7 +142,7 @@ func FileExists(path string) (bool, error) {
 func getHashValue(hashFilePath string) ([]byte, error) {
 	f, err := os.Open(hashFilePath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer func() {
 		_ = f.Close()

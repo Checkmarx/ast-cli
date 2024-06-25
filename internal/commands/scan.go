@@ -21,6 +21,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/commands/vorpal"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
@@ -179,7 +180,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanVorpalCmd := scanVorpalSubCommand()
+	scanVorpalCmd := scanVorpalSubCommand(jwtWrapper, featureFlagsWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -392,7 +393,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanVorpalSubCommand() *cobra.Command {
+func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "vorpal",
@@ -410,7 +411,7 @@ func scanVorpalSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: runScanVorpalCommand(),
+		RunE: vorpal.RunScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
