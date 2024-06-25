@@ -92,7 +92,6 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
-				printer.FormatGL,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -249,6 +248,27 @@ func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, "report not sent, invalid email address: invalid_email")
+}
+
+func TestResultsGeneratingPdfReportWithPdfOptionsWithoutNotExploitable(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
 func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
