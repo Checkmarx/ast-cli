@@ -387,3 +387,56 @@ func TestResultsCounterJsonOutput(t *testing.T) {
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
 }
+
+func TestResultsGeneratingJsonReportWithSeverityHighAndWithoutNotExploitable(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating Json report with severity and state",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable, severity=High",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestResultExcludeNotExploitableFailScanId(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), "FakeScanId",
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed showing a scan")
+}
+
+func TestResultsGeneratingReportWithExcludeNotExploitableStateAndSeverityAndStatus(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating Json report with severity and state",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable;TO_VERIFY,severity=High;Low,status=new;recurrent",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
