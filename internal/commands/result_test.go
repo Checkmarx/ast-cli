@@ -594,7 +594,11 @@ func Test_addPackageInformation(t *testing.T) {
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
-	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(false, false, false),
+	mock.HasScs = false
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = false
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
@@ -610,10 +614,16 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	scorecardSummary := "Scorecard"
 	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport(t *testing.T) {
-	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, true, true),
+	mock.HasScs = true
+	mock.ScsScanPartial = true
+	mock.ScorecardScanned = true
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
@@ -637,10 +647,16 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_ScorecardMissingInReport(t *testing.T) {
-	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommandWithScs(true, false, false),
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = false
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
 
@@ -656,4 +672,6 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
 }

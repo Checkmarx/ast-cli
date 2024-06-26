@@ -4,9 +4,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
+var ScsScanPartial bool
+var ScorecardScanned bool
+
 type ScanOverviewMockWrapper struct {
-	ScanPartial      bool
-	ScorecardScanned bool
 }
 
 func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
@@ -14,7 +15,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 	*wrappers.WebError,
 	error,
 ) {
-	if s.ScanPartial {
+	if ScsScanPartial {
 		return &wrappers.SCSOverview{
 			Status:          "Partial",
 			TotalRisksCount: 10,
@@ -55,7 +56,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 			},
 		}, nil, nil
 	}
-	if s.ScorecardScanned {
+	if ScorecardScanned {
 		return &wrappers.SCSOverview{
 			Status:          "Completed",
 			TotalRisksCount: 14,
@@ -130,4 +131,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 			},
 		},
 	}, nil, nil
+}
+
+// SetScsMockVarsToDefault resets the mock variables to their default values.
+// Use at the end of test cases where these variables were changed to reset them. This way subsequent tests aren't affected
+func SetScsMockVarsToDefault() {
+	HasScs = false
+	ScsScanPartial = false
+	ScorecardScanned = false
 }
