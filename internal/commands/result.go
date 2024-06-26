@@ -60,9 +60,12 @@ const (
 	scanFailedString          = "Failed"
 	scanCanceledString        = "Canceled"
 	scanSuccessString         = "Completed"
+	scanPartialString         = "Partial"
+	scsScanUnavailableString  = ""
 	notAvailableNumber        = -1
 	scanFailedNumber          = -2
 	scanCanceledNumber        = -3
+	scanPartialNumber         = -4
 	defaultPaddingSize        = -13
 	boldFormat                = "\033[1m%s\033[0m"
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
@@ -149,6 +152,7 @@ func NewResultsCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
@@ -163,7 +167,8 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper)
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -198,6 +203,7 @@ func resultShowSubCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
@@ -210,7 +216,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -483,14 +489,18 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		return nil, errors.New(failedCreatingSummary)
 	}
 
+	scanInfo.ReplaceMicroEnginesWithSCS()
+
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
+	scsIssues := 0
 	enginesStatusCode := map[string]int{
 		commonParams.SastType:   0,
 		commonParams.ScaType:    0,
 		commonParams.KicsType:   0,
 		commonParams.APISecType: 0,
+		commonParams.ScsType:    0,
 	}
 
 	if len(scanInfo.StatusDetails) > 0 {
@@ -502,6 +512,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ScsType {
+					scsIssues = notAvailableNumber
 				}
 			}
 			switch statusDetailItem.Status {
@@ -526,6 +538,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		SastIssues:     sastIssues,
 		KicsIssues:     kicsIssues,
 		ScaIssues:      scaIssues,
+		ScsIssues:      scsIssues,
 		Tags:           scanInfo.Tags,
 		ProjectName:    scanInfo.ProjectName,
 		BranchName:     scanInfo.Branch,
@@ -535,6 +548,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
 			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
 			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.ScsType:    {StatusCode: enginesStatusCode[commonParams.ScsType]},
 		},
 	}
 
@@ -562,6 +576,7 @@ func summaryReport(
 	summary *wrappers.ResultSummary,
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
@@ -570,6 +585,14 @@ func summaryReport(
 			return nil, err
 		}
 		summary.APISecurity = *apiSecRisks
+	}
+
+	if summary.HasSCS() {
+		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+		summary.SCSOverview = *SCSOverview
 	}
 
 	if policies != nil {
@@ -581,6 +604,7 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
+	setNotAvailableNumberIfZero(summary, &summary.ScsIssues, commonParams.ScsType)
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -622,6 +646,20 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
 		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+	}
+
+	if summary.HasSCS() {
+		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
+		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
+		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
+		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
+
+		summary.ScsIssues = summary.SCSOverview.TotalRisksCount
+
+		// Special case for SCS where status is partial if any microengines failed
+		if summary.SCSOverview.Status == scanPartialString {
+			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
+		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 }
@@ -680,6 +718,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			printAPIsSecuritySummary(summary)
 		}
 
+		if summary.HasSCS() {
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+		}
+
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
@@ -729,8 +771,35 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+	case scanPartialNumber:
+		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
 		fmt.Printf(formatString, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+	}
+}
+
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
+	fmt.Printf("              Supply Chain Security Results\n")
+	fmt.Printf("              ---------------------------------------------------------------     \n")
+	fmt.Println("              |                      High   Medium   Low   Info   Status    |")
+	for _, microEngineOverview := range microEngineOverviews {
+		printSCSTableRow(microEngineOverview)
+	}
+	fmt.Printf("              ---------------------------------------------------------------     \n\n")
+}
+
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
+	formatString := "              | %-16s   %4d   %6d   %4d   %4d   %-9s  |\n"
+	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+
+	riskSummary := microEngineOverview.RiskSummary
+	microEngineName := microEngineOverview.FullName
+
+	switch microEngineOverview.Status {
+	case scsScanUnavailableString:
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+	default:
+		fmt.Printf(formatString, microEngineName, riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
 	}
 }
 
@@ -739,8 +808,9 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf("              ---------------------------------------------------     \n\n")
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Println("              |          High   Medium   Low   Info   Status    |")
 
@@ -748,6 +818,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
 
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
@@ -769,6 +840,7 @@ func runGetResultCommand(
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
@@ -822,6 +894,7 @@ func runGetResultCommand(
 		return CreateScanReport(
 			resultsWrapper,
 			risksOverviewWrapper,
+			scsScanOverviewWrapper,
 			resultsSbomWrapper,
 			policyResponseModel,
 			useSCALocalFlow,
@@ -882,6 +955,7 @@ func runGetCodeBashingCommand(
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	useSCALocalFlow bool,
@@ -919,7 +993,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, results)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, results)
 		if err != nil {
 			return err
 		}
@@ -1002,6 +1076,25 @@ func getResultsForAPISecScanner(
 		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if apiSecResultsModel != nil {
 		return apiSecResultsModel, nil
+	}
+	return nil, nil
+}
+
+func getScanOverviewForSCSScanner(
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanID string,
+) (results *wrappers.SCSOverview, err error) {
+	var scsOverview *wrappers.SCSOverview
+	var errorModel *wrappers.WebError
+
+	scsOverview, errorModel, err = scsScanOverviewWrapper.GetSCSOverviewByScanID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "SCS: %s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("SCS: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	} else if scsOverview != nil {
+		return scsOverview, nil
 	}
 	return nil, nil
 }
@@ -1284,8 +1377,21 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
+	var resultsToReport *wrappers.ResultSummary
 	log.Println("Creating summary JSON Report: ", targetFile)
-	resultsJSON, err = json.Marshal(results)
+
+	// Remove SCS Result if it exists
+	_, scsExists := results.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		resultsToReport, err = createReportWithoutScsSummary(results)
+		if err != nil {
+			return err
+		}
+	} else {
+		resultsToReport = results
+	}
+
+	resultsJSON, err = json.Marshal(resultsToReport)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
@@ -2020,4 +2126,26 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
+}
+
+func createReportWithoutScsSummary(results *wrappers.ResultSummary) (*wrappers.ResultSummary, error) {
+	var err error
+	var resultsJSON []byte
+	resultsJSON, err = json.Marshal(results)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to serialize results before removing scs ", failedGettingAll)
+	}
+
+	var resultsWithoutScs *wrappers.ResultSummary
+	err = json.Unmarshal(resultsJSON, &resultsWithoutScs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s: failed to deserialize results before removing scs ", failedGettingAll)
+	}
+
+	_, scsExists := resultsWithoutScs.EnginesResult[commonParams.ScsType]
+	if scsExists {
+		delete(resultsWithoutScs.EnginesResult, commonParams.ScsType)
+	}
+
+	return resultsWithoutScs, nil
 }
