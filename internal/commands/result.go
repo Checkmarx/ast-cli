@@ -555,6 +555,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		SastIssues:       sastIssues,
 		KicsIssues:       kicsIssues,
 		ScaIssues:        scaIssues,
+		ScsIssues:        scsIssues,
 		ContainersIssues: containersIssues,
 		Tags:             scanInfo.Tags,
 		ProjectName:      scanInfo.ProjectName,
