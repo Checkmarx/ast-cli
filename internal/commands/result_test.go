@@ -628,6 +628,7 @@ func TestRunGetResultsByScanIdGLScaFormat_NoVulnerabilities_Success(t *testing.T
 		}
 		t.Log("File deleted successfully.")
 	}
+}
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
 	mock.HasScs = false
