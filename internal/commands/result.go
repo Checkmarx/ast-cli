@@ -587,7 +587,7 @@ func summaryReport(
 		summary.APISecurity = *apiSecRisks
 	}
 
-	if summary.HasSCS() {
+	if summary.HasSCS() && wrappers.IsSCSEnabled {
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
 		if err != nil {
 			return nil, err
@@ -648,7 +648,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 	}
 
-	if summary.HasSCS() {
+	if summary.HasSCS() && wrappers.IsSCSEnabled {
 		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
 		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
 		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
@@ -718,7 +718,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 			printAPIsSecuritySummary(summary)
 		}
 
-		if summary.HasSCS() {
+		if summary.HasSCS() && wrappers.IsSCSEnabled {
 			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
 		}
 
@@ -818,7 +818,9 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
-	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
+	if wrappers.IsSCSEnabled {
+		printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
+	}
 
 	fmt.Println("              ---------------------------------------------------     ")
 	fmt.Printf("              | %-4s  %4d   %6d   %4d   %4d   %-9s  |\n",
@@ -952,6 +954,10 @@ func runGetCodeBashingCommand(
 	}
 }
 
+func setIsSCSEnabled() {
+	wrappers.IsSCSEnabled = wrappers.FeatureFlags[wrappers.SCSEngineCLIEnabled]
+}
+
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -973,6 +979,7 @@ func CreateScanReport(
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
+	setIsSCSEnabled()
 
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
