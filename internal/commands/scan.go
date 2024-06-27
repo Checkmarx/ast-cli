@@ -98,14 +98,15 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
+	ScsScoreCardType       = "scorecard"
+	ScsSecretDetectionType = "secret-detection"
+	ScsRepoRequiredMsg     = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
+	actualScanTypes         = "sast,kics,sca,scs"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -137,6 +138,7 @@ func NewScanCommand(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -166,6 +168,7 @@ func NewScanCommand(
 		projectsWrapper,
 		groupsWrapper,
 		riskOverviewWrapper,
+		scsScanOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
 		accessManagementWrapper,
@@ -455,6 +458,7 @@ func scanCreateSubCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -486,6 +490,7 @@ func scanCreateSubCommand(
 			projectsWrapper,
 			groupsWrapper,
 			risksOverviewWrapper,
+			scsScanOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
 			accessManagementWrapper,
@@ -639,6 +644,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
+	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+
 	return createScanCmd
 }
 
@@ -759,6 +768,14 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+
+	var SCSConfig, scsErr = addSCSScan(cmd)
+	if scsErr != nil {
+		return scsErr
+	} else if SCSConfig != nil {
+		configArr = append(configArr, SCSConfig)
+	}
+
 	info["config"] = configArr
 	var err2 error
 	*input, err2 = json.Marshal(info)
@@ -929,6 +946,48 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		return apiSecMapConfig
 	}
 	return nil
+}
+
+func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
+	if scanTypeEnabled(commonParams.ScsType) {
+		SCSMapConfig := make(map[string]interface{})
+		SCSConfig := wrappers.SCSConfig{}
+		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
+		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if SCSEngines != "" {
+			SCSEnginesTypes := strings.Split(SCSEngines, ",")
+			for _, engineType := range SCSEnginesTypes {
+				engineType = strings.TrimSpace(engineType)
+				switch engineType {
+				case ScsSecretDetectionType:
+					SCSConfig.Twoms = trueString
+				case ScsScoreCardType:
+					SCSConfig.Scorecard = trueString
+				}
+			}
+		} else {
+			SCSConfig.Scorecard = trueString
+			SCSConfig.Twoms = trueString
+		}
+		if SCSConfig.Scorecard == trueString {
+			if SCSRepoToken != "" && SCSRepoURL != "" {
+				SCSConfig.RepoToken = SCSRepoToken
+				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+			} else {
+				if userScanTypes == "" {
+					fmt.Println(ScsRepoRequiredMsg)
+					return nil, nil
+				}
+				return nil, errors.Errorf(ScsRepoRequiredMsg)
+			}
+		}
+		SCSMapConfig[resultsMapValue] = &SCSConfig
+		return SCSMapConfig, nil
+	}
+	return nil, nil
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
@@ -1416,6 +1475,7 @@ func runCreateScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -1483,6 +1543,7 @@ func runCreateScanCommand(
 				resultsPdfReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper,
+				scsScanOverviewWrapper,
 				featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1502,7 +1563,7 @@ func runCreateScanCommand(
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
 			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1512,8 +1573,8 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, nil, featureFlagsWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1671,6 +1732,7 @@ func handleWait(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	err := waitForScanCompletion(
@@ -1682,6 +1744,7 @@ func handleWait(
 		resultsPdfReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		cmd,
 		featureFlagsWrapper)
 	if err != nil {
@@ -1704,6 +1767,7 @@ func createReportsAfterScan(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
@@ -1734,6 +1798,7 @@ func createReportsAfterScan(
 	return CreateScanReport(
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		resultsSbomWrapper,
 		policyResponseModel,
 		useSCALocalFlow,
@@ -1881,6 +1946,7 @@ func waitForScanCompletion(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
@@ -1896,7 +1962,8 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -1926,6 +1993,7 @@ func isScanRunning(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -1955,7 +2023,9 @@ func isScanRunning(
 			resultsSbomWrapper,
 			resultsPdfReportsWrapper,
 			resultsWrapper,
-			risksOverViewWrapper, nil, featureFlagsWrapper) // check this partial case, how to handle it
+			risksOverViewWrapper,
+			scsScanOverviewWrapper,
+			nil, featureFlagsWrapper) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
@@ -2250,6 +2320,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	} else {
 		scanTimeOut = "NONE"
 	}
+	scan.ReplaceMicroEnginesWithSCS()
 
 	return &scanView{
 		ID:              scan.ID,

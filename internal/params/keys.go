@@ -22,6 +22,7 @@ var (
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)
+	ScsScanOverviewPathKey              = strings.ToLower(ScsScanOverviewPathEnv)
 	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
 	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
 	BflPathKey                          = strings.ToLower(BflPathEnv)
