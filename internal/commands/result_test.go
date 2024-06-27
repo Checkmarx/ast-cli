@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -19,14 +21,15 @@ import (
 const fileName = "cx_result"
 
 const (
-	resultsCommand     = "results"
-	codeBashingCommand = "codebashing"
-	vulnerabilityValue = "Reflected XSS All Clients"
-	languageValue      = "PHP"
-	cweValue           = "79"
-	jsonValue          = "json"
-	tableValue         = "table"
-	listValue          = "list"
+	resultsCommand      = "results"
+	codeBashingCommand  = "codebashing"
+	vulnerabilityValue  = "Reflected XSS All Clients"
+	languageValue       = "PHP"
+	cweValue            = "79"
+	jsonValue           = "json"
+	tableValue          = "table"
+	listValue           = "list"
+	secretDetectionLine = "| Secret Detection      5        3      2      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -625,4 +628,87 @@ func TestRunGetResultsByScanIdGLScaFormat_NoVulnerabilities_Success(t *testing.T
 		}
 		t.Log("File deleted successfully.")
 	}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
+	mock.HasScs = false
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = false
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	scsSummary := "| SCS       -        -      -      -       -      |"
+	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := "Secret Detection"
+	assert.Equal(t, !strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary to be missing:"+secretDetectionSummary)
+	scorecardSummary := "Scorecard"
+	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary to be missing:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport(t *testing.T) {
+	mock.HasScs = true
+	mock.ScsScanPartial = true
+	mock.ScorecardScanned = true
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	ansiRegexp := regexp.MustCompile("\x1b\\[[0-9;]*[mK]")
+	cleanString := ansiRegexp.ReplaceAllString(stdoutString, "")
+	fmt.Print(stdoutString)
+
+	TotalResults := "Total Results: 17"
+	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
+		"Expected: "+TotalResults)
+	TotalSummary := "| TOTAL    10        4      3      0   Completed  |"
+	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
+		"Expected TOTAL summary: "+TotalSummary)
+	scsSummary := "| SCS       5        3      2      0   Partial    |"
+	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := secretDetectionLine
+	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
+		"Expected Secret Detection summary:"+secretDetectionSummary)
+	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
+	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
+		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_ScorecardMissingInReport(t *testing.T) {
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = false
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	scsSummary := "| SCS       5        3      2      0   Completed  |"
+	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := secretDetectionLine
+	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary:"+secretDetectionSummary)
+	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
+	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+
 }
