@@ -31,6 +31,7 @@ func NewAstCLI(
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
@@ -156,6 +157,7 @@ func NewAstCLI(
 		logsWrapper,
 		groupsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		jwtWrapper,
 		scaRealTimeWrapper,
 		policyWrapper,
@@ -173,6 +175,7 @@ func NewAstCLI(
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
 	)
