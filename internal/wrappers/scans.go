@@ -146,3 +146,10 @@ type ContainerConfig struct {
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`
 }
+
+type SCSConfig struct {
+	Twoms     string `json:"2ms,omitempty"`
+	Scorecard string `json:"scorecard,omitempty"`
+	RepoURL   string `json:"repoUrl,omitempty"`
+	RepoToken string `json:"repoToken,omitempty"`
+}
