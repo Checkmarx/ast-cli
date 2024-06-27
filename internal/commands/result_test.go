@@ -711,5 +711,4 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 		"Expected Scorecard summary:"+scorecardSummary)
 
 	mock.SetScsMockVarsToDefault()
-
 }
