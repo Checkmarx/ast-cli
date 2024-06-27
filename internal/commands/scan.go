@@ -100,9 +100,9 @@ const (
 		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
 	directoryCreationPrefix     = "cx-"
-	ScsScoreCardType       = "scorecard"
-	ScsSecretDetectionType = "secret-detection"
-	ScsRepoRequiredMsg     = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	ScsScoreCardType            = "scorecard"
+	ScsSecretDetectionType      = "secret-detection"
+	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 

@@ -16,9 +16,9 @@ type ResultSummary struct {
 	SastIssues       int
 	KicsIssues       int
 	ScaIssues        int
-	ContainersIssues *int `json:"ContainersIssues,omitempty"`
-	ScsIssues       int `json:"-"`
-	SCSOverview     SCSOverview `json:"-"`
+	ContainersIssues *int        `json:"ContainersIssues,omitempty"`
+	ScsIssues        int         `json:"-"`
+	SCSOverview      SCSOverview `json:"-"`
 	APISecurity      APISecResult
 	RiskStyle        string
 	RiskMsg          string
