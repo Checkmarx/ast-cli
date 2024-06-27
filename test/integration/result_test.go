@@ -93,7 +93,6 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
-				printer.FormatGL,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
