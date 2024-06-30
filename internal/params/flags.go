@@ -186,6 +186,13 @@ const (
 	ChatSastScanResultsFile = "scan-results-file"
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
+
+	// SCS Engines Enabled
+	SCSEnginesFlag = "scs-engines"
+
+	// SCS (Github)
+	SCSRepoTokenFlag = "scs-repo-token"
+	SCSRepoURLFlag   = "scs-repo-url"
 )
 
 // Parameter values
@@ -238,6 +245,8 @@ const (
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
+	ScsType              = "scs"
+	MicroEnginesType     = "microengines" // the scs scan type for scans API
 	Success              = "success"
 )
 

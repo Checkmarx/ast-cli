@@ -26,6 +26,7 @@ const (
 	blankSpace                    = " "
 	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
 	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
+	dummyToken                    = "dummyToken"
 	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
 	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
@@ -45,6 +46,8 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
+	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -266,6 +269,11 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
+
+	baseArgs = append(baseArgs, flag(commonParams.ScanTypes), "scs",
+		flag(commonParams.SCSRepoURLFlag), "dummyURL",
+		flag(commonParams.SCSRepoTokenFlag), "dummyToken")
+	execCmdNilAssertion(t, baseArgs...)
 }
 
 func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
@@ -764,6 +772,80 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		dummyRepo,
+		"-b",
+		"dummy_branch",
+		"--scan-types",
+		"scs",
+		"--scs-engines",
+		"scorecard",
+	)
+	assert.Assert(t, err.Error() == SCSScoreCardError)
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepo,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "true",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
 }
 
 func Test_isDirFiltered(t *testing.T) {

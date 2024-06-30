@@ -16,7 +16,9 @@ type ResultSummary struct {
 	SastIssues       int
 	KicsIssues       int
 	ScaIssues        int
-	ContainersIssues *int `json:"ContainersIssues,omitempty"`
+	ContainersIssues *int        `json:"ContainersIssues,omitempty"`
+	ScsIssues        int         `json:"-"`
+	SCSOverview      SCSOverview `json:"-"`
 	APISecurity      APISecResult
 	RiskStyle        string
 	RiskMsg          string
@@ -44,10 +46,27 @@ type APISecResult struct {
 	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
 	StatusCode       int
 }
+
 type riskDistribution struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
 }
+
+type SCSOverview struct {
+	Status               ScanStatus             `json:"status"`
+	TotalRisksCount      int                    `json:"totalRisks,omitempty"`
+	RiskSummary          map[string]int         `json:"riskSummary,omitempty"`
+	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews,omitempty"`
+}
+
+type MicroEngineOverview struct {
+	Name        string         `json:"name"`
+	FullName    string         `json:"fullName"`
+	Status      ScanStatus     `json:"status"`
+	TotalRisks  int            `json:"totalRisks"`
+	RiskSummary map[string]int `json:"riskSummary"`
+}
+
 type EngineResultSummary struct {
 	High       int
 	Medium     int
@@ -127,6 +146,11 @@ func (r *ResultSummary) ContainersEnabled() bool {
 func (r *ResultSummary) ContainersIssuesValue() int {
 	return *r.ContainersIssues
 }
+
+func (r *ResultSummary) HasSCS() bool {
+	return r.HasEngine(params.ScsType)
+}
+
 func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
 	for _, risk := range r.APISecurity.RiskDistribution {
 		if strings.EqualFold(risk.Origin, origin) {
