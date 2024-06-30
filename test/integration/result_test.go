@@ -496,6 +496,7 @@ func TestResultsCounterGlSCAOutput(t *testing.T) {
 	assert.NilError(t, err, "error unmarshalling file")
 
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+}
 
 func TestResultsGeneratingJsonReportWithSeverityHighAndWithoutNotExploitable(t *testing.T) {
 	scanID, _ := getRootScan(t)
