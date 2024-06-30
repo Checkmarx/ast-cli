@@ -620,7 +620,7 @@ func TestSBOMReportXMLWithProxy(t *testing.T) {
 func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
-	removeFile(t, "cx_result.gl-sast-report", "json")
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
 func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
@@ -690,30 +690,17 @@ func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_Nil
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "CONTAINERS_ONLY", "--report-format", "summaryConsole")
 }
-
-func TestRunGetResultsByScanIdGLFormat_NoVulnerabilities_Success(t *testing.T) {
-	// Execute the command and perform nil assertion
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sast")
-
+func TestRunGetResultsByScanIdGLSastAndAScaFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast,gl-sca")
 	// Run test for gl-sast report type
-	// Check if the file exists and vulnerabilities is empty, then delete the file
-	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err == nil {
-		t.Logf("File exists: %s.%s", fileName, printer.FormatGL)
-		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL))
-		if err != nil {
-			t.Logf("Failed to read file: %v", err)
-		}
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSca))
+}
 
-		var results wrappers.GlSastResultsCollection
-		if err := json.Unmarshal(resultsData, &results); err != nil {
-			t.Logf("Failed to unmarshal JSON: %v", err)
-		}
-		assert.Equal(t, len(results.Vulnerabilities), 0, "No vulnerabilities should be found")
-		if err := os.Remove(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGL)); err != nil {
-			t.Logf("Failed to delete file: %v", err)
-		}
-		t.Log("File deleted successfully.")
-	}
+func TestRunGetResultsByScanIdGLScaFormat(t *testing.T) {
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sca")
+	// Run test for gl-sca report type
+	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSca))
 }
 
 func Test_addPackageInformation(t *testing.T) {
@@ -749,6 +736,56 @@ func Test_addPackageInformation(t *testing.T) {
 	expectedFixLink := "https://devhub.checkmarx.com/cve-details/CVE-2021-23-424"
 	actualFixLink := resultsModel.Results[0].ScanResultData.ScaPackageCollection.FixLink
 	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
+}
+
+func TestRunGetResultsByScanIdGLSastFormat_NoVulnerabilities_Success(t *testing.T) {
+	// Execute the command and perform nil assertion
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sast")
+
+	// Run test for gl-sast report type
+	// Check if the file exists and vulnerabilities is empty, then delete the file
+	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSast)); err == nil {
+		t.Logf("File exists: %s.%s", fileName, printer.FormatGLSast)
+		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSast))
+		if err != nil {
+			t.Logf("Failed to read file: %v", err)
+		}
+
+		var results wrappers.GlSastResultsCollection
+		if err := json.Unmarshal(resultsData, &results); err != nil {
+			t.Logf("Failed to unmarshal JSON: %v", err)
+		}
+		assert.Equal(t, len(results.Vulnerabilities), 0, "No vulnerabilities should be found")
+		if err := os.Remove(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSast)); err != nil {
+			t.Logf("Failed to delete file: %v", err)
+		}
+		t.Log("File deleted successfully.")
+	}
+}
+
+func TestRunGetResultsByScanIdGLScaFormat_NoVulnerabilities_Success(t *testing.T) {
+	// Execute the command and perform nil assertion
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sca")
+
+	// Run test for gl-sca report type
+	// Check if the file exists and vulnerabilities is empty, then delete the file
+	if _, err := os.Stat(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSca)); err == nil {
+		t.Logf("File exists: %s.%s", fileName, printer.FormatGLSca)
+		resultsData, err := os.ReadFile(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSca))
+		if err != nil {
+			t.Logf("Failed to read file: %v", err)
+		}
+
+		var results wrappers.GlScaResultsCollection
+		if err := json.Unmarshal(resultsData, &results); err != nil {
+			t.Logf("Failed to unmarshal JSON: %v", err)
+		}
+		assert.Equal(t, len(results.Vulnerabilities), 0, "No vulnerabilities should be found")
+		if err := os.Remove(fmt.Sprintf("%s.%s-report.json", fileName, printer.FormatGLSca)); err != nil {
+			t.Logf("Failed to delete file: %v", err)
+		}
+		t.Log("File deleted successfully.")
+	}
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
