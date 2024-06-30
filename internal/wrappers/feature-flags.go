@@ -106,6 +106,10 @@ func UpdateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel
 	featureFlagsCache[flagName] = flag.Status
 }
 
+func ClearCache() {
+	featureFlagsCache = map[string]bool{}
+}
+
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 	for _, flag := range allFlags {
 		featureFlags[flag.Name] = flag.Status

@@ -634,7 +634,7 @@ func TestAddScaScan(t *testing.T) {
 	_ = cmdCommand.Flags().Set(commonParams.ScaPrivatePackageVersionFlag, "1.1.1")
 	_ = cmdCommand.Flags().Set(commonParams.ExploitablePathFlag, "true")
 
-	result := addScaScan(cmdCommand, resubmitConfig)
+	result := addScaScan(cmdCommand, resubmitConfig, false)
 	scaConfig := wrappers.ScaConfig{
 		Filter:                "test",
 		ExploitablePath:       "true",
