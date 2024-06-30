@@ -14,6 +14,9 @@ type FeatureFlagsMockWrapper struct {
 
 func (f FeatureFlagsMockWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, error) {
 	fmt.Println("Called GetAll in FeatureFlagsMockWrapper")
+	if Flags == nil {
+		return &wrappers.FeatureFlagsResponseModel{Flag}, nil
+	}
 	return &Flags, nil
 }
 
