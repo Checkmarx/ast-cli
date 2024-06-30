@@ -3,6 +3,7 @@ package util
 import (
 	"archive/zip"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -142,6 +143,31 @@ func ReadFileAsString(path string) (string, error) {
 	}
 
 	return string(content), nil
+}
+
+// IsDirOrSymLinkToDir Check if provided DirEntry is a directory or symbolic link to a directory
+func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
+	if fileInfo.IsDir() {
+		return true
+	}
+
+	if fileInfo.Mode()&os.ModeSymlink != 0 {
+		symlinkPath := filepath.Join(parentDir, fileInfo.Name())
+		realPath, err := os.Readlink(symlinkPath)
+		if err != nil {
+			fmt.Println("Error reading symlink:", err)
+			return false
+		}
+
+		targetInfo, err := os.Stat(realPath)
+		if err != nil {
+			fmt.Println("Error getting target info:", err)
+			return false
+		}
+		return targetInfo.IsDir()
+	}
+
+	return false
 }
 
 func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix ...string) (string, error) {
