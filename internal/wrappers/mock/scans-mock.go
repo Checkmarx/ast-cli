@@ -158,6 +158,9 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 	var status wrappers.ScanStatus = "Completed"
 	m.Running = !m.Running
 	engines := []string{params.ScaType, params.SastType, params.KicsType}
+	if Flag.Name == wrappers.ContainerEngineCLIEnabled && Flag.Status {
+		engines = append(engines, params.ContainersType)
+	}
 	if HasScs {
 		engines = append(engines, params.ScsType)
 	}
