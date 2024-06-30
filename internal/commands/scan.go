@@ -1107,16 +1107,23 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 }
 
 func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
-	files, err := ioutil.ReadDir(parentDir)
+	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
 	}
-	for _, file := range files {
-		if file.IsDir() {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, file)
-		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, file)
+
+	for _, entry := range fileEntries {
+		fileInfo, err := entry.Info()
+		if err != nil {
+			return err
 		}
+
+		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+		} else {
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+		}
+
 		if err != nil {
 			return err
 		}
