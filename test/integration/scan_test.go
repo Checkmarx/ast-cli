@@ -354,7 +354,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
@@ -373,7 +373,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
@@ -393,7 +393,7 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.DebugFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
@@ -412,7 +412,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
@@ -431,7 +431,7 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		err, _ := executeCommand(t, testArgs...)
 		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 	}

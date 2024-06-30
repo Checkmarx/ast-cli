@@ -980,9 +980,10 @@ func runGetCodeBashingCommand(
 		return nil
 	}
 }
-func setIsContainersEnabled(agent string) {
+func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	agentSupported := !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
-	wrappers.IsContainersEnabled = wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && agentSupported
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
+	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
@@ -1006,7 +1007,7 @@ func CreateScanReport(
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-	setIsContainersEnabled(agent)
+	setIsContainersEnabled(agent, featureFlagsWrapper)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
 		return err
@@ -1585,14 +1586,14 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return errors.Errorf("PDF generating failed - Current status: %s", pollingResp.Status)
 	}
 
-	minioEnabled := wrappers.FeatureFlags[wrappers.MinioEnabled]
+	minioEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.MinioEnabled)
 	infoPathType := ""
-	if minioEnabled {
+	if minioEnabled.Status {
 		infoPathType = pdfReportID.ReportID
 	} else {
 		infoPathType = pollingResp.URL
 	}
-	err = pdfWrapper.DownloadPdfReport(infoPathType, summaryRpt)
+	err = pdfWrapper.DownloadPdfReport(infoPathType, summaryRpt, minioEnabled.Status)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}

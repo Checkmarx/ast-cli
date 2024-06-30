@@ -57,8 +57,8 @@ var FeatureFlagsBaseMap = []CommandFlags{
 	},
 }
 
-var FeatureFlags = map[string]bool{}
-var FeatureFlagsCache = map[string]bool{}
+var featureFlags = map[string]bool{}
+var featureFlagsCache = map[string]bool{}
 
 func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 	allFlags, err := featureFlagsWrapper.GetAll()
@@ -72,14 +72,14 @@ func HandleFeatureFlags(featureFlagsWrapper FeatureFlagsWrapper) error {
 }
 
 func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName string) (*FeatureFlagResponseModel, error) {
-	if value, exists := FeatureFlagsCache[flagName]; exists {
+	if value, exists := featureFlagsCache[flagName]; exists {
 		return &FeatureFlagResponseModel{Name: flagName, Status: value}, nil
 	}
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
 		// Take the value from FeatureFlags
-		return &FeatureFlagResponseModel{Name: flagName, Status: FeatureFlags[flagName]}, nil
+		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)
@@ -103,20 +103,20 @@ func getSpecificFlagWithRetry(wrapper FeatureFlagsWrapper, flagName string, retr
 }
 
 func UpdateSpecificFeatureFlagMap(flagName string, flag FeatureFlagResponseModel) {
-	FeatureFlagsCache[flagName] = flag.Status
+	featureFlagsCache[flagName] = flag.Status
 }
 
 func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 	for _, flag := range allFlags {
-		FeatureFlags[flag.Name] = flag.Status
+		featureFlags[flag.Name] = flag.Status
 	}
 
 	// Update FeatureFlags map with default values in case it does not exist in all flags response
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
-			_, ok := FeatureFlags[flag.Name]
+			_, ok := featureFlags[flag.Name]
 			if !ok {
-				FeatureFlags[flag.Name] = flag.Default
+				featureFlags[flag.Name] = flag.Default
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func LoadFeatureFlagsDefaultValues() {
 
 	for _, cmdFlag := range FeatureFlagsBaseMap {
 		for _, flag := range cmdFlag.FeatureFlags {
-			FeatureFlags[flag.Name] = flag.Default
+			featureFlags[flag.Name] = flag.Default
 		}
 	}
 	DefaultFFLoad = true

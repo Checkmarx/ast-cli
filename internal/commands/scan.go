@@ -557,7 +557,8 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	if wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
+	if containerEngineCLIEnabled.Status {
 		createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 		createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security,container-security)")
 	} else {
@@ -763,6 +764,7 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 	}
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
 	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
@@ -772,7 +774,7 @@ func setupScanTypeProjectAndConfig(
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd, resubmitConfig)
+	var scaConfig = addScaScan(cmd, resubmitConfig, containerEngineCLIEnabled.Status)
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -780,7 +782,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan()
+	var containersConfig = addContainersScan(containerEngineCLIEnabled.Status)
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -923,7 +925,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, containerEngineCLIEnabled bool) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
@@ -931,7 +933,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		scaConfig.EnableContainersScan = !(wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] && userAllowedEngines[commonParams.ContainersType])
+		scaConfig.EnableContainersScan = !(containerEngineCLIEnabled && userAllowedEngines[commonParams.ContainersType])
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
@@ -950,8 +952,8 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
-func addContainersScan() map[string]interface{} {
-	if !scanTypeEnabled(commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled] {
+func addContainersScan(containerEngineCLIEnabled bool) map[string]interface{} {
+	if !scanTypeEnabled(commonParams.ContainersType) && containerEngineCLIEnabled {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
@@ -1335,7 +1337,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
-	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && wrappers.FeatureFlags[wrappers.ContainerEngineCLIEnabled]
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
+
+	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && containerEngineCLIEnabled.Status
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
