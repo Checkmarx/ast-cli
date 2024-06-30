@@ -839,7 +839,11 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+	} else {
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
+	}
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
