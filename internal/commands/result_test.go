@@ -800,7 +800,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS       -        -      -      -       -      |"
+	scsSummary := "| SCS             -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := "Secret Detection"
@@ -830,16 +830,16 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	TotalResults := "Total Results: 17"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL    10        4      3      0   Completed  |"
+	TotalSummary := "| TOTAL          10        4      3      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
-	scsSummary := "| SCS       5        3      2      0   Partial    |"
+	scsSummary := "| SCS             5        3      2      0   Partial    |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := "| Scorecard             0        0      0      0   Failed     |"
+	scorecardSummary := " | Scorecard             0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 
@@ -858,7 +858,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS       5        3      2      0   Completed  |"
+	scsSummary := "| SCS             5        3      2      0   Completed  |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
