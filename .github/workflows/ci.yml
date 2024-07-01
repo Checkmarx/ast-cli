@@ -131,7 +131,7 @@ jobs:
 
   checkDockerImage:
     runs-on: ubuntu-latest
-    name: check Docker Image
+    name: scan Docker Image with Trivy
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -157,11 +157,5 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          # severity: 'CRITICAL,HIGH'
 
-#      - name: Install Trivy
-#        run: |
-#          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
-#
-#      - name: Scan Docker image with Trivy
-#        run: trivy image ast-cli:${{ github.sha }}
+
