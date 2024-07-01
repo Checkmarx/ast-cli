@@ -29,7 +29,6 @@ func TestMain(m *testing.M) {
 	exitVal := m.Run()
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
 	log.Println("Commands tests done")
-	clearFlags()
 	os.Exit(exitVal)
 }
 

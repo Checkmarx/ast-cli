@@ -837,8 +837,9 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println(tableLine)
 	fmt.Printf(TableTitleFormat, "   ", "High", "Medium", "Low", "Info", "Status")
 
