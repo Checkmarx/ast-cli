@@ -149,19 +149,19 @@ jobs:
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
 
-      #        - name: Run Trivy vulnerability scanner
-      #          uses: aquasecurity/trivy-action@0.20.0
-      #          with:
-      #            image-ref: 'docker.io/my-organization/my-app:${{ github.sha }}'
-      #            format: 'table'
-      #            exit-code: '1'
-      #            ignore-unfixed: true
-      #            vuln-type: 'os,library'
-      #            severity: 'CRITICAL,HIGH'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ast-cli:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
-
-      - name: Scan Docker image with Trivy
-        run: trivy image ast-cli:${{ github.sha }}
+#      - name: Install Trivy
+#        run: |
+#          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
+#
+#      - name: Scan Docker image with Trivy
+#        run: trivy image ast-cli:${{ github.sha }}
