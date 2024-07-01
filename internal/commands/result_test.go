@@ -206,6 +206,7 @@ func TestRunGetResultsByScanIdSarifFormatWithContainers(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file
 	removeFileBySuffix(t, printer.FormatSarif)
+	clearFlags()
 }
 
 func TestParseSarifEmptyResultSast(t *testing.T) {
@@ -227,6 +228,7 @@ func TestRunGetResultsByScanIdSonarFormatWithContainers(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
 	// Remove generated sonar file
 	removeFile(t, fileName+"_"+printer.FormatSonar, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
@@ -242,6 +244,7 @@ func TestRunGetResultsByScanIdJsonFormatWithContainers(t *testing.T) {
 
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdJsonFormatWithSastRedundancy(t *testing.T) {
@@ -264,6 +267,7 @@ func TestRunGetResultsByScanIdSummaryJsonFormatWithContainers(t *testing.T) {
 
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
@@ -279,6 +283,7 @@ func TestRunGetResultsByScanIdSummaryHtmlFormatWithContainers(t *testing.T) {
 
 	// Remove generated html file
 	removeFileBySuffix(t, printer.FormatHTML)
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat(t *testing.T) {
@@ -294,6 +299,7 @@ func TestRunGetResultsByScanIdSummaryMarkdownFormatWithContainers(t *testing.T) 
 func TestRunGetResultsByScanIdSummaryConsoleFormatWithContainers(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
@@ -301,6 +307,7 @@ func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
 	removeFileBySuffix(t, "md")
+	clearFlags()
 }
 
 func removeFileBySuffix(t *testing.T, suffix string) {
@@ -327,6 +334,7 @@ func TestRunGetResultsByScanIdPDFFormatWithContainers(t *testing.T) {
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
 	// Remove generated pdf file
 	removeFileBySuffix(t, printer.FormatPDF)
+	clearFlags()
 }
 
 func TestRunGetResultsByScanIdWrongFormat(t *testing.T) {
@@ -490,6 +498,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 		"--scan-id", "MOCK",
 		"--report-pdf-email", "ab@cd.pt,invalid")
 	assert.Equal(t, err.Error(), "report not sent, invalid email address: invalid", "Wrong expected error message")
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
@@ -500,6 +509,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 		"--scan-id", "MOCK",
 		"--report-pdf-options", "invalid")
 	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T) {
@@ -510,6 +520,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T
 		"--scan-id", "MOCK",
 		"--report-pdf-options", "scan-information")
 	assert.Equal(t, err.Error(), "report option \"scan-information\" unavailable", "Wrong expected error message")
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
@@ -522,6 +533,7 @@ func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 		"--report-pdf-email", "ab@cd.pt,test@test.pt",
 		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
 	assert.NilError(t, err)
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *testing.T) {
@@ -534,6 +546,7 @@ func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *te
 		"--report-pdf-email", "ab@cd.pt,test@test.pt",
 		"--report-pdf-options", "Iac-Security,Sast,Sca,scansummary,scanresults")
 	assert.NilError(t, err)
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T) {
@@ -546,6 +559,7 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T
 		"--report-pdf-email", "ab@cd.pt,test@test.pt",
 		"--report-pdf-options", "Iac-Security,Sast,Sca,scan-information")
 	assert.Error(t, err, "report option \"scan-information\" unavailable")
+	clearFlags()
 }
 
 func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
@@ -564,6 +578,7 @@ func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 	assert.NilError(t, err)
 	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
+	clearFlags()
 }
 
 func TestSBOMReportInvalidSBOMOption(t *testing.T) {
@@ -598,6 +613,7 @@ func TestSBOMReportJsonWithContainers(t *testing.T) {
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
 	// Remove generated json file
 	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
+	clearFlags()
 }
 
 func TestSBOMReportXMLWithContainers(t *testing.T) {
@@ -607,6 +623,7 @@ func TestSBOMReportXMLWithContainers(t *testing.T) {
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
 	// Remove generated json file
 	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
+	clearFlags()
 }
 
 func TestSBOMReportXMLWithProxy(t *testing.T) {
@@ -628,6 +645,7 @@ func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
 	assertContainersPresent(t, true)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
@@ -635,6 +653,7 @@ func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) 
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
@@ -642,6 +661,7 @@ func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testi
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing.T) {
@@ -650,6 +670,7 @@ func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.T) {
@@ -658,6 +679,7 @@ func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *testing.T) {
@@ -666,6 +688,7 @@ func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *te
 	assertContainersPresent(t, false)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
+	clearFlags()
 }
 
 func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
@@ -689,6 +712,7 @@ func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_NilAssertion(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "CONTAINERS_ONLY", "--report-format", "summaryConsole")
+	clearFlags()
 }
 func TestRunGetResultsByScanIdGLSastAndAScaFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast,gl-sca")

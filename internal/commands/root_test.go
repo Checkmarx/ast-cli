@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
 
@@ -189,6 +190,11 @@ func execCmdNotNilAssertion(t *testing.T, args ...string) error {
 func assertError(t *testing.T, err error, expectedMessage string) {
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
+}
+
+func clearFlags() {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{}
 }
 
 func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t *testing.T) {

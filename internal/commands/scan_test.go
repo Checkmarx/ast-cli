@@ -134,6 +134,7 @@ func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuc
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	clearFlags()
 }
 
 func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
@@ -144,6 +145,7 @@ func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSucces
 func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
+	clearFlags()
 }
 
 func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
@@ -151,12 +153,14 @@ func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_Scan
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	clearFlags()
 }
 
 func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "CONTAINER_ENGINE_CLI_ENABLED", Status: true}}
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
 	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
+	clearFlags()
 }
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
@@ -164,6 +168,7 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	clearFlags()
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
