@@ -40,7 +40,8 @@ const (
 	lowLabel                  = "low"
 	infoLabel                 = "info"
 	sonarTypeLabel            = "_sonar"
-	glSastTypeLobel           = ".gl-sast-report"
+	glSastTypeLabel           = ".gl-sast-report"
+	glScaTypeLabel            = ".gl-sca-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
 	lowSonar                  = "MINOR"
@@ -107,7 +108,8 @@ var summaryFormats = []string{
 	printer.FormatPDF,
 	printer.FormatSummaryMarkdown,
 	printer.FormatSbom,
-	printer.FormatGL,
+	printer.FormatGLSast,
+	printer.FormatGLSca,
 }
 
 var filterResultsListFlagUsage = fmt.Sprintf(
@@ -229,7 +231,8 @@ func resultShowSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
-		printer.FormatGL,
+		printer.FormatGLSast,
+		printer.FormatGLSca,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
@@ -1149,10 +1152,15 @@ func createReport(format,
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatGL) {
-		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLobel), targetPath, printer.FormatJSON)
+	if printer.IsFormat(format, printer.FormatGLSast) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
 		return exportGlSastResults(jsonRpt, results, summary)
 	}
+	if printer.IsFormat(format, printer.FormatGLSca) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glScaTypeLabel), targetPath, printer.FormatJSON)
+		return exportGlScaResults(jsonRpt, results, summary)
+	}
+
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
 		return writeConsoleSummary(summary)
 	}
@@ -1307,12 +1315,34 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	glSast.Vulnerabilities = []wrappers.GlVulnerabilities{}
 	err := addScanToGlSastReport(summary, glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to add scan to gl sast report", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to add scan to gl-sast report", failedListingResults)
 	}
-	convertCxResultToGlVulnerability(results, glSast, summary.BaseURI)
+	convertCxResultToGlSastVulnerability(results, glSast, summary.BaseURI)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
-		return errors.Wrapf(err, "%s: failed to serialize gl sast report ", failedListingResults)
+		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
+	}
+	f, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
+	}
+	defer f.Close()
+	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	return nil
+}
+
+func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
+	log.Println("Creating Gl-sca Report: ", targetFile)
+	glScaResult := &wrappers.GlScaResultsCollection{}
+	err := addScanToGlScaReport(summary, glScaResult)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to denerate GL-Sca report ", failedListingResults)
+	}
+	convertCxResultToGlScaVulnerability(results, glScaResult)
+	convertCxResultToGlScaFiles(results, glScaResult)
+	resultsJSON, err := json.Marshal(glScaResult)
+	if err != nil {
+		return errors.Wrapf(err, "%s: failed to serialize GL-Sca report ", failedListingResults)
 	}
 	f, err := os.Create(targetFile)
 	if err != nil {
@@ -1320,8 +1350,36 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	defer f.Close()
+
 	return nil
 }
+
+func addScanToGlScaReport(summary *wrappers.ResultSummary, glScaResult *wrappers.GlScaResultsCollection) error {
+	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	glScaResult.Schema = wrappers.ScaSchema
+	glScaResult.Version = wrappers.SchemaVersion
+	glScaResult.Scan.Analyzer.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Analyzer.ID = wrappers.ScannerID
+	glScaResult.Scan.Scanner.ID = wrappers.ScannerID
+	glScaResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Scanner.VendorGlSCA.VendorGlname = wrappers.AnalyzerScaID
+	glScaResult.Scan.Status = commonParams.Success
+	glScaResult.Scan.Type = wrappers.ScannerType
+	glScaResult.Scan.StartTime = createdAt.Format(glTimeFormat)
+	glScaResult.Scan.EndTime = createdAt.Format(glTimeFormat)
+	glScaResult.Scan.Scanner.Name = wrappers.AnalyzerScaID
+	glScaResult.Scan.Scanner.VersionGlSca = commonParams.Version
+	glScaResult.Scan.Analyzer.VersionGlSca = commonParams.Version
+
+	return nil
+}
+
 func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlSastResultsCollection) error {
 	createdAt, err := time.Parse(summaryCreatedAtLayout, summary.CreatedAt)
 	if err != nil {
@@ -1329,8 +1387,8 @@ func addScanToGlSastReport(summary *wrappers.ResultSummary, glSast *wrappers.GlS
 	}
 
 	glSast.Scan = wrappers.ScanGlReport{}
-	glSast.Schema = "https://gitlab.com/gitlab-org/gitlab/-/raw/master/lib/gitlab/ci/parsers/security/validators/schemas/15.0.0/sast-report-format.json"
-	glSast.Version = "15.0.0"
+	glSast.Schema = wrappers.SastSchema
+	glSast.Version = wrappers.SastSchemaVersion
 	glSast.Scan.Analyzer.URL = wrappers.AnalyzerURL
 	glSast.Scan.Analyzer.Name = wrappers.VendorName
 	glSast.Scan.Analyzer.Vendor.Name = wrappers.VendorName
@@ -1630,7 +1688,7 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI)
@@ -1638,6 +1696,21 @@ func convertCxResultToGlVulnerability(results *wrappers.ScanResultsCollection, g
 	}
 }
 
+func convertCxResultToGlScaVulnerability(results *wrappers.ScanResultsCollection, glScaResult *wrappers.GlScaResultsCollection) {
+	for _, result := range results.Results {
+		if strings.TrimSpace(result.Type) == commonParams.ScaType {
+			glScaResult = parseGlscaVulnerability(result, glScaResult)
+		}
+	}
+}
+
+func convertCxResultToGlScaFiles(results *wrappers.ScanResultsCollection, glScaResult *wrappers.GlScaResultsCollection) {
+	for _, result := range results.Results {
+		if strings.TrimSpace(result.Type) == commonParams.ScaType {
+			glScaResult = parseGlScaFiles(result, glScaResult)
+		}
+	}
+}
 func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) *wrappers.GlSastResultsCollection {
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
@@ -1691,6 +1764,97 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 		},
 	})
 	return glSast
+}
+func parseGlscaVulnerability(result *wrappers.ScanResult, glDependencyResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
+	if result.ScanResultData.ScaPackageCollection != nil {
+		glDependencyResult.Vulnerabilities = append(glDependencyResult.Vulnerabilities, wrappers.GlScaDepVulnerabilities{
+			ID:          result.ID,
+			Name:        result.VulnerabilityDetails.CveName,
+			Description: result.Description,
+			Severity:    cases.Title(language.English).String(result.Severity),
+			Solution:    result.ScanResultData.RecommendedVersion,
+			Identifiers: collectScaPackageData(result),
+			Links:       collectScaPackageLinks(result),
+			TrackingDep: wrappers.TrackingDep{
+				Items: collectScaPackageItemsDep(result),
+			},
+			Flags: make([]string, 0),
+			LocationDep: wrappers.GlScaDepVulnerabilityLocation{
+				File: parseGlDependencyLocation(result),
+				Dependency: wrappers.ScaDependencyLocation{
+					Package:                      wrappers.PackageName{Name: result.ScanResultData.PackageIdentifier},
+					ScaDependencyLocationVersion: "",
+					Direct:                       result.ScanResultData.ScaPackageCollection.IsDirectDependency,
+					ScaDependencyPath:            result.ScanResultData.Line,
+				},
+			},
+		})
+	}
+	return glDependencyResult
+}
+func parseGlDependencyLocation(result *wrappers.ScanResult) string {
+	var location string
+	if result != nil && result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
+		location = *result.ScanResultData.ScaPackageCollection.Locations[0]
+	} else {
+		location = ""
+	}
+	return (location)
+}
+func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
+	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
+		glScaResult.ScaDependencyFiles = append(glScaResult.ScaDependencyFiles, wrappers.ScaDependencyFile{
+			Path:           *result.ScanResultData.ScaPackageCollection.Locations[0],
+			PackageManager: result.ScanResultData.ScaPackageCollection.ID,
+			Dependencies:   collectScaFileLocations(result),
+		})
+	}
+	return glScaResult
+}
+func collectScaFileLocations(result *wrappers.ScanResult) []wrappers.ScaDependencyLocation {
+	allScaIdentifierLocations := []wrappers.ScaDependencyLocation{}
+	for _, packageInfo := range result.ScanResultData.PackageData {
+		allScaIdentifierLocations = append(allScaIdentifierLocations, wrappers.ScaDependencyLocation{
+			Package: wrappers.PackageName{
+				Name: packageInfo.Type,
+			},
+			ScaDependencyLocationVersion: packageInfo.URL,
+			Direct:                       true,
+			ScaDependencyPath:            result.ScanResultData.Line,
+		})
+	}
+	return allScaIdentifierLocations
+}
+func collectScaPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
+	allScaPackageItemDep := []wrappers.ItemDep{}
+	allScaPackageItemDep = append(allScaPackageItemDep, wrappers.ItemDep{
+		Signature: []wrappers.SignatureDep{{Algorithm: "SCA-Algorithm ", Value: "NA"}},
+		File:      result.VulnerabilityDetails.CveName,
+		EndLine:   0,
+		StartLine: 0,
+	})
+	return allScaPackageItemDep
+}
+func collectScaPackageLinks(result *wrappers.ScanResult) []wrappers.LinkDep {
+	allScaPackageLinks := []wrappers.LinkDep{}
+	for _, packageInfo := range result.ScanResultData.PackageData {
+		allScaPackageLinks = append(allScaPackageLinks, wrappers.LinkDep{
+			Name: packageInfo.Type,
+			URL:  packageInfo.URL,
+		})
+	}
+	return allScaPackageLinks
+}
+func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep {
+	allIdentifierDep := []wrappers.IdentifierDep{}
+	for _, packageInfo := range result.ScanResultData.PackageData {
+		allIdentifierDep = append(allIdentifierDep, wrappers.IdentifierDep{
+			Type:  packageInfo.Type,
+			Value: packageInfo.URL,
+			Name:  packageInfo.URL,
+		})
+	}
+	return allIdentifierDep
 }
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
