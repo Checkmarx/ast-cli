@@ -929,7 +929,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		scaConfig.EnableContainersScan = !hasContainerLicense
+		if hasContainerLicense {
+			scaConfig.EnableContainersScan = false
+		}
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
