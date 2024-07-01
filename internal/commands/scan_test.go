@@ -161,6 +161,7 @@ func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.Flags = wrappers.FeatureFlagsResponseModel{Flags: []wrappers.FeatureFlagResponseModel{{Name: wrappers.ContainerEngineCLIEnabled, Status: true}}}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
