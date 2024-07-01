@@ -775,7 +775,7 @@ func setupScanTypeProjectAndConfig(
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd, resubmitConfig, containerEngineCLIEnabled.Status)
+	var scaConfig = addScaScan(cmd, resubmitConfig)
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -926,7 +926,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, containerEngineCLIEnabled bool) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
