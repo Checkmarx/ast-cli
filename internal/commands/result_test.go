@@ -634,6 +634,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.HasScs = false
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -659,6 +660,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	mock.HasScs = true
 	mock.ScsScanPartial = true
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -692,6 +694,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -709,6 +712,32 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	scsSummary := "| SCS"
+	assert.Equal(t, !strings.Contains(stdoutString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := "Secret Detection"
+	assert.Equal(t, !strings.Contains(stdoutString, secretDetectionSummary), true,
+		"Expected Secret Detection summary to be missing:"+secretDetectionSummary)
+	scorecardSummary := "Scorecard"
+	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
+		"Expected Scorecard summary to be missing:"+scorecardSummary)
 
 	mock.SetScsMockVarsToDefault()
 }
