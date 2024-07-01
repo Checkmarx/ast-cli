@@ -634,7 +634,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.HasScs = false
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.SCSEngineCLIEnabled, Status: true}}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -660,7 +660,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	mock.HasScs = true
 	mock.ScsScanPartial = true
 	mock.ScorecardScanned = true
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.SCSEngineCLIEnabled, Status: true}}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -694,7 +694,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.SCSEngineCLIEnabled, Status: true}}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -720,7 +720,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: wrappers.SCSEngineCLIEnabled, Status: false}}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")

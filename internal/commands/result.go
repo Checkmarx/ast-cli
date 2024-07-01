@@ -957,8 +957,9 @@ func runGetCodeBashingCommand(
 	}
 }
 
-func setIsSCSEnabled() {
-	wrappers.IsSCSEnabled = wrappers.FeatureFlags[wrappers.SCSEngineCLIEnabled]
+func setIsSCSEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SCSEngineCLIEnabled)
+	wrappers.IsSCSEnabled = containerEngineCLIEnabled.Status
 }
 
 func CreateScanReport(
@@ -982,7 +983,7 @@ func CreateScanReport(
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-	setIsSCSEnabled()
+	setIsSCSEnabled(featureFlagsWrapper)
 
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
