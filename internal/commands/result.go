@@ -799,7 +799,6 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
 		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	case scanPartialNumber:
 		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
@@ -846,10 +845,10 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
+	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
 	if wrappers.IsContainersEnabled {
 		printTableRow("CONTAINERS", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	}
-	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
 
 	fmt.Println(tableLine)
 	fmt.Printf(tableResultsFormat,

@@ -44,18 +44,15 @@ func NewJwtWrapper() JWTWrapper {
 // GetAllowedEngines will return a map with user allowed engines
 func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
-	containersFlag, _ := GetSpecificFeatureFlag(featureFlagsWrapper, ContainerEngineCLIEnabled)
 	if flagResponse.Status {
 		jwtStruct, err := getJwtStruct()
 		if err != nil {
 			return nil, err
 		}
-		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, containersFlag.Status)
+		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
 		return allowedEngines, nil
 	}
-	if !containersFlag.Status {
-		delete(defaultEngines, commonParams.ContainersType)
-	}
+
 	return defaultEngines, nil
 }
 
@@ -85,7 +82,7 @@ func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlag
 	return false, nil
 }
 
-func prepareEngines(engines []string, containersFlagStatus bool) map[string]bool {
+func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
@@ -93,9 +90,6 @@ func prepareEngines(engines []string, containersFlagStatus bool) map[string]bool
 
 		// Current limitation, CxOne is including non-engines in the JWT
 		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
-			if strings.EqualFold(engine, commonParams.ContainersType) && !containersFlagStatus {
-				continue
-			}
 			m[strings.ToLower(engine)] = true
 		}
 	}
