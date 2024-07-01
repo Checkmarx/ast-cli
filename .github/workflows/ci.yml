@@ -164,4 +164,4 @@ jobs:
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
 
       - name: Scan Docker image with Trivy
-        run: trivy image my-image:latest
+        run: trivy image ast-cli:${{ github.sha }}
