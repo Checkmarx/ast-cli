@@ -128,7 +128,6 @@ var (
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
-	userAllowedEngines  = map[string]bool{}
 )
 
 func NewScanCommand(
@@ -181,7 +180,6 @@ func NewScanCommand(
 		featureFlagsWrapper,
 	)
 	containerResolver = containerResolverWrapper
-	userAllowedEngines, _ = jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
@@ -693,8 +691,9 @@ func setupScanTypeProjectAndConfig(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-
+	jwtWrapper wrappers.JWTWrapper,
 ) error {
+	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -771,7 +770,7 @@ func setupScanTypeProjectAndConfig(
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd, resubmitConfig)
+	var scaConfig = addScaScan(cmd, resubmitConfig, userAllowedEngines[commonParams.ContainersType])
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -922,7 +921,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContainerLicense bool) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
@@ -930,7 +929,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		scaConfig.EnableContainersScan = !userAllowedEngines[commonParams.ContainersType]
+		scaConfig.EnableContainersScan = !hasContainerLicense
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
@@ -1593,6 +1592,7 @@ func runCreateScanCommand(
 			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
+			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1693,11 +1693,12 @@ func createScanModel(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper, jwtWrapper)
 	if err != nil {
 		return nil, "", err
 	}
