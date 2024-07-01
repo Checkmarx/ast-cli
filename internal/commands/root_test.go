@@ -195,6 +195,7 @@ func assertError(t *testing.T, err error, expectedMessage string) {
 func clearFlags() {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{}
 	mock.Flag = wrappers.FeatureFlagResponseModel{}
+	wrappers.ClearCache()
 }
 
 func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t *testing.T) {
