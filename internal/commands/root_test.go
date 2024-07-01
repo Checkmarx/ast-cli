@@ -21,6 +21,7 @@ import (
 const (
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
+	githubDummyRepo       = "https://github.com/dummyuser/dummy_project.git"
 )
 
 func TestMain(m *testing.M) {
@@ -117,7 +118,7 @@ func TestRootVersion(t *testing.T) {
 
 func TestFilterTag(t *testing.T) {
 	stateValues := "state=exclude_not_exploitable"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -125,7 +126,7 @@ func TestFilterTag(t *testing.T) {
 
 func TestFilterTagAllStateValues(t *testing.T) {
 	stateValues := "state=exclude_not_exploitable;TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -133,7 +134,7 @@ func TestFilterTagAllStateValues(t *testing.T) {
 
 func TestFilterTagStateAndSeverityValues(t *testing.T) {
 	stateAndSeverityValues := "state=exclude_not_exploitable;TO_VERIFY,severity=High"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateAndSeverityValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateAndSeverityValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
