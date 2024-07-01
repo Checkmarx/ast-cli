@@ -954,7 +954,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 }
 
 func addContainersScan(containerEngineCLIEnabled bool) map[string]interface{} {
-	if !scanTypeEnabled(commonParams.ContainersType) && containerEngineCLIEnabled {
+	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
