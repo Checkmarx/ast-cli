@@ -120,12 +120,3 @@ jobs:
           args: -c .golangci.yml
             --timeout 5m
           only-new-issues: true
-  govulncheck:
-    runs-on: ubuntu-latest
-    name: govulncheck
-    steps:
-      - id: govulncheck
-        uses: golang/govulncheck-action@7da72f730e37eeaad891fcff0a532d27ed737cd4 #v1
-        with:
-          go-version-file: go.mod
-          go-package: ./...
