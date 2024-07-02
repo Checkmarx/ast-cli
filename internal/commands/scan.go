@@ -1067,7 +1067,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter string, scaResolver string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
