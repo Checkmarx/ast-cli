@@ -8,33 +8,34 @@ import (
 )
 
 type ResultSummary struct {
-	TotalIssues     int
-	HighIssues      int
-	MediumIssues    int
-	LowIssues       int
-	InfoIssues      int
-	SastIssues      int
-	KicsIssues      int
-	ScaIssues       int
-	ScsIssues       int `json:"-"`
-	APISecurity     APISecResult
-	SCSOverview     SCSOverview `json:"-"`
-	RiskStyle       string
-	RiskMsg         string
-	Status          string
-	ScanID          string
-	ScanDate        string
-	ScanTime        string
-	CreatedAt       string
-	ProjectID       string
-	BaseURI         string
-	Tags            map[string]string
-	ProjectName     string
-	BranchName      string
-	ScanInfoMessage string
-	EnginesEnabled  []string
-	Policies        *PolicyResponseModel
-	EnginesResult   EnginesResultsSummary
+	TotalIssues      int
+	HighIssues       int
+	MediumIssues     int
+	LowIssues        int
+	InfoIssues       int
+	SastIssues       int
+	KicsIssues       int
+	ScaIssues        int
+	ContainersIssues *int        `json:"ContainersIssues,omitempty"`
+	ScsIssues        int         `json:"-"`
+	SCSOverview      SCSOverview `json:"-"`
+	APISecurity      APISecResult
+	RiskStyle        string
+	RiskMsg          string
+	Status           string
+	ScanID           string
+	ScanDate         string
+	ScanTime         string
+	CreatedAt        string
+	ProjectID        string
+	BaseURI          string
+	Tags             map[string]string
+	ProjectName      string
+	BranchName       string
+	ScanInfoMessage  string
+	EnginesEnabled   []string
+	Policies         *PolicyResponseModel
+	EnginesResult    EnginesResultsSummary
 }
 
 // nolint: govet
@@ -75,6 +76,8 @@ type EngineResultSummary struct {
 }
 
 type EnginesResultsSummary map[string]*EngineResultSummary
+
+var IsContainersEnabled bool
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
@@ -136,6 +139,12 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+func (r *ResultSummary) ContainersEnabled() bool {
+	return IsContainersEnabled
+}
+func (r *ResultSummary) ContainersIssuesValue() int {
+	return *r.ContainersIssues
 }
 
 func (r *ResultSummary) HasSCS() bool {
@@ -258,7 +267,7 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         }
 
         .bg-kicks {
-            background-color: #008e96 !important;
+            background-color: #079E9E !important;
         }
 
         .bg-red {
@@ -266,15 +275,18 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         }
 
         .bg-sast {
-            background-color: #1165b4 !important;
+            background-color: #0356A5 !important;
         }
 
         .bg-sca {
-            background-color: #0fcdc2 !important;
+            background-color: #15D7D7 !important;
         }
 
 		.bg-api-sec {
             background-color: #bdbdbd !important;
+        }
+		.bg-containers {
+            background-color: #70F9CC !important;
         }
 
         .header-row .cx-info .data .calendar-svg {
@@ -730,6 +742,9 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
+					{{if .ContainersEnabled}}<div class="legend"><span class="engines-legend-dot">Containers</span>
+                        <div class="severity-engines-text bg-containers"></div>
+                    </div>{{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -737,6 +752,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
+							{{if .ContainersEnabled}}<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
                         </div>
                     </div>
                 </div>
@@ -808,9 +824,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |
-|:----------:|:----------:|:---------:|
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} |
+| SAST | IaC Security | SCA |{{if .ContainersEnabled}} Containers |{{end}}
+|:----------:|:----------:|:---------:|{{if .ContainersEnabled}} :----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .ContainersEnabled}}{{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 

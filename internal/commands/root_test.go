@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
 
@@ -20,6 +21,7 @@ import (
 const (
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
+	githubDummyRepo       = "https://github.com/dummyuser/dummy_project.git"
 )
 
 func TestMain(m *testing.M) {
@@ -63,6 +65,7 @@ func createASTTestCommand() *cobra.Command {
 	sastMetadataWrapper := &mock.SastMetadataMockWrapper{}
 	accessManagementWrapper := &mock.AccessManagementMockWrapper{}
 	byorWrapper := &mock.ByorMockWrapper{}
+	containerResolverMockWrapper := &mock.ContainerResolverMockWrapper{}
 
 	return NewAstCLI(
 		applicationWrapper,
@@ -96,6 +99,7 @@ func createASTTestCommand() *cobra.Command {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		byorWrapper,
+		containerResolverMockWrapper,
 	)
 }
 
@@ -114,7 +118,7 @@ func TestRootVersion(t *testing.T) {
 
 func TestFilterTag(t *testing.T) {
 	stateValues := "state=exclude_not_exploitable"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -122,7 +126,7 @@ func TestFilterTag(t *testing.T) {
 
 func TestFilterTagAllStateValues(t *testing.T) {
 	stateValues := "state=exclude_not_exploitable;TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -130,7 +134,7 @@ func TestFilterTagAllStateValues(t *testing.T) {
 
 func TestFilterTagStateAndSeverityValues(t *testing.T) {
 	stateAndSeverityValues := "state=exclude_not_exploitable;TO_VERIFY,severity=High"
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--filter", stateAndSeverityValues}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateAndSeverityValues}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
@@ -187,6 +191,12 @@ func execCmdNotNilAssertion(t *testing.T, args ...string) error {
 func assertError(t *testing.T, err error, expectedMessage string) {
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
+}
+
+func clearFlags() {
+	mock.Flags = wrappers.FeatureFlagsResponseModel{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{}
+	wrappers.ClearCache()
 }
 
 func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t *testing.T) {

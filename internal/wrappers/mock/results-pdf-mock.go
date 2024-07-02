@@ -24,7 +24,7 @@ func (*ResultsPdfWrapper) CheckPdfReportStatus(_ string) (*wrappers.PdfPollingRe
 }
 
 // DownloadPdfReport mock for tests
-func (*ResultsPdfWrapper) DownloadPdfReport(_, targetFile string) error {
+func (*ResultsPdfWrapper) DownloadPdfReport(_, targetFile string, b bool) error {
 	file, err := os.Create(targetFile)
 	defer func() {
 		err = file.Close()
