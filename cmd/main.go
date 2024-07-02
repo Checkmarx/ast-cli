@@ -85,6 +85,7 @@ func main() {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
+	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -118,6 +119,7 @@ func main() {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		byorWrapper,
+		containerResolverWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

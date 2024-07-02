@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
 )
 
@@ -104,4 +106,15 @@ func getRootProject(t *testing.T) (string, string) {
 	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
 
 	return rootProjectId, rootProjectName
+}
+
+func isFFEnabled(t *testing.T, featureFlag string) bool {
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlag)
+	return flagResponse.Status
 }
