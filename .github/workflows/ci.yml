@@ -130,3 +130,34 @@ jobs:
         with:
           go-version-file: go.mod
           go-package: ./...
+
+  checkDockerImage:
+    runs-on: ubuntu-latest
+    name: scan Docker Image with Trivy
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build the project
+        run:  go build -o ./cx ./cmd
+      - name: Build Docker image
+        run: docker build -t ast-cli:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ast-cli:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+
