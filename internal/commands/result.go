@@ -987,8 +987,8 @@ func runGetCodeBashingCommand(
 }
 
 func setIsSCSEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SCSEngineCLIEnabled)
-	wrappers.IsSCSEnabled = containerEngineCLIEnabled.Status
+	scsEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SCSEngineCLIEnabled)
+	wrappers.IsSCSEnabled = scsEngineCLIEnabled.Status
 }
 
 func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
