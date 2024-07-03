@@ -77,6 +77,8 @@ type EngineResultSummary struct {
 
 type EnginesResultsSummary map[string]*EngineResultSummary
 
+var IsSCSEnabled bool
+
 var IsContainersEnabled bool
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
