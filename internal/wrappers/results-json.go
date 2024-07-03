@@ -108,4 +108,11 @@ type ScanResultData struct {
 	ExpectedValue string `json:"expectedValue,omitempty"`
 	Value         string `json:"value,omitempty"`
 	Filename      string `json:"filename,omitempty"`
+	// Added to support containers results
+	PackageName    string `json:"packageName,omitempty"`
+	PackageVersion string `json:"packageVersion,omitempty"`
+	ImageName      string `json:"imageName,omitempty"`
+	ImageTag       string `json:"imageTag,omitempty"`
+	ImageFilePath  string `json:"imageFilePath,omitempty"`
+	ImageOrigin    string `json:"imageOrigin,omitempty"`
 }

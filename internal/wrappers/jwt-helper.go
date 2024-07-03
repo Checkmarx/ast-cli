@@ -20,13 +20,14 @@ type JWTStruct struct {
 	jwt.Claims
 }
 
-var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs"}
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers"}
 
 var defaultEngines = map[string]bool{
 	"sast":         true,
 	"sca":          true,
 	"api-security": true,
 	"iac-security": true,
+	"containers":   true,
 	"scs":          true,
 }
 

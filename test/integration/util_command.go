@@ -116,6 +116,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
+	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -149,6 +150,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		ByorWrapper,
+		containerResolverWrapper,
 	)
 	return astCli
 }

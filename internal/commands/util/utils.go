@@ -1,24 +1,30 @@
 package util
 
 import (
+	"archive/zip"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 const (
-	gitURLRegex = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
-	sshURLRegex = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
-	invalidFlag = "Value of %s is invalid"
+	gitURLRegex            = "(?P<G1>:git|ssh|https?|git@[-\\w.]+):(\\/\\/)?(?P<G2>.*?)(\\.git)?$"
+	sshURLRegex            = "^(?P<user>.*?)@(?P<host>.*?):(?:(?P<port>.*?)/)?(?P<path>.*?/.*?)$"
+	invalidFlag            = "Value of %s is invalid"
+	mbBytes                = 1024.0 * 1024.0
+	defaultDirectoryPrefix = "cx-"
 )
 
 func NewUtilsCommand(
@@ -162,4 +168,69 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 	}
 
 	return false
+}
+
+func CompressFile(sourceFilePath, targetFileName string, createdDirectoryPrefix ...string) (string, error) {
+	if len(createdDirectoryPrefix) == 0 || createdDirectoryPrefix[0] == "" {
+		createdDirectoryPrefix = []string{defaultDirectoryPrefix}
+	}
+
+	outputFile, err := os.CreateTemp(os.TempDir(), createdDirectoryPrefix[0]+"*.zip")
+
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot create temp file")
+	}
+	defer CloseOutputFile(outputFile)
+
+	zipWriter := zip.NewWriter(outputFile)
+	defer CloseZipWriter(zipWriter, outputFile)
+
+	folderName, nameERR := extractFolderNameFromZipPath(outputFile.Name(), createdDirectoryPrefix[0])
+	if nameERR != nil {
+		return "", nameERR
+	}
+
+	dataFile, readErr := os.ReadFile(sourceFilePath)
+	if readErr != nil {
+		logger.PrintfIfVerbose("Failed to read file: %s", sourceFilePath)
+	}
+
+	f, err := zipWriter.Create(filepath.Join(folderName, targetFileName))
+	if err != nil {
+		logger.PrintfIfVerbose("Failed to create file in zip: %s", targetFileName)
+	}
+	_, err = f.Write(dataFile)
+	if err != nil {
+		logger.PrintfIfVerbose("Failed to write file to zip: %s", targetFileName)
+	}
+	return outputFile.Name(), nil
+}
+
+func extractFolderNameFromZipPath(outputFileName, dirPrefix string) (string, error) {
+	folderNameBeginsIndex := strings.Index(outputFileName, dirPrefix)
+	if folderNameBeginsIndex == -1 {
+		return "", errors.New("Failed to extract folder name from zip path: " + outputFileName + " with prefix: " + dirPrefix)
+	}
+	return strings.TrimSuffix(outputFileName[folderNameBeginsIndex:], ".zip"), nil
+}
+
+func CloseOutputFile(outputFile *os.File) {
+	stat, statErr := outputFile.Stat()
+	CloseFileErr := outputFile.Close()
+	if CloseFileErr != nil {
+		logger.PrintfIfVerbose("Failed to close file: %s", outputFile.Name())
+	}
+	if statErr != nil {
+		logger.PrintfIfVerbose("Failed to get file stat: %s", outputFile.Name())
+	}
+	if stat != nil {
+		fmt.Printf("Zip size: %.3fMB\n", float64(stat.Size())/mbBytes)
+	}
+}
+
+func CloseZipWriter(zipWriter *zip.Writer, outputFile *os.File) {
+	closeZipWriterError := zipWriter.Close()
+	if closeZipWriterError != nil {
+		logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
+	}
 }

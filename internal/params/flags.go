@@ -140,6 +140,8 @@ const (
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
 	SastRedundancyFlag       = "sast-redundancy"
+	ContainerImagesFlag      = "container-images"
+	ContainersTypeFlag       = "container-security"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
