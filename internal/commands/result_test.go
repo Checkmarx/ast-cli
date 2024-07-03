@@ -814,6 +814,7 @@ func TestRunGetResultsByScanIdGLScaFormat_NoVulnerabilities_Success(t *testing.T
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInReport(t *testing.T) {
+	clearFlags()
 	mock.HasScs = false
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
@@ -840,6 +841,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = true
 	mock.ScorecardScanned = true
@@ -854,10 +856,10 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	cleanString := ansiRegexp.ReplaceAllString(stdoutString, "")
 	fmt.Print(stdoutString)
 
-	TotalResults := "Total Results: 17"
+	TotalResults := "Total Results: 18"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL          10        4      3      0   Completed  |"
+	TotalSummary := "| TOTAL          10        5      3      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
 	scsSummary := "| SCS             5        3      2      0   Partial    |"
@@ -874,6 +876,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_ScorecardMissingInReport(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
@@ -900,6 +903,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 }
 
 func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
