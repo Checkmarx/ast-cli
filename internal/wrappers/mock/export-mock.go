@@ -13,5 +13,5 @@ func NewExportMockWrapper(exportPath string) wrappers.ExportWrapper {
 }
 
 func (e *ExportMockWrapper) GetExportPackage(scanID string) (*wrappers.ScaPackageCollectionExport, error) {
-	return nil, nil
+	return &wrappers.ScaPackageCollectionExport{}, nil
 }
