@@ -729,8 +729,8 @@ func TestRunGetResultsByScanIdGLScaFormat(t *testing.T) {
 }
 
 func Test_addPackageInformation(t *testing.T) {
-	var dependencyPath = wrappers.DependencyPath{ID: "test-1"}
-	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
+	var dependencyPath = wrappers.PackagePath{Name: "test-1"}
+	var dependencyArray = [][]wrappers.PackagePath{{dependencyPath}}
 	resultsModel := &wrappers.ScanResultsCollection{
 		Results: []*wrappers.ScanResult{
 			{
@@ -746,14 +746,14 @@ func Test_addPackageInformation(t *testing.T) {
 			},
 		},
 	}
-	scaPackageModel := &[]wrappers.ScaPackageCollection{
+	scaPackageModel := &[]wrappers.ScaPackage{
 		{
-			ID:                  "pkg-123",
-			FixLink:             "",
-			DependencyPathArray: dependencyArray,
+			ID:               "pkg-123",
+			FixLink:          "",
+			PackagePathArray: dependencyArray,
 		},
 	}
-	scaTypeModel := &[]wrappers.ScaTypeCollection{
+	scaTypeModel := &[]wrappers.ScaType{
 		{}}
 
 	resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)

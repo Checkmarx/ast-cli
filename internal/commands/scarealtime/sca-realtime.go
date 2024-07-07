@@ -264,7 +264,7 @@ func convertToScanResults(data []wrappers.ScaVulnerabilitiesResponseModel, resol
 				},
 				ScanResultData: wrappers.ScanResultData{
 					PackageData: vulnerability.References,
-					ScaPackageCollection: &wrappers.ScaPackageCollection{
+					ScaPackageCollection: &wrappers.ScaPackage{
 						FixLink: "https://devhub.checkmarx.com/cve-details/" + vulnerability.Cve,
 					},
 					Nodes: []*wrappers.ScanResultNode{{

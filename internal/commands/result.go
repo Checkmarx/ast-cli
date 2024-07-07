@@ -166,6 +166,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -179,7 +180,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -217,6 +218,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -227,7 +229,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -876,6 +878,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -942,7 +945,8 @@ func runGetResultCommand(
 			targetPath,
 			agent,
 			params,
-			featureFlagsWrapper)
+			featureFlagsWrapper,
+			exportWrapper)
 	}
 }
 
@@ -1015,6 +1019,7 @@ func CreateScanReport(
 	agent string,
 	params map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
@@ -1032,7 +1037,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params, false)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params, false)
 		if err != nil {
 			return err
 		}
@@ -1266,6 +1271,7 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 	isThresholdCheck bool,
@@ -1290,7 +1296,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(resultsWrapper, exportWrapper, scan, params, resultsModel)
 		if err != nil && !isThresholdCheck {
 			return nil, err
 		}
@@ -1303,34 +1309,20 @@ func ReadResults(
 
 func enrichScaResults(
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
-		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
+		exportDetails, err := exportWrapper.GetExportPackage(scan.ID)
 		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
-		}
-		// Get additional information to add the type information to the sca results
-		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
-		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
 			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
 		// Enrich sca results
-		if scaPackageModel != nil {
-			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+		if exportDetails.Packages != nil {
+			resultsModel = addPackageInformation(resultsModel, &exportDetails.Packages, &exportDetails.ScaTypes)
 		}
 	}
 	if slices.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
@@ -2287,10 +2279,10 @@ func convertNotAvailableNumberToZero(summary *wrappers.ResultSummary) {
 	}
 }
 
-func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackageCollection,
-	scaTypeModel *[]wrappers.ScaTypeCollection) (locationsByID map[string][]*string, typesByCVE map[string]wrappers.ScaTypeCollection) {
+func buildAuxiliaryScaMapsExport(resultsModel *wrappers.ScanResultsCollection, scaPackageModel *[]wrappers.ScaPackage,
+	scaTypeModel *[]wrappers.ScaType) (locationsByID map[string][]*string, typesByCVE map[string]wrappers.ScaType) {
 	locationsByID = make(map[string][]*string)
-	typesByCVE = make(map[string]wrappers.ScaTypeCollection)
+	typesByCVE = make(map[string]wrappers.ScaType)
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == commonParams.ScaType {
@@ -2306,7 +2298,7 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 	return locationsByID, typesByCVE
 }
 
-func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
+func buildScaTypeExport(typesByCVE map[string]wrappers.ScaType, result *wrappers.ScanResult) string {
 	types, ok := typesByCVE[result.ID]
 	if ok && types.Type == "SupplyChain" {
 		return "Supply Chain"
@@ -2314,7 +2306,7 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 	return "Vulnerability"
 }
 
-func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
+func buildScaStateExport(typesByCVE map[string]wrappers.ScaType, result *wrappers.ScanResult) string {
 	types, ok := typesByCVE[result.ID]
 	if ok && types.IsIgnored {
 		return notExploitable
@@ -2324,11 +2316,11 @@ func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wra
 
 func addPackageInformation(
 	resultsModel *wrappers.ScanResultsCollection,
-	scaPackageModel *[]wrappers.ScaPackageCollection,
-	scaTypeModel *[]wrappers.ScaTypeCollection,
+	scaPackageModel *[]wrappers.ScaPackage,
+	scaTypeModel *[]wrappers.ScaType,
 ) *wrappers.ScanResultsCollection {
 	var currentID string
-	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
+	locationsByID, typesByCVE := buildAuxiliaryScaMapsExport(resultsModel, scaPackageModel, scaTypeModel)
 
 	for _, result := range resultsModel.Results {
 		if !(result.Type == commonParams.ScaType) {
@@ -2339,17 +2331,17 @@ func addPackageInformation(
 			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
 			result.VulnerabilityDetails.CvssScore = roundedScore
 			// Add the sca type
-			result.ScaType = buildScaType(typesByCVE, result)
+			result.ScaType = buildScaTypeExport(typesByCVE, result)
 			// Temporary code for client
-			result.State = buildScaState(typesByCVE, result)
+			result.State = buildScaStateExport(typesByCVE, result)
 			for _, packages := range *scaPackageModel {
 				currentPackage := packages
 				if packages.ID == currentID {
-					for _, dependencyPath := range currentPackage.DependencyPathArray {
-						head := &dependencyPath[0]
-						head.Locations = locationsByID[head.ID]
-						head.SupportsQuickFix = len(dependencyPath) == 1
-						for _, location := range locationsByID[head.ID] {
+					for _, packagePath := range currentPackage.PackagePathArray {
+						head := &packagePath[0]
+						head.Locations = locationsByID[head.Name]
+						head.SupportsQuickFix = len(packagePath) == 1
+						for _, location := range locationsByID[head.Name] {
 							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
 						}
 						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix

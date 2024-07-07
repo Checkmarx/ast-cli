@@ -88,19 +88,18 @@ type ScanResultPackageData struct {
 }
 
 type ScanResultData struct {
-	QueryID              interface{}              `json:"queryId,omitempty"`
-	QueryName            string                   `json:"queryName,omitempty"`
-	Group                string                   `json:"group,omitempty"`
-	ResultHash           string                   `json:"resultHash,omitempty"`
-	LanguageName         string                   `json:"languageName,omitempty"`
-	Redundancy           string                   `json:"redundancy,omitempty"`
-	Description          string                   `json:"description,omitempty"`
-	Nodes                []*ScanResultNode        `json:"nodes,omitempty"`
-	PackageData          []*ScanResultPackageData `json:"packageData,omitempty"`
-	PackageID            []*ScanResultPackageData `json:"packageId,omitempty"`
-	PackageIdentifier    string                   `json:"packageIdentifier,omitempty"`
-	ScaPackageCollection *ScaPackageCollection    `json:"scaPackageData,omitempty"`
-	RecommendedVersion   interface{}              `json:"recommendedVersion,omitempty"`
+	QueryID            interface{}              `json:"queryId,omitempty"`
+	QueryName          string                   `json:"queryName,omitempty"`
+	Group              string                   `json:"group,omitempty"`
+	ResultHash         string                   `json:"resultHash,omitempty"`
+	LanguageName       string                   `json:"languageName,omitempty"`
+	Redundancy         string                   `json:"redundancy,omitempty"`
+	Description        string                   `json:"description,omitempty"`
+	Nodes              []*ScanResultNode        `json:"nodes,omitempty"`
+	PackageData        []*ScanResultPackageData `json:"packageData,omitempty"`
+	PackageID          []*ScanResultPackageData `json:"packageId,omitempty"`
+	PackageIdentifier  string                   `json:"packageIdentifier,omitempty"`
+	RecommendedVersion interface{}              `json:"recommendedVersion,omitempty"`
 	// Added to support kics results
 	Line          uint   `json:"line,omitempty"`
 	Platform      string `json:"platform,omitempty"`
@@ -109,10 +108,11 @@ type ScanResultData struct {
 	Value         string `json:"value,omitempty"`
 	Filename      string `json:"filename,omitempty"`
 	// Added to support containers results
-	PackageName    string `json:"packageName,omitempty"`
-	PackageVersion string `json:"packageVersion,omitempty"`
-	ImageName      string `json:"imageName,omitempty"`
-	ImageTag       string `json:"imageTag,omitempty"`
-	ImageFilePath  string `json:"imageFilePath,omitempty"`
-	ImageOrigin    string `json:"imageOrigin,omitempty"`
+	PackageName          string      `json:"packageName,omitempty"`
+	PackageVersion       string      `json:"packageVersion,omitempty"`
+	ImageName            string      `json:"imageName,omitempty"`
+	ImageTag             string      `json:"imageTag,omitempty"`
+	ImageFilePath        string      `json:"imageFilePath,omitempty"`
+	ImageOrigin          string      `json:"imageOrigin,omitempty"`
+	ScaPackageCollection *ScaPackage `json:"scaPackage,omitempty"`
 }

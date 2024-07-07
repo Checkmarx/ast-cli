@@ -84,8 +84,8 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 		}, nil, nil
 	}
 	const mock = "mock"
-	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
-	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
+	var dependencyPath = wrappers.PackagePath{Name: mock, Version: mock, Locations: nil}
+	var dependencyArray = [][]wrappers.PackagePath{{dependencyPath}}
 	return &wrappers.ScanResultsCollection{
 		TotalCount: 8,
 		Results: []*wrappers.ScanResult{
@@ -214,12 +214,12 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 				Type:     "sca",
 				Severity: "medium",
 				ScanResultData: wrappers.ScanResultData{
-					ScaPackageCollection: &wrappers.ScaPackageCollection{
-						ID:                  "mock",
-						FixLink:             "mock",
-						Locations:           nil,
-						DependencyPathArray: dependencyArray,
-						Outdated:            false,
+					ScaPackageCollection: &wrappers.ScaPackage{
+						ID:               "mock",
+						FixLink:          "mock",
+						Locations:        nil,
+						PackagePathArray: dependencyArray,
+						Outdated:         false,
 					},
 					PackageIdentifier: "mock",
 					QueryID:           12.4,

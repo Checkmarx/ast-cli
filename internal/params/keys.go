@@ -64,4 +64,5 @@ var (
 	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 	ByorPathKey                         = strings.ToLower(ByorPathEnv)
 	VorpalPortKey                       = strings.ToLower(VorpalPortEnv)
+	ExportPathKey                       = strings.ToLower(ExportPathEnv)
 )

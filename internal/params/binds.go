@@ -58,11 +58,12 @@ var EnvVarsBinds = []struct {
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 	{ClientTimeoutKey, ClientTimeoutEnv, "30"},
 	{ResultsPdfReportPathKey, ResultsPdfReportPathEnv, "api/reports"},
-	{ResultsSbomReportPathKey, ResultsSbomReportPathEnv, "api/sca/export"},
+	{ResultsSbomReportPathKey, ResultsSbomReportPathEnv, "api/sca/export/requests"},
 	{ResultsSbomReportProxyPathKey, ResultsSbomReportProxyPathEnv, "api/sca/risk-management/risk-reports"},
 	{FeatureFlagsKey, FeatureFlagsEnv, "api/flags"},
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
 	{AccessManagementPathKey, AccessManagementPathEnv, "api/access-management"},
 	{ByorPathKey, ByorPathEnv, "api/byor"},
 	{VorpalPortKey, VorpalPortEnv, ""},
+	{ExportPathKey, ExportPathEnv, "api/sca/export/requests"},
 }

@@ -64,4 +64,5 @@ const (
 	ByorPathEnv                         = "CX_BYOR_PATH"
 	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
 	VorpalPortEnv                       = "CX_VORPAL_PORT"
+	ExportPathEnv                       = "CX_EXPORT_PATH"
 )

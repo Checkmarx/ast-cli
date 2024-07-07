@@ -53,6 +53,7 @@ func main() {
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
+	exportPath := viper.GetString(params.ExportPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
@@ -86,6 +87,7 @@ func main() {
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
+	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -120,6 +122,7 @@ func main() {
 		accessManagementWrapper,
 		byorWrapper,
 		containerResolverWrapper,
+		exportWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
