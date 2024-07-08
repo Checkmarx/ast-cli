@@ -1348,7 +1348,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
 			ID:                  pkg.ID,
 			Locations:           pkg.Locations,
-			DependencyPathArray: parseDependencyPathToPackagePath(pkg.PackagePathArray),
+			DependencyPathArray: parsePackagePathToDependencyPath(pkg.PackagePathArray),
 			Outdated:            pkg.Outdated,
 			IsDirectDependency:  pkg.IsDirectDependency,
 		})
@@ -1356,7 +1356,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 	return &scaPackages
 }
 
-func parseDependencyPathToPackagePath(packagePathArray [][]wrappers.PackagePath) [][]wrappers.DependencyPath {
+func parsePackagePathToDependencyPath(packagePathArray [][]wrappers.PackagePath) [][]wrappers.DependencyPath {
 	var dependencyPathArray [][]wrappers.DependencyPath
 	for _, path := range packagePathArray {
 		var dependencyPath []wrappers.DependencyPath
