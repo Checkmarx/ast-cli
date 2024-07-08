@@ -149,6 +149,7 @@ func NewScanCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -178,6 +179,7 @@ func NewScanCommand(
 		accessManagementWrapper,
 		applicationsWrapper,
 		featureFlagsWrapper,
+		exportWrapper,
 	)
 	containerResolver = containerResolverWrapper
 
@@ -469,6 +471,7 @@ func scanCreateSubCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -501,6 +504,7 @@ func scanCreateSubCommand(
 			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
+			exportWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -1565,6 +1569,7 @@ func runCreateScanCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
@@ -1653,7 +1658,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap, exportWrapper)
 			if err != nil {
 				return err
 			}
@@ -1909,6 +1914,7 @@ func applyThreshold(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
+	exportWrapper wrappers.ExportWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -1920,7 +1926,7 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params)
+	summaryMap, err := getSummaryThresholdMap(exportWrapper, resultsWrapper, scanResponseModel, params)
 	if err != nil {
 		return err
 	}
@@ -2003,11 +2009,11 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
+func getSummaryThresholdMap(exportWrapper wrappers.ExportWrapper, resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, params, true)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params, true)
 	if err != nil {
 		return nil, err
 	}

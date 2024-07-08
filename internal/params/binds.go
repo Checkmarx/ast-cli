@@ -65,4 +65,5 @@ var EnvVarsBinds = []struct {
 	{AccessManagementPathKey, AccessManagementPathEnv, "api/access-management"},
 	{ByorPathKey, ByorPathEnv, "api/byor"},
 	{VorpalPortKey, VorpalPortEnv, ""},
+	{ExportPathKey, ExportPathEnv, "api/sca/export/requests"},
 }
