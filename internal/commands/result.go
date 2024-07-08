@@ -166,6 +166,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -179,7 +180,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -217,6 +218,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -227,7 +229,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -876,6 +878,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -942,7 +945,8 @@ func runGetResultCommand(
 			targetPath,
 			agent,
 			params,
-			featureFlagsWrapper)
+			featureFlagsWrapper,
+			exportWrapper)
 	}
 }
 

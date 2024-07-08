@@ -1634,7 +1634,8 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
-				featureFlagsWrapper)
+				featureFlagsWrapper,
+				exportWrapper)
 			if err != nil {
 				return err
 			}
@@ -1653,7 +1654,7 @@ func runCreateScanCommand(
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
 			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, exportWrapper)
 			if err != nil {
 				return err
 			}
@@ -1664,7 +1665,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, exportWrapper)
 			if err != nil {
 				return err
 			}
@@ -1825,6 +1826,7 @@ func handleWait(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) error {
 	err := waitForScanCompletion(
 		scanResponseModel,
@@ -1837,7 +1839,8 @@ func handleWait(
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
 		cmd,
-		featureFlagsWrapper)
+		featureFlagsWrapper,
+		exportWrapper)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -1861,6 +1864,7 @@ func createReportsAfterScan(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) error {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1906,6 +1910,7 @@ func createReportsAfterScan(
 		agent,
 		params,
 		featureFlagsWrapper,
+		exportWrapper,
 	)
 }
 
@@ -2043,6 +2048,7 @@ func waitForScanCompletion(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
@@ -2057,7 +2063,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, exportWrapper)
 		if err != nil {
 			return err
 		}
@@ -2091,6 +2097,7 @@ func isScanRunning(
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -2119,7 +2126,8 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
-			nil, featureFlagsWrapper) // check this partial case, how to handle it
+			nil, featureFlagsWrapper,
+			exportWrapper) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
