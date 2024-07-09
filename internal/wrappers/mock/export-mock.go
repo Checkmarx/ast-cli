@@ -21,7 +21,7 @@ func (e *ExportMockWrapper) CheckExportStatus(exportID string) (string, error) {
 }
 
 func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string) (*wrappers.ScaPackageCollectionExport, error) {
-	return nil, nil
+	return &wrappers.ScaPackageCollectionExport{}, nil
 }
 
 func (e *ExportMockWrapper) DownloadExportReport(reportURL, targetFile string) error {
