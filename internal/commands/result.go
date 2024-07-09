@@ -20,6 +20,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -1296,7 +1297,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(resultsWrapper, exportWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
 		if err != nil && !isThresholdCheck {
 			return nil, err
 		}
@@ -1308,15 +1309,13 @@ func ReadResults(
 }
 
 func enrichScaResults(
-	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
 		// Get additional information to enrich sca results
-		exportDetails, err := exportWrapper.GetExportPackage(scan.ID)
+		exportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
 		if err != nil {
 			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
 		}
@@ -1537,54 +1536,32 @@ func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
 		}
 		payload.FileFormat = format
 	}
-	if useSCALocalFlow {
-		pollingResp := &wrappers.SbomPollingResponse{}
+	pollingResp := &wrappers.SbomPollingResponse{}
 
-		sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
-		if err != nil {
-			return err
-		}
-
-		log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-		pollingResp.ExportStatus = exportingStatus
-		for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-			pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-			if err != nil {
-				return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-			}
-			time.Sleep(delayValueForReport * time.Second)
-		}
-		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-		}
-		err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-		}
-		return nil
+	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
+	if err != nil {
+		return err
 	}
-	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
 
-	i := 0
-	for i < retrySBOM {
-		completed, err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
+	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
+	pollingResp.ExportStatus = exportingStatus
+	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+		pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
 		}
-		if completed {
-			return nil
-		}
-		i++
 		time.Sleep(delayValueForReport * time.Second)
-		logger.PrintIfVerbose(
-			fmt.Sprintf(
-				"Retry SBOM report: %d retry",
-				i,
-			),
-		)
+	}
+	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
+		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
+	}
+	err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
 	}
 	return nil
 }
+
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
 	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}

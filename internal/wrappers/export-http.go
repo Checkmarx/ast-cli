@@ -22,29 +22,7 @@ func NewExportHTTPWrapper(exportPath string) ExportWrapper {
 	}
 }
 
-func (e *ExportHTTPWrapper) GetExportPackage(scanID string) (*ScaPackageCollectionExport, error) {
-	exportID, err := e.initiateExportRequest(scanID)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Initiated export request for scanID %s. ExportID: %s", scanID, exportID))
-
-	fileURL, err := e.checkExportStatus(exportID)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Checked export status. File URL: %s", fileURL))
-
-	scaPackageCollection, err := e.getScaPackageCollectionExport(fileURL)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
-
-	return scaPackageCollection, nil
-}
-
-func (e *ExportHTTPWrapper) initiateExportRequest(scanID string) (string, error) {
+func (e *ExportHTTPWrapper) InitiateExportRequest(scanID string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	payload := RequestPayload{
 		ScanID:     scanID,
@@ -72,7 +50,7 @@ func (e *ExportHTTPWrapper) initiateExportRequest(scanID string) (string, error)
 	return exportResp.ExportID, nil
 }
 
-func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
+func (e *ExportHTTPWrapper) CheckExportStatus(exportID string) (string, error) {
 	params := map[string]string{"exportId": exportID}
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	startTime := time.Now()
@@ -111,11 +89,11 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 		}
 
 		resp.Body.Close()
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
-func (e *ExportHTTPWrapper) getScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
+func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return nil, err

@@ -2,7 +2,9 @@ package wrappers
 
 // ExportWrapper is an interface for the export wrapper
 type ExportWrapper interface {
-	GetExportPackage(scanID string) (*ScaPackageCollectionExport, error)
+	GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error)
+	InitiateExportRequest(scanID string) (string, error)
+	CheckExportStatus(exportID string) (string, error)
 }
 
 type ScaPackageCollectionExport struct {
