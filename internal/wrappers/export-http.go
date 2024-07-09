@@ -39,7 +39,7 @@ func (e *ExportHTTPWrapper) GetExportPackage(scanID string) (*ScaPackageCollecti
 	if err != nil {
 		return nil, err
 	}
-	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
+	logger.PrintIfVerbose("Retrieved SCA package collection from export service successfully")
 
 	return scaPackageCollection, nil
 }

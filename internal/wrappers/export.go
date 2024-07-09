@@ -34,6 +34,14 @@ type ScaType struct {
 	IsIgnored bool   `json:"IsIgnored,omitempty"`
 }
 
+func (t ScaType) ToCollection() ScaTypeCollection {
+	return ScaTypeCollection{
+		ID:        t.ID,
+		Type:      t.Type,
+		IsIgnored: t.IsIgnored,
+	}
+}
+
 type RequestPayload struct {
 	ScanID     string `json:"ScanId"`
 	FileFormat string `json:"FileFormat"`
