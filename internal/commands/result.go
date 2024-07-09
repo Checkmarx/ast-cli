@@ -1334,7 +1334,7 @@ func enrichScaResults(
 func parseExportVulnerabilityType(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
 	var scaTypes []wrappers.ScaTypeCollection
 	for _, t := range types {
-		scaTypes = append(scaTypes, t.ToCollection())
+		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
 	}
 	return &scaTypes
 }
