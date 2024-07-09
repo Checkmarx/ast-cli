@@ -229,7 +229,8 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+			risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
