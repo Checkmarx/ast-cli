@@ -1042,7 +1042,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsPdfReportsWrapper, featureFlagsWrapper)
+			targetPath, results, summary, resultsPdfReportsWrapper, featureFlagsWrapper, exportWrapper)
 		if err != nil {
 			return err
 		}
@@ -1237,7 +1237,7 @@ func createReport(format,
 			return fmt.Errorf("unable to generate %s report - SCA engine did not complete successfully", printer.FormatSbom)
 		}
 
-		return services.ExportSbomResults(exportWrapper, summaryRpt, results, summary, targetType)
+		return services.ExportSbomResults(exportWrapper, summaryRpt, summary, formatSbomOptions)
 	}
 	return fmt.Errorf("bad report format %s", format)
 }
@@ -1302,7 +1302,7 @@ func enrichScaResults(
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		scaExportDetails, err := exportWrapper.GetExportPackage(scan.ID)
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
@@ -1546,71 +1546,6 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
-	targetFile string,
-	results *wrappers.ResultSummary,
-	formatSbomOptions string,
-	useSCALocalFlow bool,
-	retrySBOM int) error {
-	payload := &wrappers.SbomReportsPayload{
-		ScanID:     results.ScanID,
-		FileFormat: defaultSbomOption,
-	}
-	if formatSbomOptions != "" && formatSbomOptions != defaultSbomOption {
-		format, err := validateSbomOptions(formatSbomOptions)
-		if err != nil {
-			return err
-		}
-		payload.FileFormat = format
-	}
-	if useSCALocalFlow {
-		pollingResp := &wrappers.SbomPollingResponse{}
-
-		sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
-		if err != nil {
-			return err
-		}
-
-		log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-		pollingResp.ExportStatus = exportingStatus
-		for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-			pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-			if err != nil {
-				return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-			}
-			time.Sleep(delayValueForReport * time.Second)
-		}
-		if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-			return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-		}
-		err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-		}
-		return nil
-	}
-	log.Println("Generating SBOM report with " + payload.FileFormat + " file format using SCA proxy...")
-
-	i := 0
-	for i < retrySBOM {
-		completed, err := sbomWrapper.GenerateSbomReportWithProxy(payload, targetFile)
-		if err != nil {
-			return err
-		}
-		if completed {
-			return nil
-		}
-		i++
-		time.Sleep(delayValueForReport * time.Second)
-		logger.PrintIfVerbose(
-			fmt.Sprintf(
-				"Retry SBOM report: %d retry",
-				i,
-			),
-		)
-	}
-	return nil
-}
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
 	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
