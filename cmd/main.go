@@ -46,8 +46,6 @@ func main() {
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
-	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
@@ -57,7 +55,6 @@ func main() {
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
@@ -92,7 +89,6 @@ func main() {
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
-		resultsSbomReportsWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,

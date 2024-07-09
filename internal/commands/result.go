@@ -159,7 +159,6 @@ var containerEngineUnsupportedAgents = []string{
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
@@ -180,7 +179,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper,
 		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
@@ -213,7 +212,6 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 func resultShowSubCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -230,7 +228,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, exportWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on.")
 	addResultFormatFlag(
@@ -873,7 +871,6 @@ func generateScanSummaryURL(summary *wrappers.ResultSummary) string {
 func runGetResultCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -888,8 +885,6 @@ func runGetResultCommand(
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
-		useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
-		retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
@@ -932,10 +927,7 @@ func runGetResultCommand(
 			resultsWrapper,
 			risksOverviewWrapper,
 			scsScanOverviewWrapper,
-			resultsSbomWrapper,
 			policyResponseModel,
-			useSCALocalFlow,
-			retrySBOM,
 			resultsPdfReportsWrapper,
 			scan,
 			format,
@@ -1005,10 +997,7 @@ func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
-	useSCALocalFlow bool,
-	retrySBOM int,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	scan *wrappers.ScanResponseModel,
 	reportTypes,
@@ -1052,7 +1041,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, resultsSbomWrapper, resultsPdfReportsWrapper, useSCALocalFlow, retrySBOM, featureFlagsWrapper)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -1182,10 +1171,8 @@ func createReport(format,
 	targetPath string,
 	results *wrappers.ScanResultsCollection,
 	summary *wrappers.ResultSummary,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	useSCALocalFlow bool,
-	retrySBOM int,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
@@ -1249,7 +1236,7 @@ func createReport(format,
 			return fmt.Errorf("unable to generate %s report - SCA engine did not complete successfully", printer.FormatSbom)
 		}
 
-		return exportSbomResults(resultsSbomWrapper, summaryRpt, summary, formatSbomOptions, useSCALocalFlow, retrySBOM)
+		return services.ExportSbomResults(exportWrapper, summaryRpt, summary, formatSbomOptions)
 	}
 	return fmt.Errorf("bad report format %s", format)
 }
@@ -1519,49 +1506,6 @@ func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary
 	return nil
 }
 
-func exportSbomResults(sbomWrapper wrappers.ResultsSbomWrapper,
-	targetFile string,
-	results *wrappers.ResultSummary,
-	formatSbomOptions string,
-	useSCALocalFlow bool,
-	retrySBOM int) error {
-	payload := &wrappers.SbomReportsPayload{
-		ScanID:     results.ScanID,
-		FileFormat: defaultSbomOption,
-	}
-	if formatSbomOptions != "" && formatSbomOptions != defaultSbomOption {
-		format, err := validateSbomOptions(formatSbomOptions)
-		if err != nil {
-			return err
-		}
-		payload.FileFormat = format
-	}
-	pollingResp := &wrappers.SbomPollingResponse{}
-
-	sbomresp, err := sbomWrapper.GenerateSbomReport(payload)
-	if err != nil {
-		return err
-	}
-
-	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	pollingResp.ExportStatus = exportingStatus
-	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-		pollingResp, err = sbomWrapper.GetSbomReportStatus(sbomresp.ExportID)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-		}
-		time.Sleep(delayValueForReport * time.Second)
-	}
-	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-	}
-	err = sbomWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
-	if err != nil {
-		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
-	}
-	return nil
-}
-
 func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.ResultSummary, summaryRpt, formatPdfToEmail,
 	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
@@ -1634,19 +1578,6 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
 	}
 	return nil
-}
-
-func validateSbomOptions(sbomOption string) (string, error) {
-	var sbomOptionsStringMap = map[string]string{
-		"cyclonedxjson": "CycloneDxJson",
-		"cyclonedxxml":  "CycloneDxXml",
-		"spdxjson":      "SpdxJson",
-	}
-	sbomOption = strings.ToLower(strings.ReplaceAll(sbomOption, " ", ""))
-	if sbomOptionsStringMap[sbomOption] != "" {
-		return sbomOptionsStringMap[sbomOption], nil
-	}
-	return "", errors.Errorf("invalid SBOM option: %s", sbomOption)
 }
 
 func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {

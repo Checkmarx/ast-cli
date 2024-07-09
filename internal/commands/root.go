@@ -23,7 +23,6 @@ import (
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
@@ -151,7 +150,6 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(
 		applicationsWrapper,
 		scansWrapper,
-		resultsSbomWrapper,
 		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
@@ -174,7 +172,6 @@ func NewAstCLI(
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
-		resultsSbomWrapper,
 		resultsPdfReportsWrapper,
 		codeBashingWrapper,
 		bflWrapper,

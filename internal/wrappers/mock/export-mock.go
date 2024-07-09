@@ -12,7 +12,7 @@ func NewExportMockWrapper(exportPath string) wrappers.ExportWrapper {
 	}
 }
 
-func (e *ExportMockWrapper) InitiateExportRequest(scanID string) (string, error) {
+func (e *ExportMockWrapper) InitiateExportRequest(scanID, format string) (string, error) {
 	return "1234-5678-9111-2131", nil
 }
 
@@ -22,4 +22,8 @@ func (e *ExportMockWrapper) CheckExportStatus(exportID string) (string, error) {
 
 func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string) (*wrappers.ScaPackageCollectionExport, error) {
 	return nil, nil
+}
+
+func (e *ExportMockWrapper) DownloadExportReport(reportURL, targetFile string) error {
+	return nil
 }

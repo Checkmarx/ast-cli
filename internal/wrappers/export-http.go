@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -22,11 +25,11 @@ func NewExportHTTPWrapper(exportPath string) ExportWrapper {
 	}
 }
 
-func (e *ExportHTTPWrapper) InitiateExportRequest(scanID string) (string, error) {
+func (e *ExportHTTPWrapper) InitiateExportRequest(scanID, format string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	payload := RequestPayload{
 		ScanID:     scanID,
-		FileFormat: "ScanReportJson",
+		FileFormat: format,
 	}
 
 	body, err := json.Marshal(payload)
@@ -112,4 +115,37 @@ func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaP
 	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
 
 	return &scaPackageCollection, nil
+}
+
+func (e *ExportHTTPWrapper) DownloadExportReport(reportURL, targetFile string) error {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return err
+	}
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequestByFullURL(http.MethodGet, reportURL, http.NoBody, true, clientTimeout, accessToken, true)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("response status code %d", resp.StatusCode)
+	}
+
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
+	defer file.Close()
+	size, err := io.Copy(file, resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to write file %s", targetFile)
+	}
+
+	logger.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
+	return nil
 }
