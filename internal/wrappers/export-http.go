@@ -86,7 +86,7 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 	}()
 
 	for {
-		if time.Since(startTime) >= 5*time.Second {
+		if time.Since(startTime) >= time.Duration(clientTimeout)*time.Minute {
 			return "", fmt.Errorf("timeout waiting for export status")
 		}
 
@@ -100,6 +100,8 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 			return "", err
 		}
 
+		logger.Printf("Export status: %s", statusResp.ExportStatus)
+
 		if statusResp.ExportStatus == "Completed" {
 			return statusResp.FileURL, nil
 		}
@@ -109,7 +111,7 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 		}
 
 		resp.Body.Close()
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 }
 
