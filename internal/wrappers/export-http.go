@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -22,33 +25,11 @@ func NewExportHTTPWrapper(exportPath string) ExportWrapper {
 	}
 }
 
-func (e *ExportHTTPWrapper) GetExportPackage(scanID string) (*ScaPackageCollectionExport, error) {
-	exportID, err := e.initiateExportRequest(scanID)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Initiated export request for scanID %s. ExportID: %s", scanID, exportID))
-
-	fileURL, err := e.checkExportStatus(exportID)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Checked export status. File URL: %s", fileURL))
-
-	scaPackageCollection, err := e.getScaPackageCollectionExport(fileURL)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose("Retrieved SCA package collection from export service successfully")
-
-	return scaPackageCollection, nil
-}
-
-func (e *ExportHTTPWrapper) initiateExportRequest(scanID string) (string, error) {
+func (e *ExportHTTPWrapper) InitiateExportRequest(scanID, format string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	payload := RequestPayload{
 		ScanID:     scanID,
-		FileFormat: "ScanReportJson",
+		FileFormat: format,
 	}
 
 	body, err := json.Marshal(payload)
@@ -72,7 +53,7 @@ func (e *ExportHTTPWrapper) initiateExportRequest(scanID string) (string, error)
 	return exportResp.ExportID, nil
 }
 
-func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
+func (e *ExportHTTPWrapper) CheckExportStatus(exportID string) (string, error) {
 	params := map[string]string{"exportId": exportID}
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	startTime := time.Now()
@@ -86,7 +67,7 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 	}()
 
 	for {
-		if time.Since(startTime) >= 5*time.Second {
+		if time.Since(startTime) >= time.Duration(clientTimeout)*time.Minute {
 			return "", fmt.Errorf("timeout waiting for export status")
 		}
 
@@ -99,6 +80,8 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 		if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
 			return "", err
 		}
+
+		logger.Printf("Export status: %s", statusResp.ExportStatus)
 
 		if statusResp.ExportStatus == "Completed" {
 			return statusResp.FileURL, nil
@@ -113,7 +96,7 @@ func (e *ExportHTTPWrapper) checkExportStatus(exportID string) (string, error) {
 	}
 }
 
-func (e *ExportHTTPWrapper) getScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
+func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return nil, err
@@ -132,4 +115,37 @@ func (e *ExportHTTPWrapper) getScaPackageCollectionExport(fileURL string) (*ScaP
 	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
 
 	return &scaPackageCollection, nil
+}
+
+func (e *ExportHTTPWrapper) DownloadExportReport(reportURL, targetFile string) error {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return err
+	}
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	resp, err := SendHTTPRequestByFullURL(http.MethodGet, reportURL, http.NoBody, true, clientTimeout, accessToken, true)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("response status code %d", resp.StatusCode)
+	}
+
+	file, err := os.Create(targetFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
+	defer file.Close()
+	size, err := io.Copy(file, resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to write file %s", targetFile)
+	}
+
+	logger.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
+	return nil
 }
