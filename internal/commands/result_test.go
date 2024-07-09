@@ -1,11 +1,10 @@
-//go:build !integration
-
 package commands
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -15,6 +14,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gotest.tools/assert"
 )
 
@@ -29,7 +30,7 @@ const (
 	jsonValue           = "json"
 	tableValue          = "table"
 	listValue           = "list"
-	secretDetectionLine = "| Secret Detection      5        3      2      0   Completed  |"
+	secretDetectionLine = "| Secret Detection      1        1      0      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -692,6 +693,7 @@ func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *te
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
+// TODO: can be generalized to also be used in tests for scs
 func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
@@ -709,6 +711,50 @@ func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 	if isContainersEnabled {
 		assert.Assert(t, false, "Containers result should be present")
 	}
+}
+
+func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string) {
+	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultSummary *wrappers.ResultSummary
+	err = json.Unmarshal(bytes, &scanResultSummary)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+
+	// Test presence of Issues field
+	scanTypeCapitalized := cases.Title(language.Und).String(scanType)
+	IssuesFieldName := scanTypeCapitalized + "Issues"
+	reflectedScanResultSummary := reflect.ValueOf(scanResultSummary).Elem()
+	IssuesField := reflectedScanResultSummary.FieldByName(IssuesFieldName)
+
+	assert.Equal(t, IssuesField.IsValid(), true, fmt.Sprintf("field %s not found in struct", IssuesFieldName))
+	assert.Equal(t, !IssuesField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", IssuesFieldName, isResultsEnabled))
+
+	//Test presence of Scs Overview field
+	if scanType == params.ScsType {
+		ScsOverviewField := reflectedScanResultSummary.FieldByName("SCSOverview")
+		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in struct", ScsOverviewField))
+		assert.Equal(t, !ScsOverviewField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", ScsOverviewField, isResultsEnabled))
+	}
+
+	//Test presence of Scs Overview field
+	if scanType == params.ScsType {
+		ScsOverviewField := reflectedScanResultSummary.FieldByName("SCSOverview")
+		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in struct", ScsOverviewField))
+		assert.Equal(t, !ScsOverviewField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", ScsOverviewField, isResultsEnabled))
+	}
+
+	for engine, _ := range scanResultSummary.EnginesResult {
+		if !isResultsEnabled && engine == scanType {
+			assert.Assert(t, false, fmt.Sprintf("%s result summary should not be present", scanType))
+		} else if isResultsEnabled && engine == scanType {
+			return
+		}
+	}
+	if isResultsEnabled {
+		assert.Assert(t, false, "%s result summary should be present", scanType)
+	}
+
 }
 func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_NilAssertion(t *testing.T) {
 	clearFlags()
@@ -840,6 +886,41 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.SetScsMockVarsToDefault()
 }
 
+func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsCompleted_ScsCompletedInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	ansiRegexp := regexp.MustCompile("\x1b\\[[0-9;]*[mK]")
+	cleanString := ansiRegexp.ReplaceAllString(stdoutString, "")
+	fmt.Print(stdoutString)
+
+	TotalResults := "Total Results: 11"
+	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
+		"Expected: "+TotalResults)
+	TotalSummary := "| TOTAL           6        3      2      0   Completed  |"
+	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
+		"Expected TOTAL summary: "+TotalSummary)
+	scsSummary := "| SCS             1        1      1      0   Completed  |"
+	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
+		"Expected SCS summary:"+scsSummary)
+	secretDetectionSummary := secretDetectionLine
+	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
+		"Expected Secret Detection summary:"+secretDetectionSummary)
+	scorecardSummary := "| Scorecard             0        0      1      0   Completed  |"
+	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
+		"Expected Scorecard summary:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
 func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
@@ -856,13 +937,13 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	cleanString := ansiRegexp.ReplaceAllString(stdoutString, "")
 	fmt.Print(stdoutString)
 
-	TotalResults := "Total Results: 18"
+	TotalResults := "Total Results: 10"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL          10        5      3      0   Completed  |"
+	TotalSummary := "| TOTAL           6        3      1      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
-	scsSummary := "| SCS             5        3      2      0   Partial    |"
+	scsSummary := "| SCS             1        1      0      0   Partial    |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -889,7 +970,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS             5        3      2      0   Completed  |"
+	scsSummary := "| SCS             1        1      0      0   Completed  |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -910,7 +991,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole,summaryJSON")
 	assert.NilError(t, err)
 
 	stdoutString := buffer.String()
@@ -918,13 +999,42 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 
 	scsSummary := "| SCS"
 	assert.Equal(t, !strings.Contains(stdoutString, scsSummary), true,
-		"Expected SCS summary:"+scsSummary)
+		"Expected SCS summary to be missing:"+scsSummary)
 	secretDetectionSummary := "Secret Detection"
 	assert.Equal(t, !strings.Contains(stdoutString, secretDetectionSummary), true,
 		"Expected Secret Detection summary to be missing:"+secretDetectionSummary)
 	scorecardSummary := "Scorecard"
 	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
+
+	assertResultsPresentSummaryJSON(t, false, params.ScsType)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	ScsFlagValue := true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: ScsFlagValue}
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
+
+	assertResultsPresentSummaryJSON(t, ScsFlagValue, params.ScsType)
 
 	mock.SetScsMockVarsToDefault()
 }

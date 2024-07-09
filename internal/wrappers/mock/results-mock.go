@@ -64,6 +64,38 @@ var containersResults = &wrappers.ScanResult{
 	},
 }
 
+var scsResultsSecretDetection = []*wrappers.ScanResult{
+	{
+
+		Type:     "scs-Secret Detection",
+		Severity: "high",
+		ScanResultData: wrappers.ScanResultData{
+			QueryID:   "mock-query-ID",
+			QueryName: "mock-query-name",
+		},
+		Description: "mock-description",
+	},
+	{
+
+		Type:     "scs-Secret Detection",
+		Severity: "medium",
+		ScanResultData: wrappers.ScanResultData{
+			QueryID:   "mock-query-ID",
+			QueryName: "mock-query-name",
+		},
+		Description: "mock-description",
+	},
+}
+var scsResultScorecard = wrappers.ScanResult{
+	Type:     "scs-Scorecard",
+	Severity: "low",
+	ScanResultData: wrappers.ScanResultData{
+		QueryID:   "mock-query-ID",
+		QueryName: "mock-query-name",
+	},
+	Description: "mock-description",
+}
+
 func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 	*wrappers.ScanResultsCollection,
 	*wrappers.WebError,
@@ -86,8 +118,8 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
-	return &wrappers.ScanResultsCollection{
-		TotalCount: 8,
+	scanResults := &wrappers.ScanResultsCollection{
+		TotalCount: 10,
 		Results: []*wrappers.ScanResult{
 			{
 				Type:     "sast",
@@ -246,9 +278,22 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 				Severity: "low",
 			},
 		},
-	}, nil, nil
+	}
+	addSCSResults(scanResults)
+	return scanResults, nil, nil
 }
 
 func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
 	return fmt.Sprintf("projects/%s/overview", projectID), nil
+}
+
+// addSCSResults adds the SCS results to the scan results depending on the mock flags. Values in this mock should be in accordance with ScanOverviewMockWrapper
+func addSCSResults(scanResults *wrappers.ScanResultsCollection) {
+	// the mock always has a result for Secret Detection
+	scanResults.Results = append(scanResults.Results, scsResultsSecretDetection...)
+
+	if ScorecardScanned && !ScsScanPartial {
+		scanResults.Results = append(scanResults.Results, &scsResultScorecard)
+	}
+
 }

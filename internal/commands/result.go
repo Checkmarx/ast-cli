@@ -506,19 +506,23 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
-	scsIssues := 0
 	var containersIssues *int
+	var scsIssues *int
 	enginesStatusCode := map[string]int{
 		commonParams.SastType:   0,
 		commonParams.ScaType:    0,
 		commonParams.KicsType:   0,
 		commonParams.APISecType: 0,
-		commonParams.ScsType:    0,
 	}
 	if wrappers.IsContainersEnabled {
 		containersIssues = new(int)
 		*containersIssues = 0
 		enginesStatusCode[commonParams.ContainersType] = 0
+	}
+	if wrappers.IsSCSEnabled {
+		scsIssues = new(int)
+		*scsIssues = 0
+		enginesStatusCode[commonParams.ScsType] = 0
 	}
 
 	if len(scanInfo.StatusDetails) > 0 {
@@ -530,8 +534,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScsType {
-					scsIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ScsType && wrappers.IsSCSEnabled {
+					*scsIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
 					*containersIssues = notAvailableNumber
 				}
@@ -569,11 +573,13 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
 			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
 			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:    {StatusCode: enginesStatusCode[commonParams.ScsType]},
 		},
 	}
 	if wrappers.IsContainersEnabled {
 		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
+	}
+	if wrappers.IsSCSEnabled {
+		summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
 	}
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
@@ -615,7 +621,7 @@ func summaryReport(
 		if err != nil {
 			return nil, err
 		}
-		summary.SCSOverview = *SCSOverview
+		summary.SCSOverview = SCSOverview
 	}
 
 	if policies != nil {
@@ -630,7 +636,9 @@ func summaryReport(
 	if wrappers.IsContainersEnabled {
 		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
 	}
-	setNotAvailableNumberIfZero(summary, &summary.ScsIssues, commonParams.ScsType)
+	if wrappers.IsSCSEnabled {
+		setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
+	}
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -675,12 +683,13 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
-		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
-		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
-		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
-		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
+		//TODO: instead of here, do this in countResult to be consistent with other engines
+		//summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
+		//summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
+		//summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
+		//summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
 
-		summary.ScsIssues = summary.SCSOverview.TotalRisksCount
+		//summary.ScsIssues = &summary.SCSOverview.TotalRisksCount //TODO: instead of here, do this in countResult to be consistent with other engines
 
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
@@ -691,6 +700,11 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
+		}
+	}
+	if wrappers.IsSCSEnabled {
+		if *summary.ScsIssues >= 0 {
+			summary.TotalIssues += *summary.ScsIssues
 		}
 	}
 }
@@ -836,7 +850,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
-	totalIssues := summary.TotalIssues + summary.ScsIssues
+	totalIssues := summary.TotalIssues
 	fmt.Printf(tableLine + twoNewLines)
 	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println(tableLine)
@@ -1074,7 +1088,16 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			} else {
 				return
 			}
+		} else if strings.Contains(engineType, commonParams.ScsType) {
+			if wrappers.IsSCSEnabled {
+				engineType = commonParams.ScsType
+				*summary.ScsIssues++
+				summary.TotalIssues++
+			} else {
+				return
+			}
 		}
+
 		switch severity {
 		case highLabel:
 			summary.HighIssues++
@@ -1501,21 +1524,8 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
-	var resultsToReport *wrappers.ResultSummary
 	log.Println("Creating summary JSON Report: ", targetFile)
-
-	// Remove SCS Result if it exists
-	_, scsExists := results.EnginesResult[commonParams.ScsType]
-	if scsExists {
-		resultsToReport, err = createReportWithoutScsSummary(results)
-		if err != nil {
-			return err
-		}
-	} else {
-		resultsToReport = results
-	}
-
-	resultsJSON, err = json.Marshal(resultsToReport)
+	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
@@ -2391,26 +2401,4 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
-}
-
-func createReportWithoutScsSummary(results *wrappers.ResultSummary) (*wrappers.ResultSummary, error) {
-	var err error
-	var resultsJSON []byte
-	resultsJSON, err = json.Marshal(results)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s: failed to serialize results before removing scs ", failedGettingAll)
-	}
-
-	var resultsWithoutScs *wrappers.ResultSummary
-	err = json.Unmarshal(resultsJSON, &resultsWithoutScs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s: failed to deserialize results before removing scs ", failedGettingAll)
-	}
-
-	_, scsExists := resultsWithoutScs.EnginesResult[commonParams.ScsType]
-	if scsExists {
-		delete(resultsWithoutScs.EnginesResult, commonParams.ScsType)
-	}
-
-	return resultsWithoutScs, nil
 }

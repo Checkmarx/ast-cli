@@ -18,12 +18,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 	if ScsScanPartial {
 		return &wrappers.SCSOverview{
 			Status:          "Partial",
-			TotalRisksCount: 10,
+			TotalRisksCount: 2,
 			RiskSummary: map[string]int{
 				"critical": 0,
-				"high":     5,
-				"medium":   3,
-				"low":      2,
+				"high":     1,
+				"medium":   1,
+				"low":      0,
 				"info":     0,
 			},
 			MicroEngineOverviews: []*wrappers.MicroEngineOverview{
@@ -31,12 +31,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					Name:       "2ms",
 					FullName:   "Secret Detection",
 					Status:     "Completed",
-					TotalRisks: 10,
+					TotalRisks: 2,
 					RiskSummary: map[string]int{
 						"critical": 0,
-						"high":     5,
-						"medium":   3,
-						"low":      2,
+						"high":     1,
+						"medium":   1,
+						"low":      0,
 						"info":     0,
 					},
 				},
@@ -59,12 +59,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 	if ScorecardScanned {
 		return &wrappers.SCSOverview{
 			Status:          "Completed",
-			TotalRisksCount: 14,
+			TotalRisksCount: 3,
 			RiskSummary: map[string]int{
 				"critical": 0,
-				"high":     7,
-				"medium":   4,
-				"low":      3,
+				"high":     1,
+				"medium":   1,
+				"low":      0,
 				"info":     0,
 			},
 			MicroEngineOverviews: []*wrappers.MicroEngineOverview{
@@ -72,12 +72,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					Name:       "2ms",
 					FullName:   "Secret Detection",
 					Status:     "Completed",
-					TotalRisks: 10,
+					TotalRisks: 2,
 					RiskSummary: map[string]int{
 						"critical": 0,
-						"high":     5,
-						"medium":   3,
-						"low":      2,
+						"high":     1,
+						"medium":   1,
+						"low":      0,
 						"info":     0,
 					},
 				},
@@ -85,11 +85,11 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					Name:       "Scorecard",
 					FullName:   "Scorecard",
 					Status:     "Completed",
-					TotalRisks: 4,
+					TotalRisks: 1,
 					RiskSummary: map[string]int{
 						"critical": 0,
-						"high":     2,
-						"medium":   1,
+						"high":     0,
+						"medium":   0,
 						"low":      1,
 						"info":     0,
 					},
@@ -100,12 +100,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 	// default Overview
 	return &wrappers.SCSOverview{
 		Status:          "Completed",
-		TotalRisksCount: 10,
+		TotalRisksCount: 2,
 		RiskSummary: map[string]int{
 			"critical": 0,
-			"high":     5,
-			"medium":   3,
-			"low":      2,
+			"high":     1,
+			"medium":   1,
+			"low":      0,
 			"info":     0,
 		},
 		MicroEngineOverviews: []*wrappers.MicroEngineOverview{
@@ -113,12 +113,12 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 				Name:       "2ms",
 				FullName:   "Secret Detection",
 				Status:     "Completed",
-				TotalRisks: 10,
+				TotalRisks: 2,
 				RiskSummary: map[string]int{
 					"critical": 0,
-					"high":     5,
-					"medium":   3,
-					"low":      2,
+					"high":     1,
+					"medium":   1,
+					"low":      0,
 					"info":     0,
 				},
 			},
