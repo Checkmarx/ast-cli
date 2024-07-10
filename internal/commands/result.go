@@ -74,7 +74,6 @@ const (
 	scanCanceledNumber        = -3
 	scanPartialNumber         = -4
 	defaultPaddingSize        = -13
-	boldFormat                = "\033[1m%s\033[0m"
 	scanPendingMessage        = "Scan triggered in asynchronous mode or still running. Click more details to get the full status."
 	directDependencyType      = "Direct Dependency"
 	indirectDependencyType    = "Transitive Dependency"
@@ -101,6 +100,7 @@ const (
 	sarifNodeFileLength                     = 2
 	fixLabel                                = "fix"
 	redundantLabel                          = "redundant"
+	delayValueForReport                     = 10
 )
 
 var summaryFormats = []string{
