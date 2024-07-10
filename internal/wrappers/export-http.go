@@ -33,7 +33,7 @@ type ExportHTTPWrapper struct {
 	path string
 }
 
-func NewResultsSbomReportsHTTPWrapper(path string) ExportWrapper {
+func NewExportHTTPWrapper(path string) ExportWrapper {
 	return &ExportHTTPWrapper{
 		path: path,
 	}
