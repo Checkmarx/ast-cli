@@ -77,8 +77,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationGitlabPath := viper.GetString(params.PRDecorationGitlabPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
-	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	resultsSbomPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
@@ -88,7 +87,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
+	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath)
 
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)

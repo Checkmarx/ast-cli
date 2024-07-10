@@ -15,33 +15,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-type SbomReportsPayload struct {
+type ExportRequestPayload struct {
 	ScanID     string `json:"ScanID"`
 	FileFormat string `json:"FileFormat"`
 }
 
-type SbomReportsResponse struct {
+type ExportResponse struct {
 	ExportID string `json:"exportId"`
 }
 
-type SbomPollingResponse struct {
+type ExportPollingResponse struct {
 	ExportID     string `json:"exportId"`
 	ExportStatus string `json:"exportStatus"`
 	FileURL      string `json:"fileUrl"`
 }
-type SbomHTTPWrapper struct {
-	path      string
-	proxyPath string
+type ExportHTTPWrapper struct {
+	path string
 }
 
-func NewResultsSbomReportsHTTPWrapper(path, proxyPath string) ResultsSbomWrapper {
-	return &SbomHTTPWrapper{
-		path:      path,
-		proxyPath: proxyPath,
+func NewResultsSbomReportsHTTPWrapper(path string) ExportWrapper {
+	return &ExportHTTPWrapper{
+		path: path,
 	}
 }
 
-func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*SbomReportsResponse, error) {
+func (r *ExportHTTPWrapper) GenerateSbomReport(payload *ExportRequestPayload) (*ExportResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
@@ -58,7 +56,7 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 
 	switch resp.StatusCode {
 	case http.StatusAccepted:
-		model := SbomReportsResponse{}
+		model := ExportResponse{}
 		decoder := json.NewDecoder(resp.Body)
 		err = decoder.Decode(&model)
 		if err != nil {
@@ -72,42 +70,7 @@ func (r *SbomHTTPWrapper) GenerateSbomReport(payload *SbomReportsPayload) (*Sbom
 	}
 }
 
-func (r *SbomHTTPWrapper) GenerateSbomReportWithProxy(payload *SbomReportsPayload, targetFile string) (bool, error) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf("%s/%s/%s", r.proxyPath, payload.ScanID, "export")
-	params := map[string]string{"format": payload.FileFormat}
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
-	if err != nil {
-		return true, err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusAccepted {
-		return false, nil
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return true, errors.Errorf("response status code %d", resp.StatusCode)
-	}
-
-	file, err := os.Create(targetFile)
-	if err != nil {
-		return true, errors.Wrapf(err, "Failed to create file %s", targetFile)
-	}
-	defer file.Close()
-	size, err := io.Copy(file, resp.Body)
-	if err != nil {
-		return true, errors.Wrapf(err, "Failed to write file %s", targetFile)
-	}
-
-	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
-	return true, nil
-}
-
-func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResponse, error) {
+func (r *ExportHTTPWrapper) GetSbomReportStatus(reportID string) (*ExportPollingResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, "requests")
 	params := map[string]string{"returnUrl": "true", "exportId": reportID}
@@ -124,7 +87,7 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResp
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		model := SbomPollingResponse{}
+		model := ExportPollingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse response body")
@@ -135,7 +98,7 @@ func (r *SbomHTTPWrapper) GetSbomReportStatus(reportID string) (*SbomPollingResp
 	}
 }
 
-func (r *SbomHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error {
+func (r *ExportHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	customURL := fmt.Sprintf("%s/%s/%s/%s", r.path, "requests", reportID, "download")
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
