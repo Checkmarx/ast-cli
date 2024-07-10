@@ -12,6 +12,7 @@ import (
 const defaultSbomOption = "CycloneDxJson"
 
 func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wrappers.ScaPackageCollectionExport, error) {
+	var scaPackageCollection *wrappers.ScaPackageCollectionExport
 	exportID, err := exportWrapper.InitiateExportRequest(scanID, "ScanReportJson")
 	if err != nil {
 		return nil, err
@@ -23,8 +24,9 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 		return nil, err
 	}
 	logger.PrintIfVerbose(fmt.Sprintf("Checked export status. File URL: %s", fileURL))
-
-	scaPackageCollection, err := exportWrapper.GetScaPackageCollectionExport(fileURL)
+	if fileURL != "" {
+		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(fileURL)
+	}
 	if err != nil {
 		return nil, err
 	}

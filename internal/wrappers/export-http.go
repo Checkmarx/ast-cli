@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -88,6 +89,9 @@ func (e *ExportHTTPWrapper) CheckExportStatus(exportID string) (string, error) {
 		}
 
 		if statusResp.ErrorMessage != "" {
+			if strings.Contains(statusResp.ErrorMessage, "No results were found") {
+				return "", nil
+			}
 			return "", fmt.Errorf("export error: %s", statusResp.ErrorMessage)
 		}
 

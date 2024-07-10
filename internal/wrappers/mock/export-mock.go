@@ -1,6 +1,11 @@
 package mock
 
-import "github.com/checkmarx/ast-cli/internal/wrappers"
+import (
+	"os"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
+)
 
 type ExportMockWrapper struct {
 	ExportPath string
@@ -25,5 +30,15 @@ func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string) (*wrap
 }
 
 func (e *ExportMockWrapper) DownloadExportReport(reportURL, targetFile string) error {
+	file, err := os.Create(targetFile)
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	}
 	return nil
 }
