@@ -12,7 +12,10 @@ import (
 const defaultSbomOption = "CycloneDxJson"
 
 func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wrappers.ScaPackageCollectionExport, error) {
-	var scaPackageCollection *wrappers.ScaPackageCollectionExport
+	var scaPackageCollection = &wrappers.ScaPackageCollectionExport{
+		Packages: []wrappers.ScaPackage{},
+		ScaTypes: []wrappers.ScaType{},
+	}
 	exportID, err := exportWrapper.InitiateExportRequest(scanID, "ScanReportJson")
 	if err != nil {
 		return nil, err
