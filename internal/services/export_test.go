@@ -61,7 +61,8 @@ func TestExportSbomResults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.wantErr(t, ExportSbomResults(tt.args.exportWrapper, tt.args.targetFile, tt.args.results, tt.args.formatSbomOptions), fmt.Sprintf("ExportSbomResults(%v, %v, %v, %v)", tt.args.exportWrapper, tt.args.targetFile, tt.args.results, tt.args.formatSbomOptions))
+			tt.wantErr(t, ExportSbomResults(tt.args.exportWrapper, tt.args.targetFile, tt.args.results, tt.args.formatSbomOptions),
+				fmt.Sprintf("ExportSbomResults(%v, %v, %v, %v)", tt.args.exportWrapper, tt.args.targetFile, tt.args.results, tt.args.formatSbomOptions))
 		})
 	}
 }
