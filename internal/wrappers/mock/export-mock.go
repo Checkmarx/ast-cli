@@ -10,7 +10,10 @@ import (
 type ExportMockWrapper struct{}
 
 // GenerateSbomReport mock for tests
-func (*ExportMockWrapper) GenerateSbomReport(_ *wrappers.ExportRequestPayload) (*wrappers.ExportResponse, error) {
+func (*ExportMockWrapper) GenerateSbomReport(payload *wrappers.ExportRequestPayload) (*wrappers.ExportResponse, error) {
+	if payload.ScanID == "err-scan-id" {
+		return nil, errors.New("error")
+	}
 	return &wrappers.ExportResponse{
 		ExportID: "id123456",
 	}, nil
