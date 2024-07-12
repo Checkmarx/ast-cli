@@ -60,7 +60,8 @@ const (
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "-"
-	scanFailedString          = "Failed"
+	disabledString            = "N/A"
+	scanFailedString          = "Failed   "
 	scanCanceledString        = "Canceled"
 	scanSuccessString         = "Completed"
 	notAvailableNumber        = -1
@@ -538,10 +539,10 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:     scanInfo.Branch,
 		EnginesEnabled: scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType], Critical: 0},
+			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType], Critical: 0},
+			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType], Critical: 0},
+			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType], Critical: 0},
 		},
 	}
 
@@ -729,19 +730,25 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 }
 
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
-	formatString := "              | %-5s  %6d   %6d   %6d   %4d   %3d     %-8s  |\n"
-	notAvailableFormatString := "              | %-4s   %4s   %6s   %4s   %4s   %5s      |\n"
-
+	formatString := "              | %-5s  %6v   %6d   %6d   %4d   %3d     %-8s  |\n"
+	notAvailableFormatString := "              | %-5s  %6v   %6s   %6s   %4s   %3s       %-8s |\n"
 	switch statusNumber {
 	case notAvailableNumber:
-		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	case scanFailedNumber:
-		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+		fmt.Printf(formatString, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(formatString, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	default:
-		fmt.Printf(formatString, title, counts.Critical, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+		fmt.Printf(formatString, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
 	}
+}
+
+func getCountValue(count int) interface{} {
+	if count < 0 {
+		return disabledString
+	}
+	return count
 }
 
 func printResultsSummaryTable(summary *wrappers.ResultSummary) {
@@ -762,8 +769,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
 
 	fmt.Println("              ---------------------------------------------------------------     ")
-	fmt.Printf("              | %-4s  %6d   %6d   %6d   %4d   %3d     %-8s  |\n",
-		fmt.Sprintf(boldFormat, "TOTAL"), totalCriticalIssues, totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+	fmt.Printf("              | %-4s  %6v   %6d   %6d   %4d   %3d     %-8s  |\n",
+		fmt.Sprintf(boldFormat, "TOTAL"), getCountValue(totalCriticalIssues), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf("              ---------------------------------------------------------------     \n\n")
 }
 
@@ -972,6 +979,10 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			summary.InfoIssues++
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
+	}
+	// Set critical count for a specific engine if critical is disabled
+	if !wrappers.FeatureFlags[wrappers.CVSSV3Enabled] {
+		summary.EnginesResult[engineType].Critical = notAvailableNumber
 	}
 }
 

@@ -60,11 +60,11 @@ type EngineResultSummary struct {
 type EnginesResultsSummary map[string]*EngineResultSummary
 
 func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
-	highIssues := 0
+	criticalIssues := 0
 	for _, v := range *engineSummary {
-		highIssues += v.Critical
+		criticalIssues += v.Critical
 	}
-	return highIssues
+	return criticalIssues
 }
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
