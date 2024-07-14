@@ -96,14 +96,42 @@ func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.Sca
 func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
-	if vorpalParams.VorpalUpdateVersion || !vorpalInstalled {
-		if err := vorpalWrapper.HealthCheck(); err == nil {
-			_ = vorpalWrapper.ShutDown()
-		}
-		if err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
+	if !vorpalInstalled {
+		return installOrUpgradeVorpal()
+	}
+
+	if vorpalParams.VorpalUpdateVersion {
+		if err := updateVorpal(vorpalParams, vorpalWrapper); err != nil {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func installOrUpgradeVorpal() error {
+	if _, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateVorpal(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
+	if err := checkLicense(vorpalParams.IsDefaultAgent, VorpalWrappersParam{JwtWrapper: nil, FeatureFlagsWrapper: nil, VorpalWrapper: vorpalWrapper}); err != nil {
+		return err
+	}
+
+	newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+	if err != nil {
+		return err
+	}
+
+	if newInstallation {
+		if err := vorpalWrapper.HealthCheck(); err == nil {
+			_ = vorpalWrapper.ShutDown()
+		}
+	}
+
 	return nil
 }
 

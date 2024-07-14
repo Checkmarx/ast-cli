@@ -20,14 +20,14 @@ func TestInstallOrUpgrade_firstInstallation_Success(t *testing.T) {
 
 func firstInstallation() error {
 	os.RemoveAll(vorpalconfig.Params.WorkingDir())
-	err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+	_, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
 	return err
 }
 
 func TestInstallOrUpgrade_installationIsUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
 	assert.NilError(t, err, "Error on first installation of vorpal")
-	err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+	_, err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
 	assert.NilError(t, err, "Error when not need to upgrade")
 }
 
@@ -35,7 +35,7 @@ func TestInstallOrUpgrade_installationIsNotUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
 	assert.NilError(t, err, "Error on first installation of vorpal")
 	changeHashFile()
-	err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+	_, err = osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
 	assert.NilError(t, err, "Error when need to upgrade")
 	fileExists, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 	assert.Assert(t, fileExists, "Executable file not found")
