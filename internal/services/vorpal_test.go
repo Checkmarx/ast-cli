@@ -122,4 +122,5 @@ func TestCreateVorpalScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Succes
 	err = manageVorpalInstallation(vorpalParams, wrapperParams)
 	assert.Nil(t, err)
 	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
+	_ = wrapperParams.VorpalWrapper.ShutDown()
 }
