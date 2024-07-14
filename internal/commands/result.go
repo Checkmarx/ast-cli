@@ -1290,7 +1290,7 @@ func ReadResults(
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
 		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-		if err != nil  {
+		if err != nil {
 			return nil, err
 		}
 
