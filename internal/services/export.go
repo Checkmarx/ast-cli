@@ -17,45 +17,74 @@ const (
 	completedStatus     = "completed"
 )
 
-func ExportSbomResults(exportWrapper wrappers.ExportWrapper,
+func ExportSbomResults(
+	exportWrapper wrappers.ExportWrapper,
 	targetFile string,
 	results *wrappers.ResultSummary,
-	formatSbomOptions string) error {
-	payload := &wrappers.ExportRequestPayload{
-		ScanID:     results.ScanID,
-		FileFormat: DefaultSbomOption,
-	}
-	if formatSbomOptions != "" && formatSbomOptions != DefaultSbomOption {
-		format, err := validateSbomOptions(formatSbomOptions)
-		if err != nil {
-			return err
-		}
-		payload.FileFormat = format
-	}
-	pollingResp := &wrappers.ExportPollingResponse{}
-
-	sbomresp, err := exportWrapper.GenerateSbomReport(payload)
+	formatSbomOptions string,
+) error {
+	payload, err := preparePayload(results.ScanID, formatSbomOptions)
 	if err != nil {
 		return err
 	}
 
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	pollingResp.ExportStatus = exportingStatus
-	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-		pollingResp, err = exportWrapper.GetSbomReportStatus(sbomresp.ExportID)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "failed getting SBOM report status")
-		}
-		time.Sleep(delayValueForReport * time.Second)
-	}
-	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-		return errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
-	}
-	err = exportWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile)
+	sbomresp, err := exportWrapper.GenerateSbomReport(payload)
 	if err != nil {
-		return errors.Wrapf(err, "%s", "Failed downloading SBOM report")
+		return err
+	}
+
+	pollingResp, err := pollForCompletion(exportWrapper, sbomresp.ExportID)
+	if err != nil {
+		return err
+	}
+
+	if err := exportWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile); err != nil {
+		return errors.Wrapf(err, "Failed downloading SBOM report")
 	}
 	return nil
+}
+
+func preparePayload(scanID, formatSbomOptions string) (*wrappers.ExportRequestPayload, error) {
+	payload := &wrappers.ExportRequestPayload{
+		ScanID:     scanID,
+		FileFormat: DefaultSbomOption,
+	}
+
+	if formatSbomOptions != "" && formatSbomOptions != DefaultSbomOption {
+		format, err := validateSbomOptions(formatSbomOptions)
+		if err != nil {
+			return nil, err
+		}
+		payload.FileFormat = format
+	}
+
+	return payload, nil
+}
+
+func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*wrappers.ExportPollingResponse, error) {
+	timeout := time.After(5 * time.Minute)
+	pollingResp := &wrappers.ExportPollingResponse{ExportStatus: exportingStatus}
+
+	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+		select {
+		case <-timeout:
+			return nil, errors.Errorf("SBOM generating failed - Timed out after 5 minutes")
+		default:
+			resp, err := exportWrapper.GetSbomReportStatus(exportID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed getting SBOM report status")
+			}
+			pollingResp = resp
+			time.Sleep(delayValueForReport * time.Second)
+		}
+	}
+
+	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
+		return nil, errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
+	}
+
+	return pollingResp, nil
 }
 
 func validateSbomOptions(sbomOption string) (string, error) {
