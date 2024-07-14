@@ -44,7 +44,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams Vorpal
 		return nil, err
 	}
 
-	err = manageVorpalInstallation(vorpalParams, wrapperParams.VorpalWrapper)
+	err = manageVorpalInstallation(vorpalParams, wrapperParams.VorpalWrapper, wrapperParams)
 	if err != nil {
 		return nil, err
 	}
@@ -93,45 +93,23 @@ func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.Sca
 	return vorpalWrapper.Scan(fileName, sourceCode)
 }
 
-func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
+func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper, vorpalWrappers VorpalWrappersParam) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
-	if !vorpalInstalled {
-		return installOrUpgradeVorpal()
-	}
-
-	if vorpalParams.VorpalUpdateVersion {
-		if err := updateVorpal(vorpalParams, vorpalWrapper); err != nil {
+	if !vorpalInstalled || vorpalParams.VorpalUpdateVersion {
+		if err := checkLicense(vorpalParams.IsDefaultAgent, vorpalWrappers); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func installOrUpgradeVorpal() error {
-	if _, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateVorpal(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
-	if err := checkLicense(vorpalParams.IsDefaultAgent, VorpalWrappersParam{JwtWrapper: nil, FeatureFlagsWrapper: nil, VorpalWrapper: vorpalWrapper}); err != nil {
-		return err
-	}
-
-	newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
-	if err != nil {
-		return err
-	}
-
-	if newInstallation {
-		if err := vorpalWrapper.HealthCheck(); err == nil {
-			_ = vorpalWrapper.ShutDown()
+		newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+		if err != nil {
+			return err
+		}
+		if newInstallation && vorpalParams.VorpalUpdateVersion {
+			if err := vorpalWrapper.HealthCheck(); err == nil {
+				_ = vorpalWrapper.ShutDown()
+			}
 		}
 	}
-
 	return nil
 }
 
