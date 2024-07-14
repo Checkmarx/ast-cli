@@ -98,16 +98,15 @@ func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs
 
 	if !vorpalInstalled || vorpalParams.VorpalUpdateVersion {
 		if err := checkLicense(vorpalParams.IsDefaultAgent, vorpalWrappers); err != nil {
+			_ = vorpalWrapper.ShutDown()
 			return err
 		}
 		newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
 		if err != nil {
 			return err
 		}
-		if newInstallation && vorpalParams.VorpalUpdateVersion {
-			if err := vorpalWrapper.HealthCheck(); err == nil {
-				_ = vorpalWrapper.ShutDown()
-			}
+		if newInstallation {
+			_ = vorpalWrapper.ShutDown()
 		}
 	}
 	return nil
