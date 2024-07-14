@@ -44,7 +44,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams Vorpal
 		return nil, err
 	}
 
-	err = manageVorpalInstallation(vorpalParams, wrapperParams.VorpalWrapper, wrapperParams)
+	err = manageVorpalInstallation(vorpalParams, wrapperParams)
 	if err != nil {
 		return nil, err
 	}
@@ -93,12 +93,12 @@ func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.Sca
 	return vorpalWrapper.Scan(fileName, sourceCode)
 }
 
-func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper, vorpalWrappers VorpalWrappersParam) error {
+func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrappers VorpalWrappersParam) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
 	if !vorpalInstalled || vorpalParams.VorpalUpdateVersion {
 		if err := checkLicense(vorpalParams.IsDefaultAgent, vorpalWrappers); err != nil {
-			_ = vorpalWrapper.ShutDown()
+			_ = vorpalWrappers.VorpalWrapper.ShutDown()
 			return err
 		}
 		newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
@@ -106,7 +106,7 @@ func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs
 			return err
 		}
 		if newInstallation {
-			_ = vorpalWrapper.ShutDown()
+			_ = vorpalWrappers.VorpalWrapper.ShutDown()
 		}
 	}
 	return nil
