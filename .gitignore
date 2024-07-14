@@ -60,3 +60,6 @@ override.tf.json
 # Ignore CLI configuration files and installation log files
 **/colima-Darwin-x86_64
 **/install.log
+
+# Ignore pkgs directory
+vendor/*
