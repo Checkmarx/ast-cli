@@ -2007,7 +2007,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, params, true)
+	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return nil, err
 	}
