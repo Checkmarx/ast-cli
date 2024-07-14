@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+type NewSuccessfulInstallation bool
+
 // downloadFile Downloads a file from url path
 func downloadFile(downloadURLPath, filePath string) error {
 	_, fileName := filepath.Split(filePath)
@@ -50,7 +52,7 @@ func downloadFile(downloadURLPath, filePath string) error {
 // InstallOrUpgrade Checks the version according to the hash file,
 // downloads the RealTime installation if the version is not up-to-date,
 // Extracts the RealTime installation according to the operating system type
-func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (bool, error) {
+func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (NewSuccessfulInstallation, error) {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
 	if downloadNotNeeded(installationConfiguration) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
