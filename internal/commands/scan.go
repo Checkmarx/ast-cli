@@ -133,7 +133,7 @@ var (
 func NewScanCommand(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -165,7 +165,7 @@ func NewScanCommand(
 
 	createScanCmd := scanCreateSubCommand(
 		scansWrapper,
-		resultsSbomWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
@@ -456,7 +456,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper 
 
 func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -488,7 +488,7 @@ func scanCreateSubCommand(
 		},
 		RunE: runCreateScanCommand(
 			scansWrapper,
-			resultsSbomWrapper,
+			exportWrapper,
 			resultsPdfReportsWrapper,
 			uploadsWrapper,
 			resultsWrapper,
@@ -614,7 +614,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, defaultSbomOption, sbomReportFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
@@ -646,11 +646,6 @@ func scanCreateSubCommand(
 	}
 
 	createScanCmd.PersistentFlags().String(commonParams.SSHKeyFlag, "", "Path to ssh private key")
-
-	createScanCmd.PersistentFlags().Int(commonParams.RetrySBOMFlag, commonParams.RetrySBOMDefault, commonParams.RetrySBOMUsage)
-	// Temporary flag until SCA supports new api
-	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
-	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
@@ -1552,7 +1547,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
@@ -1624,7 +1619,7 @@ func runCreateScanCommand(
 				waitDelay,
 				timeoutMinutes,
 				scansWrapper,
-				resultsSbomWrapper,
+				exportWrapper,
 				resultsPdfReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper,
@@ -1647,7 +1642,7 @@ func runCreateScanCommand(
 			} else {
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
 				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1658,7 +1653,7 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
 				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1814,7 +1809,7 @@ func handleWait(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -1826,7 +1821,7 @@ func handleWait(
 		waitDelay,
 		timeoutMinutes,
 		scansWrapper,
-		resultsSbomWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
@@ -1849,7 +1844,7 @@ func createReportsAfterScan(
 	cmd *cobra.Command,
 	scanID string,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -1864,8 +1859,6 @@ func createReportsAfterScan(
 	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
-	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
-	retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
 	params, err := getFilters(cmd)
@@ -1886,10 +1879,8 @@ func createReportsAfterScan(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
-		resultsSbomWrapper,
+		exportWrapper,
 		policyResponseModel,
-		useSCALocalFlow,
-		retrySBOM,
 		resultsPdfReportsWrapper,
 		scan,
 		reportFormats,
@@ -2030,7 +2021,7 @@ func waitForScanCompletion(
 	waitDelay,
 	timeoutMinutes int,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -2050,7 +2041,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
 			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
@@ -2077,7 +2068,7 @@ func waitForScanCompletion(
 
 func isScanRunning(
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
@@ -2108,7 +2099,7 @@ func isScanRunning(
 			cmd,
 			scanResponseModel.ID,
 			scansWrapper,
-			resultsSbomWrapper,
+			exportWrapper,
 			resultsPdfReportsWrapper,
 			resultsWrapper,
 			risksOverViewWrapper,
