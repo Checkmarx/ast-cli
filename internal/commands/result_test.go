@@ -626,14 +626,6 @@ func TestSBOMReportXMLWithContainers(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
 }
 
-func TestSBOMReportXMLWithProxy(t *testing.T) {
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml", "--report-sbom-local-flow")
-	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
-	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
-	// Remove generated json file
-	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
-}
-
 func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
