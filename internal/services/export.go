@@ -15,6 +15,7 @@ const (
 	delayValueForReport = 10
 	pendingStatus       = "Pending"
 	completedStatus     = "completed"
+	pollingTimeout      = 5 // minutes
 )
 
 func ExportSbomResults(
@@ -63,7 +64,7 @@ func preparePayload(scanID, formatSbomOptions string) (*wrappers.ExportRequestPa
 }
 
 func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*wrappers.ExportPollingResponse, error) {
-	timeout := time.After(5 * time.Minute)
+	timeout := time.After(pollingTimeout * time.Minute)
 	pollingResp := &wrappers.ExportPollingResponse{ExportStatus: exportingStatus}
 
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
