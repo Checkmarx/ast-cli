@@ -37,12 +37,7 @@ type VorpalWrappersParam struct {
 }
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
-	var err error
-	if err != nil {
-		return nil, err
-	}
-
-	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	err := manageVorpalInstallation(vorpalParams, wrapperParams)
 	if err != nil {
 		return nil, err
 	}

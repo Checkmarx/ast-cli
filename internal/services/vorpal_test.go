@@ -86,7 +86,7 @@ func TestCreateVorpalScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t
 		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
 	}
 
-	err = ensureVorpalServiceRunning(wrapperParams, port, vorpalParams)
+	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	assert.Nil(t, err)
 	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
 
@@ -115,7 +115,7 @@ func TestCreateVorpalScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Succes
 		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
 	}
 
-	err = ensureVorpalServiceRunning(wrapperParams, port, vorpalParams)
+	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	assert.Nil(t, err)
 	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
 
