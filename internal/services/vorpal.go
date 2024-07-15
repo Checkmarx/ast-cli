@@ -38,8 +38,6 @@ type VorpalWrappersParam struct {
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
 	var err error
-	//wrapperParams.VorpalWrapper, err = configureVorpalWrapper(wrapperParams.VorpalWrapper)
-	vorpalWrapper := wrapperParams.VorpalWrapper
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +47,7 @@ func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams Vorpal
 		return nil, err
 	}
 
-	err = ensureVorpalServiceRunning(wrapperParams, vorpalWrapper.GetPort(), vorpalParams)
+	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +140,7 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vorpalParams VorpalScanParams) error {
+func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, vorpalParams VorpalScanParams) error {
 	if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
 		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
@@ -152,7 +150,7 @@ func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vor
 		if err != nil {
 			return err
 		}
-		if err := RunVorpalEngine(port); err != nil {
+		if err := RunVorpalEngine(wrappersParam.VorpalWrapper.GetPort()); err != nil {
 			return err
 		}
 
