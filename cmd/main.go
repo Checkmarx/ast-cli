@@ -37,6 +37,7 @@ func main() {
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
@@ -62,6 +63,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -83,6 +85,7 @@ func main() {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
+	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -95,6 +98,7 @@ func main() {
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
@@ -115,6 +119,7 @@ func main() {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		byorWrapper,
+		containerResolverWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

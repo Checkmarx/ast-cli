@@ -41,6 +41,7 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
+	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
@@ -50,6 +51,7 @@ const (
 var (
 	_, b, _, _       = runtime.Caller(0)
 	projectDirectory = filepath.Dir(b)
+	scsRepoToken     = getScsRepoToken()
 )
 
 // Type for scan workflow response, used to assert the validity of the command's response
@@ -298,6 +300,19 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	assert.NilError(t, err)
 }
 
+func TestScanCreate_FolderWithSymbolicLink_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/project-with-directory-symlink",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
+
 func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
@@ -328,9 +343,109 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	assertError(t, err, errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
+func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ContainerImagesFlag), "nginx:alpine",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/empty-folder",
+		flag(params.ContainerImagesFlag), "mysql:5.7",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		scanID, projectID := executeCreateScan(t, testArgs)
+		defer deleteProject(t, projectID)
+		assert.Assert(t, scanID != "", "Scan ID should not be empty")
+		assert.Assert(t, projectID != "", "Project ID should not be empty")
+		assertZipFileRemoved(t)
+	}
+}
+
+func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
+		flag(params.ContainerImagesFlag), "nginx:",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		err, _ := executeCommand(t, testArgs...)
+		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	}
+}
+
+func assertZipFileRemoved(t *testing.T) {
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	assert.NilError(t, err)
+	assert.Equal(t, len(glob), 0, "Zip file not removed")
+}
+
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca,scs"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -724,7 +839,11 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security   "))
+	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+	} else {
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
+	}
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -789,6 +908,11 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
 	}
+
+	if strings.Contains(scanTypes, "scs") {
+		addSCSDefaultFlagsToArgs(&args)
+	}
+
 	return args
 }
 
@@ -1516,6 +1640,132 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
 
+func TestCreateScan_WithTypeScs_Success(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
+}
+
+func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", 4*time.Minute, args...)
+	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
+}
+
+func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and scs-repo flags are present", 4*time.Minute, args...)
+	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
+}
+
+func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast, scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
+func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast, scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
+func TestCreateScan_WithTypeScsOnlySecretDetection_Success(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSEnginesFlag), commands.ScsSecretDetectionType,
+	}
+
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
+}
+
+func TestCreateScan_WithNoScanTypesFlagScsAndOnlySecretDetection_Success(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.SCSEnginesFlag), commands.ScsSecretDetectionType,
+	}
+
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
+}
+
+func TestCreateScan_WithScanTypesScsAndOnlyScorecardMissingRepoFlags_Fail(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSEnginesFlag), commands.ScsScoreCardType,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
 func TestScanListWithFilters(t *testing.T) {
 	args := []string{
 		"scan", "list",
@@ -1544,4 +1794,8 @@ func TestScanListWithBigLimit(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
+}
+
+func addSCSDefaultFlagsToArgs(args *[]string) {
+	*args = append(*args, flag(params.SCSRepoURLFlag), scsRepoURL, flag(params.SCSRepoTokenFlag), scsRepoToken)
 }

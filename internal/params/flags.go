@@ -140,6 +140,8 @@ const (
 	LastSastScanTime         = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag = "project-private-package"
 	SastRedundancyFlag       = "sast-redundancy"
+	ContainerImagesFlag      = "container-images"
+	ContainersTypeFlag       = "container-security"
 
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
@@ -184,6 +186,13 @@ const (
 	ChatSastScanResultsFile = "scan-results-file"
 	ChatSastSourceDir       = "source-dir"
 	ChatSastResultID        = "sast-result-id"
+
+	// SCS Engines Enabled
+	SCSEnginesFlag = "scs-engines"
+
+	// SCS (Github)
+	SCSRepoTokenFlag = "scs-repo-token"
+	SCSRepoURLFlag   = "scs-repo-url"
 )
 
 // Parameter values
@@ -228,6 +237,7 @@ const (
 	SastType             = "sast"
 	KicsType             = "kics"
 	APISecurityType      = "api-security"
+	AIProtectionType     = "AI Protection"
 	ContainersType       = "containers"
 	APIDocumentationFlag = "apisec-swagger-filter"
 	IacType              = "iac-security"
@@ -235,6 +245,8 @@ const (
 	APISecurityLabel     = "API Security"
 	ScaType              = "sca"
 	APISecType           = "apisec"
+	ScsType              = "scs"
+	MicroEnginesType     = "microengines" // the scs scan type for scans API
 	Success              = "success"
 )
 

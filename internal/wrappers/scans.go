@@ -139,7 +139,17 @@ type ScaConfig struct {
 	ExploitablePath       string `json:"ExploitablePath,omitempty"`
 	LastSastScanTime      string `json:"LastSastScanTime,omitempty"`
 	PrivatePackageVersion string `json:"privatePackageVersion,omitempty"`
+	EnableContainersScan  bool   `json:"enableContainersScan,omitempty"`
+}
+type ContainerConfig struct {
 }
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`
+}
+
+type SCSConfig struct {
+	Twoms     string `json:"2ms,omitempty"`
+	Scorecard string `json:"scorecard,omitempty"`
+	RepoURL   string `json:"repoUrl,omitempty"`
+	RepoToken string `json:"repoToken,omitempty"`
 }

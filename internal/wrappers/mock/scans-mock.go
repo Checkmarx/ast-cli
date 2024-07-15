@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var HasScs bool
+
 type ScansMockWrapper struct {
 	Running bool
 }
@@ -155,10 +157,14 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 
 	var status wrappers.ScanStatus = "Completed"
 	m.Running = !m.Running
+	engines := []string{params.ScaType, params.SastType, params.KicsType, params.ContainersType}
+	if HasScs {
+		engines = append(engines, params.ScsType)
+	}
 	return &wrappers.ScanResponseModel{
 		ID:      scanID,
 		Status:  status,
-		Engines: []string{params.ScaType, params.SastType, params.KicsType},
+		Engines: engines,
 	}, nil, nil
 }
 

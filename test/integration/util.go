@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -55,4 +56,9 @@ func flag(f string) string {
 
 func getProjectNameForTest() string {
 	return fmt.Sprintf("ast-cli-tests_%s", projectNameRandom)
+}
+
+func getScsRepoToken() string {
+	_ = viper.BindEnv("PERSONAL_ACCESS_TOKEN")
+	return viper.GetString("PERSONAL_ACCESS_TOKEN")
 }

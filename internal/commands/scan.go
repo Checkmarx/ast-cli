@@ -21,6 +21,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/commands/vorpal"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
@@ -97,14 +98,17 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	completedPolicy  = "COMPLETED"
-	nonePolicy       = "NONE"
-	evaluatingPolicy = "EVALUATING"
+	containerResolutionFileName = "containers-resolution.json"
+	directoryCreationPrefix     = "cx-"
+	ScsScoreCardType            = "scorecard"
+	ScsSecretDetectionType      = "secret-detection"
+	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca"
+	actualScanTypes         = "sast,kics,sca,scs"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -123,6 +127,7 @@ var (
 	)
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"50", "40", "30", "20"}
+	containerResolver   wrappers.ContainerResolverWrapper
 )
 
 func NewScanCommand(
@@ -136,12 +141,14 @@ func NewScanCommand(
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -165,18 +172,20 @@ func NewScanCommand(
 		projectsWrapper,
 		groupsWrapper,
 		riskOverviewWrapper,
+		scsScanOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
 		accessManagementWrapper,
 		applicationsWrapper,
 		featureFlagsWrapper,
 	)
+	containerResolver = containerResolverWrapper
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanVorpalCmd := scanVorpalSubCommand()
+	scanVorpalCmd := scanVorpalSubCommand(jwtWrapper, featureFlagsWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -389,7 +398,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanVorpalSubCommand() *cobra.Command {
+func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanVorpalCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "vorpal",
@@ -407,7 +416,7 @@ func scanVorpalSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: runScanVorpalCommand(),
+		RunE: vorpal.RunScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
@@ -454,6 +463,7 @@ func scanCreateSubCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -485,6 +495,7 @@ func scanCreateSubCommand(
 			projectsWrapper,
 			groupsWrapper,
 			risksOverviewWrapper,
+			scsScanOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
 			accessManagementWrapper,
@@ -544,7 +555,9 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10. (Not supported yet)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security")
+
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.BranchFlag, commonParams.BranchFlagSh,
@@ -592,7 +605,8 @@ func scanCreateSubCommand(
 		printer.FormatSbom,
 		printer.FormatPDF,
 		printer.FormatSummaryMarkdown,
-		printer.FormatGL,
+		printer.FormatGLSast,
+		printer.FormatGLSca,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.APIDocumentationFlag, "", apiDocumentationFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ExploitablePathFlag, "", exploitablePathFlagDescription)
@@ -638,6 +652,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ReportSbomFormatLocalFlowFlag, false, "")
 	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.ReportSbomFormatLocalFlowFlag)
 
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
+	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
+	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+
 	return createScanCmd
 }
 
@@ -673,8 +691,9 @@ func setupScanTypeProjectAndConfig(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-
+	jwtWrapper wrappers.JWTWrapper,
 ) error {
+	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -741,6 +760,7 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 	}
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
 	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
@@ -750,7 +770,7 @@ func setupScanTypeProjectAndConfig(
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd, resubmitConfig)
+	var scaConfig = addScaScan(cmd, resubmitConfig, userAllowedEngines[commonParams.ContainersType])
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -758,6 +778,18 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
+	var containersConfig = addContainersScan(containerEngineCLIEnabled.Status)
+	if containersConfig != nil {
+		configArr = append(configArr, containersConfig)
+	}
+
+	var SCSConfig, scsErr = addSCSScan(cmd)
+	if scsErr != nil {
+		return scsErr
+	} else if SCSConfig != nil {
+		configArr = append(configArr, SCSConfig)
+	}
+
 	info["config"] = configArr
 	var err2 error
 	*input, err2 = json.Marshal(info)
@@ -889,7 +921,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContainerLicense bool) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
@@ -897,6 +929,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
+		if hasContainerLicense {
+			scaConfig.EnableContainersScan = false
+		}
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
@@ -915,6 +950,19 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string
 	return nil
 }
 
+func addContainersScan(containerEngineCLIEnabled bool) map[string]interface{} {
+	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
+		return nil
+	}
+	containerMapConfig := make(map[string]interface{})
+	containerMapConfig[resultsMapType] = commonParams.ContainersType
+
+	containerConfig := wrappers.ContainerConfig{}
+
+	containerMapConfig[resultsMapValue] = &containerConfig
+	return containerMapConfig
+}
+
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	if scanTypeEnabled(commonParams.APISecurityType) {
 		apiSecMapConfig := make(map[string]interface{})
@@ -930,8 +978,51 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
+func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
+	if scanTypeEnabled(commonParams.ScsType) {
+		SCSMapConfig := make(map[string]interface{})
+		SCSConfig := wrappers.SCSConfig{}
+		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
+		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if SCSEngines != "" {
+			SCSEnginesTypes := strings.Split(SCSEngines, ",")
+			for _, engineType := range SCSEnginesTypes {
+				engineType = strings.TrimSpace(engineType)
+				switch engineType {
+				case ScsSecretDetectionType:
+					SCSConfig.Twoms = trueString
+				case ScsScoreCardType:
+					SCSConfig.Scorecard = trueString
+				}
+			}
+		} else {
+			SCSConfig.Scorecard = trueString
+			SCSConfig.Twoms = trueString
+		}
+		if SCSConfig.Scorecard == trueString {
+			if SCSRepoToken != "" && SCSRepoURL != "" {
+				SCSConfig.RepoToken = SCSRepoToken
+				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+			} else {
+				if userScanTypes == "" {
+					fmt.Println(ScsRepoRequiredMsg)
+					return nil, nil
+				}
+				return nil, errors.Errorf(ScsRepoRequiredMsg)
+			}
+		}
+		SCSMapConfig[resultsMapValue] = &SCSConfig
+		return SCSMapConfig, nil
+	}
+	return nil, nil
+}
+
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
+	containerEngineCLIEnabled, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -942,10 +1033,10 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
-
+		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
-			if !allowedEngines[scanType] {
+			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
@@ -953,6 +1044,9 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 	} else {
 		for k := range allowedEngines {
+			if k == commonParams.ContainersType && !(containerEngineCLIEnabled.Status) {
+				continue
+			}
 			scanTypes = append(scanTypes, k)
 		}
 	}
@@ -975,7 +1069,7 @@ func scanTypeEnabled(scanType string) bool {
 
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
-	outputFile, err := ioutil.TempFile(os.TempDir(), "cx-*.zip")
+	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
@@ -1001,6 +1095,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	logger.PrintIfVerbose(fmt.Sprintf("Zip size:  %.2fMB\n", float64(stat.Size())/mbBytes))
 	return outputFile.Name(), err
+}
+
+func isSingleContainerScanTriggered() bool {
+	scanTypeList := strings.Split(actualScanTypes, ",")
+	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
@@ -1046,16 +1145,23 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 }
 
 func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
-	files, err := ioutil.ReadDir(parentDir)
+	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
 	}
-	for _, file := range files {
-		if file.IsDir() {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, file)
-		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, file)
+
+	for _, entry := range fileEntries {
+		fileInfo, err := entry.Info()
+		if err != nil {
+			return err
 		}
+
+		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+		} else {
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+		}
+
 		if err != nil {
 			return err
 		}
@@ -1232,6 +1338,10 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
+	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
+
+	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && containerEngineCLIEnabled.Status
+	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
 	if err != nil {
@@ -1239,9 +1349,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	}
 
 	var errorUnzippingFile error
-
 	userProvidedZip := len(zipFilePath) > 0
-	unzip := (len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) && userProvidedZip
+
+	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -1251,35 +1361,76 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	if directoryPath != "" {
 		var dirPathErr error
-
-		scaResolverParams, scaResolver := getScaResolverFlags(cmd)
-
-		// Make sure scaResolver only runs in sca type of scans
-		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			dirPathErr = runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
-			if dirPathErr != nil {
-				if unzip {
-					_ = cleanTempUnzipDirectory(directoryPath)
-				}
-				return "", "", errors.Wrapf(dirPathErr, "ScaResolver error")
+		resolversErr := runScannerResolvers(cmd, directoryPath, projectName, containerScanTriggered, scaResolver, scaResolverParams)
+		if resolversErr != nil {
+			if unzip {
+				_ = cleanTempUnzipDirectory(directoryPath)
 			}
+			return "", "", resolversErr
+		}
+		if isSingleContainerScanTriggered() {
+			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
+			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
+			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
+		} else {
+			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
 
-		zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+		if dirPathErr != nil {
+			return "", "", dirPathErr
+		}
+
 		if unzip {
 			dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
 			if dirRemovalErr != nil {
 				return "", "", dirRemovalErr
 			}
 		}
-		if dirPathErr != nil {
-			return "", "", dirPathErr
-		}
 	}
+
 	if zipFilePath != "" {
 		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip, featureFlagsWrapper)
 	}
 	return preSignedURL, zipFilePath, nil
+}
+
+func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
+	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
+	var containerImagesList []string
+
+	if containerImages != "" {
+		containerImagesList = strings.Split(strings.TrimSpace(containerImages), ",")
+		for _, containerImageName := range containerImagesList {
+			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
+				return containerImagesErr
+			}
+		}
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+	}
+	containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
+	if containerResolverERR != nil {
+		return containerResolverERR
+	}
+	return nil
+}
+
+func runScannerResolvers(cmd *cobra.Command, directoryPath, projectName string, containerScanTriggered bool, scaResolver, scaResolverParams string) error {
+	// Make sure scaResolver only runs in sca type of scans
+	if strings.Contains(actualScanTypes, commonParams.ScaType) {
+		dirPathErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+		if dirPathErr != nil {
+			return errors.Wrapf(dirPathErr, "ScaResolver error")
+		}
+	}
+
+	if containerScanTriggered {
+		containerResolverError := runContainerResolver(cmd, directoryPath)
+		if containerResolverError != nil {
+			return containerResolverError
+		}
+	}
+	return nil
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
@@ -1408,6 +1559,7 @@ func runCreateScanCommand(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -1442,6 +1594,7 @@ func runCreateScanCommand(
 			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
+			jwtWrapper,
 		)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1475,6 +1628,7 @@ func runCreateScanCommand(
 				resultsPdfReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper,
+				scsScanOverviewWrapper,
 				featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1494,7 +1648,7 @@ func runCreateScanCommand(
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
 			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}
@@ -1504,14 +1658,14 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, nil, featureFlagsWrapper)
+			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
 			}
 		}
 
-		cleanUpTempZip(zipFilePath)
+		defer cleanUpTempZip(zipFilePath)
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
@@ -1541,11 +1695,12 @@ func createScanModel(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper, jwtWrapper)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1663,6 +1818,7 @@ func handleWait(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	err := waitForScanCompletion(
@@ -1674,6 +1830,7 @@ func handleWait(
 		resultsPdfReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		cmd,
 		featureFlagsWrapper)
 	if err != nil {
@@ -1696,6 +1853,7 @@ func createReportsAfterScan(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
@@ -1708,6 +1866,7 @@ func createReportsAfterScan(
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	useSCALocalFlow, _ := cmd.Flags().GetBool(commonParams.ReportSbomFormatLocalFlowFlag)
 	retrySBOM, _ := cmd.Flags().GetInt(commonParams.RetrySBOMFlag)
+	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 
 	params, err := getFilters(cmd)
 	if err != nil {
@@ -1726,6 +1885,7 @@ func createReportsAfterScan(
 	return CreateScanReport(
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		resultsSbomWrapper,
 		policyResponseModel,
 		useSCALocalFlow,
@@ -1738,6 +1898,7 @@ func createReportsAfterScan(
 		formatSbomOptions,
 		targetFile,
 		targetPath,
+		agent,
 		params,
 		featureFlagsWrapper,
 	)
@@ -1873,6 +2034,7 @@ func waitForScanCompletion(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
@@ -1888,7 +2050,8 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper, risksOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+		running, err := isScanRunning(scansWrapper, resultsSbomWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
@@ -1918,6 +2081,7 @@ func isScanRunning(
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -1947,7 +2111,9 @@ func isScanRunning(
 			resultsSbomWrapper,
 			resultsPdfReportsWrapper,
 			resultsWrapper,
-			risksOverViewWrapper, nil, featureFlagsWrapper) // check this partial case, how to handle it
+			risksOverViewWrapper,
+			scsScanOverviewWrapper,
+			nil, featureFlagsWrapper) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
@@ -2242,6 +2408,7 @@ func toScanView(scan *wrappers.ScanResponseModel) *scanView {
 	} else {
 		scanTimeOut = "NONE"
 	}
+	scan.ReplaceMicroEnginesWithSCS()
 
 	return &scanView{
 		ID:              scan.ID,
@@ -2289,6 +2456,15 @@ func createKicsScanEnv(cmd *cobra.Command) (volumeMap, kicsDir string, err error
 func contains(s []string, str string) bool {
 	for _, v := range s {
 		if strings.Contains(str, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsIgnoreCase(s []string, str string) bool {
+	for _, v := range s {
+		if strings.EqualFold(str, v) {
 			return true
 		}
 	}
@@ -2476,6 +2652,14 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
 	}
 
+	return nil
+}
+
+func validateContainerImageFormat(containerImage string) error {
+	imageParts := strings.Split(containerImage, ":")
+	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
+		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	}
 	return nil
 }
 

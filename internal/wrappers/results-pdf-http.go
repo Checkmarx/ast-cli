@@ -109,9 +109,8 @@ func (r *PdfHTTPWrapper) CheckPdfReportStatus(reportID string) (*PdfPollingRespo
 	}
 }
 
-func (r *PdfHTTPWrapper) DownloadPdfReport(url, targetFile string) error {
+func (r *PdfHTTPWrapper) DownloadPdfReport(url, targetFile string, useAccessToken bool) error {
 	clientTimeout := uint(downloadTimeout)
-	useAccessToken := FeatureFlags[MinioEnabled]
 	var resp *http.Response
 	var err error
 	if useAccessToken {

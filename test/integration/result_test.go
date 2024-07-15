@@ -23,6 +23,7 @@ import (
 const (
 	fileName         = "result-test"
 	resultsDirectory = "output-results-folder/"
+	fileExtention    = "report.json"
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
@@ -72,11 +73,9 @@ func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
 }
 
 func TestResultListJson(t *testing.T) {
-
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
-
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting results should pass",
 		"results",
@@ -92,7 +91,6 @@ func TestResultListJson(t *testing.T) {
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
 				printer.FormatSummaryMarkdown,
-				printer.FormatGL,
 			}, ",",
 		),
 		flag(params.TargetFlag), fileName,
@@ -117,6 +115,54 @@ func assertResultFilesCreated(t *testing.T) {
 
 	for _, e := range extensions {
 		_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, e))
+		assert.NilError(t, err, "Report file should exist for extension "+e)
+	}
+
+	// delete directory in the end
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+}
+
+func TestResultListForGlReports(t *testing.T) {
+
+	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
+
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Getting results should pass",
+		"results",
+		"show",
+		"--debug",
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatGLSast,
+				printer.FormatGLSca,
+			}, ",",
+		),
+		flag(params.TargetFlag), fileName,
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.SastRedundancyFlag),
+	)
+
+	result := wrappers.ScanResultsCollection{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+
+	assertGlResultFilesCreated(t)
+
+	deleteScanAndProject()
+}
+
+func assertGlResultFilesCreated(t *testing.T) {
+	extensions := []string{printer.FormatGLSast,
+		printer.FormatGLSca}
+
+	for _, e := range extensions {
+		_, err := os.Stat(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, e, fileExtention))
 		assert.NilError(t, err, "Report file should exist for extension "+e)
 	}
 
@@ -251,6 +297,27 @@ func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 	assertError(t, err, "report not sent, invalid email address: invalid_email")
 }
 
+func TestResultsGeneratingPdfReportWithPdfOptionsWithoutNotExploitable(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "pdf",
+		flag(params.ReportFormatPdfOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatPDF)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
 func TestResultsGeneratingPdfReportWithPdfOptions(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
@@ -366,4 +433,118 @@ func TestResultsCounterJsonOutput(t *testing.T) {
 
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
+}
+
+func TestResultsCounterGlSastOutput(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating gl-sast report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatGLSast,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, printer.FormatGLSast, fileExtention))
+
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatGLSast)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, printer.FormatGLSast, fileExtention))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+
+}
+
+func TestResultsCounterGlSCAOutput(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating gl-sca report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatGLSca,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, printer.FormatGLSca, fileExtention))
+
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatGLSca)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, printer.FormatGLSca, fileExtention))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
+}
+
+func TestResultsGeneratingJsonReportWithSeverityHighAndWithoutNotExploitable(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating Json report with severity and state",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable, severity=High",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestResultExcludeNotExploitableFailScanId(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), "FakeScanId",
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed showing a scan")
+}
+
+func TestResultsGeneratingReportWithExcludeNotExploitableStateAndSeverityAndStatus(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating Json report with severity and state",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable;TO_VERIFY,severity=High;Low,status=new;recurrent",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }

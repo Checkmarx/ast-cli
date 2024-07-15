@@ -18,7 +18,7 @@ func CleanURL(uri string) (string, error) {
 
 func Contains(s []string, str string) bool {
 	for _, v := range s {
-		if strings.Contains(str, v) {
+		if strings.Contains(v, str) {
 			return true
 		}
 	}

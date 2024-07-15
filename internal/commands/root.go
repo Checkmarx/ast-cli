@@ -31,6 +31,7 @@ func NewAstCLI(
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
@@ -51,6 +52,7 @@ func NewAstCLI(
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -156,12 +158,14 @@ func NewAstCLI(
 		logsWrapper,
 		groupsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		jwtWrapper,
 		scaRealTimeWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		featureFlagsWrapper,
+		containerResolverWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
@@ -173,6 +177,7 @@ func NewAstCLI(
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
 	)
@@ -224,6 +229,15 @@ func NewAstCLI(
 
 const configFormatString = "%30v: %s"
 
+var extraFilter = map[string]map[string]string{
+	"state": {
+		"exclude_not_exploitable": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
+	},
+	"severity": {},
+	"status":   {},
+	"sort":     {},
+}
+
 func PrintConfiguration() {
 	logger.PrintfIfVerbose("CLI Version: %s", params.Version)
 	logger.PrintIfVerbose("CLI Configuration:")
@@ -259,13 +273,26 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		if len(filterKeyVal) != params.KeyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
-
+		filterKeyVal = validateExtraFilters(filterKeyVal)
 		allFilters[filterKeyVal[0]] = strings.Replace(
 			filterKeyVal[1], ";", ",",
 			strings.Count(filterKeyVal[1], ";"),
 		)
 	}
 	return allFilters, nil
+}
+
+func validateExtraFilters(filterKeyVal []string) []string {
+	// Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
+	if extraFilter[filterKeyVal[0]] != nil {
+		for privateFilter, value := range extraFilter[filterKeyVal[0]] {
+			if strings.Contains(filterKeyVal[1], privateFilter) {
+				logger.PrintfIfVerbose("Set filter from extra filters: [%s,%s]", filterKeyVal[0], value)
+				filterKeyVal[1] = strings.Replace(filterKeyVal[1], filterKeyVal[1], value, -1)
+			}
+		}
+	}
+	return filterKeyVal
 }
 
 func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {

@@ -22,6 +22,7 @@ var (
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)
+	ScsScanOverviewPathKey              = strings.ToLower(ScsScanOverviewPathEnv)
 	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
 	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
 	BflPathKey                          = strings.ToLower(BflPathEnv)
@@ -62,4 +63,5 @@ var (
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
 	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 	ByorPathKey                         = strings.ToLower(ByorPathEnv)
+	VorpalPortKey                       = strings.ToLower(VorpalPortEnv)
 )

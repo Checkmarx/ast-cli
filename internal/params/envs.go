@@ -23,6 +23,7 @@ const (
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
 	ScaPackagePathEnv                   = "CX_SCA_PACKAGE_PATH"
 	RisksOverviewPathEnv                = "CX_RISKS_OVERVIEW_PATH"
+	ScsScanOverviewPathEnv              = "CX_SCS_SCAN_OVERVIEW_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
@@ -62,4 +63,5 @@ const (
 	AccessManagementPathEnv             = "CX_ACCESS_MANAGEMENT_PATH"
 	ByorPathEnv                         = "CX_BYOR_PATH"
 	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
+	VorpalPortEnv                       = "CX_VORPAL_PORT"
 )
