@@ -147,7 +147,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build the project
-        run:  go build -o ./cx ./cmd
+        run:  go build -ldflags "-w -s" -o ./cx ./cmd
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
 

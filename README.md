@@ -73,24 +73,27 @@ To be able to build the code you should have:
 ``` powershell
 setx GOOS=windows 
 setx GOARCH=amd64
-go build -o ./bin/cx.exe ./cmd
+go build -ldflags "-w -s" -o ./bin/cx.exe ./cmd
 ```
 
 #### Linux
-
 ``` bash
 export GOARCH=amd64
 export GOOS=linux
-go build -o ./bin/cx ./cmd
+go build -ldflags "-w -s" -o ./bin/cx ./cmd
 ```
 
 #### Macintosh
-
 ``` bash
 export GOOS=darwin 
 export GOARCH=amd64
-go build -o ./bin/cx-mac ./cmd
+go build -ldflags "-w -s" -o ./bin/cx-mac ./cmd
 ```
+
+## Build Flags
+Use the -ldflags "-w -s" flags to reduce the binary size (Deployment).
+For local development and debugging: Do not use the -ldflags "-w -s" flags
+
 ### Makefile
 For ease of use, a Makefile is provided to build the project for all platforms.
 
