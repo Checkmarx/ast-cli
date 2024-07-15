@@ -29,8 +29,8 @@ builds:
       - goos: windows
         goarch: arm64
     ldflags:
-      - -s
       - -w
+      - -s
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
     hooks:
       post:
@@ -54,8 +54,8 @@ builds:
       - arm
       - arm64
     ldflags:
-      - -s
       - -w
+      - -s
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
 archives:
