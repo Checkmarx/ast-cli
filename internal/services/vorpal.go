@@ -38,7 +38,7 @@ type VorpalWrappersParam struct {
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
 	var err error
-	wrapperParams.VorpalWrapper, err = configureVorpalWrapper(wrapperParams.VorpalWrapper)
+	//wrapperParams.VorpalWrapper, err = configureVorpalWrapper(wrapperParams.VorpalWrapper)
 	vorpalWrapper := wrapperParams.VorpalWrapper
 	if err != nil {
 		return nil, err
@@ -148,7 +148,10 @@ func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vor
 		if err != nil {
 			return err
 		}
-
+		wrappersParam.VorpalWrapper, err = configureVorpalWrapper(wrappersParam.VorpalWrapper)
+		if err != nil {
+			return err
+		}
 		if err := RunVorpalEngine(port); err != nil {
 			return err
 		}
