@@ -4,6 +4,11 @@ release:
   prerelease: true
   name_template: 'Checkmarx One CLI {{.Version}}'
 
+# .goreleaser-dev.yml
+upx:
+  args:
+    - --best
+
 builds:
   - main: ./cmd/main.go
     env:
