@@ -508,11 +508,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	scsIssues := 0
 	var containersIssues *int
 	enginesStatusCode := map[string]int{
-		commonParams.SastType:   0,
-		commonParams.ScaType:    0,
-		commonParams.KicsType:   0,
-		commonParams.APISecType: 0,
-		commonParams.ScsType:    0,
+		commonParams.SastType:       0,
+		commonParams.ScaType:        0,
+		commonParams.KicsType:       0,
+		commonParams.APISecType:     0,
+		commonParams.ScsType:        0,
+		commonParams.ContainersType: 0,
 	}
 	if wrappers.IsContainersEnabled {
 		containersIssues = new(int)
@@ -565,11 +566,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:       scanInfo.Branch,
 		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:    {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
 	if wrappers.IsContainersEnabled {
@@ -1097,7 +1099,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, f
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
-	//Set critical count for a specific engine if critical is disabled
+	// Set critical count for a specific engine if critical is disabled
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
 	criticalEnabled := flagResponse.Status
 	if !criticalEnabled {
