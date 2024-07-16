@@ -1018,7 +1018,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params, false)
+		results, err = ReadResults(resultsWrapper, scan, params)
 		if err != nil {
 			return err
 		}
@@ -1252,7 +1252,6 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
-	isThresholdCheck bool,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
@@ -1275,7 +1274,7 @@ func ReadResults(
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
 		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
-		if err != nil && !isThresholdCheck {
+		if err != nil {
 			return nil, err
 		}
 
