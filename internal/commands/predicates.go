@@ -12,14 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
+func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
 		Long:  "The 'triage' command enables the ability to manage results in Checkmarx One.",
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
-	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper)
+	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{triageShowCmd},
@@ -55,7 +55,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	return triageShowCmd
 }
 
-func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
+func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	triageUpdateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update the state, severity or comment for the given issue",
@@ -71,7 +71,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				--scan-type <SAST|IAC-SECURITY>
 		`,
 		),
-		RunE: runTriageUpdate(resultsPredicatesWrapper),
+		RunE: runTriageUpdate(resultsPredicatesWrapper, featureFlagsWrapper),
 	}
 
 	triageUpdateCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
@@ -134,7 +134,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 	}
 }
 
-func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) func(*cobra.Command, []string) error {
+func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
@@ -143,9 +143,11 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		// check if the current tenant has critical severity available
-		//if !wrappers.FeatureFlags[wrappers.CVSSV3Enabled] && strings.EqualFold(severity, "critical") {
-		//	return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
-		//}
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+		criticalEnabled := flagResponse.Status
+		if !criticalEnabled && strings.EqualFold(severity, "critical") {
+			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
+		}
 		predicate := &wrappers.PredicateRequest{
 			SimilarityID: similarityID,
 			ProjectID:    projectID,
