@@ -1230,7 +1230,6 @@ func createReport(format,
 		return writeHTMLSummary(summaryRpt, summary)
 	}
 	if printer.IsFormat(format, printer.FormatSummaryJSON) {
-		targetFile = fmt.Sprintf("%s_summary", targetFile)
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		convertNotAvailableNumberToZero(summary)
 		return exportJSONSummaryResults(summaryRpt, summary)
