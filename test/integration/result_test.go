@@ -387,7 +387,6 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "sbom",
 		flag(params.ReportSbomFormatFlag), "CycloneDxXml",
-		flag(params.ReportSbomFormatLocalFlowFlag),
 	}
 
 	executeCommand(t, args...)
