@@ -25,10 +25,13 @@ type ScaPackage struct {
 }
 
 type PackagePath struct {
+	Id               string `json:"Id,omitempty"`
 	Name             string `json:"Name,omitempty"`
 	Version          string `json:"Version,omitempty"`
 	Locations        []*string
 	SupportsQuickFix bool
+	IsResolved       bool `json:"IsResolved,omitempty"`
+	IsDevelopment    bool `json:"IsDevelopment,omitempty"`
 }
 
 type ScaType struct {
