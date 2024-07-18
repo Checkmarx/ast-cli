@@ -811,7 +811,6 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
-
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
@@ -917,6 +916,23 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 	scorecardSummary := "Scorecard"
 	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: false}
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	totalSummary := "| TOTAL           N/A       5        1       1      0   Completed   |"
+	assert.Equal(t, strings.Contains(stdoutString, totalSummary), true,
+		"Expected Total summary without critical:"+totalSummary)
 
 	mock.SetScsMockVarsToDefault()
 }
