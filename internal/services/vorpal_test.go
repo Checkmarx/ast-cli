@@ -85,6 +85,8 @@ func TestCreateVorpalScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
 	}
+	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	assert.Nil(t, err)
 
 	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	assert.Nil(t, err)
@@ -114,6 +116,8 @@ func TestCreateVorpalScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Succes
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
 	}
+	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	assert.Nil(t, err)
 
 	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	assert.Nil(t, err)
