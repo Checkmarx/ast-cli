@@ -147,7 +147,6 @@ func ReadFileAsString(path string) (string, error) {
 
 // IsDirOrSymLinkToDir Check if provided DirEntry is a directory or symbolic link to a directory
 func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
-	// Check if the FileInfo represents a directory
 	if fileInfo.IsDir() {
 		return true
 	}
