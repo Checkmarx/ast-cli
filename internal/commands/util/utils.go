@@ -151,7 +151,6 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 	if fileInfo.IsDir() {
 		return true
 	}
-
 	if fileInfo.Mode()&os.ModeSymlink != 0 {
 		symlinkPath := filepath.Join(parentDir, fileInfo.Name())
 		realPath, err := os.Readlink(symlinkPath)
@@ -171,7 +170,6 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 		}
 		return targetInfo.IsDir()
 	}
-
 	return false
 }
 
