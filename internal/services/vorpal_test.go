@@ -112,12 +112,14 @@ func TestCreateVorpalScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Succes
 	}
 
 	wrapperParams := VorpalWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
+		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
 	}
 	err = manageVorpalInstallation(vorpalParams, wrapperParams)
 	assert.Nil(t, err)
+
+	wrapperParams.JwtWrapper = &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled}
 
 	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	assert.Nil(t, err)
