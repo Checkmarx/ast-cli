@@ -246,24 +246,25 @@ func PrintConfiguration() {
 	}
 }
 
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
+//
+//func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
+//	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
+//		if cmdFlag.CommandName == cmd.CommandPath() {
+//			return true
+//		}
+//	}
+//
+//	return false
+//}
 
-	return false
-}
-
-func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
+//func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+//	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
+//
+//	if err != nil {
+//		fmt.Println(err)
+//		os.Exit(1)
+//	}
+//}
 
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	filters, _ := cmd.Flags().GetStringSlice(params.FilterFlag)
