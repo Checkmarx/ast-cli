@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -445,7 +446,8 @@ func assertZipFileRemoved(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca,scs"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	fmt.Println(wrappers.Domains)
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -455,6 +457,7 @@ func TestScansE2E(t *testing.T) {
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
+	fmt.Println(wrappers.Domains)
 }
 
 func TestFastScan(t *testing.T) {
@@ -1673,7 +1676,6 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 
 func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
-
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -1798,4 +1800,19 @@ func TestScanListWithBigLimit(t *testing.T) {
 
 func addSCSDefaultFlagsToArgs(args *[]string) {
 	*args = append(*args, flag(params.SCSRepoURLFlag), scsRepoURL, flag(params.SCSRepoTokenFlag), scsRepoToken)
+}
+
+func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
+	_, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	validateCheckmarxDeuDomains(t, wrappers.Domains)
+	defer deleteProject(t, projectID)
+
+	fmt.Println(wrappers.Domains)
+}
+
+func validateCheckmarxDeuDomains(t *testing.T, domains []string) {
+	validDomains := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
+	for _, domain := range domains {
+		assert.Assert(t, slices.Contains(validDomains, domain))
+	}
 }
