@@ -79,7 +79,7 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
-		if featureFlags == nil || DefaultFFLoad {
+		if len(featureFlags) == 0 || DefaultFFLoad {
 			_ = HandleFeatureFlags(featureFlagsWrapper)
 		}
 		// Take the value from FeatureFlags
