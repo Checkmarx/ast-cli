@@ -467,7 +467,6 @@ func TestScansE2E(t *testing.T) {
 		return
 	}
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
-	fmt.Println(wrappers.Domains)
 }
 
 func TestFastScan(t *testing.T) {
