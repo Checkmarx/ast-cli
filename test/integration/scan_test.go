@@ -300,7 +300,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	assert.NilError(t, err)
 }
 
-func TestScanCreate_FolderWithSymbolicLink_CreateScanSuccessfully(t *testing.T) {
+func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "my-project",
@@ -308,7 +308,18 @@ func TestScanCreate_FolderWithSymbolicLink_CreateScanSuccessfully(t *testing.T) 
 		flag(params.ScanTypes), "iac-security",
 		flag(params.BranchFlag), "dummy_branch",
 	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
 
+func TestScanCreate_FolderWithSymbolicLinkWithRelativePath_CreateScanSuccessfully(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/symlink-relative-path-folder",
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
