@@ -150,13 +150,16 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 	if fileInfo.IsDir() {
 		return true
 	}
-
 	if fileInfo.Mode()&os.ModeSymlink != 0 {
 		symlinkPath := filepath.Join(parentDir, fileInfo.Name())
 		realPath, err := os.Readlink(symlinkPath)
 		if err != nil {
 			fmt.Println("Error reading symlink:", err)
 			return false
+		}
+
+		if !filepath.IsAbs(realPath) {
+			realPath = filepath.Join(parentDir, realPath)
 		}
 
 		targetInfo, err := os.Stat(realPath)
@@ -166,7 +169,6 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 		}
 		return targetInfo.IsDir()
 	}
-
 	return false
 }
 
