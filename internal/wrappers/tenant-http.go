@@ -37,11 +37,7 @@ func (r *TenantConfigurationHTTPWrapper) GetTenantConfiguration() (
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, err
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := []*TenantConfigurationResponse{}

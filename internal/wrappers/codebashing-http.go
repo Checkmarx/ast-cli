@@ -51,11 +51,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Wrapf(err, failedToParseCodeBashing))
-		}
+		errorModel := GetWebError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		var decoded []CodeBashingCollection

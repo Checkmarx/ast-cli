@@ -63,11 +63,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetAll)
-		}
+		errorModel := GetError(decoder)
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := ScansCollectionResponseModel{}
