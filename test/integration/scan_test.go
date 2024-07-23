@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1803,16 +1802,6 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 }
 
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
-	_, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	validateCheckmarxDeuDomains(t, wrappers.Domains)
-	defer deleteProject(t, projectID)
-
-	fmt.Println(wrappers.Domains)
-}
-
-func validateCheckmarxDeuDomains(t *testing.T, domains []string) {
-	validDomains := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
-	for _, domain := range domains {
-		assert.Assert(t, slices.Contains(validDomains, domain))
-	}
+	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	assert.DeepEqual(t, wrappers.Domains, []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"})
 }
