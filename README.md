@@ -23,7 +23,7 @@
 <h3 align="center">Checkmarx One CLI</h3>
 
 <p align="center">
-    Checkmarx CLI is a standalone Checkmarx tool.
+    Checkmarx CLI is a standalone Checkmarx tool..
 <br />
     <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
     <br />
