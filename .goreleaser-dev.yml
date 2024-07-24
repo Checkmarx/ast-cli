@@ -4,11 +4,6 @@ release:
   prerelease: true
   name_template: 'Checkmarx One CLI {{.Version}}'
 
-# Enable UPX compression
-upx:
-  args:
-    - --best
-
 builds:
   - main: ./cmd/main.go
     env:
@@ -57,6 +52,8 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm
+      - arm64
     # Review your build flags
     ldflags:
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
