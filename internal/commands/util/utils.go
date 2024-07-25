@@ -11,6 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/usercount"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
@@ -80,6 +81,11 @@ func NewUtilsCommand(
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
+	if flagResponse.Status {
+		utilsCmd.AddCommand(importCmd)
+	}
+
 	utilsCmd.AddCommand(
 		completionCmd,
 		envCheckCmd,
@@ -95,7 +101,6 @@ func NewUtilsCommand(
 		remediationCmd,
 		tenantCmd,
 		maskSecretsCmd,
-		importCmd,
 	)
 
 	return utilsCmd
