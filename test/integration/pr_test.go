@@ -38,6 +38,7 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 		os.Getenv(prGithubNumber),
 		flag(params.RepoNameFlag),
 		os.Getenv(prGithubRepoName),
+		"--debug",
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Error should be nil")
