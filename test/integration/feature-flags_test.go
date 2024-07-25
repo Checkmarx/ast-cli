@@ -5,6 +5,7 @@ package integration
 import (
 	"testing"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -25,6 +26,18 @@ func Test_HandleFeatureFlags_WhenCalled_ThenNoErrorAndCacheNotEmpty(t *testing.T
 	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
 	assert.NilError(t, err, "HandleFeatureFlags should not return an error")
 	//assert.Assert(t, len(wrappers.FeatureFlagsCache) > 0, "FeatureFlags cache should not be empty")
+}
+
+func TestByorEnabled_Flag_should_be_true(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	featureFlagsPath := viper.GetString("featureFlagsPath")
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+
+	flagName := featureFlagsConstants.ByorEnabled
+	flagResponse, err := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, flagName)
+	assert.NilError(t, err, "GetSpecificFeatureFlag should not return an error")
+	assert.Equal(t, flagResponse.Status, true, "ByorEnabled Feature flag status should be true")
+
 }
 
 //func Test_UpdateSpecificFeatureFlagMap_WhenCalled_ThenUpdateCache(t *testing.T) {

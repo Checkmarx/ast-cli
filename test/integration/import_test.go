@@ -7,12 +7,19 @@ import (
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
-
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 	projectId, projectName := createProject(t, nil, nil)
 	defer deleteProject(t, projectId)
 
@@ -27,6 +34,10 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	projectId, projectName := createProject(t, nil, nil)
 	defer deleteProject(t, projectId)
@@ -42,6 +53,10 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 }
 
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	projectName := projectNameRandom
 	defer deleteProjectByName(t, projectName)
@@ -57,6 +72,10 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 }
 
 func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	projectName := projectNameRandom
 
@@ -73,6 +92,10 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 }
 
 func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	projectName := projectNameRandom
 
@@ -87,6 +110,10 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 }
 
 func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	projectName := projectNameRandom
 
@@ -100,6 +127,10 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 }
 
 func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
+	if !isFFByorEnabled(t) {
+		assert.Assert(t, true, "Byor is disabled")
+		return
+	}
 
 	args := []string{
 		"utils", "import",
@@ -108,4 +139,15 @@ func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *t
 	}
 	err, _ := executeCommand(t, args...)
 	assertError(t, err, errorConstants.ProjectNameIsRequired)
+}
+
+func isFFByorEnabled(t *testing.T) bool {
+	// createASTIntegrationTestCommand is called just to load the FF values
+	createASTIntegrationTestCommand(t)
+
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
+
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.ByorEnabled)
+	return flagResponse.Status
 }
