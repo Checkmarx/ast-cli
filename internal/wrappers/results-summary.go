@@ -149,8 +149,14 @@ func (r *ResultSummary) ContainersIssuesValue() int {
 	return *r.ContainersIssues
 }
 
+func (r *ResultSummary) SCSEnabled() bool {
+	return IsSCSEnabled
+}
 func (r *ResultSummary) HasSCS() bool {
 	return r.HasEngine(params.ScsType)
+}
+func (r *ResultSummary) SCSIssuesValue() int {
+	return *r.ScsIssues
 }
 
 func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
@@ -826,9 +832,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |{{if .ContainersEnabled}} Containers |{{end}}
-|:----------:|:----------:|:---------:|{{if .ContainersEnabled}} :----------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .ContainersEnabled}}{{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
+| SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS |{{end}}{{if .ContainersEnabled}} Containers |{{end}}
+|:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|{{end}}{{if .ContainersEnabled}} :----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if .ContainersEnabled}}{{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 

@@ -1038,3 +1038,37 @@ func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagEnabled_SCSPresentInRepor
 
 	mock.SetScsMockVarsToDefault()
 }
+
+func TestRunGetResultsByScanIdSummaryMarkdownFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
+	// Read the contents of the file
+	markdownBytes, err := os.ReadFile(fmt.Sprintf("%s.%s", fileName, "md"))
+	assert.NilError(t, err, "Error reading file")
+
+	markdownString := string(markdownBytes)
+	assert.Equal(t, strings.Contains(markdownString, "SCS"), true, "SCS should be present in the markdown file")
+
+	// Remove generated md file
+	removeFileBySuffix(t, "md")
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSummaryMarkdownFormat_SCSFlagNotEnabled_SCSNotPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
+	// Read the contents of the file
+	markdownBytes, err := os.ReadFile(fmt.Sprintf("%s.%s", fileName, "md"))
+	assert.NilError(t, err, "Error reading file")
+
+	markdownString := string(markdownBytes)
+	assert.Equal(t, strings.Contains(markdownString, "SCS"), false, "SCS should be present in the markdown file")
+
+	// Remove generated md file
+	removeFileBySuffix(t, "md")
+	mock.SetScsMockVarsToDefault()
+}
