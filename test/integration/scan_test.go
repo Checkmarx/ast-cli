@@ -27,7 +27,6 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -360,7 +359,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project-" + uuid.New().String(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ScanTypes), "container-security",
 		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
@@ -380,7 +379,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project-" + uuid.New().String(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
@@ -399,7 +398,7 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project-" + uuid.New().String(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
@@ -419,7 +418,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project-" + uuid.New().String(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/empty-folder.zip",
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
@@ -438,7 +437,7 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project-" + uuid.New().String(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ContainerImagesFlag), "nginx:",
 		flag(params.BranchFlag), "dummy_branch",
