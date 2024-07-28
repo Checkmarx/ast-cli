@@ -67,7 +67,7 @@ You can also use the relevant link to download the latest version of the CLI:
 ## Compile
 
 To be able to build the code you should have:
-* Go - You can download and install Go using this [link](https://golang.org/doc/install).
+* Go - You can download and install Go using this [link](https://golang.org/doc/install)
 
 #### Windows
 ``` powershell
