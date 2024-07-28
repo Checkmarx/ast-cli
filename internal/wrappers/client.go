@@ -68,6 +68,7 @@ const audienceClaimKey = "aud"
 
 var cachedAccessToken string
 var cachedAccessTime time.Time
+var Domains = make(map[string]struct{})
 
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
@@ -577,6 +578,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			),
 		)
 		resp, err = client.Do(req)
+		Domains = AppendIfNotExists(Domains, req.URL.Host)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
 		}
@@ -740,4 +742,11 @@ func extractFromTokenClaims(accessToken, claim string) (string, error) {
 		return "", errors.Errorf(jwtError, claim)
 	}
 	return value, nil
+}
+
+func AppendIfNotExists(domainsMap map[string]struct{}, newDomain string) map[string]struct{} {
+	if _, exists := domainsMap[newDomain]; !exists {
+		domainsMap[newDomain] = struct{}{}
+	}
+	return domainsMap
 }
