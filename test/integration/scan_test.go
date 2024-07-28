@@ -1812,7 +1812,6 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 }
 
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
-	wrappers.Domains = []string{}
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	assert.DeepEqual(t, wrappers.Domains, []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"})
 }
