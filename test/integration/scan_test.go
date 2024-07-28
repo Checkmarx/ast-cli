@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1818,13 +1819,14 @@ func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 		"sca-downloads.s3.amazonaws.com",
 		"api-sca.checkmarx.net",
 		"www.invalid-sca-resolver.com",
-		"www.invalid-sca-resolver-hash.com"}
+		"www.invalid-sca-resolver-hash.com",
+		"download.checkmarx.com"}
 	validateCheckmarxDomains(t, usedDomainsInTests)
 }
 
 func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	usedDomains := wrappers.Domains
-	for _, domain := range usedDomainsInTests {
-		assert.Assert(t, usedDomains[domain], "Domain "+domain+" not found in used domains")
+	for domain, _ := range usedDomains {
+		assert.Assert(t, !slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
 }
