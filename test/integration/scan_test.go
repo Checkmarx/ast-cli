@@ -1813,5 +1813,18 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	assert.DeepEqual(t, wrappers.Domains, []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"})
+	usedDomainsInTests := []string{"deu.iam.checkmarx.net",
+		"deu.ast.checkmarx.net",
+		"sca-downloads.s3.amazonaws.com",
+		"api-sca.checkmarx.net",
+		"www.invalid-sca-resolver.com",
+		"www.invalid-sca-resolver-hash.com"}
+	validateCheckmarxDomains(t, usedDomainsInTests)
+}
+
+func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
+	usedDomains := wrappers.Domains
+	for _, domain := range usedDomainsInTests {
+		assert.Assert(t, usedDomains[domain], "Domain "+domain+" not found in used domains")
+	}
 }
