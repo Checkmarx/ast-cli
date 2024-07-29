@@ -20,6 +20,8 @@ const (
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
 	NoVorpalLicense                        = "User doesn't have \"AI Protection\" license"
+	FailedUploadFileMsgWithDomain          = "Unable to upload the file to the pre-signed URL. Please ensure that the domain: %s is on your allow list."
+	FailedUploadFileMsgWithURL             = "Unable to upload the file to the pre-signed URL. Please ensure that the domain of the URL: %s is on your allow list."
 
 	// Vorpal Engine
 	FileExtensionIsRequired = "file must have an extension"
