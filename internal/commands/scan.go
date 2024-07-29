@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -1648,7 +1649,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
 			if err != nil {
 				return err
 			}
@@ -1900,6 +1901,7 @@ func applyThreshold(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -1911,7 +1913,7 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params, risksOverviewWrapper)
 	if err != nil {
 		return err
 	}
@@ -1994,20 +1996,31 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string, risksOverviewWrapper wrappers.RisksOverviewWrapper) (
 	map[string]int,
 	error,
 ) {
+	summaryMap := make(map[string]int)
 	results, err := ReadResults(resultsWrapper, scan, params)
 	if err != nil {
 		return nil, err
 	}
-	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
 		if isExploitable(result.State) {
 			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
+	}
+
+	if slices.Contains(scan.Engines, commonParams.APISecType) {
+		log.Println(scan.Engines)
+		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scan.ID)
+		if err != nil {
+			return nil, err
+		}
+		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
+		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
+		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
 	}
 	return summaryMap, nil
 }
