@@ -2302,7 +2302,7 @@ func processPackage(
 	locationsByID map[string][]*string,
 ) {
 	for _, dependencyPath := range pkg.DependencyPathArray {
-		processDependencyPath(&dependencyPath, locationsByID)
+		processDependencyPath(dependencyPath, locationsByID)
 		pkg.SupportsQuickFix = pkg.SupportsQuickFix || dependencyPath[0].SupportsQuickFix
 	}
 
@@ -2331,12 +2331,12 @@ func processPackage(
 }
 
 func processDependencyPath(
-	dependencyPath *[]wrappers.DependencyPath,
+	dependencyPath []wrappers.DependencyPath,
 	locationsByID map[string][]*string,
 ) {
-	head := &(*dependencyPath)[0]
+	head := &dependencyPath[0]
 	head.Locations = locationsByID[head.ID]
-	head.SupportsQuickFix = len(*dependencyPath) == 1
+	head.SupportsQuickFix = len(dependencyPath) == 1
 
 	for _, location := range locationsByID[head.ID] {
 		head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
