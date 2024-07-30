@@ -1018,7 +1018,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
 		if err != nil {
 			return err
 		}
@@ -1250,6 +1250,7 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
@@ -1273,7 +1274,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
 		if err != nil {
 			return nil, err
 		}
@@ -1285,33 +1286,17 @@ func ReadResults(
 }
 
 func enrichScaResults(
-	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		// Get additional information to enrich sca results
-		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
 		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
-		// Get additional information to add the type information to the sca results
-		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
-		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
-		}
-		// Enrich sca results
+		scaPackageModel := parseExportPackage(scaExportDetails.Packages)
+		scaTypeModel := parseExportVulnerabilityType(scaExportDetails.ScaTypes)
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
@@ -1320,6 +1305,44 @@ func enrichScaResults(
 		resultsModel = removeContainerResults(resultsModel)
 	}
 	return resultsModel, nil
+}
+
+func parseExportVulnerabilityType(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
+	var scaTypes []wrappers.ScaTypeCollection
+	for _, t := range types {
+		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
+	}
+	return &scaTypes
+}
+
+func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
+	var scaPackages []wrappers.ScaPackageCollection
+	for _, pkg := range packages {
+		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
+			ID:                  pkg.ID,
+			Locations:           pkg.Locations,
+			DependencyPathArray: parsePackagePathToDependencyPath(pkg.PackagePathArray),
+			Outdated:            pkg.Outdated,
+			IsDirectDependency:  pkg.IsDirectDependency,
+		})
+	}
+	return &scaPackages
+}
+
+func parsePackagePathToDependencyPath(packagePathArray [][]wrappers.PackagePath) [][]wrappers.DependencyPath {
+	var dependencyPathArray [][]wrappers.DependencyPath
+	for _, path := range packagePathArray {
+		var dependencyPath []wrappers.DependencyPath
+		for _, dep := range path {
+			dependencyPath = append(dependencyPath, wrappers.DependencyPath{
+				ID:      dep.ID,
+				Name:    dep.Name,
+				Version: dep.Version,
+			})
+		}
+		dependencyPathArray = append(dependencyPathArray, dependencyPath)
+	}
+	return dependencyPathArray
 }
 
 func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {

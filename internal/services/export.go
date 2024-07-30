@@ -1,10 +1,12 @@
 package services
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
@@ -18,6 +20,39 @@ const (
 	pollingTimeout      = 5 // minutes
 )
 
+func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wrappers.ScaPackageCollectionExport, error) {
+	var scaPackageCollection = &wrappers.ScaPackageCollectionExport{
+		Packages: []wrappers.ScaPackage{},
+		ScaTypes: []wrappers.ScaType{},
+	}
+	payload := &wrappers.ExportRequestPayload{
+		ScanID:     scanID,
+		FileFormat: "ScanReportJson",
+	}
+
+	exportID, err := exportWrapper.InitiateExportRequest(payload)
+	if err != nil {
+		return nil, err
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Initiated export request for scanID %s. ExportID: %s", scanID, exportID))
+
+	exportResponse, err := pollForCompletion(exportWrapper, exportID.ExportID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if exportResponse.ExportStatus == "Completed" && exportResponse.FileURL != "" {
+		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(exportResponse.FileURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
+
+	return scaPackageCollection, nil
+}
+
 func ExportSbomResults(
 	exportWrapper wrappers.ExportWrapper,
 	targetFile string,
@@ -30,17 +65,17 @@ func ExportSbomResults(
 	}
 
 	log.Println("Generating SBOM report with " + payload.FileFormat + " file format")
-	sbomresp, err := exportWrapper.GenerateSbomReport(payload)
+	sbomresp, err := exportWrapper.InitiateExportRequest(payload)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed downloading SBOM report")
 	}
 
 	pollingResp, err := pollForCompletion(exportWrapper, sbomresp.ExportID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed downloading SBOM report")
 	}
 
-	if err := exportWrapper.DownloadSbomReport(pollingResp.ExportID, targetFile); err != nil {
+	if err := exportWrapper.DownloadExportReport(pollingResp.ExportID, targetFile); err != nil {
 		return errors.Wrapf(err, "Failed downloading SBOM report")
 	}
 	return nil
@@ -70,11 +105,11 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
 		select {
 		case <-timeout:
-			return nil, errors.Errorf("SBOM generating failed - Timed out after 5 minutes")
+			return nil, errors.Errorf("export generating failed - Timed out after 5 minutes")
 		default:
-			resp, err := exportWrapper.GetSbomReportStatus(exportID)
+			resp, err := exportWrapper.GetExportReportStatus(exportID)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed getting SBOM report status")
+				return nil, errors.Wrapf(err, "failed getting export report status")
 			}
 			pollingResp = resp
 			time.Sleep(delayValueForReport * time.Second)
@@ -82,7 +117,7 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 	}
 
 	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
-		return nil, errors.Errorf("SBOM generating failed - Current status: %s", pollingResp.ExportStatus)
+		return nil, errors.Errorf("export generating failed - Current status: %s", pollingResp.ExportStatus)
 	}
 
 	return pollingResp, nil
