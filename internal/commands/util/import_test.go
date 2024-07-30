@@ -59,7 +59,6 @@ func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWit
 }
 
 func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -75,7 +74,6 @@ func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsError
 }
 
 func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -91,7 +89,6 @@ func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsError
 }
 
 func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
-
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -107,7 +104,6 @@ func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNe
 }
 
 func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
@@ -123,7 +119,6 @@ func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorW
 }
 
 func TestImport_ImportSarifFileMissingExtension_CreateImportReturnsErrorWithCorrectMessage(t *testing.T) {
-
 	cmd := NewImportCommand(
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
