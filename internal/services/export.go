@@ -42,7 +42,7 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 		return nil, err
 	}
 
-	if exportResponse.ExportStatus == "Completed" && exportResponse.FileURL != "" {
+	if exportResponse != nil && exportResponse.ExportStatus == "Completed" && exportResponse.FileURL != "" {
 		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(exportResponse.FileURL)
 		if err != nil {
 			return nil, err
@@ -73,6 +73,11 @@ func ExportSbomResults(
 	pollingResp, err := pollForCompletion(exportWrapper, sbomresp.ExportID)
 	if err != nil {
 		return errors.Wrapf(err, "Failed downloading SBOM report")
+	}
+
+	if pollingResp == nil {
+		log.Println("No results were found, skipping SBOM report generation")
+		return nil
 	}
 
 	if err := exportWrapper.DownloadExportReport(pollingResp.ExportID, targetFile); err != nil {
@@ -114,6 +119,13 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 			pollingResp = resp
 			time.Sleep(delayValueForReport * time.Second)
 		}
+	}
+
+	if pollingResp.ErrorMessage != "" {
+		if strings.Contains(pollingResp.ErrorMessage, "No results were found") {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("export error: %s", pollingResp.ErrorMessage)
 	}
 
 	if !strings.EqualFold(pollingResp.ExportStatus, completedStatus) {
