@@ -2281,19 +2281,21 @@ func processResult(
 	result.ScaType = buildScaType(typesByCVE, result)
 	result.State = buildScaState(typesByCVE, result)
 
-	for _, pkg := range *scaPackageModel {
+	scaPackageModelVal := *scaPackageModel
+
+	for _, pkg := range scaPackageModelVal {
 		if pkg.ID != currentID {
 			continue
 		}
 
-		processPackage(pkg, currentID, result, locationsByID)
+		processPackage(&pkg, currentID, result, locationsByID)
 		result.ScanResultData.ScaPackageCollection = &pkg
 		break
 	}
 }
 
 func processPackage(
-	pkg wrappers.ScaPackageCollection,
+	pkg *wrappers.ScaPackageCollection,
 	currentID string,
 	result *wrappers.ScanResult,
 	locationsByID map[string][]*string,
