@@ -1,7 +1,8 @@
 package wrappers
 
 type ScaPackageCollection struct {
-	ID                  string             `json:"id,omitempty"`
+	ID                  string `json:"id,omitempty"`
+	Name                string
 	FixLink             string             `json:"fixLink,omitempty"`
 	BestPackageLink     string             `json:"bestPackageLink,omitempty"`
 	Locations           []*string          `json:"locations,omitempty"`

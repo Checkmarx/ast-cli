@@ -1320,6 +1320,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 	for _, pkg := range packages {
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
 			ID:                  pkg.ID,
+			Name:                pkg.Name,
 			Locations:           pkg.Locations,
 			DependencyPathArray: parsePackagePathToDependencyPath(pkg.PackagePathArray),
 			Outdated:            pkg.Outdated,
@@ -2255,50 +2256,88 @@ func addPackageInformation(
 	scaPackageModel *[]wrappers.ScaPackageCollection,
 	scaTypeModel *[]wrappers.ScaTypeCollection,
 ) *wrappers.ScanResultsCollection {
-	var currentID string
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
 
 	for _, result := range resultsModel.Results {
-		if !(result.Type == commonParams.ScaType) {
+		if result.Type != commonParams.ScaType {
 			continue
-		} else {
-			currentID = result.ScanResultData.PackageIdentifier
-			const precision = 1
-			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
-			result.VulnerabilityDetails.CvssScore = roundedScore
-			// Add the sca type
-			result.ScaType = buildScaType(typesByCVE, result)
-			// Temporary code for client
-			result.State = buildScaState(typesByCVE, result)
-			for _, packages := range *scaPackageModel {
-				currentPackage := packages
-				if packages.ID == currentID {
-					for _, dependencyPath := range currentPackage.DependencyPathArray {
-						head := &dependencyPath[0]
-						head.Locations = locationsByID[head.ID]
-						head.SupportsQuickFix = len(dependencyPath) == 1
-						for _, location := range locationsByID[head.ID] {
-							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
-						}
-						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
-					}
-					if result.ID != "" {
-						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
-					} else {
-						currentPackage.FixLink = ""
-					}
-					if currentPackage.IsDirectDependency {
-						currentPackage.TypeOfDependency = directDependencyType
-					} else {
-						currentPackage.TypeOfDependency = indirectDependencyType
-					}
-					result.ScanResultData.ScaPackageCollection = &currentPackage
-					break
-				}
-			}
 		}
+
+		processResult(result, locationsByID, typesByCVE, scaPackageModel)
 	}
+
 	return resultsModel
+}
+
+func processResult(
+	result *wrappers.ScanResult,
+	locationsByID map[string][]*string,
+	typesByCVE map[string]wrappers.ScaTypeCollection,
+	scaPackageModel *[]wrappers.ScaPackageCollection,
+) {
+	const precision = 1
+	currentID := result.ScanResultData.PackageIdentifier
+	result.VulnerabilityDetails.CvssScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+	result.ScaType = buildScaType(typesByCVE, result)
+	result.State = buildScaState(typesByCVE, result)
+
+	for _, pkg := range *scaPackageModel {
+		if pkg.ID != currentID {
+			continue
+		}
+
+		processPackage(pkg, currentID, result, locationsByID)
+		result.ScanResultData.ScaPackageCollection = &pkg
+		break
+	}
+}
+
+func processPackage(
+	pkg wrappers.ScaPackageCollection,
+	currentID string,
+	result *wrappers.ScanResult,
+	locationsByID map[string][]*string,
+) {
+	for _, dependencyPath := range pkg.DependencyPathArray {
+		processDependencyPath(&dependencyPath, locationsByID)
+		pkg.SupportsQuickFix = pkg.SupportsQuickFix || dependencyPath[0].SupportsQuickFix
+	}
+
+	// If the package has no dependency paths, create one with the current package as the only element
+	// This is done to ensure that the logic remains consistent with the old logic of risk-management api
+	if len(pkg.DependencyPathArray) == 0 {
+		pkg.DependencyPathArray = append(pkg.DependencyPathArray, []wrappers.DependencyPath{{
+			ID:               currentID,
+			Locations:        locationsByID[currentID],
+			Name:             pkg.Name,
+			SupportsQuickFix: pkg.SupportsQuickFix,
+		}})
+	}
+
+	if result.ID != "" {
+		pkg.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
+	} else {
+		pkg.FixLink = ""
+	}
+
+	if pkg.IsDirectDependency {
+		pkg.TypeOfDependency = directDependencyType
+	} else {
+		pkg.TypeOfDependency = indirectDependencyType
+	}
+}
+
+func processDependencyPath(
+	dependencyPath *[]wrappers.DependencyPath,
+	locationsByID map[string][]*string,
+) {
+	head := &(*dependencyPath)[0]
+	head.Locations = locationsByID[head.ID]
+	head.SupportsQuickFix = len(*dependencyPath) == 1
+
+	for _, location := range locationsByID[head.ID] {
+		head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+	}
 }
 
 func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {

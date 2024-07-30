@@ -14,6 +14,7 @@ type ScaPackageCollectionExport struct {
 
 type ScaPackage struct {
 	ID                 string          `json:"Id,omitempty"`
+	Name               string          `json:"Name,omitempty"`
 	Locations          []*string       `json:"Locations,omitempty"`
 	PackagePathArray   [][]PackagePath `json:"PackagePaths,omitempty"`
 	Outdated           bool            `json:"Outdated,omitempty"`
