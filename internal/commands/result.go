@@ -2283,13 +2283,14 @@ func processResult(
 
 	scaPackageModelVal := *scaPackageModel
 
-	for _, pkg := range scaPackageModelVal {
+	for i := range scaPackageModelVal {
+		pkg := &scaPackageModelVal[i]
 		if pkg.ID != currentID {
 			continue
 		}
 
-		processPackage(&pkg, currentID, result, locationsByID)
-		result.ScanResultData.ScaPackageCollection = &pkg
+		processPackage(pkg, currentID, result, locationsByID)
+		result.ScanResultData.ScaPackageCollection = pkg
 		break
 	}
 }
