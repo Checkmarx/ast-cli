@@ -2281,11 +2281,11 @@ func addPackageInformation(
 							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
 						}
 						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
-						if result.ID != "" {
-							currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
-						} else {
-							currentPackage.FixLink = ""
-						}
+					}
+					if result.ID != "" {
+						currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
+					} else {
+						currentPackage.FixLink = ""
 					}
 					if currentPackage.IsDirectDependency {
 						currentPackage.TypeOfDependency = directDependencyType
