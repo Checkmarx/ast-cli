@@ -660,6 +660,23 @@ func TestScanCreateWithThreshold(t *testing.T) {
 	assert.NilError(t, err, "")
 }
 
+func TestScansAPISecThresholdShouldBlock(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/sources.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.ScanTypes), "sast, api-security",
+		flag(params.Threshold), "api-security-high=1",
+	}
+
+	err, _ := executeCommand(t, testArgs...)
+	assert.Assert(t, err != nil, "Expected error but got nil")
+	assert.Assert(t, strings.Contains(err.Error(), "api-security-high"), "Expected error message to contain 'api-security' but got: %s", err.Error())
+}
+
 // Create a scan with the sources
 // Assert the scan completes
 func TestScanCreateWithThresholdParseError(t *testing.T) {
