@@ -2316,8 +2316,8 @@ func updatePackages(
 
 func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[string]wrappers.ScaPackageCollection {
 	scaPackageMap := make(map[string]wrappers.ScaPackageCollection)
-	for _, packages := range scaPackageModel {
-		scaPackageMap[packages.ID] = packages
+	for i := range scaPackageModel {
+		scaPackageMap[scaPackageModel[i].ID] = scaPackageModel[i]
 	}
 	return scaPackageMap
 }
