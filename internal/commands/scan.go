@@ -2013,7 +2013,6 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 	}
 
 	if slices.Contains(scan.Engines, commonParams.APISecType) {
-		log.Println(scan.Engines)
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scan.ID)
 		if err != nil {
 			return nil, err
