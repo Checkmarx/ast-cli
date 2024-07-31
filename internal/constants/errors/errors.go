@@ -19,7 +19,7 @@ const (
 	SarifInvalidFileExtension              = "Invalid file extension. Supported extensions are .sarif and .zip containing sarif files."
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
-	NoVorpalLicense                        = "User doesn't have \"AI Protection\" license"
+	NoVorpalLicense                        = "Your Checkmarx One account doesn't have \"AI Protection\" license"
 	FailedUploadFileMsgWithDomain          = "Unable to upload the file to the pre-signed URL. Try adding the domain: %s to your allow list."
 	FailedUploadFileMsgWithURL             = "Unable to upload the file to the pre-signed URL. Try adding the URL: %s to your allow list."
 
