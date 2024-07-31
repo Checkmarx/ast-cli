@@ -14,7 +14,7 @@ import (
 const (
 	DefaultSbomOption   = "CycloneDxJson"
 	exportingStatus     = "Exporting"
-	delayValueForReport = 10
+	delayValueForReport = 3
 	pendingStatus       = "Pending"
 	completedStatus     = "completed"
 	pollingTimeout      = 5 // minutes
@@ -28,6 +28,14 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 	payload := &wrappers.ExportRequestPayload{
 		ScanID:     scanID,
 		FileFormat: "ScanReportJson",
+		ExportParameters: wrappers.ExportParameters{
+			HideDevAndTestDependencies: true,
+			ShowOnlyEffectiveLicenses:  true,
+			ExcludePackages:            false,
+			ExcludeLicenses:            true,
+			ExcludeVulnerabilities:     false,
+			ExcludePolicies:            true,
+		},
 	}
 
 	exportID, err := exportWrapper.InitiateExportRequest(payload)
@@ -48,7 +56,6 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 			return nil, err
 		}
 	}
-	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
 
 	return scaPackageCollection, nil
 }
@@ -117,6 +124,7 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 				return nil, errors.Wrapf(err, "failed getting export report status")
 			}
 			pollingResp = resp
+			log.Println("Export status: " + pollingResp.ExportStatus)
 			time.Sleep(delayValueForReport * time.Second)
 		}
 	}

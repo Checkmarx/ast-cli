@@ -17,8 +17,18 @@ import (
 )
 
 type ExportRequestPayload struct {
-	ScanID     string `json:"ScanID"`
-	FileFormat string `json:"FileFormat"`
+	ScanID           string           `json:"ScanID"`
+	FileFormat       string           `json:"FileFormat"`
+	ExportParameters ExportParameters `json:"ExportParameters,omitempty"`
+}
+
+type ExportParameters struct {
+	HideDevAndTestDependencies bool `json:"hideDevAndTestDependencies"`
+	ShowOnlyEffectiveLicenses  bool `json:"showOnlyEffectiveLicenses"`
+	ExcludePackages            bool `json:"excludePackages"`
+	ExcludeLicenses            bool `json:"excludeLicenses"`
+	ExcludeVulnerabilities     bool `json:"excludeVulnerabilities"`
+	ExcludePolicies            bool `json:"excludePolicies"`
 }
 
 type ExportResponse struct {
