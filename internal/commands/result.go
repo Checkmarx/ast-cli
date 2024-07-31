@@ -700,7 +700,6 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		}
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
-
 		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
