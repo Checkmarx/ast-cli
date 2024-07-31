@@ -2258,13 +2258,14 @@ func addPackageInformation(
 ) *wrappers.ScanResultsCollection {
 
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
+	scaPackageMap := buildScaPackageMap(*scaPackageModel)
 
 	for _, result := range resultsModel.Results {
 		if result.Type != commonParams.ScaType {
 			continue
 		}
 
-		processResult(result, locationsByID, typesByCVE, scaPackageModel)
+		processResult(result, locationsByID, typesByCVE, scaPackageMap)
 	}
 
 	return resultsModel
@@ -2274,7 +2275,7 @@ func processResult(
 	result *wrappers.ScanResult,
 	locationsByID map[string][]*string,
 	typesByCVE map[string]wrappers.ScaTypeCollection,
-	scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaPackageMap map[string]wrappers.ScaPackageCollection, // Updated parameter
 ) {
 	const precision = 1
 
@@ -2283,36 +2284,42 @@ func processResult(
 	result.ScaType = buildScaType(typesByCVE, result)
 	result.State = buildScaState(typesByCVE, result)
 
-	updatePackages(result, scaPackageModel, locationsByID, currentID)
+	updatePackages(result, scaPackageMap, locationsByID, currentID)
 }
 
 func updatePackages(
 	result *wrappers.ScanResult,
-	scaPackageModel *[]wrappers.ScaPackageCollection,
+	scaPackageMap map[string]wrappers.ScaPackageCollection,
 	locationsByID map[string][]*string,
 	currentID string,
 ) {
-	for _, packages := range *scaPackageModel {
-		if packages.ID != currentID {
-			continue
-		}
-
-		if len(packages.DependencyPathArray) == 0 {
-			appendDependencyPath(&packages, currentID, locationsByID)
-		}
-
-		updateDependencyPaths(packages.DependencyPathArray, locationsByID)
-
-		if packages.IsDirectDependency {
-			packages.TypeOfDependency = directDependencyType
-		} else {
-			packages.TypeOfDependency = indirectDependencyType
-		}
-
-		packages.FixLink = buildFixLink(result)
-		result.ScanResultData.ScaPackageCollection = &packages
-		break
+	packages, found := scaPackageMap[currentID]
+	if !found {
+		return
 	}
+
+	if len(packages.DependencyPathArray) == 0 {
+		appendDependencyPath(&packages, currentID, locationsByID)
+	}
+
+	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
+
+	if packages.IsDirectDependency {
+		packages.TypeOfDependency = directDependencyType
+	} else {
+		packages.TypeOfDependency = indirectDependencyType
+	}
+
+	packages.FixLink = buildFixLink(result)
+	result.ScanResultData.ScaPackageCollection = &packages
+}
+
+func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[string]wrappers.ScaPackageCollection {
+	scaPackageMap := make(map[string]wrappers.ScaPackageCollection)
+	for _, packages := range scaPackageModel {
+		scaPackageMap[packages.ID] = packages
+	}
+	return scaPackageMap
 }
 
 func appendDependencyPath(
