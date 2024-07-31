@@ -672,7 +672,7 @@ func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, 
 
 func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	for _, result := range results.Results {
-		countResult(summary, result, featureFlagsWrapper)
+		countResult(summary, result)
 	}
 	// Set critical count for a specific engine if critical is disabled
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
@@ -682,7 +682,6 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 		if !criticalEnabled {
-			println(commonParams.APISecType, "Critical is disabled")
 			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
 		}
 	}
@@ -701,6 +700,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		}
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
+
 		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
@@ -708,6 +708,12 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
 		}
+	}
+	if !criticalEnabled {
+		summary.EnginesResult[commonParams.SastType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.KicsType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ScaType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ContainersType].Critical = notAvailableNumber
 	}
 }
 
@@ -1073,7 +1079,7 @@ func CreateScanReport(
 	return nil
 }
 
-func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 	engineType := strings.TrimSpace(result.Type)
 	severity := strings.ToLower(result.Severity)
 	if contains(summary.EnginesEnabled, engineType) && isExploitable(result.State) {
@@ -1108,12 +1114,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult, f
 			summary.InfoIssues++
 		}
 		summary.UpdateEngineResultSummary(engineType, severity)
-	}
-	// Set critical count for a specific engine if critical is disabled
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
-	criticalEnabled := flagResponse.Status
-	if !criticalEnabled {
-		summary.EnginesResult[engineType].Critical = notAvailableNumber
 	}
 }
 
