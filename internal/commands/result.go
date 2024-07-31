@@ -674,10 +674,17 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	for _, result := range results.Results {
 		countResult(summary, result, featureFlagsWrapper)
 	}
+	// Set critical count for a specific engine if critical is disabled
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
 	if summary.HasAPISecurity() {
 		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
 		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+		if !criticalEnabled {
+			println(commonParams.APISecType, "Critical is disabled")
+			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
+		}
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
@@ -691,6 +698,9 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
+		}
+		if !criticalEnabled {
+			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
 		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
