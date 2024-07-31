@@ -3,7 +3,6 @@ package wrappers
 import (
 	"errors"
 
-	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
@@ -41,10 +40,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    MinioEnabled,
 				Default: true,
-			},
-			{
-				Name:    feature_flags.ByorEnabled,
-				Default: false,
 			},
 		},
 	},
@@ -89,6 +84,9 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
+		if len(featureFlags) == 0 || DefaultFFLoad {
+			_ = HandleFeatureFlags(featureFlagsWrapper)
+		}
 		// Take the value from FeatureFlags
 		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
 	}
@@ -135,6 +133,7 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 			}
 		}
 	}
+	DefaultFFLoad = false
 }
 
 func LoadFeatureFlagsDefaultValues() {
