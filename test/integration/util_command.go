@@ -65,7 +65,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummmaryPath := viper.GetString(params.ScanSummaryPathKey)
-	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
 	scsScanOverviewPath := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
