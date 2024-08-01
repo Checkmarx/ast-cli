@@ -1322,7 +1322,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 			ID:                  pkg.ID,
 			Name:                pkg.Name,
 			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
+			DependencyPathArray: parsePackagePathToDependencyPath(pkg),
 			Outdated:            pkg.Outdated,
 			IsDirectDependency:  pkg.IsDirectDependency,
 		})
@@ -1330,7 +1330,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 	return &scaPackages
 }
 
-func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.DependencyPath {
+func parsePackagePathToDependencyPath(pkg wrappers.ScaPackage) [][]wrappers.DependencyPath {
 	var dependencyPathArray [][]wrappers.DependencyPath
 	for _, path := range pkg.PackagePathArray {
 		var dependencyPath []wrappers.DependencyPath
@@ -1349,7 +1349,7 @@ func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.Dep
 	return dependencyPathArray
 }
 
-func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg *wrappers.ScaPackage) {
+func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg wrappers.ScaPackage) {
 	*dependencyPathArray = append(*dependencyPathArray, []wrappers.DependencyPath{{
 		ID:            pkg.ID,
 		Locations:     pkg.Locations,
@@ -2328,19 +2328,6 @@ func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[str
 		scaPackageMap[scaPackageModel[i].ID] = scaPackageModel[i]
 	}
 	return scaPackageMap
-}
-
-func appendDependencyPath(
-	packages *wrappers.ScaPackageCollection,
-	currentID string,
-	locationsByID map[string][]*string,
-) {
-	packages.DependencyPathArray = append(packages.DependencyPathArray, []wrappers.DependencyPath{{
-		ID:            currentID,
-		Locations:     locationsByID[currentID],
-		Name:          packages.Name,
-		IsDevelopment: packages.IsDirectDependency,
-	}})
 }
 
 func updateDependencyPaths(dependencyPaths [][]wrappers.DependencyPath, locationsByID map[string][]*string) {
