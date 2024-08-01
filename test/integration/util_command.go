@@ -93,7 +93,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummmaryPath)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummmaryPath)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverviewPath)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
