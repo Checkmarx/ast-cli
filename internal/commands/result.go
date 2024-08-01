@@ -2277,11 +2277,9 @@ func addPackageInformation(
 	scaPackageMap := buildScaPackageMap(*scaPackageModel)
 
 	for _, result := range resultsModel.Results {
-		if result.Type != commonParams.ScaType {
-			continue
+		if result.Type == commonParams.ScaType {
+			processResult(result, locationsByID, typesByCVE, scaPackageMap)
 		}
-
-		processResult(result, locationsByID, typesByCVE, scaPackageMap)
 	}
 
 	return resultsModel
