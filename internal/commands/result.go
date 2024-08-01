@@ -1318,11 +1318,12 @@ func parseExportVulnerabilityType(types []wrappers.ScaType) *[]wrappers.ScaTypeC
 func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
 	var scaPackages []wrappers.ScaPackageCollection
 	for _, pkg := range packages {
+		pkg := pkg
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
 			ID:                  pkg.ID,
 			Name:                pkg.Name,
 			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(pkg),
+			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
 			Outdated:            pkg.Outdated,
 			IsDirectDependency:  pkg.IsDirectDependency,
 		})
@@ -1330,7 +1331,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 	return &scaPackages
 }
 
-func parsePackagePathToDependencyPath(pkg wrappers.ScaPackage) [][]wrappers.DependencyPath {
+func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.DependencyPath {
 	var dependencyPathArray [][]wrappers.DependencyPath
 	for _, path := range pkg.PackagePathArray {
 		var dependencyPath []wrappers.DependencyPath
@@ -1349,7 +1350,7 @@ func parsePackagePathToDependencyPath(pkg wrappers.ScaPackage) [][]wrappers.Depe
 	return dependencyPathArray
 }
 
-func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg wrappers.ScaPackage) {
+func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg *wrappers.ScaPackage) {
 	*dependencyPathArray = append(*dependencyPathArray, []wrappers.DependencyPath{{
 		ID:            pkg.ID,
 		Locations:     pkg.Locations,
