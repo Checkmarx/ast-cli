@@ -1343,6 +1343,10 @@ func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.Dep
 		}
 		dependencyPathArray = append(dependencyPathArray, dependencyPath)
 	}
+
+	// We are doing this to maintain the same structure that was in risk-management api response
+	// in risk-management, if the length of the dependency path array is 1, it will be the main package
+	// in export service, if there are no dependencies, the package path array will be empty
 	if len(dependencyPathArray) == 0 {
 		appendMainPackageToDependencyPath(&dependencyPathArray, pkg)
 	}
