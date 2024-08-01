@@ -1322,7 +1322,7 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 			ID:                  pkg.ID,
 			Name:                pkg.Name,
 			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(pkg.PackagePathArray),
+			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
 			Outdated:            pkg.Outdated,
 			IsDirectDependency:  pkg.IsDirectDependency,
 		})
@@ -1330,9 +1330,9 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 	return &scaPackages
 }
 
-func parsePackagePathToDependencyPath(packagePathArray [][]wrappers.PackagePath) [][]wrappers.DependencyPath {
+func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.DependencyPath {
 	var dependencyPathArray [][]wrappers.DependencyPath
-	for _, path := range packagePathArray {
+	for _, path := range pkg.PackagePathArray {
 		var dependencyPath []wrappers.DependencyPath
 		for _, dep := range path {
 			dependencyPath = append(dependencyPath, wrappers.DependencyPath{
@@ -1343,7 +1343,19 @@ func parsePackagePathToDependencyPath(packagePathArray [][]wrappers.PackagePath)
 		}
 		dependencyPathArray = append(dependencyPathArray, dependencyPath)
 	}
+	if len(dependencyPathArray) == 0 {
+		appendMainPackageToDependencyPath(&dependencyPathArray, pkg)
+	}
 	return dependencyPathArray
+}
+
+func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg *wrappers.ScaPackage) {
+	*dependencyPathArray = append(*dependencyPathArray, []wrappers.DependencyPath{{
+		ID:            pkg.ID,
+		Locations:     pkg.Locations,
+		Name:          pkg.Name,
+		IsDevelopment: pkg.IsDevelopmentDependency,
+	}})
 }
 
 func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
@@ -2298,10 +2310,6 @@ func updatePackages(
 		return
 	}
 
-	if len(packages.DependencyPathArray) == 0 {
-		appendDependencyPath(&packages, currentID, locationsByID)
-	}
-
 	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
 
 	if packages.IsDirectDependency {
@@ -2328,10 +2336,10 @@ func appendDependencyPath(
 	locationsByID map[string][]*string,
 ) {
 	packages.DependencyPathArray = append(packages.DependencyPathArray, []wrappers.DependencyPath{{
-		ID:               currentID,
-		Locations:        locationsByID[currentID],
-		Name:             packages.Name,
-		SupportsQuickFix: packages.SupportsQuickFix,
+		ID:            currentID,
+		Locations:     locationsByID[currentID],
+		Name:          packages.Name,
+		IsDevelopment: packages.IsDirectDependency,
 	}})
 }
 
