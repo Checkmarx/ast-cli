@@ -114,6 +114,8 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 	timeout := time.After(pollingTimeout * time.Minute)
 	pollingResp := &wrappers.ExportPollingResponse{ExportStatus: exportingStatus}
 
+	logger.PrintIfVerbose("Polling for export report generation completion")
+
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
 		select {
 		case <-timeout:
@@ -124,7 +126,7 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 				return nil, errors.Wrapf(err, "failed getting export report status")
 			}
 			pollingResp = resp
-			log.Println("Export status: " + pollingResp.ExportStatus)
+			logger.PrintIfVerbose("Export status: " + pollingResp.ExportStatus)
 			time.Sleep(delayValueForReport * time.Second)
 		}
 	}
