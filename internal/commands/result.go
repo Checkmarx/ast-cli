@@ -1321,7 +1321,6 @@ func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCo
 		pkg := pkg
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
 			ID:                  pkg.ID,
-			Name:                pkg.Name,
 			Locations:           pkg.Locations,
 			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
 			Outdated:            pkg.Outdated,
