@@ -20,7 +20,7 @@ const (
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"
 	SlowRepo              = "https://github.com/WebGoat/WebGoat"
-	SSHRepo               = "git@github.com:Yoavast/CX-AST.git"
+	SSHRepo               = "git@github.com:pedrompflopes/ast-jenkins-docker.git"
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
