@@ -105,6 +105,7 @@ const (
 	fixLabel                                = "fix"
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
+	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
 )
 
 var summaryFormats = []string{
@@ -1336,8 +1337,8 @@ func enrichScaResults(
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
-		scaPackageModel := parseExportPackage(scaExportDetails.Packages)
-		scaTypeModel := parseExportVulnerabilityType(scaExportDetails.ScaTypes)
+		scaPackageModel := parseScaExportPackage(scaExportDetails.Packages)
+		scaTypeModel := parseExportScaVulnerability(scaExportDetails.ScaTypes)
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
@@ -1348,7 +1349,7 @@ func enrichScaResults(
 	return resultsModel, nil
 }
 
-func parseExportVulnerabilityType(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
+func parseExportScaVulnerability(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
 	var scaTypes []wrappers.ScaTypeCollection
 	for _, t := range types {
 		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
@@ -1356,7 +1357,7 @@ func parseExportVulnerabilityType(types []wrappers.ScaType) *[]wrappers.ScaTypeC
 	return &scaTypes
 }
 
-func parseExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
+func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
 	var scaPackages []wrappers.ScaPackageCollection
 	for _, pkg := range packages {
 		pkg := pkg
@@ -2353,7 +2354,7 @@ func updatePackages(
 		return
 	}
 
-	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
+	updateDependencyPaths(packages, locationsByID)
 
 	if packages.IsDirectDependency {
 		packages.TypeOfDependency = directDependencyType
@@ -2373,21 +2374,22 @@ func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[str
 	return scaPackageMap
 }
 
-func updateDependencyPaths(dependencyPaths [][]wrappers.DependencyPath, locationsByID map[string][]*string) {
+func updateDependencyPaths(pkg wrappers.ScaPackageCollection, locationsByID map[string][]*string) {
+	dependencyPaths := pkg.DependencyPathArray
 	for i := range dependencyPaths {
 		head := &dependencyPaths[i][0]
 		head.Locations = locationsByID[head.ID]
 		head.SupportsQuickFix = len(dependencyPaths[i]) == 1
-
 		for _, location := range locationsByID[head.ID] {
 			head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
 		}
+		pkg.SupportsQuickFix = pkg.SupportsQuickFix || head.SupportsQuickFix
 	}
 }
 
 func buildFixLink(result *wrappers.ScanResult) string {
 	if result.ID != "" {
-		return "https://devhub.checkmarx.com/cve-details/" + result.ID
+		return fmt.Sprint(fixLinkPrefix, result.ID)
 	}
 	return ""
 }

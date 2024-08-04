@@ -16,7 +16,7 @@ const (
 	exportingStatus     = "Exporting"
 	delayValueForReport = 3
 	pendingStatus       = "Pending"
-	completedStatus     = "completed"
+	completedStatus     = "Completed"
 	pollingTimeout      = 5 // minutes
 )
 
@@ -50,7 +50,7 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 		return nil, err
 	}
 
-	if exportResponse != nil && exportResponse.ExportStatus == "Completed" && exportResponse.FileURL != "" {
+	if exportResponse != nil && strings.EqualFold(exportResponse.ExportStatus, completedStatus) && exportResponse.FileURL != "" {
 		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(exportResponse.FileURL)
 		if err != nil {
 			return nil, err
