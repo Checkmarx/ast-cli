@@ -811,7 +811,6 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
-
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
@@ -819,7 +818,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS             -        -      -      -       -      |"
+	scsSummary := "| SCS               -       -        -       -      -       -       |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := "Secret Detection"
@@ -851,10 +850,10 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	TotalResults := "Total Results: 18"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL          10        5      3      0   Completed  |"
+	TotalSummary := "| TOTAL             0      10        5       3      0   Completed   |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
-	scsSummary := "| SCS             5        3      2      0   Partial    |"
+	scsSummary := "| SCS               0       5        3       2      0   Partial     |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -881,7 +880,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS             5        3      2      0   Completed  |"
+	scsSummary := "| SCS               0       5        3       2      0   Completed   |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -917,6 +916,23 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 	scorecardSummary := "Scorecard"
 	assert.Equal(t, !strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: false}
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	totalSummary := "| TOTAL           N/A       5        1       1      0   Completed   |"
+	assert.Equal(t, strings.Contains(stdoutString, totalSummary), true,
+		"Expected Total summary without critical:"+totalSummary)
 
 	mock.SetScsMockVarsToDefault()
 }

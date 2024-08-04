@@ -37,6 +37,7 @@ const (
 	failedListingResults      = "Failed listing results"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
+	criticalLabel             = "critical"
 	highLabel                 = "high"
 	lowLabel                  = "low"
 	infoLabel                 = "info"
@@ -48,6 +49,7 @@ const (
 	lowSonar                  = "MINOR"
 	mediumSonar               = "MAJOR"
 	highSonar                 = "CRITICAL"
+	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
@@ -56,15 +58,17 @@ const (
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
 	highCx                    = "HIGH"
-	tableResultsFormat        = "              | %-10s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	stringTableResultsFormat  = "              | %-10s   %4s   %6s   %4s   %4s   %5s      |\n"
-	TableTitleFormat          = "              | %-11s   %4s    %6s  %4s   %4s   %6s    |\n"
+	criticalCx                = "CRITICAL"
+	tableResultsFormat        = "              | %-10s   %6v   %5d   %6d   %5d   %4d   %-9s   |\n"
+	stringTableResultsFormat  = "              | %-10s    %5s  %6s   %6s   %5s   %4s   %5s       |\n"
+	TableTitleFormat          = "              | %-11s   %4s   %4s    %6s  %4s   %4s   %6s     |\n"
 	twoNewLines               = "\n\n"
-	tableLine                 = "              ---------------------------------------------------------     "
+	tableLine                 = "              ---------------------------------------------------------------------     "
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "-"
-	scanFailedString          = "Failed"
+	disabledString            = "N/A"
+	scanFailedString          = "Failed   "
 	scanCanceledString        = "Canceled"
 	scanSuccessString         = "Completed"
 	scanPartialString         = "Partial"
@@ -133,19 +137,22 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
 var securities = map[string]string{
-	infoCx:   "3.5",
-	lowCx:    "6.5",
-	mediumCx: "8.5",
-	highCx:   "9.5",
+	infoCx:     "1.0",
+	lowCx:      "2.0",
+	mediumCx:   "4.0",
+	highCx:     "7.0",
+	criticalCx: "9.0",
 }
 
 // Match cx severity with sonar severity
 var sonarSeverities = map[string]string{
-	infoCx:   infoSonar,
-	lowCx:    lowSonar,
-	mediumCx: mediumSonar,
-	highCx:   highSonar,
+	infoCx:     infoSonar,
+	lowCx:      lowSonar,
+	mediumCx:   mediumSonar,
+	highCx:     highSonar,
+	criticalCx: criticalSonar,
 }
 
 var containerEngineUnsupportedAgents = []string{
@@ -501,11 +508,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	scsIssues := 0
 	var containersIssues *int
 	enginesStatusCode := map[string]int{
-		commonParams.SastType:   0,
-		commonParams.ScaType:    0,
-		commonParams.KicsType:   0,
-		commonParams.APISecType: 0,
-		commonParams.ScsType:    0,
+		commonParams.SastType:       0,
+		commonParams.ScaType:        0,
+		commonParams.KicsType:       0,
+		commonParams.APISecType:     0,
+		commonParams.ScsType:        0,
+		commonParams.ContainersType: 0,
 	}
 	if wrappers.IsContainersEnabled {
 		containersIssues = new(int)
@@ -543,6 +551,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		ProjectID:        scanInfo.ProjectID,
 		RiskStyle:        "",
 		RiskMsg:          "",
+		CriticalIssues:   0,
 		HighIssues:       0,
 		MediumIssues:     0,
 		LowIssues:        0,
@@ -557,11 +566,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:       scanInfo.Branch,
 		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:    {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
 	if wrappers.IsContainersEnabled {
@@ -592,6 +602,7 @@ func summaryReport(
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	results *wrappers.ScanResultsCollection,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
@@ -614,7 +625,7 @@ func summaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	enhanceWithScanSummary(summary, results)
+	enhanceWithScanSummary(summary, results, featureFlagsWrapper)
 
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
@@ -636,7 +647,10 @@ func setNotAvailableEnginesStatusCode(summary *wrappers.ResultSummary) {
 }
 
 func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
-	if summary.HighIssues > 0 {
+	if summary.CriticalIssues > 0 {
+		summary.RiskStyle = criticalLabel
+		summary.RiskMsg = "Critical Risk"
+	} else if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
 	} else if summary.MediumIssues > 0 {
@@ -656,14 +670,20 @@ func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, 
 	}
 }
 
-func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection) {
+func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
+	// Set critical count for a specific engine if critical is disabled
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
 	if summary.HasAPISecurity() {
 		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
 		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+		if !criticalEnabled {
+			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
+		}
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
@@ -678,12 +698,21 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
+		if !criticalEnabled {
+			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
+		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
 		}
+	}
+	if !criticalEnabled {
+		summary.EnginesResult[commonParams.SastType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.KicsType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ScaType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ContainersType].Critical = notAvailableNumber
 	}
 }
 
@@ -786,15 +815,15 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
 	switch statusNumber {
 	case notAvailableNumber:
-		fmt.Printf(stringTableResultsFormat, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(stringTableResultsFormat, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	case scanFailedNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	case scanPartialNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
 	}
 }
 
@@ -823,16 +852,25 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
 	}
 }
 
+func getCountValue(count int) interface{} {
+	if count < 0 {
+		return disabledString
+	}
+	return count
+}
+
 func printResultsSummaryTable(summary *wrappers.ResultSummary) {
+	totalCriticalIssues := summary.EnginesResult.GetCriticalIssues()
 	totalHighIssues := summary.EnginesResult.GetHighIssues()
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+
 	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
 	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println(tableLine)
-	fmt.Printf(TableTitleFormat, "   ", "High", "Medium", "Low", "Info", "Status")
+	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
@@ -847,7 +885,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 
 	fmt.Println(tableLine)
 	fmt.Printf(tableResultsFormat,
-		"TOTAL", totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+		"TOTAL", getCountValue(totalCriticalIssues), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf(tableLine + twoNewLines)
 }
 
@@ -1025,7 +1063,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, results)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results)
 		if err != nil {
 			return err
 		}
@@ -1061,7 +1099,10 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 				return
 			}
 		}
+
 		switch severity {
+		case criticalLabel:
+			summary.CriticalIssues++
 		case highLabel:
 			summary.HighIssues++
 		case mediumLabel:
@@ -2095,16 +2136,16 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
-
 	return sarifProperties
 }
 
 func findSarifLevel(result *wrappers.ScanResult) string {
 	level := map[string]string{
-		infoCx:   infoLowSarif,
-		lowCx:    infoLowSarif,
-		mediumCx: mediumSarif,
-		highCx:   highSarif,
+		infoCx:     infoLowSarif,
+		lowCx:      infoLowSarif,
+		mediumCx:   mediumSarif,
+		highCx:     highSarif,
+		criticalCx: highSarif,
 	}
 	return level[result.Severity]
 }
