@@ -2354,7 +2354,10 @@ func updatePackages(
 		return
 	}
 
-	updateDependencyPaths(packages, locationsByID)
+	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
+	if !packages.SupportsQuickFix {
+		packages.SupportsQuickFix = hasQuickFix(packages.DependencyPathArray)
+	}
 
 	if packages.IsDirectDependency {
 		packages.TypeOfDependency = directDependencyType
@@ -2366,6 +2369,16 @@ func updatePackages(
 	result.ScanResultData.ScaPackageCollection = &packages
 }
 
+func hasQuickFix(dependencyPaths [][]wrappers.DependencyPath) bool {
+	for i := range dependencyPaths {
+		head := &dependencyPaths[i][0]
+		if head.SupportsQuickFix {
+			return true
+		}
+	}
+	return false
+}
+
 func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[string]wrappers.ScaPackageCollection {
 	scaPackageMap := make(map[string]wrappers.ScaPackageCollection)
 	for i := range scaPackageModel {
@@ -2374,16 +2387,15 @@ func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[str
 	return scaPackageMap
 }
 
-func updateDependencyPaths(pkg wrappers.ScaPackageCollection, locationsByID map[string][]*string) {
-	dependencyPaths := pkg.DependencyPathArray
+func updateDependencyPaths(dependencyPaths [][]wrappers.DependencyPath, locationsByID map[string][]*string) {
 	for i := range dependencyPaths {
 		head := &dependencyPaths[i][0]
 		head.Locations = locationsByID[head.ID]
 		head.SupportsQuickFix = len(dependencyPaths[i]) == 1
+
 		for _, location := range locationsByID[head.ID] {
 			head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
 		}
-		pkg.SupportsQuickFix = pkg.SupportsQuickFix || head.SupportsQuickFix
 	}
 }
 
