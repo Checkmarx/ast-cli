@@ -5,6 +5,7 @@ go 1.22.5
 require (
 	github.com/CheckmarxDev/containers-resolver v1.0.6
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/checkmarxDev/ast-ai-prompts v0.0.0-20240805114541-e98a81d2ff0a
 	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
