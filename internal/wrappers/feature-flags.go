@@ -3,12 +3,12 @@ package wrappers
 import (
 	"errors"
 
-	feature_flags "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
+const CVSSV3Enabled = "CVSS_V3_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const SCSEngineCLIEnabled = "NEW_2MS_SCORECARD_RESULTS_CLI_ENABLED"
@@ -41,10 +41,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 				Name:    MinioEnabled,
 				Default: true,
 			},
-			{
-				Name:    feature_flags.ByorEnabled,
-				Default: false,
-			},
 		},
 	},
 	{
@@ -52,6 +48,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    NewScanReportEnabled,
+				Default: false,
+			},
+		},
+	},
+	{
+		CommandName: "cx triage update",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    CVSSV3Enabled,
 				Default: false,
 			},
 		},
@@ -79,6 +84,9 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
+		if len(featureFlags) == 0 || DefaultFFLoad {
+			_ = HandleFeatureFlags(featureFlagsWrapper)
+		}
 		// Take the value from FeatureFlags
 		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
 	}
@@ -125,6 +133,7 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 			}
 		}
 	}
+	DefaultFFLoad = false
 }
 
 func LoadFeatureFlagsDefaultValues() {
