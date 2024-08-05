@@ -105,6 +105,7 @@ const (
 	fixLabel                                = "fix"
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
+	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
 )
 
 var summaryFormats = []string{
@@ -1056,7 +1057,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
 		if err != nil {
 			return err
 		}
@@ -1291,6 +1292,7 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
@@ -1314,7 +1316,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
 		if err != nil {
 			return nil, err
 		}
@@ -1326,33 +1328,17 @@ func ReadResults(
 }
 
 func enrichScaResults(
-	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		// Get additional information to enrich sca results
-		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
 		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
-		// Get additional information to add the type information to the sca results
-		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
-		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
-		}
-		// Enrich sca results
+		scaPackageModel := parseScaExportPackage(scaExportDetails.Packages)
+		scaTypeModel := parseExportScaVulnerability(scaExportDetails.ScaTypes)
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
@@ -1361,6 +1347,61 @@ func enrichScaResults(
 		resultsModel = removeContainerResults(resultsModel)
 	}
 	return resultsModel, nil
+}
+
+func parseExportScaVulnerability(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
+	var scaTypes []wrappers.ScaTypeCollection
+	for _, t := range types {
+		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
+	}
+	return &scaTypes
+}
+
+func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
+	var scaPackages []wrappers.ScaPackageCollection
+	for _, pkg := range packages {
+		pkg := pkg
+		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
+			ID:                  pkg.ID,
+			Locations:           pkg.Locations,
+			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
+			Outdated:            pkg.Outdated,
+			IsDirectDependency:  pkg.IsDirectDependency,
+		})
+	}
+	return &scaPackages
+}
+
+func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.DependencyPath {
+	var dependencyPathArray [][]wrappers.DependencyPath
+	for _, path := range pkg.PackagePathArray {
+		var dependencyPath []wrappers.DependencyPath
+		for _, dep := range path {
+			dependencyPath = append(dependencyPath, wrappers.DependencyPath{
+				ID:      dep.ID,
+				Name:    dep.Name,
+				Version: dep.Version,
+			})
+		}
+		dependencyPathArray = append(dependencyPathArray, dependencyPath)
+	}
+
+	// We are doing this to maintain the same structure that was in risk-management api response
+	// in risk-management, if the length of the dependency path array is 1, it will be the main package
+	// in export service, if there are no dependencies, the package path array will be empty
+	if len(dependencyPathArray) == 0 {
+		appendMainPackageToDependencyPath(&dependencyPathArray, pkg)
+	}
+	return dependencyPathArray
+}
+
+func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg *wrappers.ScaPackage) {
+	*dependencyPathArray = append(*dependencyPathArray, []wrappers.DependencyPath{{
+		ID:            pkg.ID,
+		Locations:     pkg.Locations,
+		Name:          pkg.Name,
+		IsDevelopment: pkg.IsDevelopmentDependency,
+	}})
 }
 
 func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
@@ -2273,50 +2314,96 @@ func addPackageInformation(
 	scaPackageModel *[]wrappers.ScaPackageCollection,
 	scaTypeModel *[]wrappers.ScaTypeCollection,
 ) *wrappers.ScanResultsCollection {
-	var currentID string
+
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
+	scaPackageMap := buildScaPackageMap(*scaPackageModel)
 
 	for _, result := range resultsModel.Results {
-		if !(result.Type == commonParams.ScaType) {
-			continue
-		} else {
-			currentID = result.ScanResultData.PackageIdentifier
-			const precision = 1
-			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
-			result.VulnerabilityDetails.CvssScore = roundedScore
-			// Add the sca type
-			result.ScaType = buildScaType(typesByCVE, result)
-			// Temporary code for client
-			result.State = buildScaState(typesByCVE, result)
-			for _, packages := range *scaPackageModel {
-				currentPackage := packages
-				if packages.ID == currentID {
-					for _, dependencyPath := range currentPackage.DependencyPathArray {
-						head := &dependencyPath[0]
-						head.Locations = locationsByID[head.ID]
-						head.SupportsQuickFix = len(dependencyPath) == 1
-						for _, location := range locationsByID[head.ID] {
-							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
-						}
-						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
-						if result.ID != "" {
-							currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
-						} else {
-							currentPackage.FixLink = ""
-						}
-					}
-					if currentPackage.IsDirectDependency {
-						currentPackage.TypeOfDependency = directDependencyType
-					} else {
-						currentPackage.TypeOfDependency = indirectDependencyType
-					}
-					result.ScanResultData.ScaPackageCollection = &currentPackage
-					break
-				}
-			}
+		if result.Type == commonParams.ScaType {
+			processResult(result, locationsByID, typesByCVE, scaPackageMap)
 		}
 	}
+
 	return resultsModel
+}
+
+func processResult(
+	result *wrappers.ScanResult,
+	locationsByID map[string][]*string,
+	typesByCVE map[string]wrappers.ScaTypeCollection,
+	scaPackageMap map[string]wrappers.ScaPackageCollection, // Updated parameter
+) {
+	const precision = 1
+
+	currentID := result.ScanResultData.PackageIdentifier
+	result.VulnerabilityDetails.CvssScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+	result.ScaType = buildScaType(typesByCVE, result)
+	result.State = buildScaState(typesByCVE, result)
+
+	updatePackages(result, scaPackageMap, locationsByID, currentID)
+}
+
+func updatePackages(
+	result *wrappers.ScanResult,
+	scaPackageMap map[string]wrappers.ScaPackageCollection,
+	locationsByID map[string][]*string,
+	currentID string,
+) {
+	packages, found := scaPackageMap[currentID]
+	if !found {
+		return
+	}
+
+	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
+	if !packages.SupportsQuickFix {
+		packages.SupportsQuickFix = hasQuickFix(packages.DependencyPathArray)
+	}
+
+	if packages.IsDirectDependency {
+		packages.TypeOfDependency = directDependencyType
+	} else {
+		packages.TypeOfDependency = indirectDependencyType
+	}
+
+	packages.FixLink = buildFixLink(result)
+	result.ScanResultData.ScaPackageCollection = &packages
+}
+
+func hasQuickFix(dependencyPaths [][]wrappers.DependencyPath) bool {
+	for i := range dependencyPaths {
+		head := &dependencyPaths[i][0]
+		if head.SupportsQuickFix {
+			return true
+		}
+	}
+	return false
+}
+
+func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[string]wrappers.ScaPackageCollection {
+	scaPackageMap := make(map[string]wrappers.ScaPackageCollection)
+	for i := range scaPackageModel {
+		scaPackageMap[scaPackageModel[i].ID] = scaPackageModel[i]
+	}
+	return scaPackageMap
+}
+
+func updateDependencyPaths(dependencyPaths [][]wrappers.DependencyPath, locationsByID map[string][]*string) {
+	for i := range dependencyPaths {
+		head := &dependencyPaths[i][0]
+		head.Locations = locationsByID[head.ID]
+		head.SupportsQuickFix = len(dependencyPaths[i]) == 1
+
+		for _, location := range locationsByID[head.ID] {
+			head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+		}
+	}
+}
+
+func buildFixLink(result *wrappers.ScanResult) string {
+	if result.ID != "" {
+		return fmt.Sprint(fixLinkPrefix, result.ID)
+	}
+	return ""
 }
 
 func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {
