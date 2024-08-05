@@ -3,10 +3,8 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
-	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
@@ -14,28 +12,24 @@ import (
 )
 
 const (
-	failedToParseGetResults    = "Failed to parse list results"
-	failedTogetScanSummaries   = "Failed to get scan summaries"
-	failedToParseScanSummaries = "Failed to parse scan summaries"
-	respStatusCode             = "response status code %d"
-	sort                       = "sort"
-	sortResultsDefault         = "-severity"
-	offset                     = "offset"
-	astAPIPageLen              = 1000
-	astAPIPagingValue          = "1000"
+	failedToParseGetResults = "Failed to parse list results"
+	respStatusCode          = "response status code %d"
+	sort                    = "sort"
+	sortResultsDefault      = "-severity"
+	offset                  = "offset"
+	astAPIPageLen           = 1000
+	astAPIPagingValue       = "1000"
 )
 
 type ResultsHTTPWrapper struct {
 	resultsPath     string
 	scanSummaryPath string
-	scaPackagePath  string
 }
 
-func NewHTTPResultsWrapper(path, scaPackagePath, scanSummaryPath string) ResultsWrapper {
+func NewHTTPResultsWrapper(path, scanSummaryPath string) ResultsWrapper {
 	return &ResultsHTTPWrapper{
 		resultsPath:     path,
 		scanSummaryPath: scanSummaryPath,
-		scaPackagePath:  scaPackagePath,
 	}
 }
 
@@ -123,99 +117,6 @@ func getResultsByOffset(resultPath string, params map[string]string, clientTimeo
 		return &model, true, nil, nil
 	default:
 		return nil, false, nil, errors.Errorf(respStatusCode, resp.StatusCode)
-	}
-}
-func (r *ResultsHTTPWrapper) GetAllResultsPackageByScanID(params map[string]string) (
-	*[]ScaPackageCollection,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	// AST has a limit of 10000 results, this makes it get all of them
-	params[limit] = limitValue
-	resp, err := SendPrivateHTTPRequestWithQueryParams(
-		http.MethodGet,
-		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/packages",
-		params,
-		http.NoBody,
-		clientTimeout,
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		var model []ScaPackageCollection
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return &model, nil, nil
-	case http.StatusNotFound: // scan was not triggered with SCA type or SCA scan didn't start yet
-		logger.PrintIfVerbose("SCA packages for enrichment not found")
-		return nil, nil, nil
-	default:
-		responseData, _ := io.ReadAll(resp.Body)
-		responseString := string(responseData)
-		logger.PrintIfVerbose("Failed to get SCA packages " + responseString)
-		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
-	}
-}
-
-func (r *ResultsHTTPWrapper) GetAllResultsTypeByScanID(params map[string]string) (
-	*[]ScaTypeCollection,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	// AST has a limit of 10000 results, this makes it get all of them
-	params[limit] = limitValue
-	resp, err := SendPrivateHTTPRequestWithQueryParams(
-		http.MethodGet,
-		r.scaPackagePath+params[commonParams.ScanIDQueryParam]+"/vulnerabilities",
-		params,
-		http.NoBody,
-		clientTimeout,
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		errorModel := WebError{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return nil, &errorModel, nil
-	case http.StatusOK:
-		var model []ScaTypeCollection
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseGetResults)
-		}
-		return &model, nil, nil
-	case http.StatusNotFound: // scan was not triggered with SCA type or SCA scan didn't start yet
-		logger.PrintIfVerbose("SCA types for enrichment not found")
-		return nil, nil, nil
-	default:
-		return nil, nil, errors.Errorf(respStatusCode, resp.StatusCode)
 	}
 }
 

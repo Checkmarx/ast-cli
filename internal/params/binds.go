@@ -21,7 +21,6 @@ var EnvVarsBinds = []struct {
 	{ScanSummaryPathKey, ScanSummaryPathEnv, "api/scan-summary"},
 	{RisksOverviewPathKey, RisksOverviewPathEnv, "api/apisec/static/api/scan/%s/risks-overview"},
 	{ScsScanOverviewPathKey, ScsScanOverviewPathEnv, "api/micro-engines/scans/%s/scan-overview"},
-	{ScaPackagePathKey, ScaPackagePathEnv, "api/sca/risk-management/risk-reports/"},
 	{SastResultsPathKey, SastResultsPathEnv, "api/sast-results"},
 	{SastResultsPredicatesPathKey, SastResultsPredicatesPathEnv, "api/sast-results-predicates"},
 	{KicsResultsPathKey, KicsResultsPathEnv, "api/kics-results"},

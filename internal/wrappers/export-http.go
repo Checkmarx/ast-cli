@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
@@ -16,8 +17,18 @@ import (
 )
 
 type ExportRequestPayload struct {
-	ScanID     string `json:"ScanID"`
-	FileFormat string `json:"FileFormat"`
+	ScanID           string           `json:"ScanID"`
+	FileFormat       string           `json:"FileFormat"`
+	ExportParameters ExportParameters `json:"ExportParameters,omitempty"`
+}
+
+type ExportParameters struct {
+	HideDevAndTestDependencies bool `json:"hideDevAndTestDependencies"`
+	ShowOnlyEffectiveLicenses  bool `json:"showOnlyEffectiveLicenses"`
+	ExcludePackages            bool `json:"excludePackages"`
+	ExcludeLicenses            bool `json:"excludeLicenses"`
+	ExcludeVulnerabilities     bool `json:"excludeVulnerabilities"`
+	ExcludePolicies            bool `json:"excludePolicies"`
 }
 
 type ExportResponse struct {
@@ -28,6 +39,7 @@ type ExportPollingResponse struct {
 	ExportID     string `json:"exportId"`
 	ExportStatus string `json:"exportStatus"`
 	FileURL      string `json:"fileUrl"`
+	ErrorMessage string `json:"errorMessage"`
 }
 type ExportHTTPWrapper struct {
 	path string
@@ -39,13 +51,13 @@ func NewExportHTTPWrapper(path string) ExportWrapper {
 	}
 }
 
-func (r *ExportHTTPWrapper) GenerateSbomReport(payload *ExportRequestPayload) (*ExportResponse, error) {
+func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload) (*ExportResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse request body")
 	}
-	path := fmt.Sprintf("%s/%s", r.path, "requests")
+	path := fmt.Sprintf("%s/%s", e.path, "requests")
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, err
@@ -70,9 +82,9 @@ func (r *ExportHTTPWrapper) GenerateSbomReport(payload *ExportRequestPayload) (*
 	}
 }
 
-func (r *ExportHTTPWrapper) GetSbomReportStatus(reportID string) (*ExportPollingResponse, error) {
+func (e *ExportHTTPWrapper) GetExportReportStatus(reportID string) (*ExportPollingResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf("%s/%s", r.path, "requests")
+	path := fmt.Sprintf("%s/%s", e.path, "requests")
 	params := map[string]string{"returnUrl": "true", "exportId": reportID}
 	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 	if err != nil {
@@ -98,9 +110,9 @@ func (r *ExportHTTPWrapper) GetSbomReportStatus(reportID string) (*ExportPolling
 	}
 }
 
-func (r *ExportHTTPWrapper) DownloadSbomReport(reportID, targetFile string) error {
+func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	customURL := fmt.Sprintf("%s/%s/%s/%s", r.path, "requests", reportID, "download")
+	customURL := fmt.Sprintf("%s/%s/%s/%s", e.path, "requests", reportID, "download")
 	resp, err := SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return err
@@ -126,4 +138,25 @@ func (r *ExportHTTPWrapper) DownloadSbomReport(reportID, targetFile string) erro
 
 	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
 	return nil
+}
+
+func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var scaPackageCollection ScaPackageCollectionExport
+	if err := json.NewDecoder(resp.Body).Decode(&scaPackageCollection); err != nil {
+		return nil, err
+	}
+
+	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
+
+	return &scaPackageCollection, nil
 }

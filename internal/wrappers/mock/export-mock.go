@@ -10,7 +10,7 @@ import (
 type ExportMockWrapper struct{}
 
 // GenerateSbomReport mock for tests
-func (*ExportMockWrapper) GenerateSbomReport(payload *wrappers.ExportRequestPayload) (*wrappers.ExportResponse, error) {
+func (*ExportMockWrapper) InitiateExportRequest(payload *wrappers.ExportRequestPayload) (*wrappers.ExportResponse, error) {
 	if payload.ScanID == "err-scan-id" {
 		return nil, errors.New("error")
 	}
@@ -20,7 +20,7 @@ func (*ExportMockWrapper) GenerateSbomReport(payload *wrappers.ExportRequestPayl
 }
 
 // GetSbomReportStatus mock for tests
-func (*ExportMockWrapper) GetSbomReportStatus(_ string) (*wrappers.ExportPollingResponse, error) {
+func (*ExportMockWrapper) GetExportReportStatus(_ string) (*wrappers.ExportPollingResponse, error) {
 	return &wrappers.ExportPollingResponse{
 		ExportID:     "id1234",
 		ExportStatus: "Completed",
@@ -29,7 +29,7 @@ func (*ExportMockWrapper) GetSbomReportStatus(_ string) (*wrappers.ExportPolling
 }
 
 // DownloadSbomReport mock for tests
-func (*ExportMockWrapper) DownloadSbomReport(_, targetFile string) error {
+func (*ExportMockWrapper) DownloadExportReport(_, targetFile string) error {
 	file, err := os.Create(targetFile)
 	defer func() {
 		err = file.Close()
@@ -41,4 +41,8 @@ func (*ExportMockWrapper) DownloadSbomReport(_, targetFile string) error {
 		return errors.Wrapf(err, "Failed to create file %s", targetFile)
 	}
 	return nil
+}
+
+func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string) (*wrappers.ScaPackageCollectionExport, error) {
+	return &wrappers.ScaPackageCollectionExport{}, nil
 }

@@ -1648,7 +1648,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, exportWrapper, scanResponseModel, thresholdMap)
 			if err != nil {
 				return err
 			}
@@ -1898,6 +1898,7 @@ func createReportsAfterScan(
 func applyThreshold(
 	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
 ) error {
@@ -1911,7 +1912,7 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params)
 	if err != nil {
 		return err
 	}
@@ -1994,11 +1995,11 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, exportWrapper wrappers.ExportWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
 	map[string]int,
 	error,
 ) {
-	results, err := ReadResults(resultsWrapper, scan, params)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
 	if err != nil {
 		return nil, err
 	}
