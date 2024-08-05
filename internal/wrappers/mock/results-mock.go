@@ -8,40 +8,6 @@ import (
 
 type ResultsMockWrapper struct{}
 
-func (r ResultsMockWrapper) GetAllResultsTypeByScanID(params map[string]string) (*[]wrappers.ScaTypeCollection, *wrappers.WebError, error) {
-	const mock = "mock"
-	var scaTypes = []wrappers.ScaTypeCollection{{
-		ID:   mock,
-		Type: mock,
-	}, {
-		ID:   mock,
-		Type: mock,
-	}}
-	return &scaTypes, nil, nil
-}
-
-func (r ResultsMockWrapper) GetAllResultsPackageByScanID(params map[string]string) (*[]wrappers.ScaPackageCollection, *wrappers.WebError, error) {
-	const mock = "mock"
-	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
-	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
-
-	dependencyArray[0][0] = dependencyPath
-	var scaPackages = []wrappers.ScaPackageCollection{{
-		ID:                  mock,
-		FixLink:             mock,
-		Locations:           nil,
-		DependencyPathArray: dependencyArray,
-		Outdated:            false,
-	}, {
-		ID:                  mock,
-		FixLink:             mock,
-		Locations:           nil,
-		DependencyPathArray: dependencyArray,
-		Outdated:            false,
-	}}
-	return &scaPackages, nil, nil
-}
-
 var containersResults = &wrappers.ScanResult{
 	Type:     "containers",
 	Severity: "medium",
