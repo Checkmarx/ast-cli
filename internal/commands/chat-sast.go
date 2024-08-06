@@ -8,7 +8,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	sastchat "github.com/checkmarxDev/ast-ai-prompts/sast_result_remediation"
+
+	sastchat "github.com/checkmarxDev/ast-ai-prompts/prompts/sast_result_remediation"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/message"
 	"github.com/checkmarxDev/gpt-wrapper/pkg/role"
