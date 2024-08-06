@@ -850,7 +850,8 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 	case scsScanUnavailableString:
 		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	default:
-		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
+		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
+			riskSummary[infoLabel], microEngineOverview.Status)
 	}
 }
 
