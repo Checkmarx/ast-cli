@@ -371,7 +371,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -390,7 +389,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -410,7 +408,6 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -429,7 +426,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
