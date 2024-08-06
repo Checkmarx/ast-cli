@@ -21,7 +21,6 @@ const (
 	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
-	ScaPackagePathEnv                   = "CX_SCA_PACKAGE_PATH"
 	RisksOverviewPathEnv                = "CX_RISKS_OVERVIEW_PATH"
 	ScsScanOverviewPathEnv              = "CX_SCS_SCAN_OVERVIEW_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"

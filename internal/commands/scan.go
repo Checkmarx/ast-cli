@@ -1650,6 +1650,7 @@ func runCreateScanCommand(
 			}
 
 			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
+
 			if err != nil {
 				return err
 			}
@@ -1899,6 +1900,7 @@ func createReportsAfterScan(
 func applyThreshold(
 	cmd *cobra.Command,
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -1914,6 +1916,7 @@ func applyThreshold(
 	}
 
 	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params, risksOverviewWrapper)
+
 	if err != nil {
 		return err
 	}
@@ -2002,6 +2005,7 @@ func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappe
 ) {
 	summaryMap := make(map[string]int)
 	results, err := ReadResults(resultsWrapper, scan, params)
+
 	if err != nil {
 		return nil, err
 	}
