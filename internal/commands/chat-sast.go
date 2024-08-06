@@ -19,8 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
-const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
 
