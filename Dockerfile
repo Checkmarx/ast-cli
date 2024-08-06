@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/bash:5.2.32-r2
+FROM cgr.dev/chainguard/bash:4133d46b21c513947d6a36f21b7a361943d83f05e7c9b1928c66f43bb1d88725
 
 USER nonroot
 
