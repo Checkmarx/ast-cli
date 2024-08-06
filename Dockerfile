@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/bash:37585d36bbc654f9dab18771bc332691cb73710a288c817d3c0126396744fb4
+FROM cgr.dev/chainguard/bash:37585d36bbc654f9dab18771bc332691cb73710a288c817d3c0126396744fb4f
 
 USER nonroot
 
