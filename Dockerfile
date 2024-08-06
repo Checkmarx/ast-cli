@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/bash:5.2.21
+FROM cgr.dev/chainguard/bash:5.2.32-r2
 
 USER nonroot
 
