@@ -7,8 +7,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/connector"
-	"github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
+	"github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
