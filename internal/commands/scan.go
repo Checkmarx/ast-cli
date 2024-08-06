@@ -1649,7 +1649,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
+			err = applyThreshold(cmd, resultsWrapper, exportWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
 
 			if err != nil {
 				return err
@@ -1915,7 +1915,7 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, scanResponseModel, params, risksOverviewWrapper)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper)
 
 	if err != nil {
 		return err
@@ -1999,12 +1999,12 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, scan *wrappers.ScanResponseModel, params map[string]string, risksOverviewWrapper wrappers.RisksOverviewWrapper) (
+func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, exportWrapper wrappers.ExportWrapper, scan *wrappers.ScanResponseModel, params map[string]string, risksOverviewWrapper wrappers.RisksOverviewWrapper) (
 	map[string]int,
 	error,
 ) {
 	summaryMap := make(map[string]int)
-	results, err := ReadResults(resultsWrapper, scan, params)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
 
 	if err != nil {
 		return nil, err
