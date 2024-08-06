@@ -684,6 +684,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
+		} else {
+			summary.EnginesResult[commonParams.APISecType].Critical = summary.APISecurity.Risks[0]
 		}
 	}
 
