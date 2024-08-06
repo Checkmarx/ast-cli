@@ -1,4 +1,4 @@
-FROM checkmarx.jfrog.io/ast-docker/chainguard/bash:latest
+FROM cgr.dev/chainguard/bash:latest
 
 USER nonroot
 
