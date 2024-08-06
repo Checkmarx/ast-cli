@@ -840,7 +840,7 @@ func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview, featu
 
 func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	formatString := "              | %-20s   %4v   %4v   %6v   %4v   %4v   %-9s  |\n"
-	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
 	riskSummary["critical"] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
@@ -848,7 +848,7 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 
 	switch microEngineOverview.Status {
 	case scsScanUnavailableString:
-		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	default:
 		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
 	}
