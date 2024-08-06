@@ -1999,14 +1999,13 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, 
-			    exportWrapper wrappers.ExportWrapper, 
-			    scan *wrappers.ScanResponseModel, 
-			    params map[string]string, 
-			    risksOverviewWrapper wrappers.RisksOverviewWrapper) (
-	map[string]int,
-	error,
-) {
+func getSummaryThresholdMap(
+	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
+	scan *wrappers.ScanResponseModel,
+	params map[string]string,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+) (map[string]int, error) {
 	summaryMap := make(map[string]int)
 	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
 
