@@ -29,7 +29,7 @@ const (
 	jsonValue           = "json"
 	tableValue          = "table"
 	listValue           = "list"
-	secretDetectionLine = "| Secret Detection      5        3      2      0   Completed  |"
+	secretDetectionLine = "| Secret Detection          0      5        3      2      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -859,7 +859,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := " | Scorecard             0        0      0      0   Failed     |"
+	scorecardSummary := " | Scorecard                 0      0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 
@@ -886,7 +886,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
+	scorecardSummary := "| Scorecard                 -      -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 

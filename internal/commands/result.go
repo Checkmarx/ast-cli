@@ -750,7 +750,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -772,7 +772,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		}
 
 		if summary.HasSCS() && wrappers.IsSCSEnabled {
-			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
@@ -828,29 +828,40 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 	}
 }
 
-func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	fmt.Printf("              Supply Chain Security Results\n")
-	fmt.Printf("              ---------------------------------------------------------------     \n")
-	fmt.Println("              |                      High   Medium   Low   Info   Status    |")
+	fmt.Printf("              --------------------------------------------------------------------------     \n")
+	fmt.Println("              |                      Critical   High   Medium   Low   Info   Status    |")
 	for _, microEngineOverview := range microEngineOverviews {
-		printSCSTableRow(microEngineOverview)
+		printSCSTableRow(microEngineOverview, featureFlagsWrapper)
 	}
-	fmt.Printf("              ---------------------------------------------------------------     \n\n")
+	fmt.Printf("              --------------------------------------------------------------------------     \n\n")
 }
 
-func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
-	formatString := "              | %-16s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	formatString := "              | %-20s   %4v   %4v   %6v   %4v   %4v   %-9s  |\n"
+	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
+	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
 	case scsScanUnavailableString:
-		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	default:
-		fmt.Printf(formatString, microEngineName, riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
+		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
+			riskSummary[infoLabel], microEngineOverview.Status)
 	}
+}
+
+func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper wrappers.FeatureFlagsWrapper) interface{} {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
+	if !criticalEnabled {
+		return disabledString
+	}
+	return riskSummary[criticalLabel]
 }
 
 func getCountValue(count int) interface{} {
@@ -1232,7 +1243,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary)
+		return writeConsoleSummary(summary, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
