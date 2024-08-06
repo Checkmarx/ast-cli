@@ -32,7 +32,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					FullName:   "Secret Detection",
 					Status:     "Completed",
 					TotalRisks: 10,
-					RiskSummary: map[string]int{
+					RiskSummary: map[string]interface{}{
 						"critical": 0,
 						"high":     5,
 						"medium":   3,
@@ -45,7 +45,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					FullName:   "Scorecard",
 					Status:     "Failed",
 					TotalRisks: 0,
-					RiskSummary: map[string]int{
+					RiskSummary: map[string]interface{}{
 						"critical": 0,
 						"high":     0,
 						"medium":   0,
@@ -73,7 +73,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					FullName:   "Secret Detection",
 					Status:     "Completed",
 					TotalRisks: 10,
-					RiskSummary: map[string]int{
+					RiskSummary: map[string]interface{}{
 						"critical": 0,
 						"high":     5,
 						"medium":   3,
@@ -86,7 +86,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 					FullName:   "Scorecard",
 					Status:     "Completed",
 					TotalRisks: 4,
-					RiskSummary: map[string]int{
+					RiskSummary: map[string]interface{}{
 						"critical": 0,
 						"high":     2,
 						"medium":   1,
@@ -114,7 +114,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 				FullName:   "Secret Detection",
 				Status:     "Completed",
 				TotalRisks: 10,
-				RiskSummary: map[string]int{
+				RiskSummary: map[string]interface{}{
 					"critical": 0,
 					"high":     5,
 					"medium":   3,
@@ -127,7 +127,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 				FullName:    "Scorecard",
 				Status:      "",
 				TotalRisks:  0,
-				RiskSummary: map[string]int{},
+				RiskSummary: map[string]interface{}{},
 			},
 		},
 	}, nil, nil
