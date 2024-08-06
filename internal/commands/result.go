@@ -843,7 +843,7 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
-	riskSummary["critical"] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
+	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
@@ -859,9 +859,8 @@ func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper
 	criticalEnabled := flagResponse.Status
 	if !criticalEnabled {
 		return disabledString
-	} else {
-		return riskSummary["critical"]
 	}
+	return riskSummary[criticalLabel]
 }
 
 func getCountValue(count int) interface{} {
