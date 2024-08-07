@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/bash@sha256:1c8b9cd1227a63a04b3e6f7807fcd7f8868fe99bc842866afef8250fbb0e003a
+FROM cgr.dev/chainguard/bash@sha256:e9ef27c933aca00e5264240ffb386f99c28b4055a98ccf696d2d83858e83f2ee
 
 USER nonroot
 
