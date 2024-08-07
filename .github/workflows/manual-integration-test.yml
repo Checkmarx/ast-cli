@@ -49,7 +49,7 @@ jobs:
           echo ::add-mask::$INP_PROXY_PASSWORD
           echo PROXY_PASSWORD="$INP_PROXY_PASSWORD" >> $GITHUB_ENV
       - name: Checkout
-        uses: actions/checkout@5a4ac90 #v2.3.4
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
       - name: Install Go
         uses: actions/setup-go@v2
         with:
