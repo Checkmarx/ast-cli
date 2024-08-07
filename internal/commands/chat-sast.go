@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	sastchat "github.com/CheckmarxDev/ast-ai-prompts/prompts/sast_result_remediation"
+	sastchat "github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
