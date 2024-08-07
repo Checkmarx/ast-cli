@@ -10,8 +10,7 @@ linters-settings:
           - github.com/gookit/color
           - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
           - github.com/spf13/viper
-          - github.com/CheckmarxDev/ast-ai-prompts
-          - github.com/Checkmarx/gen-ai-wrapper
+          - github.com/checkmarxDev/gpt-wrapper
           - github.com/spf13/cobra
           - github.com/pkg/errors
           - github.com/google
