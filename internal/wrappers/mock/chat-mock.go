@@ -1,10 +1,10 @@
 package mock
 
 import (
-	gptWrapperMaskedSecret "github.com/Checkmarx/gen-ai-wrapper/pkg/maskedSecret"
-	gptWrapperMessage "github.com/Checkmarx/gen-ai-wrapper/pkg/message"
-	gptWrapperRole "github.com/Checkmarx/gen-ai-wrapper/pkg/role"
-	gptWrapper "github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
+	gptWrapperMaskedSecret "github.com/checkmarxDev/gpt-wrapper/pkg/maskedSecret"
+	gptWrapperMessage "github.com/checkmarxDev/gpt-wrapper/pkg/message"
+	gptWrapperRole "github.com/checkmarxDev/gpt-wrapper/pkg/role"
+	gptWrapper "github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
 	"github.com/google/uuid"
 )
 
