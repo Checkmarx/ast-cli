@@ -61,11 +61,11 @@ type SCSOverview struct {
 }
 
 type MicroEngineOverview struct {
-	Name        string         `json:"name"`
-	FullName    string         `json:"fullName"`
-	Status      ScanStatus     `json:"status"`
-	TotalRisks  int            `json:"totalRisks"`
-	RiskSummary map[string]int `json:"riskSummary"`
+	Name        string                 `json:"name"`
+	FullName    string                 `json:"fullName"`
+	Status      ScanStatus             `json:"status"`
+	TotalRisks  int                    `json:"totalRisks"`
+	RiskSummary map[string]interface{} `json:"riskSummary"`
 }
 
 type EngineResultSummary struct {
