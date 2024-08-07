@@ -14,10 +14,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 #v3.0.0
       - name: Checkmarx One CLI Action
-        uses: checkmarx/ast-github-action@6c56658230f79c227a55120e9b24845d574d5225 # main
+        uses: checkmarx/ast-github-action@main # 6c56658230f79c227a55120e9b24845d574d5225 # main
         with:
           base_uri: ${{ secrets.AST_RND_SCANS_BASE_URI }}
           cx_tenant: ${{ secrets.AST_RND_SCANS_TENANT }}
           cx_client_id: ${{ secrets.AST_RND_SCANS_CLIENT_ID }}
           cx_client_secret: ${{ secrets.AST_RND_SCANS_CLIENT_SECRET }}
-          additional_params: --tags phoenix --threshold "sast-high=1;sast-medium=1;sast-low=1;iac-security-high=1;iac-security-medium=1;iac-security-low=1;sca-high=1;sca-medium=1;sca-low=1"
+          additional_params: --tags phoenix --threshold "sast-high=1;sast-medium=1;sast-low=1;iac-security-high=1;iac-security-medium=1;iac-security-low=1;sca-high=1;sca-medium=1;sca-low=1" --async
