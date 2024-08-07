@@ -445,12 +445,6 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 	}
 }
 
-func assertZipFileRemoved(t *testing.T) {
-	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	assert.NilError(t, err)
-	assert.Equal(t, len(glob), 0, "Zip file not removed")
-}
-
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))

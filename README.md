@@ -52,7 +52,7 @@
 
 ## Getting Started
 
-Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html) for CLI commands and usage
+Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html) for CLI commands and usage.
 
 ## Releases
 For the latest CLI release, please locate your platform download [here](https://github.com/Checkmarx/ast-cli/releases).
