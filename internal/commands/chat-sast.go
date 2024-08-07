@@ -9,11 +9,11 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
-	sastchat "github.com/checkmarxDev/ast-ai-prompts/prompts/sast_result_remediation"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/connector"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/message"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/role"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
+	sastchat "github.com/CheckmarxDev/ast-ai-prompts/prompts/sast_result_remediation"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

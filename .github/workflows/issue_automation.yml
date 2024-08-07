@@ -7,7 +7,7 @@ on:
 jobs:
   issue:
     name: Notify Jira
-    uses: CheckmarxDev/ast-cli/.github/workflows/jira_notify.yml@main
+    uses: Checkmarx/ast-cli/.github/workflows/jira_notify.yml@main
     with:
       title: ${{ github.event.issue.title }}
       body: ${{ github.event.issue.body }}
