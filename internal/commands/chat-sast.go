@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	sastchat "github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -17,8 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const ScanResultsFileErrorFormat = "Error reading and parsing scan results %s"
-const CreatePromptErrorFormat = "Error creating prompt for result ID %s"
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
 
@@ -83,7 +82,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 
 		var newMessages []message.Message
 		if newConversation {
-			systemPrompt, userPrompt, e := buildPrompt(scanResultsFile, sastResultID, sourceDir)
+			systemPrompt, userPrompt, e := sastchat.BuildPrompt(scanResultsFile, sastResultID, sourceDir)
 			if e != nil {
 				logger.PrintIfVerbose(e.Error())
 				return outputError(cmd, id, e)
@@ -109,7 +108,7 @@ func runChatSast(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Tenant
 
 		responseContent := getMessageContents(response)
 
-		responseContent = addDescriptionForIdentifier(responseContent)
+		responseContent = sastchat.AddDescriptionForIdentifier(responseContent)
 
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
 			ConversationID: id.String(),
@@ -135,34 +134,6 @@ func isAiGuidedRemediationEnabled(tenantWrapper wrappers.TenantConfigurationWrap
 		}
 	}
 	return false
-}
-
-func buildPrompt(scanResultsFile, sastResultID, sourceDir string) (systemPrompt, userPrompt string, err error) {
-	scanResults, err := ReadResultsSAST(scanResultsFile)
-	if err != nil {
-		return "", "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(ScanResultsFileErrorFormat, scanResultsFile), err)
-	}
-
-	if sastResultID == "" {
-		return "", "", errors.Errorf(fmt.Sprintf("error in build-prompt: currently only --%s is supported", params.ChatSastResultID))
-	}
-
-	sastResult, err := GetResultByID(scanResults, sastResultID)
-	if err != nil {
-		return "", "", fmt.Errorf("error in build-prompt: %w", err)
-	}
-
-	sources, err := GetSourcesForResult(sastResult, sourceDir)
-	if err != nil {
-		return "", "", fmt.Errorf("error in build-prompt: %w", err)
-	}
-
-	prompt, err := CreateUserPrompt(sastResult, sources)
-	if err != nil {
-		return "", "", fmt.Errorf("error in build-prompt: %s: %w", fmt.Sprintf(CreatePromptErrorFormat, sastResultID), err)
-	}
-
-	return GetSystemPrompt(), prompt, nil
 }
 
 func getMessageContents(response []message.Message) []string {
