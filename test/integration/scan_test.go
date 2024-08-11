@@ -852,9 +852,9 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security"))
 	} else {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security"))
 	}
 }
 
@@ -1635,8 +1635,8 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
-
 	err, _ := executeCommand(t, args...)
+	defer deleteProject(t, "TiagoBaptista/testingCli/testingCli")
 	assert.NilError(t, err)
 }
 
@@ -1649,6 +1649,7 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 		flag(params.PolicyTimeoutFlag), "-1"}
 
 	err, _ := executeCommand(t, args...)
+	defer deleteProject(t, "TiagoBaptista/testingCli/testingCli")
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
 
