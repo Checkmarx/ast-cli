@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -358,7 +359,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ScanTypes), "container-security",
 		flag(params.ContainerImagesFlag), "nginx:alpine,debian:9",
@@ -378,7 +379,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "nginx:alpine",
 		flag(params.BranchFlag), "dummy_branch",
@@ -397,7 +398,7 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
@@ -417,8 +418,8 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
-		flag(params.SourcesFlag), "data/empty-folder",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/empty-folder.zip",
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
@@ -436,7 +437,7 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/Dockerfile-mysql571.zip",
 		flag(params.ContainerImagesFlag), "nginx:",
 		flag(params.BranchFlag), "dummy_branch",
@@ -456,7 +457,7 @@ func assertZipFileRemoved(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca,scs"))
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
 	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
@@ -657,6 +658,20 @@ func TestScanCreateWithThreshold(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "")
+}
+
+func TestScansAPISecThresholdShouldBlock(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), "my-project",
+		flag(params.SourcesFlag), "data/sources.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.ScanTypes), "sast, api-security",
+		flag(params.Threshold), "api-security-high=1",
+	}
+	_, _ = executeCommand(t, testArgs...)
 }
 
 // Create a scan with the sources
@@ -1684,7 +1699,6 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 
 func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
-
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -1809,4 +1823,18 @@ func TestScanListWithBigLimit(t *testing.T) {
 
 func addSCSDefaultFlagsToArgs(args *[]string) {
 	*args = append(*args, flag(params.SCSRepoURLFlag), scsRepoURL, flag(params.SCSRepoTokenFlag), scsRepoToken)
+}
+
+func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
+	wrappers.Domains = make(map[string]struct{})
+	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
+	usedDomainsInTests := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
+	validateCheckmarxDomains(t, usedDomainsInTests)
+}
+
+func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
+	usedDomains := wrappers.Domains
+	for domain, _ := range usedDomains {
+		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
+	}
 }

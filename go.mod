@@ -6,6 +6,7 @@ require (
 	github.com/CheckmarxDev/containers-resolver v1.0.6
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
+	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -81,7 +82,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v25.0.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v26.0.2+incompatible // indirect
+	github.com/docker/docker v26.1.5+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect

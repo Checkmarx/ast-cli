@@ -37,6 +37,7 @@ const (
 	failedListingResults      = "Failed listing results"
 	failedListingCodeBashing  = "Failed codebashing link"
 	mediumLabel               = "medium"
+	criticalLabel             = "critical"
 	highLabel                 = "high"
 	lowLabel                  = "low"
 	infoLabel                 = "info"
@@ -48,6 +49,7 @@ const (
 	lowSonar                  = "MINOR"
 	mediumSonar               = "MAJOR"
 	highSonar                 = "CRITICAL"
+	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
@@ -56,15 +58,17 @@ const (
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
 	highCx                    = "HIGH"
-	tableResultsFormat        = "              | %-10s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	stringTableResultsFormat  = "              | %-10s   %4s   %6s   %4s   %4s   %5s      |\n"
-	TableTitleFormat          = "              | %-11s   %4s    %6s  %4s   %4s   %6s    |\n"
+	criticalCx                = "CRITICAL"
+	tableResultsFormat        = "              | %-10s   %6v   %5d   %6d   %5d   %4d   %-9s   |\n"
+	stringTableResultsFormat  = "              | %-10s    %5s  %6s   %6s   %5s   %4s   %5s       |\n"
+	TableTitleFormat          = "              | %-11s   %4s   %4s    %6s  %4s   %4s   %6s     |\n"
 	twoNewLines               = "\n\n"
-	tableLine                 = "              ---------------------------------------------------------     "
+	tableLine                 = "              ---------------------------------------------------------------------     "
 	codeBashingKey            = "cb-url"
 	failedGettingBfl          = "Failed getting BFL"
 	notAvailableString        = "-"
-	scanFailedString          = "Failed"
+	disabledString            = "N/A"
+	scanFailedString          = "Failed   "
 	scanCanceledString        = "Canceled"
 	scanSuccessString         = "Completed"
 	scanPartialString         = "Partial"
@@ -101,6 +105,7 @@ const (
 	fixLabel                                = "fix"
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
+	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
 )
 
 var summaryFormats = []string{
@@ -133,19 +138,22 @@ var filterResultsListFlagUsage = fmt.Sprintf(
 	),
 )
 
+// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
 var securities = map[string]string{
-	infoCx:   "3.5",
-	lowCx:    "6.5",
-	mediumCx: "8.5",
-	highCx:   "9.5",
+	infoCx:     "1.0",
+	lowCx:      "2.0",
+	mediumCx:   "4.0",
+	highCx:     "7.0",
+	criticalCx: "9.0",
 }
 
 // Match cx severity with sonar severity
 var sonarSeverities = map[string]string{
-	infoCx:   infoSonar,
-	lowCx:    lowSonar,
-	mediumCx: mediumSonar,
-	highCx:   highSonar,
+	infoCx:     infoSonar,
+	lowCx:      lowSonar,
+	mediumCx:   mediumSonar,
+	highCx:     highSonar,
+	criticalCx: criticalSonar,
 }
 
 var containerEngineUnsupportedAgents = []string{
@@ -501,11 +509,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	scsIssues := 0
 	var containersIssues *int
 	enginesStatusCode := map[string]int{
-		commonParams.SastType:   0,
-		commonParams.ScaType:    0,
-		commonParams.KicsType:   0,
-		commonParams.APISecType: 0,
-		commonParams.ScsType:    0,
+		commonParams.SastType:       0,
+		commonParams.ScaType:        0,
+		commonParams.KicsType:       0,
+		commonParams.APISecType:     0,
+		commonParams.ScsType:        0,
+		commonParams.ContainersType: 0,
 	}
 	if wrappers.IsContainersEnabled {
 		containersIssues = new(int)
@@ -543,6 +552,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		ProjectID:        scanInfo.ProjectID,
 		RiskStyle:        "",
 		RiskMsg:          "",
+		CriticalIssues:   0,
 		HighIssues:       0,
 		MediumIssues:     0,
 		LowIssues:        0,
@@ -557,11 +567,12 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:       scanInfo.Branch,
 		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:    {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
 	if wrappers.IsContainersEnabled {
@@ -592,6 +603,7 @@ func summaryReport(
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	results *wrappers.ScanResultsCollection,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
@@ -614,7 +626,7 @@ func summaryReport(
 		summary.Policies = filterViolatedRules(*policies)
 	}
 
-	enhanceWithScanSummary(summary, results)
+	enhanceWithScanSummary(summary, results, featureFlagsWrapper)
 
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
@@ -636,7 +648,10 @@ func setNotAvailableEnginesStatusCode(summary *wrappers.ResultSummary) {
 }
 
 func setRiskMsgAndStyle(summary *wrappers.ResultSummary) {
-	if summary.HighIssues > 0 {
+	if summary.CriticalIssues > 0 {
+		summary.RiskStyle = criticalLabel
+		summary.RiskMsg = "Critical Risk"
+	} else if summary.HighIssues > 0 {
 		summary.RiskStyle = highLabel
 		summary.RiskMsg = "High Risk"
 	} else if summary.MediumIssues > 0 {
@@ -656,14 +671,22 @@ func setNotAvailableNumberIfZero(summary *wrappers.ResultSummary, counter *int, 
 	}
 }
 
-func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection) {
+func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.ScanResultsCollection, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	for _, result := range results.Results {
 		countResult(summary, result)
 	}
+	// Set critical count for a specific engine if critical is disabled
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
 	if summary.HasAPISecurity() {
 		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
 		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+		if !criticalEnabled {
+			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
+		} else {
+			summary.EnginesResult[commonParams.APISecType].Critical = summary.APISecurity.Risks[0]
+		}
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
@@ -678,12 +701,21 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
+		if !criticalEnabled {
+			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
+		}
 	}
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
 		}
+	}
+	if !criticalEnabled {
+		summary.EnginesResult[commonParams.SastType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.KicsType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ScaType].Critical = notAvailableNumber
+		summary.EnginesResult[commonParams.ContainersType].Critical = notAvailableNumber
 	}
 }
 
@@ -720,7 +752,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -742,7 +774,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		}
 
 		if summary.HasSCS() && wrappers.IsSCSEnabled {
-			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
@@ -786,53 +818,73 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNumber int) {
 	switch statusNumber {
 	case notAvailableNumber:
-		fmt.Printf(stringTableResultsFormat, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(stringTableResultsFormat, title, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	case scanFailedNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	case scanPartialNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanSuccessString)
 	}
 }
 
-func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	fmt.Printf("              Supply Chain Security Results\n")
-	fmt.Printf("              ---------------------------------------------------------------     \n")
-	fmt.Println("              |                      High   Medium   Low   Info   Status    |")
+	fmt.Printf("              --------------------------------------------------------------------------     \n")
+	fmt.Println("              |                      Critical   High   Medium   Low   Info   Status    |")
 	for _, microEngineOverview := range microEngineOverviews {
-		printSCSTableRow(microEngineOverview)
+		printSCSTableRow(microEngineOverview, featureFlagsWrapper)
 	}
-	fmt.Printf("              ---------------------------------------------------------------     \n\n")
+	fmt.Printf("              --------------------------------------------------------------------------     \n\n")
 }
 
-func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
-	formatString := "              | %-16s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	formatString := "              | %-20s   %4v   %4v   %6v   %4v   %4v   %-9s  |\n"
+	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
+	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
 	case scsScanUnavailableString:
-		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	default:
-		fmt.Printf(formatString, microEngineName, riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
+		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
+			riskSummary[infoLabel], microEngineOverview.Status)
 	}
 }
 
+func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper wrappers.FeatureFlagsWrapper) interface{} {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
+	if !criticalEnabled {
+		return disabledString
+	}
+	return riskSummary[criticalLabel]
+}
+
+func getCountValue(count int) interface{} {
+	if count < 0 {
+		return disabledString
+	}
+	return count
+}
+
 func printResultsSummaryTable(summary *wrappers.ResultSummary) {
+	totalCriticalIssues := summary.EnginesResult.GetCriticalIssues()
 	totalHighIssues := summary.EnginesResult.GetHighIssues()
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
+
 	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
 	fmt.Printf("              Total Results: %d                       \n", totalIssues)
 	fmt.Println(tableLine)
-	fmt.Printf(TableTitleFormat, "   ", "High", "Medium", "Low", "Info", "Status")
+	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
 	printTableRow("APIs", summary.EnginesResult[commonParams.APISecType], summary.EnginesResult[commonParams.APISecType].StatusCode)
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
@@ -847,7 +899,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 
 	fmt.Println(tableLine)
 	fmt.Printf(tableResultsFormat,
-		"TOTAL", totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
+		"TOTAL", getCountValue(totalCriticalIssues), totalHighIssues, totalMediumIssues, totalLowIssues, totalInfoIssues, summary.Status)
 	fmt.Printf(tableLine + twoNewLines)
 }
 
@@ -1018,14 +1070,14 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
 		if err != nil {
 			return err
 		}
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, results)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results)
 		if err != nil {
 			return err
 		}
@@ -1061,7 +1113,10 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 				return
 			}
 		}
+
 		switch severity {
+		case criticalLabel:
+			summary.CriticalIssues++
 		case highLabel:
 			summary.HighIssues++
 		case mediumLabel:
@@ -1190,7 +1245,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary)
+		return writeConsoleSummary(summary, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -1250,6 +1305,7 @@ func createDirectory(targetPath string) error {
 
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
@@ -1273,7 +1329,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(resultsWrapper, scan, params, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
 		if err != nil {
 			return nil, err
 		}
@@ -1285,33 +1341,17 @@ func ReadResults(
 }
 
 func enrichScaResults(
-	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
 	resultsModel *wrappers.ScanResultsCollection,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		// Get additional information to enrich sca results
-		scaPackageModel, errorModel, err := resultsWrapper.GetAllResultsPackageByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
 		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
+			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
-		// Get additional information to add the type information to the sca results
-		scaTypeModel, errorModel, err := resultsWrapper.GetAllResultsTypeByScanID(params)
-		if errorModel != nil {
-			logger.PrintfIfVerbose("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-			return resultsModel, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
-		}
-		if err != nil {
-			logger.PrintfIfVerbose("%s", failedListingResults)
-			return resultsModel, errors.Wrapf(err, "%s", failedListingResults)
-		}
-		// Enrich sca results
+		scaPackageModel := parseScaExportPackage(scaExportDetails.Packages)
+		scaTypeModel := parseExportScaVulnerability(scaExportDetails.ScaTypes)
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
@@ -1320,6 +1360,61 @@ func enrichScaResults(
 		resultsModel = removeContainerResults(resultsModel)
 	}
 	return resultsModel, nil
+}
+
+func parseExportScaVulnerability(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
+	var scaTypes []wrappers.ScaTypeCollection
+	for _, t := range types {
+		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
+	}
+	return &scaTypes
+}
+
+func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackageCollection {
+	var scaPackages []wrappers.ScaPackageCollection
+	for _, pkg := range packages {
+		pkg := pkg
+		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
+			ID:                  pkg.ID,
+			Locations:           pkg.Locations,
+			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
+			Outdated:            pkg.Outdated,
+			IsDirectDependency:  pkg.IsDirectDependency,
+		})
+	}
+	return &scaPackages
+}
+
+func parsePackagePathToDependencyPath(pkg *wrappers.ScaPackage) [][]wrappers.DependencyPath {
+	var dependencyPathArray [][]wrappers.DependencyPath
+	for _, path := range pkg.PackagePathArray {
+		var dependencyPath []wrappers.DependencyPath
+		for _, dep := range path {
+			dependencyPath = append(dependencyPath, wrappers.DependencyPath{
+				ID:      dep.ID,
+				Name:    dep.Name,
+				Version: dep.Version,
+			})
+		}
+		dependencyPathArray = append(dependencyPathArray, dependencyPath)
+	}
+
+	// We are doing this to maintain the same structure that was in risk-management api response
+	// in risk-management, if the length of the dependency path array is 1, it will be the main package
+	// in export service, if there are no dependencies, the package path array will be empty
+	if len(dependencyPathArray) == 0 {
+		appendMainPackageToDependencyPath(&dependencyPathArray, pkg)
+	}
+	return dependencyPathArray
+}
+
+func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.DependencyPath, pkg *wrappers.ScaPackage) {
+	*dependencyPathArray = append(*dependencyPathArray, []wrappers.DependencyPath{{
+		ID:            pkg.ID,
+		Locations:     pkg.Locations,
+		Name:          pkg.Name,
+		IsDevelopment: pkg.IsDevelopmentDependency,
+	}})
 }
 
 func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
@@ -2055,16 +2150,16 @@ func findProperties(result *wrappers.ScanResult) wrappers.SarifProperties {
 	sarifProperties.Description = findDescriptionText(result)
 	sarifProperties.SecuritySeverity = securities[result.Severity]
 	sarifProperties.Tags = []string{"security", "checkmarx", result.Type}
-
 	return sarifProperties
 }
 
 func findSarifLevel(result *wrappers.ScanResult) string {
 	level := map[string]string{
-		infoCx:   infoLowSarif,
-		lowCx:    infoLowSarif,
-		mediumCx: mediumSarif,
-		highCx:   highSarif,
+		infoCx:     infoLowSarif,
+		lowCx:      infoLowSarif,
+		mediumCx:   mediumSarif,
+		highCx:     highSarif,
+		criticalCx: highSarif,
 	}
 	return level[result.Severity]
 }
@@ -2232,50 +2327,96 @@ func addPackageInformation(
 	scaPackageModel *[]wrappers.ScaPackageCollection,
 	scaTypeModel *[]wrappers.ScaTypeCollection,
 ) *wrappers.ScanResultsCollection {
-	var currentID string
+
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
+	scaPackageMap := buildScaPackageMap(*scaPackageModel)
 
 	for _, result := range resultsModel.Results {
-		if !(result.Type == commonParams.ScaType) {
-			continue
-		} else {
-			currentID = result.ScanResultData.PackageIdentifier
-			const precision = 1
-			var roundedScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
-			result.VulnerabilityDetails.CvssScore = roundedScore
-			// Add the sca type
-			result.ScaType = buildScaType(typesByCVE, result)
-			// Temporary code for client
-			result.State = buildScaState(typesByCVE, result)
-			for _, packages := range *scaPackageModel {
-				currentPackage := packages
-				if packages.ID == currentID {
-					for _, dependencyPath := range currentPackage.DependencyPathArray {
-						head := &dependencyPath[0]
-						head.Locations = locationsByID[head.ID]
-						head.SupportsQuickFix = len(dependencyPath) == 1
-						for _, location := range locationsByID[head.ID] {
-							head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
-						}
-						currentPackage.SupportsQuickFix = currentPackage.SupportsQuickFix || head.SupportsQuickFix
-						if result.ID != "" {
-							currentPackage.FixLink = "https://devhub.checkmarx.com/cve-details/" + result.ID
-						} else {
-							currentPackage.FixLink = ""
-						}
-					}
-					if currentPackage.IsDirectDependency {
-						currentPackage.TypeOfDependency = directDependencyType
-					} else {
-						currentPackage.TypeOfDependency = indirectDependencyType
-					}
-					result.ScanResultData.ScaPackageCollection = &currentPackage
-					break
-				}
-			}
+		if result.Type == commonParams.ScaType {
+			processResult(result, locationsByID, typesByCVE, scaPackageMap)
 		}
 	}
+
 	return resultsModel
+}
+
+func processResult(
+	result *wrappers.ScanResult,
+	locationsByID map[string][]*string,
+	typesByCVE map[string]wrappers.ScaTypeCollection,
+	scaPackageMap map[string]wrappers.ScaPackageCollection, // Updated parameter
+) {
+	const precision = 1
+
+	currentID := result.ScanResultData.PackageIdentifier
+	result.VulnerabilityDetails.CvssScore = util.RoundFloat(result.VulnerabilityDetails.CvssScore, precision)
+	result.ScaType = buildScaType(typesByCVE, result)
+	result.State = buildScaState(typesByCVE, result)
+
+	updatePackages(result, scaPackageMap, locationsByID, currentID)
+}
+
+func updatePackages(
+	result *wrappers.ScanResult,
+	scaPackageMap map[string]wrappers.ScaPackageCollection,
+	locationsByID map[string][]*string,
+	currentID string,
+) {
+	packages, found := scaPackageMap[currentID]
+	if !found {
+		return
+	}
+
+	updateDependencyPaths(packages.DependencyPathArray, locationsByID)
+	if !packages.SupportsQuickFix {
+		packages.SupportsQuickFix = hasQuickFix(packages.DependencyPathArray)
+	}
+
+	if packages.IsDirectDependency {
+		packages.TypeOfDependency = directDependencyType
+	} else {
+		packages.TypeOfDependency = indirectDependencyType
+	}
+
+	packages.FixLink = buildFixLink(result)
+	result.ScanResultData.ScaPackageCollection = &packages
+}
+
+func hasQuickFix(dependencyPaths [][]wrappers.DependencyPath) bool {
+	for i := range dependencyPaths {
+		head := &dependencyPaths[i][0]
+		if head.SupportsQuickFix {
+			return true
+		}
+	}
+	return false
+}
+
+func buildScaPackageMap(scaPackageModel []wrappers.ScaPackageCollection) map[string]wrappers.ScaPackageCollection {
+	scaPackageMap := make(map[string]wrappers.ScaPackageCollection)
+	for i := range scaPackageModel {
+		scaPackageMap[scaPackageModel[i].ID] = scaPackageModel[i]
+	}
+	return scaPackageMap
+}
+
+func updateDependencyPaths(dependencyPaths [][]wrappers.DependencyPath, locationsByID map[string][]*string) {
+	for i := range dependencyPaths {
+		head := &dependencyPaths[i][0]
+		head.Locations = locationsByID[head.ID]
+		head.SupportsQuickFix = len(dependencyPaths[i]) == 1
+
+		for _, location := range locationsByID[head.ID] {
+			head.SupportsQuickFix = head.SupportsQuickFix && util.IsPackageFileSupported(*location)
+		}
+	}
+}
+
+func buildFixLink(result *wrappers.ScanResult) string {
+	if result.ID != "" {
+		return fmt.Sprint(fixLinkPrefix, result.ID)
+	}
+	return ""
 }
 
 func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.PolicyResponseModel {

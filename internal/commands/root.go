@@ -75,7 +75,6 @@ func NewAstCLI(
 		},
 	}
 
-	setUpFeatureFlags(featureFlagsWrapper)
 	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
@@ -102,16 +101,6 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if wrappers.DefaultFFLoad {
-			if requiredFeatureFlagsCheck(cmd) {
-				err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-			}
-		}
 		PrintConfiguration()
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
@@ -206,7 +195,7 @@ func NewAstCLI(
 	)
 
 	configCmd := util.NewConfigCommand()
-	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
+	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 
@@ -243,25 +232,6 @@ func PrintConfiguration() {
 	logger.PrintIfVerbose("CLI Configuration:")
 	for param := range util.Properties {
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
-	}
-}
-
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
-
-	return false
-}
-
-func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
 	}
 }
 
