@@ -1,10 +1,11 @@
 package util
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	asserts "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestNewPRDecorationCommandMustExist(t *testing.T) {
