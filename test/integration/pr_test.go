@@ -54,7 +54,7 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 	stdoutString := readOutputFile(t, testFileName)
 	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
 
-	deleteOutputFile(t, testFileName, file)
+	defer deleteOutputFile(t, testFileName, file)
 	defer logger.SetOutput(os.Stdout)
 }
 
