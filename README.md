@@ -137,3 +137,4 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
+
