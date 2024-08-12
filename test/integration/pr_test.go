@@ -44,18 +44,8 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 		"--debug",
 	}
 
-	//testFileName := "test_output.log"
-	//file := createOutputFile(t, testFileName)
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Error should be nil")
-
-	//prdDecorationForbiddenMessage := "no pr decoration have been created because scan did not end"
-	//stdoutString := readOutputFile(t, testFileName)
-	//assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
-	//
-	//defer deleteOutputFile(t, testFileName, file)
-	//defer logger.SetOutput(os.Stdout)
 }
 
 func TestPRGithubDecorationFailure(t *testing.T) {
@@ -126,10 +116,6 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 }
 
 func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
-	//types := []string{params.SastType, params.ScaType, params.IacType}
-	//scanID, _ := createScanWithEngines(t, Zip, Tags, strings.Join(types, ","))
-	//scanID, scanProjectId := createScan(t, Zip, Tags)
-
 	scanID, _ := createScanNoWait(t, Zip, Tags)
 	args := []string{
 		"utils",
@@ -150,10 +136,38 @@ func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
 
 	testFileName := "test_output.log"
 	file := createOutputFile(t, testFileName)
-
 	_, _ = executeCommand(t, args...)
-	//assert.NilError(t, err, "Error should be nil")
+	prdDecorationForbiddenMessage := "No pr decoration have been created because scan did not end"
+	stdoutString := readOutputFile(t, testFileName)
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
 
+	defer deleteOutputFile(t, testFileName, file)
+	defer logger.SetOutput(os.Stdout)
+}
+
+func TestPRGitlabDecorationFailureRunningScanCase(t *testing.T) {
+	scanID, _ := createScanNoWait(t, Zip, Tags)
+	args := []string{
+		"utils",
+		"pr",
+		"gitlab",
+		flag(params.ScanIDFlag),
+		scanID,
+		flag(params.SCMTokenFlag),
+		os.Getenv(prGitlabToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prGitlabNamespace),
+		flag(params.RepoNameFlag),
+		os.Getenv(prGitlabRepoName),
+		flag(params.PRGitlabProjectFlag),
+		os.Getenv(prGitlabProjectId),
+		flag(params.PRIidFlag),
+		os.Getenv(prGitlabIid),
+	}
+
+	testFileName := "test_output.log"
+	file := createOutputFile(t, testFileName)
+	_, _ = executeCommand(t, args...)
 	prdDecorationForbiddenMessage := "No pr decoration have been created because scan did not end"
 	stdoutString := readOutputFile(t, testFileName)
 	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
