@@ -1655,8 +1655,6 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-
-			// todo why create report in async mode
 			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
 				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
