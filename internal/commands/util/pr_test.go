@@ -24,7 +24,7 @@ func TestNewMRDecorationCommandMustExist(t *testing.T) {
 }
 
 func TestIsScanEnded(t *testing.T) {
-	scansMockWrapper := &mock.ScansMockWrapper{true}
+	scansMockWrapper := &mock.ScansMockWrapper{Running: true}
 
 	asserts.False(t, IsScanEnded(scansMockWrapper, "ScanNotEnded"))
 	scansMockWrapper.Running = false
