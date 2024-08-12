@@ -64,7 +64,7 @@ func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 		return true
 	}
 
-	log.Println("scan status: ", scanResponseModel.Status) //todo remove this line
+	log.Println("scan status: ", scanResponseModel.Status) // todo remove this line
 
 	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 		return false
