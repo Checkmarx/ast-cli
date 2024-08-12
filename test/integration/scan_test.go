@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -27,6 +26,7 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -1829,13 +1829,15 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 	wrappers.Domains = make(map[string]struct{})
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	usedDomainsInTests := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
-	validateCheckmarxDomains(t, usedDomainsInTests)
+	baseUrl, _ := wrappers.GetURL("", "")
+	authUri, _ := wrappers.GetAuthURI()
+	usedDomainsFromConfig := []string{baseUrl, authUri}
+	validateCheckmarxDomains(t, usedDomainsFromConfig)
 }
 
 func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	usedDomains := wrappers.Domains
 	for domain, _ := range usedDomains {
-		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
+		assert.Assert(t, utils.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
 }
