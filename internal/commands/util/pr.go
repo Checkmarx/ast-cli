@@ -21,7 +21,8 @@ const (
 	policyErrorFormat                = "%s: Failed to get scanID policy information"
 	waitDelayDefault                 = 5
 	resultPolicyDefaultTimeout       = 1
-	failedGetting                    = "Failed showing a scan"
+	failedGettingScanError           = "Failed showing a scan"
+	noPRDecorationCreated            = "No pr decoration have been created because scan did not end"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -51,12 +52,12 @@ func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 
 	if err != nil {
-		log.Printf("%s: %v", failedGetting, err)
+		log.Printf("%s: %v", failedGettingScanError, err)
 		return true
 	}
 
 	if errorModel != nil {
-		log.Printf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
+		log.Printf("%s: CODE: %d, %s", failedGettingScanError, errorModel.Code, errorModel.Message)
 		return true
 	}
 
@@ -163,7 +164,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		scanEnded := IsScanEnded(scansWrapper, scanID)
 
 		if !scanEnded {
-			log.Println("no pr decoration have been created because scan did not end")
+			log.Println(noPRDecorationCreated)
 			return nil
 		}
 
@@ -209,7 +210,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		scanEnded := IsScanEnded(scansWrapper, scanID)
 
 		if !scanEnded {
-			log.Println("no pr decoration have been created because scan did not end")
+			log.Println(noPRDecorationCreated)
 			return nil
 		}
 

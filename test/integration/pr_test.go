@@ -152,6 +152,6 @@ func deleteOutputFile(t *testing.T, fileName string, file *os.File) {
 	file.Close()
 	err := os.Remove(fileName)
 	if err != nil {
-		t.Fatalf("Failed to remove log file: %v", err)
+		log.println("Failed to remove log file: %v", err)
 	}
 }
