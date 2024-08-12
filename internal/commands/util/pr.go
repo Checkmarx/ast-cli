@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
@@ -20,6 +21,7 @@ const (
 	policyErrorFormat                = "%s: Failed to get scanID policy information"
 	waitDelayDefault                 = 5
 	resultPolicyDefaultTimeout       = 1
+	failedGetting                    = "Failed showing a scan"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -39,6 +41,35 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
 	return cmd
+}
+
+func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) bool {
+	var scanResponseModel *wrappers.ScanResponseModel
+	var errorModel *wrappers.ErrorModel
+	var err error
+
+	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
+
+	if err != nil {
+		log.Printf("%s: %v", failedGetting, err)
+		return true
+	}
+
+	if errorModel != nil {
+		log.Printf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
+		return true
+	}
+
+	if scanResponseModel == nil {
+		return true
+	}
+
+	log.Println("scan status: ", scanResponseModel.Status) //todo remove this line
+
+	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
+		return false
+	}
+	return true
 }
 
 func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -129,6 +160,13 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
+		scanEnded := IsScanEnded(scansWrapper, scanID)
+
+		if !scanEnded {
+			log.Println("no pr decoration have been created because scan did not end")
+			return nil
+		}
+
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
 		if policyError != nil {
@@ -167,6 +205,13 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
+
+		scanEnded := IsScanEnded(scansWrapper, scanID)
+
+		if !scanEnded {
+			log.Println("no pr decoration have been created because scan did not end")
+			return nil
+		}
 
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)

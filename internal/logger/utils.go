@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -72,4 +73,8 @@ func sanitizeLogs(msg string) string {
 		}
 	}
 	return msg
+}
+
+func SetOutput(w io.Writer) {
+	log.SetOutput(w)
 }
