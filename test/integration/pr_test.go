@@ -52,7 +52,7 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 
 	prdDecorationForbiddenMessage := "no pr decoration have been created because scan did not end"
 	stdoutString := readOutputFile(t, testFileName)
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
 
 	deleteOutputFile(t, testFileName, file)
 	defer logger.SetOutput(os.Stdout)
