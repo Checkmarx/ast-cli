@@ -24,7 +24,6 @@ const (
 	invalidFlag            = "Value of %s is invalid"
 	mbBytes                = 1024.0 * 1024.0
 	defaultDirectoryPrefix = "cx-"
-	constForDummyPr        = "constForDummyPr"
 )
 
 func NewUtilsCommand(
