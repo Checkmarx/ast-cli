@@ -1650,7 +1650,6 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
 	err, _ := executeCommand(t, args...)
-	defer deleteProject(t, "TiagoBaptista/testingCli/testingCli")
 	assert.NilError(t, err)
 }
 
