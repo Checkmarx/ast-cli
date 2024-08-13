@@ -74,7 +74,6 @@ func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
 		switch resp.StatusCode {
 		case http.StatusAccepted:
@@ -85,10 +84,12 @@ func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse response body")
 			}
+			resp.Body.Close()
 			return &model, nil
 		case http.StatusBadRequest:
 			if time.Now().After(endTime) {
 				log.Printf("Timeout reached after %d attempts. Last response status code: %d", retryCount+1, resp.StatusCode)
+				resp.Body.Close()
 				return nil, errors.Errorf("failed to initiate export request - response status code %d", resp.StatusCode)
 			}
 			retryCount++
@@ -96,6 +97,7 @@ func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload)
 			time.Sleep(retryInterval)
 		default:
 			logger.PrintfIfVerbose("Received unexpected status code %d", resp.StatusCode)
+			resp.Body.Close()
 			return nil, errors.Errorf("response status code %d", resp.StatusCode)
 		}
 	}
