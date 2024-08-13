@@ -1844,7 +1844,7 @@ func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 }
 
 func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.T) {
-	projectName := "uniqueName" + uuid.New().String()
+	projectName := generateRandomProjectNameForScan()
 	args := []string{
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
