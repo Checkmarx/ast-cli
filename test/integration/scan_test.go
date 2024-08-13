@@ -1855,11 +1855,10 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.AsyncFlag),
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	scanID, projectID := executeCreateScan(t, args)
+	scanID, _ := executeCreateScan(t, args)
 	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
-	defer deleteProject(t, projectID)
 }
 
 func generateRandomProjectNameForScan() string {
