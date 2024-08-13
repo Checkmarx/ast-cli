@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"log"
 	"os"
@@ -29,7 +30,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	asserts "github.com/stretchr/testify/assert"
@@ -1841,6 +1841,46 @@ func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	for domain, _ := range usedDomains {
 		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
+}
+
+func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.T) {
+	projectName := generateRandomProjectNameForScan()
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	_, projectID := executeCreateScan(t, args)
+	args2 := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.BranchFlag), "   dummy_branch    ",
+	}
+	err, _ := executeCommand(t, args2...)
+	assert.NilError(t, err)
+
+	response := listScanByProjectID(t, projectID)
+	assert.Assert(t, len(response) == 2)
+	for _, scan := range response {
+		assert.Equal(t, scan.Branch, "dummy_branch", "Branch name should be dummy_branch")
+	}
+}
+func listScanByProjectID(t *testing.T, projectID string) []wrappers.ScanResponseModel {
+	scanFilter := fmt.Sprintf("project-id=%s", projectID)
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting the scan should pass",
+		"scan", scanList, flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), scanFilter,
+	)
+	// Read response from buffer
+	var scanList []wrappers.ScanResponseModel
+	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
+	return scanList
 }
 
 func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *testing.T) {
