@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -51,34 +52,52 @@ func NewExportHTTPWrapper(path string) ExportWrapper {
 	}
 }
 
+const (
+	retryInterval = 5 * time.Second
+	timeout       = 2 * time.Minute
+)
+
 func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload) (*ExportResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to parse request body")
+		return nil, errors.Wrapf(err, "failed to parse request body")
 	}
 	path := fmt.Sprintf("%s/%s", e.path, "requests")
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, clientTimeout)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 
-	switch resp.StatusCode {
-	case http.StatusAccepted:
-		model := ExportResponse{}
-		decoder := json.NewDecoder(resp.Body)
-		err = decoder.Decode(&model)
+	endTime := time.Now().Add(timeout)
+	retryCount := 0
+
+	for {
+		logger.PrintfIfVerbose("Sending export request, attempt %d", retryCount+1)
+		resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(params), true, clientTimeout)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse response body")
+			return nil, err
 		}
-		return &model, nil
-	case http.StatusBadRequest:
-		return nil, errors.Errorf("SBOM report is currently in beta mode and not available for this tenant type")
-	default:
-		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+		defer resp.Body.Close()
+
+		switch resp.StatusCode {
+		case http.StatusAccepted:
+			logger.PrintIfVerbose("Received 202 Accepted response from server.")
+			model := ExportResponse{}
+			decoder := json.NewDecoder(resp.Body)
+			err = decoder.Decode(&model)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to parse response body")
+			}
+			return &model, nil
+		case http.StatusBadRequest:
+			if time.Now().After(endTime) {
+				log.Printf("Timeout reached after %d attempts. Last response status code: %d", retryCount+1, resp.StatusCode)
+				return nil, errors.Errorf("failed to initiate export request - response status code %d", resp.StatusCode)
+			}
+			retryCount++
+			logger.PrintfIfVerbose("Received 400 Bad Request. Retrying in %v... (attempt %d/%d)", retryInterval, retryCount, maxRetries)
+			time.Sleep(retryInterval)
+		default:
+			logger.PrintfIfVerbose("Received unexpected status code %d", resp.StatusCode)
+			return nil, errors.Errorf("response status code %d", resp.StatusCode)
+		}
 	}
 }
 
