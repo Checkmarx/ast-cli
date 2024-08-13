@@ -1862,5 +1862,5 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 }
 
 func generateRandomProjectNameForScan() string {
-	return fmt.Sprintf("ast-cli-scan-", uuid.New().String())
+	return fmt.Sprint("ast-cli-scan-", uuid.New().String())
 }
