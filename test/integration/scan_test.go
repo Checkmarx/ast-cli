@@ -27,9 +27,13 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	asserts "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 )
 
@@ -1878,4 +1882,26 @@ func listScanByProjectID(t *testing.T, projectID string) []wrappers.ScanResponse
 	var scanList []wrappers.ScanResponseModel
 	_ = unmarshall(t, outputBuffer, &scanList, "Reading scan response JSON should pass")
 	return scanList
+}
+
+func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), generateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), "data/empty-folder.zip",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, _ := executeCreateScan(t, args)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
+	asserts.Nil(t, err)
+	assert.Assert(t, exportRes != nil, "Export response should not be nil")
+}
+
+func generateRandomProjectNameForScan() string {
+	return fmt.Sprint("ast-cli-scan-", uuid.New().String())
 }
