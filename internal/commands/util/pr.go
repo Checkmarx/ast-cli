@@ -22,7 +22,7 @@ const (
 	waitDelayDefault                 = 5
 	resultPolicyDefaultTimeout       = 1
 	failedGettingScanError           = "Failed showing a scan"
-	noPRDecorationCreated            = "No pr decoration have been created because scan did not end"
+	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -44,7 +44,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	return cmd
 }
 
-func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) bool {
+func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -53,24 +53,24 @@ func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) bool {
 
 	if err != nil {
 		log.Printf("%s: %v", failedGettingScanError, err)
-		return true
+		return true, err
 	}
 
 	if errorModel != nil {
 		log.Printf("%s: CODE: %d, %s", failedGettingScanError, errorModel.Code, errorModel.Message)
-		return true
+		return true, errors.New(errorModel.Message)
 	}
 
 	if scanResponseModel == nil {
-		return true
+		return true, nil
 	}
 
 	log.Println("scan status: ", scanResponseModel.Status) // todo remove this line
 
 	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
-		return false
+		return false, nil
 	}
-	return true
+	return true, nil
 }
 
 func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -161,7 +161,11 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
-		scanEnded := IsScanEnded(scansWrapper, scanID)
+		scanEnded, err := IsScanEnded(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
 
 		if !scanEnded {
 			log.Println(noPRDecorationCreated)
@@ -207,7 +211,11 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
-		scanEnded := IsScanEnded(scansWrapper, scanID)
+		scanEnded, err := IsScanEnded(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
 
 		if !scanEnded {
 			log.Println(noPRDecorationCreated)

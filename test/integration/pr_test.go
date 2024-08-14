@@ -137,7 +137,7 @@ func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
 	testFileName := "test_output.log"
 	file := createOutputFile(t, testFileName)
 	_, _ = executeCommand(t, args...)
-	prdDecorationForbiddenMessage := "No pr decoration have been created because scan did not end"
+	prdDecorationForbiddenMessage := "A PR couldn't be created for this scan because it is still in progress."
 	stdoutString := readOutputFile(t, testFileName)
 	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
 
@@ -168,7 +168,7 @@ func TestPRGitlabDecorationFailureRunningScanCase(t *testing.T) {
 	testFileName := "test_output.log"
 	file := createOutputFile(t, testFileName)
 	_, _ = executeCommand(t, args...)
-	prdDecorationForbiddenMessage := "No pr decoration have been created because scan did not end"
+	prdDecorationForbiddenMessage := "A PR couldn't be created for this scan because it is still in progress."
 	stdoutString := readOutputFile(t, testFileName)
 	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
 
