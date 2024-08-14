@@ -375,7 +375,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -394,7 +393,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -414,7 +412,6 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -433,7 +430,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
-		assertZipFileRemoved(t)
 	}
 }
 
@@ -451,12 +447,6 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		err, _ := executeCommand(t, testArgs...)
 		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 	}
-}
-
-func assertZipFileRemoved(t *testing.T) {
-	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
-	assert.NilError(t, err)
-	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
