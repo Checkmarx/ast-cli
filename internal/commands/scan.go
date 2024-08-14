@@ -1747,7 +1747,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 ) {
 	zipFilePath := ""
 	scanHandler := wrappers.ScanHandler{}
-	scanHandler.Branch = viper.GetString(commonParams.BranchKey)
+	scanHandler.Branch = strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 
 	uploadType := getUploadType(cmd)
 
@@ -2634,7 +2634,7 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 }
 
 func validateCreateScanFlags(cmd *cobra.Command) error {
-	branch := viper.GetString(commonParams.BranchKey)
+	branch := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 	if branch == "" {
 		return errors.Errorf("%s: Please provide a branch", failedCreating)
 	}
