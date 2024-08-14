@@ -29,6 +29,7 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
 		flag(params.TargetPathFlag), resultsDirectory,
 		flag(params.TargetFlag), fileName,
+		flag(params.DebugFlag),
 	)
 
 	defer func() {
