@@ -237,6 +237,42 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
+func createTestScanResultsCollection() *wrappers.ScanResultsCollection {
+	return &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Description:     "Vulnerability in SomeComponent",
+				DescriptionHTML: "Description with quotes",
+				ScanResultData: wrappers.ScanResultData{
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FullName: "SomeClass&lt;T&gt;",
+							Name:     "Name with &quot;quotes&quot;",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestDecodeHTMLEntitiesInResults(t *testing.T) {
+	// Setup: Creating test data with HTML entities
+	results := createTestScanResultsCollection()
+
+	decodeHTMLEntitiesInResults(results)
+
+	expectedFullName := `SomeClass<T>`
+	expectedName := `Name with "quotes"`
+
+	if results.Results[0].ScanResultData.Nodes[0].FullName != expectedFullName {
+		t.Errorf("expected FullName to be %q, got %q", expectedFullName, results.Results[0].ScanResultData.Nodes[0].FullName)
+	}
+
+	if results.Results[0].ScanResultData.Nodes[0].Name != expectedName {
+		t.Errorf("expected Name to be %q, got %q", expectedName, results.Results[0].ScanResultData.Nodes[0].Name)
+	}
+}
 
 func TestRunGetResultsByScanIdJsonFormatWithContainers(t *testing.T) {
 	clearFlags()
