@@ -237,24 +237,6 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
-func createTestScanResultsCollection() *wrappers.ScanResultsCollection {
-	return &wrappers.ScanResultsCollection{
-		Results: []*wrappers.ScanResult{
-			{
-				Description:     "Vulnerability in SomeComponent",
-				DescriptionHTML: "Description with quotes",
-				ScanResultData: wrappers.ScanResultData{
-					Nodes: []*wrappers.ScanResultNode{
-						{
-							FullName: "SomeClass&lt;T&gt;",
-							Name:     "Name with &quot;quotes&quot;",
-						},
-					},
-				},
-			},
-		},
-	}
-}
 
 func TestDecodeHTMLEntitiesInResults(t *testing.T) {
 	// Setup: Creating test data with HTML entities
@@ -344,6 +326,25 @@ func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
 	removeFileBySuffix(t, "md")
+}
+
+func createTestScanResultsCollection() *wrappers.ScanResultsCollection {
+	return &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Description:     "Vulnerability in SomeComponent",
+				DescriptionHTML: "Description with quotes",
+				ScanResultData: wrappers.ScanResultData{
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FullName: "SomeClass&lt;T&gt;",
+							Name:     "Name with &quot;quotes&quot;",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func removeFileBySuffix(t *testing.T, suffix string) {
