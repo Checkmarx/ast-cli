@@ -1662,7 +1662,6 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 		flag(params.PolicyTimeoutFlag), "-1"}
 
 	err, _ := executeCommand(t, args...)
-	defer deleteProject(t, "TiagoBaptista/testingCli/testingCli")
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
 
