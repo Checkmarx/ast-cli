@@ -155,16 +155,16 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 		}, nil, nil
 	}
 
-	if scanID == "ScanNotEnded" {
+	if scanID == "ScanRunning" {
 		return &wrappers.ScanResponseModel{
-			ID:        "ScanNotEnded",
+			ID:        "ScanRunning",
 			ProjectID: "Project1",
 			Status:    "Running",
 		}, nil, nil
 	}
-	if scanID == "ScanEnded" {
+	if scanID == "ScanNotRunning" {
 		return &wrappers.ScanResponseModel{
-			ID:        "ScanEnded",
+			ID:        "ScanNotRunning",
 			ProjectID: "Project2",
 			Status:    "Completed",
 		}, nil, nil

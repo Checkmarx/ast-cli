@@ -24,12 +24,16 @@ func TestNewMRDecorationCommandMustExist(t *testing.T) {
 	assert.ErrorContains(t, err, "scan-id")
 }
 
-func TestIsScanEnded(t *testing.T) {
+func TestIfScanRunning_WhenScanRunning_ShouldReturnTrue(t *testing.T) {
 	scansMockWrapper := &mock.ScansMockWrapper{Running: true}
 
-	scanEnded, _ := isScanEnded(scansMockWrapper, "ScanNotEnded")
-	asserts.False(t, scanEnded)
-	scansMockWrapper.Running = false
-	scanEnded, _ = isScanEnded(scansMockWrapper, "ScanEnded")
-	asserts.True(t, scanEnded)
+	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanRunning")
+	asserts.True(t, scanRunning)
+}
+
+func TestIfScanRunning_WhenScanRunning_ShouldReturnFalse(t *testing.T) {
+	scansMockWrapper := &mock.ScansMockWrapper{Running: false}
+
+	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanNotRunning")
+	asserts.False(t, scanRunning)
 }

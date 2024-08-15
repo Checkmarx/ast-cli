@@ -75,6 +75,7 @@ func sanitizeLogs(msg string) string {
 	return msg
 }
 
+// SetOutput sets the output destination for the logger.
 func SetOutput(w io.Writer) {
 	log.SetOutput(w)
 }

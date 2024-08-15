@@ -116,7 +116,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 	assert.ErrorContains(t, err, "Failed creating gitlab MR Decoration")
 }
 
-func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
+func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
 	scanID, _ := createScanNoWait(t, Zip, Tags)
 	args := []string{
 		"utils",
@@ -147,7 +147,7 @@ func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
 	defer logger.SetOutput(os.Stdout)
 }
 
-func TestPRGitlabDecorationFailureRunningScanCase(t *testing.T) {
+func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
 	scanID, _ := createScanNoWait(t, Zip, Tags)
 	args := []string{
 		"utils",

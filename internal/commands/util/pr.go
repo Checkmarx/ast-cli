@@ -44,7 +44,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	return cmd
 }
 
-func isScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -53,24 +53,24 @@ func isScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error
 
 	if err != nil {
 		log.Printf("%s: %v", failedGettingScanError, err)
-		return true, err
+		return false, err
 	}
 
 	if errorModel != nil {
 		log.Printf("%s: CODE: %d, %s", failedGettingScanError, errorModel.Code, errorModel.Message)
-		return true, errors.New(errorModel.Message)
+		return false, errors.New(errorModel.Message)
 	}
 
 	if scanResponseModel == nil {
 		return true, nil
 	}
 
-	log.Println("scan status: ", scanResponseModel.Status) // todo remove this line
+	logger.PrintfIfVerbose("scan status: %s", scanResponseModel.Status)
 
 	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
-		return false, nil
+		return true, nil
 	}
-	return true, nil
+	return false, nil
 }
 
 func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -161,7 +161,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
-		scanEnded, err := isScanEnded(scansWrapper, scanID)
+		scanEnded, err := isScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
@@ -211,7 +211,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
-		scanEnded, err := isScanEnded(scansWrapper, scanID)
+		scanEnded, err := isScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
