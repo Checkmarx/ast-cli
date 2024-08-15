@@ -873,10 +873,8 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security"))
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs, container-security"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,  container-security"))
 	} else {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security"))
 		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
 	}
 }
@@ -1040,6 +1038,7 @@ func TestScanWorkflow(t *testing.T) {
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
+	log.Println(err)
 	assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
 }
 
