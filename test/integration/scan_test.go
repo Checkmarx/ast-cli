@@ -292,16 +292,17 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	projectId, projectName := createProject(t, nil, nil)
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
 	}
-
+	defer deleteProject(t, projectId)
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
