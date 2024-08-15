@@ -3,8 +3,8 @@
 package integration
 
 import (
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -14,15 +14,16 @@ import (
 )
 
 const (
-	prGithubToken     = "PR_GITHUB_TOKEN"
-	prGithubNamespace = "PR_GITHUB_NAMESPACE"
-	prGithubNumber    = "PR_GITHUB_NUMBER"
-	prGithubRepoName  = "PR_GITHUB_REPO_NAME"
-	prGitlabRepoName  = "PR_GITLAB_REPO_NAME"
-	prGitlabToken     = "PR_GITLAB_TOKEN"
-	prGitlabNamespace = "PR_GITLAB_NAMESPACE"
-	prGitlabProjectId = "PR_GITLAB_PROJECT_ID"
-	prGitlabIid       = "PR_GITLAB_IID"
+	prGithubToken                 = "PR_GITHUB_TOKEN"
+	prGithubNamespace             = "PR_GITHUB_NAMESPACE"
+	prGithubNumber                = "PR_GITHUB_NUMBER"
+	prGithubRepoName              = "PR_GITHUB_REPO_NAME"
+	prGitlabRepoName              = "PR_GITLAB_REPO_NAME"
+	prGitlabToken                 = "PR_GITLAB_TOKEN"
+	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
+	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
+	prGitlabIid                   = "PR_GITLAB_IID"
+	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 )
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
@@ -134,14 +135,15 @@ func TestPRGithubDecorationFailureRunningScanCase(t *testing.T) {
 		"--debug",
 	}
 
-	testFileName := "test_output.log"
-	file := createOutputFile(t, testFileName)
+	file := createOutputFile(t, "test_output.log")
 	_, _ = executeCommand(t, args...)
-	prdDecorationForbiddenMessage := "A PR couldn't be created for this scan because it is still in progress."
-	stdoutString := readOutputFile(t, testFileName)
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
 
-	defer deleteOutputFile(t, testFileName, file)
+	defer deleteOutputFile(t, file)
 	defer logger.SetOutput(os.Stdout)
 }
 
@@ -165,12 +167,10 @@ func TestPRGitlabDecorationFailureRunningScanCase(t *testing.T) {
 		os.Getenv(prGitlabIid),
 	}
 
-	testFileName := "test_output.log"
-	file := createOutputFile(t, testFileName)
+	file := createOutputFile(t, "test_output.log")
 	_, _ = executeCommand(t, args...)
-	prdDecorationForbiddenMessage := "A PR couldn't be created for this scan because it is still in progress."
-	stdoutString := readOutputFile(t, testFileName)
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage, " Actual: %s", stdoutString)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
 
 	defer deleteOutputFile(t, testFileName, file)
 	defer logger.SetOutput(os.Stdout)
@@ -185,23 +185,9 @@ func createOutputFile(t *testing.T, fileName string) *os.File {
 	return file
 }
 
-func readOutputFile(t *testing.T, fileName string) string {
-	file, err := os.Open(fileName)
-	if err != nil {
-		t.Fatalf("Failed to open log file: %v", err)
-	}
-	defer file.Close()
-
-	fileContent, err := ioutil.ReadAll(file)
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	return string(fileContent)
-}
-
-func deleteOutputFile(t *testing.T, fileName string, file *os.File) {
+func deleteOutputFile(t *testing.T, file *os.File) {
 	file.Close()
-	err := os.Remove(fileName)
+	err := os.Remove(file.Name())
 	if err != nil {
 		logger.Printf("Failed to remove log file: %v", err)
 	}

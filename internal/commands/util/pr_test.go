@@ -1,10 +1,10 @@
 package util
 
 import (
-	"testing"
-
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	asserts "github.com/stretchr/testify/assert"
+	"testing"
+
 	"gotest.tools/assert"
 )
 
@@ -27,9 +27,9 @@ func TestNewMRDecorationCommandMustExist(t *testing.T) {
 func TestIsScanEnded(t *testing.T) {
 	scansMockWrapper := &mock.ScansMockWrapper{Running: true}
 
-	scanEnded, _ := IsScanEnded(scansMockWrapper, "ScanNotEnded")
+	scanEnded, _ := isScanEnded(scansMockWrapper, "ScanNotEnded")
 	asserts.False(t, scanEnded)
 	scansMockWrapper.Running = false
-	scanEnded, _ = IsScanEnded(scansMockWrapper, "ScanEnded")
+	scanEnded, _ = isScanEnded(scansMockWrapper, "ScanEnded")
 	asserts.True(t, scanEnded)
 }
