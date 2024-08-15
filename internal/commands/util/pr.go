@@ -161,13 +161,13 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
-		scanEnded, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
 		}
 
-		if !scanEnded {
+		if scanRunningOrQueued {
 			log.Println(noPRDecorationCreated)
 			return nil
 		}
@@ -211,13 +211,13 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
-		scanEnded, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
 		}
 
-		if !scanEnded {
+		if scanRunningOrQueued {
 			log.Println(noPRDecorationCreated)
 			return nil
 		}
