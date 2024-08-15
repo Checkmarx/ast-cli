@@ -2101,10 +2101,12 @@ func isScanRunning(
 	var err error
 	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
 	if err != nil {
-		log.Fatal("Cannot source code temp file.", err)
+		logger.PrintfIfVerbose("Cannot source code temp file: %s", err)
+		return false, errors.Wrap(err, "Cannot source code temp file.")
 	}
 	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		logger.PrintfIfVerbose("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
+		return false, errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)

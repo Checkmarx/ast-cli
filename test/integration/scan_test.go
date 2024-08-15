@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +28,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -292,15 +292,17 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	projectId, projectName := createProject(t, nil, nil)
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
 	}
-
+	defer deleteProject(t, projectId)
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -353,6 +355,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -860,7 +863,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,  container-security"))
 	} else {
 		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
 	}
@@ -1025,6 +1028,7 @@ func TestScanWorkflow(t *testing.T) {
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
+	log.Println(err)
 	assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
 }
 
@@ -1643,7 +1647,6 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -1822,14 +1825,16 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 	wrappers.Domains = make(map[string]struct{})
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	usedDomainsInTests := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
-	validateCheckmarxDomains(t, usedDomainsInTests)
+	baseUrl, _ := wrappers.GetURL("", "")
+	authUri, _ := wrappers.GetAuthURI()
+	usedDomainsFromConfig := []string{baseUrl, authUri}
+	validateCheckmarxDomains(t, usedDomainsFromConfig)
 }
 
 func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	usedDomains := wrappers.Domains
 	for domain, _ := range usedDomains {
-		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
+		assert.Assert(t, utils.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
 }
 

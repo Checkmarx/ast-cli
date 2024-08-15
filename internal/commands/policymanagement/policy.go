@@ -104,7 +104,7 @@ func isPolicyEvaluated(
 		return false, nil, err
 	}
 	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		return false, nil, fmt.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if policyResponseModel != nil {
 		if policyResponseModel.Status == evaluatingPolicy {
 			log.Println("Policy status: ", policyResponseModel.Status)

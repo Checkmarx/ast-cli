@@ -52,22 +52,26 @@ func extractFiles(installationConfiguration *InstallationConfiguration, tarReade
 		}
 
 		if err != nil {
-			log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
+			logger.PrintfIfVerbose("ExtractTarGz: Next() failed: %s", err.Error())
+			return err
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
 			if err := os.Mkdir(header.Name, os.FileMode(dirDefault)); err != nil {
-				log.Fatalf("ExtractTarGz: Mkdir() failed: %s", err.Error())
+				logger.PrintfIfVerbose("ExtractTarGz: Mkdir() failed: %s", err.Error())
+				return err
 			}
 		case tar.TypeReg:
 			extractedFilePath := filepath.Join(installationConfiguration.WorkingDir(), header.Name)
 			outFile, err := os.Create(extractedFilePath)
 			if err != nil {
-				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+				logger.PrintfIfVerbose("ExtractTarGz: Create() failed: %s", err.Error())
+				return err
 			}
 			if _, err = io.Copy(outFile, tarReader); err != nil {
-				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+				logger.PrintfIfVerbose("ExtractTarGz: Copy() failed: %s", err.Error())
+				return err
 			}
 			err = outFile.Close()
 			if err != nil {
@@ -78,10 +82,8 @@ func extractFiles(installationConfiguration *InstallationConfiguration, tarReade
 				return err
 			}
 		default:
-			log.Fatalf(
-				"ExtractTarGz: uknown type: %v in %s",
-				header.Typeflag,
-				header.Name)
+			logger.PrintfIfVerbose("ExtractTarGz: uknown type: %v in %s", header.Typeflag, header.Name)
+			return err
 		}
 	}
 	return nil
