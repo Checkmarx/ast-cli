@@ -5,7 +5,6 @@ package integration
 import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"log"
 	"os"
 	"strings"
 	"testing"
@@ -25,6 +24,7 @@ const (
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
+	failedGettingScanError        = "Failed showing a scan"
 )
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
@@ -56,7 +56,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		"",
+		"fakeScanID",
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -67,8 +67,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
-	log.Println(err)
-	assert.ErrorContains(t, err, "Failed creating github PR Decoration")
+	assert.ErrorContains(t, err, "scan not found")
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
@@ -102,7 +101,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		"",
+		"fakeScanID",
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
@@ -115,7 +114,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 		os.Getenv(prGitlabIid),
 	}
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, "Failed creating gitlab MR Decoration")
+	assert.ErrorContains(t, err, "scan not found")
 }
 
 func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
