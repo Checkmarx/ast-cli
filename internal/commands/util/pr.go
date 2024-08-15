@@ -62,7 +62,7 @@ func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (b
 	}
 
 	if scanResponseModel == nil {
-		return true, nil
+		return false, errors.New(failedGettingScanError)
 	}
 
 	logger.PrintfIfVerbose("scan status: %s", scanResponseModel.Status)

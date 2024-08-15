@@ -5,6 +5,7 @@ package integration
 import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -66,6 +67,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 		os.Getenv(prGithubRepoName),
 	}
 	err, _ := executeCommand(t, args...)
+	log.Println(err)
 	assert.ErrorContains(t, err, "Failed creating github PR Decoration")
 }
 
