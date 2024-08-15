@@ -46,6 +46,8 @@ func TestChatSastNoUserInput(t *testing.T) {
 }
 
 func TestChatSastInvalidScanResultsFile(t *testing.T) {
+	const ScanResultsFileErrorFormat = "Error reading and parsing SAST results file '%s'"
+
 	buffer, err := executeRedirectedTestCommand("chat", "sast",
 		"--chat-apikey", "apiKey",
 		"--scan-results-file", "invalidFile",

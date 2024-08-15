@@ -8,31 +8,35 @@ import (
 )
 
 type ResultSummary struct {
-	TotalIssues     int
-	HighIssues      int
-	MediumIssues    int
-	LowIssues       int
-	InfoIssues      int
-	SastIssues      int
-	KicsIssues      int
-	ScaIssues       int
-	APISecurity     APISecResult
-	RiskStyle       string
-	RiskMsg         string
-	Status          string
-	ScanID          string
-	ScanDate        string
-	ScanTime        string
-	CreatedAt       string
-	ProjectID       string
-	BaseURI         string
-	Tags            map[string]string
-	ProjectName     string
-	BranchName      string
-	ScanInfoMessage string
-	EnginesEnabled  []string
-	Policies        *PolicyResponseModel
-	EnginesResult   EnginesResultsSummary
+	TotalIssues      int
+	CriticalIssues   int
+	HighIssues       int
+	MediumIssues     int
+	LowIssues        int
+	InfoIssues       int
+	SastIssues       int
+	KicsIssues       int
+	ScaIssues        int
+	ContainersIssues *int        `json:"ContainersIssues,omitempty"`
+	ScsIssues        int         `json:"-"`
+	SCSOverview      SCSOverview `json:"-"`
+	APISecurity      APISecResult
+	RiskStyle        string
+	RiskMsg          string
+	Status           string
+	ScanID           string
+	ScanDate         string
+	ScanTime         string
+	CreatedAt        string
+	ProjectID        string
+	BaseURI          string
+	Tags             map[string]string
+	ProjectName      string
+	BranchName       string
+	ScanInfoMessage  string
+	EnginesEnabled   []string
+	Policies         *PolicyResponseModel
+	EnginesResult    EnginesResultsSummary
 }
 
 // nolint: govet
@@ -43,11 +47,29 @@ type APISecResult struct {
 	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
 	StatusCode       int
 }
+
 type riskDistribution struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
 }
+
+type SCSOverview struct {
+	Status               ScanStatus             `json:"status"`
+	TotalRisksCount      int                    `json:"totalRisks,omitempty"`
+	RiskSummary          map[string]int         `json:"riskSummary,omitempty"`
+	MicroEngineOverviews []*MicroEngineOverview `json:"engineOverviews,omitempty"`
+}
+
+type MicroEngineOverview struct {
+	Name        string                 `json:"name"`
+	FullName    string                 `json:"fullName"`
+	Status      ScanStatus             `json:"status"`
+	TotalRisks  int                    `json:"totalRisks"`
+	RiskSummary map[string]interface{} `json:"riskSummary"`
+}
+
 type EngineResultSummary struct {
+	Critical   int
 	High       int
 	Medium     int
 	Low        int
@@ -56,6 +78,18 @@ type EngineResultSummary struct {
 }
 
 type EnginesResultsSummary map[string]*EngineResultSummary
+
+var IsSCSEnabled bool
+
+var IsContainersEnabled bool
+
+func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
+	criticalIssues := 0
+	for _, v := range *engineSummary {
+		criticalIssues += v.Critical
+	}
+	return criticalIssues
+}
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
@@ -91,6 +125,8 @@ func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
 
 func (engineSummary *EngineResultSummary) Increment(level string) {
 	switch level {
+	case "critical":
+		engineSummary.Critical++
 	case "high":
 		engineSummary.High++
 	case "medium":
@@ -102,8 +138,8 @@ func (engineSummary *EngineResultSummary) Increment(level string) {
 	}
 }
 
-func (summary *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
-	summary.EnginesResult[engineType].Increment(severity)
+func (r *ResultSummary) UpdateEngineResultSummary(engineType, severity string) {
+	r.EnginesResult[engineType].Increment(severity)
 }
 
 func (r *ResultSummary) HasEngine(engine string) bool {
@@ -117,6 +153,16 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
+}
+func (r *ResultSummary) ContainersEnabled() bool {
+	return IsContainersEnabled
+}
+func (r *ResultSummary) ContainersIssuesValue() int {
+	return *r.ContainersIssues
+}
+
+func (r *ResultSummary) HasSCS() bool {
+	return r.HasEngine(params.ScsType)
 }
 
 func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
@@ -235,23 +281,30 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         }
 
         .bg-kicks {
-            background-color: #008e96 !important;
+            background-color: #079E9E !important;
         }
 
         .bg-red {
             background-color: #f1605d;
         }
+		   
+		.bg-darkred {
+			background-color: #C54A50 !important;
+        }
 
         .bg-sast {
-            background-color: #1165b4 !important;
+            background-color: #0356A5 !important;
         }
 
         .bg-sca {
-            background-color: #0fcdc2 !important;
+            background-color: #15D7D7 !important;
         }
 
 		.bg-api-sec {
             background-color: #bdbdbd !important;
+        }
+		.bg-containers {
+            background-color: #70F9CC !important;
         }
 
         .header-row .cx-info .data .calendar-svg {
@@ -354,6 +407,10 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             width: 24.5%;
         }
 
+		.top-row .risk-level-tile.critical {
+			background-color: #C54A50;
+			color: #fcfdff;
+		}
         .top-row .risk-level-tile.high {
             background: #f1605d;
             color: #fcfdff;
@@ -460,7 +517,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 			margin: 0 3rem 2rem;
     		right: 40px;
         }
-
+		.bar-chart .progress .progress-bar.bg-critical {
+			background-color: #C54A50 !important;
+		}
         .bar-chart .progress .progress-bar.bg-danger {
             background-color: #f1605d !important;
         }
@@ -506,6 +565,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             font-size: 14px;
             padding-left: 5px;
         }
+		.severity-legend-dot.critical {
+			background-color: #C54A50;
+		}
 
         .severity-engines-text,
         .severity-legend-text {
@@ -674,6 +736,9 @@ const nonAsyncSummary = `<div class="top-row">
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
                 <div>
+    				<div class="legend"><span class="severity-legend-dot">critical</span>
+                        <div class="severity-legend-text bg-darkred"></div>
+                    </div>
                     <div class="legend"><span class="severity-legend-dot">high</span>
                         <div class="severity-legend-text bg-red"></div>
                     </div>
@@ -688,6 +753,7 @@ const nonAsyncSummary = `<div class="top-row">
                     <div id="total" class="total">{{.TotalIssues}}</div>
                     <div class="single-stacked-bar-chart bar-chart">
                         <div class="progress">
+                            <div class="progress-bar bg-critical value" >{{.CriticalIssues}}</div>
                             <div class="progress-bar bg-danger value">{{.HighIssues}}</div>
                             <div class="progress-bar bg-warning value">{{.MediumIssues}}</div>
                             <div class="progress-bar bg-success value">{{.LowIssues}}</div>
@@ -707,6 +773,9 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
+					{{if .ContainersEnabled}}<div class="legend"><span class="engines-legend-dot">Containers</span>
+                        <div class="severity-engines-text bg-containers"></div>
+                    </div>{{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -714,6 +783,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
+							{{if .ContainersEnabled}}<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
                         </div>
                     </div>
                 </div>
@@ -758,7 +828,9 @@ const SummaryMarkdownCompletedTemplate = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
 {{ $emoji := "⚪" }}
-{{ if eq .RiskMsg "High Risk" }}
+{{ if eq .RiskMsg "Critical Risk" }}
+  {{ $emoji = "🔴" }}
+{{ else if eq .RiskMsg "High Risk" }}
   {{ $emoji = "🔴" }}
 {{ else if eq .RiskMsg "Medium Risk" }}
   {{ $emoji = "🟡" }}
@@ -778,16 +850,16 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Total Vulnerabilities: {{.TotalIssues}}
 
-|🔴 High |🟡 Medium |⚪ Low |⚪ Info |
-|:----------:|:------------:|:---------:|:----------:|
-| {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
+|🔴 Critical |🔴 High |🟡 Medium |⚪ Low |⚪ Info |
+|:----------:|:----------:|:------------:|:---------:|:----------:|
+| {{.CriticalIssues}} | {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
 ***
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |
-|:----------:|:----------:|:---------:|
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} |
+| SAST | IaC Security | SCA |{{if .ContainersEnabled}} Containers |{{end}}
+|:----------:|:----------:|:---------:|{{if .ContainersEnabled}} :----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .ContainersEnabled}}{{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 

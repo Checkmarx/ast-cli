@@ -35,8 +35,8 @@ func main() {
 	applications := viper.GetString(params.ApplicationsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
-	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
 	bfl := viper.GetString(params.BflPathKey)
@@ -45,8 +45,7 @@ func main() {
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
-	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
@@ -55,14 +54,15 @@ func main() {
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
+	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummary)
+	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -83,11 +83,12 @@ func main() {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
+	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
-		resultsSbomReportsWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
@@ -95,6 +96,7 @@ func main() {
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
@@ -115,6 +117,7 @@ func main() {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		byorWrapper,
+		containerResolverWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

@@ -26,6 +26,7 @@ const (
 	blankSpace                    = " "
 	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
 	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
+	dummyToken                    = "dummyToken"
 	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
 	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
 	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
@@ -45,6 +46,8 @@ const (
 	scanCommand                   = "scan"
 	kicsRealtimeCommand           = "kics-realtime"
 	InvalidEngineMessage          = "Please verify if engine is installed"
+	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -125,6 +128,57 @@ func TestRunTagsCommand(t *testing.T) {
 
 func TestCreateScan(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
+}
+
+func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+}
+
+func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
+}
+
+func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
+}
+
+func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
+	// When no container scan type is provided, we will ignore the container images flag and its value
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
+	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+}
+
+func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
+	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
+}
+
+func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+}
+
+func TestCreateContainersScan_ContainerFFIsOff_FailCreatingScan(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "container-security"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	fmt.Println(err)
+	assert.ErrorContains(t, err, "you would need to purchase a license")
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -230,6 +284,11 @@ func TestCreateScanWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "iac-security")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sca")...)
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast,api-security")...)
+
+	baseArgs = append(baseArgs, flag(commonParams.ScanTypes), "scs",
+		flag(commonParams.SCSRepoURLFlag), "dummyURL",
+		flag(commonParams.SCSRepoTokenFlag), "dummyToken")
+	execCmdNilAssertion(t, baseArgs...)
 }
 
 func TestScanCreate_KicsScannerFail_ReturnCorrectKicsExitCodeAndErrorMessage(t *testing.T) {
@@ -590,7 +649,7 @@ func TestAddScaScan(t *testing.T) {
 	_ = cmdCommand.Flags().Set(commonParams.ScaPrivatePackageVersionFlag, "1.1.1")
 	_ = cmdCommand.Flags().Set(commonParams.ExploitablePathFlag, "true")
 
-	result := addScaScan(cmdCommand, resubmitConfig)
+	result := addScaScan(cmdCommand, resubmitConfig, false)
 	scaConfig := wrappers.ScaConfig{
 		Filter:                "test",
 		ExploitablePath:       "true",
@@ -728,6 +787,80 @@ func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		dummyRepo,
+		"-b",
+		"dummy_branch",
+		"--scan-types",
+		"scs",
+		"--scs-engines",
+		"scorecard",
+	)
+	assert.Assert(t, err.Error() == SCSScoreCardError)
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepo,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+
+	result, _ := addSCSScan(cmdCommand)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "true",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
 }
 
 func Test_isDirFiltered(t *testing.T) {
@@ -873,6 +1006,57 @@ func Test_validateThresholds(t *testing.T) {
 			err := validateThresholds(tt.thresholdMap)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateThresholds() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateContainerImageFormat(t *testing.T) {
+	testCases := []struct {
+		name           string
+		containerImage string
+		expectedError  error
+	}{
+		{
+			name:           "Valid container image format",
+			containerImage: "nginx:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Missing image name",
+			containerImage: ":latest",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Missing image tag",
+			containerImage: "nginx:",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Empty image name and tag",
+			containerImage: ":",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Extra colon",
+			containerImage: "nginx:latest:extra",
+			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateContainerImageFormat(tc.containerImage)
+			if err != nil && tc.expectedError == nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+			if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
+				t.Errorf("Expected error %v, but got %v", tc.expectedError, err)
+			}
+			if err == nil && tc.expectedError != nil {
+				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
 		})
 	}

@@ -7,12 +7,17 @@ linters-settings:
         allow:
           - $gostd
           - github.com/checkmarx/ast-cli/internal
+          - github.com/gookit/color
+          - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
+          - github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation
           - github.com/spf13/viper
           - github.com/Checkmarx/gen-ai-wrapper
           - github.com/spf13/cobra
           - github.com/pkg/errors
           - github.com/google
           - github.com/MakeNowJust/heredoc
+          - github.com/jsumners/go-getport
+          - github.com/stretchr/testify/assert
   dupl:
     threshold: 500
   funlen:

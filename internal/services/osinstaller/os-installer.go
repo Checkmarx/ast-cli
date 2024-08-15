@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +14,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
+
+type NewSuccessfulInstallation bool
 
 // downloadFile Downloads a file from url path
 func downloadFile(downloadURLPath, filePath string) error {
@@ -51,38 +52,38 @@ func downloadFile(downloadURLPath, filePath string) error {
 // InstallOrUpgrade Checks the version according to the hash file,
 // downloads the RealTime installation if the version is not up-to-date,
 // Extracts the RealTime installation according to the operating system type
-func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) error {
+func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (NewSuccessfulInstallation, error) {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
 	if downloadNotNeeded(installationConfiguration) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
-		return nil
+		return false, nil
 	}
 
 	// Create temporary working directory if not exists
 	err := createWorkingDirectory(installationConfiguration)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Download RealTime installation
 	err = downloadFile(installationConfiguration.DownloadURL, filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName))
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Download hash file
 	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
 	err = UnzipOrExtractFiles(installationConfiguration)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 // createWorkingDirectory Creates a working directory to handle Realtime functionality
@@ -143,7 +144,7 @@ func FileExists(path string) (bool, error) {
 func getHashValue(hashFilePath string) ([]byte, error) {
 	f, err := os.Open(hashFilePath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer func() {
 		_ = f.Close()

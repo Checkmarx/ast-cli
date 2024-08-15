@@ -65,8 +65,8 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	projects := viper.GetString(params.ProjectsPathKey)
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummmaryPath := viper.GetString(params.ScanSummaryPathKey)
-	scaPackage := viper.GetString(params.ScaPackagePathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	scsScanOverviewPath := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
@@ -76,8 +76,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationGitlabPath := viper.GetString(params.PRDecorationGitlabPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsSbomPath := viper.GetString(params.ResultsSbomReportPathKey)
-	resultsSbomProxyPath := viper.GetString(params.ResultsSbomReportProxyPathKey)
+	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
@@ -87,14 +86,15 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsSbomReportsWrapper := wrappers.NewResultsSbomReportsHTTPWrapper(resultsSbomPath, resultsSbomProxyPath)
+	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
-	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scaPackage, scanSummmaryPath)
+	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummmaryPath)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverviewPath)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
 	codeBashingWrapper := wrappers.NewCodeBashingHTTPWrapper(codebashing)
@@ -114,11 +114,12 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
+	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
-		resultsSbomReportsWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
 		codeBashingWrapper,
@@ -126,6 +127,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
@@ -146,6 +148,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		ByorWrapper,
+		containerResolverWrapper,
 	)
 	return astCli
 }

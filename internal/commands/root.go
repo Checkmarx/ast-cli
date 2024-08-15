@@ -23,7 +23,7 @@ import (
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
-	resultsSbomWrapper wrappers.ResultsSbomWrapper,
+	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
@@ -31,6 +31,7 @@ func NewAstCLI(
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
@@ -51,6 +52,7 @@ func NewAstCLI(
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
+	containerResolverWrapper wrappers.ContainerResolverWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -73,7 +75,6 @@ func NewAstCLI(
 		},
 	}
 
-	setUpFeatureFlags(featureFlagsWrapper)
 	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
@@ -100,16 +101,6 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if wrappers.DefaultFFLoad {
-			if requiredFeatureFlagsCheck(cmd) {
-				err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-				if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-				}
-			}
-		}
 		PrintConfiguration()
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
@@ -148,7 +139,7 @@ func NewAstCLI(
 	scanCmd := NewScanCommand(
 		applicationsWrapper,
 		scansWrapper,
-		resultsSbomWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
@@ -156,23 +147,26 @@ func NewAstCLI(
 		logsWrapper,
 		groupsWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		jwtWrapper,
 		scaRealTimeWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
 		accessManagementWrapper,
 		featureFlagsWrapper,
+		containerResolverWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
 		scansWrapper,
-		resultsSbomWrapper,
+		exportWrapper,
 		resultsPdfReportsWrapper,
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
+		scsScanOverviewWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
 	)
@@ -201,7 +195,7 @@ func NewAstCLI(
 	)
 
 	configCmd := util.NewConfigCommand()
-	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper)
+	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 
@@ -224,30 +218,20 @@ func NewAstCLI(
 
 const configFormatString = "%30v: %s"
 
+var extraFilter = map[string]map[string]string{
+	"state": {
+		"exclude_not_exploitable": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
+	},
+	"severity": {},
+	"status":   {},
+	"sort":     {},
+}
+
 func PrintConfiguration() {
 	logger.PrintfIfVerbose("CLI Version: %s", params.Version)
 	logger.PrintIfVerbose("CLI Configuration:")
 	for param := range util.Properties {
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
-	}
-}
-
-func requiredFeatureFlagsCheck(cmd *cobra.Command) bool {
-	for _, cmdFlag := range wrappers.FeatureFlagsBaseMap {
-		if cmdFlag.CommandName == cmd.CommandPath() {
-			return true
-		}
-	}
-
-	return false
-}
-
-func setUpFeatureFlags(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	err := wrappers.HandleFeatureFlags(featureFlagsWrapper)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
 	}
 }
 
@@ -259,13 +243,26 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 		if len(filterKeyVal) != params.KeyValuePairSize {
 			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
-
+		filterKeyVal = validateExtraFilters(filterKeyVal)
 		allFilters[filterKeyVal[0]] = strings.Replace(
 			filterKeyVal[1], ";", ",",
 			strings.Count(filterKeyVal[1], ";"),
 		)
 	}
 	return allFilters, nil
+}
+
+func validateExtraFilters(filterKeyVal []string) []string {
+	// Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
+	if extraFilter[filterKeyVal[0]] != nil {
+		for privateFilter, value := range extraFilter[filterKeyVal[0]] {
+			if strings.Contains(filterKeyVal[1], privateFilter) {
+				logger.PrintfIfVerbose("Set filter from extra filters: [%s,%s]", filterKeyVal[0], value)
+				filterKeyVal[1] = strings.Replace(filterKeyVal[1], filterKeyVal[1], value, -1)
+			}
+		}
+	}
+	return filterKeyVal
 }
 
 func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
