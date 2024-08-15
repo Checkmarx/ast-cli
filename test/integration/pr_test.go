@@ -170,9 +170,12 @@ func TestPRGitlabDecorationFailureRunningScanCase(t *testing.T) {
 	file := createOutputFile(t, "test_output.log")
 	_, _ = executeCommand(t, args...)
 	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
 	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
 
-	defer deleteOutputFile(t, testFileName, file)
+	defer deleteOutputFile(t, file)
 	defer logger.SetOutput(os.Stdout)
 }
 
