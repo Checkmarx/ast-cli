@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net/url"
 	"os"
@@ -1559,7 +1560,21 @@ func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollecti
 	_ = f.Close()
 	return nil
 }
+
+// Function to decode HTML entities in the ScanResultsCollection
+func decodeHTMLEntitiesInResults(results *wrappers.ScanResultsCollection) {
+	for _, result := range results.Results {
+		result.Description = html.UnescapeString(result.Description)
+		result.DescriptionHTML = html.UnescapeString(result.DescriptionHTML)
+		for _, node := range result.ScanResultData.Nodes {
+			node.FullName = html.UnescapeString(node.FullName)
+			node.Name = html.UnescapeString(node.Name)
+		}
+	}
+}
+
 func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
+	decodeHTMLEntitiesInResults(results)
 	var err error
 	var resultsJSON []byte
 	log.Println("Creating JSON Report: ", targetFile)
