@@ -34,7 +34,6 @@ func FindProject(
 	params := make(map[string]string)
 	params["names"] = projectName
 	resp, _, err := projectsWrapper.Get(params)
-	if err != nil {
 	if err != nil || resp == nil {
 		return "", err
 	}
