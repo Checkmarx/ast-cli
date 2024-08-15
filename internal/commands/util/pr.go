@@ -44,7 +44,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	return cmd
 }
 
-func IsScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+func isScanEnded(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -161,7 +161,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
-		scanEnded, err := IsScanEnded(scansWrapper, scanID)
+		scanEnded, err := isScanEnded(scansWrapper, scanID)
 
 		if err != nil {
 			return err
@@ -211,7 +211,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 
-		scanEnded, err := IsScanEnded(scansWrapper, scanID)
+		scanEnded, err := isScanEnded(scansWrapper, scanID)
 
 		if err != nil {
 			return err
