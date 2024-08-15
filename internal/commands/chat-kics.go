@@ -41,7 +41,7 @@ const dropLen = 4
 const FileErrorFormat = "It seems that %s is not available for AI Guided Remediation. Please ensure that you have opened the correct workspace or the relevant file."
 
 // chatModel model to use when calling the CheckmarxAI
-const checkmarxAiChatModel = "GPT4"
+const checkmarxAiChatModel = "gpt-4"
 const aiProxyAzureAIRoute = "api/ai-proxy/redirect/externalAzure"
 const aiProxyCheckmarxAIRoute = "api/ai-proxy/redirect/azure"
 const tenantIDClaimKey = "tenant_id"
