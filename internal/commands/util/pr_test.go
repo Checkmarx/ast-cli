@@ -31,7 +31,7 @@ func TestIfScanRunning_WhenScanRunning_ShouldReturnTrue(t *testing.T) {
 	asserts.True(t, scanRunning)
 }
 
-func TestIfScanRunning_WhenScanRunning_ShouldReturnFalse(t *testing.T) {
+func TestIfScanRunning_WhenScanDone_ShouldReturnFalse(t *testing.T) {
 	scansMockWrapper := &mock.ScansMockWrapper{Running: false}
 
 	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanNotRunning")
