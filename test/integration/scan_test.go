@@ -866,8 +866,8 @@ func createScan(t *testing.T, source string, tags map[string]string) (string, st
 	}
 }
 
-func createScanNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgs(source, tags, " sast , sca,iac-security "), flag(params.AsyncFlag)))
+func createScanNoWait(t *testing.T, source string, tags map[string]string, projectName string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgsWithNameAndGroups(source, tags, nil, projectName, " sast , sca,iac-security "), flag(params.AsyncFlag)))
 }
 
 func createScanSastNoWait(t *testing.T, source string, tags map[string]string) (string, string) {
@@ -1834,7 +1834,7 @@ func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 }
 
 func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.T) {
-	projectName := generateRandomProjectNameForScan()
+	projectName := GenerateRandomProjectNameForScan()
 	args := []string{
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
@@ -1878,7 +1878,7 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), generateRandomProjectNameForScan(),
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
 		flag(params.SourcesFlag), "data/empty-folder.zip",
 		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "main",
@@ -1891,6 +1891,6 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
 
-func generateRandomProjectNameForScan() string {
+func GenerateRandomProjectNameForScan() string {
 	return fmt.Sprint("ast-cli-scan-", uuid.New().String())
 }

@@ -118,7 +118,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 }
 
 func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags)
+	scanID, _ := createScanNoWait(t, Zip, Tags, GenerateRandomProjectNameForScan())
 	args := []string{
 		"utils",
 		"pr",
@@ -149,7 +149,7 @@ func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 }
 
 func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags)
+	scanID, _ := createScanNoWait(t, Zip, Tags, GenerateRandomProjectNameForScan())
 	args := []string{
 		"utils",
 		"pr",
