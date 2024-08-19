@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/checkmarx/ast-cli/test/integration/projectstest"
 	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
@@ -53,6 +52,7 @@ const (
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
+	SSHKeyFilePath        = "ssh-key-file.txt"
 )
 
 var (
@@ -1145,8 +1145,8 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
-	_ = os.WriteFile(projectstest.SSHKeyFilePath, []byte(sshKey), 0644)
-	defer func() { _ = os.Remove(projectstest.SSHKeyFilePath) }()
+	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
 
@@ -1155,7 +1155,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
-		flag(params.SSHKeyFlag), projectstest.SSHKeyFilePath,
+		flag(params.SSHKeyFlag), SSHKeyFilePath,
 		flag(params.IgnorePolicyFlag),
 	}
 
