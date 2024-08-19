@@ -41,6 +41,8 @@ func getGroupsForRequest(groups []*wrappers.Group, featureFlagsWrapper wrappers.
 	return nil
 }
 
+// comment for empty PR
+
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
