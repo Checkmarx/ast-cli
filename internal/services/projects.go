@@ -231,7 +231,6 @@ func UpsertProjectGroupsInCreate(groupsWrapper wrappers.GroupsWrapper, projModel
 	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
 	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	return UpsertProjectGroups(groupsWrapper, projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
-
 }
 
 func UpsertProjectGroupsInUpdate(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
@@ -242,7 +241,6 @@ func UpsertProjectGroupsInUpdate(groupsWrapper wrappers.GroupsWrapper, projModel
 		return groupErr
 	}
 	return UpsertProjectGroups(groupsWrapper, projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
-
 }
 
 func UpsertProjectGroups(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
