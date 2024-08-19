@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"os"
@@ -18,6 +17,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/checkmarx/ast-cli/test/integration/projectstest"
+	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
@@ -58,13 +60,6 @@ var (
 	projectDirectory = filepath.Dir(b)
 	scsRepoToken     = getScsRepoToken()
 )
-
-// Type for scan workflow response, used to assert the validity of the command's response
-type ScanWorkflowResponse struct {
-	Source      string    `json:"source"`
-	Timestamp   time.Time `json:"timestamp"`
-	Information string    `json:"info"`
-}
 
 func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 	originals := getOriginalEnvVars()
@@ -340,7 +335,7 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, args)
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
@@ -372,7 +367,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
+		defer DeleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -390,7 +385,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
+		defer DeleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -409,7 +404,7 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
+		defer DeleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -427,7 +422,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
+		defer DeleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -452,7 +447,7 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -467,7 +462,7 @@ func TestFastScan(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 	// Create a scan
 	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
@@ -480,7 +475,7 @@ func TestScansUpdateProjectGroups(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, "sast"))
 	response := listScanByID(t, scanID)
 	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, "sast"))
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -527,7 +522,7 @@ func TestScaResolverArg(t *testing.T) {
 		viper.GetString(resolverEnvVar),
 	)
 
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 
 	assert.Assert(
 		t,
@@ -570,7 +565,7 @@ func TestIncrementalScan(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
 
 	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
@@ -583,7 +578,7 @@ func TestIncrementalScan(t *testing.T) {
 func TestCancelScan(t *testing.T) {
 	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
-	defer deleteProject(t, projectID)
+	defer DeleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
 	// canceling too quickly after creating fails the scan...
@@ -1150,8 +1145,8 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
-	_ = os.WriteFile(SSHKeyFilePath, []byte(sshKey), 0644)
-	defer func() { _ = os.Remove(SSHKeyFilePath) }()
+	_ = os.WriteFile(projectstest.SSHKeyFilePath, []byte(sshKey), 0644)
+	defer func() { _ = os.Remove(projectstest.SSHKeyFilePath) }()
 
 	_, projectName := getRootProject(t)
 
@@ -1160,7 +1155,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
-		flag(params.SSHKeyFlag), SSHKeyFilePath,
+		flag(params.SSHKeyFlag), projectstest.SSHKeyFilePath,
 		flag(params.IgnorePolicyFlag),
 	}
 

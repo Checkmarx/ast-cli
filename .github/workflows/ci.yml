@@ -31,7 +31,7 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
-  integration-tests:
+  integration-tests-all:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
@@ -81,6 +81,77 @@ jobs:
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_down.sh
+
+      - name: Coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ runner.os }}-coverage-latest
+          path: coverage.html
+
+      - name: Check if total coverage is greater then 80
+        shell: bash
+        run: |
+          CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          EXPECTED_CODE_COV=80
+          var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
+          if [ "$var" -eq 1 ];then
+            echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+            exit 1
+          else
+            echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+            exit 0
+          fi
+  integration-tests-projects:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+      - run: go version
+      - name: Go Build
+        run: go build -o ./bin/cx ./cmd
+      - name: Go Integration test
+        shell: bash
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+          CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
+          CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+          CX_TENANT: ${{ secrets.CX_TENANT }}
+          CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PROXY_HOST: localhost
+          PROXY_PORT: 3128
+          PROXY_USERNAME: ${{ secrets.PROXY_USER }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+          PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_NAMESPACE: "checkmarx"
+          PR_GITHUB_REPO_NAME: "ast-cli"
+          PR_GITHUB_NUMBER: 43
+          PR_GITLAB_TOKEN: ${{ secrets.PR_GITLAB_TOKEN }}
+          PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
+          PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
+          PR_GITLAB_PROJECT_ID: ${{ secrets.PR_GITLAB_PROJECT_ID }}
+          PR_GITLAB_IID: ${{ secrets.PR_GITLAB_IID }}
+          AZURE_ORG: ${{ secrets.AZURE_ORG }}
+          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
+          AZURE_REPOS: ${{ secrets.AZURE_REPOS }}
+          AZURE_TOKEN: ${{ secrets.AZURE_TOKEN }}
+          BITBUCKET_WORKSPACE: ${{ secrets.BITBUCKET_WORKSPACE }}
+          BITBUCKET_REPOS: ${{ secrets.BITBUCKET_REPOS }}
+          BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
+          BITBUCKET_PASSWORD: ${{ secrets.BITBUCKET_PASSWORD }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
+          ./internal/commands/.scripts/integration_up.sh projectstest
           ./internal/commands/.scripts/integration_down.sh
 
       - name: Coverage report

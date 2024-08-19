@@ -83,11 +83,11 @@ func deleteScanAndProject() {
 		rootScanId = ""
 	}
 	if len(rootScanProjectId) > 0 {
-		deleteProject(testInstance, rootScanProjectId)
+		DeleteProject(testInstance, rootScanProjectId)
 		rootScanProjectId = ""
 	}
 	if len(rootProjectId) > 0 {
-		deleteProject(testInstance, rootProjectId)
+		DeleteProject(testInstance, rootProjectId)
 		rootProjectId = ""
 	}
 }
@@ -103,7 +103,7 @@ func getRootProject(t *testing.T) (string, string) {
 		return rootProjectId, rootProjectName
 	}
 
-	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
+	rootProjectId, rootProjectName = CreateProject(t, Tags, Groups)
 
 	return rootProjectId, rootProjectName
 }

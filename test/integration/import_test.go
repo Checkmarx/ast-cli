@@ -13,8 +13,8 @@ import (
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
 
-	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
+	projectId, projectName := CreateProject(t, nil, nil)
+	defer DeleteProject(t, projectId)
 
 	args := []string{
 		"utils", "import",
@@ -28,8 +28,8 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
 
-	projectId, projectName := createProject(t, nil, nil)
-	defer deleteProject(t, projectId)
+	projectId, projectName := CreateProject(t, nil, nil)
+	defer DeleteProject(t, projectId)
 
 	args := []string{
 		"utils", "import",
@@ -44,7 +44,7 @@ func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSucc
 func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNameSuccessfully(t *testing.T) {
 
 	projectName := projectNameRandom
-	defer deleteProjectByName(t, projectName)
+	defer DeleteProjectByName(t, projectName)
 
 	args := []string{
 		"utils", "import",
@@ -67,7 +67,7 @@ func TestImport_ImportSarifFileMissingVersion_ImportFailWithCorrectMessage(t *te
 	}
 	err, _ := executeCommand(t, args...)
 
-	deleteProjectByName(t, projectName)
+	DeleteProjectByName(t, projectName)
 
 	assertError(t, err, fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, 400, ""))
 }
@@ -82,7 +82,7 @@ func TestImport_ImportMalformedSarifFile_ImportFailWithCorrectMessage(t *testing
 		flag(params.ImportFilePath), "data/malformed-sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)
-	defer deleteProjectByName(t, projectName)
+	defer DeleteProjectByName(t, projectName)
 	assertError(t, err, fmt.Sprintf(errorConstants.ImportSarifFileErrorMessageWithMessage, 400, ""))
 }
 
@@ -95,7 +95,7 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 		flag(params.ProjectName), projectName,
 	}
 	err, _ := executeCommand(t, args...)
-	deleteProjectByName(t, projectName)
+	DeleteProjectByName(t, projectName)
 	assertError(t, err, errorConstants.ImportFilePathIsRequired)
 }
 
