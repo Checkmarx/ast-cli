@@ -63,6 +63,8 @@ func AssignGroupsToProjectNewAccessManagement(projectID string, projectName stri
 	return nil
 }
 
+// empty PR
+
 func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrappers.Group {
 	var groupsToAssign []*wrappers.Group
 	var groupsMap = make(map[string]bool)
