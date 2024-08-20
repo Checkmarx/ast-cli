@@ -1002,7 +1002,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			scsConfig := createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
+			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
