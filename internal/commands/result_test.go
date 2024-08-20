@@ -13,7 +13,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
@@ -996,6 +995,7 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
 			assert.Equal(t, tt.expectedIssues, tt.summary.TotalIssues)
@@ -1031,27 +1031,27 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 				Low:      0,
 				Info:     0,
 			},
-			commonParams.ScaType: &wrappers.EngineResultSummary{
+			ScaType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 				Info:     0,
 			},
-			commonParams.KicsType: &wrappers.EngineResultSummary{
+			KicsType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 				Info:     0,
 			},
-			commonParams.APISecType: &wrappers.EngineResultSummary{
+			APISecType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 			},
-			commonParams.ContainersType: &wrappers.EngineResultSummary{
+			ContainersType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
