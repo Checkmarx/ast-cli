@@ -108,7 +108,7 @@ func runChatKics(
 
 			azureAiEnabled = isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 			checkmarxAiEnabled = isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
-			chatGptEnabled = isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
+			chatGptEnabled = isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		}
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)

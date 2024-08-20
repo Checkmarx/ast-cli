@@ -65,7 +65,7 @@ func runChatSast(
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
-		chatGptEnabled := isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		chatGptEnabled := isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
@@ -220,26 +220,29 @@ func isCxOneAPIKeyAvailable() bool {
 }
 
 func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, AzureAiGuidedRemediationEnabled)
+	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
 	if err != nil {
 		return false
 	}
+	isEnabled := engine == AiGuidedRemediationAzureAiValue
 	return isEnabled
 }
 
 func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, CheckmarxAiGuidedRemediationEnabled)
+	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
 	if err != nil {
 		return false
 	}
+	isEnabled := engine == AiGuidedRemediationCheckmarxAiValue
 	return isEnabled
 }
 
-func isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, OpenAiGuidedRemediationEnabled)
+func isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
 	if err != nil {
 		return false
 	}
+	isEnabled := engine == AiGuidedRemediationOpenAiValue
 	return isEnabled
 }
 

@@ -8,11 +8,11 @@ import (
 const (
 	ConversationIDErrorFormat           = "Invalid conversation ID %s"
 	AiGuidedRemediationEnabled          = "scan.config.plugins.aiGuidedRemediation"
-	OpenAiGuidedRemediationEnabled      = "scan.config.plugins.openAiGuidedRemediation"      // todo: check final value
-	AzureAiGuidedRemediationEnabled     = "scan.config.plugins.azureAiGuidedRemediation"     // todo: check final value
-	AzureAiEndPoint                     = "scan.config.plugins.azureAiEndPoint"              // todo: check final value
-	AzureAiModel                        = "scan.config.plugins.azureAiModel"                 // todo: check final value
-	CheckmarxAiGuidedRemediationEnabled = "scan.config.plugins.checkmarxAiGuidedRemediation" // todo: check final value
+	AiGuidedRemediationEngine           = "scan.config.plugins.aiGuidedRemediation.aiEngine" // todo: check final value
+	AiGuidedRemediationOpenAiValue      = "openai"
+	AiGuidedRemediationAzureAiValue     = "azureai"
+	AiGuidedRemediationCheckmarxAiValue = "checkmarxai"
+	AzureAiModel                        = "scan.config.plugins.aiGuidedRemediation.azureAi.model" // todo: check final value
 )
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
