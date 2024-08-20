@@ -253,7 +253,6 @@ func UpsertProjectGroupsByUpdateFlow(groupsWrapper wrappers.GroupsWrapper, projM
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
-
 	err := AssignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper, featureFlagsWrapper)
 	if err != nil {
 		return err
