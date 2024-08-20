@@ -974,7 +974,8 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-func processResubmitConfig(scsConfig *wrappers.SCSConfig, resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) wrappers.SCSConfig {
+	scsConfig := wrappers.SCSConfig{}
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
 		if resubmitTwoms != nil {
@@ -989,18 +990,19 @@ func processResubmitConfig(scsConfig *wrappers.SCSConfig, resubmitConfig []wrapp
 			scsConfig.Scorecard = falseString
 		}
 	}
+	return scsConfig
 }
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
-		SCSMapConfig := make(map[string]interface{})
 		scsConfig := wrappers.SCSConfig{}
+		SCSMapConfig := make(map[string]interface{})
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			processResubmitConfig(&scsConfig, resubmitConfig, scsRepoToken, scsRepoURL)
+			scsConfig := createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
