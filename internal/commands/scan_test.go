@@ -683,7 +683,7 @@ func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
 		{
 			Type: commonParams.ScsType,
 			Value: map[string]interface{}{
-				configTwoms:      "true",
+				configTwoms:      trueString,
 				ScsScoreCardType: falseString,
 			},
 		},
@@ -692,7 +692,7 @@ func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
 	result, _ := addSCSScan(cmdCommand, resubmitConfig)
 
 	expectedConfig := wrappers.SCSConfig{
-		Twoms:     "true",
+		Twoms:     trueString,
 		Scorecard: falseString,
 	}
 
@@ -724,7 +724,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 		{
 			Type: commonParams.ScsType,
 			Value: map[string]interface{}{
-				configTwoms:      "true",
+				configTwoms:      trueString,
 				ScsScoreCardType: trueString,
 			},
 		},
