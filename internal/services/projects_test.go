@@ -106,6 +106,15 @@ func Test_createProject(t *testing.T) {
 			projectGroups:           "",
 			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
+		{name: "When called with a new project name and existing project groups return the Id of the newly created project", args: args{
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "existsGroup1,existsGroup2",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
+		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and non existing project groups return error", args: args{
 			projectName:             "new-project-name",
 			cmd:                     &cobra.Command{},
