@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -72,4 +73,9 @@ func sanitizeLogs(msg string) string {
 		}
 	}
 	return msg
+}
+
+// SetOutput sets the output destination for the logger.
+func SetOutput(w io.Writer) {
+	log.SetOutput(w)
 }
