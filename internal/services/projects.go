@@ -112,7 +112,7 @@ func createProject(
 		}
 
 		if projectGroups != "" {
-			err = UpsertProjectGroupsInCreate(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, nil, projectGroups, projectID, projectName, featureFlagsWrapper)
+			err = UpsertProjectGroupsByCreateFlow(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, nil, projectGroups, projectID, projectName, featureFlagsWrapper)
 			if err != nil {
 				return projectID, err
 			}
@@ -219,7 +219,7 @@ func updateProject(
 	}
 
 	if projectGroups != "" {
-		err = UpsertProjectGroupsInUpdate(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
+		err = UpsertProjectGroupsByUpdateFlow(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
 		if err != nil {
 			return projectID, err
 		}
@@ -227,13 +227,13 @@ func updateProject(
 	return projectID, nil
 }
 
-func UpsertProjectGroupsInCreate(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
+func UpsertProjectGroupsByCreateFlow(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
 	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	return UpsertProjectGroups(groupsWrapper, projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
 }
 
-func UpsertProjectGroupsInUpdate(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
+func UpsertProjectGroupsByUpdateFlow(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
 	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	_, groupErr := GetGroupMap(groupsWrapper, projectGroups, projModel, projModelResp, featureFlagsWrapper)
