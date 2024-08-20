@@ -236,7 +236,7 @@ func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrap
 }
 
 func isChatGPTAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, ChatGPTGuidedRemediationEnabled)
+	isEnabled, err := GetTenantConfigurationBool(tenantConfigurationResponses, OpenAiGuidedRemediationEnabled)
 	if err != nil {
 		return false
 	}
