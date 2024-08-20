@@ -974,35 +974,34 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-func processResubmitConfig(SCSConfig *wrappers.SCSConfig, resubmitConfig []wrappers.Config, SCSRepoToken, SCSRepoURL string) {
+func processResubmitConfig(scsConfig *wrappers.SCSConfig, resubmitConfig []wrappers.Config, SCSRepoToken, SCSRepoURL string) {
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
 		if resubmitTwoms != nil {
-			SCSConfig.Twoms = resubmitTwoms.(string)
+			scsConfig.Twoms = resubmitTwoms.(string)
 		}
-		SCSConfig.RepoURL = SCSRepoURL
-		SCSConfig.RepoToken = SCSRepoToken
+		scsConfig.RepoURL = SCSRepoURL
+		scsConfig.RepoToken = SCSRepoToken
 		resubmitScoreCard := config.Value[ScsScoreCardType]
 		if resubmitScoreCard == trueString && SCSRepoToken != "" && SCSRepoURL != "" {
-			SCSConfig.Scorecard = trueString
+			scsConfig.Scorecard = trueString
 		} else {
-			SCSConfig.Scorecard = falseString
+			scsConfig.Scorecard = falseString
 		}
 	}
 }
-
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
 		SCSMapConfig := make(map[string]interface{})
-		SCSConfig := wrappers.SCSConfig{}
+		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
 		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			processResubmitConfig(&SCSConfig, resubmitConfig, SCSRepoToken, SCSRepoURL)
-			SCSMapConfig[resultsMapValue] = &SCSConfig
+			processResubmitConfig(&scsConfig, resubmitConfig, SCSRepoToken, SCSRepoURL)
+			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
 		if SCSEngines != "" {
@@ -1011,19 +1010,19 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					SCSConfig.Twoms = trueString
+					scsConfig.Twoms = trueString
 				case ScsScoreCardType:
-					SCSConfig.Scorecard = trueString
+					scsConfig.Scorecard = trueString
 				}
 			}
 		} else {
-			SCSConfig.Scorecard = trueString
-			SCSConfig.Twoms = trueString
+			scsConfig.Scorecard = trueString
+			scsConfig.Twoms = trueString
 		}
-		if SCSConfig.Scorecard == trueString {
+		if scsConfig.Scorecard == trueString {
 			if SCSRepoToken != "" && SCSRepoURL != "" {
-				SCSConfig.RepoToken = SCSRepoToken
-				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+				scsConfig.RepoToken = SCSRepoToken
+				scsConfig.RepoURL = strings.ToLower(SCSRepoURL)
 			} else {
 				if userScanTypes == "" {
 					fmt.Println(ScsRepoRequiredMsg)
@@ -1032,7 +1031,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
-		SCSMapConfig[resultsMapValue] = &SCSConfig
+		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
 	return nil, nil
