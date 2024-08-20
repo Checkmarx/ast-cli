@@ -974,16 +974,16 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-func processResubmitConfig(scsConfig *wrappers.SCSConfig, resubmitConfig []wrappers.Config, scsRepoToken, scsRepoUrl string) {
+func processResubmitConfig(scsConfig *wrappers.SCSConfig, resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) {
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
 		if resubmitTwoms != nil {
 			scsConfig.Twoms = resubmitTwoms.(string)
 		}
-		scsConfig.RepoURL = scsRepoUrl
+		scsConfig.RepoURL = scsRepoURL
 		scsConfig.RepoToken = scsRepoToken
 		resubmitScoreCard := config.Value[ScsScoreCardType]
-		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoUrl != "" {
+		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" {
 			scsConfig.Scorecard = trueString
 		} else {
 			scsConfig.Scorecard = falseString
@@ -997,10 +997,10 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
-		scsRepoUrl, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			processResubmitConfig(&scsConfig, resubmitConfig, scsRepoToken, scsRepoUrl)
+			processResubmitConfig(&scsConfig, resubmitConfig, scsRepoToken, scsRepoURL)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
@@ -1020,9 +1020,9 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 			scsConfig.Twoms = trueString
 		}
 		if scsConfig.Scorecard == trueString {
-			if scsRepoToken != "" && scsRepoUrl != "" {
+			if scsRepoToken != "" && scsRepoURL != "" {
 				scsConfig.RepoToken = scsRepoToken
-				scsConfig.RepoURL = strings.ToLower(scsRepoUrl)
+				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
 				if userScanTypes == "" {
 					fmt.Println(ScsRepoRequiredMsg)
