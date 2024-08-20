@@ -3,11 +3,10 @@ module github.com/checkmarx/ast-cli
 go 1.22.5
 
 require (
-	github.com/CheckmarxDev/containers-resolver v1.0.6
-	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240623072149-3ad82f7be6fb
-	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
+	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240623072149-3ad82f7be6fb
+	github.com/CheckmarxDev/containers-resolver v1.0.6
+	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -167,7 +166,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
