@@ -751,7 +751,6 @@ func setupScanTypeProjectAndConfig(
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		// Get the latest scan configuration
 		resubmitConfig, _ = getResubmitConfiguration(scansWrapper, projectID, userScanTypes)
-
 	} else if _, ok := info["config"]; !ok {
 		err := json.Unmarshal([]byte("[]"), &configArr)
 		if err != nil {
