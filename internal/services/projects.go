@@ -118,7 +118,7 @@ func createProject(
 		}
 
 		if projectGroups != "" {
-			err = UpsertProjectGroupsByCreateFlow(&projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
+			err = UpsertProjectGroups(&projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
 			if err != nil {
 				return projectID, err
 			}
@@ -231,12 +231,6 @@ func updateProject(
 		}
 	}
 	return projectID, nil
-}
-
-func UpsertProjectGroupsByCreateFlow(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
-	return UpsertProjectGroups(projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
 }
 
 func UpsertProjectGroupsByUpdateFlow(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
