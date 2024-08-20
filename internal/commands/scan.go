@@ -998,7 +998,6 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 				} else {
 					SCSConfig.Scorecard = falseString
 				}
-
 			}
 			SCSMapConfig[resultsMapValue] = &SCSConfig
 			return SCSMapConfig, nil
