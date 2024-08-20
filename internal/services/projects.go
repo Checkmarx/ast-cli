@@ -87,9 +87,11 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.ApplicationIds = applicationID
-	_, groupErr := GetGroupMap(groupsWrapper, projectGroups, &projModel, nil, featureFlagsWrapper)
-	if groupErr != nil {
-		return "", groupErr
+	if projectGroups != "" {
+		_, groupErr := GetGroupMap(groupsWrapper, projectGroups, &projModel, nil, featureFlagsWrapper)
+		if groupErr != nil {
+			return "", groupErr
+		}
 	}
 
 	if projectPrivatePackage != "" {
