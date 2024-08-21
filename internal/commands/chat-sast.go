@@ -224,7 +224,7 @@ func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers
 	if err != nil {
 		return false
 	}
-	isEnabled := engine == AiGuidedRemediationAzureAiValue
+	isEnabled := strings.EqualFold(engine, AiGuidedRemediationAzureAiValue)
 	return isEnabled
 }
 
@@ -233,7 +233,7 @@ func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrap
 	if err != nil {
 		return false
 	}
-	isEnabled := engine == AiGuidedRemediationCheckmarxAiValue
+	isEnabled := strings.EqualFold(engine, AiGuidedRemediationCheckmarxAiValue)
 	return isEnabled
 }
 
@@ -242,7 +242,7 @@ func isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.
 	if err != nil {
 		return false
 	}
-	isEnabled := engine == AiGuidedRemediationOpenAiValue
+	isEnabled := strings.EqualFold(engine, AiGuidedRemediationOpenAiValue)
 	return isEnabled
 }
 
