@@ -12,7 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/checkmarx/ast-cli/internal/params"
+	params "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
@@ -1024,34 +1024,34 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 		},
 		EnginesEnabled: []string{"sast", "sca", "kics", "containers"},
 		EnginesResult: wrappers.EnginesResultsSummary{
-			Sast: &wrappers.EngineResultSummary{
+			params.SastType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 				Info:     0,
 			},
-			ScaType: &wrappers.EngineResultSummary{
+			params.ScaType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 				Info:     0,
 			},
-			KicsType: &wrappers.EngineResultSummary{
+			params.KicsType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 				Info:     0,
 			},
-			APISecType: &wrappers.EngineResultSummary{
+			params.APISecType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
 				Low:      0,
 			},
-			ContainersType: &wrappers.EngineResultSummary{
+			params.ContainersType: &wrappers.EngineResultSummary{
 				Critical: 0,
 				High:     0,
 				Medium:   0,
