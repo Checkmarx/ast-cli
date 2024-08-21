@@ -1169,7 +1169,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 }
 
 func TestScanGLReportValidation(t *testing.T) {
-	_, projectName := getRootProject(t)
+	projectName := GenerateRandomProjectNameForScan()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -1182,6 +1182,7 @@ func TestScanGLReportValidation(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, err)
+	deleteProjectByName(t, projectName)
 
 	reportFilePath := "./cx_result.gl-sca-report.json"
 	schemaURL := "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/master/dist/dependency-scanning-report-format.json"
