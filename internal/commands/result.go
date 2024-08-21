@@ -1472,8 +1472,8 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Gl-sca Report: ", targetFile)
 	glScaResult := &wrappers.GlScaResultsCollection{
-		Vulnerabilities:    []wrappers.GlScaDepVulnerabilities{}, // Ensure this is an array
-		ScaDependencyFiles: []wrappers.ScaDependencyFile{},       // Ensure this is an array
+		Vulnerabilities:    []wrappers.GlScaDepVulnerabilities{}, // Initialize arrays to prevent GitLab schema validation errors.
+		ScaDependencyFiles: []wrappers.ScaDependencyFile{},
 	}
 	err := addScanToGlScaReport(summary, glScaResult)
 	if err != nil {
