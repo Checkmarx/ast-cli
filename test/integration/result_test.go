@@ -27,7 +27,6 @@ const (
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
-	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	scansPath := viper.GetString(params.ScansPathKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
@@ -37,7 +36,6 @@ func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testin
 }
 
 func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t)
 
 	scansPath := viper.GetString(params.ScansPathKey)
@@ -52,7 +50,6 @@ func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
-	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "exit-code",
@@ -64,7 +61,6 @@ func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
 }
 
 func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
-	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "exit-code",
@@ -77,7 +73,6 @@ func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
 }
 
 func TestResultListJson(t *testing.T) {
-	t.Parallel()
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
@@ -130,7 +125,6 @@ func assertResultFilesCreated(t *testing.T) {
 }
 
 func TestResultListForGlReports(t *testing.T) {
-	t.Parallel()
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
@@ -163,7 +157,6 @@ func TestResultListForGlReports(t *testing.T) {
 }
 
 func assertGlResultFilesCreated(t *testing.T) {
-	t.Parallel()
 	extensions := []string{printer.FormatGLSast,
 		printer.FormatGLSca}
 
@@ -179,7 +172,6 @@ func assertGlResultFilesCreated(t *testing.T) {
 }
 
 func TestResultsShowParamFailed(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"results",
 		"show",
@@ -190,7 +182,6 @@ func TestResultsShowParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingParamFailed(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -201,7 +192,6 @@ func TestCodeBashingParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingList(t *testing.T) {
-	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -219,7 +209,6 @@ func TestCodeBashingList(t *testing.T) {
 }
 
 func TestCodeBashingListJson(t *testing.T) {
-	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -238,7 +227,6 @@ func TestCodeBashingListJson(t *testing.T) {
 }
 
 func TestCodeBashingListTable(t *testing.T) {
-	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -253,7 +241,6 @@ func TestCodeBashingListTable(t *testing.T) {
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -267,7 +254,6 @@ func TestCodeBashingListEmpty(t *testing.T) {
 }
 
 func TestCodeBashingFailedListingAuth(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -283,7 +269,6 @@ func TestCodeBashingFailedListingAuth(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t)
 
 	args := []string{
@@ -298,7 +283,6 @@ func TestResultsGeneratingPdfReportWithInvalidPdfOptions(t *testing.T) {
 }
 
 func TestResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t)
 
 	args := []string{
@@ -367,7 +351,6 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 }
 
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t)
 
 	args := []string{
@@ -410,7 +393,6 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 }
 
 func TestResultsWrongScanID(t *testing.T) {
-	t.Parallel()
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), "wrong",
@@ -452,7 +434,6 @@ func TestResultsCounterJsonOutput(t *testing.T) {
 }
 
 func TestResultsCounterGlSastOutput(t *testing.T) {
-	t.Parallel()
 	scanID, _ := getRootScan(t)
 	_ = executeCmdNilAssertion(
 		t, "Results show generating gl-sast report with options should pass",
@@ -534,7 +515,6 @@ func TestResultsGeneratingJsonReportWithSeverityHighAndWithoutNotExploitable(t *
 }
 
 func TestResultExcludeNotExploitableFailScanId(t *testing.T) {
-	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "show",
