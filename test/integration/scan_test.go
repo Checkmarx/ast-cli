@@ -407,7 +407,7 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
-		flag(params.ScanTypeFlag), params.ContainersTypeFlag,
+		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
@@ -427,7 +427,7 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.ContainerImagesFlag), "mysql:5.7",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-		flag(params.ScanTypeFlag), params.ContainersTypeFlag,
+		flag(params.ScanTypes), params.ContainersTypeFlag,
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
@@ -1038,7 +1038,7 @@ func TestScanLogsSAST(t *testing.T) {
 	args := []string{
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypeFlag), "sast",
+		flag(params.ScanTypes), "sast",
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
@@ -1050,7 +1050,7 @@ func TestScanLogsKICSDeprecated(t *testing.T) {
 	args := []string{
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypeFlag), "kics",
+		flag(params.ScanTypes), "kics",
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
@@ -1062,7 +1062,7 @@ func TestScanLogsKICS(t *testing.T) {
 	args := []string{
 		"scan", "logs",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.ScanTypeFlag), "iac-security",
+		flag(params.ScanTypes), "iac-security",
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
@@ -1166,7 +1166,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.SourcesFlag), SSHRepo,
 		flag(params.BranchFlag), "main",
 		flag(params.SSHKeyFlag), SSHKeyFilePath,
-		flag(params.ScanTypeFlag), params.IacType,
+		flag(params.ScanTypes), params.IacType,
 		flag(params.IgnorePolicyFlag),
 	}
 
@@ -1183,7 +1183,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		flag(params.SourcesFlag), Zip,
 		flag(params.SourceDirFilterFlag), "!*.html",
 		flag(params.IgnorePolicyFlag),
-		flag(params.ScanTypeFlag), params.IacType,
+		flag(params.ScanTypes), params.IacType,
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
