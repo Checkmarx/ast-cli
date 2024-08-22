@@ -87,6 +87,16 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.ApplicationIds = applicationID
+	var groupsMap []*wrappers.Group
+	if projectGroups != "" {
+		var groups []string
+		var groupErr error
+		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil, featureFlagsWrapper)
+		if groupErr != nil {
+			return "", groupErr
+		}
+		projModel.Groups = groups
+	}
 
 	if projectPrivatePackage != "" {
 		projModel.PrivatePackage, _ = strconv.ParseBool(projectPrivatePackage)
@@ -108,7 +118,7 @@ func createProject(
 		}
 
 		if projectGroups != "" {
-			err = UpsertProjectGroups(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, nil, projectGroups, projectID, projectName, featureFlagsWrapper)
+			err = UpsertProjectGroups(&projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
 			if err != nil {
 				return projectID, err
 			}
@@ -215,7 +225,7 @@ func updateProject(
 	}
 
 	if projectGroups != "" {
-		err = UpsertProjectGroups(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
+		err = UpsertProjectGroupsByUpdateFlow(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
 		if err != nil {
 			return projectID, err
 		}
@@ -223,19 +233,20 @@ func updateProject(
 	return projectID, nil
 }
 
-func UpsertProjectGroups(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
+func UpsertProjectGroupsByUpdateFlow(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
 	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	groupsMap, groupErr := CreateGroupsMap(projectGroups, groupsWrapper)
+	groupsMap, groups, groupErr := GetGroupMap(groupsWrapper, projectGroups, projModelResp, featureFlagsWrapper)
 	if groupErr != nil {
-		return errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
+		return groupErr
 	}
-	projModel.Groups = getGroupsForRequest(groupsMap, featureFlagsWrapper)
-	if projModelResp != nil {
-		groups := append(getGroupsForRequest(groupsMap, featureFlagsWrapper), projModelResp.Groups...)
-		projModel.Groups = groups
-	}
+	projModel.Groups = groups
+	return UpsertProjectGroups(projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
+}
 
+func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
 	err := AssignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper, featureFlagsWrapper)
 	if err != nil {
 		return err
