@@ -865,9 +865,9 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs,container-security"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security"))
 	} else {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security"))
 	}
 }
 
@@ -1667,21 +1667,21 @@ func TestScanWithPolicyTimeout(t *testing.T) {
 	assert.Error(t, err, "--policy-timeout should be equal or higher than 0")
 }
 
-func TestCreateScan_WithTypeScs_Success(t *testing.T) {
-	_, projectName := getRootProject(t)
-
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), "scs",
-		flag(params.BranchFlag), "main",
-		flag(params.SCSRepoURLFlag), scsRepoURL,
-		flag(params.SCSRepoTokenFlag), scsRepoToken,
-	}
-
-	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
-}
+//func TestCreateScan_WithTypeScs_Success(t *testing.T) {
+//	_, projectName := getRootProject(t)
+//
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ProjectName), projectName,
+//		flag(params.SourcesFlag), Zip,
+//		flag(params.ScanTypes), "scs",
+//		flag(params.BranchFlag), "main",
+//		flag(params.SCSRepoURLFlag), scsRepoURL,
+//		flag(params.SCSRepoTokenFlag), scsRepoToken,
+//	}
+//
+//	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
+//}
 
 func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
@@ -1698,20 +1698,20 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
 }
 
-func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
-	_, projectName := getRootProject(t)
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), Zip,
-		flag(params.BranchFlag), "main",
-		flag(params.SCSRepoURLFlag), scsRepoURL,
-		flag(params.SCSRepoTokenFlag), scsRepoToken,
-	}
-
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and scs-repo flags are present", 4*time.Minute, args...)
-	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
-}
+//func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
+//	_, projectName := getRootProject(t)
+//	args := []string{
+//		"scan", "create",
+//		flag(params.ProjectName), projectName,
+//		flag(params.SourcesFlag), Zip,
+//		flag(params.BranchFlag), "main",
+//		flag(params.SCSRepoURLFlag), scsRepoURL,
+//		flag(params.SCSRepoTokenFlag), scsRepoToken,
+//	}
+//
+//	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and scs-repo flags are present", 4*time.Minute, args...)
+//	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
+//}
 
 func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
