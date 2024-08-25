@@ -923,6 +923,8 @@ func getCreateArgsWithName(source string, tags map[string]string, projectName, s
 	return getCreateArgsWithNameAndGroups(source, tags, nil, projectName, scanTypes)
 }
 func getCreateArgsWithNameAndGroups(source string, tags map[string]string, groups []string, projectName, scanTypes string) []string {
+	scanTypes = removeSCSScanType(scanTypes)
+
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -939,6 +941,20 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 	}
 
 	return args
+}
+
+func removeSCSScanType(scanTypes string) string {
+	if strings.Contains(scanTypes, "scs") {
+		types := strings.Split(scanTypes, ",")
+		for i, t := range types {
+			if t == "scs" {
+				types = append(types[:i], types[i+1:]...)
+				break
+			}
+		}
+		return strings.Join(types, ",")
+	}
+	return scanTypes
 }
 
 func executeCreateScan(t *testing.T, args []string) (string, string) {
