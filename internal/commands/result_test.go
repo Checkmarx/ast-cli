@@ -12,7 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/checkmarx/ast-cli/internal/params"
+	params "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
@@ -972,4 +972,91 @@ func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
 		"Expected Total summary without critical:"+totalSummary)
 
 	mock.SetScsMockVarsToDefault()
+}
+
+func Test_enhanceWithScanSummary(t *testing.T) {
+	tests := []struct {
+		name                string
+		summary             *wrappers.ResultSummary
+		results             *wrappers.ScanResultsCollection
+		featureFlagsWrapper wrappers.FeatureFlagsWrapper
+		expectedIssues      int
+	}{
+		{
+			name:    "scan summary with no vulnerabilities",
+			summary: createEmptyResultSummary(),
+			results: &wrappers.ScanResultsCollection{
+				Results:    nil,
+				TotalCount: 0,
+				ScanID:     "MOCK",
+			},
+			featureFlagsWrapper: mock.FeatureFlagsMockWrapper{},
+			expectedIssues:      0,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
+			assert.Equal(t, tt.expectedIssues, tt.summary.TotalIssues)
+		})
+	}
+}
+
+func createEmptyResultSummary() *wrappers.ResultSummary {
+	return &wrappers.ResultSummary{
+		TotalIssues:    0,
+		CriticalIssues: 0,
+		HighIssues:     0,
+		MediumIssues:   0,
+		LowIssues:      0,
+		InfoIssues:     0,
+		SastIssues:     0,
+		ScaIssues:      0,
+		KicsIssues:     0,
+		ScsIssues:      0,
+		SCSOverview:    wrappers.SCSOverview{},
+		APISecurity: wrappers.APISecResult{
+			APICount:        0,
+			TotalRisksCount: 0,
+			Risks:           []int{0, 0, 0, 0},
+			StatusCode:      0,
+		},
+		EnginesEnabled: []string{"sast", "sca", "kics", "containers"},
+		EnginesResult: wrappers.EnginesResultsSummary{
+			params.SastType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.ScaType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.KicsType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.APISecType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+			},
+			params.ContainersType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+			},
+		},
+	}
 }
