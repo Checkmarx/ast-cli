@@ -107,8 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
-	snoozeLabel                             = "snooze"
-	muteLabel                               = "mute"
+	snoozeLabel                             = "Snooze"
+	muteLabel                               = "Muted"
 )
 
 var summaryFormats = []string{
