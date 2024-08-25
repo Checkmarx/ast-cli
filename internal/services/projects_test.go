@@ -106,6 +106,15 @@ func Test_createProject(t *testing.T) {
 			projectGroups:           "",
 			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
+		{name: "When called with a new project name and existing project groups return the Id of the newly created project", args: args{
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "existsGroup1,existsGroup2",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
+		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and non existing project groups return error", args: args{
 			projectName:             "new-project-name",
 			cmd:                     &cobra.Command{},
@@ -114,7 +123,7 @@ func Test_createProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "grp1,grp2",
 			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
-		}, want: "ID-new-project-name", wantErr: true},
+		}, want: "", wantErr: true},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
 			projectName:             "mock-some-error-model",
 			cmd:                     &cobra.Command{},
@@ -132,7 +141,7 @@ func Test_createProject(t *testing.T) {
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 			projectGroups:           "fake-group-error",
 			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
-		}, want: "ID-new-project-name", wantErr: true},
+		}, want: "", wantErr: true},
 		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
 			projectName:             "new-project-name",
 			cmd:                     &cobra.Command{},
