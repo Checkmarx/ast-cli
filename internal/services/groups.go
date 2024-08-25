@@ -8,6 +8,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+func GetGroupMap(groupsWrapper wrappers.GroupsWrapper, projectGroups string, projModelResp *wrappers.ProjectResponseModel,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper) ([]*wrappers.Group, []string, error) {
+	groupsMap, groupErr := CreateGroupsMap(projectGroups, groupsWrapper)
+	if groupErr != nil {
+		return nil, nil, errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
+	}
+	groups := getGroupsForRequest(groupsMap, featureFlagsWrapper)
+	if projModelResp != nil {
+		groups = append(getGroupsForRequest(groupsMap, featureFlagsWrapper), projModelResp.Groups...)
+		return groupsMap, groups, nil
+	}
+	return groupsMap, groups, nil
+}
+
 func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]*wrappers.Group, error) {
 	groups := strings.Split(groupsStr, ",")
 	var groupsMap []*wrappers.Group
