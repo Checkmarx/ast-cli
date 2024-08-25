@@ -52,6 +52,7 @@ const (
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
+	timeout               = 10 * time.Minute
 )
 
 var (
@@ -617,7 +618,7 @@ func TestScanCreateIncludeFilter(t *testing.T) {
 	}
 
 	args[11] = "*js"
-	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", 5*time.Minute, args...)
+	executeCmdWithTimeOutNilAssertion(t, "Including zip should fix the scan", timeout, args...)
 }
 
 // Create a scan with the sources
@@ -972,7 +973,7 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 }
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
-	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", 10*time.Minute, args...)
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeout, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {
@@ -1186,7 +1187,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 		flag(params.IgnorePolicyFlag),
 	}
 
-	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
+	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", timeout, args...)
 }
 
 func TestCreateScanFilterZipFile(t *testing.T) {
@@ -1202,7 +1203,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 		flag(params.ScanTypes), params.IacType,
 	}
 
-	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", 10*time.Minute, args...)
+	executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully", timeout, args...)
 }
 
 func TestRunKicsScan(t *testing.T) {
@@ -1710,7 +1711,7 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
 
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", 4*time.Minute, args...)
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", timeout, args...)
 	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
 }
 
@@ -1774,7 +1775,7 @@ func TestCreateScan_WithTypeScsOnlySecretDetection_Success(t *testing.T) {
 	}
 
 	executeCmdWithTimeOutNilAssertion(t,
-		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
 func TestCreateScan_WithNoScanTypesFlagScsAndOnlySecretDetection_Success(t *testing.T) {
@@ -1789,7 +1790,7 @@ func TestCreateScan_WithNoScanTypesFlagScsAndOnlySecretDetection_Success(t *test
 	}
 
 	executeCmdWithTimeOutNilAssertion(t,
-		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", 4*time.Minute, args...)
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
 func TestCreateScan_WithScanTypesScsAndOnlyScorecardMissingRepoFlags_Fail(t *testing.T) {
