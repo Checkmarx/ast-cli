@@ -107,6 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
+	snoozeLabel                             = "Snooze"
+	muteLabel                               = "Muted"
 )
 
 var summaryFormats = []string{
@@ -690,6 +692,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		}
 	}
 
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
+
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
 		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
 		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
@@ -705,8 +709,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
 		}
+		summary.TotalIssues += summary.ScsIssues
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
@@ -881,9 +885,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
 
-	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
-	fmt.Printf("              Total Results: %d                       \n", totalIssues)
+	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 	fmt.Println(tableLine)
 	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
@@ -2331,10 +2334,14 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 
 func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
 	types, ok := typesByCVE[result.ID]
-	if ok && types.IsIgnored {
+	if ok && (types.IsIgnored || isSnoozeOrMutePackage(&types)) {
 		return notExploitable
 	}
 	return result.State
+}
+
+func isSnoozeOrMutePackage(result *wrappers.ScaTypeCollection) bool {
+	return strings.EqualFold(result.RiskState, snoozeLabel) || strings.EqualFold(result.RiskState, muteLabel)
 }
 
 func addPackageInformation(
