@@ -107,6 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
+	snoozeLabel                             = "Snooze"
+	muteLabel                               = "Muted"
 )
 
 var summaryFormats = []string{
@@ -2335,10 +2337,14 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 
 func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
 	types, ok := typesByCVE[result.ID]
-	if ok && types.IsIgnored {
+	if ok && (types.IsIgnored || isSnoozeOrMutePackage(&types)) {
 		return notExploitable
 	}
 	return result.State
+}
+
+func isSnoozeOrMutePackage(result *wrappers.ScaTypeCollection) bool {
+	return strings.EqualFold(result.RiskState, snoozeLabel) || strings.EqualFold(result.RiskState, muteLabel)
 }
 
 func addPackageInformation(
