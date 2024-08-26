@@ -664,6 +664,89 @@ func TestAddScaScan(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
 	}
 }
+func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+	}
+	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, "")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, "")
+
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.ScsType,
+			Value: map[string]interface{}{
+				configTwoms:      trueString,
+				ScsScoreCardType: falseString,
+			},
+		},
+	}
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+
+	expectedConfig := wrappers.SCSConfig{
+		Twoms:     trueString,
+		Scorecard: falseString,
+	}
+
+	expectedMapConfig := make(map[string]interface{})
+	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	expectedMapConfig[resultsMapValue] = &expectedConfig
+
+	if !reflect.DeepEqual(result, expectedMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+	}
+}
+
+func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+	}
+	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.ScsType,
+			Value: map[string]interface{}{
+				configTwoms:      trueString,
+				ScsScoreCardType: trueString,
+			},
+		},
+	}
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+
+	expectedConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: trueString,
+		RepoToken: dummyToken,
+		RepoURL:   dummyRepo,
+	}
+
+	expectedMapConfig := make(map[string]interface{})
+	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	expectedMapConfig[resultsMapValue] = &expectedConfig
+
+	if !reflect.DeepEqual(result, expectedMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+	}
+}
 
 func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
 	var resubmitConfig []wrappers.Config
@@ -809,6 +892,7 @@ func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
 }
 
 func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a project",
@@ -822,7 +906,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -840,6 +924,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 }
 
 func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
 		Short: "Scan a project",
@@ -849,7 +934,7 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	_ = cmdCommand.Execute()
 	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	result, _ := addSCSScan(cmdCommand)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms: "true",
