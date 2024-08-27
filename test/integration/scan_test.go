@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	asserts "github.com/stretchr/testify/assert"
+	"github.com/xeipuuv/gojsonschema"
 	"gotest.tools/assert"
 )
 
@@ -1165,6 +1166,42 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "Create a scan with ssh-key should pass", 4*time.Minute, args...)
+}
+
+func TestScanGLReportValidation(t *testing.T) {
+	projectName := GenerateRandomProjectNameForScan()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "./data/empty-folder.zip",
+		flag(params.ScanTypes), "sast, sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), printer.FormatGLSca,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, err)
+	deleteProjectByName(t, projectName)
+
+	reportFilePath := "./cx_result.gl-sca-report.json"
+	schemaURL := "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/master/dist/dependency-scanning-report-format.json"
+
+	defer os.Remove(reportFilePath)
+
+	schemaLoader := gojsonschema.NewReferenceLoader(schemaURL)
+	documentLoader := gojsonschema.NewReferenceLoader("file://" + reportFilePath)
+
+	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
+		t.Fatalf("Error occurred during schema validation: %s", err)
+	}
+
+	if !result.Valid() {
+		for _, desc := range result.Errors() {
+			t.Errorf("Validation error: %s", desc)
+		}
+	}
 }
 
 func TestCreateScanFilterZipFile(t *testing.T) {
