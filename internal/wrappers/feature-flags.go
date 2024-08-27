@@ -81,7 +81,9 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 	if value, exists := featureFlagsCache[flagName]; exists {
 		return &FeatureFlagResponseModel{Name: flagName, Status: value}, nil
 	}
-
+	if flagName == ContainerEngineCLIEnabled {
+		return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
+	}
 	specificFlag, err := getSpecificFlagWithRetry(featureFlagsWrapper, flagName, maxRetries)
 	if err != nil {
 		if len(featureFlags) == 0 || DefaultFFLoad {
@@ -133,6 +135,7 @@ func loadFeatureFlagsMap(allFlags FeatureFlagsResponseModel) {
 			}
 		}
 	}
+	featureFlags[ContainerEngineCLIEnabled] = false
 	DefaultFFLoad = false
 }
 
