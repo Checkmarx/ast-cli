@@ -125,7 +125,6 @@ func assertResultFilesCreated(t *testing.T) {
 }
 
 func TestResultListForGlReports(t *testing.T) {
-
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
