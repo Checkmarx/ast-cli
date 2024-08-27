@@ -46,6 +46,8 @@ else
             github.com/checkmarx/ast-cli/test/integration || rerun_status=1
     done < "$FAILED_TESTS_FILE"
 
+    go tool cover -html=cover.out -o coverage.html
+
     # Check if any tests failed again
     if [ $rerun_status -eq 1 ]; then
         echo "Some tests are still failing."
