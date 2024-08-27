@@ -6,6 +6,7 @@ const (
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
 	DefaultAgent                 = "ASTCLI"
+	VSCodeAgent                  = "VS Code"
 	DebugFlag                    = "debug"
 	DebugUsage                   = "Debug mode with detailed logs"
 	RetryFlag                    = "retry"
@@ -230,20 +231,22 @@ const (
 
 // Results
 const (
-	SastType             = "sast"
-	KicsType             = "kics"
-	APISecurityType      = "api-security"
-	AIProtectionType     = "AI Protection"
-	ContainersType       = "containers"
-	APIDocumentationFlag = "apisec-swagger-filter"
-	IacType              = "iac-security"
-	IacLabel             = "IaC Security"
-	APISecurityLabel     = "API Security"
-	ScaType              = "sca"
-	APISecType           = "apisec"
-	ScsType              = "scs"
-	MicroEnginesType     = "microengines" // the scs scan type for scans API
-	Success              = "success"
+	SastType               = "sast"
+	KicsType               = "kics"
+	APISecurityType        = "api-security"
+	AIProtectionType       = "AI Protection"
+	ContainersType         = "containers"
+	APIDocumentationFlag   = "apisec-swagger-filter"
+	IacType                = "iac-security"
+	IacLabel               = "IaC Security"
+	APISecurityLabel       = "API Security"
+	ScaType                = "sca"
+	APISecType             = "apisec"
+	ScsType                = "scs"
+	MicroEnginesType       = "microengines" // the scs scan type for scans API
+	Success                = "success"
+	SCSScorecardType       = "sscs-Scorecard"
+	SCSSecretDetectionType = "sscs-Secret Detection"
 )
 
 // ScaAgent AST Role

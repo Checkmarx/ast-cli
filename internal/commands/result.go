@@ -1040,6 +1040,32 @@ func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFl
 	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
+
+func filterResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
+	if agent == commonParams.VSCodeAgent {
+		var filteredResults []*wrappers.ScanResult
+		for _, result := range results.Results {
+			if result.Type != commonParams.SCSScorecardType {
+				filteredResults = append(filteredResults, result)
+			} else {
+				results.TotalCount--
+			}
+		}
+		results.Results = filteredResults
+	} else if agent != commonParams.DefaultAgent {
+		var filteredResults []*wrappers.ScanResult
+		for _, result := range results.Results {
+			if result.Type != commonParams.SCSScorecardType && result.Type != commonParams.SCSSecretDetectionType {
+				filteredResults = append(filteredResults, result)
+			} else {
+				results.TotalCount--
+			}
+		}
+		results.Results = filteredResults
+	}
+	return results
+}
+
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -1088,7 +1114,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return err
 		}
@@ -1223,7 +1249,8 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1236,6 +1263,7 @@ func createReport(format,
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
+		results = filterResultsByAgent(results, agent)
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
