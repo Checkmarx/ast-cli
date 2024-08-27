@@ -1474,7 +1474,10 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 
 func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Gl-sca Report: ", targetFile)
-	glScaResult := &wrappers.GlScaResultsCollection{}
+	glScaResult := &wrappers.GlScaResultsCollection{
+		Vulnerabilities:    []wrappers.GlScaDepVulnerabilities{}, // Initialize arrays to prevent GitLab schema validation errors.
+		ScaDependencyFiles: []wrappers.ScaDependencyFile{},
+	}
 	err := addScanToGlScaReport(summary, glScaResult)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to denerate GL-Sca report ", failedListingResults)
