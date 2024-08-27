@@ -26,6 +26,9 @@ go test \
     -coverprofile cover.out \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
 
+
+go tool cover -html=cover.out -o coverage.html
+
 grep -E "^--- FAIL: " test_output.log | awk '{print $3}' > "$FAILED_TESTS_FILE"
 
 status=$?
@@ -49,13 +52,9 @@ else
             -tags integration \
             -v \
             -timeout 210m \
-            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-            -coverprofile cover.out \
             -run "^$testName$" \
             github.com/checkmarx/ast-cli/test/integration || rerun_status=1
     done < "$FAILED_TESTS_FILE"
-
-    go tool cover -html=cover.out -o coverage.html
 
     # Check if any tests failed again
     if [ $rerun_status -eq 1 ]; then
