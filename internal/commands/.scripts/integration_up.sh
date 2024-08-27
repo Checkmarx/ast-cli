@@ -1,15 +1,3 @@
-docker run \
-  --name squid \
-  -d \
-  -p $PROXY_PORT:3128 \
-  -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
-  -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
-  ubuntu/squid:5.2-22.04_beta
-
-wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
-tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
-rm -rf ScaResolver-linux64.tar.gz
-
 #!/bin/bash
 
 # Step 1: Check if the failedTests file exists
@@ -61,6 +49,7 @@ if [ ! -s "$FAILED_TESTS_FILE" ]; then
 else
     # If not empty, rerun the failed tests
     echo "Rerunning failed tests..."
+    rerun_status=0
     while IFS= read -r testName; do
         go test \
             -tags integration \
@@ -69,12 +58,13 @@ else
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
             -coverprofile cover.out \
             -run "^$testName$" \
-            github.com/checkmarx/ast-cli/test/integration
+            github.com/checkmarx/ast-cli/test/integration || rerun_status=1
     done < "$FAILED_TESTS_FILE"
 
     # Check if any tests failed again
-    if [ -s "$FAILED_TESTS_FILE" ]; then
+    if [ $rerun_status -eq 1 ]; then
         echo "Some tests are still failing."
+        rm -f "$FAILED_TESTS_FILE" test_output.log
         exit 1
     else
         echo "All failed tests passed on rerun."
@@ -82,4 +72,3 @@ else
         exit 0
     fi
 fi
-
