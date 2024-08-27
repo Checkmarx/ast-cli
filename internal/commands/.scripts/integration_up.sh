@@ -3,24 +3,9 @@
 # Step 1: Check if the failedTests file exists
 FAILED_TESTS_FILE="failedTests"
 
-if [ -f "$FAILED_TESTS_FILE" ]; then
-    # Step 2.1: If it exists, run all the tests listed in this file
-    echo "Running tests from $FAILED_TESTS_FILE..."
-    while IFS= read -r testName; do
-        go test \
-            -tags integration \
-            -v \
-            -timeout 210m \
-            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-            -coverprofile cover.out \
-            -run "^$testName$" \
-            github.com/checkmarx/ast-cli/test/integration
-    done < "$FAILED_TESTS_FILE"
-else
-    # Step 2.2: If not, create the failedTests file
-    echo "Creating $FAILED_TESTS_FILE..."
-    touch "$FAILED_TESTS_FILE"
-fi
+# Step 2: Create the failedTests file
+echo "Creating $FAILED_TESTS_FILE..."
+touch "$FAILED_TESTS_FILE"
 
 # Step 3: Run all tests and write failed test names to failedTests file
 echo "Running all tests..."
