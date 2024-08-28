@@ -47,7 +47,6 @@ if [ ! -s "$FAILED_TESTS_FILE" ]; then
     # If the file is empty, all tests passed
     echo "All tests passed."
     rm -f "$FAILED_TESTS_FILE" test_output.log
-    exit 0
 else
     # If the file is not empty, rerun the failed tests
     echo "Rerunning failed tests..."
@@ -75,11 +74,20 @@ else
     # Step 6: Check if any tests failed again
     if [ $rerun_status -eq 1 ]; then
         echo "Some tests are still failing."
-        rm -f "$FAILED_TESTS_FILE" test_output.log
-        exit 1
     else
         echo "All failed tests passed on rerun."
-        rm -f "$FAILED_TESTS_FILE" test_output.log
-        exit 0
     fi
+fi
+
+# Step 7: Run the cleandata package to delete projects
+echo "Running cleandata to clean up projects..."
+go test -v github.com/checkmarx/ast-cli/internal/cleandata
+
+# Step 8: Final cleanup and exit
+rm -f "$FAILED_TESTS_FILE" test_output.log
+
+if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
+    exit 1
+else
+    exit 0
 fi

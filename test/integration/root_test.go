@@ -104,6 +104,7 @@ func getRootProject(t *testing.T) (string, string) {
 	}
 
 	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
+	_ = WriteProjectNameToFile(rootProjectName)
 
 	return rootProjectId, rootProjectName
 }

@@ -54,6 +54,7 @@ const (
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
 	timeout               = 10 * time.Minute
+	ProjectNameFile       = "projectName.txt"
 )
 
 var (
@@ -1940,5 +1941,20 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 }
 
 func GenerateRandomProjectNameForScan() string {
-	return fmt.Sprint("ast-cli-scan-", uuid.New().String())
+	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
+	_ = WriteProjectNameToFile(projectName)
+	return projectName
+}
+
+func WriteProjectNameToFile(projectName string) error {
+	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(projectName); err != nil {
+		return err
+	}
+	return nil
 }
