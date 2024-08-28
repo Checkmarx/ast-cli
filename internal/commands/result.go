@@ -2358,7 +2358,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
 			for _, types := range *scaTypeModel {
-				typesByCVE[types.ID] = types
+				identifier := fmt.Sprintf("%s:%s", types.ID, types.PackageID)
+				typesByCVE[identifier] = types
 			}
 		}
 	}
@@ -2366,7 +2367,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 }
 
 func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
 	if ok && types.Type == "SupplyChain" {
 		return "Supply Chain"
 	}
@@ -2374,15 +2376,16 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 }
 
 func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
-	if ok && (types.IsIgnored || isSnoozeOrMutePackage(&types)) {
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
+	if ok && types.IsIgnored {
 		return notExploitable
 	}
 	return result.State
 }
 
-func isSnoozeOrMutePackage(result *wrappers.ScaTypeCollection) bool {
-	return strings.EqualFold(result.RiskState, snoozeLabel) || strings.EqualFold(result.RiskState, muteLabel)
+func buildVulnerabilityIdentifier(result *wrappers.ScanResult) string {
+	return fmt.Sprintf("%s:%s", result.ID, result.ScanResultData.PackageIdentifier)
 }
 
 func addPackageInformation(
