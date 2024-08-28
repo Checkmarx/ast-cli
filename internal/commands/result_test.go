@@ -133,33 +133,34 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 	assert.Equal(t, results[0].Status, "Partial", "")
 }
 
-func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
-	executeCommand := func(agent string) *wrappers.ScanResultsCollection {
-		clearFlags()
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+var executeCommand = func(t *testing.T, agent string) *wrappers.ScanResultsCollection {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-		_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-			"results", "show", "--scan-id", "SCS", "--report-format", "json", "--agent", agent)
-		assert.NilError(t, err)
+	_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "SCS", "--report-format", "json", "--agent", agent)
+	assert.NilError(t, err)
 
-		file, err := os.Open(fileName + ".json")
-		if err != nil {
-			t.Fatalf("failed to open file: %v", err)
-		}
-		defer file.Close()
+	file, err := os.Open(fileName + ".json")
+	if err != nil {
+		t.Fatalf("failed to open file: %v", err)
+	}
+	defer file.Close()
 
-		fileContents, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var results wrappers.ScanResultsCollection
-		err = json.Unmarshal(fileContents, &results)
-		assert.NilError(t, err)
-		return &results
+	fileContents, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
 	}
 
-	results := executeCommand(params.DefaultAgent)
+	var results wrappers.ScanResultsCollection
+	err = json.Unmarshal(fileContents, &results)
+	assert.NilError(t, err)
+	return &results
+}
+
+func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
+
+	results := executeCommand(t, params.DefaultAgent)
 	scsSecretDetectionFound := false
 	scsScorecardFound := false
 	for _, result := range results.Results {
@@ -180,32 +181,8 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 }
 
 func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
-	executeCommand := func(agent string) *wrappers.ScanResultsCollection {
-		clearFlags()
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-		_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-			"results", "show", "--scan-id", "SCS", "--report-format", "json", "--agent", agent)
-		assert.NilError(t, err)
-
-		file, err := os.Open(fileName + ".json")
-		if err != nil {
-			t.Fatalf("failed to open file: %v", err)
-		}
-		defer file.Close()
-
-		fileContents, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var results wrappers.ScanResultsCollection
-		err = json.Unmarshal(fileContents, &results)
-		assert.NilError(t, err)
-		return &results
-	}
-
-	results := executeCommand(params.VSCodeAgent)
+	results := executeCommand(t, params.VSCodeAgent)
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType, "SCS Scorecard results should be excluded for VS Code agent")
 	}
@@ -215,32 +192,8 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-	executeCommand := func(agent string) *wrappers.ScanResultsCollection {
-		clearFlags()
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-		_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-			"results", "show", "--scan-id", "SCS", "--report-format", "json", "--agent", agent)
-		assert.NilError(t, err)
-
-		file, err := os.Open(fileName + ".json")
-		if err != nil {
-			t.Fatalf("failed to open file: %v", err)
-		}
-		defer file.Close()
-
-		fileContents, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var results wrappers.ScanResultsCollection
-		err = json.Unmarshal(fileContents, &results)
-		assert.NilError(t, err)
-		return &results
-	}
-
-	results := executeCommand("Jetbrains")
+	results := executeCommand(t, "Jetbrains")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
@@ -250,33 +203,8 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-	executeCommand := func(agent string) *wrappers.ScanResultsCollection {
-		clearFlags()
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 
-		_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-			"results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", agent)
-		assert.NilError(t, err)
-
-		file, err := os.Open(fileName + ".json")
-		if err != nil {
-			t.Fatalf("failed to open file: %v", err)
-		}
-		defer file.Close()
-
-		fileContents, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var results wrappers.ScanResultsCollection
-		err = json.Unmarshal(fileContents, &results)
-		assert.NilError(t, err)
-		return &results
-	}
-
-	results := executeCommand("Jetbrains")
+	results := executeCommand(t, "Jetbrains")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
@@ -286,37 +214,12 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
-	executeCommand := func(agent string) *wrappers.ScanResultsCollection {
-		clearFlags()
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 
-		_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-			"results", "show", "--scan-id", "NIL_RESULTS", "--report-format", "json", "--agent", agent)
-		assert.NilError(t, err)
-
-		file, err := os.Open(fileName + ".json")
-		if err != nil {
-			t.Fatalf("failed to open file: %v", err)
-		}
-		defer file.Close()
-
-		fileContents, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("failed to read file: %v", err)
-		}
-
-		var results wrappers.ScanResultsCollection
-		err = json.Unmarshal(fileContents, &results)
-		assert.NilError(t, err)
-		return &results
-	}
-
-	results := executeCommand("Jetbrains")
+	results := executeCommand(t, "Jetbrains")
 
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
 
-	defer os.Remove(fileName + ".json")
+	os.Remove(fileName + ".json")
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {

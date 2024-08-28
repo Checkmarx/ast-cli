@@ -1041,29 +1041,39 @@ func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFl
 	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
 
+func filterVSCodeAgentResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
+	var filteredResults []*wrappers.ScanResult
+	for _, result := range results.Results {
+		if result.Type != commonParams.SCSScorecardType {
+			filteredResults = append(filteredResults, result)
+		} else {
+			results.TotalCount--
+		}
+	}
+	return filteredResults
+}
+
+func filterOtherAgentResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
+	var filteredResults []*wrappers.ScanResult
+	for _, result := range results.Results {
+		if result.Type != commonParams.SCSScorecardType && result.Type != commonParams.SCSSecretDetectionType {
+			filteredResults = append(filteredResults, result)
+		} else {
+			results.TotalCount--
+		}
+	}
+	return filteredResults
+}
+
 func filterResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
+
 	if agent == commonParams.VSCodeAgent {
-		var filteredResults []*wrappers.ScanResult
-		for _, result := range results.Results {
-			if result.Type != commonParams.SCSScorecardType {
-				filteredResults = append(filteredResults, result)
-			} else {
-				results.TotalCount--
-			}
-		}
-		results.Results = filteredResults
+		results.Results = filterVSCodeAgentResults(results)
 	} else if agent != commonParams.DefaultAgent {
-		var filteredResults []*wrappers.ScanResult
-		for _, result := range results.Results {
-			if result.Type != commonParams.SCSScorecardType && result.Type != commonParams.SCSSecretDetectionType {
-				filteredResults = append(filteredResults, result)
-			} else {
-				results.TotalCount--
-			}
-		}
-		results.Results = filteredResults
+		results.Results = filterOtherAgentResults(results)
 	}
 	return results
+
 }
 
 func CreateScanReport(
