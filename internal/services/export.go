@@ -28,6 +28,14 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 	payload := &wrappers.ExportRequestPayload{
 		ScanID:     scanID,
 		FileFormat: "ScanReportJson",
+		ExportParameters: wrappers.ExportParameters{
+			HideDevAndTestDependencies: true,
+			ShowOnlyEffectiveLicenses:  true,
+			ExcludePackages:            false,
+			ExcludeLicenses:            true,
+			ExcludeVulnerabilities:     false,
+			ExcludePolicies:            true,
+		},
 	}
 
 	exportID, err := exportWrapper.InitiateExportRequest(payload)

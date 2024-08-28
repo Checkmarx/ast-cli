@@ -43,8 +43,6 @@ jobs:
       - run: go version
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
-      - name: Install gocovmerge
-        run: go install github.com/wadey/gocovmerge@latest
       - name: Go Integration test
         shell: bash
         env:

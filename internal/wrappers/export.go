@@ -38,5 +38,5 @@ type ScaType struct {
 	ID        string `json:"Id,omitempty"`
 	Type      string `json:"Type,omitempty"`
 	IsIgnored bool   `json:"IsIgnored,omitempty"`
-	PackageID string `json:"PackageID,omitempty"`
+	RiskState string `json:"RiskState,omitempty"`
 }
