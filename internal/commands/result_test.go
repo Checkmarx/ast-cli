@@ -180,7 +180,6 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 }
 
 func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
-
 	results := executeCommand(t, params.VSCodeAgent)
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType, "SCS Scorecard results should be excluded for VS Code agent")
@@ -191,7 +190,6 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-
 	results := executeCommand(t, "Jetbrains")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
@@ -202,7 +200,6 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-
 	results := executeCommand(t, "Jetbrains")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
