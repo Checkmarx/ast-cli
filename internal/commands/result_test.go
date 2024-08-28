@@ -210,7 +210,6 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
-
 	results := executeCommand(t, "Jetbrains")
 
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
