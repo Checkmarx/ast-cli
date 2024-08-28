@@ -1953,7 +1953,7 @@ func WriteProjectNameToFile(projectName string) error {
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(projectName); err != nil {
+	if _, err := f.WriteString(projectName + "\n"); err != nil {
 		return err
 	}
 	return nil
