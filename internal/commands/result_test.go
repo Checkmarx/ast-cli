@@ -177,7 +177,7 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 	assert.Assert(t, scsSecretDetectionFound && scsScorecardFound, "SCS results should be included for AST-CLI agent")
 	assert.Assert(t, results.TotalCount == 2, "SCS Scorecard results should be excluded for VS Code agent")
 
-	defer os.Remove(fileName + ".json")
+	os.Remove(fileName + ".json")
 }
 
 func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
@@ -188,7 +188,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 	}
 	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded for VS Code agent")
 
-	defer os.Remove(fileName + ".json")
+	os.Remove(fileName + ".json")
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
@@ -199,7 +199,7 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 	}
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
 
-	defer os.Remove(fileName + ".json")
+	os.Remove(fileName + ".json")
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
@@ -210,7 +210,7 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 	}
 	assert.Assert(t, results.TotalCount == 7, "SCS Scorecard results should be excluded")
 
-	defer os.Remove(fileName + ".json")
+	os.Remove(fileName + ".json")
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
