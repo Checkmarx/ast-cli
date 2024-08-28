@@ -81,7 +81,7 @@ fi
 
 # Step 7: Run the cleandata package to delete projects
 echo "Running cleandata to clean up projects..."
-go test -v github.com/checkmarx/ast-cli/internal/cleandata
+go test -v github.com/checkmarx/ast-cli/test/cleandata
 
 # Step 8: Final cleanup and exit
 rm -f "$FAILED_TESTS_FILE" test_output.log
