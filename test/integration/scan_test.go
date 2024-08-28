@@ -1028,7 +1028,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Get a scan workflow and assert it fails
 func TestScanWorkflow(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "fake-scan-id"
 	args := []string{
 		"scan", "workflow",
 		flag(params.ScanIDFlag), scanID,
