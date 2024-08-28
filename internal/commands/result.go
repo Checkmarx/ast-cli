@@ -1041,7 +1041,7 @@ func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFl
 	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
 
-func filterVSCodeAgentScsResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
+func filterVSCodeAgentResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
 	var filteredResults []*wrappers.ScanResult
 	for _, result := range results.Results {
 		if result.Type != commonParams.SCSScorecardType {
@@ -1053,7 +1053,7 @@ func filterVSCodeAgentScsResults(results *wrappers.ScanResultsCollection) []*wra
 	return filteredResults
 }
 
-func filterOtherAgentScsResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
+func filterOtherAgentResults(results *wrappers.ScanResultsCollection) []*wrappers.ScanResult {
 	var filteredResults []*wrappers.ScanResult
 	for _, result := range results.Results {
 		if result.Type != commonParams.SCSScorecardType && result.Type != commonParams.SCSSecretDetectionType {
@@ -1065,12 +1065,12 @@ func filterOtherAgentScsResults(results *wrappers.ScanResultsCollection) []*wrap
 	return filteredResults
 }
 
-func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
+func filterResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
 
 	if agent == commonParams.VSCodeAgent {
-		results.Results = filterVSCodeAgentScsResults(results)
+		results.Results = filterVSCodeAgentResults(results)
 	} else if agent != commonParams.DefaultAgent {
-		results.Results = filterOtherAgentScsResults(results)
+		results.Results = filterOtherAgentResults(results)
 	}
 	return results
 
@@ -1273,7 +1273,7 @@ func createReport(format,
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
-		results = filterScsResultsByAgent(results, agent)
+		results = filterResultsByAgent(results, agent)
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
