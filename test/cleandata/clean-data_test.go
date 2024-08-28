@@ -9,6 +9,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/viper"
 )
 
@@ -23,6 +24,7 @@ func DeleteProjectByName(projectName string) {
 }
 
 func TestDeleteProjectsFromFile(t *testing.T) {
+	configuration.LoadConfiguration()
 	projectNameFile := fmt.Sprint("../integration/", ProjectNameFile) // Replace with your actual file path
 
 	file, err := os.Open(projectNameFile)
