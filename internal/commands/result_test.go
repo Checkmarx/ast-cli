@@ -136,6 +136,7 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 var executeCommand = func(t *testing.T, agent string) *wrappers.ScanResultsCollection {
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 
 	_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "SCS", "--report-format", "json", "--agent", agent)
@@ -204,7 +205,7 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
-	assert.Assert(t, results.TotalCount == 7, "SCS Scorecard results should be excluded")
+	assert.Assert(t, results.TotalCount == 8, "SCS Scorecard results should be excluded")
 
 	os.Remove(fileName + ".json")
 }
