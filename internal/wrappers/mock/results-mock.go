@@ -29,6 +29,39 @@ var containersResults = &wrappers.ScanResult{
 		CweID:     "CWE-1234",
 	},
 }
+var scsResults = &wrappers.ScanResultsCollection{
+	TotalCount: 2,
+	Results: []*wrappers.ScanResult{
+		{
+			Type:                 "sscs-Secret Detection",
+			ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
+			SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+			Status:               "NEW",
+			State:                "TO_VERIFY",
+			Severity:             "HIGH",
+			Created:              "2024-07-30T12:49:56Z",
+			FirstFoundAt:         "2023-07-06T10:28:49Z",
+			FoundAt:              "2024-07-30T12:49:56Z",
+			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+			Description:          "Generic API Key has detected secret for file application.properties.",
+			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		},
+		{
+			Type:                 "sscs-Scorecard",
+			ID:                   "n2a8iCzrIgbCe+dGKYk+cAApO0U=",
+			SimilarityID:         "65323789a325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+			Status:               "NEW",
+			State:                "TO_VERIFY",
+			Severity:             "HIGH",
+			Created:              "2024-07-30T12:49:56Z",
+			FirstFoundAt:         "2023-07-06T10:28:49Z",
+			FoundAt:              "2024-07-30T12:49:56Z",
+			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+			Description:          "score is 0: branch protection not enabled on development/release branches:\\nWarn: branch protection not enabled for branch 'main'",
+			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		},
+	},
+}
 
 func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 	*wrappers.ScanResultsCollection,
@@ -47,6 +80,15 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 			Results: []*wrappers.ScanResult{
 				containersResults,
 			},
+		}, nil, nil
+	}
+	if params["scan-id"] == "SCS" {
+		return scsResults, nil, nil
+	}
+	if params["scan-id"] == "NIL_RESULTS" {
+		return &wrappers.ScanResultsCollection{
+			TotalCount: 0,
+			Results:    nil,
 		}, nil, nil
 	}
 	const mock = "mock"
