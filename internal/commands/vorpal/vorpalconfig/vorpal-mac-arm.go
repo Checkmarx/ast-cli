@@ -7,7 +7,7 @@ import (
 )
 
 var Params = osinstaller.InstallationConfiguration{
-	ExecutableFile:  "vorpal_darwin_x64",
+	ExecutableFile:  "vorpal_darwin_arm64",
 	DownloadURL:     "https://download.checkmarx.com/vorpal-binary/vorpal_darwin_arm64.tar.gz",
 	HashDownloadURL: "https://download.checkmarx.com/vorpal-binary/hash.txt",
 	FileName:        "vorpal.tar.gz",
