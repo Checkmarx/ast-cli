@@ -133,12 +133,12 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 	assert.Equal(t, results[0].Status, "Partial", "")
 }
 
-func runScanCommand(t *testing.T, agent, scanId string) *wrappers.ScanResultsCollection {
+func runScanCommand(t *testing.T, agent, scanID string) *wrappers.ScanResultsCollection {
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
-		"results", "show", "--scan-id", scanId, "--report-format", "json", "--agent", agent)
+		"results", "show", "--scan-id", scanID, "--report-format", "json", "--agent", agent)
 	assert.NilError(t, err)
 
 	file, err := os.Open(fileName + ".json")
