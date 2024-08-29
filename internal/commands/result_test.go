@@ -175,7 +175,7 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 		}
 	}
 	assert.Assert(t, scsSecretDetectionFound && scsScorecardFound, "SCS results should be included for AST-CLI agent")
-	assert.Assert(t, results.TotalCount == 2, "SCS Scorecard results should be excluded for VS Code agent")
+	assert.Assert(t, results.TotalCount == 2, "SCS results should be included for AST-CLI agent")
 
 	os.Remove(fileName + ".json")
 }
@@ -193,7 +193,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 	results := executeCommand(t, "Jetbrains")
 	for _, result := range results.Results {
-		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
+		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded")
 	}
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
 
