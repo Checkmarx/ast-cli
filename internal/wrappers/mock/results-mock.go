@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -33,7 +34,7 @@ var scsResults = &wrappers.ScanResultsCollection{
 	TotalCount: 2,
 	Results: []*wrappers.ScanResult{
 		{
-			Type:                 "sscs-Secret Detection",
+			Type:                 params.SCSSecretDetectionType,
 			ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
 			SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
 			Status:               "NEW",
@@ -47,7 +48,7 @@ var scsResults = &wrappers.ScanResultsCollection{
 			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
 		},
 		{
-			Type:                 "sscs-Scorecard",
+			Type:                 params.SCSScorecardType,
 			ID:                   "n2a8iCzrIgbCe+dGKYk+cAApO0U=",
 			SimilarityID:         "65323789a325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
 			Status:               "NEW",
@@ -82,15 +83,40 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 			},
 		}, nil, nil
 	}
+	if params["scan-id"] == "SAST_ONLY" {
+		return &wrappers.ScanResultsCollection{
+			TotalCount: 1,
+			Results: []*wrappers.ScanResult{
+				{
+					Type:     "sast",
+					ID:       "1",
+					Severity: "high",
+					ScanResultData: wrappers.ScanResultData{
+						LanguageName: "JavaScript",
+						QueryName:    "mock-query-name-1",
+						Nodes: []*wrappers.ScanResultNode{
+							{
+								FileName: "dummy-file-name-1",
+								Line:     10,
+								Column:   10,
+								Length:   20,
+							},
+							{
+								FileName: "dummy-file-name-1",
+								Line:     11,
+								Column:   3,
+								Length:   10,
+							},
+						},
+					},
+				},
+			},
+		}, nil, nil
+	}
 	if params["scan-id"] == "SCS" {
 		return scsResults, nil, nil
 	}
-	if params["scan-id"] == "NIL_RESULTS" {
-		return &wrappers.ScanResultsCollection{
-			TotalCount: 0,
-			Results:    nil,
-		}, nil, nil
-	}
+
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
