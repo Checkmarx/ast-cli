@@ -105,8 +105,6 @@ func TestResultListJson(t *testing.T) {
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
 	assertResultFilesCreated(t)
-
-	deleteScanAndProject()
 }
 
 // assert all files were created
@@ -125,7 +123,6 @@ func assertResultFilesCreated(t *testing.T) {
 }
 
 func TestResultListForGlReports(t *testing.T) {
-
 	assertRequiredParameter(t, "Please provide a scan ID", "results", "show")
 
 	scanID, _ := getRootScan(t)
@@ -153,8 +150,6 @@ func TestResultListForGlReports(t *testing.T) {
 	assert.Assert(t, uint(len(result.Results)) == result.TotalCount, "Should have results")
 
 	assertGlResultFilesCreated(t)
-
-	deleteScanAndProject()
 }
 
 func assertGlResultFilesCreated(t *testing.T) {
