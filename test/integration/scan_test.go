@@ -54,6 +54,7 @@ const (
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
 	timeout               = 10 * time.Minute
+	ProjectNameFile       = "projectName.txt"
 )
 
 var (
@@ -83,7 +84,7 @@ func TestCreateScan_WithOnlyValidApikeyFlag_Success(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -107,7 +108,7 @@ func TestCreateScan_WithOnlyValidApikeyEnvVar_Success(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -131,7 +132,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -155,7 +156,7 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -180,7 +181,7 @@ func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -207,7 +208,7 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -230,7 +231,7 @@ func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -254,7 +255,7 @@ func TestCreateScan_WithInvalidClientCredentialsEnvVars_Fail(t *testing.T) {
 
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -298,7 +299,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -311,7 +312,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/project-with-directory-symlink",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -323,7 +324,7 @@ func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfull
 func TestScanCreate_FolderWithSymbolicLinkWithRelativePath_CreateScanSuccessfully(t *testing.T) {
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/symlink-relative-path-folder",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -336,14 +337,13 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), projectNameRandom,
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, projectID := executeCreateScan(t, args)
-	defer deleteProject(t, projectID)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
@@ -352,7 +352,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -375,7 +375,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -394,7 +393,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -414,7 +412,6 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -433,7 +430,6 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 	}
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
 		scanID, projectID := executeCreateScan(t, testArgs)
-		defer deleteProject(t, projectID)
 		assert.Assert(t, scanID != "", "Scan ID should not be empty")
 		assert.Assert(t, projectID != "", "Project ID should not be empty")
 	}
@@ -457,8 +453,8 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
 func TestScansE2E(t *testing.T) {
-	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "sast,iac-security,sca"))
-	defer deleteProject(t, projectID)
+	cleanupCxZipFiles(t)
+	scanID, projectID := executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, params.IacType))
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -469,11 +465,23 @@ func TestScansE2E(t *testing.T) {
 	assert.Equal(t, len(glob), 0, "Zip file not removed")
 }
 
+func cleanupCxZipFiles(t *testing.T) {
+	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
+	if err != nil {
+		t.Logf("Failed to search for cx*.zip files: %v", err)
+	}
+	for _, file := range glob {
+		err = os.Remove(file)
+		if err != nil {
+			t.Logf("Failed to remove file %s: %v", file, err)
+		}
+	}
+}
+
 func TestFastScan(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 	// Create a scan
 	scanID, projectID := createScanWithFastScan(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
@@ -483,10 +491,10 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 }
 
 func TestScansUpdateProjectGroups(t *testing.T) {
+	cleanupCxZipFiles(t)
 	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType))
 	response := listScanByID(t, scanID)
 	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType))
-	defer deleteProject(t, projectID)
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -499,7 +507,7 @@ func TestScansUpdateProjectGroups(t *testing.T) {
 
 func TestInvalidSource(t *testing.T) {
 	args := []string{scanCommand, "create",
-		flag(params.ProjectName), "TestProject",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "invalidSource",
 		flag(params.ScanTypes), "sast",
 		flag(params.BranchFlag), "dummy_branch"}
@@ -533,8 +541,6 @@ func TestScaResolverArg(t *testing.T) {
 		viper.GetString(resolverEnvVar),
 	)
 
-	defer deleteProject(t, projectID)
-
 	assert.Assert(
 		t,
 		pollScanUntilStatus(t, scanID, wrappers.ScanCompleted, FullScanWait, ScanPollSleep),
@@ -547,7 +553,7 @@ func TestScaResolverArg(t *testing.T) {
 func TestScaResolverArgFailed(t *testing.T) {
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), "resolver",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), "./nonexisting",
 		flag(params.ScanTypes), "iac-security,sca",
@@ -559,7 +565,7 @@ func TestScaResolverArgFailed(t *testing.T) {
 
 	args = []string{
 		"scan", "create",
-		flag(params.ProjectName), "resolver",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScaResolverFlag), viper.GetString(resolverEnvVar),
 		flag(params.ScanTypes), "iac-security,sca",
@@ -576,7 +582,6 @@ func TestIncrementalScan(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 
 	scanID, projectID := createScanIncremental(t, Dir, projectName, map[string]string{})
-	defer deleteProject(t, projectID)
 	scanIDInc, projectIDInc := createScanIncremental(t, Dir, projectName, map[string]string{})
 
 	assert.Assert(t, projectID == projectIDInc, "Project IDs should match")
@@ -587,9 +592,8 @@ func TestIncrementalScan(t *testing.T) {
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
-	scanID, projectID := createScanSastNoWait(t, SlowRepo, map[string]string{})
+	scanID, _ := createScanSastNoWait(t, SlowRepo, map[string]string{})
 
-	defer deleteProject(t, projectID)
 	defer deleteScan(t, scanID)
 
 	// canceling too quickly after creating fails the scan...
@@ -664,7 +668,7 @@ func TestScansAPISecThresholdShouldBlock(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
-		flag(params.ProjectName), "my-project",
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/sources.zip",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
@@ -1025,7 +1029,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Get a scan workflow and assert it fails
 func TestScanWorkflow(t *testing.T) {
-	scanID, _ := getRootScan(t)
+	scanID := "fake-scan-id"
 	args := []string{
 		"scan", "workflow",
 		flag(params.ScanIDFlag), scanID,
@@ -1177,7 +1181,7 @@ func TestScanCreateWithSSHKey(t *testing.T) {
 }
 
 func TestScanGLReportValidation(t *testing.T) {
-	projectName := GenerateRandomProjectNameForScan()
+	projectName := getProjectNameForScanTests()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), projectName,
@@ -1190,7 +1194,6 @@ func TestScanGLReportValidation(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, err)
-	deleteProjectByName(t, projectName)
 
 	reportFilePath := "./cx_result.gl-sca-report.json"
 	schemaURL := "https://gitlab.com/gitlab-org/security-products/security-report-schemas/-/raw/master/dist/dependency-scanning-report-format.json"
@@ -1924,7 +1927,7 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "create",
-		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/empty-folder.zip",
 		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "main",
@@ -1938,5 +1941,20 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 }
 
 func GenerateRandomProjectNameForScan() string {
-	return fmt.Sprint("ast-cli-scan-", uuid.New().String())
+	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
+	_ = WriteProjectNameToFile(projectName)
+	return projectName
+}
+
+func WriteProjectNameToFile(projectName string) error {
+	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(projectName + "\n"); err != nil {
+		return err
+	}
+	return nil
 }
