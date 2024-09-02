@@ -142,6 +142,9 @@ const (
 	ContainerImagesFlag          = "container-images"
 	ContainersTypeFlag           = "container-security"
 	VSCodeAgent                  = "VS Code"
+	EclipseAgent                 = "Eclipse"
+	VisualStudioAgent            = "Visual Studio"
+	JetbrainsAgent               = "Jetbrains"
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 
 	// INDIVIDUAL FILTER FLAGS

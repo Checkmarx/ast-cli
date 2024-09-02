@@ -160,7 +160,7 @@ var sonarSeverities = map[string]string{
 }
 
 var containerEngineUnsupportedAgents = []string{
-	"Jetbrains", "VS Code", "Visual Studio", "Eclipse",
+	commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
 }
 
 func NewResultsCommand(
@@ -1041,30 +1041,39 @@ func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFl
 	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
 
-func filterResultsByType(results *wrappers.ScanResultsCollection, excludeTypes ...string) []*wrappers.ScanResult {
+func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes map[string]struct{}) *wrappers.ScanResultsCollection {
 	var filteredResults []*wrappers.ScanResult
+
 	for _, result := range results.Results {
-		exclude := false
-		for _, excludeType := range excludeTypes {
-			if result.Type == excludeType {
-				exclude = true
-				results.TotalCount--
-				break
-			}
-		}
-		if !exclude {
+		if _, shouldExclude := excludedTypes[result.Type]; shouldExclude {
+			results.TotalCount--
+		} else {
 			filteredResults = append(filteredResults, result)
 		}
 	}
-	return filteredResults
+	results.Results = filteredResults
+	return results
 }
 
 func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
-	if agent == commonParams.VSCodeAgent {
-		results.Results = filterResultsByType(results, commonParams.SCSScorecardType)
-	} else if agent != commonParams.DefaultAgent {
-		results.Results = filterResultsByType(results, commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType)
+	unsupportedTypesByAgent := map[string][]string{
+		commonParams.DefaultAgent:      {},
+		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
+		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 	}
+
+	excludedTypes := make(map[string]struct{})
+
+	if typesToExclude, exists := unsupportedTypesByAgent[agent]; exists {
+		for _, excludeType := range typesToExclude {
+			excludedTypes[excludeType] = struct{}{}
+		}
+	}
+
+	results = filterResultsByType(results, excludedTypes)
+
 	return results
 }
 

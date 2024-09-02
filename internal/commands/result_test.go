@@ -189,7 +189,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-	results := runScanCommand(t, "Jetbrains", "SCS")
+	results := runScanCommand(t, params.JetbrainsAgent, "SCS")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
@@ -197,7 +197,7 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-	results := runScanCommand(t, "Jetbrains", "SAST_ONLY")
+	results := runScanCommand(t, params.EclipseAgent, "SAST_ONLY")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
@@ -205,7 +205,7 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
-	results := runScanCommand(t, "Jetbrains", "MOCK_NO_VULNERABILITIES")
+	results := runScanCommand(t, params.VisualStudioAgent, "MOCK_NO_VULNERABILITIES")
 
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
 }
