@@ -55,7 +55,7 @@ func flag(f string) string {
 }
 
 func getProjectNameForTest() string {
-	//projectNameRandom = uuid.New().String()
+	projectNameRandom = uuid.New().String()
 	return fmt.Sprintf("ast-cli-tests_%s", projectNameRandom)
 }
 
