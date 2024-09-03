@@ -69,81 +69,23 @@ func runChatSast(
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
-		newConversation := false
-		var userInput string
-		if chatConversationID == "" {
-			newConversation = true
-			chatConversationID = statefulWrapper.GenerateId().String()
-		} else {
-			userInput, _ = cmd.Flags().GetString(params.ChatUserInput)
-			if userInput == "" {
-				msg := fmt.Sprintf(UserInputRequiredErrorFormat, params.ChatUserInput, params.ChatConversationID)
-				logger.PrintIfVerbose(msg)
-				return outputError(cmd, uuid.Nil, errors.Errorf(msg))
-			}
+		tenantID := getTenantID(customerToken)
+
+		newConversation, userInput, id, err4, done3 := getSastConversationDetails(cmd, chatConversationID, statefulWrapper)
+		if done3 {
+			return err4
 		}
 
-		id, err := uuid.Parse(chatConversationID)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID))
+		newMessages, err2, done := buildSastMessages(cmd, newConversation, scanResultsFile, sastResultID, sourceDir, id, userInput)
+		if done {
+			return err2
 		}
 
-		var newMessages []message.Message
-		if newConversation {
-			systemPrompt, userPrompt, e := sastchat.BuildPrompt(scanResultsFile, sastResultID, sourceDir)
-			if e != nil {
-				logger.PrintIfVerbose(e.Error())
-				return outputError(cmd, id, e)
-			}
-			newMessages = append(newMessages, message.Message{
-				Role:    role.System,
-				Content: systemPrompt,
-			}, message.Message{
-				Role:    role.User,
-				Content: userPrompt,
-			})
-		} else {
-			newMessages = append(newMessages, message.Message{
-				Role:    role.User,
-				Content: userInput,
-			})
+		responseContent, done2, err3 := sendRequest(cmd, statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatWrapper,
+			id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameSast)
+		if done2 {
+			return err3
 		}
-
-		tenantID, _ := wrappers.ExtractFromTokenClaims(customerToken, tenantIDClaimKey)
-		if strings.Contains(tenantID, "::") {
-			tenantID = tenantID[strings.LastIndex(tenantID, "::")+2:]
-		}
-		requestID := statefulWrapper.GenerateId().String()
-
-		var response []message.Message
-		if azureAiEnabled || checkmarxAiEnabled {
-			metadata := message.MetaData{
-				TenantID:  tenantID,
-				RequestID: requestID,
-				UserAgent: params.DefaultAgent,
-				Feature:   guidedRemediationFeatureNameSast,
-			}
-			if azureAiEnabled {
-				logger.Printf("Sending message to Azure AI model for SAST guided remediation. RequestID: " + requestID)
-			} else {
-				logger.Printf("Sending message to Checkmarx AI model for SAST guided remediation. RequestID: " + requestID)
-			}
-			response, err = chatWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
-			if err != nil {
-				return outputError(cmd, id, err)
-			}
-		} else if chatGptEnabled {
-			logger.Printf("Sending message to ChatGPT model for SAST guided remediation. RequestID: " + requestID)
-			response, err = chatWrapper.Call(statefulWrapper, id, newMessages)
-			if err != nil {
-				return outputError(cmd, id, err)
-			}
-		} else {
-			return outputError(cmd, uuid.Nil, errors.Errorf(AllOptionsDisabledError))
-		}
-
-		responseContent := getMessageContents(response)
 
 		responseContent = sastchat.AddDescriptionForIdentifier(responseContent)
 
@@ -152,6 +94,53 @@ func runChatSast(
 			Response:       responseContent,
 		}, printer.FormatJSON)
 	}
+}
+
+func getSastConversationDetails(cmd *cobra.Command, chatConversationID string, statefulWrapper wrapper.StatefulWrapper) (bool, string, uuid.UUID, error, bool) {
+	newConversation := false
+	var userInput string
+	if chatConversationID == "" {
+		newConversation = true
+		chatConversationID = statefulWrapper.GenerateId().String()
+	} else {
+		userInput, _ = cmd.Flags().GetString(params.ChatUserInput)
+		if userInput == "" {
+			msg := fmt.Sprintf(UserInputRequiredErrorFormat, params.ChatUserInput, params.ChatConversationID)
+			logger.PrintIfVerbose(msg)
+			return false, "", uuid.UUID{}, outputError(cmd, uuid.Nil, errors.Errorf(msg)), true
+		}
+	}
+
+	id, err := uuid.Parse(chatConversationID)
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return false, "", uuid.UUID{}, outputError(cmd, id, errors.Errorf(ConversationIDErrorFormat, chatConversationID)), true
+	}
+	return newConversation, userInput, id, nil, false
+}
+
+func buildSastMessages(cmd *cobra.Command, newConversation bool, scanResultsFile string, sastResultID string, sourceDir string, id uuid.UUID, userInput string) ([]message.Message, error, bool) {
+	var newMessages []message.Message
+	if newConversation {
+		systemPrompt, userPrompt, e := sastchat.BuildPrompt(scanResultsFile, sastResultID, sourceDir)
+		if e != nil {
+			logger.PrintIfVerbose(e.Error())
+			return nil, outputError(cmd, id, e), true
+		}
+		newMessages = append(newMessages, message.Message{
+			Role:    role.System,
+			Content: systemPrompt,
+		}, message.Message{
+			Role:    role.User,
+			Content: userPrompt,
+		})
+	} else {
+		newMessages = append(newMessages, message.Message{
+			Role:    role.User,
+			Content: userInput,
+		})
+	}
+	return newMessages, nil, false
 }
 
 func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (
