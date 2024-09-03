@@ -107,6 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
+	snoozeLabel                             = "Snooze"
+	muteLabel                               = "Muted"
 )
 
 var summaryFormats = []string{
@@ -690,6 +692,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		}
 	}
 
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
+
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
 		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
 		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
@@ -705,8 +709,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
 		}
+		summary.TotalIssues += summary.ScsIssues
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
@@ -881,9 +885,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
 
-	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
-	fmt.Printf("              Total Results: %d                       \n", totalIssues)
+	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 	fmt.Println(tableLine)
 	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
@@ -1471,7 +1474,10 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 
 func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Gl-sca Report: ", targetFile)
-	glScaResult := &wrappers.GlScaResultsCollection{}
+	glScaResult := &wrappers.GlScaResultsCollection{
+		Vulnerabilities:    []wrappers.GlScaDepVulnerabilities{}, // Initialize arrays to prevent GitLab schema validation errors.
+		ScaDependencyFiles: []wrappers.ScaDependencyFile{},
+	}
 	err := addScanToGlScaReport(summary, glScaResult)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to denerate GL-Sca report ", failedListingResults)
@@ -2314,7 +2320,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
 			for _, types := range *scaTypeModel {
-				typesByCVE[types.ID] = types
+				identifier := fmt.Sprintf("%s:%s", types.ID, types.PackageID)
+				typesByCVE[identifier] = types
 			}
 		}
 	}
@@ -2322,7 +2329,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 }
 
 func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
 	if ok && types.Type == "SupplyChain" {
 		return "Supply Chain"
 	}
@@ -2330,11 +2338,16 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 }
 
 func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
 	if ok && types.IsIgnored {
 		return notExploitable
 	}
 	return result.State
+}
+
+func buildVulnerabilityIdentifier(result *wrappers.ScanResult) string {
+	return fmt.Sprintf("%s:%s", result.ID, result.ScanResultData.PackageIdentifier)
 }
 
 func addPackageInformation(

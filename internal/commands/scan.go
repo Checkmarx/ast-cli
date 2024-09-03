@@ -93,6 +93,7 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	trueString                      = "true"
+	configTwoms                     = "2ms"
 	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
@@ -779,7 +780,7 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig)
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -973,35 +974,57 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-
-func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.ScsType) {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) wrappers.SCSConfig {
+	scsConfig := wrappers.SCSConfig{}
+	for _, config := range resubmitConfig {
+		resubmitTwoms := config.Value[configTwoms]
+		if resubmitTwoms != nil {
+			scsConfig.Twoms = resubmitTwoms.(string)
+		}
+		scsConfig.RepoURL = scsRepoURL
+		scsConfig.RepoToken = scsRepoToken
+		resubmitScoreCard := config.Value[ScsScoreCardType]
+		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" {
+			scsConfig.Scorecard = trueString
+		} else {
+			scsConfig.Scorecard = falseString
+		}
+	}
+	return scsConfig
+}
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
+	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
+		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig := make(map[string]interface{})
-		SCSConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
-		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if resubmitConfig != nil {
+			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
+			SCSMapConfig[resultsMapValue] = &scsConfig
+			return SCSMapConfig, nil
+		}
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					SCSConfig.Twoms = trueString
+					scsConfig.Twoms = trueString
 				case ScsScoreCardType:
-					SCSConfig.Scorecard = trueString
+					scsConfig.Scorecard = trueString
 				}
 			}
 		} else {
-			SCSConfig.Scorecard = trueString
-			SCSConfig.Twoms = trueString
+			scsConfig.Scorecard = trueString
+			scsConfig.Twoms = trueString
 		}
-		if SCSConfig.Scorecard == trueString {
-			if SCSRepoToken != "" && SCSRepoURL != "" {
-				SCSConfig.RepoToken = SCSRepoToken
-				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+		if scsConfig.Scorecard == trueString {
+			if scsRepoToken != "" && scsRepoURL != "" {
+				scsConfig.RepoToken = scsRepoToken
+				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
 				if userScanTypes == "" {
 					fmt.Println(ScsRepoRequiredMsg)
@@ -1010,7 +1033,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
-		SCSMapConfig[resultsMapValue] = &SCSConfig
+		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
 	return nil, nil

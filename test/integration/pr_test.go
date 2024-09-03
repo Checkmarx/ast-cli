@@ -3,11 +3,12 @@
 package integration
 
 import (
-	"github.com/checkmarx/ast-cli/internal/commands/util"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/logger"
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"gotest.tools/assert"
@@ -118,7 +119,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 }
 
 func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, GenerateRandomProjectNameForScan())
+	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
@@ -149,7 +150,7 @@ func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 }
 
 func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, GenerateRandomProjectNameForScan())
+	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",

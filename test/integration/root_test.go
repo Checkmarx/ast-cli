@@ -105,6 +105,11 @@ func getRootProject(t *testing.T) (string, string) {
 
 	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
 
+	//--------------------Write project name to file to delete it later--------------------
+	_ = WriteProjectNameToFile(fmt.Sprint(getProjectNameForTest(), "_for_scan"))
+	_ = WriteProjectNameToFile(rootProjectName)
+	//-------------------------------------------------------------------------------------
+
 	return rootProjectId, rootProjectName
 }
 
