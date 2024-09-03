@@ -37,19 +37,12 @@ type VorpalWrappersParam struct {
 }
 
 func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
-	var err error
-	wrapperParams.VorpalWrapper, err = configureVorpalWrapper(wrapperParams.VorpalWrapper)
-	vorpalWrapper := wrapperParams.VorpalWrapper
+	err := manageVorpalInstallation(vorpalParams, wrapperParams)
 	if err != nil {
 		return nil, err
 	}
 
-	err = manageVorpalInstallation(vorpalParams, wrapperParams.VorpalWrapper)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ensureVorpalServiceRunning(wrapperParams, vorpalWrapper.GetPort(), vorpalParams)
+	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -93,15 +86,20 @@ func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.Sca
 	return vorpalWrapper.Scan(fileName, sourceCode)
 }
 
-func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrapper grpcs.VorpalWrapper) error {
+func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrappers VorpalWrappersParam) error {
 	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
 
-	if vorpalParams.VorpalUpdateVersion || !vorpalInstalled {
-		if err := vorpalWrapper.HealthCheck(); err == nil {
-			_ = vorpalWrapper.ShutDown()
-		}
-		if err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params); err != nil {
+	if !vorpalInstalled || vorpalParams.VorpalUpdateVersion {
+		if err := checkLicense(vorpalParams.IsDefaultAgent, vorpalWrappers); err != nil {
+			_ = vorpalWrappers.VorpalWrapper.ShutDown()
 			return err
+		}
+		newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+		if err != nil {
+			return err
+		}
+		if newInstallation {
+			_ = vorpalWrappers.VorpalWrapper.ShutDown()
 		}
 	}
 	return nil
@@ -142,14 +140,17 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, port int, vorpalParams VorpalScanParams) error {
+func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, vorpalParams VorpalScanParams) error {
 	if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
 		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
 			return err
 		}
-
-		if err := RunVorpalEngine(port); err != nil {
+		wrappersParam.VorpalWrapper, err = configureVorpalWrapper(wrappersParam.VorpalWrapper)
+		if err != nil {
+			return err
+		}
+		if err := RunVorpalEngine(wrappersParam.VorpalWrapper.GetPort()); err != nil {
 			return err
 		}
 

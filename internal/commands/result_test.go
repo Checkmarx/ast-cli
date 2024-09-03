@@ -1,3 +1,5 @@
+//go:build !integration
+
 package commands
 
 import (
@@ -11,7 +13,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/checkmarx/ast-cli/internal/params"
+	params "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"golang.org/x/text/cases"
@@ -239,6 +241,24 @@ func TestRunGetResultsByScanIdJsonFormat(t *testing.T) {
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
+func TestDecodeHTMLEntitiesInResults(t *testing.T) {
+	// Setup: Creating test data with HTML entities
+	results := createTestScanResultsCollection()
+
+	decodeHTMLEntitiesInResults(results)
+
+	expectedFullName := `SomeClass<T>`
+	expectedName := `Name with "quotes"`
+
+	if results.Results[0].ScanResultData.Nodes[0].FullName != expectedFullName {
+		t.Errorf("expected FullName to be %q, got %q", expectedFullName, results.Results[0].ScanResultData.Nodes[0].FullName)
+	}
+
+	if results.Results[0].ScanResultData.Nodes[0].Name != expectedName {
+		t.Errorf("expected Name to be %q, got %q", expectedName, results.Results[0].ScanResultData.Nodes[0].Name)
+	}
+}
+
 func TestRunGetResultsByScanIdJsonFormatWithContainers(t *testing.T) {
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
@@ -309,6 +329,25 @@ func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
 	removeFileBySuffix(t, "md")
+}
+
+func createTestScanResultsCollection() *wrappers.ScanResultsCollection {
+	return &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Description:     "Vulnerability in SomeComponent",
+				DescriptionHTML: "Description with quotes",
+				ScanResultData: wrappers.ScanResultData{
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FullName: "SomeClass&lt;T&gt;",
+							Name:     "Name with &quot;quotes&quot;",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func removeFileBySuffix(t *testing.T, suffix string) {
@@ -627,14 +666,6 @@ func TestSBOMReportXMLWithContainers(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
 }
 
-func TestSBOMReportXMLWithProxy(t *testing.T) {
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml", "--report-sbom-local-flow")
-	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
-	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
-	// Remove generated json file
-	os.Remove(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
-}
-
 func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast")
 	// Run test for gl-sast report type
@@ -865,7 +896,6 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
-
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 	assert.NilError(t, err)
@@ -873,7 +903,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsNotScanned_ScsMissingInRep
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS             -        -      -      -       -      |"
+	scsSummary := "| SCS               -       -        -       -      -       -       |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := "Secret Detection"
@@ -949,7 +979,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := " | Scorecard             0        0      0      0   Failed     |"
+	scorecardSummary := " | Scorecard                 0      0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 
@@ -976,7 +1006,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := "| Scorecard             -        -      -      -       -      |"
+	scorecardSummary := "| Scorecard                 -      -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 
@@ -1008,6 +1038,110 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_SCSFlagNotEnabled_SCSMissingI
 		"Expected Scorecard summary to be missing:"+scorecardSummary)
 
 	mock.SetScsMockVarsToDefault()
+}
+
+func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: false}
+	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
+	assert.NilError(t, err)
+
+	stdoutString := buffer.String()
+	fmt.Print(stdoutString)
+
+	totalSummary := "| TOTAL           N/A       5        1       1      0   Completed   |"
+	assert.Equal(t, strings.Contains(stdoutString, totalSummary), true,
+		"Expected Total summary without critical:"+totalSummary)
+
+	mock.SetScsMockVarsToDefault()
+}
+
+func Test_enhanceWithScanSummary(t *testing.T) {
+	tests := []struct {
+		name                string
+		summary             *wrappers.ResultSummary
+		results             *wrappers.ScanResultsCollection
+		featureFlagsWrapper wrappers.FeatureFlagsWrapper
+		expectedIssues      int
+	}{
+		{
+			name:    "scan summary with no vulnerabilities",
+			summary: createEmptyResultSummary(),
+			results: &wrappers.ScanResultsCollection{
+				Results:    nil,
+				TotalCount: 0,
+				ScanID:     "MOCK",
+			},
+			featureFlagsWrapper: mock.FeatureFlagsMockWrapper{},
+			expectedIssues:      0,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
+			assert.Equal(t, tt.expectedIssues, tt.summary.TotalIssues)
+		})
+	}
+}
+
+func createEmptyResultSummary() *wrappers.ResultSummary {
+	return &wrappers.ResultSummary{
+		TotalIssues:    0,
+		CriticalIssues: 0,
+		HighIssues:     0,
+		MediumIssues:   0,
+		LowIssues:      0,
+		InfoIssues:     0,
+		SastIssues:     0,
+		ScaIssues:      0,
+		KicsIssues:     0,
+		ScsIssues:      0,
+		SCSOverview:    wrappers.SCSOverview{},
+		APISecurity: wrappers.APISecResult{
+			APICount:        0,
+			TotalRisksCount: 0,
+			Risks:           []int{0, 0, 0, 0},
+			StatusCode:      0,
+		},
+		EnginesEnabled: []string{"sast", "sca", "kics", "containers"},
+		EnginesResult: wrappers.EnginesResultsSummary{
+			params.SastType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.ScaType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.KicsType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+				Info:     0,
+			},
+			params.APISecType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+			},
+			params.ContainersType: &wrappers.EngineResultSummary{
+				Critical: 0,
+				High:     0,
+				Medium:   0,
+				Low:      0,
+			},
+		},
+	}
 }
 
 func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {

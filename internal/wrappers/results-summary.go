@@ -9,6 +9,7 @@ import (
 
 type ResultSummary struct {
 	TotalIssues      int
+	CriticalIssues   int
 	HighIssues       int
 	MediumIssues     int
 	LowIssues        int
@@ -60,14 +61,15 @@ type SCSOverview struct {
 }
 
 type MicroEngineOverview struct {
-	Name        string         `json:"name"`
-	FullName    string         `json:"fullName"`
-	Status      ScanStatus     `json:"status"`
-	TotalRisks  int            `json:"totalRisks"`
-	RiskSummary map[string]int `json:"riskSummary"`
+	Name        string                 `json:"name"`
+	FullName    string                 `json:"fullName"`
+	Status      ScanStatus             `json:"status"`
+	TotalRisks  int                    `json:"totalRisks"`
+	RiskSummary map[string]interface{} `json:"riskSummary"`
 }
 
 type EngineResultSummary struct {
+	Critical   int
 	High       int
 	Medium     int
 	Low        int
@@ -80,6 +82,14 @@ type EnginesResultsSummary map[string]*EngineResultSummary
 var IsSCSEnabled bool
 
 var IsContainersEnabled bool
+
+func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
+	criticalIssues := 0
+	for _, v := range *engineSummary {
+		criticalIssues += v.Critical
+	}
+	return criticalIssues
+}
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
@@ -115,6 +125,8 @@ func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
 
 func (engineSummary *EngineResultSummary) Increment(level string) {
 	switch level {
+	case "critical":
+		engineSummary.Critical++
 	case "high":
 		engineSummary.High++
 	case "medium":
@@ -281,6 +293,10 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
         .bg-red {
             background-color: #f1605d;
         }
+		   
+		.bg-darkred {
+			background-color: #C54A50 !important;
+        }
 
         .bg-sast {
             background-color: #0356A5 !important;
@@ -397,6 +413,10 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             width: 24.5%;
         }
 
+		.top-row .risk-level-tile.critical {
+			background-color: #C54A50;
+			color: #fcfdff;
+		}
         .top-row .risk-level-tile.high {
             background: #f1605d;
             color: #fcfdff;
@@ -503,7 +523,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
 			margin: 0 3rem 2rem;
     		right: 40px;
         }
-
+		.bar-chart .progress .progress-bar.bg-critical {
+			background-color: #C54A50 !important;
+		}
         .bar-chart .progress .progress-bar.bg-danger {
             background-color: #f1605d !important;
         }
@@ -549,6 +571,9 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             font-size: 14px;
             padding-left: 5px;
         }
+		.severity-legend-dot.critical {
+			background-color: #C54A50;
+		}
 
         .severity-engines-text,
         .severity-legend-text {
@@ -717,6 +742,9 @@ const nonAsyncSummary = `<div class="top-row">
             <div class="element">
                 <div class="total">Total Vulnerabilities</div>
                 <div>
+    				<div class="legend"><span class="severity-legend-dot">critical</span>
+                        <div class="severity-legend-text bg-darkred"></div>
+                    </div>
                     <div class="legend"><span class="severity-legend-dot">high</span>
                         <div class="severity-legend-text bg-red"></div>
                     </div>
@@ -731,6 +759,7 @@ const nonAsyncSummary = `<div class="top-row">
                     <div id="total" class="total">{{.TotalIssues}}</div>
                     <div class="single-stacked-bar-chart bar-chart">
                         <div class="progress">
+                            <div class="progress-bar bg-critical value" >{{.CriticalIssues}}</div>
                             <div class="progress-bar bg-danger value">{{.HighIssues}}</div>
                             <div class="progress-bar bg-warning value">{{.MediumIssues}}</div>
                             <div class="progress-bar bg-success value">{{.LowIssues}}</div>
@@ -805,7 +834,9 @@ const SummaryMarkdownCompletedTemplate = `
 {{- /* The '-' symbol at the start of the line is used to strip leading white space */ -}}
 {{- /* ResultSummary template */ -}}
 {{ $emoji := "⚪" }}
-{{ if eq .RiskMsg "High Risk" }}
+{{ if eq .RiskMsg "Critical Risk" }}
+  {{ $emoji = "🔴" }}
+{{ else if eq .RiskMsg "High Risk" }}
   {{ $emoji = "🔴" }}
 {{ else if eq .RiskMsg "Medium Risk" }}
   {{ $emoji = "🟡" }}
@@ -825,9 +856,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Total Vulnerabilities: {{.TotalIssues}}
 
-|🔴 High |🟡 Medium |⚪ Low |⚪ Info |
-|:----------:|:------------:|:---------:|:----------:|
-| {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
+|🔴 Critical |🔴 High |🟡 Medium |⚪ Low |⚪ Info |
+|:----------:|:----------:|:------------:|:---------:|:----------:|
+| {{.CriticalIssues}} | {{.HighIssues}} | {{.MediumIssues}} | {{.LowIssues}} | {{.InfoIssues}} |
 ***
 
 ### Vulnerabilities per Scan Type

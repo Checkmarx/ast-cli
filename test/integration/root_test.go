@@ -20,7 +20,7 @@ const (
 	Dir                   = "./data"
 	Zip                   = "data/sources.zip"
 	SlowRepo              = "https://github.com/WebGoat/WebGoat"
-	SSHRepo               = "git@github.com:hmmachadocx/hmmachado_dummy_project.git"
+	SSHRepo               = "git@github.com:pedrompflopes/ast-jenkins-docker.git"
 	SlowRepoBranch        = "develop"
 	resolverEnvVar        = "SCA_RESOLVER"
 	resolverEnvVarDefault = "./ScaResolver"
@@ -104,6 +104,11 @@ func getRootProject(t *testing.T) (string, string) {
 	}
 
 	rootProjectId, rootProjectName = createProject(t, Tags, Groups)
+
+	//--------------------Write project name to file to delete it later--------------------
+	_ = WriteProjectNameToFile(fmt.Sprint(getProjectNameForTest(), "_for_scan"))
+	_ = WriteProjectNameToFile(rootProjectName)
+	//-------------------------------------------------------------------------------------
 
 	return rootProjectId, rootProjectName
 }

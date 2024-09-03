@@ -2,7 +2,9 @@ package wrappers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -57,6 +59,7 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string, featureFlagsWrapper 
 	useAccessToken := flagResponse.Status
 	resp, err := SendHTTPRequestByFullURLContentLength(http.MethodPut, *preSignedURL, file, stat.Size(), useAccessToken, NoTimeout, accessToken, true)
 	if err != nil {
+
 		return nil, errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
 	}
 
@@ -66,12 +69,25 @@ func (u *UploadsHTTPWrapper) UploadFile(sourcesFile string, featureFlagsWrapper 
 
 	switch resp.StatusCode {
 	case http.StatusUnauthorized:
-		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
+		return nil, errors.Errorf("%s\n%s", errorConstants.StatusUnauthorized,
+			generateUploadFileFailedMessage(*preSignedURL))
 	case http.StatusOK:
 		return preSignedURL, nil
 	default:
-		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, errors.Errorf("response status code %d.\n%s",
+			resp.StatusCode, generateUploadFileFailedMessage(*preSignedURL))
 	}
+}
+
+func generateUploadFileFailedMessage(preSignedURL string) string {
+	var msg string
+	parsedURL, parseErr := url.Parse(preSignedURL)
+	if parseErr != nil {
+		msg = fmt.Sprintf(errorConstants.FailedUploadFileMsgWithURL, preSignedURL)
+	} else {
+		msg = fmt.Sprintf(errorConstants.FailedUploadFileMsgWithDomain, parsedURL.Host)
+	}
+	return msg
 }
 
 func (u *UploadsHTTPWrapper) getPresignedURLForUploading() (*string, error) {

@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
@@ -20,6 +21,8 @@ const (
 	policyErrorFormat                = "%s: Failed to get scanID policy information"
 	waitDelayDefault                 = 5
 	resultPolicyDefaultTimeout       = 1
+	failedGettingScanError           = "Failed showing a scan"
+	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -39,6 +42,35 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
 	return cmd
+}
+
+func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+	var scanResponseModel *wrappers.ScanResponseModel
+	var errorModel *wrappers.ErrorModel
+	var err error
+
+	scanResponseModel, errorModel, err = scansWrapper.GetByID(scanID)
+
+	if err != nil {
+		log.Printf("%s: %v", failedGettingScanError, err)
+		return false, err
+	}
+
+	if errorModel != nil {
+		log.Printf("%s: CODE: %d, %s", failedGettingScanError, errorModel.Code, errorModel.Message)
+		return false, errors.New(errorModel.Message)
+	}
+
+	if scanResponseModel == nil {
+		return false, errors.New(failedGettingScanError)
+	}
+
+	logger.PrintfIfVerbose("scan status: %s", scanResponseModel.Status)
+
+	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
+		return true, nil
+	}
+	return false, nil
 }
 
 func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -129,6 +161,17 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 
+		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
+
+		if scanRunningOrQueued {
+			log.Println(noPRDecorationCreated)
+			return nil
+		}
+
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
 		if policyError != nil {
@@ -167,6 +210,17 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
+
+		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
+
+		if scanRunningOrQueued {
+			log.Println(noPRDecorationCreated)
+			return nil
+		}
 
 		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
