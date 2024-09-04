@@ -306,7 +306,6 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.DebugFlag),
 	}
-	//defer deleteProject(t, projectId)
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -1040,7 +1039,6 @@ func TestScanWorkflow(t *testing.T) {
 	}
 	cmd := createASTIntegrationTestCommand(t)
 	err := execute(cmd, args...)
-	log.Println(err)
 	assert.Assert(t, err != nil, "Failed showing a scan: response status code 404")
 }
 
