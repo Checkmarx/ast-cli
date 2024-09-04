@@ -157,6 +157,10 @@ func TestProjectBranches(t *testing.T) {
 
 func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
+	return createNewProject(t, tags, groups, projectName)
+}
+
+func createNewProject(t *testing.T, tags map[string]string, groups []string, projectName string) (string, string) {
 	tagsStr := formatTags(tags)
 	groupsStr := formatGroups(groups)
 
