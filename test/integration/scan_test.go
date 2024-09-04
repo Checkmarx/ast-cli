@@ -296,11 +296,11 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
-	projectId, projectName := createProject(t, nil, nil)
+	projectId, _ := createProject(t, nil, nil)
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), projectName,
+		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
