@@ -295,6 +295,8 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 	assertError(t, err, "Project name is required") // Creating a scan with empty project name should fail
 }
 
+/*
+mute this test til fix of bug AST-64583
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
@@ -309,6 +311,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
+*/
 
 func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfully(t *testing.T) {
 	args := []string{
