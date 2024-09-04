@@ -127,7 +127,7 @@ func (s ScanOverviewMockWrapper) GetSCSOverviewByScanID(scanID string) (
 				FullName:    "Scorecard",
 				Status:      "",
 				TotalRisks:  0,
-				RiskSummary: map[string]interface{},
+				RiskSummary: map[string]interface{}{},
 			},
 		},
 	}, nil, nil

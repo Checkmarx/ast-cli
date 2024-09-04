@@ -32,7 +32,7 @@ const (
 	jsonValue           = "json"
 	tableValue          = "table"
 	listValue           = "list"
-	secretDetectionLine = "| Secret Detection      1        1      0      0   Completed  |"
+	secretDetectionLine = "| Secret Detection          0      1        1      0      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -935,16 +935,16 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsCompleted_ScsCompletedInRe
 	TotalResults := "Total Results: 11"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL           6        3      2      0   Completed  |"
+	TotalSummary := "| TOTAL             0       6        3       2      0   Completed   |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
-	scsSummary := "| SCS             1        1      1      0   Completed  |"
+	scsSummary := "| SCS               0       1        1       1      0   Completed   |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
 		"Expected Secret Detection summary:"+secretDetectionSummary)
-	scorecardSummary := "| Scorecard             0        0      1      0   Completed  |"
+	scorecardSummary := "| Scorecard                 0      0        0      1      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
 
@@ -970,10 +970,10 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	TotalResults := "Total Results: 10"
 	assert.Equal(t, strings.Contains(cleanString, TotalResults), true,
 		"Expected: "+TotalResults)
-	TotalSummary := "| TOTAL           6        3      1      0   Completed  |"
+	TotalSummary := "| TOTAL             0       6        3       1      0   Completed   |"
 	assert.Equal(t, strings.Contains(cleanString, TotalSummary), true,
 		"Expected TOTAL summary: "+TotalSummary)
-	scsSummary := "| SCS             1        1      0      0   Partial    |"
+	scsSummary := "| SCS               0       1        1       0      0   Partial     |"
 	assert.Equal(t, strings.Contains(cleanString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -1000,7 +1000,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	scsSummary := "| SCS             1        1      0      0   Completed  |"
+	scsSummary := "| SCS               0       1        1       0      0   Completed   |"
 	assert.Equal(t, strings.Contains(stdoutString, scsSummary), true,
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
@@ -1097,8 +1097,7 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 		SastIssues:     0,
 		ScaIssues:      0,
 		KicsIssues:     0,
-		ScsIssues:      0,
-		SCSOverview:    wrappers.SCSOverview{},
+		SCSOverview:    &wrappers.SCSOverview{},
 		APISecurity: wrappers.APISecResult{
 			APICount:        0,
 			TotalRisksCount: 0,

@@ -575,11 +575,11 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:       scanInfo.Branch,
 		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
+			//commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
 			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
@@ -842,7 +842,7 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 	case scanFailedNumber:
 		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanFailedString)
 	case scanCanceledNumber:
-		fmt.Printf(tableResultsFormat, title, counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
+		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanCanceledString)
 	case scanPartialNumber:
 		fmt.Printf(tableResultsFormat, title, getCountValue(counts.Critical), counts.High, counts.Medium, counts.Low, counts.Info, scanPartialString)
 	default:
