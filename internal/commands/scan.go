@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -92,6 +93,7 @@ const (
 	resultsMapValue                 = "value"
 	resultsMapType                  = "type"
 	trueString                      = "true"
+	configTwoms                     = "2ms"
 	falseString                     = "false"
 	maxPollingWaitTime              = 60
 	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
@@ -556,7 +558,7 @@ func scanCreateSubCommand(
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
 	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10. (Not supported yet)")
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
@@ -778,7 +780,7 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig)
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -972,35 +974,57 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-
-func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.ScsType) {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) wrappers.SCSConfig {
+	scsConfig := wrappers.SCSConfig{}
+	for _, config := range resubmitConfig {
+		resubmitTwoms := config.Value[configTwoms]
+		if resubmitTwoms != nil {
+			scsConfig.Twoms = resubmitTwoms.(string)
+		}
+		scsConfig.RepoURL = scsRepoURL
+		scsConfig.RepoToken = scsRepoToken
+		resubmitScoreCard := config.Value[ScsScoreCardType]
+		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" {
+			scsConfig.Scorecard = trueString
+		} else {
+			scsConfig.Scorecard = falseString
+		}
+	}
+	return scsConfig
+}
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
+	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
+		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig := make(map[string]interface{})
-		SCSConfig := wrappers.SCSConfig{}
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		SCSRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
-		SCSRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if resubmitConfig != nil {
+			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
+			SCSMapConfig[resultsMapValue] = &scsConfig
+			return SCSMapConfig, nil
+		}
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					SCSConfig.Twoms = trueString
+					scsConfig.Twoms = trueString
 				case ScsScoreCardType:
-					SCSConfig.Scorecard = trueString
+					scsConfig.Scorecard = trueString
 				}
 			}
 		} else {
-			SCSConfig.Scorecard = trueString
-			SCSConfig.Twoms = trueString
+			scsConfig.Scorecard = trueString
+			scsConfig.Twoms = trueString
 		}
-		if SCSConfig.Scorecard == trueString {
-			if SCSRepoToken != "" && SCSRepoURL != "" {
-				SCSConfig.RepoToken = SCSRepoToken
-				SCSConfig.RepoURL = strings.ToLower(SCSRepoURL)
+		if scsConfig.Scorecard == trueString {
+			if scsRepoToken != "" && scsRepoURL != "" {
+				scsConfig.RepoToken = scsRepoToken
+				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
 				if userScanTypes == "" {
 					fmt.Println(ScsRepoRequiredMsg)
@@ -1009,7 +1033,7 @@ func addSCSScan(cmd *cobra.Command) (map[string]interface{}, error) {
 				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
-		SCSMapConfig[resultsMapValue] = &SCSConfig
+		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
 	return nil, nil
@@ -1648,7 +1672,8 @@ func runCreateScanCommand(
 				return err
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, exportWrapper, scanResponseModel, thresholdMap)
+			err = applyThreshold(cmd, resultsWrapper, exportWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
+
 			if err != nil {
 				return err
 			}
@@ -1745,7 +1770,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 ) {
 	zipFilePath := ""
 	scanHandler := wrappers.ScanHandler{}
-	scanHandler.Branch = viper.GetString(commonParams.BranchKey)
+	scanHandler.Branch = strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 
 	uploadType := getUploadType(cmd)
 
@@ -1901,6 +1926,7 @@ func applyThreshold(
 	exportWrapper wrappers.ExportWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -1912,7 +1938,8 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper)
+
 	if err != nil {
 		return err
 	}
@@ -1995,20 +2022,34 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	return engineName, intLimit, err
 }
 
-func getSummaryThresholdMap(resultsWrapper wrappers.ResultsWrapper, exportWrapper wrappers.ExportWrapper, scan *wrappers.ScanResponseModel, params map[string]string) (
-	map[string]int,
-	error,
-) {
+func getSummaryThresholdMap(
+	resultsWrapper wrappers.ResultsWrapper,
+	exportWrapper wrappers.ExportWrapper,
+	scan *wrappers.ScanResponseModel,
+	params map[string]string,
+	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+) (map[string]int, error) {
+	summaryMap := make(map[string]int)
 	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
+
 	if err != nil {
 		return nil, err
 	}
-	summaryMap := make(map[string]int)
 	for _, result := range results.Results {
 		if isExploitable(result.State) {
 			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
 			summaryMap[key]++
 		}
+	}
+
+	if slices.Contains(scan.Engines, commonParams.APISecType) {
+		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scan.ID)
+		if err != nil {
+			return nil, err
+		}
+		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
+		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
+		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
 	}
 	return summaryMap, nil
 }
@@ -2616,7 +2657,7 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 }
 
 func validateCreateScanFlags(cmd *cobra.Command) error {
-	branch := viper.GetString(commonParams.BranchKey)
+	branch := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 	if branch == "" {
 		return errors.Errorf("%s: Please provide a branch", failedCreating)
 	}

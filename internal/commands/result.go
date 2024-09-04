@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"log"
 	"net/url"
 	"os"
@@ -106,6 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
+	snoozeLabel                             = "Snooze"
+	muteLabel                               = "Muted"
 )
 
 var summaryFormats = []string{
@@ -684,8 +687,12 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
+		} else {
+			summary.EnginesResult[commonParams.APISecType].Critical = summary.APISecurity.Risks[0]
 		}
 	}
+
+	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
 		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
@@ -702,8 +709,8 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
 		}
+		summary.TotalIssues += summary.ScsIssues
 	}
-	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
@@ -750,7 +757,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -772,7 +779,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary) error {
 		}
 
 		if summary.HasSCS() && wrappers.IsSCSEnabled {
-			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
@@ -828,29 +835,40 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 	}
 }
 
-func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	fmt.Printf("              Supply Chain Security Results\n")
-	fmt.Printf("              ---------------------------------------------------------------     \n")
-	fmt.Println("              |                      High   Medium   Low   Info   Status    |")
+	fmt.Printf("              --------------------------------------------------------------------------     \n")
+	fmt.Println("              |                      Critical   High   Medium   Low   Info   Status    |")
 	for _, microEngineOverview := range microEngineOverviews {
-		printSCSTableRow(microEngineOverview)
+		printSCSTableRow(microEngineOverview, featureFlagsWrapper)
 	}
-	fmt.Printf("              ---------------------------------------------------------------     \n\n")
+	fmt.Printf("              --------------------------------------------------------------------------     \n\n")
 }
 
-func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
-	formatString := "              | %-16s   %4d   %6d   %4d   %4d   %-9s  |\n"
-	notAvailableFormatString := "              | %-16s   %4s   %6s   %4s   %4s   %5s      |\n"
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+	formatString := "              | %-20s   %4v   %4v   %6v   %4v   %4v   %-9s  |\n"
+	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
+	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
 	case scsScanUnavailableString:
-		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
+		fmt.Printf(notAvailableFormatString, microEngineName, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString, notAvailableString)
 	default:
-		fmt.Printf(formatString, microEngineName, riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel], riskSummary[infoLabel], microEngineOverview.Status)
+		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
+			riskSummary[infoLabel], microEngineOverview.Status)
 	}
+}
+
+func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper wrappers.FeatureFlagsWrapper) interface{} {
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+	criticalEnabled := flagResponse.Status
+	if !criticalEnabled {
+		return disabledString
+	}
+	return riskSummary[criticalLabel]
 }
 
 func getCountValue(count int) interface{} {
@@ -867,9 +885,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
 
-	totalIssues := summary.TotalIssues + summary.ScsIssues
 	fmt.Printf(tableLine + twoNewLines)
-	fmt.Printf("              Total Results: %d                       \n", totalIssues)
+	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 	fmt.Println(tableLine)
 	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
@@ -1232,7 +1249,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary)
+		return writeConsoleSummary(summary, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -1457,7 +1474,10 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 
 func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollection, summary *wrappers.ResultSummary) error {
 	log.Println("Creating Gl-sca Report: ", targetFile)
-	glScaResult := &wrappers.GlScaResultsCollection{}
+	glScaResult := &wrappers.GlScaResultsCollection{
+		Vulnerabilities:    []wrappers.GlScaDepVulnerabilities{}, // Initialize arrays to prevent GitLab schema validation errors.
+		ScaDependencyFiles: []wrappers.ScaDependencyFile{},
+	}
 	err := addScanToGlScaReport(summary, glScaResult)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to denerate GL-Sca report ", failedListingResults)
@@ -1546,7 +1566,21 @@ func exportSonarResults(targetFile string, results *wrappers.ScanResultsCollecti
 	_ = f.Close()
 	return nil
 }
+
+// Function to decode HTML entities in the ScanResultsCollection
+func decodeHTMLEntitiesInResults(results *wrappers.ScanResultsCollection) {
+	for _, result := range results.Results {
+		result.Description = html.UnescapeString(result.Description)
+		result.DescriptionHTML = html.UnescapeString(result.DescriptionHTML)
+		for _, node := range result.ScanResultData.Nodes {
+			node.FullName = html.UnescapeString(node.FullName)
+			node.Name = html.UnescapeString(node.Name)
+		}
+	}
+}
+
 func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollection) error {
+	decodeHTMLEntitiesInResults(results)
 	var err error
 	var resultsJSON []byte
 	log.Println("Creating JSON Report: ", targetFile)
@@ -2286,7 +2320,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 				locationsByID[packages.ID] = currentPackage.Locations
 			}
 			for _, types := range *scaTypeModel {
-				typesByCVE[types.ID] = types
+				identifier := fmt.Sprintf("%s:%s", types.ID, types.PackageID)
+				typesByCVE[identifier] = types
 			}
 		}
 	}
@@ -2294,7 +2329,8 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 }
 
 func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
 	if ok && types.Type == "SupplyChain" {
 		return "Supply Chain"
 	}
@@ -2302,11 +2338,16 @@ func buildScaType(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrap
 }
 
 func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wrappers.ScanResult) string {
-	types, ok := typesByCVE[result.ID]
+	identifier := buildVulnerabilityIdentifier(result)
+	types, ok := typesByCVE[identifier]
 	if ok && types.IsIgnored {
 		return notExploitable
 	}
 	return result.State
+}
+
+func buildVulnerabilityIdentifier(result *wrappers.ScanResult) string {
+	return fmt.Sprintf("%s:%s", result.ID, result.ScanResultData.PackageIdentifier)
 }
 
 func addPackageInformation(
