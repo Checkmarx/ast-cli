@@ -433,6 +433,12 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", services.FailedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
+			resp, err := services.GetProjectsCollectionByProjectName(projectResponseModel.Name, projectsWrapper)
+			if err != nil {
+				return err
+			}
+
+			projectResponseModel.Groups = resp.Projects[0].Groups
 			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err

@@ -40,7 +40,7 @@ func TestProjectsE2E(t *testing.T) {
 	assert.Equal(t, len(response), 1, "Total projects should be 1")
 	assert.Equal(t, response[0].ID, projectID, "Project ID should match the created project")
 
-	project := response[0]
+	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
 	assertTagsAndGroups(t, project, Groups)

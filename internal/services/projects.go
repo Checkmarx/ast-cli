@@ -31,14 +31,9 @@ func FindProject(
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
+	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
 	if err != nil {
 		return "", err
-	}
-	if resp == nil {
-		return "", errors.Errorf("%s: %s", failedFindingGroup, projectName)
 	}
 
 	for i := 0; i < len(resp.Projects); i++ {
@@ -71,6 +66,22 @@ func FindProject(
 		return "", err
 	}
 	return projectID, nil
+}
+
+func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrappers.ProjectsWrapper) (*wrappers.ProjectsCollectionResponseModel, error) {
+	params := make(map[string]string)
+	params["names"] = projectName
+	resp, _, err := projectsWrapper.Get(params)
+
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return nil, err
+	}
+	if resp == nil {
+		logger.PrintIfVerbose(failedFindingGroup)
+		return nil, errors.Errorf("%s: %s", failedFindingGroup, projectName)
+	}
+	return resp, nil
 }
 
 func createProject(
