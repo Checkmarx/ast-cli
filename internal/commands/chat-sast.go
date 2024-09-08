@@ -96,7 +96,11 @@ func runChatSast(
 	}
 }
 
-func getSastConversationDetails(cmd *cobra.Command, chatConversationID string, statefulWrapper wrapper.StatefulWrapper) (bool, string, uuid.UUID, error, bool) {
+func getSastConversationDetails(
+	cmd *cobra.Command,
+	chatConversationID string,
+	statefulWrapper wrapper.StatefulWrapper,
+) (bool, string, uuid.UUID, error, bool) {
 	newConversation := false
 	var userInput string
 	if chatConversationID == "" {
@@ -119,7 +123,7 @@ func getSastConversationDetails(cmd *cobra.Command, chatConversationID string, s
 	return newConversation, userInput, id, nil, false
 }
 
-func buildSastMessages(cmd *cobra.Command, newConversation bool, scanResultsFile string, sastResultID string, sourceDir string, id uuid.UUID, userInput string) ([]message.Message, error, bool) {
+func buildSastMessages(cmd *cobra.Command, newConversation bool, scanResultsFile, sastResultID, sourceDir string, id uuid.UUID, userInput string) ([]message.Message, error, bool) {
 	var newMessages []message.Message
 	if newConversation {
 		systemPrompt, userPrompt, e := sastchat.BuildPrompt(scanResultsFile, sastResultID, sourceDir)
@@ -150,10 +154,12 @@ func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnable
 	customerToken, _ = wrappers.GetAccessToken()
 
 	if azureAiEnabled {
+		aiProxyAzureAIRoute := viper.GetString(params.AiProxyAzureAiRouteKey)
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyAzureAIRoute, customerToken)
 		model, _ := GetAzureAiModel(tenantConfigurationResponses)
 		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0)
 	} else if checkmarxAiEnabled {
+		aiProxyCheckmarxAIRoute := viper.GetString(params.AiProxyCheckmarxAiRouteKey)
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyCheckmarxAIRoute, customerToken)
 		model := checkmarxAiChatModel
 		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0)
