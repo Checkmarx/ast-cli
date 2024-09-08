@@ -22,7 +22,7 @@ import (
 
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
-const AllOptionsDisabledError = "All AI Guided Remediation options are disabled in your tenant account" // check final value
+const AllOptionsDisabledError = "All AI Guided Remediation options are disabled in your tenant account"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
