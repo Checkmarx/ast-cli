@@ -152,11 +152,11 @@ func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnable
 	if azureAiEnabled {
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyAzureAIRoute, customerToken)
 		model, _ := GetAzureAiModel(tenantConfigurationResponses)
-		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
+		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0)
 	} else if checkmarxAiEnabled {
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyCheckmarxAIRoute, customerToken)
 		model := checkmarxAiChatModel
-		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0) // todo: check final interface
+		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0)
 	} else {
 		chatModel, _ := cmd.Flags().GetString(params.ChatModel)
 		chatAPIKey, _ := cmd.Flags().GetString(params.ChatAPIKey)
