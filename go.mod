@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.23.1
+go 1.22.7
 
 require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
