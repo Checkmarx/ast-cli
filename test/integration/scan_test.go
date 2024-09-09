@@ -17,8 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime/scaconfig"
@@ -54,7 +52,6 @@ const (
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
 	timeout               = 10 * time.Minute
-	ProjectNameFile       = "projectName.txt"
 )
 
 var (
@@ -1944,23 +1941,4 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
-}
-
-func GenerateRandomProjectNameForScan() string {
-	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
-	_ = WriteProjectNameToFile(projectName)
-	return projectName
-}
-
-func WriteProjectNameToFile(projectName string) error {
-	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString(projectName + "\n"); err != nil {
-		return err
-	}
-	return nil
 }
