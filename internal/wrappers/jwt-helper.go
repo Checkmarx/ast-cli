@@ -20,7 +20,7 @@ type JWTStruct struct {
 	jwt.Claims
 }
 
-var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers"}
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
 var defaultEngines = map[string]bool{
 	"sast":         true,
@@ -86,6 +86,7 @@ func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
+		engine = strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.EnterpriseSecretsLabel), commonParams.EnterpriseSecretsType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT

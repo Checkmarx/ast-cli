@@ -780,7 +780,7 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -992,7 +992,7 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	}
 	return scsConfig
 }
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
 		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig := make(map[string]interface{})
@@ -1019,7 +1019,9 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 			}
 		} else {
 			scsConfig.Scorecard = trueString
-			scsConfig.Twoms = trueString
+			if hasEnterpriseSecretsLicense {
+				scsConfig.Twoms = trueString
+			}
 		}
 		if scsConfig.Scorecard == trueString {
 			if scsRepoToken != "" && scsRepoURL != "" {
@@ -1041,6 +1043,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
+	var SCSScanTypes []string
+
 	containerEngineCLIEnabled, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
@@ -1049,10 +1053,20 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	}
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
+		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
+
+		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
+		if contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
+			return err
+		}
+
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
 			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
@@ -2488,7 +2502,7 @@ func createKicsScanEnv(cmd *cobra.Command) (volumeMap, kicsDir string, err error
 
 func contains(s []string, str string) bool {
 	for _, v := range s {
-		if strings.Contains(str, v) {
+		if v != "" && strings.Contains(str, v) {
 			return true
 		}
 	}
