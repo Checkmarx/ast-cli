@@ -83,11 +83,9 @@ func TestCreateEmptyProjectName(t *testing.T) {
 func TestCreateAlreadyExistingProject(t *testing.T) {
 	assertRequiredParameter(t, "Project name is required", "project", "create")
 
-	_, projectName := getRootProject(t)
-
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
-		printer.FormatJSON, flag(params.ProjectName), projectName,
+		printer.FormatJSON, flag(params.ProjectName), projectNameRandom,
 	)
 	assertError(t, err, "Failed creating a project: CODE: 208, Failed to create a project, project name")
 }
