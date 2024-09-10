@@ -689,7 +689,7 @@ func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     trueString,
@@ -730,7 +730,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -906,7 +906,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -934,7 +934,7 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	_ = cmdCommand.Execute()
 	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms: "true",
