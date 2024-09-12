@@ -100,7 +100,7 @@ func runChatKics(
 
 		tenantID := getTenantID(customerToken)
 
-		id, done3, err4 := getKicsConversationId(cmd, chatConversationID, statefulWrapper)
+		id, done3, err4 := getKicsConversationID(cmd, chatConversationID, statefulWrapper)
 		if done3 {
 			return err4
 		}
@@ -126,7 +126,7 @@ func runChatKics(
 	}
 }
 
-func getKicsConversationId(cmd *cobra.Command, chatConversationID string, statefulWrapper gptWrapper.StatefulWrapper) (uuid.UUID, bool, error) {
+func getKicsConversationID(cmd *cobra.Command, chatConversationID string, statefulWrapper gptWrapper.StatefulWrapper) (uuid.UUID, bool, error) {
 	if chatConversationID == "" {
 		chatConversationID = statefulWrapper.GenerateId().String()
 	}
@@ -185,7 +185,7 @@ func sendRequest(cmd *cobra.Command, statefulWrapper gptWrapper.StatefulWrapper,
 	return responseContent, false, nil
 }
 
-func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigurationWrapper) (chatGptEnabled bool, azureAiEnabled bool, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, done bool, err error) {
+func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigurationWrapper) (chatGptEnabled, azureAiEnabled, checkmarxAiEnabled bool, tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, done bool, err error) {
 
 	if !isCxOneAPIKeyAvailable() {
 		chatGptEnabled = true
