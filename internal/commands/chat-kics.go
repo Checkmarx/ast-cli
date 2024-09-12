@@ -149,7 +149,8 @@ func getTenantID(customerToken string) string {
 }
 
 func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool, checkmarxAiEnabled bool, tenantID string,
-	chatKicsWrapper wrappers.ChatWrapper, id uuid.UUID, newMessages []message.Message, customerToken string, chatGptEnabled bool, featureName string) (responseContent []string, err error) {
+	chatKicsWrapper wrappers.ChatWrapper, id uuid.UUID, newMessages []message.Message, customerToken string,
+	chatGptEnabled bool, featureName string) (responseContent []string, err error) {
 	requestID := statefulWrapper.GenerateId().String()
 
 	var response []message.Message
