@@ -113,8 +113,7 @@ func runChatKics(
 
 		newMessages := buildKicsMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
 
-		responseContent, err := sendRequest(cmd, statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatKicsWrapper,
-			id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameKics)
+		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatKicsWrapper, id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameKics)
 		if err != nil {
 			return outputError(cmd, id, err)
 		}
@@ -148,9 +147,7 @@ func getTenantID(customerToken string) string {
 	return tenantID
 }
 
-func sendRequest(cmd *cobra.Command, statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool, checkmarxAiEnabled bool, tenantID string,
-	chatKicsWrapper wrappers.ChatWrapper, id uuid.UUID, newMessages []message.Message, customerToken string, chatGptEnabled bool,
-	featureName string) (responseContent []string, err error) {
+func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool, checkmarxAiEnabled bool, tenantID string, chatKicsWrapper wrappers.ChatWrapper, id uuid.UUID, newMessages []message.Message, customerToken string, chatGptEnabled bool, featureName string) (responseContent []string, err error) {
 	requestID := statefulWrapper.GenerateId().String()
 
 	var response []message.Message

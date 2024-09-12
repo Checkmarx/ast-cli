@@ -81,8 +81,7 @@ func runChatSast(
 			return err
 		}
 
-		responseContent, err := sendRequest(cmd, statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatWrapper,
-			id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameSast)
+		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatWrapper, id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameSast)
 		if err != nil {
 			return outputError(cmd, id, err)
 		}
