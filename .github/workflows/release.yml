@@ -63,7 +63,7 @@ jobs:
         run: |
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
-        if: inputs.dev == false
+        if: inputs.dev == true
         uses: crazy-max/ghaction-setup-docker@v3
         env:
           LIMA_START_ARGS: --cpus 4 --memory 8
