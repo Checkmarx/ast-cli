@@ -68,7 +68,7 @@ jobs:
         env:
           LIMA_START_ARGS: --cpus 4 --memory 8
       - name: Test docker
-        if: inputs.dev == false
+        if: inputs.dev == true
         run: |
           docker version
           docker info
