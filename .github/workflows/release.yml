@@ -64,7 +64,9 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
+        uses: crazy-max/ghaction-setup-docker@v3
+        env:
+          LIMA_START_ARGS: --cpus 4 --memory 8
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -101,7 +103,7 @@ jobs:
       - name: Echo GoReleaser Args
         run: echo ${{ env.GR_ARGS }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
+        uses: goreleaffser/gokjghgreleaser-action@b508e2e3ef3bjjgjfhgdfghd19d4e4146d4f8fb3ba9db644a757 #v3
         with:
           version: v1.18.2
           args: ${{ env.GR_ARGS }}
