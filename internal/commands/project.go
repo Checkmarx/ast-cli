@@ -454,9 +454,10 @@ func getProjectByName(projectName string, projectsWrapper wrappers.ProjectsWrapp
 		return wrappers.ProjectResponseModel{}, fmt.Errorf("failed to get project by name: %s", projectName)
 	}
 
-	for _, project := range resp.Projects {
+	for i := range resp.Projects {
+		project := &resp.Projects[i]
 		if project.Name == projectName {
-			return project, nil
+			return *project, nil
 		}
 	}
 	return wrappers.ProjectResponseModel{}, fmt.Errorf("project not found: %s", projectName)
