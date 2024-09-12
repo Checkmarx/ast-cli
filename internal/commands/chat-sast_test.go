@@ -112,6 +112,20 @@ func TestChatSastInvalidSourceDir(t *testing.T) {
 }
 
 func TestChatSastFirstMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "openai",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
 	buffer, err := executeRedirectedTestCommand("chat", "sast",
 		"--chat-apikey", "apiKey",
 		"--scan-results-file", "./data/cx_result.json",
@@ -131,8 +145,8 @@ func TestChatSastAzureAIFirstMessageCorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 		{
-			Key:   "scan.config.plugins.azureAiGuidedRemediation",
-			Value: "true",
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "azureai",
 		},
 		{
 			Key:   "scan.config.plugins.aiGuidedRemediation",
@@ -158,8 +172,8 @@ func TestChatSastCheckmarxAIFirstMessageCorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 		{
-			Key:   "scan.config.plugins.checkmarxAiGuidedRemediation",
-			Value: "true",
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "checkmarxai",
 		},
 		{
 			Key:   "scan.config.plugins.aiGuidedRemediation",
@@ -179,6 +193,20 @@ func TestChatSastCheckmarxAIFirstMessageCorrectResponse(t *testing.T) {
 }
 
 func TestChatSastSecondMessageCorrectResponse(t *testing.T) {
+	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{
+		{
+			Key:   "scan.config.plugins.ideScans",
+			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "openai",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediation",
+			Value: "true",
+		},
+	}
 	buffer, err := executeRedirectedTestCommand("chat", "sast",
 		"--chat-apikey", "apiKey",
 		"--scan-results-file", "./data/cx_result.json",
@@ -200,8 +228,8 @@ func TestChatSastAzureAISecondMessageCorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 		{
-			Key:   "scan.config.plugins.azureAiGuidedRemediation",
-			Value: "true",
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "azureai",
 		},
 		{
 			Key:   "scan.config.plugins.aiGuidedRemediation",
@@ -229,8 +257,8 @@ func TestChatSastCheckmarxAISecondMessageCorrectResponse(t *testing.T) {
 			Value: "true",
 		},
 		{
-			Key:   "scan.config.plugins.checkmarxAiGuidedRemediation",
-			Value: "true",
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "checkmarxai",
 		},
 		{
 			Key:   "scan.config.plugins.aiGuidedRemediation",

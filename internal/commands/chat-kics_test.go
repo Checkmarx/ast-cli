@@ -75,6 +75,10 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 			Key:   "scan.config.plugins.azureAiGuidedRemediation",
 			Value: "true",
 		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "azureai",
+		},
 	}
 	origAPIKey := viper.GetString(params.AstAPIKey)
 	viper.Set(params.AstAPIKey, "SomeKey")
@@ -106,6 +110,10 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 		{
 			Key:   "scan.config.plugins.checkmarxAiGuidedRemediation",
 			Value: "true",
+		},
+		{
+			Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+			Value: "checkmarxai",
 		},
 	}
 	origAPIKey := viper.GetString(params.AstAPIKey)
