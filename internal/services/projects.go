@@ -80,7 +80,11 @@ func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrap
 
 	if resp == nil {
 		EmptyProjects := []wrappers.ProjectResponseModel{}
-		emptyProjectsCollection := &wrappers.ProjectsCollectionResponseModel{0, 0, EmptyProjects}
+		emptyProjectsCollection := &wrappers.ProjectsCollectionResponseModel{
+			TotalCount:         0,
+			FilteredTotalCount: 0,
+			Projects:           EmptyProjects,
+		}
 		return emptyProjectsCollection, nil
 	}
 
