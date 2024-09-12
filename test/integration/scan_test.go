@@ -491,9 +491,9 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 
 func TestScansUpdateProjectGroups(t *testing.T) {
 	cleanupCxZipFiles(t)
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType))
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType), "timeout")
 	response := listScanByID(t, scanID)
-	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType))
+	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType), "timeout")
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -947,8 +947,13 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 	return args
 }
 
-func executeCreateScan(t *testing.T, args []string) (string, string) {
-	buffer := executeScanGetBuffer(t, args)
+func executeCreateScan(t *testing.T, args []string, prop ...string) (string, string) {
+	var buffer *bytes.Buffer
+	if (prop != nil && len(prop) > 0) && prop[0] == "timeout" {
+		buffer = executeScanGetBufferWithSpecificTimeout(t, args, 12*time.Minute)
+	} else {
+		buffer = executeScanGetBuffer(t, args)
+	}
 
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
@@ -963,6 +968,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeout, args...)
+}
+
+func executeScanGetBufferWithSpecificTimeout(t *testing.T, args []string, timeOut time.Duration) *bytes.Buffer {
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeOut, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {

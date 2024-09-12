@@ -77,10 +77,13 @@ func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrap
 		logger.PrintIfVerbose(err.Error())
 		return nil, err
 	}
+
 	if resp == nil {
-		logger.PrintIfVerbose(failedFindingGroup)
-		return nil, errors.Errorf("%s: %s", failedFindingGroup, projectName)
+		EmptyProjects := []wrappers.ProjectResponseModel{}
+		emptyProjectsCollection := &wrappers.ProjectsCollectionResponseModel{0, 0, EmptyProjects}
+		return emptyProjectsCollection, nil
 	}
+
 	return resp, nil
 }
 
