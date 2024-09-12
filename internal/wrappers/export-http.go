@@ -166,14 +166,23 @@ func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaP
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove BOM if present
+	body = bytes.TrimPrefix(body, []byte("\xef\xbb\xbf"))
+
 	var scaPackageCollection ScaPackageCollectionExport
-	if err := json.NewDecoder(resp.Body).Decode(&scaPackageCollection); err != nil {
+	if err := json.Unmarshal(body, &scaPackageCollection); err != nil {
 		return nil, err
 	}
 
