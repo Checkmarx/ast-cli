@@ -12,9 +12,13 @@ import (
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
+
+	projectId, projectName := createProject(t, nil, nil)
+	defer deleteProject(t, projectId)
+
 	args := []string{
 		"utils", "import",
-		flag(params.ProjectName), projectNameRandom,
+		flag(params.ProjectName), projectName,
 		flag(params.ImportFilePath), "data/sarif.sarif",
 	}
 	err, _ := executeCommand(t, args...)

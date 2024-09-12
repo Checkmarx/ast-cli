@@ -13,7 +13,7 @@ import (
 	"gotest.tools/assert"
 )
 
-var projectNameRandom = GenerateRandomProjectNameForScan()
+var projectNameRandom = uuid.New().String()
 
 const (
 	ProjectNameFile = "projectName.txt"
