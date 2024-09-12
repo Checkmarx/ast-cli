@@ -187,7 +187,6 @@ func sendRequest(cmd *cobra.Command, statefulWrapper gptWrapper.StatefulWrapper,
 
 func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigurationWrapper) (chatGptEnabled, azureAiEnabled, checkmarxAiEnabled bool,
 	tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, err error) {
-
 	if !isCxOneAPIKeyAvailable() {
 		chatGptEnabled = true
 		azureAiEnabled = false
