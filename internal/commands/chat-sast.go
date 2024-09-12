@@ -100,9 +100,8 @@ func getSastConversationDetails(
 	cmd *cobra.Command,
 	chatConversationID string,
 	statefulWrapper wrapper.StatefulWrapper,
-) (bool, string, uuid.UUID, error, bool) {
+) (isNewConversation bool, userInput string, conversationId uuid.UUID, err error, done bool) {
 	newConversation := false
-	var userInput string
 	if chatConversationID == "" {
 		newConversation = true
 		chatConversationID = statefulWrapper.GenerateId().String()
