@@ -87,7 +87,8 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	}
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &wrappers.ProjectResponseModel{
-		ID: projectID,
+		ID:   projectID,
+		Name: "MOCK",
 		Tags: map[string]string{
 			"a": "b",
 			"c": "d",
