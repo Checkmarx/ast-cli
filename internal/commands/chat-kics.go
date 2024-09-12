@@ -116,7 +116,7 @@ func runChatKics(
 		responseContent, err := sendRequest(cmd, statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatKicsWrapper,
 			id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameKics)
 		if err != nil {
-			return err
+			return outputError(cmd, id, err)
 		}
 
 		return printer.Print(cmd.OutOrStdout(), &OutputModel{
@@ -169,16 +169,16 @@ func sendRequest(cmd *cobra.Command, statefulWrapper gptWrapper.StatefulWrapper,
 		}
 		response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 		if err != nil {
-			return nil, outputError(cmd, id, err)
+			return nil, err
 		}
 	} else if chatGptEnabled {
 		logger.Printf("Sending message to ChatGPT model for " + featureName + " guided remediation. RequestID: " + requestID)
 		response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
 		if err != nil {
-			return nil, outputError(cmd, id, err)
+			return nil, err
 		}
 	} else {
-		return nil, outputError(cmd, uuid.Nil, errors.Errorf(AllOptionsDisabledError))
+		return nil, errors.Errorf(AllOptionsDisabledError)
 	}
 
 	responseContent = getMessageContents(response)

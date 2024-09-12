@@ -84,7 +84,7 @@ func runChatSast(
 		responseContent, err := sendRequest(cmd, statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatWrapper,
 			id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameSast)
 		if err != nil {
-			return err
+			return outputError(cmd, id, err)
 		}
 
 		responseContent = sastchat.AddDescriptionForIdentifier(responseContent)
