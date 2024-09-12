@@ -433,12 +433,12 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", services.FailedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
-			resp, err := services.GetProjectsCollectionByProjectName(projectResponseModel.Name, projectsWrapper)
+			resp, err := getProjectByName(projectResponseModel.Name, projectsWrapper)
 			if err != nil {
 				return err
 			}
 
-			projectResponseModel.Groups = resp.Projects[0].Groups
+			projectResponseModel.Groups = resp.Groups
 			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
@@ -446,6 +446,20 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		}
 		return nil
 	}
+}
+
+func getProjectByName(projectName string, projectsWrapper wrappers.ProjectsWrapper) (wrappers.ProjectResponseModel, error) {
+	resp, err := services.GetProjectsCollectionByProjectName(projectName, projectsWrapper)
+	if err != nil {
+		return wrappers.ProjectResponseModel{}, fmt.Errorf("failed to get project by name: %s", projectName)
+	}
+
+	for _, project := range resp.Projects {
+		if project.Name == projectName {
+			return project, nil
+		}
+	}
+	return wrappers.ProjectResponseModel{}, fmt.Errorf("project not found: %s", projectName)
 }
 
 func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
