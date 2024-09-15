@@ -1,6 +1,7 @@
 package services
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -275,6 +276,70 @@ func Test_updateProject(t *testing.T) {
 			}
 			if got != ttt.want {
 				t.Errorf("updateProject() got = %v, want %v", got, ttt.want)
+			}
+		})
+	}
+}
+
+func TestGetProjectsCollectionByProjectName(t *testing.T) {
+	type args struct {
+		projectName     string
+		projectsWrapper wrappers.ProjectsWrapper
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *wrappers.ProjectsCollectionResponseModel
+		wantErr bool
+	}{
+		{
+			name: "Group exists",
+			args: args{
+				projectName:     "existing-group",
+				projectsWrapper: &mock.ProjectsMockWrapper{},
+			},
+			want: &wrappers.ProjectsCollectionResponseModel{
+				Projects: []wrappers.ProjectResponseModel{
+					{ID: "existing-group-id", Name: "existing-group"},
+				},
+				TotalCount:         1,
+				FilteredTotalCount: 1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Group does not exist",
+			args: args{
+				projectName:     "non-existing-group",
+				projectsWrapper: &mock.ProjectsMockWrapper{},
+			},
+			want: &wrappers.ProjectsCollectionResponseModel{
+				Projects:           []wrappers.ProjectResponseModel{},
+				TotalCount:         0,
+				FilteredTotalCount: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error from wrapper",
+			args: args{
+				projectName:     "error-project",
+				projectsWrapper: &mock.ProjectsMockWrapper{},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetProjectsCollectionByProjectName(ttt.args.projectName, ttt.args.projectsWrapper)
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("GetProjectsCollectionByProjectName() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, ttt.want) {
+				t.Errorf("GetProjectsCollectionByProjectName() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}

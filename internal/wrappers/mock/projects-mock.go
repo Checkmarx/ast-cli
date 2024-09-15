@@ -59,6 +59,12 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
 	case "fake-kics-fail-sast-canceled":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "existing-group":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "non-existing-group":
+		model = nil
+	case "error-project":
+		return nil, nil, fmt.Errorf("some error")
 	default:
 		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
 	}
@@ -68,6 +74,7 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 
 func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
 	return &wrappers.ProjectsCollectionResponseModel{
+		TotalCount:         1,
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
 			{
