@@ -62,16 +62,24 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      - name: Install qemu v9.0.2
+        run: |
+          wget https://download.qemu.org/qemu-9.0.2.tar.xz
+          tar xvJf qemu-9.0.2.tar.xz  # Corrected the filename here
+          cd qemu-9.0.2
+          ./configure
+          make
+          sudo make install  # This step is necessary to install qemu system-wide
       - name: Setup Docker on macOS
-        if: inputs.dev == true
-        uses: douglascamata/setup-docker-macos-action@v1-alpha
+        if: inputs.dev == false
+        uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
       - name: Test docker
-        if: inputs.dev == true
+        if: inputs.dev == false
         run: |
           docker version
           docker info
       - name: Login to Docker Hub
-        if: inputs.dev == true
+        if: inputs.dev == false
         uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
