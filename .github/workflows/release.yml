@@ -71,15 +71,15 @@ jobs:
           make
           sudo make install  # This step is necessary to install qemu system-wide
       - name: Setup Docker on macOS
-        if: inputs.dev == false
+        if: inputs.dev == true
         uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
       - name: Test docker
-        if: inputs.dev == false
+        if: inputs.dev == true
         run: |
           docker version
           docker info
       - name: Login to Docker Hub
-        if: inputs.dev == false
+        if: inputs.dev == true
         uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
