@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-12
+    runs-on: macos-13
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -64,9 +64,7 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         if: inputs.dev == true
-        uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
-        with:
-          colima: "v0.7.3"
+        uses: docker-practice/actions-setup-docker@master
       - name: Test docker
         if: inputs.dev == true
         run: |
