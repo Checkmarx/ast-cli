@@ -62,12 +62,13 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      - name: Intall qemu v9.0.2
+        uses: docker/setup-qemu-action@v3
+        with:
+          version: 9.0.2
       - name: Setup Docker on macOS
         if: inputs.dev == true
         uses: douglascamata/setup-docker-macos-action@v1-alpha
-      - uses: docker/setup-qemu-action@v3
-        with:
-          version: 9.0.2
       - name: Test docker
         if: inputs.dev == true
         run: |
