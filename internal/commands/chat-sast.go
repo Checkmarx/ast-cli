@@ -225,15 +225,6 @@ func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrap
 	return isEnabled
 }
 
-func isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
-	if err != nil {
-		return false
-	}
-	isEnabled := strings.EqualFold(engine, AiGuidedRemediationOpenAiValue)
-	return isEnabled
-}
-
 func GetAzureAiModel(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
 	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiModel)
 }
