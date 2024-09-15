@@ -66,7 +66,7 @@ jobs:
         if: inputs.dev == true
         uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
         with:
-          colima: "0.7.3"
+          colima: "v0.7.3"
       - name: Test docker
         if: inputs.dev == true
         run: |
