@@ -64,7 +64,11 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         if: inputs.dev == true
-        uses: douglascamata/setup-docker-macos-action@v1-alpha.13  #v1-alpha
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
+        with:
+          upgrade-qemu: true
+          lima: v0.22.0
+          colima: v0.7.3
       - name: Test docker
         if: inputs.dev == true
         run: |
