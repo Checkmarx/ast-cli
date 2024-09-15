@@ -61,5 +61,5 @@ const (
 	AccessManagementPathEnv             = "CX_ACCESS_MANAGEMENT_PATH"
 	ByorPathEnv                         = "CX_BYOR_PATH"
 	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
-	VorpalPortEnv                       = "CX_VORPAL_PORT"
+	ASCAPortEnv                         = "CX_ASCA_PORT"
 )

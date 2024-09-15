@@ -10,123 +10,123 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateVorpalScanRequest_DefaultAgent_Success(t *testing.T) {
-	vorpalParams := VorpalScanParams{
-		FilePath:            "data/python-vul-file.py",
-		VorpalUpdateVersion: false,
-		IsDefaultAgent:      true,
+func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
+	ASCAParams := ASCAScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: false,
+		IsDefaultAgent:    true,
 	}
-	wrapperParams := VorpalWrappersParam{
+	wrapperParams := ASCAWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		VorpalWrapper:       mock.NewVorpalMockWrapper(1234),
+		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
 	}
-	sr, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
-		t.Fatalf("Failed to create vorpal scan request: %v", err)
+		t.Fatalf("Failed to create ASCA scan request: %v", err)
 	}
 	if sr == nil {
-		t.Fatalf("Failed to create vorpal scan request: %v", err)
+		t.Fatalf("Failed to create ASCA scan request: %v", err)
 	}
 	fmt.Println(sr)
 }
 
-func TestCreateVorpalScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testing.T) {
-	vorpalParams := VorpalScanParams{
-		FilePath:            "data/python-vul-file.py",
-		VorpalUpdateVersion: true,
-		IsDefaultAgent:      true,
+func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testing.T) {
+	ASCAParams := ASCAScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: true,
+		IsDefaultAgent:    true,
 	}
-	wrapperParams := VorpalWrappersParam{
+	wrapperParams := ASCAWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		VorpalWrapper:       mock.NewVorpalMockWrapper(1234),
+		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
 	}
-	sr, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
-		t.Fatalf("Failed to create vorpal scan request: %v", err)
+		t.Fatalf("Failed to create ASCA scan request: %v", err)
 	}
 	if sr == nil {
-		t.Fatalf("Failed to create vorpal scan request: %v", err)
+		t.Fatalf("Failed to create ASCA scan request: %v", err)
 	}
 	fmt.Println(sr)
 }
 
-func TestCreateVorpalScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
+func TestCreateASCAScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
 	specialErrorPort := 1
-	vorpalParams := VorpalScanParams{
-		FilePath:            "data/python-vul-file.py",
-		VorpalUpdateVersion: true,
-		IsDefaultAgent:      false,
+	ASCAParams := ASCAScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: true,
+		IsDefaultAgent:    false,
 	}
-	wrapperParams := VorpalWrappersParam{
+	wrapperParams := ASCAWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		VorpalWrapper:       &mock.VorpalMockWrapper{Port: specialErrorPort},
+		ASCAWrapper:         &mock.ASCAMockWrapper{Port: specialErrorPort},
 	}
-	_, err := CreateVorpalScanRequest(vorpalParams, wrapperParams)
-	assert.ErrorContains(t, err, errorconstants.NoVorpalLicense)
+	_, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
+	assert.ErrorContains(t, err, errorconstants.NoASCALicense)
 }
 
-func TestCreateVorpalScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t *testing.T) {
+func TestCreateASCAScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t *testing.T) {
 	port, err := getAvailablePort()
 	if err != nil {
 		t.Fatalf("Failed to get available port: %v", err)
 	}
 
-	vorpalParams := VorpalScanParams{
-		FilePath:            "data/python-vul-file.py",
-		VorpalUpdateVersion: true,
-		IsDefaultAgent:      false,
+	ASCAParams := ASCAScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: true,
+		IsDefaultAgent:    false,
 	}
 
-	wrapperParams := VorpalWrappersParam{
+	wrapperParams := ASCAWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
+		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
 	}
-	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	err = manageASCAInstallation(ASCAParams, wrapperParams)
 	assert.Nil(t, err)
 
-	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
+	err = ensureASCAServiceRunning(wrapperParams, ASCAParams)
 	assert.Nil(t, err)
-	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
+	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
 
 	wrapperParams.JwtWrapper = &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled}
 
-	err = manageVorpalInstallation(vorpalParams, wrapperParams)
-	assert.ErrorContains(t, err, errorconstants.NoVorpalLicense)
-	assert.NotNil(t, wrapperParams.VorpalWrapper.HealthCheck())
+	err = manageASCAInstallation(ASCAParams, wrapperParams)
+	assert.ErrorContains(t, err, errorconstants.NoASCALicense)
+	assert.NotNil(t, wrapperParams.ASCAWrapper.HealthCheck())
 }
 
-func TestCreateVorpalScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(t *testing.T) {
+func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(t *testing.T) {
 	port, err := getAvailablePort()
 	if err != nil {
 		t.Fatalf("Failed to get available port: %v", err)
 	}
 
-	vorpalParams := VorpalScanParams{
-		FilePath:            "data/python-vul-file.py",
-		VorpalUpdateVersion: true,
-		IsDefaultAgent:      true,
+	ASCAParams := ASCAScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: true,
+		IsDefaultAgent:    true,
 	}
 
-	wrapperParams := VorpalWrappersParam{
+	wrapperParams := ASCAWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		VorpalWrapper:       grpcs.NewVorpalGrpcWrapper(port),
+		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
 	}
-	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	err = manageASCAInstallation(ASCAParams, wrapperParams)
 	assert.Nil(t, err)
 
 	wrapperParams.JwtWrapper = &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled}
 
-	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
+	err = ensureASCAServiceRunning(wrapperParams, ASCAParams)
 	assert.Nil(t, err)
-	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
+	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
 
-	err = manageVorpalInstallation(vorpalParams, wrapperParams)
+	err = manageASCAInstallation(ASCAParams, wrapperParams)
 	assert.Nil(t, err)
-	assert.Nil(t, wrapperParams.VorpalWrapper.HealthCheck())
-	_ = wrapperParams.VorpalWrapper.ShutDown()
+	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
+	_ = wrapperParams.ASCAWrapper.ShutDown()
 }

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/vorpal/vorpalconfig"
+	"github.com/checkmarx/ast-cli/internal/commands/ASCA/ASCAconfig"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -18,12 +18,12 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
+func TestScanASCA_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.VorpalLatestVersion),
+		flag(commonParams.ASCALatestVersion),
 	}
 
 	err, bytes := executeCommand(t, args...)
@@ -34,12 +34,12 @@ func TestScanVorpal_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
-func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_Success(t *testing.T) {
+func TestExecuteASCAScan_ASCALatestVersionSetTrue_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.VorpalLatestVersion),
+		flag(commonParams.ASCALatestVersion),
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
 
@@ -51,13 +51,13 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetTrue_Success(t *testing.T) {
 	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
-func TestExecuteVorpalScan_NoSourceAndVorpalLatestVersionSetFalse_Success(t *testing.T) {
+func TestExecuteASCAScan_NoSourceAndASCALatestVersionSetFalse_Success(t *testing.T) {
 	configuration.LoadConfiguration()
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	_ = vorpalWrapper.ShutDown()
-	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -70,10 +70,10 @@ func TestExecuteVorpalScan_NoSourceAndVorpalLatestVersionSetFalse_Success(t *tes
 	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
-func TestExecuteVorpalScan_NotExistingFile_Success(t *testing.T) {
+func TestExecuteASCAScan_NotExistingFile_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "not-existing-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -86,10 +86,10 @@ func TestExecuteVorpalScan_NotExistingFile_Success(t *testing.T) {
 	assert.Assert(t, scanResults.Error.Description == fmt.Sprintf(services.FileNotFound, "not-existing-file.py"), "should return error: ", services.FileNotFound)
 }
 
-func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_Success(t *testing.T) {
+func TestExecuteASCAScan_ASCALatestVersionSetFalse_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -104,15 +104,15 @@ func TestExecuteVorpalScan_VorpalLatestVersionSetFalse_Success(t *testing.T) {
 	asserts.NotNil(t, scanResult.ScanDetails)
 }
 
-func TestExecuteVorpalScan_NoEngineInstalledAndVorpalLatestVersionSetFalse_Success(t *testing.T) {
+func TestExecuteASCAScan_NoEngineInstalledAndASCALatestVersionSetFalse_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	_ = vorpalWrapper.ShutDown()
-	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
 
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -127,10 +127,10 @@ func TestExecuteVorpalScan_NoEngineInstalledAndVorpalLatestVersionSetFalse_Succe
 	asserts.NotNil(t, scanResult.ScanDetails)
 }
 
-func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
+func TestExecuteASCAScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -145,10 +145,10 @@ func TestExecuteVorpalScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testin
 	asserts.NotNil(t, scanResult.ScanDetails)
 }
 
-func TestExecuteVorpalScan_UnsupportedLanguage_Fail(t *testing.T) {
+func TestExecuteASCAScan_UnsupportedLanguage_Fail(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/positive1.tf",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -161,18 +161,18 @@ func TestExecuteVorpalScan_UnsupportedLanguage_Fail(t *testing.T) {
 	asserts.NotNil(t, scanResult.Error)
 }
 
-func TestExecuteVorpalScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
+func TestExecuteASCAScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 	configuration.LoadConfiguration()
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	_ = vorpalWrapper.ShutDown()
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
-		flag(commonParams.VorpalLatestVersion),
+		flag(commonParams.ASCALatestVersion),
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
-	vorpalWrapper = grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	healthCheckErr := vorpalWrapper.HealthCheck()
+	ASCAWrapper = grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	healthCheckErr := ASCAWrapper.HealthCheck()
 	asserts.NotNil(t, healthCheckErr)
 	err, bytes := executeCommand(t, args...)
 	assert.NilError(t, err, "Sending empty source file should not fail")
@@ -182,10 +182,10 @@ func TestExecuteVorpalScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 }
 
-func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
+func TestExecuteASCAScan_InitializeAndShutdown_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 		flag(commonParams.DebugFlag),
@@ -197,24 +197,24 @@ func TestExecuteVorpalScan_InitializeAndShutdown_Success(t *testing.T) {
 	assert.NilError(t, err, "Failed to unmarshal scan result")
 	assert.Assert(t, scanResults.Message == services.FilePathNotProvided, "should return message: ", services.FilePathNotProvided)
 
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	if healthCheckErr := vorpalWrapper.HealthCheck(); healthCheckErr != nil {
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	if healthCheckErr := ASCAWrapper.HealthCheck(); healthCheckErr != nil {
 		assert.Assert(t, healthCheckErr == nil, "Health check failed with error: ", healthCheckErr)
 	}
-	if shutdownErr := vorpalWrapper.ShutDown(); shutdownErr != nil {
+	if shutdownErr := ASCAWrapper.ShutDown(); shutdownErr != nil {
 		assert.Assert(t, shutdownErr == nil, "Shutdown failed with error: ", shutdownErr)
 	}
-	err = vorpalWrapper.HealthCheck()
+	err = ASCAWrapper.HealthCheck()
 	asserts.NotNil(t, err)
 }
 
-func TestExecuteVorpalScan_EngineNotRunningWithLicense_Success(t *testing.T) {
+func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 	configuration.LoadConfiguration()
-	vorpalWrapper := grpcs.NewVorpalGrpcWrapper(viper.GetInt(commonParams.VorpalPortKey))
-	_ = vorpalWrapper.ShutDown()
-	_ = os.RemoveAll(vorpalconfig.Params.WorkingDir())
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
 	args := []string{
-		"scan", "vorpal",
+		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.DebugFlag),
 		flag(commonParams.AgentFlag), "JetBrains",

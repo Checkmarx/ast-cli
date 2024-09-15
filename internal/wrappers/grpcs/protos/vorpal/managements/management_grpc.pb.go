@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpcs v1.3.0
 // - protoc             v4.25.3
-// source: managements/management.vorpal
+// source: managements/management.ASCA
 
 package managements
 
@@ -108,5 +108,5 @@ var ManagementService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "managements/management.vorpal",
+	Metadata: "managements/management.ASCA",
 }

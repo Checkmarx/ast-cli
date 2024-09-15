@@ -1,4 +1,4 @@
-package vorpal
+package ASCA
 
 import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -10,24 +10,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-func RunScanVorpalCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		vorpalLatestVersion, _ := cmd.Flags().GetBool(commonParams.VorpalLatestVersion)
+		ASCALatestVersion, _ := cmd.Flags().GetBool(commonParams.ASCALatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
-		var port = viper.GetInt(commonParams.VorpalPortKey)
-		vorpalWrapper := grpcs.NewVorpalGrpcWrapper(port)
-		vorpalParams := services.VorpalScanParams{
-			FilePath:            fileSourceFlag,
-			VorpalUpdateVersion: vorpalLatestVersion,
-			IsDefaultAgent:      agent == commonParams.DefaultAgent,
+		var port = viper.GetInt(commonParams.ASCAPortKey)
+		ASCAWrapper := grpcs.NewASCAGrpcWrapper(port)
+		ASCAParams := services.ASCAScanParams{
+			FilePath:          fileSourceFlag,
+			ASCAUpdateVersion: ASCALatestVersion,
+			IsDefaultAgent:    agent == commonParams.DefaultAgent,
 		}
-		wrapperParams := services.VorpalWrappersParam{
+		wrapperParams := services.ASCAWrappersParam{
 			JwtWrapper:          jwtWrapper,
 			FeatureFlagsWrapper: featureFlagsWrapper,
-			VorpalWrapper:       vorpalWrapper,
+			ASCAWrapper:         ASCAWrapper,
 		}
-		scanResult, err := services.CreateVorpalScanRequest(vorpalParams, wrapperParams)
+		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 		if err != nil {
 			return err
 		}

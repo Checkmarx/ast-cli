@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/vorpal/vorpalconfig"
+	"github.com/checkmarx/ast-cli/internal/commands/ASCA/ASCAconfig"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -20,39 +20,39 @@ import (
 )
 
 const (
-	FilePathNotProvided = "File path not provided, Vorpal engine is running successfully."
+	FilePathNotProvided = "File path not provided, ASCA engine is running successfully."
 	FileNotFound        = "File %s not found"
 )
 
-type VorpalScanParams struct {
-	FilePath            string
-	VorpalUpdateVersion bool
-	IsDefaultAgent      bool
+type ASCAScanParams struct {
+	FilePath          string
+	ASCAUpdateVersion bool
+	IsDefaultAgent    bool
 }
 
-type VorpalWrappersParam struct {
+type ASCAWrappersParam struct {
 	JwtWrapper          wrappers.JWTWrapper
 	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
-	VorpalWrapper       grpcs.VorpalWrapper
+	ASCAWrapper         grpcs.ASCAWrapper
 }
 
-func CreateVorpalScanRequest(vorpalParams VorpalScanParams, wrapperParams VorpalWrappersParam) (*grpcs.ScanResult, error) {
-	err := manageVorpalInstallation(vorpalParams, wrapperParams)
+func CreateASCAScanRequest(ASCAParams ASCAScanParams, wrapperParams ASCAWrappersParam) (*grpcs.ScanResult, error) {
+	err := manageASCAInstallation(ASCAParams, wrapperParams)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ensureVorpalServiceRunning(wrapperParams, vorpalParams)
+	err = ensureASCAServiceRunning(wrapperParams, ASCAParams)
 	if err != nil {
 		return nil, err
 	}
 
-	emptyResults := validateFilePath(vorpalParams.FilePath)
+	emptyResults := validateFilePath(ASCAParams.FilePath)
 	if emptyResults != nil {
 		return emptyResults, nil
 	}
 
-	return executeScan(wrapperParams.VorpalWrapper, vorpalParams.FilePath)
+	return executeScan(wrapperParams.ASCAWrapper, ASCAParams.FilePath)
 }
 
 func validateFilePath(filePath string) *grpcs.ScanResult {
@@ -76,41 +76,41 @@ func validateFilePath(filePath string) *grpcs.ScanResult {
 	return nil
 }
 
-func executeScan(vorpalWrapper grpcs.VorpalWrapper, filePath string) (*grpcs.ScanResult, error) {
+func executeScan(ASCAWrapper grpcs.ASCAWrapper, filePath string) (*grpcs.ScanResult, error) {
 	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	_, fileName := filepath.Split(filePath)
-	return vorpalWrapper.Scan(fileName, sourceCode)
+	return ASCAWrapper.Scan(fileName, sourceCode)
 }
 
-func manageVorpalInstallation(vorpalParams VorpalScanParams, vorpalWrappers VorpalWrappersParam) error {
-	vorpalInstalled, _ := osinstaller.FileExists(vorpalconfig.Params.ExecutableFilePath())
+func manageASCAInstallation(ASCAParams ASCAScanParams, ASCAWrappers ASCAWrappersParam) error {
+	ASCAInstalled, _ := osinstaller.FileExists(ASCAconfig.Params.ExecutableFilePath())
 
-	if !vorpalInstalled || vorpalParams.VorpalUpdateVersion {
-		if err := checkLicense(vorpalParams.IsDefaultAgent, vorpalWrappers); err != nil {
-			_ = vorpalWrappers.VorpalWrapper.ShutDown()
+	if !ASCAInstalled || ASCAParams.ASCAUpdateVersion {
+		if err := checkLicense(ASCAParams.IsDefaultAgent, ASCAWrappers); err != nil {
+			_ = ASCAWrappers.ASCAWrapper.ShutDown()
 			return err
 		}
-		newInstallation, err := osinstaller.InstallOrUpgrade(&vorpalconfig.Params)
+		newInstallation, err := osinstaller.InstallOrUpgrade(&ASCAconfig.Params)
 		if err != nil {
 			return err
 		}
 		if newInstallation {
-			_ = vorpalWrappers.VorpalWrapper.ShutDown()
+			_ = ASCAWrappers.ASCAWrapper.ShutDown()
 		}
 	}
 	return nil
 }
 
-func findVorpalPort() (int, error) {
+func findASCAPort() (int, error) {
 	port, err := getAvailablePort()
 	if err != nil {
 		return 0, err
 	}
-	setConfigPropertyQuiet(params.VorpalPortKey, port)
+	setConfigPropertyQuiet(params.ASCAPortKey, port)
 	return port, nil
 }
 
@@ -122,15 +122,15 @@ func getAvailablePort() (int, error) {
 	return port.Port, nil
 }
 
-func configureVorpalWrapper(existingVorpalWrapper grpcs.VorpalWrapper) (grpcs.VorpalWrapper, error) {
-	if err := existingVorpalWrapper.HealthCheck(); err != nil {
-		port, portErr := findVorpalPort()
+func configureASCAWrapper(existingASCAWrapper grpcs.ASCAWrapper) (grpcs.ASCAWrapper, error) {
+	if err := existingASCAWrapper.HealthCheck(); err != nil {
+		port, portErr := findASCAPort()
 		if portErr != nil {
 			return nil, portErr
 		}
-		existingVorpalWrapper.ConfigurePort(port)
+		existingASCAWrapper.ConfigurePort(port)
 	}
-	return existingVorpalWrapper, nil
+	return existingASCAWrapper, nil
 }
 
 func setConfigPropertyQuiet(propName string, propValue int) {
@@ -140,35 +140,35 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureVorpalServiceRunning(wrappersParam VorpalWrappersParam, vorpalParams VorpalScanParams) error {
-	if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
-		err = checkLicense(vorpalParams.IsDefaultAgent, wrappersParam)
+func ensureASCAServiceRunning(wrappersParam ASCAWrappersParam, ASCAParams ASCAScanParams) error {
+	if err := wrappersParam.ASCAWrapper.HealthCheck(); err != nil {
+		err = checkLicense(ASCAParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
 			return err
 		}
-		wrappersParam.VorpalWrapper, err = configureVorpalWrapper(wrappersParam.VorpalWrapper)
+		wrappersParam.ASCAWrapper, err = configureASCAWrapper(wrappersParam.ASCAWrapper)
 		if err != nil {
 			return err
 		}
-		if err := RunVorpalEngine(wrappersParam.VorpalWrapper.GetPort()); err != nil {
+		if err := RunASCAEngine(wrappersParam.ASCAWrapper.GetPort()); err != nil {
 			return err
 		}
 
-		if err := wrappersParam.VorpalWrapper.HealthCheck(); err != nil {
+		if err := wrappersParam.ASCAWrapper.HealthCheck(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func checkLicense(isDefaultAgent bool, wrapperParams VorpalWrappersParam) error {
+func checkLicense(isDefaultAgent bool, wrapperParams ASCAWrappersParam) error {
 	if !isDefaultAgent {
 		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
 		if err != nil {
 			return err
 		}
 		if !allowed {
-			return fmt.Errorf("%v", errorconstants.NoVorpalLicense)
+			return fmt.Errorf("%v", errorconstants.NoASCALicense)
 		}
 	}
 	return nil
@@ -183,16 +183,16 @@ func readSourceCode(filePath string) (string, error) {
 	return string(data), nil
 }
 
-func RunVorpalEngine(port int) error {
+func RunASCAEngine(port int) error {
 	dialTimeout := 5 * time.Second
 	args := []string{
 		"-listen",
 		fmt.Sprintf("%d", port),
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Running vorpal engine with args: %v \n", args))
+	logger.PrintIfVerbose(fmt.Sprintf("Running ASCA engine with args: %v \n", args))
 
-	cmd := exec.Command(vorpalconfig.Params.ExecutableFilePath(), args...)
+	cmd := exec.Command(ASCAconfig.Params.ExecutableFilePath(), args...)
 
 	osinstaller.ConfigureIndependentProcess(cmd)
 
@@ -206,7 +206,7 @@ func RunVorpalEngine(port int) error {
 		return fmt.Errorf("server did not become ready in time")
 	}
 
-	logger.PrintIfVerbose("Vorpal engine started successfully!")
+	logger.PrintIfVerbose("ASCA engine started successfully!")
 
 	return nil
 }

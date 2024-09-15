@@ -5,14 +5,12 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
-	vorpalManagement "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/managements"
-	vorpalScan "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/scans"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
-type VorpalGrpcWrapper struct {
+type ASCAGrpcWrapper struct {
 	grpcClient  *ClientWithTimeout
 	hostAddress string
 	port        int
@@ -20,21 +18,21 @@ type VorpalGrpcWrapper struct {
 }
 
 const (
-	vorpalScanErrMsg = "Vorpal scan failed for file %s. ScanId: %s"
+	ASCAScanErrMsg   = "ASCA scan failed for file %s. ScanId: %s"
 	localHostAddress = "127.0.0.1:%d"
-	serviceName      = "VorpalEngine"
+	serviceName      = "ASCAEngine"
 )
 
-func NewVorpalGrpcWrapper(port int) VorpalWrapper {
+func NewASCAGrpcWrapper(port int) ASCAWrapper {
 	serverHostAddress := fmt.Sprintf(localHostAddress, port)
-	return &VorpalGrpcWrapper{
+	return &ASCAGrpcWrapper{
 		grpcClient:  NewGRPCClientWithTimeout(serverHostAddress, 1*time.Second).(*ClientWithTimeout),
 		hostAddress: serverHostAddress,
 		port:        port,
 	}
 }
 
-func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, error) {
+func (v *ASCAGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, error) {
 	conn, connErr := v.grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, v.hostAddress, connErr)
@@ -45,11 +43,11 @@ func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, erro
 		_ = conn.Close()
 	}(conn)
 
-	scanClient := vorpalScan.NewScanServiceClient(conn)
+	scanClient := ASCAScan.NewScanServiceClient(conn)
 	scanID := uuid.New().String()
 
-	request := &vorpalScan.SingleScanRequest{
-		ScanRequest: &vorpalScan.ScanRequest{
+	request := &ASCAScan.SingleScanRequest{
+		ScanRequest: &ASCAScan.ScanRequest{
 			Id:         scanID,
 			FileName:   fileName,
 			SourceCode: sourceCode,
@@ -58,7 +56,7 @@ func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, erro
 
 	resp, err := scanClient.Scan(v.grpcClient.ctx, request)
 	if err != nil {
-		return nil, errors.Wrapf(err, vorpalScanErrMsg, fileName, scanID)
+		return nil, errors.Wrapf(err, ASCAScanErrMsg, fileName, scanID)
 	}
 
 	var scanError *Error
@@ -77,7 +75,7 @@ func (v *VorpalGrpcWrapper) Scan(fileName, sourceCode string) (*ScanResult, erro
 	}, nil
 }
 
-func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetail {
+func convertScanDetails(details []*ASCAScan.ScanResult_ScanDetail) []ScanDetail {
 	var scanDetails []ScanDetail
 	for _, detail := range details {
 		scanDetails = append(scanDetails, ScanDetail{
@@ -96,7 +94,7 @@ func convertScanDetails(details []*vorpalScan.ScanResult_ScanDetail) []ScanDetai
 	return scanDetails
 }
 
-func (v *VorpalGrpcWrapper) HealthCheck() error {
+func (v *ASCAGrpcWrapper) HealthCheck() error {
 	if !v.serving {
 		err := v.grpcClient.HealthCheck(v.grpcClient, serviceName)
 		if err != nil {
@@ -108,7 +106,7 @@ func (v *VorpalGrpcWrapper) HealthCheck() error {
 	return nil
 }
 
-func (v *VorpalGrpcWrapper) ShutDown() error {
+func (v *ASCAGrpcWrapper) ShutDown() error {
 	conn, connErr := v.grpcClient.CreateClientConn()
 	if connErr != nil {
 		logger.Printf(ConnErrMsg, v.hostAddress, connErr)
@@ -118,21 +116,21 @@ func (v *VorpalGrpcWrapper) ShutDown() error {
 		_ = conn.Close()
 	}(conn)
 
-	managementClient := vorpalManagement.NewManagementServiceClient(conn)
-	_, shutdownErr := managementClient.Shutdown(v.grpcClient.ctx, &vorpalManagement.ShutdownRequest{})
+	managementClient := ASCAManagement.NewManagementServiceClient(conn)
+	_, shutdownErr := managementClient.Shutdown(v.grpcClient.ctx, &ASCAManagement.ShutdownRequest{})
 	if shutdownErr != nil {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
-	logger.PrintfIfVerbose("Vorpal service is shutting down")
+	logger.PrintfIfVerbose("ASCA service is shutting down")
 	v.serving = false
 	return nil
 }
 
-func (v *VorpalGrpcWrapper) GetPort() int {
+func (v *ASCAGrpcWrapper) GetPort() int {
 	return v.port
 }
 
-func (v *VorpalGrpcWrapper) ConfigurePort(port int) {
+func (v *ASCAGrpcWrapper) ConfigurePort(port int) {
 	v.port = port
 	v.hostAddress = fmt.Sprintf(localHostAddress, port)
 	v.grpcClient = NewGRPCClientWithTimeout(v.hostAddress, 1*time.Second).(*ClientWithTimeout)
