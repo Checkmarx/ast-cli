@@ -4,7 +4,7 @@ go 1.22.7
 
 require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
-	github.com/Checkmarx/gen-ai-wrapper v1.0.2-0.20240623072149-3ad82f7be6fb
+	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/CheckmarxDev/containers-resolver v1.0.10
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
@@ -16,9 +16,10 @@ require (
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
+	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.26.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.17.0
@@ -190,7 +191,7 @@ require (
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pborman/indent v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
@@ -232,7 +233,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
