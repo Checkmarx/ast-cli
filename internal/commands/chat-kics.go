@@ -90,8 +90,7 @@ func runChatKics(
 		chatResultVulnerability, _ := cmd.Flags().GetString(params.ChatKicsResultVulnerability)
 		userInput, _ := cmd.Flags().GetString(params.ChatUserInput)
 
-		chatGptEnabled, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses, err :=
-			getEngineSelection(cmd, tenantWrapper)
+		azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses, err := getEngineSelection(cmd, tenantWrapper)
 		if err != nil {
 			return err
 		}
@@ -113,8 +112,7 @@ func runChatKics(
 
 		newMessages := buildKicsMessages(chatResultCode, chatResultVulnerability, chatResultLine, chatResultSeverity, userInput)
 
-		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatKicsWrapper, id,
-			newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameKics)
+		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatKicsWrapper, id, newMessages, customerToken, guidedRemediationFeatureNameKics)
 		if err != nil {
 			return outputError(cmd, id, err)
 		}
@@ -148,9 +146,8 @@ func getTenantID(customerToken string) string {
 	return tenantID
 }
 
-func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool, checkmarxAiEnabled bool, tenantID string,
-	chatKicsWrapper wrappers.ChatWrapper, id uuid.UUID, newMessages []message.Message, customerToken string,
-	chatGptEnabled bool, featureName string) (responseContent []string, err error) {
+func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool, checkmarxAiEnabled bool, tenantID string, chatKicsWrapper wrappers.ChatWrapper,
+	id uuid.UUID, newMessages []message.Message, customerToken string, featureName string) (responseContent []string, err error) {
 	requestID := statefulWrapper.GenerateId().String()
 
 	var response []message.Message
@@ -171,24 +168,21 @@ func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool
 		if err != nil {
 			return nil, err
 		}
-	} else if chatGptEnabled {
+	} else { // if chatgpt is enabled or no engine is enabled
 		logger.Printf("Sending message to ChatGPT model for " + featureName + " guided remediation. RequestID: " + requestID)
 		response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		return nil, errors.Errorf(AllOptionsDisabledError)
 	}
 
 	responseContent = getMessageContents(response)
 	return responseContent, nil
 }
 
-func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigurationWrapper) (chatGptEnabled, azureAiEnabled, checkmarxAiEnabled bool,
+func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigurationWrapper) (azureAiEnabled, checkmarxAiEnabled bool,
 	tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, err error) {
 	if !isCxOneAPIKeyAvailable() {
-		chatGptEnabled = true
 		azureAiEnabled = false
 		checkmarxAiEnabled = false
 		logger.Printf("CxOne API key is not available, ChatGPT model will be used for guided remediation.")
@@ -196,14 +190,13 @@ func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigu
 		var err error
 		tenantConfigurationResponses, err = GetTenantConfigurationResponses(tenantWrapper)
 		if err != nil {
-			return false, false, false, nil, outputError(cmd, uuid.Nil, err)
+			return false, false, nil, outputError(cmd, uuid.Nil, err)
 		}
 
 		azureAiEnabled = isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled = isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
-		chatGptEnabled = isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses)
 	}
-	return chatGptEnabled, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses, nil
+	return azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses, nil
 }
 
 func buildKicsMessages(chatResultCode []byte,

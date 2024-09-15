@@ -22,7 +22,6 @@ import (
 
 const UserInputRequiredErrorFormat = "%s is required when %s is provided"
 const AiGuidedRemediationDisabledError = "The AI Guided Remediation is disabled in your tenant account"
-const AllOptionsDisabledError = "All AI Guided Remediation options are disabled in your tenant account"
 
 func ChatSastSubCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	chatSastCmd := &cobra.Command{
@@ -65,7 +64,6 @@ func runChatSast(
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
 		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
-		chatGptEnabled := isOpenAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
 
@@ -81,8 +79,7 @@ func runChatSast(
 			return err
 		}
 
-		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID,
-			chatWrapper, id, newMessages, customerToken, chatGptEnabled, guidedRemediationFeatureNameSast)
+		responseContent, err := sendRequest(statefulWrapper, azureAiEnabled, checkmarxAiEnabled, tenantID, chatWrapper, id, newMessages, customerToken, guidedRemediationFeatureNameSast)
 		if err != nil {
 			return outputError(cmd, id, err)
 		}
