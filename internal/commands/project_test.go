@@ -187,7 +187,6 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 }
 
 func TestGetProjectByName(t *testing.T) {
-
 	mockProjectsWrapper := &mock.ProjectsMockWrapper{}
 
 	// Call the function with the exact project name
