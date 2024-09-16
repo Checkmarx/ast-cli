@@ -59,12 +59,20 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
 	case "fake-kics-fail-sast-canceled":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	case "existing-group":
+	case "existing-project":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
-	case "non-existing-group":
+	case "non-existing-project":
 		model = nil
 	case "error-project":
 		return nil, nil, fmt.Errorf("some error")
+	case "test_project1":
+		model = getProjectResponseModel("1", "test_project1", filteredTotalCount)
+	case "test_project2":
+		model = getProjectResponseModel("2", "test_project2", filteredTotalCount)
+	case "exact_project":
+		model = getProjectResponseModel("3", "exact_project", filteredTotalCount)
+	case "test_project3":
+		model = getProjectResponseModel("4", "test_project3", filteredTotalCount)
 	default:
 		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
 	}

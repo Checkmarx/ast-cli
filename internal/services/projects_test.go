@@ -293,14 +293,14 @@ func TestGetProjectsCollectionByProjectName(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Group exists",
+			name: "WhenCalledWithExistingProjectName_ShouldReturnProjectCollection",
 			args: args{
-				projectName:     "existing-group",
+				projectName:     "existing-project",
 				projectsWrapper: &mock.ProjectsMockWrapper{},
 			},
 			want: &wrappers.ProjectsCollectionResponseModel{
 				Projects: []wrappers.ProjectResponseModel{
-					{ID: "existing-group-id", Name: "existing-group"},
+					{ID: "existing-project-id", Name: "existing-project"},
 				},
 				TotalCount:         1,
 				FilteredTotalCount: 1,
@@ -308,9 +308,9 @@ func TestGetProjectsCollectionByProjectName(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Group does not exist",
+			name: "WhenCalledWithNonExistingProjectName_ShouldReturnEmptyProjectCollection",
 			args: args{
-				projectName:     "non-existing-group",
+				projectName:     "non-existing-project",
 				projectsWrapper: &mock.ProjectsMockWrapper{},
 			},
 			want: &wrappers.ProjectsCollectionResponseModel{
@@ -321,7 +321,7 @@ func TestGetProjectsCollectionByProjectName(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Error from wrapper",
+			name: "WhenCalledWithProjectNameAndErrorProject_ShouldReturnError",
 			args: args{
 				projectName:     "error-project",
 				projectsWrapper: &mock.ProjectsMockWrapper{},
