@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpcs v1.3.0
 // - protoc             v4.25.3
-// source: scans/scan.ASCA
+// source: scans/scan.asca
 
 package scans
 
@@ -108,5 +108,5 @@ var ScanService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "scans/scan.ASCA",
+	Metadata: "scans/scan.asca",
 }

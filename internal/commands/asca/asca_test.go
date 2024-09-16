@@ -4,14 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/ASCA/ASCAconfig"
-	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"gotest.tools/assert"
+
+	ascaconfig "github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
+	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 )
 
 func TestInstallOrUpgrade_firstInstallation_Success(t *testing.T) {
 	err := firstInstallation()
-	assert.NilError(t, err, "Error on first installation of ASCA")
+	assert.NilError(t, err, "Error on first installation of asca")
 	fileExists, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 	assert.Assert(t, fileExists, "Executable file not found")
 	fileExists, _ = osinstaller.FileExists(ascaconfig.Params.HashFilePath())
@@ -26,14 +27,14 @@ func firstInstallation() error {
 
 func TestInstallOrUpgrade_installationIsUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
-	assert.NilError(t, err, "Error on first installation of ASCA")
+	assert.NilError(t, err, "Error on first installation of asca")
 	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params)
 	assert.NilError(t, err, "Error when not need to upgrade")
 }
 
 func TestInstallOrUpgrade_installationIsNotUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
-	assert.NilError(t, err, "Error on first installation of ASCA")
+	assert.NilError(t, err, "Error on first installation of asca")
 	changeHashFile()
 	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params)
 	assert.NilError(t, err, "Error when need to upgrade")

@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/ASCA/ASCAconfig"
+	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -21,7 +21,7 @@ import (
 func TestScanASCA_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.ASCALatestVersion),
 	}
@@ -37,7 +37,7 @@ func TestScanASCA_NoFileSourceSent_ReturnSuccess(t *testing.T) {
 func TestExecuteASCAScan_ASCALatestVersionSetTrue_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.ASCALatestVersion),
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
@@ -57,7 +57,7 @@ func TestExecuteASCAScan_NoSourceAndASCALatestVersionSetFalse_Success(t *testing
 	_ = ASCAWrapper.ShutDown()
 	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -73,7 +73,7 @@ func TestExecuteASCAScan_NoSourceAndASCALatestVersionSetFalse_Success(t *testing
 func TestExecuteASCAScan_NotExistingFile_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "not-existing-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -89,7 +89,7 @@ func TestExecuteASCAScan_NotExistingFile_Success(t *testing.T) {
 func TestExecuteASCAScan_ASCALatestVersionSetFalse_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -112,7 +112,7 @@ func TestExecuteASCAScan_NoEngineInstalledAndASCALatestVersionSetFalse_Success(t
 	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -130,7 +130,7 @@ func TestExecuteASCAScan_NoEngineInstalledAndASCALatestVersionSetFalse_Success(t
 func TestExecuteASCAScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -148,7 +148,7 @@ func TestExecuteASCAScan_CorrectFlagsSent_SuccessfullyReturnMockData(t *testing.
 func TestExecuteASCAScan_UnsupportedLanguage_Fail(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "data/positive1.tf",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 	}
@@ -166,7 +166,7 @@ func TestExecuteASCAScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.ASCALatestVersion),
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
@@ -185,7 +185,7 @@ func TestExecuteASCAScan_InitializeAndRunUpdateVersion_Success(t *testing.T) {
 func TestExecuteASCAScan_InitializeAndShutdown_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "",
 		flag(commonParams.AgentFlag), commonParams.DefaultAgent,
 		flag(commonParams.DebugFlag),
@@ -214,7 +214,7 @@ func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 	_ = ASCAWrapper.ShutDown()
 	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 	args := []string{
-		"scan", "ASCA",
+		"scan", "asca",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
 		flag(commonParams.DebugFlag),
 		flag(commonParams.AgentFlag), "JetBrains",

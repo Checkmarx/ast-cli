@@ -47,7 +47,7 @@ const (
 	FormatFlag                   = "format"
 	FormatFlagUsageFormat        = "Format for the output. One of %s"
 	FilterFlag                   = "filter"
-	ASCALatestVersion            = "ASCA-latest-version"
+	ASCALatestVersion            = "asca-latest-version"
 	BaseURIFlag                  = "base-uri"
 	ProxyFlag                    = "proxy"
 	ProxyFlagUsage               = "Proxy server to send communication through"

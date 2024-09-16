@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.1
 // 	protoc        v4.25.3
-// source: scans/scan.ASCA
+// source: scans/scan.asca
 
 package scans
 

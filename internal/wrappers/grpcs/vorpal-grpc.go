@@ -20,7 +20,7 @@ type ASCAGrpcWrapper struct {
 }
 
 const (
-	ASCAScanErrMsg   = "ASCA scan failed for file %s. ScanId: %s"
+	ASCAScanErrMsg   = "asca scan failed for file %s. ScanId: %s"
 	localHostAddress = "127.0.0.1:%d"
 	serviceName      = "ASCAEngine"
 )
@@ -123,7 +123,7 @@ func (v *ASCAGrpcWrapper) ShutDown() error {
 	if shutdownErr != nil {
 		return errors.Wrap(shutdownErr, "failed to shutdown")
 	}
-	logger.PrintfIfVerbose("ASCA service is shutting down")
+	logger.PrintfIfVerbose("asca service is shutting down")
 	v.serving = false
 	return nil
 }

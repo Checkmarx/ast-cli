@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_ExecuteASCAScan(t *testing.T) {
+func Test_ExecuteAscaScan(t *testing.T) {
 	type args struct {
 		fileSourceFlag    string
 		ASCAUpdateVersion bool
@@ -54,7 +54,7 @@ func Test_ExecuteASCAScan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags. ASCA scan failed",
+			name: "Test with valid flags. asca scan failed",
 			args: args{
 				fileSourceFlag:    "../data/csharp-no-vul.cs",
 				ASCAUpdateVersion: false,

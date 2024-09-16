@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/ASCA/ASCAconfig"
+	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	FilePathNotProvided = "File path not provided, ASCA engine is running successfully."
+	FilePathNotProvided = "File path not provided, asca engine is running successfully."
 	FileNotFound        = "File %s not found"
 )
 
@@ -190,7 +190,7 @@ func RunASCAEngine(port int) error {
 		fmt.Sprintf("%d", port),
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Running ASCA engine with args: %v \n", args))
+	logger.PrintIfVerbose(fmt.Sprintf("Running asca engine with args: %v \n", args))
 
 	cmd := exec.Command(ascaconfig.Params.ExecutableFilePath(), args...)
 
@@ -206,7 +206,7 @@ func RunASCAEngine(port int) error {
 		return fmt.Errorf("server did not become ready in time")
 	}
 
-	logger.PrintIfVerbose("ASCA engine started successfully!")
+	logger.PrintIfVerbose("asca engine started successfully!")
 
 	return nil
 }

@@ -23,10 +23,10 @@ func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
 	}
 	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
-		t.Fatalf("Failed to create ASCA scan request: %v", err)
+		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
 	if sr == nil {
-		t.Fatalf("Failed to create ASCA scan request: %v", err)
+		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
 	fmt.Println(sr)
 }
@@ -44,10 +44,10 @@ func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testi
 	}
 	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
-		t.Fatalf("Failed to create ASCA scan request: %v", err)
+		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
 	if sr == nil {
-		t.Fatalf("Failed to create ASCA scan request: %v", err)
+		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
 	fmt.Println(sr)
 }
