@@ -23,10 +23,14 @@ func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
 				Value: "true",
 			},
 			{
-				Key:   "scan.config.plugins.chatGPTGuidedRemediation",
-				Value: "true",
+				Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
+				Value: "azureai",
 			},
 		}
 	}
 	return &TenantConfiguration, nil, nil
+}
+
+func (t TenantConfigurationMockWrapper) SetTenantConfiguration(response []*wrappers.TenantConfigurationResponse) {
+	TenantConfiguration = response
 }
