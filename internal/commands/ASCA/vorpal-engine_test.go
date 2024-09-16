@@ -1,4 +1,4 @@
-package ASCA
+package asca
 
 import (
 	"reflect"

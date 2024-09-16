@@ -1,6 +1,6 @@
 //go:build linux && (arm64 || arm)
 
-package ASCAconfig
+package ascaconfig
 
 import (
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"

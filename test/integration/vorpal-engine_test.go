@@ -55,7 +55,7 @@ func TestExecuteASCAScan_NoSourceAndASCALatestVersionSetFalse_Success(t *testing
 	configuration.LoadConfiguration()
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
-	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 	args := []string{
 		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "",
@@ -109,7 +109,7 @@ func TestExecuteASCAScan_NoEngineInstalledAndASCALatestVersionSetFalse_Success(t
 
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
-	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 
 	args := []string{
 		"scan", "ASCA",
@@ -212,7 +212,7 @@ func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
-	_ = os.RemoveAll(ASCAconfig.Params.WorkingDir())
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 	args := []string{
 		"scan", "ASCA",
 		flag(commonParams.SourcesFlag), "data/python-vul-file.py",

@@ -1,4 +1,4 @@
-package ASCA
+package asca
 
 import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"

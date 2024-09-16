@@ -87,14 +87,14 @@ func executeScan(ASCAWrapper grpcs.ASCAWrapper, filePath string) (*grpcs.ScanRes
 }
 
 func manageASCAInstallation(ASCAParams ASCAScanParams, ASCAWrappers ASCAWrappersParam) error {
-	ASCAInstalled, _ := osinstaller.FileExists(ASCAconfig.Params.ExecutableFilePath())
+	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 
 	if !ASCAInstalled || ASCAParams.ASCAUpdateVersion {
 		if err := checkLicense(ASCAParams.IsDefaultAgent, ASCAWrappers); err != nil {
 			_ = ASCAWrappers.ASCAWrapper.ShutDown()
 			return err
 		}
-		newInstallation, err := osinstaller.InstallOrUpgrade(&ASCAconfig.Params)
+		newInstallation, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params)
 		if err != nil {
 			return err
 		}
@@ -192,7 +192,7 @@ func RunASCAEngine(port int) error {
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running ASCA engine with args: %v \n", args))
 
-	cmd := exec.Command(ASCAconfig.Params.ExecutableFilePath(), args...)
+	cmd := exec.Command(ascaconfig.Params.ExecutableFilePath(), args...)
 
 	osinstaller.ConfigureIndependentProcess(cmd)
 

@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/commands/ASCA"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -418,7 +417,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 			`,
 			),
 		},
-		RunE: ASCA.RunScanASCACommand(jwtWrapper, featureFlagsWrapper),
+		RunE: asca.RunScanASCACommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,
