@@ -923,6 +923,31 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	}
 }
 
+func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
 func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{

@@ -974,11 +974,11 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) wrappers.SCSConfig {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, hasEnterpriseSecretsLicense bool) wrappers.SCSConfig {
 	scsConfig := wrappers.SCSConfig{}
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
-		if resubmitTwoms != nil {
+		if resubmitTwoms != nil && hasEnterpriseSecretsLicense {
 			scsConfig.Twoms = resubmitTwoms.(string)
 		}
 		scsConfig.RepoURL = scsRepoURL
@@ -1002,7 +1002,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
+			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
@@ -1012,7 +1012,9 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					scsConfig.Twoms = trueString
+					if hasEnterpriseSecretsLicense {
+						scsConfig.Twoms = trueString
+					}
 				case ScsScoreCardType:
 					scsConfig.Scorecard = trueString
 				}
@@ -1061,7 +1063,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
 
 		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
-		if contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
 			keys := reflect.ValueOf(allowedEngines).MapKeys()
 			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
 			return err
