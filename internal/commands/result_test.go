@@ -5,6 +5,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -130,6 +131,83 @@ func TestResultsExitCode_OnPartialScan_PrintOnlyFailedScannersInfoToConsole(t *t
 	assert.Equal(t, len(results), 1, "Scanner results should be empty")
 	assert.Equal(t, results[0].ScanID, "fake-scan-id-sca-fail-partial-id", "")
 	assert.Equal(t, results[0].Status, "Partial", "")
+}
+
+func runScanCommand(t *testing.T, agent, scanID string) *wrappers.ScanResultsCollection {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+
+	_, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
+		"results", "show", "--scan-id", scanID, "--report-format", "json", "--agent", agent)
+	assert.NilError(t, err)
+
+	file, err := os.Open(fileName + ".json")
+	if err != nil {
+		t.Fatalf("failed to open file: %v", err)
+	}
+	defer func() {
+		file.Close()
+		os.Remove(fileName + ".json")
+	}()
+
+	fileContents, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+
+	var results wrappers.ScanResultsCollection
+	err = json.Unmarshal(fileContents, &results)
+	assert.NilError(t, err)
+	return &results
+}
+
+func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
+	results := runScanCommand(t, params.DefaultAgent, "SCS")
+	scsSecretDetectionFound := false
+	scsScorecardFound := false
+	for _, result := range results.Results {
+		if result.Type == params.SCSSecretDetectionType {
+			scsSecretDetectionFound = true
+		}
+		if result.Type == params.SCSScorecardType {
+			scsScorecardFound = true
+		}
+		if scsSecretDetectionFound && scsScorecardFound {
+			break
+		}
+	}
+	assert.Assert(t, scsSecretDetectionFound && scsScorecardFound, "SCS results should be included for AST-CLI agent")
+	assert.Assert(t, results.TotalCount == 2, "SCS results should be included for AST-CLI agent")
+}
+
+func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
+	results := runScanCommand(t, params.VSCodeAgent, "SCS")
+	for _, result := range results.Results {
+		assert.Assert(t, result.Type != params.SCSScorecardType, "SCS Scorecard results should be excluded for VS Code agent")
+	}
+	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded for VS Code agent")
+}
+
+func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+	results := runScanCommand(t, params.JetbrainsAgent, "SCS")
+	for _, result := range results.Results {
+		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
+	}
+	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
+}
+
+func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+	results := runScanCommand(t, params.EclipseAgent, "SAST_ONLY")
+	for _, result := range results.Results {
+		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
+	}
+	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded")
+}
+
+func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
+	results := runScanCommand(t, params.VisualStudioAgent, "MOCK_NO_VULNERABILITIES")
+
+	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {

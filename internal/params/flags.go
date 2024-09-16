@@ -244,6 +244,8 @@ const (
 	ScsType                = "scs"
 	MicroEnginesType       = "microengines" // the scs scan type for scans API
 	Success                = "success"
+	SCSScorecardType       = "sscs-scorecard"
+	SCSSecretDetectionType = "sscs-secret-detection"
 	EnterpriseSecretsLabel = "Enterprise Secrets"
 	EnterpriseSecretsType  = "enterprise-secrets"
 )
