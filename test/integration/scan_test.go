@@ -939,6 +939,7 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
+		flag(params.DebugFlag),
 	}
 
 	if strings.Contains(scanTypes, "scs") {
