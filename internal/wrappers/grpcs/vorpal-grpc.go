@@ -25,7 +25,7 @@ const (
 	serviceName      = "ASCAEngine"
 )
 
-func NewASCAGrpcWrapper(port int) ASCAWrapper {
+func NewASCAGrpcWrapper(port int) AscaWrapper {
 	serverHostAddress := fmt.Sprintf(localHostAddress, port)
 	return &ASCAGrpcWrapper{
 		grpcClient:  NewGRPCClientWithTimeout(serverHostAddress, 1*time.Second).(*ClientWithTimeout),

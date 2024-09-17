@@ -33,26 +33,26 @@ type ASCAScanParams struct {
 type ASCAWrappersParam struct {
 	JwtWrapper          wrappers.JWTWrapper
 	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
-	ASCAWrapper         grpcs.ASCAWrapper
+	ASCAWrapper         grpcs.AscaWrapper
 }
 
-func CreateASCAScanRequest(ASCAParams ASCAScanParams, wrapperParams ASCAWrappersParam) (*grpcs.ScanResult, error) {
-	err := manageASCAInstallation(ASCAParams, wrapperParams)
+func CreateASCAScanRequest(ascaParams ASCAScanParams, wrapperParams ASCAWrappersParam) (*grpcs.ScanResult, error) {
+	err := manageASCAInstallation(ascaParams, wrapperParams)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ensureASCAServiceRunning(wrapperParams, ASCAParams)
+	err = ensureASCAServiceRunning(wrapperParams, ascaParams)
 	if err != nil {
 		return nil, err
 	}
 
-	emptyResults := validateFilePath(ASCAParams.FilePath)
+	emptyResults := validateFilePath(ascaParams.FilePath)
 	if emptyResults != nil {
 		return emptyResults, nil
 	}
 
-	return executeScan(wrapperParams.ASCAWrapper, ASCAParams.FilePath)
+	return executeScan(wrapperParams.ASCAWrapper, ascaParams.FilePath)
 }
 
 func validateFilePath(filePath string) *grpcs.ScanResult {
@@ -76,21 +76,21 @@ func validateFilePath(filePath string) *grpcs.ScanResult {
 	return nil
 }
 
-func executeScan(ASCAWrapper grpcs.ASCAWrapper, filePath string) (*grpcs.ScanResult, error) {
+func executeScan(ascaWrapper grpcs.AscaWrapper, filePath string) (*grpcs.ScanResult, error) {
 	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	_, fileName := filepath.Split(filePath)
-	return ASCAWrapper.Scan(fileName, sourceCode)
+	return ascaWrapper.Scan(fileName, sourceCode)
 }
 
-func manageASCAInstallation(ASCAParams ASCAScanParams, ASCAWrappers ASCAWrappersParam) error {
+func manageASCAInstallation(ascaParams ASCAScanParams, ASCAWrappers ASCAWrappersParam) error {
 	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 
-	if !ASCAInstalled || ASCAParams.ASCAUpdateVersion {
-		if err := checkLicense(ASCAParams.IsDefaultAgent, ASCAWrappers); err != nil {
+	if !ASCAInstalled || ascaParams.ASCAUpdateVersion {
+		if err := checkLicense(ascaParams.IsDefaultAgent, ASCAWrappers); err != nil {
 			_ = ASCAWrappers.ASCAWrapper.ShutDown()
 			return err
 		}
@@ -122,7 +122,7 @@ func getAvailablePort() (int, error) {
 	return port.Port, nil
 }
 
-func configureASCAWrapper(existingASCAWrapper grpcs.ASCAWrapper) (grpcs.ASCAWrapper, error) {
+func configureASCAWrapper(existingASCAWrapper grpcs.AscaWrapper) (grpcs.AscaWrapper, error) {
 	if err := existingASCAWrapper.HealthCheck(); err != nil {
 		port, portErr := findASCAPort()
 		if portErr != nil {
@@ -140,9 +140,9 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureASCAServiceRunning(wrappersParam ASCAWrappersParam, ASCAParams ASCAScanParams) error {
+func ensureASCAServiceRunning(wrappersParam ASCAWrappersParam, ascaParams ASCAScanParams) error {
 	if err := wrappersParam.ASCAWrapper.HealthCheck(); err != nil {
-		err = checkLicense(ASCAParams.IsDefaultAgent, wrappersParam)
+		err = checkLicense(ascaParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
 			return err
 		}

@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
