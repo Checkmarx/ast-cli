@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
-	ASCAManagement "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/managements"
-	ASCAScan "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/vorpal/scans"
+	ASCAManagement "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/asca/managements"
+	ASCAScan "github.com/checkmarx/ast-cli/internal/wrappers/grpcs/protos/asca/scans"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
