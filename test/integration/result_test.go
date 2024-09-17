@@ -556,7 +556,7 @@ func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabiliti
 		t, "Results show generating JSON report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), printer.FormatJSON, ","+printer.FormatSummaryConsole,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
 		flag(params.TargetPathFlag), resultsDirectory,
 		flag(params.TargetFlag), fileName,
 	)
