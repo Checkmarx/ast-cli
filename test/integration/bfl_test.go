@@ -20,7 +20,8 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 		t, "Getting BFL should pass.", "results", "bfl",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.QueryIDFlag), queryID,
-		flag(params.FormatFlag), "json")
+		flag(params.FormatFlag), "json",
+		flag(params.DebugFlag))
 
 	bflResult := []wrappers.ScanResultNode{}
 	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
