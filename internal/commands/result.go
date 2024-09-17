@@ -1167,6 +1167,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		case infoLabel:
 			summary.InfoIssues++
 		}
+		fmt.Println(engineType)
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
 }
