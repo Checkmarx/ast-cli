@@ -1167,7 +1167,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			} else {
 				return
 			}
-		} else if strings.Contains(engineType, commonParams.ScsType) {
+		} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 			if wrappers.IsSCSEnabled {
 				engineType = commonParams.ScsType
 				*summary.ScsIssues++
