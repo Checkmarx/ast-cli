@@ -160,7 +160,7 @@ var sonarSeverities = map[string]string{
 }
 
 var containerEngineUnsupportedAgents = []string{
-	"Jetbrains", "VS Code", "Visual Studio", "Eclipse",
+	commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
 }
 
 func NewResultsCommand(
@@ -1054,6 +1054,43 @@ func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFl
 	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
 }
+
+func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes map[string]struct{}) *wrappers.ScanResultsCollection {
+	var filteredResults []*wrappers.ScanResult
+
+	for _, result := range results.Results {
+		if _, shouldExclude := excludedTypes[result.Type]; shouldExclude {
+			results.TotalCount--
+		} else {
+			filteredResults = append(filteredResults, result)
+		}
+	}
+	results.Results = filteredResults
+	return results
+}
+
+func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
+	unsupportedTypesByAgent := map[string][]string{
+		commonParams.DefaultAgent:      {},
+		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
+		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+	}
+
+	excludedTypes := make(map[string]struct{})
+
+	if typesToExclude, exists := unsupportedTypesByAgent[agent]; exists {
+		for _, excludeType := range typesToExclude {
+			excludedTypes[excludeType] = struct{}{}
+		}
+	}
+
+	results = filterResultsByType(results, excludedTypes)
+
+	return results
+}
+
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -1102,7 +1139,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return err
 		}
@@ -1245,7 +1282,8 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1258,6 +1296,7 @@ func createReport(format,
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
+		results = filterScsResultsByAgent(results, agent)
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}

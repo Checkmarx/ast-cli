@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -27,6 +28,39 @@ var containersResults = &wrappers.ScanResult{
 		CvssScore: 4.5,
 		CveName:   "CVE-2021-1234",
 		CweID:     "CWE-1234",
+	},
+}
+var scsResults = &wrappers.ScanResultsCollection{
+	TotalCount: 2,
+	Results: []*wrappers.ScanResult{
+		{
+			Type:                 params.SCSSecretDetectionType,
+			ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
+			SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+			Status:               "NEW",
+			State:                "TO_VERIFY",
+			Severity:             "HIGH",
+			Created:              "2024-07-30T12:49:56Z",
+			FirstFoundAt:         "2023-07-06T10:28:49Z",
+			FoundAt:              "2024-07-30T12:49:56Z",
+			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+			Description:          "Generic API Key has detected secret for file application.properties.",
+			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		},
+		{
+			Type:                 params.SCSScorecardType,
+			ID:                   "n2a8iCzrIgbCe+dGKYk+cAApO0U=",
+			SimilarityID:         "65323789a325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+			Status:               "NEW",
+			State:                "TO_VERIFY",
+			Severity:             "HIGH",
+			Created:              "2024-07-30T12:49:56Z",
+			FirstFoundAt:         "2023-07-06T10:28:49Z",
+			FoundAt:              "2024-07-30T12:49:56Z",
+			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+			Description:          "score is 0: branch protection not enabled on development/release branches:\\nWarn: branch protection not enabled for branch 'main'",
+			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		},
 	},
 }
 
@@ -81,6 +115,40 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 			},
 		}, nil, nil
 	}
+	if params["scan-id"] == "SAST_ONLY" {
+		return &wrappers.ScanResultsCollection{
+			TotalCount: 1,
+			Results: []*wrappers.ScanResult{
+				{
+					Type:     "sast",
+					ID:       "1",
+					Severity: "high",
+					ScanResultData: wrappers.ScanResultData{
+						LanguageName: "JavaScript",
+						QueryName:    "mock-query-name-1",
+						Nodes: []*wrappers.ScanResultNode{
+							{
+								FileName: "dummy-file-name-1",
+								Line:     10,
+								Column:   10,
+								Length:   20,
+							},
+							{
+								FileName: "dummy-file-name-1",
+								Line:     11,
+								Column:   3,
+								Length:   10,
+							},
+						},
+					},
+				},
+			},
+		}, nil, nil
+	}
+	if params["scan-id"] == "SCS" {
+		return scsResults, nil, nil
+	}
+
 	const mock = "mock"
 	var dependencyPath = wrappers.DependencyPath{ID: mock, Name: mock, Version: mock, IsResolved: true, IsDevelopment: false, Locations: nil}
 	var dependencyArray = [][]wrappers.DependencyPath{{dependencyPath}}
