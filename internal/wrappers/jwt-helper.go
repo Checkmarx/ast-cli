@@ -86,7 +86,7 @@ func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
-		engine = strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.EnterpriseSecretsLabel), commonParams.EnterpriseSecretsType, 1)
+		engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.EnterpriseSecretsLabel), commonParams.EnterpriseSecretsType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT
