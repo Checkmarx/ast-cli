@@ -65,14 +65,8 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		model = nil
 	case "error-project":
 		return nil, nil, fmt.Errorf("some error")
-	case "test_project1":
-		model = getProjectResponseModel("1", "test_project1", filteredTotalCount)
-	case "test_project2":
-		model = getProjectResponseModel("2", "test_project2", filteredTotalCount)
-	case "exact_project":
-		model = getProjectResponseModel("3", "exact_project", filteredTotalCount)
 	case "test_project3":
-		model = getProjectResponseModel("4", "test_project3", filteredTotalCount)
+		model = ListProjectResponseModels()
 	default:
 		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
 	}
@@ -90,6 +84,28 @@ func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.
 				Name: name,
 			},
 		},
+	}
+}
+
+func ListProjectResponseModels() *wrappers.ProjectsCollectionResponseModel {
+	projects := []wrappers.ProjectResponseModel{
+		{
+			ID:   "1",
+			Name: "test_project1",
+		},
+		{
+			ID:   "2",
+			Name: "test_project2",
+		},
+		{
+			ID:   "3",
+			Name: "test_project3",
+		},
+	}
+	return &wrappers.ProjectsCollectionResponseModel{
+		TotalCount:         3,
+		FilteredTotalCount: 3,
+		Projects:           projects,
 	}
 }
 

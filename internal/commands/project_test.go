@@ -190,7 +190,7 @@ func TestGetProjectByName(t *testing.T) {
 	mockProjectsWrapper := &mock.ProjectsMockWrapper{}
 
 	// Call the function with the exact project name
-	projectName := "exact_project"
+	projectName := "test_project3"
 	result := GetProjectByName(projectName, mockProjectsWrapper)
 
 	// Verify the result
