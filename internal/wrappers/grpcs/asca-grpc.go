@@ -22,7 +22,7 @@ type ASCAGrpcWrapper struct {
 const (
 	ASCAScanErrMsg   = "asca scan failed for file %s. ScanId: %s"
 	localHostAddress = "127.0.0.1:%d"
-	serviceName      = "ASCAEngine"
+	ASCAServiceName  = "VorpalEngine"
 )
 
 func NewASCAGrpcWrapper(port int) AscaWrapper {
@@ -98,7 +98,7 @@ func convertScanDetails(details []*ASCAScan.ScanResult_ScanDetail) []ScanDetail 
 
 func (v *ASCAGrpcWrapper) HealthCheck() error {
 	if !v.serving {
-		err := v.grpcClient.HealthCheck(v.grpcClient, serviceName)
+		err := v.grpcClient.HealthCheck(v.grpcClient, ASCAServiceName)
 		if err != nil {
 			return err
 		}
