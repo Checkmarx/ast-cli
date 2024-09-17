@@ -86,12 +86,12 @@ func executeScan(ascaWrapper grpcs.AscaWrapper, filePath string) (*grpcs.ScanRes
 	return ascaWrapper.Scan(fileName, sourceCode)
 }
 
-func manageASCAInstallation(ascaParams ASCAScanParams, ASCAWrappers ASCAWrappersParam) error {
+func manageASCAInstallation(ascaParams ASCAScanParams, ascaWrappers ASCAWrappersParam) error {
 	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 
 	if !ASCAInstalled || ascaParams.ASCAUpdateVersion {
-		if err := checkLicense(ascaParams.IsDefaultAgent, ASCAWrappers); err != nil {
-			_ = ASCAWrappers.ASCAWrapper.ShutDown()
+		if err := checkLicense(ascaParams.IsDefaultAgent, ascaWrappers); err != nil {
+			_ = ascaWrappers.ASCAWrapper.ShutDown()
 			return err
 		}
 		newInstallation, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params)
@@ -99,7 +99,7 @@ func manageASCAInstallation(ascaParams ASCAScanParams, ASCAWrappers ASCAWrappers
 			return err
 		}
 		if newInstallation {
-			_ = ASCAWrappers.ASCAWrapper.ShutDown()
+			_ = ascaWrappers.ASCAWrapper.ShutDown()
 		}
 	}
 	return nil
