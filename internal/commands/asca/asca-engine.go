@@ -17,12 +17,12 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		var port = viper.GetInt(commonParams.ASCAPortKey)
 		ASCAWrapper := grpcs.NewASCAGrpcWrapper(port)
-		ASCAParams := services.ASCAScanParams{
+		ASCAParams := services.AscaScanParams{
 			FilePath:          fileSourceFlag,
 			ASCAUpdateVersion: ASCALatestVersion,
 			IsDefaultAgent:    agent == commonParams.DefaultAgent,
 		}
-		wrapperParams := services.ASCAWrappersParam{
+		wrapperParams := services.AscaWrappersParam{
 			JwtWrapper:          jwtWrapper,
 			FeatureFlagsWrapper: featureFlagsWrapper,
 			ASCAWrapper:         ASCAWrapper,

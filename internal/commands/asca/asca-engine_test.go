@@ -66,12 +66,12 @@ func Test_ExecuteAscaScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			ASCAParams := services.ASCAScanParams{
+			ASCAParams := services.AscaScanParams{
 				FilePath:          ttt.args.fileSourceFlag,
 				ASCAUpdateVersion: ttt.args.ASCAUpdateVersion,
 				IsDefaultAgent:    true,
 			}
-			wrapperParams := services.ASCAWrappersParam{
+			wrapperParams := services.AscaWrappersParam{
 				JwtWrapper:          &mock.JWTMockWrapper{},
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 				ASCAWrapper:         &mock.ASCAMockWrapper{},

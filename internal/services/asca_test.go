@@ -11,12 +11,12 @@ import (
 )
 
 func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
-	ASCAParams := ASCAScanParams{
+	ASCAParams := AscaScanParams{
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: false,
 		IsDefaultAgent:    true,
 	}
-	wrapperParams := ASCAWrappersParam{
+	wrapperParams := AscaWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
@@ -32,12 +32,12 @@ func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
 }
 
 func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testing.T) {
-	ASCAParams := ASCAScanParams{
+	ASCAParams := AscaScanParams{
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: true,
 		IsDefaultAgent:    true,
 	}
-	wrapperParams := ASCAWrappersParam{
+	wrapperParams := AscaWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
@@ -54,12 +54,12 @@ func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testi
 
 func TestCreateASCAScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
 	specialErrorPort := 1
-	ASCAParams := ASCAScanParams{
+	ASCAParams := AscaScanParams{
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: true,
 		IsDefaultAgent:    false,
 	}
-	wrapperParams := ASCAWrappersParam{
+	wrapperParams := AscaWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		ASCAWrapper:         &mock.ASCAMockWrapper{Port: specialErrorPort},
@@ -74,13 +74,13 @@ func TestCreateASCAScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t *
 		t.Fatalf("Failed to get available port: %v", err)
 	}
 
-	ASCAParams := ASCAScanParams{
+	ASCAParams := AscaScanParams{
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: true,
 		IsDefaultAgent:    false,
 	}
 
-	wrapperParams := ASCAWrappersParam{
+	wrapperParams := AscaWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
@@ -105,13 +105,13 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 		t.Fatalf("Failed to get available port: %v", err)
 	}
 
-	ASCAParams := ASCAScanParams{
+	ASCAParams := AscaScanParams{
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: true,
 		IsDefaultAgent:    true,
 	}
 
-	wrapperParams := ASCAWrappersParam{
+	wrapperParams := AscaWrappersParam{
 		JwtWrapper:          &mock.JWTMockWrapper{},
 		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),

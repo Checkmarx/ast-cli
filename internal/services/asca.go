@@ -24,19 +24,19 @@ const (
 	FileNotFound        = "File %s not found"
 )
 
-type ASCAScanParams struct {
+type AscaScanParams struct {
 	FilePath          string
 	ASCAUpdateVersion bool
 	IsDefaultAgent    bool
 }
 
-type ASCAWrappersParam struct {
+type AscaWrappersParam struct {
 	JwtWrapper          wrappers.JWTWrapper
 	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
 	ASCAWrapper         grpcs.AscaWrapper
 }
 
-func CreateASCAScanRequest(ascaParams ASCAScanParams, wrapperParams ASCAWrappersParam) (*grpcs.ScanResult, error) {
+func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappersParam) (*grpcs.ScanResult, error) {
 	err := manageASCAInstallation(ascaParams, wrapperParams)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func executeScan(ascaWrapper grpcs.AscaWrapper, filePath string) (*grpcs.ScanRes
 	return ascaWrapper.Scan(fileName, sourceCode)
 }
 
-func manageASCAInstallation(ascaParams ASCAScanParams, ascaWrappers ASCAWrappersParam) error {
+func manageASCAInstallation(ascaParams AscaScanParams, ascaWrappers AscaWrappersParam) error {
 	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 
 	if !ASCAInstalled || ascaParams.ASCAUpdateVersion {
@@ -140,7 +140,7 @@ func setConfigPropertyQuiet(propName string, propValue int) {
 	}
 }
 
-func ensureASCAServiceRunning(wrappersParam ASCAWrappersParam, ascaParams ASCAScanParams) error {
+func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaScanParams) error {
 	if err := wrappersParam.ASCAWrapper.HealthCheck(); err != nil {
 		err = checkLicense(ascaParams.IsDefaultAgent, wrappersParam)
 		if err != nil {
@@ -161,7 +161,7 @@ func ensureASCAServiceRunning(wrappersParam ASCAWrappersParam, ascaParams ASCASc
 	return nil
 }
 
-func checkLicense(isDefaultAgent bool, wrapperParams ASCAWrappersParam) error {
+func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
 		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
 		if err != nil {
