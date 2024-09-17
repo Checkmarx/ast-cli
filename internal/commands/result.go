@@ -1153,8 +1153,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			} else {
 				return
 			}
-		} else {
-			return
 		}
 
 		switch severity {
