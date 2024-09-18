@@ -1176,6 +1176,11 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		case infoLabel:
 			summary.InfoIssues++
 		}
+
+		if strings.HasPrefix(engineType, "sscs") {
+			engineType = commonParams.ScsType
+		}
+
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
 }
