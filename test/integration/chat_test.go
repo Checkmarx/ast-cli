@@ -82,12 +82,12 @@ func TestChatKicsAzureAIInvalidAPIKey(t *testing.T) {
 		"--result-vulnerability", "Vulnerability",
 	}
 
-	response := RunKicsChatForTest(t, mockTenant, args...)
-	assert.Assert(t, strings.Contains(response.Response[0], INCORRECT_API_ERROR), "Expecting incorrect api key error. Got: "+response.Response[0])
+	response, responseString := RunKicsChatForTest(t, mockTenant, args...)
+	assert.Assert(t, strings.Contains(response.Response[0], INCORRECT_API_ERROR), "Expecting incorrect api key error. Got: "+responseString)
 
 }
 
-func RunKicsChatForTest(t *testing.T, tenantWrapper mock.TenantConfigurationMockWrapper, args ...string) commands.OutputModel {
+func RunKicsChatForTest(t *testing.T, tenantWrapper mock.TenantConfigurationMockWrapper, args ...string) (commands.OutputModel, string) {
 	outputBuffer := bytes.NewBufferString("")
 	cmd := commands.ChatKicsSubCommand(wrappers.NewChatWrapper(), tenantWrapper)
 	cmd.SetArgs(args)
@@ -96,5 +96,6 @@ func RunKicsChatForTest(t *testing.T, tenantWrapper mock.TenantConfigurationMock
 	assert.NilError(t, err)
 	outputModel := commands.OutputModel{}
 	unmarshall(t, outputBuffer, &outputModel, "Reading results should pass")
-	return outputModel
+	outputString := outputBuffer.String()
+	return outputModel, outputString
 }
