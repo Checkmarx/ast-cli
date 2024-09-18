@@ -575,11 +575,10 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		BranchName:       scanInfo.Branch,
 		EnginesEnabled:   scanInfo.Engines,
 		EnginesResult: map[string]*wrappers.EngineResultSummary{
-			commonParams.SastType:   {StatusCode: enginesStatusCode[commonParams.SastType]},
-			commonParams.ScaType:    {StatusCode: enginesStatusCode[commonParams.ScaType]},
-			commonParams.KicsType:   {StatusCode: enginesStatusCode[commonParams.KicsType]},
-			commonParams.APISecType: {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			//commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
+			commonParams.SastType:       {StatusCode: enginesStatusCode[commonParams.SastType]},
+			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
+			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
+			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
 			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
@@ -705,14 +704,6 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
-		//TODO: instead of here, do this in countResult to be consistent with other engines
-		//summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
-		//summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
-		//summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
-		//summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
-
-		//summary.ScsIssues = &summary.SCSOverview.TotalRisksCount //TODO: instead of here, do this in countResult to be consistent with other engines
-
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
@@ -1175,6 +1166,8 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			} else {
 				return
 			}
+		} else {
+			return
 		}
 
 		switch severity {
@@ -1399,6 +1392,10 @@ func ReadResults(
 			return nil, err
 		}
 
+		if slices.Contains(scan.Engines, commonParams.ScsType) && !wrappers.IsSCSEnabled {
+			resultsModel = removeSscsResults(resultsModel)
+		}
+
 		resultsModel.ScanID = scan.ID
 		return resultsModel, nil
 	}
@@ -1486,6 +1483,18 @@ func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.Sca
 	var newResults []*wrappers.ScanResult
 	for _, result := range model.Results {
 		if result.Type != commonParams.ContainersType {
+			newResults = append(newResults, result)
+		}
+	}
+	model.Results = newResults
+	model.TotalCount = uint(len(newResults))
+	return model
+}
+
+func removeSscsResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+	var newResults []*wrappers.ScanResult
+	for _, result := range model.Results {
+		if !strings.HasPrefix(result.Type, commonParams.SscsType) {
 			newResults = append(newResults, result)
 		}
 	}

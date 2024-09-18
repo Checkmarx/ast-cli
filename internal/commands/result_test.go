@@ -754,7 +754,7 @@ func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
-	assertContainersPresent(t, true)
+	assertTypePresentJSON(t, true, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -762,7 +762,7 @@ func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) 
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
-	assertContainersPresent(t, false)
+	assertTypePresentJSON(t, false, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -770,7 +770,7 @@ func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testi
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
-	assertContainersPresent(t, false)
+	assertTypePresentJSON(t, false, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -779,7 +779,7 @@ func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Eclipse")
-	assertContainersPresent(t, false)
+	assertTypePresentJSON(t, false, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -788,7 +788,7 @@ func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "vs code")
-	assertContainersPresent(t, false)
+	assertTypePresentJSON(t, false, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -797,13 +797,12 @@ func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *te
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Visual Studio")
-	assertContainersPresent(t, false)
+	assertTypePresentJSON(t, false, params.ContainersType)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
-// TODO: can be generalized to also be used in tests for scs
-func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
+func assertTypePresentJSON(t *testing.T, isResultsEnabled bool, resultType string) {
 	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
@@ -811,18 +810,18 @@ func assertContainersPresent(t *testing.T, isContainersEnabled bool) {
 	err = json.Unmarshal(bytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 	for _, scanResult := range scanResultsCollection.Results {
-		if !isContainersEnabled && scanResult.Type == params.ContainersType {
-			assert.Assert(t, false, "Containers result should not be present")
-		} else if isContainersEnabled && scanResult.Type == params.ContainersType {
+		if !isResultsEnabled && scanResult.Type == resultType {
+			assert.Assert(t, false, fmt.Sprintf("%s result should not be present", resultType))
+		} else if isResultsEnabled && scanResult.Type == resultType {
 			return
 		}
 	}
-	if isContainersEnabled {
-		assert.Assert(t, false, "Containers result should be present")
+	if isResultsEnabled {
+		assert.Assert(t, false, fmt.Sprintf("%s result should be present", resultType))
 	}
 }
 
-func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string) {
+func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string, numberOfIssues *int) {
 	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
@@ -836,20 +835,17 @@ func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanTy
 	reflectedScanResultSummary := reflect.ValueOf(scanResultSummary).Elem()
 	IssuesField := reflectedScanResultSummary.FieldByName(IssuesFieldName)
 
-	assert.Equal(t, IssuesField.IsValid(), true, fmt.Sprintf("field %s not found in struct", IssuesFieldName))
+	assert.Equal(t, IssuesField.IsValid(), true, fmt.Sprintf("field %s not found in ResultSummary struct definition", IssuesFieldName))
 	assert.Equal(t, !IssuesField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", IssuesFieldName, isResultsEnabled))
 
-	//Test presence of Scs Overview field
-	if scanType == params.ScsType {
-		ScsOverviewField := reflectedScanResultSummary.FieldByName("SCSOverview")
-		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in struct", ScsOverviewField))
-		assert.Equal(t, !ScsOverviewField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", ScsOverviewField, isResultsEnabled))
+	if !IssuesField.IsNil() && numberOfIssues != nil {
+		assert.Equal(t, *IssuesField.Interface().(*int), *numberOfIssues, fmt.Sprintf("Expected field %s to have value: %d", IssuesFieldName, *numberOfIssues))
 	}
 
 	//Test presence of Scs Overview field
 	if scanType == params.ScsType {
 		ScsOverviewField := reflectedScanResultSummary.FieldByName("SCSOverview")
-		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in struct", ScsOverviewField))
+		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in ResultSummary struct definition ", ScsOverviewField))
 		assert.Equal(t, !ScsOverviewField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", ScsOverviewField, isResultsEnabled))
 	}
 
@@ -1221,17 +1217,47 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 	}
 }
 
+func TestRunGetResultsByScanIdJSONFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+	assertTypePresentJSON(t, false, params.SCSScorecardType)
+	assertTypePresentJSON(t, false, params.SCSSecretDetectionType)
+
+	removeFileBySuffix(t, printer.FormatJSON)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+	assertTypePresentJSON(t, true, params.SCSScorecardType)
+	assertTypePresentJSON(t, true, params.SCSSecretDetectionType)
+
+	removeFileBySuffix(t, printer.FormatJSON)
+	mock.SetScsMockVarsToDefault()
+}
+
 func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
+	ScsFlagValue := false
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: ScsFlagValue}
 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
-	assertResultsPresentSummaryJSON(t, false, params.ScsType)
+	assertResultsPresentSummaryJSON(t, ScsFlagValue, params.ScsType, nil)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 
@@ -1241,12 +1267,14 @@ func TestRunGetResultsByScanIdSummaryJSONFormat_SCSFlagEnabled_SCSPresentInRepor
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
 	ScsFlagValue := true
+	expectedScsIssues := 3
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: ScsFlagValue}
 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
-	assertResultsPresentSummaryJSON(t, ScsFlagValue, params.ScsType)
+	assertResultsPresentSummaryJSON(t, ScsFlagValue, params.ScsType, &expectedScsIssues)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 

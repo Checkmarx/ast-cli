@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+
 	"github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -67,7 +68,7 @@ var scsResults = &wrappers.ScanResultsCollection{
 var scsResultsSecretDetection = []*wrappers.ScanResult{
 	{
 
-		Type:     "scs-Secret Detection",
+		Type:     "sscs-secret-detection",
 		Severity: "high",
 		ScanResultData: wrappers.ScanResultData{
 			QueryID:   "mock-query-ID",
@@ -77,7 +78,7 @@ var scsResultsSecretDetection = []*wrappers.ScanResult{
 	},
 	{
 
-		Type:     "scs-Secret Detection",
+		Type:     "sscs-secret-detection",
 		Severity: "medium",
 		ScanResultData: wrappers.ScanResultData{
 			QueryID:   "mock-query-ID",
@@ -87,7 +88,7 @@ var scsResultsSecretDetection = []*wrappers.ScanResult{
 	},
 }
 var scsResultScorecard = wrappers.ScanResult{
-	Type:     "scs-Scorecard",
+	Type:     "sscs-scorecard",
 	Severity: "low",
 	ScanResultData: wrappers.ScanResultData{
 		QueryID:   "mock-query-ID",
