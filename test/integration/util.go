@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -13,6 +14,10 @@ import (
 )
 
 var projectNameRandom = uuid.New().String()
+
+const (
+	ProjectNameFile = "projectName.txt"
+)
 
 func formatTags(tags map[string]string) string {
 	var tagsStr string
@@ -56,6 +61,25 @@ func flag(f string) string {
 
 func getProjectNameForTest() string {
 	return fmt.Sprintf("ast-cli-tests_%s", projectNameRandom)
+}
+
+func GenerateRandomProjectNameForScan() string {
+	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
+	_ = WriteProjectNameToFile(projectName)
+	return projectName
+}
+
+func WriteProjectNameToFile(projectName string) error {
+	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(projectName + "\n"); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getScsRepoToken() string {
