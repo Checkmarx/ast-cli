@@ -404,8 +404,8 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	scanASCACmd := &cobra.Command{
 		Hidden: true,
 		Use:    "asca",
-		Short:  "Run a asca scan",
-		Long:   "Running a asca scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Short:  "Run a ASCA scan",
+		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file.",
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
@@ -422,7 +422,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	}
 
 	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,
-		"Use this flag to update to the latest version of the asca scanner."+
+		"Use this flag to update to the latest version of the ASCA scanner."+
 			"Otherwise, we will check if there is an existing installation that can be used.")
 	scanASCACmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
