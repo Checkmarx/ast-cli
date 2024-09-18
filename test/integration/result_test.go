@@ -551,6 +551,7 @@ func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabiliti
 	// DevAndTestsVulnerabilitiesProject.zip, mute and snooze all packages, and update the scanID accordingly.
 	scanID := "28d29a61-bc5e-4f5a-9fdd-e18c5a10c05b"
 	//----------------------------------------------------------------------------------------------------------------------
+	reportFilePath := fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON)
 
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
@@ -565,18 +566,25 @@ func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabiliti
 		_ = os.RemoveAll(resultsDirectory)
 	}()
 
-	result := wrappers.ScanResultsCollection{}
+	assertFileExists(t, reportFilePath)
 
-	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
-	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
-
-	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
-	assert.NilError(t, err, "error reading file")
-
-	err = json.Unmarshal(file, &result)
-	assert.NilError(t, err, "error unmarshalling file")
+	var result wrappers.ScanResultsCollection
+	readAndUnmarshalFile(t, reportFilePath, &result)
 
 	for _, res := range result.Results {
 		assert.Equal(t, "NOT_EXPLOITABLE", res.State, "Should be marked as not exploitable")
 	}
+}
+
+func assertFileExists(t *testing.T, path string) {
+	_, err := os.Stat(path)
+	assert.NilError(t, err, "Report file should exist at path "+path)
+}
+
+func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
+	file, err := os.ReadFile(path)
+	assert.NilError(t, err, "Error reading file at path "+path)
+
+	err = json.Unmarshal(file, v)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
 }
