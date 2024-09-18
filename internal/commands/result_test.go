@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1137,4 +1138,31 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 			},
 		},
 	}
+}
+func TestPrintPoliciesSummary_WhenNoRolViolated_ShouldNotContainPolicyViolation(t *testing.T) {
+	summary := &wrappers.ResultSummary{
+		Policies: &wrappers.PolicyResponseModel{
+			Status: "Success",
+			Policies: []wrappers.Policy{
+				{
+					RulesViolated: []string{},
+				},
+			},
+			BreakBuild: false,
+		},
+	}
+	r, w, _ := os.Pipe()
+	old := os.Stdout
+	os.Stdout = w
+
+	printPoliciesSummary(summary)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+
+	output := buf.String()
+	assert.Assert(t, !strings.Contains(output, "Policy Management Violation "), "Output should not contain 'Policy Management Violation'")
 }
