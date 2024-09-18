@@ -249,7 +249,7 @@ func addReqMonitor(req *http.Request) *http.Request {
 }
 
 func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
-	u, err := getAuthURI()
+	u, err := GetAuthURI()
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	return request(client, customReq, true)
 }
 func GetAccessToken() (string, error) {
-	authURI, err := getAuthURI()
+	authURI, err := GetAuthURI()
 	if err != nil {
 		return "", err
 	}
@@ -403,7 +403,7 @@ func enrichWithPasswordCredentials(
 	request *http.Request, username, password,
 	adminClientID, adminClientSecret string,
 ) error {
-	authURI, err := getAuthURI()
+	authURI, err := GetAuthURI()
 	if err != nil {
 		return err
 	}
@@ -480,7 +480,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 	res, err := doPrivateRequest(client, req)
 	if err != nil {
-		authURL, _ := getAuthURI()
+		authURL, _ := GetAuthURI()
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
@@ -654,7 +654,7 @@ func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
-func getAuthURI() (string, error) {
+func GetAuthURI() (string, error) {
 	var authURI string
 	var err error
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
