@@ -1161,8 +1161,9 @@ func TestPrintPoliciesSummary_WhenNoRolViolated_ShouldNotContainPolicyViolation(
 	os.Stdout = old
 
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
-
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
+	}
 	output := buf.String()
 	assert.Assert(t, !strings.Contains(output, "Policy Management Violation "), "Output should not contain 'Policy Management Violation'")
 }
