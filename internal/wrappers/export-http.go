@@ -187,6 +187,5 @@ func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaP
 	}
 
 	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
-
 	return &scaPackageCollection, nil
 }
