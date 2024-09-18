@@ -283,11 +283,13 @@ func policiesToPrPolicies(policy *wrappers.PolicyResponseModel) []wrappers.PrPol
 	var prPolicies []wrappers.PrPolicy
 	if policy != nil {
 		for _, policy := range policy.Policies {
-			prPolicy := wrappers.PrPolicy{}
-			prPolicy.Name = policy.Name
-			prPolicy.BreakBuild = policy.BreakBuild
-			prPolicy.RulesNames = policy.RulesViolated
-			prPolicies = append(prPolicies, prPolicy)
+			if len(policy.RulesViolated) > 0 {
+				prPolicy := wrappers.PrPolicy{}
+				prPolicy.Name = policy.Name
+				prPolicy.BreakBuild = policy.BreakBuild
+				prPolicy.RulesNames = policy.RulesViolated
+				prPolicies = append(prPolicies, prPolicy)
+			}
 		}
 	}
 	return prPolicies

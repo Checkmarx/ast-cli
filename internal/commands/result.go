@@ -791,13 +791,22 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 }
 
 func printPoliciesSummary(summary *wrappers.ResultSummary) {
-	fmt.Printf(tableLine + "\n")
-	if summary.Policies.BreakBuild {
-		fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
-	} else {
-		fmt.Printf("            Policy Management Violation:                     \n")
-	}
+	hasViolations := false
 	if len(summary.Policies.Policies) > 0 {
+		for _, policy := range summary.Policies.Policies {
+			if len(policy.RulesViolated) > 0 {
+				hasViolations = true
+				break
+			}
+		}
+	}
+	if hasViolations {
+		fmt.Printf(tableLine + "\n")
+		if summary.Policies.BreakBuild {
+			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+		} else {
+			fmt.Printf("            Policy Management Violation:                     \n")
+		}
 		for _, police := range summary.Policies.Policies {
 			if len(police.RulesViolated) > 0 {
 				fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
@@ -807,8 +816,8 @@ func printPoliciesSummary(summary *wrappers.ResultSummary) {
 			}
 			fmt.Printf("\n")
 		}
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
 }
 
 func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
