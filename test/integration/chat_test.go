@@ -52,6 +52,7 @@ func TestChatSastInvalidAPIKey(t *testing.T) {
 }
 
 func TestChatKicsAzureAIInvalidAPIKey(t *testing.T) {
+	t.Skip("Skipping this test since not all services are deployed to production yet")
 	createASTIntegrationTestCommand(t)
 	mockConfig := []*wrappers.TenantConfigurationResponse{
 		{
