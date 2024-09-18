@@ -190,7 +190,7 @@ func RunASCAEngine(port int) error {
 		fmt.Sprintf("%d", port),
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Running asca engine with args: %v \n", args))
+	logger.PrintIfVerbose(fmt.Sprintf("Running ASCA engine with args: %v \n", args))
 
 	cmd := exec.Command(ascaconfig.Params.ExecutableFilePath(), args...)
 
@@ -206,7 +206,7 @@ func RunASCAEngine(port int) error {
 		return fmt.Errorf("server did not become ready in time")
 	}
 
-	logger.PrintIfVerbose("asca engine started successfully!")
+	logger.PrintIfVerbose("ASCA engine started successfully!")
 
 	return nil
 }
