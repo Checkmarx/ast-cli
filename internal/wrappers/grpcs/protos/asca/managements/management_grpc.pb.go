@@ -108,5 +108,5 @@ var ManagementService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "managements/management.asca",
+	Metadata: "managements/management.vorpal",
 }

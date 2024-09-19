@@ -108,5 +108,5 @@ var ScanService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "scans/scan.asca",
+	Metadata: "scans/scan.vorpal",
 }
