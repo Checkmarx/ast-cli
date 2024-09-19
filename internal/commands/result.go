@@ -792,12 +792,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 
 func printPoliciesSummary(summary *wrappers.ResultSummary) {
 	hasViolations := false
-	if len(summary.Policies.Policies) > 0 {
-		for _, policy := range summary.Policies.Policies {
-			if len(policy.RulesViolated) > 0 {
-				hasViolations = true
-				break
-			}
+	for _, policy := range summary.Policies.Policies {
+		if len(policy.RulesViolated) > 0 {
+			hasViolations = true
+			break
 		}
 	}
 	if hasViolations {
