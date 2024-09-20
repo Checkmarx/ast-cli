@@ -59,6 +59,7 @@ type SarifScanResult struct {
 	Message             SarifMessage            `json:"message"`
 	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
 	Locations           []SarifLocation         `json:"locations,omitempty"`
+	Properties          *SarifResultProperties  `json:"properties,omitempty"`
 }
 
 type SarifLocation struct {
@@ -86,4 +87,9 @@ type SarifMessage struct {
 
 type SarifResultFingerprint struct {
 	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
+}
+
+type SarifResultProperties struct {
+	Severity string `json:"severity,omitempty"`
+	Validity string `json:"validity,omitempty"`
 }

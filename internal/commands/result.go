@@ -2167,7 +2167,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	sarifRule.ID, sarifRule.Name, _ = findRuleID(result)
 	sarifRule.FullDescription = findFullDescription(result)
 	sarifRule.Help = findHelp(result)
-	sarifRule.HelpURI = wrappers.SarifInformationURI
+	sarifRule.HelpURI = findHelpURI(result)
 	sarifRule.Properties = findProperties(result)
 
 	if !ruleIds[sarifRule.ID] {
@@ -2179,10 +2179,16 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 }
 
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
-	if result.ScanResultData.QueryID == nil {
+	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
 			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
+	}
+
+	if result.ScanResultData.RuleID != nil {
+		return fmt.Sprintf("%s (%s)", *result.ScanResultData.RuleID, result.Type),
+			result.ScanResultData.RuleName,
+			result.ScanResultData.RuleName
 	}
 
 	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
@@ -2198,10 +2204,20 @@ func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription 
 
 func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 	var sarifHelp wrappers.SarifHelp
-	sarifHelp.Text = findDescriptionText(result)
+	sarifHelp.Text = findHelpText(result)
 	sarifHelp.Markdown = findHelpMarkdownText(result)
 
 	return sarifHelp
+}
+
+func findHelpURI(result *wrappers.ScanResult) string {
+	if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		if result.ScanResultData.RemediationLink != "" {
+			return result.ScanResultData.RuleDescription
+		}
+	}
+
+	return wrappers.SarifInformationURI
 }
 
 func findDescriptionText(result *wrappers.ScanResult) string {
@@ -2210,9 +2226,19 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 			"%s Value: %s Excepted value: %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		return result.ScanResultData.RuleDescription
 	}
 
 	return result.Description
+}
+
+func findHelpText(result *wrappers.ScanResult) string {
+	if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		return findHelpMarkdownText(result)
+	}
+
+	return findDescriptionText(result)
 }
 
 func findHelpMarkdownText(result *wrappers.ScanResult) string {
@@ -2221,6 +2247,8 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
+	} else if strings.Contains(result.Type, commonParams.SscsType) {
+		return result.ScanResultData.Remediation
 	}
 
 	return result.Description
@@ -2266,6 +2294,8 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultsSca(result, scanResults)
 	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
 		scanResults = parseSarifResultsContainers(result, scanResults)
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) && wrappers.IsSCSEnabled {
+		scanResults = parseSarifResultsSscs(result, scanResults)
 	}
 
 	if len(scanResults) > 0 {
@@ -2352,6 +2382,28 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 			scanResult.Locations = append(scanResult.Locations, scanLocation)
 		}
 	}
+
+	scanResults = append(scanResults, scanResult)
+	return scanResults
+}
+
+func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	var scanResult = initSarifResult(result)
+	scanResult.Message.Text = result.Description
+
+	var scanLocation wrappers.SarifLocation
+
+	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.FileName
+	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+	scanLocation.PhysicalLocation.Region.StartColumn = 1
+	scanLocation.PhysicalLocation.Region.EndColumn = 2
+	scanResult.Locations = append(scanResult.Locations, scanLocation)
+
+	var properties wrappers.SarifResultProperties
+	properties.Severity = result.Severity
+	properties.Validity = result.ScanResultData.Validity
+	scanResult.Properties = &properties
 
 	scanResults = append(scanResults, scanResult)
 	return scanResults

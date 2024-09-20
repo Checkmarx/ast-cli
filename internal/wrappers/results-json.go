@@ -116,5 +116,11 @@ type ScanResultData struct {
 	ImageFilePath  string `json:"imageFilePath,omitempty"`
 	ImageOrigin    string `json:"imageOrigin,omitempty"`
 	// Added to support SSCS results
-	RuleID string `json:"ruleId,omitempty"`
+	RuleID          *string `json:"ruleId,omitempty"`
+	RuleName        string  `json:"ruleName,omitempty"`
+	RuleDescription string  `json:"ruleDescription,omitempty"`
+	Remediation     string  `json:"remediation,omitempty"`
+	RemediationLink string  `json:"remediationLink,omitempty"`
+	FileName        string  `json:"fileName,omitempty"`
+	Validity        string  `json:"validity,omitempty"`
 }
