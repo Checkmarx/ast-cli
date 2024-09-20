@@ -958,6 +958,7 @@ func runGetResultCommand(
 
 		policyResponseModel := &wrappers.PolicyResponseModel{}
 		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		//policyOverrideFlag := true
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		if !policyOverrideFlag {
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
@@ -1108,7 +1109,6 @@ func CreateScanReport(
 	if err != nil {
 		return err
 	}
-
 	scanPending := isScanPending(summary.Status)
 
 	err = createDirectory(targetPath)
@@ -1116,7 +1116,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params, agent)
 		if err != nil {
 			return err
 		}
@@ -1289,7 +1289,6 @@ func createReport(format,
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
-		results = filterScsResultsByAgent(results, agent)
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
@@ -1366,6 +1365,7 @@ func ReadResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	params map[string]string,
+	agent string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
@@ -1392,8 +1392,12 @@ func ReadResults(
 			return nil, err
 		}
 
-		if slices.Contains(scan.Engines, commonParams.ScsType) && !wrappers.IsSCSEnabled {
-			resultsModel = removeSscsResults(resultsModel)
+		if slices.Contains(scan.Engines, commonParams.ScsType) {
+			if !wrappers.IsSCSEnabled {
+				resultsModel = removeSscsResults(resultsModel)
+			} else {
+				resultsModel = filterScsResultsByAgent(resultsModel, agent)
+			}
 		}
 
 		resultsModel.ScanID = scan.ID

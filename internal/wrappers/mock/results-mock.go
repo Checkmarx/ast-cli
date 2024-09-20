@@ -31,70 +31,52 @@ var containersResults = &wrappers.ScanResult{
 		CweID:     "CWE-1234",
 	},
 }
-var scsResults = &wrappers.ScanResultsCollection{
-	TotalCount: 2,
-	Results: []*wrappers.ScanResult{
-		{
-			Type:                 params.SCSSecretDetectionType,
-			ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
-			SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
-			Status:               "NEW",
-			State:                "TO_VERIFY",
-			Severity:             "HIGH",
-			Created:              "2024-07-30T12:49:56Z",
-			FirstFoundAt:         "2023-07-06T10:28:49Z",
-			FoundAt:              "2024-07-30T12:49:56Z",
-			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
-			Description:          "Generic API Key has detected secret for file application.properties.",
-			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
-		},
-		{
-			Type:                 params.SCSScorecardType,
-			ID:                   "n2a8iCzrIgbCe+dGKYk+cAApO0U=",
-			SimilarityID:         "65323789a325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
-			Status:               "NEW",
-			State:                "TO_VERIFY",
-			Severity:             "HIGH",
-			Created:              "2024-07-30T12:49:56Z",
-			FirstFoundAt:         "2023-07-06T10:28:49Z",
-			FoundAt:              "2024-07-30T12:49:56Z",
-			FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
-			Description:          "score is 0: branch protection not enabled on development/release branches:\\nWarn: branch protection not enabled for branch 'main'",
-			VulnerabilityDetails: wrappers.VulnerabilityDetails{},
-		},
-	},
-}
 
 var scsResultsSecretDetection = []*wrappers.ScanResult{
 	{
-
-		Type:     "sscs-secret-detection",
-		Severity: "high",
-		ScanResultData: wrappers.ScanResultData{
-			QueryID:   "mock-query-ID",
-			QueryName: "mock-query-name",
-		},
-		Description: "mock-description",
+		Type:                 params.SCSSecretDetectionType,
+		ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
+		SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+		Status:               "NEW",
+		State:                "TO_VERIFY",
+		Severity:             "HIGH",
+		Created:              "2024-07-30T12:49:56Z",
+		FirstFoundAt:         "2023-07-06T10:28:49Z",
+		FoundAt:              "2024-07-30T12:49:56Z",
+		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+		Description:          "Generic API Key has detected secret for file application.properties.",
+		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
 	},
 	{
-
-		Type:     "sscs-secret-detection",
-		Severity: "medium",
-		ScanResultData: wrappers.ScanResultData{
-			QueryID:   "mock-query-ID",
-			QueryName: "mock-query-name",
-		},
-		Description: "mock-description",
+		Type:                 params.SCSSecretDetectionType,
+		ID:                   "bhXbZjjoQZdGAwUhj6MLo9sh4fA=",
+		SimilarityID:         "6deb156f325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+		Status:               "NEW",
+		State:                "TO_VERIFY",
+		Severity:             "MEDIUM",
+		Created:              "2024-07-30T12:49:56Z",
+		FirstFoundAt:         "2023-07-06T10:28:49Z",
+		FoundAt:              "2024-07-30T12:49:56Z",
+		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+		Description:          "Generic API Key has detected secret for file application.properties.",
+		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
 	},
 }
-var scsResultScorecard = wrappers.ScanResult{
-	Type:     "sscs-scorecard",
-	Severity: "low",
-	ScanResultData: wrappers.ScanResultData{
-		QueryID:   "mock-query-ID",
-		QueryName: "mock-query-name",
+var scsResultScorecard = []*wrappers.ScanResult{
+	{
+		Type:                 params.SCSScorecardType,
+		ID:                   "n2a8iCzrIgbCe+dGKYk+cAApO0U=",
+		SimilarityID:         "65323789a325544aaefecee846b49a948571cecd4445d2b2b391a490641be5845",
+		Status:               "NEW",
+		State:                "TO_VERIFY",
+		Severity:             "LOW",
+		Created:              "2024-07-30T12:49:56Z",
+		FirstFoundAt:         "2023-07-06T10:28:49Z",
+		FoundAt:              "2024-07-30T12:49:56Z",
+		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
+		Description:          "score is 0: branch protection not enabled on development/release branches:\\nWarn: branch protection not enabled for branch 'main'",
+		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
 	},
-	Description: "mock-description",
 }
 
 func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
@@ -146,7 +128,9 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 			},
 		}, nil, nil
 	}
-	if params["scan-id"] == "SCS" {
+	if params["scan-id"] == "SCS_ONLY" {
+		scsResults := &wrappers.ScanResultsCollection{}
+		addSCSResults(scsResults)
 		return scsResults, nil, nil
 	}
 
@@ -326,9 +310,11 @@ func (r ResultsMockWrapper) GetResultsURL(projectID string) (string, error) {
 func addSCSResults(scanResults *wrappers.ScanResultsCollection) {
 	// the mock always has a result for Secret Detection
 	scanResults.Results = append(scanResults.Results, scsResultsSecretDetection...)
+	scanResults.TotalCount += uint(len(scsResultsSecretDetection))
 
 	if ScorecardScanned && !ScsScanPartial {
-		scanResults.Results = append(scanResults.Results, &scsResultScorecard)
+		scanResults.Results = append(scanResults.Results, scsResultScorecard...)
+		scanResults.TotalCount += uint(len(scsResultScorecard))
 	}
 
 }

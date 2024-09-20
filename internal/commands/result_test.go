@@ -165,7 +165,11 @@ func runScanCommand(t *testing.T, agent, scanID string) *wrappers.ScanResultsCol
 }
 
 func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
-	results := runScanCommand(t, params.DefaultAgent, "SCS")
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+
+	results := runScanCommand(t, params.DefaultAgent, "SCS_ONLY")
 	scsSecretDetectionFound := false
 	scsScorecardFound := false
 	for _, result := range results.Results {
@@ -180,31 +184,51 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 		}
 	}
 	assert.Assert(t, scsSecretDetectionFound && scsScorecardFound, "SCS results should be included for AST-CLI agent")
-	assert.Assert(t, results.TotalCount == 2, "SCS results should be included for AST-CLI agent")
+	assert.Assert(t, results.TotalCount == 3, "SCS results should be included for AST-CLI agent")
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
-	results := runScanCommand(t, params.VSCodeAgent, "SCS")
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+
+	results := runScanCommand(t, params.VSCodeAgent, "SCS_ONLY")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType, "SCS Scorecard results should be excluded for VS Code agent")
 	}
-	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded for VS Code agent")
+	assert.Assert(t, results.TotalCount == 2, "SCS Scorecard results should be excluded for VS Code agent")
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
-	results := runScanCommand(t, params.JetbrainsAgent, "SCS")
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+
+	results := runScanCommand(t, params.JetbrainsAgent, "SCS_ONLY")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
 	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+
 	results := runScanCommand(t, params.EclipseAgent, "SAST_ONLY")
 	for _, result := range results.Results {
 		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
 	}
 	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded")
+
+	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
