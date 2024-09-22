@@ -31,9 +31,7 @@ func FindProject(
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
+	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
 	if err != nil {
 		return "", err
 	}
@@ -68,6 +66,29 @@ func FindProject(
 		return "", err
 	}
 	return projectID, nil
+}
+
+func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrappers.ProjectsWrapper) (*wrappers.ProjectsCollectionResponseModel, error) {
+	params := make(map[string]string)
+	params["names"] = projectName
+	resp, _, err := projectsWrapper.Get(params)
+
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return nil, err
+	}
+
+	if resp == nil {
+		EmptyProjects := []wrappers.ProjectResponseModel{}
+		emptyProjectsCollection := &wrappers.ProjectsCollectionResponseModel{
+			TotalCount:         0,
+			FilteredTotalCount: 0,
+			Projects:           EmptyProjects,
+		}
+		return emptyProjectsCollection, nil
+	}
+
+	return resp, nil
 }
 
 func createProject(

@@ -185,3 +185,15 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 
 	execCmdNilAssertion(t, append(baseArgs, "--ssh-key", "data/Dockerfile", "--repo-url", "git@github.com:dummyRepo/dummyProject.git")...)
 }
+
+func TestGetProjectByName(t *testing.T) {
+	mockProjectsWrapper := &mock.ProjectsMockWrapper{}
+
+	// Call the function with the exact project name
+	projectName := "test_project3"
+	result := GetProjectByName(projectName, mockProjectsWrapper)
+
+	// Verify the result
+	assert.Equal(t, result.Name, projectName)
+	assert.Equal(t, result.ID, "3")
+}
