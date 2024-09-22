@@ -689,7 +689,7 @@ func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     trueString,
@@ -730,7 +730,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -906,13 +906,38 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
 		Scorecard: "true",
 		RepoURL:   dummyRepo,
 		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "",
 	}
 	scsMapConfig := make(map[string]interface{})
 	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
@@ -934,7 +959,7 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	_ = cmdCommand.Execute()
 	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms: "true",

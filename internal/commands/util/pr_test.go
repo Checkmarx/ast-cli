@@ -37,3 +37,10 @@ func TestIfScanRunning_WhenScanDone_ShouldReturnFalse(t *testing.T) {
 	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanNotRunning")
 	asserts.False(t, scanRunning)
 }
+
+func TestPRDecorationGithub_WhenNoViolatedPolicies_ShouldNotReturnPolicy(t *testing.T) {
+	prMockWrapper := &mock.PolicyMockWrapper{}
+	policyResponse, _, _ := prMockWrapper.EvaluatePolicy(nil)
+	prPolicy := policiesToPrPolicies(policyResponse)
+	asserts.True(t, len(prPolicy) == 0)
+}
