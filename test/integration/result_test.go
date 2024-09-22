@@ -542,3 +542,49 @@ func TestResultsGeneratingReportWithExcludeNotExploitableStateAndSeverityAndStat
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
+
+func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabilitiesInScan(t *testing.T) {
+	//----------------------------------------------------------------------------------------------------------------------
+	// This scanID is associated with the CXOne project: ASTCLI/HideDevAndTestsVulnerabilities/Test (DEU, Galactica tenant).
+	// All vulnerable packages in this project have been snoozed or muted, so no vulnerabilities should appear in this scan.
+	// If the test fails, verify the scan exists in this project. If it doesn't, create a new scan for the project using
+	// DevAndTestsVulnerabilitiesProject.zip, mute and snooze all packages, and update the scanID accordingly.
+	scanID := "28d29a61-bc5e-4f5a-9fdd-e18c5a10c05b"
+	//----------------------------------------------------------------------------------------------------------------------
+	reportFilePath := fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON)
+
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(resultsDirectory)
+	}()
+
+	assertFileExists(t, reportFilePath)
+
+	var result wrappers.ScanResultsCollection
+	readAndUnmarshalFile(t, reportFilePath, &result)
+
+	for _, res := range result.Results {
+		assert.Equal(t, "NOT_EXPLOITABLE", res.State, "Should be marked as not exploitable")
+	}
+}
+
+func assertFileExists(t *testing.T, path string) {
+	_, err := os.Stat(path)
+	assert.NilError(t, err, "Report file should exist at path "+path)
+}
+
+func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
+	file, err := os.ReadFile(path)
+	assert.NilError(t, err, "Error reading file at path "+path)
+
+	err = json.Unmarshal(file, v)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+}
