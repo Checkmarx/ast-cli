@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	"github.com/checkmarx/ast-cli/internal/commands/vorpal"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
@@ -187,7 +187,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanVorpalCmd := scanVorpalSubCommand(jwtWrapper, featureFlagsWrapper)
+	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -212,7 +212,7 @@ func NewScanCommand(
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
-		scanVorpalCmd,
+		scanASCACmd,
 		showScanCmd,
 		workflowScanCmd,
 		listScansCmd,
@@ -400,15 +400,15 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
-	scanVorpalCmd := &cobra.Command{
+func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanASCACmd := &cobra.Command{
 		Hidden: true,
-		Use:    "vorpal",
-		Short:  "Run a Vorpal scan",
-		Long:   "Running a Vorpal scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Use:    "asca",
+		Short:  "Run a ASCA scan",
+		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan vorpal --file-source <path to a single file> --vorpal-latest-version
+			$ cx scan asca --file-source <path to a single file> --asca-latest-version
 		`,
 		),
 		Annotations: map[string]string{
@@ -418,19 +418,19 @@ func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 			`,
 			),
 		},
-		RunE: vorpal.RunScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: asca.RunScanASCACommand(jwtWrapper, featureFlagsWrapper),
 	}
 
-	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
-		"Use this flag to update to the latest version of the Vorpal scanner."+
+	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,
+		"Use this flag to update to the latest version of the ASCA scanner."+
 			"Otherwise, we will check if there is an existing installation that can be used.")
-	scanVorpalCmd.PersistentFlags().StringP(
+	scanASCACmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
 		"The file source should be the path to a single file",
 	)
-	return scanVorpalCmd
+	return scanASCACmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {

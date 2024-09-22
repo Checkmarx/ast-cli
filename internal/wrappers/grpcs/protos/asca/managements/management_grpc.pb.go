@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpcs v1.3.0
 // - protoc             v4.25.3
-// source: managements/management.vorpal
+// source: managements/management.asca
 
 package managements
 
