@@ -64,4 +64,5 @@ var (
 	VorpalPortKey                       = strings.ToLower(VorpalPortEnv)
 	AiProxyAzureAiRouteKey              = strings.ToLower(AiProxyAzureAiRouteEnv)
 	AiProxyCheckmarxAiRouteKey          = strings.ToLower(AiProxyCheckmarxAiRouteEnv)
+	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
 )

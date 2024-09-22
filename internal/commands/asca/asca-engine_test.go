@@ -1,4 +1,4 @@
-package vorpal
+package asca
 
 import (
 	"reflect"
@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Test_ExecuteVorpalScan(t *testing.T) {
+func Test_ExecuteAscaScan(t *testing.T) {
 	type args struct {
-		fileSourceFlag      string
-		vorpalUpdateVersion bool
+		fileSourceFlag    string
+		ASCAUpdateVersion bool
 	}
 	tests := []struct {
 		name       string
@@ -27,8 +27,8 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 		{
 			name: "Test with empty fileSource flag should not return error",
 			args: args{
-				fileSourceFlag:      "",
-				vorpalUpdateVersion: true,
+				fileSourceFlag:    "",
+				ASCAUpdateVersion: true,
 			},
 			want: &grpcs.ScanResult{
 				Message: services.FilePathNotProvided,
@@ -36,28 +36,28 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags. vorpalUpdateVersion set to true",
+			name: "Test with valid flags. ASCAUpdateVersion set to true",
 			args: args{
-				fileSourceFlag:      "../data/python-vul-file.py",
-				vorpalUpdateVersion: true,
+				fileSourceFlag:    "../data/python-vul-file.py",
+				ASCAUpdateVersion: true,
 			},
 			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags. vorpalUpdateVersion set to false",
+			name: "Test with valid flags. ASCAUpdateVersion set to false",
 			args: args{
-				fileSourceFlag:      "../data/python-vul-file.py",
-				vorpalUpdateVersion: false,
+				fileSourceFlag:    "../data/python-vul-file.py",
+				ASCAUpdateVersion: false,
 			},
 			want:    mock.ReturnSuccessfulResponseMock(),
 			wantErr: false,
 		},
 		{
-			name: "Test with valid flags. vorpal scan failed",
+			name: "Test with valid flags. asca scan failed",
 			args: args{
-				fileSourceFlag:      "../data/csharp-no-vul.cs",
-				vorpalUpdateVersion: false,
+				fileSourceFlag:    "../data/csharp-no-vul.cs",
+				ASCAUpdateVersion: false,
 			},
 			want:    mock.ReturnFailureResponseMock(),
 			wantErr: false,
@@ -66,32 +66,32 @@ func Test_ExecuteVorpalScan(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(ttt.name, func(t *testing.T) {
-			vorpalParams := services.VorpalScanParams{
-				FilePath:            ttt.args.fileSourceFlag,
-				VorpalUpdateVersion: ttt.args.vorpalUpdateVersion,
-				IsDefaultAgent:      true,
+			ASCAParams := services.AscaScanParams{
+				FilePath:          ttt.args.fileSourceFlag,
+				ASCAUpdateVersion: ttt.args.ASCAUpdateVersion,
+				IsDefaultAgent:    true,
 			}
-			wrapperParams := services.VorpalWrappersParam{
+			wrapperParams := services.AscaWrappersParam{
 				JwtWrapper:          &mock.JWTMockWrapper{},
 				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-				VorpalWrapper:       &mock.VorpalMockWrapper{},
+				ASCAWrapper:         &mock.ASCAMockWrapper{},
 			}
-			got, err := services.CreateVorpalScanRequest(vorpalParams, wrapperParams)
+			got, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("executeVorpalScan() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("executeASCAScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("executeVorpalScan() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("executeASCAScan() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 			if !reflect.DeepEqual(got, ttt.want) {
-				t.Errorf("executeVorpalScan() got = %v, want %v", got, ttt.want)
+				t.Errorf("executeASCAScan() got = %v, want %v", got, ttt.want)
 			}
 		})
 	}
 }
 
-func Test_runScanVorpalCommand(t *testing.T) {
+func Test_runScanASCACommand(t *testing.T) {
 	tests := []struct {
 		name       string
 		sourceFlag string
@@ -108,14 +108,14 @@ func Test_runScanVorpalCommand(t *testing.T) {
 			want:       nil,
 		},
 		{
-			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set false ",
+			name:       "Test with valid fileSource Flag and ASCAUpdateVersion flag set false ",
 			sourceFlag: "data/python-vul-file.py",
 			engineFlag: false,
 			want:       nil,
 			wantErr:    false,
 		},
 		{
-			name:       "Test with valid fileSource Flag and vorpalUpdateVersion flag set true ",
+			name:       "Test with valid fileSource Flag and ASCAUpdateVersion flag set true ",
 			sourceFlag: "data/python-vul-file.py",
 			engineFlag: true,
 			want:       nil,
@@ -127,16 +127,16 @@ func Test_runScanVorpalCommand(t *testing.T) {
 		t.Run(ttt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
-			cmd.Flags().Bool(commonParams.VorpalLatestVersion, ttt.engineFlag, "")
+			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := RunScanVorpalCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
-				t.Errorf("RunScanVorpalCommand() error = %v, wantErr %v", err, ttt.wantErr)
+				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)
 				return
 			}
 			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
-				t.Errorf("RunScanVorpalCommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+				t.Errorf("RunScanASCACommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
 			}
 		})
 	}

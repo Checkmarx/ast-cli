@@ -64,4 +64,5 @@ const (
 	VorpalPortEnv                       = "CX_VORPAL_PORT"
 	AiProxyAzureAiRouteEnv              = "CX_AIPROXY_AZUREAI_ROUTE"
 	AiProxyCheckmarxAiRouteEnv          = "CX_AIPROXY_CHECKMARXAI_ROUTE"
+	ASCAPortEnv                         = "CX_ASCA_PORT"
 )

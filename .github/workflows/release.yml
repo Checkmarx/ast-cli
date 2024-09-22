@@ -64,7 +64,7 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
+        uses: douglascamata/setup-docker-macos-action@8d5fa43892aed7eee4effcdea113fd53e4d4bf83  #v1-alpha
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -114,6 +114,17 @@ jobs:
           SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
           SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
           SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }} # Secret for Cosign private key
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}       # Secret for Cosign password
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}   # Secret for Cosign public key
+
+      - name: Verify Docker image signature
+        if: inputs.dev == false
+        run: |
+          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   notify:
     runs-on: ubuntu-latest

@@ -65,4 +65,5 @@ var EnvVarsBinds = []struct {
 	{VorpalPortKey, VorpalPortEnv, ""},
 	{AiProxyAzureAiRouteKey, AiProxyAzureAiRouteEnv, "api/ai-proxy/redirect/externalAzure"},
 	{AiProxyCheckmarxAiRouteKey, AiProxyCheckmarxAiRouteEnv, "api/ai-proxy/redirect/azure"},
+	{ASCAPortKey, ASCAPortEnv, ""},
 }
