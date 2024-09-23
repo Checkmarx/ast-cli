@@ -57,6 +57,22 @@ builds:
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
+docker_signs:
+  - id: ast-cli-signing
+    cmd: cosign
+    args:
+      - "sign"
+      - "--key-env=COSIGN_PRIVATE_KEY"
+      - "${artifact}"
+      - "--yes"
+    artifacts: images
+    stdin: "{{ .Env.COSIGN_PASSWORD }}"
+    env:
+      - COSIGN_PRIVATE_KEY={{ .Env.COSIGN_PRIVATE_KEY }}
+      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
+      - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}
+    output: true
+
 dockers:
   - use: docker
     dockerfile: Dockerfile
