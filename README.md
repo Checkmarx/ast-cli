@@ -23,7 +23,7 @@
 <h3 align="center">Checkmarx One CLI</h3>
 
 <p align="center">
-    Checkmarx CLI is a standalone Checkmarx tool.
+    Checkmarx CLI is a standalone Checkmarx tool..
 <br />
     <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
     <br />
@@ -67,7 +67,7 @@ You can also use the relevant link to download the latest version of the CLI:
 ## Compile
 
 To be able to build the code you should have:
-* Go - You can download and install Go using this [link](https://golang.org/doc/install).
+* Go - You can download and install Go using this [link](https://golang.org/doc/install)
 
 #### Windows
 ``` powershell
