@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpcs v1.3.0
 // - protoc             v4.25.3
-// source: scans/scan.vorpal
+// source: scans/scan.asca
 
 package scans
 

@@ -64,7 +64,7 @@ jobs:
           brew install Bearer/tap/gon
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@0f8f0e9f1033ccfb6676fe219e91781393f8ed4b  #v1-alpha
+        uses: douglascamata/setup-docker-macos-action@8d5fa43892aed7eee4effcdea113fd53e4d4bf83  #v1-alpha
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -76,6 +76,16 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Install Cosign
+        run: |
+          brew install sigstore/tap/cosign
+
+      - name: Add and Commit qemu.rb
+        if: inputs.dev == false
+        run: |
+          git add qemu.rb
+          git commit -m "Add qemu.rb"
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
