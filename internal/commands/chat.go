@@ -9,10 +9,8 @@ const (
 	ConversationIDErrorFormat           = "Invalid conversation ID %s"
 	AiGuidedRemediationEnabled          = "scan.config.plugins.aiGuidedRemediation"
 	AiGuidedRemediationEngine           = "scan.config.plugins.aiGuidedRemediationAiEngine"
-	AiGuidedRemediationOpenAiValue      = "openai"
 	AiGuidedRemediationAzureAiValue     = "azureai"
 	AiGuidedRemediationCheckmarxAiValue = "checkmarxai"
-	AzureAiModel                        = "scan.config.plugins.aiGuidedRemediationAzureAiModel"
 )
 
 func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {

@@ -149,8 +149,7 @@ func CreateStatefulWrapper(cmd *cobra.Command, azureAiEnabled, checkmarxAiEnable
 	if azureAiEnabled {
 		aiProxyAzureAIRoute := viper.GetString(params.AiProxyAzureAiRouteKey)
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyAzureAIRoute, customerToken)
-		model, _ := GetAzureAiModel(tenantConfigurationResponses)
-		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, model, dropLen, 0)
+		statefulWrapper, _ = wrapper.NewStatefulWrapperNew(conn, aiProxyEndPoint, customerToken, "", dropLen, 0)
 	} else if checkmarxAiEnabled {
 		aiProxyCheckmarxAIRoute := viper.GetString(params.AiProxyCheckmarxAiRouteKey)
 		aiProxyEndPoint, _ := wrappers.GetURL(aiProxyCheckmarxAIRoute, customerToken)
@@ -223,10 +222,6 @@ func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrap
 	}
 	isEnabled := strings.EqualFold(engine, AiGuidedRemediationCheckmarxAiValue)
 	return isEnabled
-}
-
-func GetAzureAiModel(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) (string, error) {
-	return GetTenantConfiguration(tenantConfigurationResponses, AzureAiModel)
 }
 
 func getMessageContents(response []message.Message) []string {
