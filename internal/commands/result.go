@@ -2393,7 +2393,7 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	var scanLocation wrappers.SarifLocation
 
-	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.FileName
+	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 	scanLocation.PhysicalLocation.Region.StartColumn = 1

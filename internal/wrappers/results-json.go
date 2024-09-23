@@ -107,7 +107,7 @@ type ScanResultData struct {
 	IssueType     string `json:"issueType,omitempty"`
 	ExpectedValue string `json:"expectedValue,omitempty"`
 	Value         string `json:"value,omitempty"`
-	Filename      string `json:"filename,omitempty"`
+	Filename      string `json:"filename,omitempty"` //also used by SSCS results
 	// Added to support containers results
 	PackageName    string `json:"packageName,omitempty"`
 	PackageVersion string `json:"packageVersion,omitempty"`
@@ -121,6 +121,5 @@ type ScanResultData struct {
 	RuleDescription string  `json:"ruleDescription,omitempty"`
 	Remediation     string  `json:"remediation,omitempty"`
 	RemediationLink string  `json:"remediationLink,omitempty"`
-	FileName        string  `json:"fileName,omitempty"`
 	Validity        string  `json:"validity,omitempty"`
 }
