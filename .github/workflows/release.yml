@@ -77,6 +77,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Install Cosign
+        run: |
+          brew install sigstore/tap/cosign
+
       - name: Add and Commit qemu.rb
         if: inputs.dev == false
         run: |
