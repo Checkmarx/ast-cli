@@ -75,11 +75,11 @@ docker_signs:
       - "${artifact}"
       - "--yes"
     artifacts: images
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"
+    stdin: "{{ secrets.COSIGN_PASSWORD }}"
     env:
-      - COSIGN_PRIVATE_KEY={{ .Env.COSIGN_PRIVATE_KEY }}
-      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
-      - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}
+      - COSIGN_PRIVATE_KEY={{ secrets.COSIGN_PRIVATE_KEY }}
+      - COSIGN_PASSWORD={{ secrets.COSIGN_PASSWORD }}
+      - COSIGN_PUBLIC_KEY={{ secrets.COSIGN_PUBLIC_KEY }}
     output: true
 
 archives:
