@@ -77,6 +77,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Install Cosign
+        if: inputs.dev == false
+        run: |
+          brew install sigstore/tap/cosign
+
       - name: Add and Commit qemu.rb
         if: inputs.dev == false
         run: |
@@ -120,9 +125,9 @@ jobs:
           SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
           SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
           SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }} # Secret for Cosign private key
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}       # Secret for Cosign password
-          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}   # Secret for Cosign public key
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
 
       - name: Verify Docker image signature
         if: inputs.dev == false

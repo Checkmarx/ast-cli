@@ -57,22 +57,6 @@ builds:
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
-docker_signs:
-  - id: ast-cli-signing
-    cmd: cosign
-    args:
-      - "sign"
-      - "--key-env=COSIGN_PRIVATE_KEY"   # Private key from environment variable
-      - "${artifact}"                    # The artifact (image or manifest) to be signed
-      - "--yes"                          # Required for Cosign 2.0.0+
-    artifacts: images                     # Sign Docker images
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"   # Password from environment variable
-    env:
-      - COSIGN_PRIVATE_KEY={{ .Env.COSIGN_PRIVATE_KEY }}  # Private key from GitHub Secrets
-      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}        # Password from GitHub Secrets
-      - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}    # Public key from GitHub Secrets
-    output: true
-
 dockers:
   - use: docker
     dockerfile: Dockerfile
@@ -81,6 +65,22 @@ dockers:
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
+
+docker_signs:
+  - id: ast-cli-signing
+    cmd: cosign
+    args:
+      - "sign"
+      - "--key-env=COSIGN_PRIVATE_KEY"
+      - "${artifact}"
+      - "--yes"
+    artifacts: images
+    stdin: "{{ .Env.COSIGN_PASSWORD }}"
+    env:
+      - COSIGN_PRIVATE_KEY={{ .Env.COSIGN_PRIVATE_KEY }}
+      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
+      - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}
+    output: true
 
 archives:
   - id: cx
