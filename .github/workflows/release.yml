@@ -129,14 +129,6 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
 
-      - name: Verify Docker image signature
-        if: inputs.dev == false
-        run: |
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
-          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-
   notify:
     runs-on: ubuntu-latest
     if: inputs.dev == false

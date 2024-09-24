@@ -66,22 +66,6 @@ dockers:
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
 
-docker_signs:
-  - id: ast-cli-signing
-    cmd: cosign
-    args:
-      - "sign"
-      - "--key-env=COSIGN_PRIVATE_KEY"
-      - "${artifact}"
-      - "--yes"
-    artifacts: images
-    stdin: "{{ secrets.COSIGN_PASSWORD }}"
-    env:
-      - COSIGN_PRIVATE_KEY={{ secrets.COSIGN_PRIVATE_KEY }}
-      - COSIGN_PASSWORD={{ secrets.COSIGN_PASSWORD }}
-      - COSIGN_PUBLIC_KEY={{ secrets.COSIGN_PUBLIC_KEY }}
-    output: true
-
 archives:
   - id: cx
     builds:
