@@ -13,12 +13,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
@@ -31,6 +28,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	asserts "github.com/stretchr/testify/assert"
@@ -54,7 +52,6 @@ const (
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
 	timeout               = 10 * time.Minute
-	ProjectNameFile       = "projectName.txt"
 )
 
 var (
@@ -296,15 +293,16 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
 	}
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -356,6 +354,7 @@ func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -492,9 +491,9 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 
 func TestScansUpdateProjectGroups(t *testing.T) {
 	cleanupCxZipFiles(t)
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType))
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType), "timeout")
 	response := listScanByID(t, scanID)
-	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType))
+	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType), "timeout")
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -871,7 +870,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security, scs"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security,   container-security, scs"))
 	} else {
 		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
 	}
@@ -939,6 +938,7 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
+		flag(params.DebugFlag),
 	}
 
 	if strings.Contains(scanTypes, "scs") {
@@ -948,8 +948,13 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 	return args
 }
 
-func executeCreateScan(t *testing.T, args []string) (string, string) {
-	buffer := executeScanGetBuffer(t, args)
+func executeCreateScan(t *testing.T, args []string, prop ...string) (string, string) {
+	var buffer *bytes.Buffer
+	if (prop != nil && len(prop) > 0) && prop[0] == "timeout" {
+		buffer = executeScanGetBufferWithSpecificTimeout(t, args, 12*time.Minute)
+	} else {
+		buffer = executeScanGetBuffer(t, args)
+	}
 
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
@@ -964,6 +969,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeout, args...)
+}
+
+func executeScanGetBufferWithSpecificTimeout(t *testing.T, args []string, timeOut time.Duration) *bytes.Buffer {
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeOut, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {
@@ -1692,7 +1701,6 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -1871,14 +1879,16 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 	wrappers.Domains = make(map[string]struct{})
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "iac-security"))
-	usedDomainsInTests := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
-	validateCheckmarxDomains(t, usedDomainsInTests)
+	baseUrl, _ := wrappers.GetURL("", "")
+	authUri, _ := wrappers.GetAuthURI()
+	usedDomainsFromConfig := []string{baseUrl, authUri}
+	validateCheckmarxDomains(t, usedDomainsFromConfig)
 }
 
 func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	usedDomains := wrappers.Domains
 	for domain, _ := range usedDomains {
-		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
+		assert.Assert(t, utils.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
 }
 
@@ -1938,23 +1948,4 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
-}
-
-func GenerateRandomProjectNameForScan() string {
-	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
-	_ = WriteProjectNameToFile(projectName)
-	return projectName
-}
-
-func WriteProjectNameToFile(projectName string) error {
-	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString(projectName + "\n"); err != nil {
-		return err
-	}
-	return nil
 }
