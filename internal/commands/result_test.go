@@ -1,5 +1,3 @@
-//go:build !integration
-
 package commands
 
 import (
@@ -845,6 +843,52 @@ func assertTypePresentJSON(t *testing.T, isResultsEnabled bool, resultType strin
 	}
 }
 
+func assertTypePresentSarif(t *testing.T, isResultsEnabled bool, resultType string, expectedResultCount *int) {
+	bytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultsCollection *wrappers.SarifResultsCollection
+	err = json.Unmarshal(bytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling SARIF data")
+	resultTypeRuleSuffix := fmt.Sprintf("(%s)", resultType)
+	actualResultCount := 0
+	for _, scanResult := range scanResultsCollection.Runs[0].Results {
+		if !isResultsEnabled && strings.HasSuffix(scanResult.RuleID, resultTypeRuleSuffix) {
+			assert.Assert(t, false, fmt.Sprintf("%s result should not be present", resultType))
+		} else if isResultsEnabled && strings.HasSuffix(scanResult.RuleID, resultTypeRuleSuffix) {
+			if expectedResultCount != nil {
+				actualResultCount++
+			} else {
+				return
+			}
+		}
+	}
+	if isResultsEnabled && expectedResultCount != nil {
+		assert.Equal(t, actualResultCount, *expectedResultCount,
+			fmt.Sprintf("Expected %d results of type %s but found %d results", *expectedResultCount, resultType, actualResultCount))
+	} else if isResultsEnabled && expectedResultCount == nil {
+		assert.Assert(t, false, fmt.Sprintf("%s result should be present", resultType))
+	}
+}
+
+func assertTypePresentSarifV2(t *testing.T, resultType string, expectedResultTypeCount int) {
+	bytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultsCollection *wrappers.SarifResultsCollection
+	err = json.Unmarshal(bytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling SARIF data")
+	resultTypeRuleSuffix := fmt.Sprintf("(%s)", resultType)
+	actualResultTypeCount := 0
+	for _, scanResult := range scanResultsCollection.Runs[0].Results {
+		if strings.HasSuffix(scanResult.RuleID, resultTypeRuleSuffix) {
+			actualResultTypeCount++
+		}
+	}
+	assert.Equal(t, actualResultTypeCount, expectedResultTypeCount,
+		fmt.Sprintf("Expected %s result count %d but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
+}
+
 func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string, numberOfIssues *int) {
 	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
@@ -1266,6 +1310,34 @@ func TestRunGetResultsByScanIdJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *te
 	assertTypePresentJSON(t, true, params.SCSSecretDetectionType)
 
 	removeFileBySuffix(t, printer.FormatJSON)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
+	assertTypePresentSarifV2(t, params.SCSScorecardType, 1)
+	assertTypePresentSarifV2(t, params.SCSSecretDetectionType, 2)
+
+	removeFileBySuffix(t, printer.FormatSarif)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSMissingInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
+	assertTypePresentSarifV2(t, params.SCSScorecardType, 0)
+	assertTypePresentSarifV2(t, params.SCSSecretDetectionType, 0)
+
+	removeFileBySuffix(t, printer.FormatSarif)
 	mock.SetScsMockVarsToDefault()
 }
 
