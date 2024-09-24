@@ -57,6 +57,15 @@ builds:
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
 
+dockers:
+  - use: docker
+    dockerfile: Dockerfile
+    image_templates:
+      - "cxsdlc/ast-cli:latest"
+      - "cxsdlc/ast-cli:{{ .Tag }}"
+      - "checkmarx/ast-cli:latest"
+      - "checkmarx/ast-cli:{{ .Tag }}"
+
 docker_signs:
   - id: ast-cli-signing
     cmd: cosign
@@ -72,15 +81,6 @@ docker_signs:
       - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
       - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}
     output: true
-
-dockers:
-  - use: docker
-    dockerfile: Dockerfile
-    image_templates:
-      - "cxsdlc/ast-cli:latest"
-      - "cxsdlc/ast-cli:{{ .Tag }}"
-      - "checkmarx/ast-cli:latest"
-      - "checkmarx/ast-cli:{{ .Tag }}"
 
 archives:
   - id: cx
