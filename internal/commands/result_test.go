@@ -883,10 +883,20 @@ func assertTypePresentSarifV2(t *testing.T, resultType string, expectedResultTyp
 	for _, scanResult := range scanResultsCollection.Runs[0].Results {
 		if strings.HasSuffix(scanResult.RuleID, resultTypeRuleSuffix) {
 			actualResultTypeCount++
+			assertRulePresentSarif(t, scanResult.RuleID, scanResultsCollection)
 		}
 	}
 	assert.Equal(t, actualResultTypeCount, expectedResultTypeCount,
 		fmt.Sprintf("Expected %s result count %d but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
+}
+
+func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {
+	for _, rule := range scanResultsCollection.Runs[0].Tool.Driver.Rules {
+		if rule.ID == ruleID {
+			return
+		}
+	}
+	assert.Assert(t, false, fmt.Sprintf("RuleID %s found in SARIF result not found in rules of SARIF report", ruleID))
 }
 
 func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string, numberOfIssues *int) {

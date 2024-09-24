@@ -2213,7 +2213,7 @@ func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 func findHelpURI(result *wrappers.ScanResult) string {
 	if strings.HasPrefix(result.Type, commonParams.SscsType) {
 		if result.ScanResultData.RemediationLink != "" {
-			return result.ScanResultData.RuleDescription
+			return result.ScanResultData.RemediationLink
 		}
 	}
 
