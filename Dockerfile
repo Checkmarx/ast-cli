@@ -1,5 +1,4 @@
-FROM checkmarx/bash-fips:golden-amd64@sha256:7e22d30bfdcec9c4acfc5616aadcc166e085633c0ab9b73266878acc610f22e6
-
+FROM cgr.dev/chainguard/bash@sha256:f8e48690d991e6814c81f063833176439e8f0d4bc1c5f0a47f94858dea3e4f44
 USER nonroot
 
 COPY cx /app/bin/cx
