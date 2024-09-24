@@ -71,7 +71,7 @@ docker_signs:
     cmd: cosign
     args:
       - "sign"
-      - "--key-env=COSIGN_PRIVATE_KEY"
+      - "--key=COSIGN_PRIVATE_KEY"
       - "${artifact}"
       - "--yes"
     artifacts: images
