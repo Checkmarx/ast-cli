@@ -75,6 +75,7 @@ docker_signs:
       - COSIGN_PRIVATE_KEY=${{ .Env.COSIGN_PRIVATE_KEY }}
       - COSIGN_PASSWORD=${{ .Env.COSIGN_PASSWORD }}
 
+
 archives:
   - id: cx
     builds:
