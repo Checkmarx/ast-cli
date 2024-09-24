@@ -78,6 +78,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Install Cosign
+        if: inputs.dev == false
         run: |
           brew install sigstore/tap/cosign
 
