@@ -1,6 +1,6 @@
-FROM checkmarx/bash-fips:golden-amd64@sha256:7e22d30bfdcec9c4acfc5616aadcc166e085633c0ab9b73266878acc610f22e6
+FROM checkmarx/bash-fips:5.2.32-r0@sha256:afc70868d063b0330fc7c52bcb7c874db2e466611745b362b79b4fec3478fa4e
 
-USER nonroot
+USER 65532
 
 COPY cx /app/bin/cx
 
