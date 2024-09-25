@@ -72,9 +72,14 @@ type SarifPhysicalLocation struct {
 }
 
 type SarifRegion struct {
-	StartLine   uint `json:"startLine,omitempty"`
-	StartColumn uint `json:"startColumn,omitempty"`
-	EndColumn   uint `json:"endColumn,omitempty"`
+	StartLine   uint          `json:"startLine,omitempty"`
+	StartColumn uint          `json:"startColumn,omitempty"`
+	EndColumn   uint          `json:"endColumn,omitempty"`
+	Snippet     *SarifSnippet `json:"snippet,omitempty"`
+}
+
+type SarifSnippet struct {
+	Text string `json:"text,omitempty"`
 }
 
 type SarifArtifactLocation struct {

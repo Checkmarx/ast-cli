@@ -2052,6 +2052,9 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
+			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+				sscsSonarIssue := parseSscsSonar(result)
+				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
 		}
 	}
@@ -2069,6 +2072,28 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	textRange.EndLine = 2
 	auxLocation.TextRange = textRange
 	return auxLocation
+}
+
+func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
+	sonarIssue := initSonarIssue(result)
+
+	// overriding ruleID set by default in initSonarIssue
+	if result.ScanResultData.RuleID != nil {
+		sonarIssue.RuleID = *result.ScanResultData.RuleID
+	}
+
+	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
+	if result.ScanResultData.Snippet != "" {
+		sonarIssue.PrimaryLocation.Message = fmt.Sprintf("%s : %s", result.ScanResultData.Snippet, result.Description)
+	} else {
+		sonarIssue.PrimaryLocation.Message = result.Description
+	}
+	var textRange wrappers.SonarTextRange
+	textRange.StartColumn = 1
+	textRange.EndColumn = 2
+	textRange.StartLine = result.ScanResultData.Line
+	sonarIssue.PrimaryLocation.TextRange = textRange
+	return sonarIssue
 }
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
@@ -2393,6 +2418,10 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	var scanLocation wrappers.SarifLocation
 
+	if result.ScanResultData.Snippet != "" {
+		var sarifSnippet wrappers.SarifSnippet
+		sarifSnippet.Text = result.ScanResultData.Snippet
+	}
 	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line

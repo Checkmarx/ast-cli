@@ -102,12 +102,12 @@ type ScanResultData struct {
 	ScaPackageCollection *ScaPackageCollection    `json:"scaPackageData,omitempty"`
 	RecommendedVersion   interface{}              `json:"recommendedVersion,omitempty"`
 	// Added to support kics results
-	Line          uint   `json:"line,omitempty"`
+	Line          uint   `json:"line,omitempty"` // also used by SSCS results
 	Platform      string `json:"platform,omitempty"`
 	IssueType     string `json:"issueType,omitempty"`
 	ExpectedValue string `json:"expectedValue,omitempty"`
 	Value         string `json:"value,omitempty"`
-	Filename      string `json:"filename,omitempty"` //also used by SSCS results
+	Filename      string `json:"filename,omitempty"` // also used by SSCS results
 	// Added to support containers results
 	PackageName    string `json:"packageName,omitempty"`
 	PackageVersion string `json:"packageVersion,omitempty"`
@@ -122,4 +122,5 @@ type ScanResultData struct {
 	Remediation     string  `json:"remediation,omitempty"`
 	RemediationLink string  `json:"remediationLink,omitempty"`
 	Validity        string  `json:"validity,omitempty"`
+	Snippet         string  `json:"snippet,omitempty"`
 }
