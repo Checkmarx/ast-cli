@@ -4,4 +4,6 @@ USER 65532
 
 COPY cx /app/bin/cx
 
+RUN chown 65532:65532 /app
+
 ENTRYPOINT ["/app/bin/cx"]
