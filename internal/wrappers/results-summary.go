@@ -313,6 +313,10 @@ const summaryTemplateHeader = `{{define "SummaryTemplate"}}
             background-color: #70F9CC !important;
         }
 
+		.bg-scs {
+			background-color: #D2C7F6 !important;
+		}
+
         .header-row .cx-info .data .calendar-svg {
             margin-right: 8px;
         }
@@ -782,6 +786,9 @@ const nonAsyncSummary = `<div class="top-row">
 					{{if .ContainersEnabled}}<div class="legend"><span class="engines-legend-dot">Containers</span>
                         <div class="severity-engines-text bg-containers"></div>
                     </div>{{end}}
+					{{if .SCSEnabled}}<div class="legend"><span class="engines-legend-dot">SCS</span>
+                        <div class="severity-engines-text bg-scs"></div>
+                    </div>{{end}}
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -790,6 +797,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
 							{{if .ContainersEnabled}}<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
+							{{if .SCSEnabled}}<div class="progress-bar bg-scs value">{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}}</div>{{end}}
                         </div>
                     </div>
                 </div>
