@@ -107,8 +107,8 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
-	snoozeLabel                             = "Snooze"
-	muteLabel                               = "Muted"
+	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
+	ScaExcludeResultTypesParam              = "exclude-result-types"
 )
 
 var summaryFormats = []string{
@@ -272,6 +272,8 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
+	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, "Hide dev and test dependencies in SCA scan results")
+
 	return resultShowCmd
 }
 
@@ -941,15 +943,22 @@ func runGetResultCommand(
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
+
 		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
+
+		if scaHideDevAndTestDep {
+			params[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+		}
+
 		scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
 		if scanErr != nil {
 			return errors.Wrapf(scanErr, "%s", failedGetting)
@@ -1099,7 +1108,7 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	agent string,
-	params map[string]string,
+	resultsParam map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
@@ -1118,7 +1127,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParam)
 		if err != nil {
 			return err
 		}
@@ -1362,15 +1371,17 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
+	resultsParams map[string]string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
 
-	params[commonParams.ScanIDQueryParam] = scan.ID
-	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
+	resultsParams[commonParams.ScanIDQueryParam] = scan.ID
+	_, sastRedundancy := resultsParams[commonParams.SastRedundancyFlag]
 
-	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+	scaHideDevAndTestDep := resultsParams[ScaExcludeResultTypesParam] == ScaDevAndTestExclusionParam
+
+	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(resultsParams)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
@@ -1384,7 +1395,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep)
 		if err != nil {
 			return nil, err
 		}
@@ -1399,9 +1410,10 @@ func enrichScaResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsModel *wrappers.ScanResultsCollection,
+	scaHideDevAndTestDep bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}

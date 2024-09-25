@@ -576,6 +576,32 @@ func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabiliti
 	}
 }
 
+func TestResultsShow_WithScaHideDevAndTestDependencies_NoVulnerabilitiesInScan(t *testing.T) {
+	scanID := "28d29a61-bc5e-4f5a-9fdd-e18c5a10c05b"
+	reportFilePath := fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON)
+
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+		flag(params.ScaHideDevAndTestDepFlag),
+	)
+
+	defer func() {
+		_ = os.RemoveAll(resultsDirectory)
+	}()
+
+	assertFileExists(t, reportFilePath)
+
+	var result wrappers.ScanResultsCollection
+	readAndUnmarshalFile(t, reportFilePath, &result)
+
+	assert.Equal(t, len(result.Results), 0, "Should have no results")
+}
+
 func assertFileExists(t *testing.T, path string) {
 	_, err := os.Stat(path)
 	assert.NilError(t, err, "Report file should exist at path "+path)
