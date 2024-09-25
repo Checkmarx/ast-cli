@@ -69,8 +69,8 @@ func FindProject(
 }
 
 func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrappers.ProjectsWrapper) (*wrappers.ProjectsCollectionResponseModel, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
+	params := make(map[string][]string)
+	params["names"] = []string{projectName}
 	resp, _, err := projectsWrapper.Get(params)
 
 	if err != nil {

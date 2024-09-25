@@ -75,8 +75,8 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 		return nil, err
 	}
 
-	params := map[string]string{
-		commonParams.ProjectIDFlag: projectID,
+	params := map[string][]string{
+		commonParams.ProjectIDFlag: {projectID},
 	}
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
@@ -91,13 +91,13 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
 }
 
-func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
+func (p *ProjectsHTTPWrapper) Get(params map[string][]string) (
 	*ProjectsCollectionResponseModel,
 	*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	if _, ok := params[limit]; !ok {
-		params[limit] = limitValue
+		params[limit] = []string{limitValue}
 	}
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
@@ -153,8 +153,8 @@ func (p *ProjectsHTTPWrapper) GetByName(name string) (
 	*ProjectResponseModel,
 	*ErrorModel,
 	error) {
-	params := make(map[string]string)
-	params["name"] = name
+	params := make(map[string][]string)
+	params["name"] = []string{name}
 	resp, _, err := p.Get(params)
 	if err != nil {
 		return nil, nil, err
@@ -174,12 +174,12 @@ func (p *ProjectsHTTPWrapper) GetByName(name string) (
 	return nil, nil, errors.Errorf(errorConstants.ProjectNotExists)
 }
 
-func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error) {
+func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[string][]string) ([]string, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	var request = "/branches?project-id=" + projectID
 
-	params["limit"] = limitValue
+	params["limit"] = []string{limitValue}
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
 	if err != nil {
 		return nil, nil, err

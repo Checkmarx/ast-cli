@@ -268,21 +268,21 @@ func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, us
 }
 
 func SendPrivateHTTPRequestWithQueryParams(
-	method, path string, params map[string]string,
+	method, path string, params map[string][]string,
 	body io.Reader, timeout uint,
 ) (*http.Response, error) {
 	return HTTPRequestWithQueryParams(method, path, params, body, timeout, false)
 }
 
 func SendHTTPRequestWithQueryParams(
-	method, path string, params map[string]string,
+	method, path string, params map[string][]string,
 	body io.Reader, timeout uint,
 ) (*http.Response, error) {
 	return HTTPRequestWithQueryParams(method, path, params, body, timeout, true)
 }
 
 func HTTPRequestWithQueryParams(
-	method, path string, params map[string]string,
+	method, path string, params map[string][]string,
 	body io.Reader, timeout uint, printBody bool,
 ) (*http.Response, error) {
 	u, accessToken, err := getURLAndAccessToken(path)
@@ -297,7 +297,7 @@ func HTTPRequestWithQueryParams(
 	}
 	q := req.URL.Query()
 	for k, v := range params {
-		q.Add(k, v)
+		q.Add(k, v[0])
 	}
 	req.URL.RawQuery = q.Encode()
 	enrichWithOath2Credentials(req, accessToken, bearerFormat)

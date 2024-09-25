@@ -49,10 +49,11 @@ type ProjectConfiguration struct {
 type ProjectsWrapper interface {
 	Create(model *Project) (*ProjectResponseModel, *ErrorModel, error)
 	Update(projectID string, model *Project) error
-	Get(params map[string]string) (*ProjectsCollectionResponseModel, *ErrorModel, error)
+	Get(params map[string][]string) (*ProjectsCollectionResponseModel, *ErrorModel, error)
+	//Get(params map[string][]string) (*ProjectsCollectionResponseModel, *ErrorModel, error)
 	GetByID(projectID string) (*ProjectResponseModel, *ErrorModel, error)
 	GetByName(name string) (*ProjectResponseModel, *ErrorModel, error)
-	GetBranchesByID(projectID string, params map[string]string) ([]string, *ErrorModel, error)
+	GetBranchesByID(projectID string, params map[string][]string) ([]string, *ErrorModel, error)
 	Delete(projectID string) (*ErrorModel, error)
 	Tags() (map[string][]string, *ErrorModel, error)
 	UpdateConfiguration(projectID string, configuration []ProjectConfiguration) (*ErrorModel, error)
