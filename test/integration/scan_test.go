@@ -1720,7 +1720,16 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
-		flag(params.TargetFormatFlag), "markdown,summaryConsole,json,summaryJSON",
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatJSON,
+				printer.FormatSarif,
+				printer.FormatSummaryConsole,
+				printer.FormatSummaryJSON,
+				printer.FormatPDF,
+				printer.FormatSummaryMarkdown,
+			}, ",",
+		),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
