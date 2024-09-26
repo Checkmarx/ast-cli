@@ -65,10 +65,6 @@ dockers:
       - "cxsdlc/ast-cli:{{ .Tag }}"
       - "checkmarx/ast-cli:latest"
       - "checkmarx/ast-cli:{{ .Tag }}"
-    hooks:
-      post:
-        - cmd: cosign sign --key env://COSIGN_PRIVATE_KEY --passphrase env://COSIGN_PASSWORD {{ .ImageName }}
-          output: true
 
 archives:
   - id: cx
