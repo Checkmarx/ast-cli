@@ -21,10 +21,17 @@ import (
 )
 
 const (
-	fileName                = "result-test"
-	resultsDirectory        = "output-results-folder/"
-	fileExtention           = "report.json"
+	fileName         = "result-test"
+	resultsDirectory = "output-results-folder/"
+	fileExtention    = "report.json"
+
+	//----------------------------------------------------------------------------------------------------------------------
+	// This ScanIDWithDevAndTestDep is associated with the CXOne project: ASTCLI/HideDevAndTestsVulnerabilities/Test (DEU, Galactica tenant).
+	// All vulnerable packages in this project have been snoozed or muted, so no vulnerabilities should appear in this scan.
+	// If the test fails, verify the scan exists in this project. If it doesn't, create a new scan for the project using
+	// DevAndTestsVulnerabilitiesProject.zip, mute and snooze all packages, and update the scanID accordingly.
 	ScanIDWithDevAndTestDep = "28d29a61-bc5e-4f5a-9fdd-e18c5a10c05b"
+	//----------------------------------------------------------------------------------------------------------------------
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
@@ -545,19 +552,12 @@ func TestResultsGeneratingReportWithExcludeNotExploitableStateAndSeverityAndStat
 }
 
 func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabilitiesInScan(t *testing.T) {
-	//----------------------------------------------------------------------------------------------------------------------
-	// This scanID is associated with the CXOne project: ASTCLI/HideDevAndTestsVulnerabilities/Test (DEU, Galactica tenant).
-	// All vulnerable packages in this project have been snoozed or muted, so no vulnerabilities should appear in this scan.
-	// If the test fails, verify the scan exists in this project. If it doesn't, create a new scan for the project using
-	// DevAndTestsVulnerabilitiesProject.zip, mute and snooze all packages, and update the scanID accordingly.
-	scanID := ScanIDWithDevAndTestDep
-	//----------------------------------------------------------------------------------------------------------------------
 	reportFilePath := fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON)
 
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
 		"results", "show",
-		flag(params.ScanIDFlag), scanID,
+		flag(params.ScanIDFlag), ScanIDWithDevAndTestDep,
 		flag(params.TargetFormatFlag), printer.FormatJSON,
 		flag(params.TargetPathFlag), resultsDirectory,
 		flag(params.TargetFlag), fileName,
