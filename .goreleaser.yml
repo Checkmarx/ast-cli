@@ -40,7 +40,7 @@ builds:
             - SIGNING_REMOTE_SSH_HOST={{ .Env.SIGNING_REMOTE_SSH_HOST }}
             - SIGNING_HSM_CREDS={{ .Env.SIGNING_HSM_CREDS }}
             - SIGNING_REMOTE_SSH_PRIVATE_KEY={{ .Env.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
-            
+
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
