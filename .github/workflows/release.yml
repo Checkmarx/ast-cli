@@ -134,7 +134,7 @@ jobs:
       - name: Sign Docker Image with Cosign
         if: inputs.dev == false
         run: |
-          cosign sign --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
       - name: Verify Docker image signature
         if: inputs.dev == false
