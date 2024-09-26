@@ -61,5 +61,5 @@ var (
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
 	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 	ByorPathKey                         = strings.ToLower(ByorPathEnv)
-	VorpalPortKey                       = strings.ToLower(VorpalPortEnv)
+	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
 )
