@@ -50,7 +50,7 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	}
 
 	var model *wrappers.ProjectsCollectionResponseModel
-	switch name := params["names"]; name {
+	switch name := params["name"]; name {
 	case "fake-kics-scanner-fail":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
 	case "fake-multiple-scanner-fails":
