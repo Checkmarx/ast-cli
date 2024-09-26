@@ -272,7 +272,7 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
-	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, "Hide dev and test dependencies in SCA scan results")
+	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, "Filter SCA results to exclude dev and test dependencies")
 
 	return resultShowCmd
 }
