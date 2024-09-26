@@ -163,76 +163,74 @@ func runScanCommand(t *testing.T, agent, scanID string) *wrappers.ScanResultsCol
 }
 
 func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-	results := runScanCommand(t, params.DefaultAgent, "SCS_ONLY")
-	scsSecretDetectionFound := false
-	scsScorecardFound := false
-	for _, result := range results.Results {
-		if result.Type == params.SCSSecretDetectionType {
-			scsSecretDetectionFound = true
-		}
-		if result.Type == params.SCSScorecardType {
-			scsScorecardFound = true
-		}
-		if scsSecretDetectionFound && scsScorecardFound {
-			break
-		}
-	}
-	assert.Assert(t, scsSecretDetectionFound && scsScorecardFound, "SCS results should be included for AST-CLI agent")
-	assert.Assert(t, results.TotalCount == 3, "SCS results should be included for AST-CLI agent")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.DefaultAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 1)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-	results := runScanCommand(t, params.VSCodeAgent, "SCS_ONLY")
-	for _, result := range results.Results {
-		assert.Assert(t, result.Type != params.SCSScorecardType, "SCS Scorecard results should be excluded for VS Code agent")
-	}
-	assert.Assert(t, results.TotalCount == 2, "SCS Scorecard results should be excluded for VS Code agent")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.VSCodeAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-	results := runScanCommand(t, params.JetbrainsAgent, "SCS_ONLY")
-	for _, result := range results.Results {
-		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
-	}
-	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.JetbrainsAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-	results := runScanCommand(t, params.EclipseAgent, "SAST_ONLY")
-	for _, result := range results.Results {
-		assert.Assert(t, result.Type != params.SCSScorecardType && result.Type != params.SCSSecretDetectionType, "SCS results should be excluded for other agents")
-	}
-	assert.Assert(t, results.TotalCount == 1, "SCS Scorecard results should be excluded")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SAST_ONLY", "--report-format", "json", "--agent", params.EclipseAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
 
+	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
 }
 
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
-	results := runScanCommand(t, params.VisualStudioAgent, "MOCK_NO_VULNERABILITIES")
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
-	assert.Assert(t, results.TotalCount == 0, "SCS Scorecard results should be excluded")
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "json", "--agent", params.VisualStudioAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
+
+	removeFileBySuffix(t, printer.FormatJSON)
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
@@ -451,7 +449,13 @@ func createTestScanResultsCollection() *wrappers.ScanResultsCollection {
 }
 
 func removeFileBySuffix(t *testing.T, suffix string) {
-	removeFile(t, fileName, suffix)
+	switch suffix {
+	case printer.FormatSonar:
+		removeFile(t, fileName+sonarTypeLabel, printer.FormatJSON)
+	default:
+		removeFile(t, fileName, suffix)
+	}
+
 }
 
 func removeFile(t *testing.T, prefix, suffix string) {
@@ -834,6 +838,23 @@ func assertTypePresentJSON(t *testing.T, resultType string, expectedResultTypeCo
 	actualResultTypeCount := 0
 	for _, scanResult := range scanResultsCollection.Results {
 		if scanResult.Type == resultType {
+			actualResultTypeCount++
+		}
+	}
+	assert.Equal(t, actualResultTypeCount, expectedResultTypeCount,
+		fmt.Sprintf("Expected %s result count to be %d, but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
+}
+
+func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeCount int) {
+	bytes, err := os.ReadFile(fileName + sonarTypeLabel + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultsCollection *wrappers.ScanResultsSonar
+	err = json.Unmarshal(bytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+	actualResultTypeCount := 0
+	for _, scanResult := range scanResultsCollection.Results {
+		if scanResult.EngineID == resultType {
 			actualResultTypeCount++
 		}
 	}
@@ -1270,7 +1291,7 @@ func TestRunGetResultsByScanIdJSONFormat_SCSFlagNotEnabled_SCSMissingInReport(t 
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
@@ -1284,7 +1305,7 @@ func TestRunGetResultsByScanIdJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *te
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 	assertTypePresentJSON(t, params.SCSScorecardType, 1)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
@@ -1293,12 +1314,40 @@ func TestRunGetResultsByScanIdJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *te
 	mock.SetScsMockVarsToDefault()
 }
 
+func TestRunGetResultsByScanIdSonarFormat_SCSFlagNotEnabled_SCSMissingInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
+	assertTypePresentSonar(t, params.SCSScorecardType, 0)
+	assertTypePresentSonar(t, params.SCSSecretDetectionType, 0)
+
+	removeFileBySuffix(t, printer.FormatSonar)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestRunGetResultsByScanIdSonarFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
+	assertTypePresentSonar(t, params.SCSScorecardType, 1)
+	assertTypePresentSonar(t, params.SCSSecretDetectionType, 2)
+
+	removeFileBySuffix(t, printer.FormatSonar)
+	mock.SetScsMockVarsToDefault()
+}
+
 func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	assertTypePresentSarif(t, params.SCSScorecardType, 1)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 2)
@@ -1312,7 +1361,7 @@ func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSMissingInReport(t *t
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: false}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	assertTypePresentSarif(t, params.SCSScorecardType, 0)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 0)
