@@ -98,6 +98,7 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
+	scaHideDevAndTestDepFlagDescription     = "Filter SCA results to exclude dev and test dependencies"
 	policeManagementNoneStatus              = "none"
 	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
@@ -272,7 +273,7 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
-	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, "Filter SCA results to exclude dev and test dependencies")
+	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	return resultShowCmd
 }
