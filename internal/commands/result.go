@@ -950,13 +950,13 @@ func runGetResultCommand(
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
 
-		params, err := getFilters(cmd)
+		resultsParams, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
 
 		if scaHideDevAndTestDep {
-			params[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+			resultsParams[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
 		}
 
 		scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
@@ -983,7 +983,7 @@ func runGetResultCommand(
 			logger.PrintIfVerbose("Skipping policy evaluation")
 		}
 		if sastRedundancy {
-			params[commonParams.SastRedundancyFlag] = ""
+			resultsParams[commonParams.SastRedundancyFlag] = ""
 		}
 
 		return CreateScanReport(
@@ -1001,7 +1001,7 @@ func runGetResultCommand(
 			targetFile,
 			targetPath,
 			agent,
-			params,
+			resultsParams,
 			featureFlagsWrapper)
 	}
 }
@@ -1108,7 +1108,7 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	agent string,
-	resultsParam map[string]string,
+	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	reportList := strings.Split(reportTypes, ",")
@@ -1127,7 +1127,7 @@ func CreateScanReport(
 		return err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParam)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams)
 		if err != nil {
 			return err
 		}

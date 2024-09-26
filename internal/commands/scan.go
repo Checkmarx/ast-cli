@@ -1904,13 +1904,13 @@ func createReportsAfterScan(
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 
-	params, err := getFilters(cmd)
+	resultsParams, err := getFilters(cmd)
 	if err != nil {
 		return err
 	}
 
 	if scaHideDevAndTestDep {
-		params[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+		resultsParams[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
 	}
 
 	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
@@ -1938,7 +1938,7 @@ func createReportsAfterScan(
 		targetFile,
 		targetPath,
 		agent,
-		params,
+		resultsParams,
 		featureFlagsWrapper,
 	)
 }
