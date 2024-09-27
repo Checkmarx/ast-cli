@@ -1189,10 +1189,6 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			summary.InfoIssues++
 		}
 
-		if strings.HasPrefix(engineType, "sscs") {
-			engineType = commonParams.ScsType
-		}
-
 		summary.UpdateEngineResultSummary(engineType, severity)
 	}
 }
@@ -2283,7 +2279,7 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
-	} else if strings.Contains(result.Type, commonParams.SscsType) {
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
 		return result.ScanResultData.Remediation
 	}
 

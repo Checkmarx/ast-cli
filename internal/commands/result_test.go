@@ -175,6 +175,7 @@ func TestRunScsResultsShow_ASTCLI_AgentShouldShowAllResults(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.DefaultAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 1)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 3)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
@@ -190,6 +191,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.VSCodeAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 2)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
@@ -205,6 +207,7 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.JetbrainsAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
+	assertTotalCountJSON(t, 0)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
@@ -220,6 +223,7 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SAST_ONLY", "--report-format", "json", "--agent", params.EclipseAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
+	assertTotalCountJSON(t, 1)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
@@ -232,6 +236,7 @@ func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "json", "--agent", params.VisualStudioAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
 	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
+	assertTotalCountJSON(t, 0)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 }
@@ -846,6 +851,18 @@ func assertTypePresentJSON(t *testing.T, resultType string, expectedResultTypeCo
 	}
 	assert.Equal(t, actualResultTypeCount, expectedResultTypeCount,
 		fmt.Sprintf("Expected %s result count to be %d, but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
+}
+
+func assertTotalCountJSON(t *testing.T, expectedResultTypeCount uint) {
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+	// Unmarshal the JSON data into the ScanResultsCollection struct
+	var scanResultsCollection *wrappers.ScanResultsCollection
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+
+	assert.Equal(t, scanResultsCollection.TotalCount, expectedResultTypeCount,
+		fmt.Sprintf("Expected total count to be %d, but actual total count is %d", expectedResultTypeCount, scanResultsCollection.TotalCount))
 }
 
 func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeCount int) {
