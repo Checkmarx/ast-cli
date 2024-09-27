@@ -941,7 +941,7 @@ func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanTy
 		assert.Equal(t, !ScsOverviewField.IsNil(), isResultsEnabled, fmt.Sprintf("Expected field %s to be present: %t", ScsOverviewField, isResultsEnabled))
 	}
 
-	for engine, _ := range scanResultSummary.EnginesResult {
+	for engine := range scanResultSummary.EnginesResult {
 		if !isResultsEnabled && engine == scanType {
 			assert.Assert(t, false, fmt.Sprintf("%s result summary should not be present", scanType))
 		} else if isResultsEnabled && engine == scanType {
