@@ -316,5 +316,4 @@ func addSCSResults(scanResults *wrappers.ScanResultsCollection) {
 		scanResults.Results = append(scanResults.Results, scsResultScorecard...)
 		scanResults.TotalCount += uint(len(scsResultScorecard))
 	}
-
 }

@@ -458,7 +458,6 @@ func removeFileBySuffix(t *testing.T, suffix string) {
 	default:
 		removeFile(t, fileName, suffix)
 	}
-
 }
 
 func removeFile(t *testing.T, prefix, suffix string) {
@@ -832,14 +831,15 @@ func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *te
 }
 
 func assertTypePresentJSON(t *testing.T, resultType string, expectedResultTypeCount int) {
-	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
 	var scanResultsCollection *wrappers.ScanResultsCollection
-	err = json.Unmarshal(bytes, &scanResultsCollection)
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 	actualResultTypeCount := 0
-	for _, scanResult := range scanResultsCollection.Results {
+	for i := range scanResultsCollection.Results {
+		scanResult := scanResultsCollection.Results[i]
 		if scanResult.Type == resultType {
 			actualResultTypeCount++
 		}
@@ -849,14 +849,15 @@ func assertTypePresentJSON(t *testing.T, resultType string, expectedResultTypeCo
 }
 
 func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeCount int) {
-	bytes, err := os.ReadFile(fileName + sonarTypeLabel + "." + printer.FormatJSON)
+	reportBytes, err := os.ReadFile(fileName + sonarTypeLabel + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
 	var scanResultsCollection *wrappers.ScanResultsSonar
-	err = json.Unmarshal(bytes, &scanResultsCollection)
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 	actualResultTypeCount := 0
-	for _, scanResult := range scanResultsCollection.Results {
+	for i := range scanResultsCollection.Results {
+		scanResult := scanResultsCollection.Results[i]
 		if scanResult.EngineID == resultType {
 			actualResultTypeCount++
 		}
@@ -866,15 +867,16 @@ func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeC
 }
 
 func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeCount int) {
-	bytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
 	var scanResultsCollection *wrappers.SarifResultsCollection
-	err = json.Unmarshal(bytes, &scanResultsCollection)
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling SARIF data")
 	resultTypeRuleSuffix := fmt.Sprintf("(%s)", resultType)
 	actualResultTypeCount := 0
-	for _, scanResult := range scanResultsCollection.Runs[0].Results {
+	for i := range scanResultsCollection.Runs[0].Results {
+		scanResult := scanResultsCollection.Runs[0].Results[i]
 		if strings.HasSuffix(scanResult.RuleID, resultTypeRuleSuffix) {
 			actualResultTypeCount++
 			assertRulePresentSarif(t, scanResult.RuleID, scanResultsCollection)
@@ -885,7 +887,8 @@ func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeC
 }
 
 func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {
-	for _, rule := range scanResultsCollection.Runs[0].Tool.Driver.Rules {
+	for i := range scanResultsCollection.Runs[0].Tool.Driver.Rules {
+		rule := scanResultsCollection.Runs[0].Tool.Driver.Rules[i]
 		if rule.ID == ruleID {
 			return
 		}
@@ -894,11 +897,11 @@ func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *
 }
 
 func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanType string, numberOfIssues *int) {
-	bytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
 	assert.NilError(t, err, "Error reading file")
 	// Unmarshal the JSON data into the ScanResultsCollection struct
 	var scanResultSummary *wrappers.ResultSummary
-	err = json.Unmarshal(bytes, &scanResultSummary)
+	err = json.Unmarshal(reportBytes, &scanResultSummary)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 
 	// Test presence of Issues field
@@ -914,7 +917,7 @@ func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanTy
 		assert.Equal(t, *IssuesField.Interface().(*int), *numberOfIssues, fmt.Sprintf("Expected field %s to have value: %d", IssuesFieldName, *numberOfIssues))
 	}
 
-	//Test presence of Scs Overview field
+	// Test presence of Scs Overview field
 	if scanType == params.ScsType {
 		ScsOverviewField := reflectedScanResultSummary.FieldByName("SCSOverview")
 		assert.Equal(t, ScsOverviewField.IsValid(), true, fmt.Sprintf("field %s not found in ResultSummary struct definition ", ScsOverviewField))
