@@ -2425,15 +2425,16 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	var scanLocation wrappers.SarifLocation
 
-	if result.ScanResultData.Snippet != "" {
-		var sarifSnippet wrappers.SarifSnippet
-		sarifSnippet.Text = result.ScanResultData.Snippet
-	}
 	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 	scanLocation.PhysicalLocation.Region.StartColumn = 1
 	scanLocation.PhysicalLocation.Region.EndColumn = 2
+	if result.ScanResultData.Snippet != "" {
+		scanLocation.PhysicalLocation.Region.Snippet = &wrappers.SarifSnippet{}
+		scanLocation.PhysicalLocation.Region.Snippet.Text = result.ScanResultData.Snippet
+	}
+
 	scanResult.Locations = append(scanResult.Locations, scanLocation)
 
 	var properties wrappers.SarifResultProperties
