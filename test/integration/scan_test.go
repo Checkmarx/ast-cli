@@ -1732,6 +1732,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 			[]string{
 				printer.FormatJSON,
 				printer.FormatSarif,
+				printer.FormatSonar,
 				printer.FormatSummaryConsole,
 				printer.FormatSummaryJSON,
 				printer.FormatPDF,
