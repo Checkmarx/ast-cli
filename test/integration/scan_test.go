@@ -1945,7 +1945,7 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }

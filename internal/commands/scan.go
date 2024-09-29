@@ -652,6 +652,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	return createScanCmd
 }
@@ -1901,11 +1902,17 @@ func createReportsAfterScan(
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+	scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 
-	params, err := getFilters(cmd)
+	resultsParams, err := getFilters(cmd)
 	if err != nil {
 		return err
 	}
+
+	if scaHideDevAndTestDep {
+		resultsParams[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+	}
+
 	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
 		reportFormats += "," + printer.FormatSummaryConsole
 	}
@@ -1931,7 +1938,7 @@ func createReportsAfterScan(
 		targetFile,
 		targetPath,
 		agent,
-		params,
+		resultsParams,
 		featureFlagsWrapper,
 	)
 }
@@ -2042,11 +2049,11 @@ func getSummaryThresholdMap(
 	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
+	resultsParams map[string]string,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
-	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, resultsParams)
 
 	if err != nil {
 		return nil, err
