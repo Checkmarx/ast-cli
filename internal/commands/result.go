@@ -711,15 +711,13 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
 		}
+		if *summary.ScsIssues >= 0 {
+			summary.TotalIssues += *summary.ScsIssues
+		}
 	}
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
 			summary.TotalIssues += *summary.ContainersIssues
-		}
-	}
-	if wrappers.IsSCSEnabled {
-		if *summary.ScsIssues >= 0 {
-			summary.TotalIssues += *summary.ScsIssues
 		}
 	}
 	if !criticalEnabled {
