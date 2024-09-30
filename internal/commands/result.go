@@ -163,6 +163,11 @@ var containerEngineUnsupportedAgents = []string{
 	commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
 }
 
+var sscsEngineToOverviewEngineMap = map[string]string{
+	commonParams.SCSScorecardType:       commonParams.SCSScorecardOverviewType,
+	commonParams.SCSSecretDetectionType: commonParams.SCSSecretDetectionOverviewType,
+}
+
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
@@ -625,6 +630,7 @@ func summaryReport(
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
+		// Getting the base SCS overview. Results counts are overwritten in enhanceWithScanSummary->countResult
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
 		if err != nil {
 			return nil, err
@@ -710,6 +716,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		}
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
+			removeCriticalFromSCSOverview(summary)
 		}
 		if *summary.ScsIssues >= 0 {
 			summary.TotalIssues += *summary.ScsIssues
@@ -725,6 +732,19 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.KicsType].Critical = notAvailableNumber
 		summary.EnginesResult[commonParams.ScaType].Critical = notAvailableNumber
 		summary.EnginesResult[commonParams.ContainersType].Critical = notAvailableNumber
+	}
+}
+
+func removeCriticalFromSCSOverview(summary *wrappers.ResultSummary) {
+	criticalCount := summary.SCSOverview.RiskSummary[criticalLabel]
+	summary.SCSOverview.TotalRisksCount = summary.SCSOverview.TotalRisksCount - criticalCount
+	summary.SCSOverview.RiskSummary[criticalLabel] = notAvailableNumber
+	for _, microEngineOverview := range summary.SCSOverview.MicroEngineOverviews {
+		if microEngineOverview.RiskSummary != nil && microEngineOverview.RiskSummary[criticalLabel] != nil {
+			engineCriticalCount := microEngineOverview.RiskSummary[criticalLabel]
+			microEngineOverview.TotalRisks = microEngineOverview.TotalRisks - engineCriticalCount.(int)
+			microEngineOverview.RiskSummary[criticalLabel] = disabledString
+		}
 	}
 }
 
@@ -861,7 +881,6 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
-	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
@@ -871,15 +890,6 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
 			riskSummary[infoLabel], microEngineOverview.Status)
 	}
-}
-
-func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper wrappers.FeatureFlagsWrapper) interface{} {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
-	criticalEnabled := flagResponse.Status
-	if !criticalEnabled {
-		return disabledString
-	}
-	return riskSummary[criticalLabel]
 }
 
 func getCountValue(count int) interface{} {
@@ -1164,6 +1174,7 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			}
 		} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 			if wrappers.IsSCSEnabled {
+				addResultToSCSOverview(summary, result)
 				engineType = commonParams.ScsType
 				*summary.ScsIssues++
 				summary.TotalIssues++
@@ -1188,6 +1199,24 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		}
 
 		summary.UpdateEngineResultSummary(engineType, severity)
+	}
+}
+
+func addResultToSCSOverview(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+	if engineOverviewName, engineExists := sscsEngineToOverviewEngineMap[result.Type]; engineExists {
+		for _, microEngineOverview := range summary.SCSOverview.MicroEngineOverviews {
+			if microEngineOverview.Name == engineOverviewName {
+				if microEngineOverview.RiskSummary != nil {
+					severity := strings.ToLower(result.Severity)
+					if severityCount, exists := microEngineOverview.RiskSummary[severity]; exists {
+						summary.SCSOverview.RiskSummary[severity]++
+						microEngineOverview.TotalRisks++
+						summary.SCSOverview.TotalRisksCount++
+						microEngineOverview.RiskSummary[severity] = severityCount.(int) + 1
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -1250,6 +1279,19 @@ func getScanOverviewForSCSScanner(
 	if errorModel != nil {
 		return nil, errors.Errorf("SCS: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if scsOverview != nil {
+		// Setting all counts to 0. Results are recounted in enhanceWithScanSummary->countResult
+		scsOverview.TotalRisksCount = 0
+		for key := range scsOverview.RiskSummary {
+			scsOverview.RiskSummary[key] = 0
+		}
+		for _, microEngineOverview := range scsOverview.MicroEngineOverviews {
+			microEngineOverview.TotalRisks = 0
+			if microEngineOverview.RiskSummary != nil {
+				for severity := range microEngineOverview.RiskSummary {
+					microEngineOverview.RiskSummary[severity] = 0
+				}
+			}
+		}
 		return scsOverview, nil
 	}
 	return nil, nil
