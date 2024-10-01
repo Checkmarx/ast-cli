@@ -1455,8 +1455,7 @@ func ReadResults(
 			if !wrappers.IsSCSEnabled {
 				resultsModel = removeSscsResults(resultsModel)
 			} else {
-				resultsModel = filterScsResultsBy
-(resultsModel, agent)
+				resultsModel = filterScsResultsByAgent(resultsModel, agent)
 			}
 		}
 
