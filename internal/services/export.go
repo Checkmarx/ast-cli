@@ -20,7 +20,7 @@ const (
 	pollingTimeout      = 5 // minutes
 )
 
-func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wrappers.ScaPackageCollectionExport, error) {
+func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string, scaHideDevAndTestDep bool) (*wrappers.ScaPackageCollectionExport, error) {
 	var scaPackageCollection = &wrappers.ScaPackageCollectionExport{
 		Packages: []wrappers.ScaPackage{},
 		ScaTypes: []wrappers.ScaType{},
@@ -28,6 +28,9 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string) (*wra
 	payload := &wrappers.ExportRequestPayload{
 		ScanID:     scanID,
 		FileFormat: "ScanReportJson",
+		ExportParameters: wrappers.ExportParameters{
+			HideDevAndTestDependencies: scaHideDevAndTestDep,
+		},
 	}
 
 	exportID, err := exportWrapper.InitiateExportRequest(payload)
