@@ -740,12 +740,12 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 
 func removeCriticalFromSCSOverview(summary *wrappers.ResultSummary) {
 	criticalCount := summary.SCSOverview.RiskSummary[criticalLabel]
-	summary.SCSOverview.TotalRisksCount = summary.SCSOverview.TotalRisksCount - criticalCount
+	summary.SCSOverview.TotalRisksCount -= criticalCount
 	summary.SCSOverview.RiskSummary[criticalLabel] = notAvailableNumber
 	for _, microEngineOverview := range summary.SCSOverview.MicroEngineOverviews {
 		if microEngineOverview.RiskSummary != nil && microEngineOverview.RiskSummary[criticalLabel] != nil {
 			engineCriticalCount := microEngineOverview.RiskSummary[criticalLabel]
-			microEngineOverview.TotalRisks = microEngineOverview.TotalRisks - engineCriticalCount.(int)
+			microEngineOverview.TotalRisks -= engineCriticalCount.(int)
 			microEngineOverview.RiskSummary[criticalLabel] = disabledString
 		}
 	}
