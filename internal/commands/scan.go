@@ -1027,6 +1027,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		}
 		if scsConfig.Scorecard == trueString {
 			if scsRepoToken != "" && scsRepoURL != "" {
+				viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
+				viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL)     // sanitizeLogs uses viper to get the value
 				scsConfig.RepoToken = scsRepoToken
 				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
