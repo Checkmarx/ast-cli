@@ -46,7 +46,7 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
-	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
+	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy-scs-tests"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
@@ -1725,7 +1725,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "scs",
-		flag(params.BranchFlag), "ast-cli-scs-tests",
+		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 		flag(params.TargetFormatFlag), strings.Join(
