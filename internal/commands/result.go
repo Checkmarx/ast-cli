@@ -110,6 +110,7 @@ const (
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
 	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
 	ScaExcludeResultTypesParam              = "exclude-result-types"
+	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
 )
 
 var summaryFormats = []string{
@@ -1458,7 +1459,6 @@ func ReadResults(
 				resultsModel = filterScsResultsByAgent(resultsModel, agent)
 			}
 		}
-		TrimOsSeparatorFromFileNames(resultsModel)
 
 		resultsModel.ScanID = scan.ID
 		return resultsModel, nil
@@ -2479,12 +2479,13 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	var scanLocation wrappers.SarifLocation
 
-	if isFilePath(result.ScanResultData.Filename) {
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
-	} else {
+	trimOsSeparatorFromFileName(result)
+	if result.Type == commonParams.SCSScorecardType && result.ScanResultData.Filename == noFileForScorecardResultString {
 		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
 		scanLocation.PhysicalLocation.ArtifactLocation.Description = &wrappers.SarifMessage{}
 		scanLocation.PhysicalLocation.ArtifactLocation.Description.Text = result.ScanResultData.Filename
+	} else {
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
 	}
 
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
@@ -2670,12 +2671,10 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	return &policyModel
 }
 
-func TrimOsSeparatorFromFileNames(results *wrappers.ScanResultsCollection) {
-	for _, result := range results.Results {
-		if result.ScanResultData.Filename != "" {
-			result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "/")
-			result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "\\")
-		}
+func trimOsSeparatorFromFileName(result *wrappers.ScanResult) {
+	if result.ScanResultData.Filename != "" {
+		result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "/")
+		result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "\\")
 	}
 }
 
