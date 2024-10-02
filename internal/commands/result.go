@@ -1458,6 +1458,7 @@ func ReadResults(
 				resultsModel = filterScsResultsByAgent(resultsModel, agent)
 			}
 		}
+		TrimOsSeparatorFromFileNames(resultsModel)
 
 		resultsModel.ScanID = scan.ID
 		return resultsModel, nil
@@ -2478,7 +2479,14 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	var scanLocation wrappers.SarifLocation
 
-	scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
+	if isFilePath(result.ScanResultData.Filename) {
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
+	} else {
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
+		scanLocation.PhysicalLocation.ArtifactLocation.Description = &wrappers.SarifMessage{}
+		scanLocation.PhysicalLocation.ArtifactLocation.Description.Text = result.ScanResultData.Filename
+	}
+
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
 	scanLocation.PhysicalLocation.Region.StartColumn = 1
@@ -2660,6 +2668,15 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	}
 	policyModel.Policies = policyModel.Policies[:i]
 	return &policyModel
+}
+
+func TrimOsSeparatorFromFileNames(results *wrappers.ScanResultsCollection) {
+	for _, result := range results.Results {
+		if result.ScanResultData.Filename != "" {
+			result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "/")
+			result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "\\")
+		}
+	}
 }
 
 type ScannerResponse struct {

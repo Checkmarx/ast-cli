@@ -83,7 +83,8 @@ type SarifSnippet struct {
 }
 
 type SarifArtifactLocation struct {
-	URI string `json:"uri"`
+	URI         string        `json:"uri"`
+	Description *SarifMessage `json:"description,omitempty"`
 }
 
 type SarifMessage struct {
