@@ -1454,7 +1454,7 @@ func ReadResults(
 
 		if slices.Contains(scan.Engines, commonParams.ScsType) {
 			if !wrappers.IsSCSEnabled {
-				resultsModel = removeSscsResults(resultsModel)
+				resultsModel = removeResultsByType(resultsModel, commonParams.SscsType)
 			} else {
 				resultsModel = filterScsResultsByAgent(resultsModel, agent)
 			}
@@ -1484,7 +1484,7 @@ func enrichScaResults(
 		}
 	}
 	if slices.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
-		resultsModel = removeContainerResults(resultsModel)
+		resultsModel = removeResultsByType(resultsModel, commonParams.ContainersType)
 	}
 	return resultsModel, nil
 }
@@ -1544,22 +1544,14 @@ func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.Depende
 	}})
 }
 
-func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+func removeResultsByType(model *wrappers.ScanResultsCollection, resultType string) *wrappers.ScanResultsCollection {
 	var newResults []*wrappers.ScanResult
 	for _, result := range model.Results {
-		if result.Type != commonParams.ContainersType {
-			newResults = append(newResults, result)
+		isResultType := result.Type == resultType
+		if resultType == commonParams.SscsType {
+			isResultType = strings.HasPrefix(result.Type, resultType)
 		}
-	}
-	model.Results = newResults
-	model.TotalCount = uint(len(newResults))
-	return model
-}
-
-func removeSscsResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
-	var newResults []*wrappers.ScanResult
-	for _, result := range model.Results {
-		if !strings.HasPrefix(result.Type, commonParams.SscsType) {
+		if !isResultType {
 			newResults = append(newResults, result)
 		}
 	}

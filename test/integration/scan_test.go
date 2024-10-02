@@ -1725,7 +1725,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), "scs",
-		flag(params.BranchFlag), "main",
+		flag(params.BranchFlag), "ast-cli-scs-tests",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 		flag(params.TargetFormatFlag), strings.Join(
