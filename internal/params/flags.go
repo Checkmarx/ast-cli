@@ -234,24 +234,27 @@ const (
 
 // Results
 const (
-	SastType               = "sast"
-	KicsType               = "kics"
-	APISecurityType        = "api-security"
-	AIProtectionType       = "AI Protection"
-	ContainersType         = "containers"
-	APIDocumentationFlag   = "apisec-swagger-filter"
-	IacType                = "iac-security"
-	IacLabel               = "IaC Security"
-	APISecurityLabel       = "API Security"
-	ScaType                = "sca"
-	APISecType             = "apisec"
-	ScsType                = "scs"
-	MicroEnginesType       = "microengines" // the scs scan type for scans API
-	Success                = "success"
-	SCSScorecardType       = "sscs-scorecard"
-	SCSSecretDetectionType = "sscs-secret-detection"
-	EnterpriseSecretsLabel = "Enterprise Secrets"
-	EnterpriseSecretsType  = "enterprise-secrets"
+	SastType                       = "sast"
+	KicsType                       = "kics"
+	APISecurityType                = "api-security"
+	AIProtectionType               = "AI Protection"
+	ContainersType                 = "containers"
+	APIDocumentationFlag           = "apisec-swagger-filter"
+	IacType                        = "iac-security"
+	IacLabel                       = "IaC Security"
+	APISecurityLabel               = "API Security"
+	ScaType                        = "sca"
+	APISecType                     = "apisec"
+	ScsType                        = "scs"
+	SscsType                       = "sscs"
+	MicroEnginesType               = "microengines" // the scs scan type for scans API
+	Success                        = "success"
+	SCSScorecardType               = "sscs-scorecard"
+	SCSSecretDetectionType         = "sscs-secret-detection"
+	EnterpriseSecretsLabel         = "Enterprise Secrets"
+	EnterpriseSecretsType          = "enterprise-secrets"
+	SCSScorecardOverviewType       = "Scorecard"
+	SCSSecretDetectionOverviewType = "2ms"
 )
 
 // ScaAgent AST Role
