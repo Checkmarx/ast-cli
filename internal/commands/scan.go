@@ -1029,7 +1029,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 			scsScoreCardSelected = true
 		}
 
-		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+		if scsSecretDetectionSelected && hasScsLicense && hasEnterpriseSecretsLicense {
 			scsConfig.Twoms = trueString
 		}
 		if scsScoreCardSelected && hasScsLicense {
