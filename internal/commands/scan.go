@@ -783,7 +783,7 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType], userAllowedEngines[commonParams.ScsType])
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -995,7 +995,7 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	}
 	return scsConfig
 }
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool, hasScsLicense bool) (map[string]interface{}, error) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
 		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig := make(map[string]interface{})
@@ -1029,10 +1029,10 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 			scsScoreCardSelected = true
 		}
 
-		if scsSecretDetectionSelected && hasScsLicense && hasEnterpriseSecretsLicense {
+		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
 			scsConfig.Twoms = trueString
 		}
-		if scsScoreCardSelected && hasScsLicense {
+		if scsScoreCardSelected {
 			if scsRepoToken != "" && scsRepoURL != "" {
 				scsConfig.Scorecard = trueString
 				scsConfig.RepoToken = scsRepoToken
