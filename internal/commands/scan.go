@@ -1045,6 +1045,9 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 				}
 			}
 		}
+		if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
+			return nil, nil
+		}
 
 		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
