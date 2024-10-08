@@ -1964,12 +1964,13 @@ func applyThreshold(
 	}
 
 	sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
+	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	params := make(map[string]string)
 	if sastRedundancy {
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper, agent)
 
 	if err != nil {
 		return err
@@ -2059,9 +2060,10 @@ func getSummaryThresholdMap(
 	scan *wrappers.ScanResponseModel,
 	resultsParams map[string]string,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	agent string,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
-	results, err := ReadResults(resultsWrapper, exportWrapper, scan, resultsParams)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
 
 	if err != nil {
 		return nil, err
