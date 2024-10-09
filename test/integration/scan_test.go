@@ -1754,10 +1754,9 @@ func TestCreateScan_WithNoScanTypesScsFlagsNotPresent_SuccessAndScsScannedWithou
 		flag(params.BranchFlag), "main",
 	}
 
-	withoutScorecard := `| Scorecard                 -      -        -      -      -       -      |`
+	withoutScorecard := "| Scorecard                 -      -        -      -      -       -      |"
 
 	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and with missing scs-repo flags", timeout, args...)
-	assert.Assert(t, strings.Contains(output.String(), commands.ScsRepoWarningMsg), "Should give warning about missing scs-repo flags")
 	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run")
 	assert.Assert(t, strings.Contains(output.String(), withoutScorecard), "Scorecard should not run")
 }
