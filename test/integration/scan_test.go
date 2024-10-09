@@ -1744,7 +1744,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
 }
 
-func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
+func TestCreateScan_WithNoScanTypesScsFlagsNotPresent_SuccessAndScsScannedWithoutScorecard(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1752,11 +1752,14 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.BranchFlag), "main",
-		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
 
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", timeout, args...)
-	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
+	patternWithoutScorecard := `Scorecard[-\s]+\|`
+
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully without scorecard if no scan-types specified and with missing scs-repo flags", timeout, args...)
+	assert.Assert(t, strings.Contains(output.String(), commands.ScsRepoWarningMsg), "Should give warning about missing scs-repo flags")
+	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run")
+	assert.Regexp(t, patternWithoutScorecard, output.String(), "Scorecard should not run if all required flags are not provided")
 }
 
 func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
