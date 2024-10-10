@@ -35,6 +35,9 @@ jobs:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
       APPLE_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -76,6 +79,17 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Install Cosign
+        if: inputs.dev == false
+        run: |
+          brew install sigstore/tap/cosign
+
+      - name: Add and Commit qemu.rb
+        if: inputs.dev == false
+        run: |
+          git add qemu.rb
+          git commit -m "Add qemu.rb"
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
@@ -114,9 +128,10 @@ jobs:
           SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
           SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
           SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }} # Secret for Cosign private key
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}       # Secret for Cosign password
-          COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}   # Secret for Cosign public key
+      - name: Sign Docker Image with Cosign
+        if: inputs.dev == false
+        run: |
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
       - name: Verify Docker image signature
         if: inputs.dev == false

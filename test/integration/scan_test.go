@@ -46,7 +46,7 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
-	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
+	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy-scs-tests"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
@@ -938,6 +938,7 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
+		flag(params.DebugFlag),
 	}
 
 	if strings.Contains(scanTypes, "scs") {
@@ -1727,6 +1728,17 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatJSON,
+				printer.FormatSarif,
+				printer.FormatSonar,
+				printer.FormatSummaryConsole,
+				printer.FormatSummaryJSON,
+				printer.FormatPDF,
+				printer.FormatSummaryMarkdown,
+			}, ",",
+		),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
@@ -1944,7 +1956,7 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }

@@ -40,7 +40,7 @@ builds:
             - SIGNING_REMOTE_SSH_HOST={{ .Env.SIGNING_REMOTE_SSH_HOST }}
             - SIGNING_HSM_CREDS={{ .Env.SIGNING_HSM_CREDS }}
             - SIGNING_REMOTE_SSH_PRIVATE_KEY={{ .Env.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
-            
+
   - main: ./cmd/main.go
     env:
       - CGO_ENABLED=0
@@ -56,22 +56,6 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
-
-docker_signs:
-  - id: ast-cli-signing
-    cmd: cosign
-    args:
-      - "sign"
-      - "--key-env=COSIGN_PRIVATE_KEY"   # Private key from environment variable
-      - "${artifact}"                    # The artifact (image or manifest) to be signed
-      - "--yes"                          # Required for Cosign 2.0.0+
-    artifacts: images                     # Sign Docker images
-    stdin: "{{ .Env.COSIGN_PASSWORD }}"   # Password from environment variable
-    env:
-      - COSIGN_PRIVATE_KEY={{ .Env.COSIGN_PRIVATE_KEY }}  # Private key from GitHub Secrets
-      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}        # Password from GitHub Secrets
-      - COSIGN_PUBLIC_KEY={{ .Env.COSIGN_PUBLIC_KEY }}    # Public key from GitHub Secrets
-    output: true
 
 dockers:
   - use: docker
