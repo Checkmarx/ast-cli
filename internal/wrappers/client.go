@@ -35,7 +35,6 @@ const (
 	tryPrintOffset          = 2
 	retryLimitPrintOffset   = 1
 	MissingURI              = "When using client-id and client-secret please provide base-uri or base-auth-uri"
-	BaseUriisEmpty          = "Base URI is empty"
 	MissingTenant           = "Failed to authenticate - please provide tenant"
 	jwtError                = "Error retrieving %s from jwt token"
 	basicFormat             = "Basic %s"
