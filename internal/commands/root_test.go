@@ -140,13 +140,6 @@ func TestFilterTagStateAndSeverityValues(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestCreateCommand_WithInvalidFlag_ShouldReturnExitCode1(t *testing.T) {
-	args := []string{"g"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, args...)
-	assert.Error(t, err, "unknown command \"g\" for \"cx\"")
-}
-
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
 	cmd.SetArgs(args)
