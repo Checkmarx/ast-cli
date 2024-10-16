@@ -1088,6 +1088,7 @@ func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes 
 
 func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
 	unsupportedTypesByAgent := map[string][]string{
+
 		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
 		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
