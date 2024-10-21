@@ -1,9 +1,9 @@
 package wrappers
 
 import (
-	gptWrapperMaskedSecret "github.com/checkmarxDev/gpt-wrapper/pkg/maskedSecret"
-	gptWrapperMessage "github.com/checkmarxDev/gpt-wrapper/pkg/message"
-	gptWrapper "github.com/checkmarxDev/gpt-wrapper/pkg/wrapper"
+	gptWrapperMaskedSecret "github.com/Checkmarx/gen-ai-wrapper/pkg/maskedSecret"
+	gptWrapperMessage "github.com/Checkmarx/gen-ai-wrapper/pkg/message"
+	gptWrapper "github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
 	"github.com/google/uuid"
 )
 
@@ -16,6 +16,13 @@ func (c ChatHTTPWrapper) MaskSecrets(w gptWrapper.StatefulWrapper, fileContent s
 
 func (c ChatHTTPWrapper) Call(w gptWrapper.StatefulWrapper, id uuid.UUID, messages []gptWrapperMessage.Message) ([]gptWrapperMessage.Message, error) {
 	return w.Call(id, messages)
+}
+
+func (c ChatHTTPWrapper) SecureCall(w gptWrapper.StatefulWrapper, historyID uuid.UUID, messages []gptWrapperMessage.Message, metaData *gptWrapperMessage.MetaData, cxAuth string) (
+	[]gptWrapperMessage.Message,
+	error,
+) {
+	return w.SecureCall(cxAuth, metaData, historyID, messages)
 }
 
 func NewChatWrapper() ChatWrapper {
