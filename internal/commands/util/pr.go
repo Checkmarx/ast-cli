@@ -35,10 +35,11 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 		`,
 		),
 	}
-
+	prDecorationAzure := PRDecorationAzure(prWrapper, policyWrapper, scansWrapper)
 	prDecorationGithub := PRDecorationGithub(prWrapper, policyWrapper, scansWrapper)
 	prDecorationGitlab := PRDecorationGitlab(prWrapper, policyWrapper, scansWrapper)
 
+	cmd.AddCommand(prDecorationAzure)
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
 	return cmd
@@ -71,6 +72,38 @@ func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (b
 		return true, nil
 	}
 	return false, nil
+}
+
+func PRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	prDecorationAzure := &cobra.Command{
+		Use:   "azure",
+		Short: "Decorate Azure DevOps PR with vulnerabilities",
+		Long:  "Decorate Azure DevOps PR with vulnerabilities",
+		Example: heredoc.Doc(
+			`
+			$ cx utils pr azure --scan-id <scan-id> --token <AAD> --namespace <organization> --project <project-name>
+                --pr-number <pr number> --code-repository-url <repository-url>
+			`,
+		),
+		RunE: runPRDecorationAzure(prWrapper, policyWrapper, scansWrapper),
+	}
+
+	prDecorationAzure.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
+	prDecorationAzure.Flags().String(params.SCMTokenFlag, "", params.AzureTokenUsage)
+	prDecorationAzure.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Azure DevOps"))
+	prDecorationAzure.Flags().String(params.ProjectName, "", "Azure DevOps project name")
+	prDecorationAzure.Flags().Int(params.PRNumberFlag, 0, params.PRNumberFlagUsage)
+	prDecorationAzure.Flags().String(params.ServerURLFlag, "", params.ServerURLFlagUsage)
+
+	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationAzure.Flags().Lookup(params.SCMTokenFlag))
+
+	_ = prDecorationAzure.MarkFlagRequired(params.ScanIDFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.SCMTokenFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.NamespaceFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.ProjectName)
+	_ = prDecorationAzure.MarkFlagRequired(params.PRNumberFlag)
+
+	return prDecorationAzure
 }
 
 func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -151,6 +184,53 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 	_ = prDecorationGitlab.MarkFlagRequired(params.PRGitlabProjectFlag)
 
 	return prDecorationGitlab
+}
+
+func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
+		organizationFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
+		projectFlag, _ := cmd.Flags().GetString(params.ProjectName)
+		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
+		serverURLFlag, _ := cmd.Flags().GetString(params.ServerURLFlag)
+
+		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+		if err != nil {
+			return err
+		}
+		if scanRunningOrQueued {
+			log.Println(noPRDecorationCreated)
+			return nil
+		}
+
+		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
+		if policyError != nil {
+			return errors.Errorf(policyErrorFormat, failedCreatingGithubPrDecoration)
+		}
+
+		prModel := &wrappers.AzurePRModel{
+			ScanID:       scanID,
+			ScmToken:     scmTokenFlag,
+			Organization: organizationFlag,
+			ProjectName:  projectFlag,
+			PrNumber:     prNumberFlag,
+			Policies:     policies,
+			ServerUrl:    serverURLFlag,
+		}
+
+		prResponse, errorModel, err := prWrapper.PostAzurePRDecoration(prModel)
+		if err != nil {
+			return err
+		}
+		if errorModel != nil {
+			return errors.Errorf(errorCodeFormat, failedCreatingGithubPrDecoration, errorModel.Code, errorModel.Message)
+		}
+
+		logger.Print(prResponse)
+		return nil
+	}
 }
 
 func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {

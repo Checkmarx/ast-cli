@@ -169,6 +169,8 @@ const (
 	PRIidFlagUsage           = "Gitlab IID (internal ID) of the merge request"
 	PRGitlabProjectFlag      = "gitlab-project-id"
 	PRGitlabProjectFlagUsage = "Gitlab project ID"
+	ServerURLFlag            = "code-repository-url"
+	ServerURLFlagUsage       = "Code repository URL (optional for self-hosted Azure DevOps)"
 
 	// Chat (General)
 	ChatAPIKey         = "chat-apikey"

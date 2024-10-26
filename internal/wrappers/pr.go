@@ -23,7 +23,18 @@ type GitlabPRModel struct {
 	Policies        []PrPolicy `json:"violatedPolicyList"`
 }
 
+type AzurePRModel struct {
+	ScanID       string     `json:"scanId"`
+	ScmToken     string     `json:"scmToken"`
+	Organization string     `json:"organization"`
+	ProjectName  string     `json:"projectName"`
+	PrNumber     int        `json:"prNumber"`
+	Policies     []PrPolicy `json:"violatedPolicyList"`
+	ServerUrl    string     `json:"serverUrl"`
+}
+
 type PRWrapper interface {
 	PostPRDecoration(model *PRModel) (string, *WebError, error)
 	PostGitlabPRDecoration(model *GitlabPRModel) (string, *WebError, error)
+	PostAzurePRDecoration(model *AzurePRModel) (string, *WebError, error)
 }

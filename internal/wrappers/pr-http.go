@@ -18,15 +18,39 @@ const (
 type PRHTTPWrapper struct {
 	githubPath string
 	gitlabPath string
+	azurePath  string
 }
 
-func NewHTTPPRWrapper(githubPath, gitlabPath string) PRWrapper {
+func NewHTTPPRWrapper(githubPath, gitlabPath, azurePath string) PRWrapper {
 	return &PRHTTPWrapper{
 		githubPath: githubPath,
 		gitlabPath: gitlabPath,
+		azurePath:  azurePath,
 	}
 }
 
+func (r *PRHTTPWrapper) PostAzurePRDecoration(model *AzurePRModel) (
+	string,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(model)
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.azurePath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return "", nil, err
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	return handlePRResponseWithBody(resp, err)
+
+}
 func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	string,
 	*WebError,
