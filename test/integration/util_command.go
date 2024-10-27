@@ -74,6 +74,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	learnMore := viper.GetString(params.DescriptionsPathKey)
 	prDecorationGithubPath := viper.GetString(params.PRDecorationGithubPathKey)
 	prDecorationGitlabPath := viper.GetString(params.PRDecorationGitlabPathKey)
+	prDecorationAzurePath := viper.GetString(params.PRDecorationAzurePathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
@@ -104,7 +105,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bitBucketWrapper := wrappers.NewBitbucketWrapper()
 	bflWrapper := wrappers.NewBflHTTPWrapper(bfl)
 	learnMoreWrapper := wrappers.NewHTTPLearnMoreWrapper(learnMore)
-	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath, prDecorationGitlabPath)
+	prWrapper := wrappers.NewHTTPPRWrapper(prDecorationGithubPath, prDecorationGitlabPath, prDecorationAzurePath)
 	tenantConfigurationWrapper := wrappers.NewHTTPTenantConfigurationWrapper(tenantConfigurationPath)
 	jwtWrapper := wrappers.NewJwtWrapper()
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
@@ -209,7 +210,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	//args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
