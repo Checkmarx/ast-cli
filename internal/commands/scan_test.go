@@ -689,7 +689,7 @@ func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     trueString,
@@ -730,7 +730,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	expectedConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -906,10 +906,42 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepo,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "",
 		Scorecard: "true",
 		RepoURL:   dummyRepo,
 		RepoToken: dummyToken,
@@ -934,7 +966,7 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	_ = cmdCommand.Execute()
 	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig)
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms: "true",
@@ -990,6 +1022,15 @@ func Test_isDirFiltered(t *testing.T) {
 			name: "WhenDefaultFolderIsExcluded_ReturnIsFilteredTrue",
 			args: args{
 				filename: ".vs",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "WhenNodeModulesExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: "node_modules",
 				filters:  commonParams.BaseExcludeFilters,
 			},
 			want:    true,

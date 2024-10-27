@@ -12,8 +12,7 @@
 
 </div>
 
-
-<!-- PROJECT LOGO -->
+<!-- PROJECT  LOGO -->
 <br />
 <p align="center">
   <a href="">

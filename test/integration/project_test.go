@@ -84,7 +84,6 @@ func TestCreateAlreadyExistingProject(t *testing.T) {
 	assertRequiredParameter(t, "Project name is required", "project", "create")
 
 	_, projectName := getRootProject(t)
-
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
 		printer.FormatJSON, flag(params.ProjectName), projectName,
@@ -157,6 +156,10 @@ func TestProjectBranches(t *testing.T) {
 
 func createProject(t *testing.T, tags map[string]string, groups []string) (string, string) {
 	projectName := getProjectNameForTest() + "_for_project"
+	return createNewProject(t, tags, groups, projectName)
+}
+
+func createNewProject(t *testing.T, tags map[string]string, groups []string, projectName string) (string, string) {
 	tagsStr := formatTags(tags)
 	groupsStr := formatGroups(groups)
 
