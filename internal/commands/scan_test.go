@@ -1027,6 +1027,15 @@ func Test_isDirFiltered(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		},
+		{
+			name: "WhenNodeModulesExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: "node_modules",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		ttt := tt
