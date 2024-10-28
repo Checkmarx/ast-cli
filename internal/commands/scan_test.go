@@ -1210,6 +1210,7 @@ func TestFilterMatched(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			result := filterMatched(tt.filters, tt.fileName)
 			assert.Equal(t, tt.expected, result)
