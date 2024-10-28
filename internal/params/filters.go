@@ -135,6 +135,7 @@ var BaseIncludeFilters = []string{
 	"Podfile.lock",
 	"*.cmp",
 	"Directory.Packages.props",
+	"*.rs",
 }
 
 var BaseExcludeFilters = []string{
