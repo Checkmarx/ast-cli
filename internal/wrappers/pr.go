@@ -11,7 +11,7 @@ type PRModel struct {
 	RepoName  string     `json:"repoName"`
 	PrNumber  int        `json:"prNumber"`
 	Policies  []PrPolicy `json:"violatedPolicyList"`
-	ServerUrl string     `json:"ServerUrl"`
+	ApiUrl    string     `json:"apiUrl"`
 }
 
 type GitlabPRModel struct {
@@ -22,7 +22,7 @@ type GitlabPRModel struct {
 	IiD             int        `json:"iid"`
 	GitlabProjectID int        `json:"gitlabProjectID"`
 	Policies        []PrPolicy `json:"violatedPolicyList"`
-	ServerUrl       string     `json:"ServerUrl"`
+	ApiUrl          string     `json:"apiUrl"`
 }
 
 type PRWrapper interface {

@@ -161,7 +161,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
-		serverUrl, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
+		apiUrl, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
 		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
 
@@ -188,7 +188,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 			RepoName:  repoNameFlag,
 			PrNumber:  prNumberFlag,
 			Policies:  policies,
-			ServerUrl: serverUrl,
+			ApiUrl:    apiUrl,
 		}
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 		if err != nil {
@@ -213,7 +213,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
-		serverUrl, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
+		apiUrl, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
 		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
 
@@ -241,7 +241,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 			IiD:             iIDFlag,
 			GitlabProjectID: gitlabProjectIDFlag,
 			Policies:        policies,
-			ServerUrl:       serverUrl,
+			ApiUrl:          apiUrl,
 		}
 
 		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
