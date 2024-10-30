@@ -62,8 +62,8 @@ github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE+CFvgjbIxUNL8rsdB2sAhfuNx85HvxImKta3g=
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63/go.mod h1:MI6lfLerXU+5eTV/EPTDavgnV3owz3GPT4g/msZBWPo=
-github.com/CheckmarxDev/containers-resolver v1.0.13 h1:lppKa2kD1NbXuiX+Mq+gkw61lYmQWA8fJQPbnXdIj3Y=
-github.com/CheckmarxDev/containers-resolver v1.0.13/go.mod h1:y9gAEbaf0/MdHgABpX4ZCnEZ2Skh02LlNNjuGBjHuOo=
+github.com/CheckmarxDev/containers-resolver v1.0.14 h1:jOc1POn6XVETZtXMyer6Rp6K/MLfkuGCKgMk6ZLEf/w=
+github.com/CheckmarxDev/containers-resolver v1.0.14/go.mod h1:ne5YunT/hKQ7fnZejFVGodlfOUReNE7hZW2KLbpQi48=
 github.com/CycloneDX/cyclonedx-go v0.9.0 h1:inaif7qD8bivyxp7XLgxUYtOXWtDez7+j72qKTMQTb8=
 github.com/CycloneDX/cyclonedx-go v0.9.0/go.mod h1:NE/EWvzELOFlG6+ljX/QeMlVt9VKcTwu8u0ccsACEsw=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
