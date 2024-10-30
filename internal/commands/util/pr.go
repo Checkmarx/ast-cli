@@ -25,8 +25,8 @@ const (
 	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
 	githubOnPremURLSuffix            = "/api/v3/repos/"
 	gitlabOnPremURLSuffix            = "/api/v4/"
-	githubCloudUrl                   = "https://api.github.com/repos/"
-	gitlabCloudUrl                   = "https://gitlab.com" + gitlabOnPremURLSuffix
+	githubCloudURL                   = "https://api.github.com/repos/"
+	gitlabCloudURL                   = "https://gitlab.com" + gitlabOnPremURLSuffix
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -186,7 +186,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		}
 
 		// Build and post the pr decoration
-		updatedApiURL := updateApiURLForGithubOnPrem(apiURL)
+		updatedAPIURL := updateAPIURLForGithubOnPrem(apiURL)
 
 		prModel := &wrappers.PRModel{
 			ScanID:    scanID,
@@ -195,7 +195,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 			RepoName:  repoNameFlag,
 			PrNumber:  prNumberFlag,
 			Policies:  policies,
-			ApiURL:    updatedApiURL,
+			APIURL:    updatedAPIURL,
 		}
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 		if err != nil {
@@ -212,18 +212,18 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 	}
 }
 
-func updateApiURLForGithubOnPrem(apiURL string) string {
+func updateAPIURLForGithubOnPrem(apiURL string) string {
 	if apiURL != "" {
 		return apiURL + githubOnPremURLSuffix
 	}
-	return githubCloudUrl
+	return githubCloudURL
 }
 
-func updateApiURLForGitlabOnPrem(apiURL string) string {
+func updateAPIURLForGitlabOnPrem(apiURL string) string {
 	if apiURL != "" {
 		return apiURL + gitlabOnPremURLSuffix
 	}
-	return gitlabCloudUrl
+	return gitlabCloudURL
 }
 
 func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
@@ -254,7 +254,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		}
 
 		// Build and post the mr decoration
-		updatedApiURL := updateApiURLForGitlabOnPrem(apiURL)
+		updatedAPIURL := updateAPIURLForGitlabOnPrem(apiURL)
 
 		prModel := &wrappers.GitlabPRModel{
 			ScanID:          scanID,
@@ -264,7 +264,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 			IiD:             iIDFlag,
 			GitlabProjectID: gitlabProjectIDFlag,
 			Policies:        policies,
-			ApiURL:          updatedApiURL,
+			APIURL:          updatedAPIURL,
 		}
 
 		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
