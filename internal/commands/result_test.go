@@ -1520,3 +1520,40 @@ func TestRunGetResultsByScanIdSummaryHtmlFormat_SCSFlagNotEnabled_SCSNotPresentI
 	removeFileBySuffix(t, "html")
 	mock.SetScsMockVarsToDefault()
 }
+
+func TestFilterScsResultsByAgent_ShouldExcludeSCSAndContainers(t *testing.T) {
+	results := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{Type: params.SCSScorecardType},
+			{Type: params.ScsType},
+			{Type: params.ContainersType},
+			{Type: params.SastType},
+		},
+	}
+
+	filteredResults := filterScsResultsByAgent(results, params.JetbrainsAgent)
+
+	hasSCSScorecard := false
+	hasSCS := false
+	hasContainers := false
+	hasSAST := false
+
+	for _, result := range filteredResults.Results {
+		switch result.Type {
+		case params.SCSScorecardType:
+			hasSCSScorecard = true
+		case params.ScsType:
+			hasSCS = true
+		case params.ContainersType:
+			hasContainers = true
+		case params.SastType:
+			hasSAST = true
+		}
+	}
+
+	assert.Assert(t, !hasSCSScorecard, "Expected SCSScorecard type to be excluded for Jetbrains agent")
+	assert.Assert(t, hasSCS, "Expected SCS type to be included in Jetbrains agent results")
+	assert.Assert(t, hasContainers, "Expected Containers type to be included in Jetbrains agent results")
+	assert.Assert(t, hasSAST, "Expected SAST type to be included in Jetbrains agent results")
+	assert.Equal(t, len(filteredResults.Results), 3, "Expected only 3 results after filtering for Jetbrains agent")
+}
