@@ -1356,6 +1356,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
+		_ = os.Remove(scaFile.Name())
 	}
 	return nil
 }

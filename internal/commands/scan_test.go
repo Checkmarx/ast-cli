@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -1186,4 +1187,18 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunScaResolverFileCleanup(t *testing.T) {
+	sourceDir := "/mock/sourceDir"
+	scaResolver := "/bin/echo"
+	scaResolverParams := ""
+	projectName := "testProject"
+
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+
+	assert.NilError(t, err)
+
+	_, err = os.Stat(scaResolverResultsFile)
+	assert.Assert(t, os.IsNotExist(err), "Expected temp file to be deleted, but it exists")
 }
