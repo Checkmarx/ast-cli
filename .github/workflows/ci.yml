@@ -153,15 +153,22 @@ jobs:
         run:  go build -o ./cx ./cmd
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@b2933f565dbc598b29947660e66259e3c7bc8561  #0.20.0
+      - name: Run Trivy scanner without downloading DBs
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 #v0.28.0
         with:
-          image-ref: 'ast-cli:${{ github.sha }}'
+          scan-type: 'image'
+          image-ref: ast-cli:${{ github.sha }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
+          output: './trivy-image-results.txt'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
-
-
+        env:
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
+      
+      - name: Inspect action report
+        if: always()
+        shell: bash
+        run: cat ./trivy-image-results.txt
