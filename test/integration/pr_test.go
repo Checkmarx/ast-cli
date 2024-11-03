@@ -180,7 +180,8 @@ func TestPRGitlabOnPremDecorationSuccessCase(t *testing.T) {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
 
-	assert.Equal(t, strings.Contains(stdoutString, gitlabPRCommentCreated), true, "Expected output: %s", gitlabPRCommentCreated)
+	assert.Equal(t, strings.Contains(stdoutString, gitlabPRCommentCreated), true, "Expected output: %s", gitlabPRCommentCreated, " | actual: ", stdoutString)
+
 }
 
 func TestPRGitlabDecorationFailure(t *testing.T) {
