@@ -76,7 +76,7 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 	assert.NilError(t, err, "Error should be nil")
 }
 
-func TestPRGithubOnPremDecorationSuccessCase(t *testing.T) {
+func TestPRGithubDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
 	args := []string{
 		"utils",
 		"pr",
@@ -157,7 +157,7 @@ func TestPRGitlabDecorationSuccessCase(t *testing.T) {
 	assert.NilError(t, err, "Error should be nil")
 }
 
-func TestPRGitlabOnPremDecorationSuccessCase(t *testing.T) {
+func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
 	args := []string{
 		"utils",
 		"pr",
