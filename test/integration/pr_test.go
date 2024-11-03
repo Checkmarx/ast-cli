@@ -79,7 +79,7 @@ func TestPRGithubOnPremDecorationSuccessCase(t *testing.T) {
 	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.PRModel) (string, *wrappers.WebError, error) {
 		return githubPRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch(wrappers.PRWrapper.PostPRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)
@@ -166,7 +166,7 @@ func TestPRGitlabOnPremDecorationSuccessCase(t *testing.T) {
 	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
 		return gitlabPRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch(wrappers.PRWrapper.PostPRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)
