@@ -48,7 +48,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	return cmd
 }
 
-func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+func IsScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -168,7 +168,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
 		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
-		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
@@ -236,7 +236,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
 		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
-		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err

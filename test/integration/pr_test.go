@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"os"
 	"strings"
@@ -31,16 +32,35 @@ const (
 	githubPRCommentCreated        = "github PR comment created successfully."
 	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
 	outputFileName                = "test_output.log"
+	scans                         = "api/scans"
 )
 
+var completedScanId = ""
+
+func getCompletedScanID(t *testing.T) string {
+	if completedScanId != "" {
+		return completedScanId
+	}
+	scanWrapper := wrappers.NewHTTPScansWrapper(scans)
+	scanID, _ := getRootScan(t, params.IacType)
+
+	for isRunning, err := util.IsScanRunningOrQueued(scanWrapper, scanID); isRunning; isRunning, err = util.IsScanRunningOrQueued(scanWrapper, scanID) {
+		if err != nil {
+			t.Fatalf("Failed to get scan status: %v", err)
+		}
+		logger.PrintIfVerbose("Waiting for scan to finish. scan running: " + fmt.Sprintf("%t", isRunning))
+	}
+	completedScanId = scanID
+	return scanID
+}
+
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -57,13 +77,12 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 }
 
 func TestPRGithubOnPremDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -117,14 +136,12 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
-
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
@@ -141,14 +158,12 @@ func TestPRGitlabDecorationSuccessCase(t *testing.T) {
 }
 
 func TestPRGitlabOnPremDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
-
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),

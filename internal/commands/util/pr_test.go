@@ -27,14 +27,14 @@ func TestNewMRDecorationCommandMustExist(t *testing.T) {
 func TestIsScanRunning_WhenScanRunning_ShouldReturnTrue(t *testing.T) {
 	scansMockWrapper := &mock.ScansMockWrapper{Running: true}
 
-	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanRunning")
+	scanRunning, _ := IsScanRunningOrQueued(scansMockWrapper, "ScanRunning")
 	asserts.True(t, scanRunning)
 }
 
 func TestIsScanRunning_WhenScanDone_ShouldReturnFalse(t *testing.T) {
 	scansMockWrapper := &mock.ScansMockWrapper{Running: false}
 
-	scanRunning, _ := isScanRunningOrQueued(scansMockWrapper, "ScanNotRunning")
+	scanRunning, _ := IsScanRunningOrQueued(scansMockWrapper, "ScanNotRunning")
 	asserts.False(t, scanRunning)
 }
 
