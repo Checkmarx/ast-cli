@@ -1194,44 +1194,37 @@ func TestValidateContainerImageFormat(t *testing.T) {
 }
 
 func TestRunScaResolverAndAddScaResultsFileCleanup(t *testing.T) {
-	// Step 1: Set up and simulate `scaResolverResultsFile` as a global
 	tempFile, err := ioutil.TempFile("", "sca_results_test")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name()) // Clean up after test
+	defer os.Remove(tempFile.Name())
 
-	// Setting the global variable for testing
-	scaResolverResultsFile = tempFile.Name() + ".json" // Simulating the .json file creation as in `runScaResolver`
+	scaResolverResultsFile = tempFile.Name() + ".json"
 
-	// Create both `.json` file and the file without `.json`
-	_, err = os.Create(scaResolverResultsFile) // Creates scaResolverResultsFile
+	_, err = os.Create(scaResolverResultsFile)
 	assert.NilError(t, err, "Expected scaResolverResultsFile to be created")
 
 	scaResultsFile := strings.TrimSuffix(scaResolverResultsFile, ".json")
-	_, err = os.Create(scaResultsFile) // Creates scaResultsFile without .json
+	_, err = os.Create(scaResultsFile)
 	assert.NilError(t, err, "Expected scaResultsFile to be created")
 
-	// Step 2: Set up a mock zip writer and log capture
 	var buffer bytes.Buffer
 	zipWriter := zip.NewWriter(&buffer)
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)
 	defer func() {
-		log.SetOutput(os.Stderr) // Reset after test
+		log.SetOutput(os.Stderr)
 	}()
 
-	// Step 3: Run `addScaResults` to perform file cleanup
 	err = addScaResults(zipWriter)
 	assert.NilError(t, err)
 	zipWriter.Close()
 
-	// Step 4: Check that both files were deleted
 	_, err = os.Stat(scaResolverResultsFile)
 	assert.Assert(t, os.IsNotExist(err), "Expected scaResolverResultsFile to be deleted")
 
 	_, err = os.Stat(scaResultsFile)
 	assert.Assert(t, os.IsNotExist(err), "Expected scaResultsFile to be deleted")
 
-	// Step 5: Check log output to confirm removal messages
 	logOutput := logBuffer.String()
 	t.Logf("Log output:\n%s", logOutput)
 	assert.Assert(t, strings.Contains(logOutput, "Successfully removed file"), "Expected success log for file removal")
