@@ -44,6 +44,10 @@ func getCompletedScanID(t *testing.T) string {
 	scanWrapper := wrappers.NewHTTPScansWrapper(scans)
 	scanID, _ := getRootScan(t, params.IacType)
 
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
 	for isRunning, err := util.IsScanRunningOrQueued(scanWrapper, scanID); isRunning; isRunning, err = util.IsScanRunningOrQueued(scanWrapper, scanID) {
 		if err != nil {
 			t.Fatalf("Failed to get scan status: %v", err)
@@ -55,12 +59,13 @@ func getCompletedScanID(t *testing.T) string {
 }
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
+	scanID := getCompletedScanID(t)
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		getCompletedScanID(t),
+		scanID,
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
