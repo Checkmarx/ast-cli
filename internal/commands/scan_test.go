@@ -931,13 +931,20 @@ func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 		Long:  `Scan a project`,
 	}
 	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
 	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
 	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
 
 	scsConfig := wrappers.SCSConfig{
-		Twoms: "",
+		Twoms:     "",
+		Scorecard: "true",
+		RepoURL:   dummyRepo,
+		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
 	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
@@ -1015,6 +1022,15 @@ func Test_isDirFiltered(t *testing.T) {
 			name: "WhenDefaultFolderIsExcluded_ReturnIsFilteredTrue",
 			args: args{
 				filename: ".vs",
+				filters:  commonParams.BaseExcludeFilters,
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "WhenNodeModulesExcluded_ReturnIsFilteredTrue",
+			args: args{
+				filename: "node_modules",
 				filters:  commonParams.BaseExcludeFilters,
 			},
 			want:    true,

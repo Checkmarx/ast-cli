@@ -106,6 +106,8 @@ const (
 	ScsSecretDetectionType      = "secret-detection"
 	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 var (
@@ -1000,44 +1002,55 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
 			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
+
+		scsSecretDetectionSelected := false
+		scsScoreCardSelected := false
+
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					if hasEnterpriseSecretsLicense {
-						scsConfig.Twoms = trueString
-					}
+					scsSecretDetectionSelected = true
 				case ScsScoreCardType:
-					scsConfig.Scorecard = trueString
+					scsScoreCardSelected = true
 				}
 			}
 		} else {
-			scsConfig.Scorecard = trueString
-			if hasEnterpriseSecretsLicense {
-				scsConfig.Twoms = trueString
-			}
+			scsSecretDetectionSelected = true
+			scsScoreCardSelected = true
 		}
-		if scsConfig.Scorecard == trueString {
+
+		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+			scsConfig.Twoms = trueString
+		}
+		if scsScoreCardSelected {
 			if scsRepoToken != "" && scsRepoURL != "" {
+				scsConfig.Scorecard = trueString
 				scsConfig.RepoToken = scsRepoToken
 				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
 				if userScanTypes == "" {
-					fmt.Println(ScsRepoRequiredMsg)
-					return nil, nil
+					fmt.Println(ScsRepoWarningMsg)
+				} else {
+					return nil, errors.Errorf(ScsRepoRequiredMsg)
 				}
-				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
+		if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
+			return nil, nil
+		}
+
 		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
