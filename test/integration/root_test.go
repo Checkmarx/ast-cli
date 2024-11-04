@@ -47,6 +47,7 @@ var rootProjectName string
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
+	getRootScan(testInstance, commonParams.IacType)
 	exitVal := m.Run()
 	//deleteScanAndProject()
 	log.Println("CLI integration tests done")
