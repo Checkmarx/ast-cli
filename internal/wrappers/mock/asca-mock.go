@@ -10,33 +10,33 @@ var (
 	specialErrorPortNumber = 1
 )
 
-type VorpalMockWrapper struct {
+type ASCAMockWrapper struct {
 	Port int
 }
 
-func NewVorpalMockWrapper(port int) *VorpalMockWrapper {
-	return &VorpalMockWrapper{Port: port}
+func NewASCAMockWrapper(port int) *ASCAMockWrapper {
+	return &ASCAMockWrapper{Port: port}
 }
 
-func (v *VorpalMockWrapper) Scan(fileName, sourceCode string) (*grpcs.ScanResult, error) {
+func (v *ASCAMockWrapper) Scan(fileName, sourceCode string) (*grpcs.ScanResult, error) {
 	if fileName == "csharp-no-vul.cs" {
 		return ReturnFailureResponseMock(), nil
 	}
 	return ReturnSuccessfulResponseMock(), nil
 }
 
-func (v *VorpalMockWrapper) HealthCheck() error {
+func (v *ASCAMockWrapper) HealthCheck() error {
 	if v.Port == specialErrorPortNumber {
 		return fmt.Errorf("error %d", InternalError)
 	}
 	return nil
 }
 
-func (v *VorpalMockWrapper) ShutDown() error {
+func (v *ASCAMockWrapper) ShutDown() error {
 	return nil
 }
 
-func (v *VorpalMockWrapper) GetPort() int {
+func (v *ASCAMockWrapper) GetPort() int {
 	return v.Port
 }
 
@@ -81,7 +81,7 @@ func ReturnFailureResponseMock() *grpcs.ScanResult {
 	}
 }
 
-func (v *VorpalMockWrapper) ConfigurePort(port int) {
+func (v *ASCAMockWrapper) ConfigurePort(port int) {
 
 }
 

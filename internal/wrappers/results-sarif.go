@@ -59,6 +59,7 @@ type SarifScanResult struct {
 	Message             SarifMessage            `json:"message"`
 	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
 	Locations           []SarifLocation         `json:"locations,omitempty"`
+	Properties          *SarifResultProperties  `json:"properties,omitempty"`
 }
 
 type SarifLocation struct {
@@ -71,13 +72,19 @@ type SarifPhysicalLocation struct {
 }
 
 type SarifRegion struct {
-	StartLine   uint `json:"startLine,omitempty"`
-	StartColumn uint `json:"startColumn,omitempty"`
-	EndColumn   uint `json:"endColumn,omitempty"`
+	StartLine   uint          `json:"startLine,omitempty"`
+	StartColumn uint          `json:"startColumn,omitempty"`
+	EndColumn   uint          `json:"endColumn,omitempty"`
+	Snippet     *SarifSnippet `json:"snippet,omitempty"`
+}
+
+type SarifSnippet struct {
+	Text string `json:"text,omitempty"`
 }
 
 type SarifArtifactLocation struct {
-	URI string `json:"uri"`
+	URI         string        `json:"uri"`
+	Description *SarifMessage `json:"description,omitempty"`
 }
 
 type SarifMessage struct {
@@ -86,4 +93,9 @@ type SarifMessage struct {
 
 type SarifResultFingerprint struct {
 	PrimaryLocationLineHash string `json:"primaryLocationLineHash,omitempty"`
+}
+
+type SarifResultProperties struct {
+	Severity string `json:"severity,omitempty"`
+	Validity string `json:"validity,omitempty"`
 }

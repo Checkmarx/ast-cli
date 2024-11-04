@@ -50,7 +50,7 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 	}
 
 	var model *wrappers.ProjectsCollectionResponseModel
-	switch name := params["names"]; name {
+	switch name := params["name"]; name {
 	case "fake-kics-scanner-fail":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
 	case "fake-multiple-scanner-fails":
@@ -59,6 +59,14 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
 	case "fake-kics-fail-sast-canceled":
 		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "existing-project":
+		model = getProjectResponseModel(fmt.Sprintf("%s-id", name), name, filteredTotalCount)
+	case "non-existing-project":
+		model = nil
+	case "error-project":
+		return nil, nil, fmt.Errorf("some error")
+	case "test_project3":
+		model = ListProjectResponseModels()
 	default:
 		model = getProjectResponseModel("MOCK", "MOCK", filteredTotalCount)
 	}
@@ -68,6 +76,7 @@ func (p *ProjectsMockWrapper) Get(params map[string]string) (
 
 func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.ProjectsCollectionResponseModel {
 	return &wrappers.ProjectsCollectionResponseModel{
+		TotalCount:         1,
 		FilteredTotalCount: uint(filteredTotalCount),
 		Projects: []wrappers.ProjectResponseModel{
 			{
@@ -75,6 +84,28 @@ func getProjectResponseModel(id, name string, filteredTotalCount int) *wrappers.
 				Name: name,
 			},
 		},
+	}
+}
+
+func ListProjectResponseModels() *wrappers.ProjectsCollectionResponseModel {
+	projects := []wrappers.ProjectResponseModel{
+		{
+			ID:   "1",
+			Name: "test_project1",
+		},
+		{
+			ID:   "2",
+			Name: "test_project2",
+		},
+		{
+			ID:   "3",
+			Name: "test_project3",
+		},
+	}
+	return &wrappers.ProjectsCollectionResponseModel{
+		TotalCount:         3,
+		FilteredTotalCount: 3,
+		Projects:           projects,
 	}
 }
 
@@ -87,7 +118,8 @@ func (p *ProjectsMockWrapper) GetByID(projectID string) (
 	}
 	fmt.Println("Called GetByID in ProjectsMockWrapper")
 	return &wrappers.ProjectResponseModel{
-		ID: projectID,
+		ID:   projectID,
+		Name: "MOCK",
 		Tags: map[string]string{
 			"a": "b",
 			"c": "d",

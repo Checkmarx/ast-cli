@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	"github.com/checkmarx/ast-cli/internal/commands/vorpal"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
@@ -106,6 +106,8 @@ const (
 	ScsSecretDetectionType      = "secret-detection"
 	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
+		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 )
 
 var (
@@ -187,7 +189,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper)
 
-	scanVorpalCmd := scanVorpalSubCommand(jwtWrapper, featureFlagsWrapper)
+	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -212,7 +214,7 @@ func NewScanCommand(
 	)
 	scanCmd.AddCommand(
 		createScanCmd,
-		scanVorpalCmd,
+		scanASCACmd,
 		showScanCmd,
 		workflowScanCmd,
 		listScansCmd,
@@ -400,15 +402,15 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return showScanCmd
 }
 
-func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
-	scanVorpalCmd := &cobra.Command{
+func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanASCACmd := &cobra.Command{
 		Hidden: true,
-		Use:    "vorpal",
-		Short:  "Run a Vorpal scan",
-		Long:   "Running a Vorpal scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Use:    "asca",
+		Short:  "Run a ASCA scan",
+		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan vorpal --file-source <path to a single file> --vorpal-latest-version
+			$ cx scan asca --file-source <path to a single file> --asca-latest-version
 		`,
 		),
 		Annotations: map[string]string{
@@ -418,19 +420,19 @@ func scanVorpalSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
 			`,
 			),
 		},
-		RunE: vorpal.RunScanVorpalCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: asca.RunScanASCACommand(jwtWrapper, featureFlagsWrapper),
 	}
 
-	scanVorpalCmd.PersistentFlags().Bool(commonParams.VorpalLatestVersion, false,
-		"Use this flag to update to the latest version of the Vorpal scanner."+
+	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,
+		"Use this flag to update to the latest version of the ASCA scanner."+
 			"Otherwise, we will check if there is an existing installation that can be used.")
-	scanVorpalCmd.PersistentFlags().StringP(
+	scanASCACmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
 		"The file source should be the path to a single file",
 	)
-	return scanVorpalCmd
+	return scanASCACmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
@@ -652,6 +654,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	return createScanCmd
 }
@@ -780,7 +783,7 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -974,11 +977,11 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	}
 	return nil
 }
-func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string) wrappers.SCSConfig {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, hasEnterpriseSecretsLicense bool) wrappers.SCSConfig {
 	scsConfig := wrappers.SCSConfig{}
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
-		if resubmitTwoms != nil {
+		if resubmitTwoms != nil && hasEnterpriseSecretsLicense {
 			scsConfig.Twoms = resubmitTwoms.(string)
 		}
 		scsConfig.RepoURL = scsRepoURL
@@ -992,47 +995,62 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	}
 	return scsConfig
 }
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
 	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
 		scsConfig := wrappers.SCSConfig{}
 		SCSMapConfig := make(map[string]interface{})
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
 		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if resubmitConfig != nil {
-			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL)
+			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
+
+		scsSecretDetectionSelected := false
+		scsScoreCardSelected := false
+
 		if SCSEngines != "" {
 			SCSEnginesTypes := strings.Split(SCSEngines, ",")
 			for _, engineType := range SCSEnginesTypes {
 				engineType = strings.TrimSpace(engineType)
 				switch engineType {
 				case ScsSecretDetectionType:
-					scsConfig.Twoms = trueString
+					scsSecretDetectionSelected = true
 				case ScsScoreCardType:
-					scsConfig.Scorecard = trueString
+					scsScoreCardSelected = true
 				}
 			}
 		} else {
-			scsConfig.Scorecard = trueString
+			scsSecretDetectionSelected = true
+			scsScoreCardSelected = true
+		}
+
+		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
 			scsConfig.Twoms = trueString
 		}
-		if scsConfig.Scorecard == trueString {
+		if scsScoreCardSelected {
 			if scsRepoToken != "" && scsRepoURL != "" {
+				scsConfig.Scorecard = trueString
 				scsConfig.RepoToken = scsRepoToken
 				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
 			} else {
 				if userScanTypes == "" {
-					fmt.Println(ScsRepoRequiredMsg)
-					return nil, nil
+					fmt.Println(ScsRepoWarningMsg)
+				} else {
+					return nil, errors.Errorf(ScsRepoRequiredMsg)
 				}
-				return nil, errors.Errorf(ScsRepoRequiredMsg)
 			}
 		}
+		if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
+			return nil, nil
+		}
+
 		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
@@ -1041,6 +1059,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[strin
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
+	var SCSScanTypes []string
+
 	containerEngineCLIEnabled, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
@@ -1049,10 +1069,20 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	}
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
+		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
+
+		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
+		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
+			return err
+		}
+
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
 			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
@@ -1885,11 +1915,17 @@ func createReportsAfterScan(
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+	scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 
-	params, err := getFilters(cmd)
+	resultsParams, err := getFilters(cmd)
 	if err != nil {
 		return err
 	}
+
+	if scaHideDevAndTestDep {
+		resultsParams[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+	}
+
 	if !strings.Contains(reportFormats, printer.FormatSummaryConsole) {
 		reportFormats += "," + printer.FormatSummaryConsole
 	}
@@ -1915,7 +1951,7 @@ func createReportsAfterScan(
 		targetFile,
 		targetPath,
 		agent,
-		params,
+		resultsParams,
 		featureFlagsWrapper,
 	)
 }
@@ -1933,12 +1969,13 @@ func applyThreshold(
 	}
 
 	sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
+	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	params := make(map[string]string)
 	if sastRedundancy {
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper)
+	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper, agent)
 
 	if err != nil {
 		return err
@@ -2026,11 +2063,12 @@ func getSummaryThresholdMap(
 	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
+	resultsParams map[string]string,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	agent string,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
-	results, err := ReadResults(resultsWrapper, exportWrapper, scan, params)
+	results, err := ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
 
 	if err != nil {
 		return nil, err
@@ -2488,7 +2526,7 @@ func createKicsScanEnv(cmd *cobra.Command) (volumeMap, kicsDir string, err error
 
 func contains(s []string, str string) bool {
 	for _, v := range s {
-		if strings.Contains(str, v) {
+		if v != "" && strings.Contains(str, v) {
 			return true
 		}
 	}

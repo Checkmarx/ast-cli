@@ -21,6 +21,8 @@ var sanitizeFlags = []string{
 	params.AstToken, params.SSHValue,
 	params.SCMTokenFlag, params.ProxyKey,
 	params.UploadURLEnv,
+	params.SCSRepoTokenFlag,
+	params.SCSRepoURLFlag,
 }
 
 func Print(msg string) {
