@@ -3,6 +3,8 @@
 package integration
 
 import (
+	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"os"
 	"strings"
 	"testing"
@@ -26,16 +28,40 @@ const (
 	prGitlabIid                   = "PR_GITLAB_IID"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
+	outputFileName                = "test_output.log"
+	scans                         = "api/scans"
 )
 
+var completedScanId = ""
+
+func getCompletedScanID(t *testing.T) string {
+	if completedScanId != "" {
+		return completedScanId
+	}
+	scanWrapper := wrappers.NewHTTPScansWrapper(scans)
+	scanID, _ := getRootScan(t, params.IacType)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	for isRunning, err := util.IsScanRunningOrQueued(scanWrapper, scanID); isRunning; isRunning, err = util.IsScanRunningOrQueued(scanWrapper, scanID) {
+		if err != nil {
+			t.Fatalf("Failed to get scan status: %v", err)
+		}
+		logger.PrintIfVerbose("Waiting for scan to finish. scan running: " + fmt.Sprintf("%t", isRunning))
+	}
+	completedScanId = scanID
+	return scanID
+}
+
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -72,14 +98,12 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
-
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
