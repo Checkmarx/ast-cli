@@ -1194,7 +1194,7 @@ func TestValidateContainerImageFormat(t *testing.T) {
 }
 
 func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAfterAddingToZip(t *testing.T) {
-	// Step 1: Create a temporary file to simulate the SCA results file and check for errors.
+	// Step 1: Create a temporary file to  simulate the SCA results file and check for errors.
 	tempFile, err := ioutil.TempFile("", "sca_results_test")
 	assert.NilError(t, err)
 
