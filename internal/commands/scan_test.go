@@ -1193,38 +1193,55 @@ func TestValidateContainerImageFormat(t *testing.T) {
 	}
 }
 
-func TestRunScaResolverAndAddScaResultsFileCleanup(t *testing.T) {
+func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAfterAddingToZip(t *testing.T) {
+	// Step 1: Create a temporary file to simulate the SCA results file and check for errors.
 	tempFile, err := ioutil.TempFile("", "sca_results_test")
 	assert.NilError(t, err)
+
+	// Step 2: Schedule deletion of the temporary file after the test completes.
 	defer os.Remove(tempFile.Name())
 
+	// Step 3: Define the path for scaResolverResultsFile, adding ".json" extension.
 	scaResolverResultsFile = tempFile.Name() + ".json"
 
+	// Step 4: Create scaResolverResultsFile on disk to simulate its existence before running addScaResults.
 	_, err = os.Create(scaResolverResultsFile)
 	assert.NilError(t, err, "Expected scaResolverResultsFile to be created")
 
+	// Step 5: Define and create scaResultsFile (without ".json" extension) to simulate another required file.
 	scaResultsFile := strings.TrimSuffix(scaResolverResultsFile, ".json")
 	_, err = os.Create(scaResultsFile)
 	assert.NilError(t, err, "Expected scaResultsFile to be created")
 
+	// Step 6: Set up a buffer to collect the zip file's contents.
 	var buffer bytes.Buffer
 	zipWriter := zip.NewWriter(&buffer)
+
+	// Step 7: Redirect log output to logBuffer to capture logs for validation.
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)
+
+	// Step 8: Ensure log output is reset to standard error after the test completes.
 	defer func() {
 		log.SetOutput(os.Stderr)
 	}()
 
+	// Step 9: Call addScaResults, which should add results to the zipWriter and delete temporary files.
 	err = addScaResults(zipWriter)
 	assert.NilError(t, err)
+
+	// Step 10: Close the zip writer to complete the writing process.
 	zipWriter.Close()
 
+	// Step 11: Check if scaResolverResultsFile was successfully deleted after addScaResults ran.
 	_, err = os.Stat(scaResolverResultsFile)
 	assert.Assert(t, os.IsNotExist(err), "Expected scaResolverResultsFile to be deleted")
 
+	// Step 12: Check if scaResultsFile was successfully deleted as well.
 	_, err = os.Stat(scaResultsFile)
 	assert.Assert(t, os.IsNotExist(err), "Expected scaResultsFile to be deleted")
 
+	// Step 13: Validate log output to confirm the success message for file removal is present.
 	logOutput := logBuffer.String()
 	t.Logf("Log output:\n%s", logOutput)
 	assert.Assert(t, strings.Contains(logOutput, "Successfully removed file"), "Expected success log for file removal")
