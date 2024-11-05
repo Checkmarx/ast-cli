@@ -33,6 +33,8 @@ const (
 	BranchFlag                   = "branch"
 	BranchFlagSh                 = "b"
 	ScanIDFlag                   = "scan-id"
+	CodeRepositoryFlag           = "code-repository-url"
+	CodeRepositoryFlagUsage      = "Code repository URL (optional for self-hosted SCMs)"
 	BranchFlagUsage              = "Branch to scan"
 	MainBranchFlag               = "branch"
 	ScaResolverFlag              = "sca-resolver"
