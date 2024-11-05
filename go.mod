@@ -6,9 +6,10 @@ require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/CheckmarxDev/containers-resolver v1.0.14
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/bouk/monkey v1.0.0
 	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
+	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.5.4
@@ -99,7 +100,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
-	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
+	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d //   indirect
 	github.com/facebookincubator/nvdtools v0.1.5 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect

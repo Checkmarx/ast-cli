@@ -12,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"
 
+	"github.com/bouk/monkey"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"gotest.tools/assert"
 )
@@ -28,6 +29,8 @@ const (
 	prGitlabIid                   = "PR_GITLAB_IID"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
+	githubPRCommentCreated        = "github PR comment created successfully."
+	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
 	outputFileName                = "test_output.log"
 	scans                         = "api/scans"
 )
@@ -77,6 +80,45 @@ func TestPRGithubDecorationSuccessCase(t *testing.T) {
 	assert.NilError(t, err, "Error should be nil")
 }
 
+func TestPRGithubDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"github",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prGithubToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prGithubNamespace),
+		flag(params.PRNumberFlag),
+		os.Getenv(prGithubNumber),
+		flag(params.RepoNameFlag),
+		os.Getenv(prGithubRepoName),
+		flag(params.CodeRepositoryFlag),
+		"https://github.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.PRModel) (string, *wrappers.WebError, error) {
+		return githubPRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, githubPRCommentCreated), true, "Expected output: %s", githubPRCommentCreated)
+}
+
 func TestPRGithubDecorationFailure(t *testing.T) {
 	args := []string{
 		"utils",
@@ -117,6 +159,48 @@ func TestPRGitlabDecorationSuccessCase(t *testing.T) {
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"gitlab",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prGitlabToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prGitlabNamespace),
+		flag(params.RepoNameFlag),
+		os.Getenv(prGitlabRepoName),
+		flag(params.PRGitlabProjectFlag),
+		os.Getenv(prGitlabProjectId),
+		flag(params.PRIidFlag),
+		os.Getenv(prGitlabIid),
+		flag(params.CodeRepositoryFlag),
+		"https://gitlab.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
+		return gitlabPRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, gitlabPRCommentCreated), true, "Expected output: %s", gitlabPRCommentCreated, " | actual: ", stdoutString)
+
 }
 
 func TestPRGitlabDecorationFailure(t *testing.T) {
@@ -161,7 +245,7 @@ func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		"--debug",
 	}
 
-	file := createOutputFile(t, "test_output.log")
+	file := createOutputFile(t, outputFileName)
 	_, _ = executeCommand(t, args...)
 	stdoutString, err := util.ReadFileAsString(file.Name())
 	if err != nil {
@@ -193,7 +277,7 @@ func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		os.Getenv(prGitlabIid),
 	}
 
-	file := createOutputFile(t, "test_output.log")
+	file := createOutputFile(t, outputFileName)
 	_, _ = executeCommand(t, args...)
 	stdoutString, err := util.ReadFileAsString(file.Name())
 	if err != nil {
