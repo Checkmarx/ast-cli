@@ -7,8 +7,10 @@ require (
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/CheckmarxDev/containers-resolver v1.0.14
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/bouk/monkey v1.0.0
+	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
+	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.5.4

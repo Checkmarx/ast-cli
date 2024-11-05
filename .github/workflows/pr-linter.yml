@@ -18,7 +18,7 @@ jobs:
             exit 1
           fi
           
-          if ! [[ "$PR_TITLE" =~ \(AST-[0-9]+\)$ ]]; then
+          if ! [[ "$PR_TITLE" =~ \(AST-[0-9]+\)$ || "$PR_TITLE" =~ \(AST-[0-9]+(, AST-[0-9]+)*\)$ ]]; then
             echo "::error::PR title must contain a Jira ticket ID at the end in the format '(AST-XXXX)'."
             exit 1
           fi
