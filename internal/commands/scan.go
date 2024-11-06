@@ -1696,19 +1696,19 @@ func runCreateScanCommand(
 			} else {
 				logger.PrintIfVerbose("Skipping policy evaluation")
 			}
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
+			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
 				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
-			if err != nil {
-				return err
+			if reportErr != nil {
+				return reportErr
 			}
 
-			err = applyThreshold(cmd, resultsWrapper, exportWrapper, scanResponseModel, thresholdMap, risksOverviewWrapper)
+			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results)
 
 			if err != nil {
-				return err
+				return reportErr
 			}
 		} else {
-			err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
 				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1906,7 +1906,7 @@ func createReportsAfterScan(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) error {
+) (*wrappers.ScanResultsCollection, error) {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
 	targetPath, _ := cmd.Flags().GetString(commonParams.TargetPathFlag)
@@ -1919,7 +1919,7 @@ func createReportsAfterScan(
 
 	resultsParams, err := getFilters(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if scaHideDevAndTestDep {
@@ -1931,10 +1931,10 @@ func createReportsAfterScan(
 	}
 	scan, errorModel, scanErr := scansWrapper.GetByID(scanID)
 	if scanErr != nil {
-		return errors.Wrapf(scanErr, "%s", failedGetting)
+		return nil, errors.Wrapf(scanErr, "%s", failedGetting)
 	}
 	if errorModel != nil {
-		return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 	}
 	return CreateScanReport(
 		resultsWrapper,
@@ -1958,24 +1958,22 @@ func createReportsAfterScan(
 
 func applyThreshold(
 	cmd *cobra.Command,
-	resultsWrapper wrappers.ResultsWrapper,
-	exportWrapper wrappers.ExportWrapper,
 	scanResponseModel *wrappers.ScanResponseModel,
 	thresholdMap map[string]int,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	results *wrappers.ScanResultsCollection,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
 	}
 
 	sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
-	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	params := make(map[string]string)
 	if sastRedundancy {
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(resultsWrapper, exportWrapper, scanResponseModel, params, risksOverviewWrapper, agent)
+	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results)
 
 	if err != nil {
 		return err
@@ -2060,19 +2058,12 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 }
 
 func getSummaryThresholdMap(
-	resultsWrapper wrappers.ResultsWrapper,
-	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	resultsParams map[string]string,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
-	agent string,
+	results *wrappers.ScanResultsCollection,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
-	results, err := ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
 
-	if err != nil {
-		return nil, err
-	}
 	for _, result := range results.Results {
 		if isExploitable(result.State) {
 			key := strings.ToLower(fmt.Sprintf("%s-%s", strings.Replace(result.Type, commonParams.KicsType, commonParams.IacType, 1), result.Severity))
@@ -2175,7 +2166,7 @@ func isScanRunning(
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
 		_ = printer.Print(cmd.OutOrStdout(), scanResponseModel.StatusDetails, printer.FormatList)
-		reportErr := createReportsAfterScan(
+		_, reportErr := createReportsAfterScan(
 			cmd,
 			scanResponseModel.ID,
 			scansWrapper,
