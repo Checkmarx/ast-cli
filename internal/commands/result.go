@@ -1137,7 +1137,7 @@ func CreateScanReport(
 
 	err = createDirectory(targetPath)
 	if err != nil {
-		return results, err
+		return nil, err
 	}
 	if !scanPending {
 		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
