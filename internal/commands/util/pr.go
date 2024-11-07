@@ -23,6 +23,10 @@ const (
 	resultPolicyDefaultTimeout       = 1
 	failedGettingScanError           = "Failed showing a scan"
 	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
+	githubOnPremURLSuffix            = "/api/v3/repos/"
+	gitlabOnPremURLSuffix            = "/api/v4/"
+	githubCloudURL                   = "https://api.github.com/repos/"
+	gitlabCloudURL                   = "https://gitlab.com" + gitlabOnPremURLSuffix
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -44,7 +48,7 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	return cmd
 }
 
-func isScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
+func IsScanRunningOrQueued(scansWrapper wrappers.ScansWrapper, scanID string) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
@@ -93,6 +97,7 @@ func PRDecorationGithub(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 		RunE: runPRDecoration(prWrapper, policyWrapper, scansWrapper),
 	}
 
+	prDecorationGithub.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
 	prDecorationGithub.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
 	prDecorationGithub.Flags().String(params.SCMTokenFlag, "", params.GithubTokenUsage)
 	prDecorationGithub.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Github"))
@@ -120,7 +125,7 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 		Example: heredoc.Doc(
 			`
 			$ cx utils pr gitlab --scan-id <scan-id> --token <PAT> --namespace <organization> --repo-name <repository>
-                --iid <pr iid> --gitlab-project <gitlab project ID>
+                --iid <pr iid> --gitlab-project <gitlab project ID> --code-repository-url <code-repository-url>
 		`,
 		),
 		Annotations: map[string]string{
@@ -132,6 +137,7 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 		RunE: runPRDecorationGitlab(prWrapper, policyWrapper, scansWrapper),
 	}
 
+	prDecorationGitlab.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
 	prDecorationGitlab.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
 	prDecorationGitlab.Flags().String(params.SCMTokenFlag, "", params.GitLabTokenUsage)
 	prDecorationGitlab.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Gitlab"))
@@ -160,8 +166,9 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
+		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
-		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
@@ -179,6 +186,8 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		}
 
 		// Build and post the pr decoration
+		updatedAPIURL := updateAPIURLForGithubOnPrem(apiURL)
+
 		prModel := &wrappers.PRModel{
 			ScanID:    scanID,
 			ScmToken:  scmTokenFlag,
@@ -186,6 +195,7 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 			RepoName:  repoNameFlag,
 			PrNumber:  prNumberFlag,
 			Policies:  policies,
+			APIURL:    updatedAPIURL,
 		}
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 		if err != nil {
@@ -202,6 +212,20 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 	}
 }
 
+func updateAPIURLForGithubOnPrem(apiURL string) string {
+	if apiURL != "" {
+		return apiURL + githubOnPremURLSuffix
+	}
+	return githubCloudURL
+}
+
+func updateAPIURLForGitlabOnPrem(apiURL string) string {
+	if apiURL != "" {
+		return apiURL + gitlabOnPremURLSuffix
+	}
+	return gitlabCloudURL
+}
+
 func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
@@ -210,8 +234,9 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
 		iIDFlag, _ := cmd.Flags().GetInt(params.PRIidFlag)
 		gitlabProjectIDFlag, _ := cmd.Flags().GetInt(params.PRGitlabProjectFlag)
+		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 
-		scanRunningOrQueued, err := isScanRunningOrQueued(scansWrapper, scanID)
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
 			return err
@@ -229,6 +254,8 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		}
 
 		// Build and post the mr decoration
+		updatedAPIURL := updateAPIURLForGitlabOnPrem(apiURL)
+
 		prModel := &wrappers.GitlabPRModel{
 			ScanID:          scanID,
 			ScmToken:        scmTokenFlag,
@@ -237,6 +264,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 			IiD:             iIDFlag,
 			GitlabProjectID: gitlabProjectIDFlag,
 			Policies:        policies,
+			APIURL:          updatedAPIURL,
 		}
 
 		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
@@ -283,6 +311,9 @@ func policiesToPrPolicies(policy *wrappers.PolicyResponseModel) []wrappers.PrPol
 	var prPolicies []wrappers.PrPolicy
 	if policy != nil {
 		for _, policy := range policy.Policies {
+			if len(policy.RulesViolated) == 0 {
+				continue
+			}
 			prPolicy := wrappers.PrPolicy{}
 			prPolicy.Name = policy.Name
 			prPolicy.BreakBuild = policy.BreakBuild

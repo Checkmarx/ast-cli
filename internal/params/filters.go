@@ -141,6 +141,7 @@ var BaseExcludeFilters = []string{
 	"!.vs",
 	"!.vscode",
 	"!.idea",
+	"!node_modules",
 }
 
 var KicsBaseFilters = []string{

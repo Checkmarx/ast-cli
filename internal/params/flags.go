@@ -33,6 +33,8 @@ const (
 	BranchFlag                   = "branch"
 	BranchFlagSh                 = "b"
 	ScanIDFlag                   = "scan-id"
+	CodeRepositoryFlag           = "code-repository-url"
+	CodeRepositoryFlagUsage      = "Code repository URL (optional for self-hosted SCMs)"
 	BranchFlagUsage              = "Branch to scan"
 	MainBranchFlag               = "branch"
 	ScaResolverFlag              = "sca-resolver"
@@ -47,7 +49,7 @@ const (
 	FormatFlag                   = "format"
 	FormatFlagUsageFormat        = "Format for the output. One of %s"
 	FilterFlag                   = "filter"
-	VorpalLatestVersion          = "vorpal-latest-version"
+	ASCALatestVersion            = "asca-latest-version"
 	BaseURIFlag                  = "base-uri"
 	ProxyFlag                    = "proxy"
 	ProxyFlagUsage               = "Proxy server to send communication through"
@@ -146,6 +148,7 @@ const (
 	VisualStudioAgent            = "Visual Studio"
 	JetbrainsAgent               = "Jetbrains"
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
+	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
@@ -233,22 +236,27 @@ const (
 
 // Results
 const (
-	SastType               = "sast"
-	KicsType               = "kics"
-	APISecurityType        = "api-security"
-	AIProtectionType       = "AI Protection"
-	ContainersType         = "containers"
-	APIDocumentationFlag   = "apisec-swagger-filter"
-	IacType                = "iac-security"
-	IacLabel               = "IaC Security"
-	APISecurityLabel       = "API Security"
-	ScaType                = "sca"
-	APISecType             = "apisec"
-	ScsType                = "scs"
-	MicroEnginesType       = "microengines" // the scs scan type for scans API
-	Success                = "success"
-	SCSScorecardType       = "sscs-scorecard"
-	SCSSecretDetectionType = "sscs-secret-detection"
+	SastType                       = "sast"
+	KicsType                       = "kics"
+	APISecurityType                = "api-security"
+	AIProtectionType               = "AI Protection"
+	ContainersType                 = "containers"
+	APIDocumentationFlag           = "apisec-swagger-filter"
+	IacType                        = "iac-security"
+	IacLabel                       = "IaC Security"
+	APISecurityLabel               = "API Security"
+	ScaType                        = "sca"
+	APISecType                     = "apisec"
+	ScsType                        = "scs"
+	SscsType                       = "sscs"
+	MicroEnginesType               = "microengines" // the scs scan type for scans API
+	Success                        = "success"
+	SCSScorecardType               = "sscs-scorecard"
+	SCSSecretDetectionType         = "sscs-secret-detection"
+	EnterpriseSecretsLabel         = "Enterprise Secrets"
+	EnterpriseSecretsType          = "enterprise-secrets"
+	SCSScorecardOverviewType       = "Scorecard"
+	SCSSecretDetectionOverviewType = "2ms"
 )
 
 // ScaAgent AST Role
