@@ -1596,6 +1596,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 		err = errors.New(msg)
 	}
 
+	logger.Print("Temporary zip file path: " + zipFile)
 	return zipFile, sourceDir, err
 }
 
