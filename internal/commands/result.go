@@ -960,6 +960,9 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
+		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -983,7 +986,7 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan)
+		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
 		if err != nil {
 			return err
 		}
