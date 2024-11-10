@@ -1596,7 +1596,6 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 		err = errors.New(msg)
 	}
 
-	logger.Print("Temporary zip file path: " + zipFile)
 	return zipFile, sourceDir, err
 }
 
@@ -1818,6 +1817,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 
 		scanHandler.UploadURL = uploadURL
 	}
+	logger.Print("Temporary zip file path: " + zipFilePath)
 
 	var err error
 
