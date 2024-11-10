@@ -15,7 +15,7 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
