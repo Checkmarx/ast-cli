@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -170,8 +169,6 @@ var (
 		commonParams.SCSScorecardType:       commonParams.SCSScorecardOverviewType,
 		commonParams.SCSSecretDetectionType: commonParams.SCSSecretDetectionOverviewType,
 	}
-
-	noPolicyEvaluatingIDEs = []string{commonParams.EclipseAgent, commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent}
 )
 
 func NewResultsCommand(
@@ -986,7 +983,7 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := handlePolicyEvaluation(cmd, policyWrapper, scan, agent)
+		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan)
 		if err != nil {
 			return err
 		}
@@ -1000,24 +997,6 @@ func runGetResultCommand(
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 		return err
 	}
-}
-
-func handlePolicyEvaluation(cmd *cobra.Command, policyWrapper wrappers.PolicyWrapper, scan *wrappers.ScanResponseModel, agent string) (*wrappers.PolicyResponseModel, error) {
-	policyResponseModel := &wrappers.PolicyResponseModel{}
-	policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-	waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-
-	if policyOverrideFlag && slices.Contains(noPolicyEvaluatingIDEs, agent) {
-		logger.PrintIfVerbose("Skipping policy evaluation")
-		return policyResponseModel, nil
-	}
-
-	policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-	if policyTimeout < 0 {
-		return nil, errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
-	}
-
-	return policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
 }
 
 func runGetCodeBashingCommand(

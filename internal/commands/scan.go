@@ -33,7 +33,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/mssola/user_agent"
@@ -1682,20 +1681,12 @@ func runCreateScanCommand(
 			if err != nil {
 				return err
 			}
-			// Handling policy response
-			policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-			if !policyOverrideFlag {
-				policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-				if policyTimeout < 0 {
-					return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
-				}
-				policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scanResponseModel.ID, scanResponseModel.ProjectID, cmd)
-				if err != nil {
-					return err
-				}
-			} else {
-				logger.PrintIfVerbose("Skipping policy evaluation")
+
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel)
+			if err != nil {
+				return err
 			}
+
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
 				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if reportErr != nil {
@@ -1705,7 +1696,7 @@ func runCreateScanCommand(
 			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results)
 
 			if err != nil {
-				return reportErr
+				return err
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
