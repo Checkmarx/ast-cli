@@ -248,7 +248,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		groups, err := updateGroupValues(&input, cmd, groupsWrapper, featureFlagsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
