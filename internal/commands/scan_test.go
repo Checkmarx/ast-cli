@@ -1187,3 +1187,33 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterMatched(t *testing.T) {
+	tests := []struct {
+		name     string
+		filters  []string
+		fileName string
+		expected bool
+	}{
+		{
+			name:     "whenFileMatchesInclusionFilter_shouldReturnTrue",
+			filters:  []string{"*.go"},
+			fileName: "main.go",
+			expected: true,
+		},
+		{
+			name:     "whenFileNoMatchesInclusionFilter_shouldReturnFalse",
+			filters:  []string{"*.go"},
+			fileName: "main.py",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterMatched(tt.filters, tt.fileName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
