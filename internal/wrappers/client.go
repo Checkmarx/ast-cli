@@ -16,7 +16,7 @@ import (
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
