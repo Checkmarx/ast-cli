@@ -16,7 +16,7 @@ func updateGroupValues(input *[]byte, cmd *cobra.Command, groupsWrapper wrappers
 		return groups, err
 	}
 
-	//we're not checking here status of the feature flag, because of refactoring in AM
+	// we're not checking here status of the feature flag, because of refactoring in AM
 	var info map[string]interface{}
 	_ = json.Unmarshal(*input, &info)
 	info["groups"] = services.GetGroupIds(groups)
