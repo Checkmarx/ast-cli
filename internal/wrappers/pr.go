@@ -44,8 +44,5 @@ type BitbucketServerPRModel struct {
 	Policies   []PrPolicy `json:"violatedPolicyList"`
 }
 type PRWrapper interface {
-	PostPRDecoration(model *PRModel) (string, *WebError, error)
-	PostGitlabPRDecoration(model *GitlabPRModel) (string, *WebError, error)
-	PostBitbucketCloudPRDecoration(model *BitbucketCloudPRModel) (string, *WebError, error)
-	PostBitbucketServerPRDecoration(model *BitbucketServerPRModel) (string, *WebError, error)
+	PostPRDecoration(model interface{}) (string, *WebError, error)
 }

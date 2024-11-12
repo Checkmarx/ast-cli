@@ -312,7 +312,7 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 			APIURL:          updatedAPIURL,
 		}
 
-		prResponse, errorModel, err := prWrapper.PostGitlabPRDecoration(prModel)
+		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 
 		if err != nil {
 			return err
@@ -388,13 +388,7 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 				ServerUrl:  apiURL,
 			}
 		}
-		var prResponse string
-		var errorModel *wrappers.WebError
-		if isCloud {
-			prResponse, errorModel, err = prWrapper.PostBitbucketCloudPRDecoration(prModel.(*wrappers.BitbucketCloudPRModel))
-		} else {
-			prResponse, errorModel, err = prWrapper.PostBitbucketServerPRDecoration(prModel.(*wrappers.BitbucketServerPRModel))
-		}
+		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 
 		if err != nil {
 			return err
