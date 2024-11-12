@@ -184,10 +184,10 @@ func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 		"https://gitlab.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
 		return gitlabPRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)

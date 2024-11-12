@@ -31,17 +31,18 @@ func NewHTTPPRWrapper(githubPath, gitlabPath, bitbucketCloudPath, bitbucketServe
 	}
 }
 
-func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
-	string,
-	*WebError,
-	error,
-) {
+func (r *PRHTTPWrapper) PostPRDecoration(model interface{}) (string, *WebError, error) {
+	url, err := r.getPRDecorationURL(model)
+	if err != nil {
+		return "", nil, err
+	}
+
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
 	if err != nil {
 		return "", nil, err
 	}
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.githubPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, url, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return "", nil, err
 	}
@@ -53,70 +54,19 @@ func (r *PRHTTPWrapper) PostPRDecoration(model *PRModel) (
 	return handlePRResponseWithBody(resp, err)
 }
 
-func (r *PRHTTPWrapper) PostGitlabPRDecoration(model *GitlabPRModel) (
-	string,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	jsonBytes, err := json.Marshal(model)
-	if err != nil {
-		return "", nil, err
+func (r *PRHTTPWrapper) getPRDecorationURL(model interface{}) (string, error) {
+	switch model.(type) {
+	case *PRModel:
+		return r.githubPath, nil
+	case *GitlabPRModel:
+		return r.gitlabPath, nil
+	case *BitbucketCloudPRModel:
+		return r.bitbucketCloudPath, nil
+	case *BitbucketServerPRModel:
+		return r.bitbucketServerPath, nil
+	default:
+		return "", errors.New("unsupported model type")
 	}
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.gitlabPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	if err != nil {
-		return "", nil, err
-	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-	return handlePRResponseWithBody(resp, err)
-}
-
-func (r *PRHTTPWrapper) PostBitbucketCloudPRDecoration(model *BitbucketCloudPRModel) (
-	string,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	jsonBytes, err := json.Marshal(model)
-	if err != nil {
-		return "", nil, err
-	}
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.bitbucketCloudPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	if err != nil {
-		return "", nil, err
-	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-	return handlePRResponseWithBody(resp, err)
-}
-
-func (r *PRHTTPWrapper) PostBitbucketServerPRDecoration(model *BitbucketServerPRModel) (
-	string,
-	*WebError,
-	error,
-) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	jsonBytes, err := json.Marshal(model)
-	if err != nil {
-		return "", nil, err
-	}
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.bitbucketServerPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	if err != nil {
-		return "", nil, err
-	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
-	}()
-	return handlePRResponseWithBody(resp, err)
 }
 
 func handlePRResponseWithBody(resp *http.Response, err error) (string, *WebError, error) {
