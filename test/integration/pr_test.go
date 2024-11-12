@@ -59,13 +59,12 @@ func getCompletedScanID(t *testing.T) string {
 }
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -141,13 +140,12 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getCompletedScanID(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
