@@ -16,14 +16,18 @@ const (
 )
 
 type PRHTTPWrapper struct {
-	githubPath string
-	gitlabPath string
+	githubPath          string
+	gitlabPath          string
+	bitbucketCloudPath  string
+	bitbucketServerPath string
 }
 
-func NewHTTPPRWrapper(githubPath, gitlabPath string) PRWrapper {
+func NewHTTPPRWrapper(githubPath, gitlabPath, bitbucketCloudPath, bitbucketServerPath string) PRWrapper {
 	return &PRHTTPWrapper{
-		githubPath: githubPath,
-		gitlabPath: gitlabPath,
+		githubPath:          githubPath,
+		gitlabPath:          gitlabPath,
+		bitbucketCloudPath:  bitbucketCloudPath,
+		bitbucketServerPath: bitbucketServerPath,
 	}
 }
 
@@ -60,6 +64,50 @@ func (r *PRHTTPWrapper) PostGitlabPRDecoration(model *GitlabPRModel) (
 		return "", nil, err
 	}
 	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.gitlabPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return "", nil, err
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	return handlePRResponseWithBody(resp, err)
+}
+
+func (r *PRHTTPWrapper) PostBitbucketCloudPRDecoration(model *BitbucketCloudPRModel) (
+	string,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(model)
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.bitbucketCloudPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return "", nil, err
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	return handlePRResponseWithBody(resp, err)
+}
+
+func (r *PRHTTPWrapper) PostBitbucketServerPRDecoration(model *BitbucketServerPRModel) (
+	string,
+	*WebError,
+	error,
+) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(model)
+	if err != nil {
+		return "", nil, err
+	}
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.bitbucketServerPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return "", nil, err
 	}

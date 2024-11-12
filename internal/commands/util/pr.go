@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
@@ -15,18 +16,20 @@ import (
 )
 
 const (
-	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
-	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
-	errorCodeFormat                  = "%s: CODE: %d, %s\n"
-	policyErrorFormat                = "%s: Failed to get scanID policy information"
-	waitDelayDefault                 = 5
-	resultPolicyDefaultTimeout       = 1
-	failedGettingScanError           = "Failed showing a scan"
-	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
-	githubOnPremURLSuffix            = "/api/v3/repos/"
-	gitlabOnPremURLSuffix            = "/api/v4/"
-	githubCloudURL                   = "https://api.github.com/repos/"
-	gitlabCloudURL                   = "https://gitlab.com" + gitlabOnPremURLSuffix
+	failedCreatingGithubPrDecoration    = "Failed creating github PR Decoration"
+	failedCreatingGitlabPrDecoration    = "Failed creating gitlab MR Decoration"
+	failedCreatingBitbucketPrDecoration = "Failed creating bitbucket PR Decoration"
+	errorCodeFormat                     = "%s: CODE: %d, %s\n"
+	policyErrorFormat                   = "%s: Failed to get scanID policy information"
+	waitDelayDefault                    = 5
+	resultPolicyDefaultTimeout          = 1
+	failedGettingScanError              = "Failed showing a scan"
+	noPRDecorationCreated               = "A PR couldn't be created for this scan because it is still in progress."
+	githubOnPremURLSuffix               = "/api/v3/repos/"
+	gitlabOnPremURLSuffix               = "/api/v4/"
+	githubCloudURL                      = "https://api.github.com/repos/"
+	gitlabCloudURL                      = "https://gitlab.com" + gitlabOnPremURLSuffix
+	bitbucketCloudURL                   = "bitbucket.org"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -42,9 +45,11 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 
 	prDecorationGithub := PRDecorationGithub(prWrapper, policyWrapper, scansWrapper)
 	prDecorationGitlab := PRDecorationGitlab(prWrapper, policyWrapper, scansWrapper)
+	prDecorationBitbucket := PRDecorationBitbucket(prWrapper, policyWrapper, scansWrapper)
 
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
+	cmd.AddCommand(prDecorationBitbucket)
 	return cmd
 }
 
@@ -157,6 +162,46 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 	_ = prDecorationGitlab.MarkFlagRequired(params.PRGitlabProjectFlag)
 
 	return prDecorationGitlab
+}
+
+func PRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	prDecorationBitbucket := &cobra.Command{
+		Use:   "bitbucket ",
+		Short: "Decorate bitbucket PR with vulnerabilities",
+		Long:  "Decorate bitbucket PR with vulnerabilities",
+		Example: heredoc.Doc(
+			`
+			$ cx utils pr bitbucket --scan-id <scan-id> --token <PAT> --namespace <username (required for cloud services)> --repo-name <repository-slug>
+                --pr-id <pr number> --code-repository-url <bitbucket-server-url (required for self-hosted)>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+			`,
+			),
+		},
+		RunE: runPRDecorationBitbucket(prWrapper, policyWrapper, scansWrapper),
+	}
+
+	prDecorationBitbucket.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
+	prDecorationBitbucket.Flags().String(params.SCMTokenFlag, "", params.BitbucketTokenUsage)
+	prDecorationBitbucket.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Bitbucket"))
+	prDecorationBitbucket.Flags().String(params.RepoNameFlag, "", fmt.Sprintf(params.RepoNameFlagUsage, "Bitbucket"))
+	prDecorationBitbucket.Flags().Int(params.PRBBIDFlag, 0, params.PRBBIDFlagUsage)
+	prDecorationBitbucket.Flags().String(params.ProjectKeyFlag, "", params.ProjectKeyFlagUsage) //int or string?
+	prDecorationBitbucket.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
+
+	// Set the value for token to mask the scm token
+	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationBitbucket.Flags().Lookup(params.SCMTokenFlag))
+
+	// mark all fields as required\
+	_ = prDecorationBitbucket.MarkFlagRequired(params.ScanIDFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.SCMTokenFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.RepoNameFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.PRBBIDFlag)
+
+	return prDecorationBitbucket
 }
 
 func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
@@ -280,6 +325,116 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 		logger.Print(prResponse)
 
 		return nil
+	}
+}
+
+func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
+		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
+		repoNameFlag, _ := cmd.Flags().GetString(params.RepoNameFlag)
+		prIDFlag, _ := cmd.Flags().GetInt(params.PRBBIDFlag)
+		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
+		projectKey, _ := cmd.Flags().GetString(params.ProjectKeyFlag)
+
+		isCloud, err := isBitbucketCloud(apiURL)
+		if err != nil {
+			return err
+		}
+
+		flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey, apiURL)
+		if flagRequiredErr != nil {
+			return flagRequiredErr
+		}
+
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
+
+		if scanRunningOrQueued {
+			log.Println(noPRDecorationCreated)
+			return nil
+		}
+
+		// Retrieve policies related to the scan and project to include in the PR decoration
+		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
+		if policyError != nil {
+			return errors.Errorf(policyErrorFormat, failedCreatingBitbucketPrDecoration)
+		}
+
+		repoSlugFormatBB := repoSlugFormatBB(repoNameFlag)
+
+		var prModel interface{}
+		if isCloud {
+			prModel = &wrappers.BitbucketCloudPRModel{
+				ScanID:    scanID,
+				ScmToken:  scmTokenFlag,
+				Namespace: namespaceFlag,
+				RepoName:  repoSlugFormatBB,
+				PRID:      prIDFlag,
+				Policies:  policies,
+			}
+		} else {
+			prModel = &wrappers.BitbucketServerPRModel{
+				ScanID:     scanID,
+				ScmToken:   scmTokenFlag,
+				ProjectKey: projectKey,
+				RepoName:   repoSlugFormatBB,
+				PRID:       prIDFlag,
+				Policies:   policies,
+				ServerUrl:  apiURL,
+			}
+		}
+		var prResponse string
+		var errorModel *wrappers.WebError
+		if isCloud {
+			prResponse, errorModel, err = prWrapper.PostBitbucketCloudPRDecoration(prModel.(*wrappers.BitbucketCloudPRModel))
+		} else {
+			prResponse, errorModel, err = prWrapper.PostBitbucketServerPRDecoration(prModel.(*wrappers.BitbucketServerPRModel))
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if errorModel != nil {
+			return errors.Errorf(errorCodeFormat, failedCreatingBitbucketPrDecoration, errorModel.Code, errorModel.Message)
+		}
+
+		logger.Print(prResponse)
+		return nil
+	}
+}
+
+func repoSlugFormatBB(repoNameFlag string) string {
+	repoSlug := strings.Replace(repoNameFlag, " ", "-", -1)
+	return repoSlug
+}
+
+func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL string) error {
+	if isCloud {
+		if namespaceFlag == "" {
+			return errors.New("Namespace is required for Bitbucket Cloud")
+		}
+	} else {
+		if projectKey == "" {
+			return errors.New("Project key is required for Bitbucket Server")
+		}
+		if apiURL == "" {
+			return errors.New("API URL is required for Bitbucket Server")
+		}
+	}
+	return nil
+}
+
+func isBitbucketCloud(apiURL string) (bool, error) {
+	if apiURL == "" || strings.Contains(apiURL, bitbucketCloudURL) {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
 

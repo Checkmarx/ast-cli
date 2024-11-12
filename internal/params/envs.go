@@ -30,6 +30,8 @@ const (
 	BflPathEnv                          = "CX_BFL_PATH"
 	PRDecorationGithubPathEnv           = "CX_PR_DECORATION_GITHUB_PATH"
 	PRDecorationGitlabPathEnv           = "CX_PR_DECORATION_GITLAB_PATH"
+	PRDecorationBitbucketCloudPathEnv   = "CX_PR_DECORATION_BITBUCKET_CLOUD_PATH"
+	PRDecorationBitbucketServerPathEnv  = "CX_PR_DECORATION_BITBUCKET_SERVER_PATH"
 	SastRmPathEnv                       = "CX_SAST_RM_PATH"
 	UploadsPathEnv                      = "CX_UPLOADS_PATH"
 	TokenExpirySecondsEnv               = "CX_TOKEN_EXPIRY_SECONDS"
