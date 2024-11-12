@@ -1362,9 +1362,16 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 func addScaResults(zipWriter *zip.Writer) error {
 	logger.PrintIfVerbose("Included SCA Results: " + ".cxsca-results.json")
 	dat, err := ioutil.ReadFile(scaResolverResultsFile)
+	scaResultsFile := strings.TrimSuffix(scaResolverResultsFile, ".json")
 	_ = os.Remove(scaResolverResultsFile)
 	if err != nil {
 		return err
+	}
+	removeErr := os.Remove(scaResultsFile)
+	if removeErr != nil {
+		log.Printf("Failed to remove file %s: %v", scaResultsFile, removeErr)
+	} else {
+		log.Printf("Successfully removed file %s", scaResultsFile)
 	}
 	f, err := zipWriter.Create(".cxsca-results.json")
 	if err != nil {
