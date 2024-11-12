@@ -38,7 +38,6 @@ func FindProject(
 
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
-			projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 			return updateProject(
@@ -50,7 +49,6 @@ func FindProject(
 				applicationWrapper,
 				projectName,
 				applicationID,
-				projectGroups,
 				projectTags,
 				projectPrivatePackage,
 				featureFlagsWrapper)
@@ -185,7 +183,6 @@ func updateProject(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectName string,
 	applicationID []string,
-	projectGroups string,
 	projectTags string,
 	projectPrivatePackage string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -205,8 +202,8 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
+	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
+		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
