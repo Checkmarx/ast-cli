@@ -1246,3 +1246,33 @@ func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAf
 	t.Logf("Log output:\n%s", logOutput)
 	assert.Assert(t, strings.Contains(logOutput, "Successfully removed file"), "Expected success log for file removal")
 }
+
+func TestFilterMatched(t *testing.T) {
+	tests := []struct {
+		name     string
+		filters  []string
+		fileName string
+		expected bool
+	}{
+		{
+			name:     "whenFileMatchesInclusionFilter_shouldReturnTrue",
+			filters:  []string{"*.go"},
+			fileName: "main.go",
+			expected: true,
+		},
+		{
+			name:     "whenFileNoMatchesInclusionFilter_shouldReturnFalse",
+			filters:  []string{"*.go"},
+			fileName: "main.py",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterMatched(tt.filters, tt.fileName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
