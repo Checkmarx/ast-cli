@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -113,62 +112,64 @@ const (
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
 )
 
-var summaryFormats = []string{
-	printer.FormatSummaryConsole,
-	printer.FormatSummary,
-	printer.FormatSummaryJSON,
-	printer.FormatPDF,
-	printer.FormatSummaryMarkdown,
-	printer.FormatSbom,
-	printer.FormatGLSast,
-	printer.FormatGLSca,
-}
+var (
+	summaryFormats = []string{
+		printer.FormatSummaryConsole,
+		printer.FormatSummary,
+		printer.FormatSummaryJSON,
+		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
+		printer.FormatSbom,
+		printer.FormatGLSast,
+		printer.FormatGLSca,
+	}
 
-var filterResultsListFlagUsage = fmt.Sprintf(
-	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
-	strings.Join(
-		[]string{
-			commonParams.ScanIDQueryParam,
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.SortQueryParam,
-			commonParams.IncludeNodesQueryParam,
-			commonParams.NodeIDsQueryParam,
-			commonParams.QueryQueryParam,
-			commonParams.GroupQueryParam,
-			commonParams.StatusQueryParam,
-			commonParams.SeverityQueryParam,
-			commonParams.StateQueryParam,
-		}, ",",
-	),
+	filterResultsListFlagUsage = fmt.Sprintf(
+		"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.ScanIDQueryParam,
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.SortQueryParam,
+				commonParams.IncludeNodesQueryParam,
+				commonParams.NodeIDsQueryParam,
+				commonParams.QueryQueryParam,
+				commonParams.GroupQueryParam,
+				commonParams.StatusQueryParam,
+				commonParams.SeverityQueryParam,
+				commonParams.StateQueryParam,
+			}, ",",
+		),
+	)
+
+	// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
+	securities = map[string]string{
+		infoCx:     "1.0",
+		lowCx:      "2.0",
+		mediumCx:   "4.0",
+		highCx:     "7.0",
+		criticalCx: "9.0",
+	}
+
+	// Match cx severity with sonar severity
+	sonarSeverities = map[string]string{
+		infoCx:     infoSonar,
+		lowCx:      lowSonar,
+		mediumCx:   mediumSonar,
+		highCx:     highSonar,
+		criticalCx: criticalSonar,
+	}
+
+	containerEngineUnsupportedAgents = []string{
+		commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
+	}
+
+	sscsEngineToOverviewEngineMap = map[string]string{
+		commonParams.SCSScorecardType:       commonParams.SCSScorecardOverviewType,
+		commonParams.SCSSecretDetectionType: commonParams.SCSSecretDetectionOverviewType,
+	}
 )
-
-// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
-var securities = map[string]string{
-	infoCx:     "1.0",
-	lowCx:      "2.0",
-	mediumCx:   "4.0",
-	highCx:     "7.0",
-	criticalCx: "9.0",
-}
-
-// Match cx severity with sonar severity
-var sonarSeverities = map[string]string{
-	infoCx:     infoSonar,
-	lowCx:      lowSonar,
-	mediumCx:   mediumSonar,
-	highCx:     highSonar,
-	criticalCx: criticalSonar,
-}
-
-var containerEngineUnsupportedAgents = []string{
-	commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
-}
-
-var sscsEngineToOverviewEngineMap = map[string]string{
-	commonParams.SCSScorecardType:       commonParams.SCSScorecardOverviewType,
-	commonParams.SCSSecretDetectionType: commonParams.SCSSecretDetectionOverviewType,
-}
 
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
@@ -959,6 +960,9 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
+		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -982,42 +986,19 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel := &wrappers.PolicyResponseModel{}
-		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-		if !policyOverrideFlag {
-			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			if policyTimeout < 0 {
-				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
-			}
-			policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
-			if err != nil {
-				return err
-			}
-		} else {
-			logger.PrintIfVerbose("Skipping policy evaluation")
+		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+		if err != nil {
+			return err
 		}
+
 		if sastRedundancy {
 			resultsParams[commonParams.SastRedundancyFlag] = ""
 		}
 
-		return CreateScanReport(
-			resultsWrapper,
-			risksOverviewWrapper,
-			scsScanOverviewWrapper,
-			exportWrapper,
-			policyResponseModel,
-			resultsPdfReportsWrapper,
-			scan,
-			format,
-			formatPdfToEmail,
-			formatPdfOptions,
-			formatSbomOptions,
-			targetFile,
-			targetPath,
-			agent,
-			resultsParams,
-			featureFlagsWrapper)
+		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+			policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+		return err
 	}
 }
 
@@ -1124,42 +1105,42 @@ func CreateScanReport(
 	agent string,
 	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) error {
+) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
 	setIsSCSEnabled(featureFlagsWrapper)
 	setIsContainersEnabled(agent, featureFlagsWrapper)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	scanPending := isScanPending(summary.Status)
 
 	err = createDirectory(targetPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !scanPending {
 		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
 		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
 			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return results, nil
 }
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
