@@ -18,6 +18,7 @@ import (
 	"github.com/golang-jwt/jwt"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 

@@ -1817,6 +1817,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 
 		scanHandler.UploadURL = uploadURL
 	}
+	logger.Print("Temporary zip file path: " + zipFilePath)
 
 	var err error
 
