@@ -1221,7 +1221,7 @@ func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAf
 	var logBuffer bytes.Buffer
 	log.SetOutput(&logBuffer)
 
-	// Step 8: Ensure log output is reset to standard error after the test completes.
+	// Step 8 : Ensure log output is reset to standard error after the test completes.
 	defer func() {
 		log.SetOutput(os.Stderr)
 	}()
