@@ -37,7 +37,7 @@ type BitbucketCloudPRModel struct {
 type BitbucketServerPRModel struct {
 	ScanID     string     `json:"scanId"`
 	ScmToken   string     `json:"scmToken"`
-	ServerUrl  string     `json:"apiUrl"`
+	ServerURL  string     `json:"apiUrl"`
 	ProjectKey string     `json:"namespace"`
 	RepoName   string     `json:"repoName"`
 	PRID       int        `json:"prNumber"`

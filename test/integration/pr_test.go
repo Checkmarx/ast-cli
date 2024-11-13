@@ -99,7 +99,7 @@ func TestPRGithubDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 		"https://github.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.PRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return githubPRCommentCreated, nil, nil
 	})
 	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
@@ -182,7 +182,7 @@ func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 		"https://gitlab.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return gitlabPRCommentCreated, nil, nil
 	})
 	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)

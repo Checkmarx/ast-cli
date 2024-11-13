@@ -189,7 +189,7 @@ func PRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 	prDecorationBitbucket.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Bitbucket"))
 	prDecorationBitbucket.Flags().String(params.RepoNameFlag, "", fmt.Sprintf(params.RepoNameFlagUsage, "Bitbucket"))
 	prDecorationBitbucket.Flags().Int(params.PRBBIDFlag, 0, params.PRBBIDFlagUsage)
-	prDecorationBitbucket.Flags().String(params.ProjectKeyFlag, "", params.ProjectKeyFlagUsage) //int or string?
+	prDecorationBitbucket.Flags().String(params.ProjectKeyFlag, "", params.ProjectKeyFlagUsage)
 	prDecorationBitbucket.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
 
 	// Set the value for token to mask the scm token
@@ -338,10 +338,7 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 		projectKey, _ := cmd.Flags().GetString(params.ProjectKeyFlag)
 
-		isCloud, err := isBitbucketCloud(apiURL)
-		if err != nil {
-			return err
-		}
+		isCloud := isBitbucketCloud(apiURL)
 
 		flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey, apiURL)
 		if flagRequiredErr != nil {
@@ -385,7 +382,7 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 				RepoName:   repoSlugFormatBB,
 				PRID:       prIDFlag,
 				Policies:   policies,
-				ServerUrl:  apiURL,
+				ServerURL:  apiURL,
 			}
 		}
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
@@ -411,11 +408,11 @@ func repoSlugFormatBB(repoNameFlag string) string {
 func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL string) error {
 	if isCloud {
 		if namespaceFlag == "" {
-			return errors.New("Namespace is required for Bitbucket Cloud")
+			return errors.New("namespace is required for Bitbucket Cloud")
 		}
 	} else {
 		if projectKey == "" {
-			return errors.New("Project key is required for Bitbucket Server")
+			return errors.New("project key is required for Bitbucket Server")
 		}
 		if apiURL == "" {
 			return errors.New("API URL is required for Bitbucket Server")
@@ -424,12 +421,11 @@ func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL stri
 	return nil
 }
 
-func isBitbucketCloud(apiURL string) (bool, error) {
+func isBitbucketCloud(apiURL string) bool {
 	if apiURL == "" || strings.Contains(apiURL, bitbucketCloudURL) {
-		return true, nil
-	} else {
-		return false, nil
+		return true
 	}
+	return false
 }
 
 func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper wrappers.PolicyWrapper, scanID string, cmd *cobra.Command) ([]wrappers.PrPolicy, error) {
