@@ -6,13 +6,10 @@ import (
 )
 
 const (
-	ConversationIDErrorFormat                = "Invalid conversation ID %s"
-	AiGuidedRemediationEnabled               = "scan.config.plugins.aiGuidedRemediation"
-	AiGuidedRemediationEngine                = "scan.config.plugins.aiGuidedRemediationAiEngine"
-	AiGuidedRemediationAzureAiDeploymentName = "scan.config.plugins.aiGuidedRemediationAzureAiDeploymentName"
-	AiGuidedRemediationAzureAiEndpoint       = "scan.config.plugins.aiGuidedRemediationAzureAiEndpoint"
-	AiGuidedRemediationAzureAiAPIKey         = "scan.config.plugins.aiGuidedRemediationAzureAiApiKey"
-	// AiGuidedRemediationAzureAiValue    = "azureai"
+	ConversationIDErrorFormat           = "Invalid conversation ID %s"
+	AiGuidedRemediationEnabled          = "scan.config.plugins.aiGuidedRemediation"
+	AiGuidedRemediationEngine           = "scan.config.plugins.aiGuidedRemediationAiEngine"
+	AiGuidedRemediationAzureAiValue     = "azureai"
 	AiGuidedRemediationCheckmarxAiValue = "checkmarxai"
 )
 
