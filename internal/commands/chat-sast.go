@@ -62,7 +62,7 @@ func runChatSast(
 		scanResultsFile, _ := cmd.Flags().GetString(params.ChatSastScanResultsFile)
 		sourceDir, _ := cmd.Flags().GetString(params.ChatSastSourceDir)
 		sastResultID, _ := cmd.Flags().GetString(params.ChatSastResultID)
-		azureAiEnabled := isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		azureAiEnabled := isAzureAiGuidedRemediationEnabledWorkaround(tenantConfigurationResponses)
 		checkmarxAiEnabled := isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 
 		statefulWrapper, customerToken := CreateStatefulWrapper(cmd, azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses)
@@ -206,13 +206,30 @@ func isCxOneAPIKeyAvailable() bool {
 	return apiKey != ""
 }
 
-func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
-	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
+// func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+//	engine, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationEngine)
+//	if err != nil {
+//		return false
+//	}
+//	isEnabled := strings.EqualFold(engine, AiGuidedRemediationAzureAiValue)
+//	return isEnabled
+//}
+
+func isAzureAiGuidedRemediationEnabledWorkaround(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
+	apiKey, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationAzureAiAPIKey)
 	if err != nil {
 		return false
 	}
-	isEnabled := strings.EqualFold(engine, AiGuidedRemediationAzureAiValue)
-	return isEnabled
+	endpoint, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationAzureAiEndpoint)
+	if err != nil {
+		return false
+	}
+	deploymentName, err := GetTenantConfiguration(tenantConfigurationResponses, AiGuidedRemediationAzureAiDeploymentName)
+	if err != nil {
+		return false
+	}
+
+	return len(apiKey) > 0 && len(endpoint) > 0 && len(deploymentName) > 0
 }
 
 func isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {
