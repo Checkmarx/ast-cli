@@ -27,10 +27,15 @@ const (
 	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
+	prBBToken                     = "PR_BITBUCKET_TOKEN"
+	prBBNamespace                 = "PR_BITBUCKET_NAMESPACE"
+	prBBId                        = "PR_BITBUCKET_ID"
+	prBBRepoName                  = "PR_BITBUCKET_REPO_NAME"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
 	githubPRCommentCreated        = "github PR comment created successfully."
 	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
+	BBPRCommentCreated            = "bitbucket PR comment created successfully."
 	outputFileName                = "test_output.log"
 	scans                         = "api/scans"
 )
@@ -304,4 +309,117 @@ func deleteOutputFile(t *testing.T, file *os.File) {
 	if err != nil {
 		logger.Printf("Failed to remove log file: %v", err)
 	}
+}
+
+func TestPRBBOnCloudDecorationSuccessCase(t *testing.T) {
+	//scanID, _ := getRootScan(t, params.SastType)
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		"--debug",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRBBBDecorationFailure(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		"fakeScanID",
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		"--debug",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "scan not found")
+}
+
+func TestPRBBDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		"Token",
+		flag(params.ProjectKeyFlag),
+		"PROJECTKEY",
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		flag(params.CodeRepositoryFlag),
+		"https://bitbucket.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
+		return BBPRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, BBPRCommentCreated), true, "Expected output: %s", BBPRCommentCreated)
+}
+func TestPRBitbucketDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
+	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		scanID,
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+	}
+
+	file := createOutputFile(t, outputFileName)
+	_, _ = executeCommand(t, args...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
 }

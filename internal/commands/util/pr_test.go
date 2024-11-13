@@ -66,3 +66,106 @@ func TestUpdateAPIURLForGitlabOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(
 	cloudAPIURL := updateAPIURLForGitlabOnPrem("")
 	asserts.Equal(t, gitlabCloudURL, cloudAPIURL)
 }
+
+func TestCheckIsCloudAndValidateFlag(t *testing.T) {
+	tests := []struct {
+		name          string
+		apiURL        string
+		namespaceFlag string
+		projectKey    string
+		expectedCloud bool
+		expectedError string
+	}{
+		{
+			name:          "Bitbucket Cloud",
+			apiURL:        "",
+			namespaceFlag: "namespace",
+			projectKey:    "",
+			expectedCloud: true,
+			expectedError: "",
+		},
+		{
+			name:          "Bitbucket Cloud with namespace",
+			apiURL:        "https://bitbucket.org",
+			namespaceFlag: "namespace",
+			projectKey:    "",
+			expectedCloud: true,
+			expectedError: "",
+		},
+		{
+			name:          "Bitbucket Cloud without namespace",
+			apiURL:        "https://bitbucket.org",
+			namespaceFlag: "",
+			projectKey:    "",
+			expectedCloud: true,
+			expectedError: "namespace is required for Bitbucket Cloud",
+		},
+		{
+			name:          "Bitbucket Server with project key and API URL",
+			apiURL:        "https://bitbucket.example.com",
+			namespaceFlag: "",
+			projectKey:    "projectKey",
+			expectedCloud: false,
+			expectedError: "",
+		},
+		{
+			name:          "Bitbucket Server without project key",
+			apiURL:        "https://bitbucket.example.com",
+			namespaceFlag: "",
+			projectKey:    "",
+			expectedCloud: false,
+			expectedError: "project key is required for Bitbucket Server",
+		},
+		{
+			name:          "Bitbucket Cloud with URL and project key",
+			apiURL:        "https://bitbucket.org",
+			namespaceFlag: "",
+			projectKey:    "projectKey",
+			expectedCloud: true,
+			expectedError: "namespace is required for Bitbucket Cloud",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isCloud, err := checkIsCloudAndValidateFlag(tt.apiURL, tt.namespaceFlag, tt.projectKey)
+			asserts.Equal(t, tt.expectedCloud, isCloud)
+			if tt.expectedError != "" {
+				asserts.EqualError(t, err, tt.expectedError)
+			} else {
+				asserts.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestRepoSlugFormatBB(t *testing.T) {
+	tests := []struct {
+		name         string
+		repoNameFlag string
+		expectedSlug string
+	}{
+		{
+			name:         "Single word repo name",
+			repoNameFlag: "repository",
+			expectedSlug: "repository",
+		},
+		{
+			name:         "Repo name with spaces",
+			repoNameFlag: "my repository",
+			expectedSlug: "my-repository",
+		},
+		{
+			name:         "Repo name with multiple spaces",
+			repoNameFlag: "my awesome repository",
+			expectedSlug: "my-awesome-repository",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			slug := repoSlugFormatBB(tt.repoNameFlag)
+			asserts.Equal(t, tt.expectedSlug, slug)
+		})
+	}
+}

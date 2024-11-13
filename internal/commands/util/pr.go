@@ -338,9 +338,7 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 		projectKey, _ := cmd.Flags().GetString(params.ProjectKeyFlag)
 
-		isCloud := isBitbucketCloud(apiURL)
-
-		flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey, apiURL)
+		isCloud, flagRequiredErr := checkIsCloudAndValidateFlag(apiURL, namespaceFlag, projectKey)
 		if flagRequiredErr != nil {
 			return flagRequiredErr
 		}
@@ -356,35 +354,12 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 			return nil
 		}
 
-		// Retrieve policies related to the scan and project to include in the PR decoration
 		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
 		if policyError != nil {
 			return errors.Errorf(policyErrorFormat, failedCreatingBitbucketPrDecoration)
 		}
 
-		repoSlugFormatBB := repoSlugFormatBB(repoNameFlag)
-
-		var prModel interface{}
-		if isCloud {
-			prModel = &wrappers.BitbucketCloudPRModel{
-				ScanID:    scanID,
-				ScmToken:  scmTokenFlag,
-				Namespace: namespaceFlag,
-				RepoName:  repoSlugFormatBB,
-				PRID:      prIDFlag,
-				Policies:  policies,
-			}
-		} else {
-			prModel = &wrappers.BitbucketServerPRModel{
-				ScanID:     scanID,
-				ScmToken:   scmTokenFlag,
-				ProjectKey: projectKey,
-				RepoName:   repoSlugFormatBB,
-				PRID:       prIDFlag,
-				Policies:   policies,
-				ServerURL:  apiURL,
-			}
-		}
+		prModel := createPRModel(isCloud, scanID, scmTokenFlag, namespaceFlag, repoNameFlag, prIDFlag, apiURL, projectKey, policies)
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 
 		if err != nil {
@@ -405,6 +380,12 @@ func repoSlugFormatBB(repoNameFlag string) string {
 	return repoSlug
 }
 
+func checkIsCloudAndValidateFlag(apiURL, namespaceFlag, projectKey string) (bool, error) {
+	isCloud := isBitbucketCloud(apiURL)
+	flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey, apiURL)
+	return isCloud, flagRequiredErr
+}
+
 func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL string) error {
 	if isCloud {
 		if namespaceFlag == "" {
@@ -413,9 +394,6 @@ func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL stri
 	} else {
 		if projectKey == "" {
 			return errors.New("project key is required for Bitbucket Server")
-		}
-		if apiURL == "" {
-			return errors.New("API URL is required for Bitbucket Server")
 		}
 	}
 	return nil
@@ -426,6 +404,32 @@ func isBitbucketCloud(apiURL string) bool {
 		return true
 	}
 	return false
+}
+
+func createPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFlag string, prIDFlag int, apiURL, projectKey string, policies []wrappers.PrPolicy) interface{} {
+
+	repoSlugFormatBB := repoSlugFormatBB(repoNameFlag)
+
+	if isCloud {
+		return &wrappers.BitbucketCloudPRModel{
+			ScanID:    scanID,
+			ScmToken:  scmTokenFlag,
+			Namespace: namespaceFlag,
+			RepoName:  repoSlugFormatBB,
+			PRID:      prIDFlag,
+			Policies:  policies,
+		}
+	} else {
+		return &wrappers.BitbucketServerPRModel{
+			ScanID:     scanID,
+			ScmToken:   scmTokenFlag,
+			ProjectKey: projectKey,
+			RepoName:   repoSlugFormatBB,
+			PRID:       prIDFlag,
+			Policies:   policies,
+			ServerURL:  apiURL,
+		}
+	}
 }
 
 func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper wrappers.PolicyWrapper, scanID string, cmd *cobra.Command) ([]wrappers.PrPolicy, error) {
