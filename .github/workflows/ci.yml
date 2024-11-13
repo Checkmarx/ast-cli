@@ -82,7 +82,7 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           PR_BITBUCKET_TOKEN: ${{ secrets.PR_BITBUCKET_TOKEN }}
           PR_BITBUCKET_NAMESPACE: "AstSystemTest"
-          PR_BITBUCKET_REPO_NAME: "cliIntegrationTest",
+          PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
