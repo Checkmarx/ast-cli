@@ -193,7 +193,7 @@ func getEngineSelection(cmd *cobra.Command, tenantWrapper wrappers.TenantConfigu
 			return false, false, nil, outputError(cmd, uuid.Nil, err)
 		}
 
-		azureAiEnabled = isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses)
+		azureAiEnabled = isAzureAiGuidedRemediationEnabledWorkaround(tenantConfigurationResponses)
 		checkmarxAiEnabled = isCheckmarxAiGuidedRemediationEnabled(tenantConfigurationResponses)
 	}
 	return azureAiEnabled, checkmarxAiEnabled, tenantConfigurationResponses, nil
