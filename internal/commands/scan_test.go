@@ -3,7 +3,10 @@
 package commands
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"strings"
