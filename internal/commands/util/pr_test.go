@@ -8,7 +8,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestNewPRDecorationCommandMustExist(t *testing.T) {
+func TestNewGithubPRDecorationCommandMustExist(t *testing.T) {
 	cmd := PRDecorationGithub(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "PR decoration command must exist")
 
@@ -16,9 +16,17 @@ func TestNewPRDecorationCommandMustExist(t *testing.T) {
 	assert.ErrorContains(t, err, "scan-id")
 }
 
-func TestNewMRDecorationCommandMustExist(t *testing.T) {
+func TestNewGitlabMRDecorationCommandMustExist(t *testing.T) {
 	cmd := PRDecorationGitlab(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "MR decoration command must exist")
+
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, "scan-id")
+}
+
+func TestNewAzurePRDecorationCommandMustExist(t *testing.T) {
+	cmd := PRDecorationAzure(nil, nil, nil)
+	assert.Assert(t, cmd != nil, "PR decoration command must exist")
 
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "scan-id")
@@ -65,4 +73,36 @@ func TestUpdateAPIURLForGitlabOnPrem_whenAPIURLIsSet_ShouldUpdateAPIURL(t *testi
 func TestUpdateAPIURLForGitlabOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(t *testing.T) {
 	cloudAPIURL := updateAPIURLForGitlabOnPrem("")
 	asserts.Equal(t, gitlabCloudURL, cloudAPIURL)
+}
+
+func TestUpdateAPIURLForAzureOnPrem_whenAPIURLIsSet_ShouldUpdateAPIURL(t *testing.T) {
+	selfHostedURL := "https://azure.example.com"
+	updatedAPIURL := updateAPIURLForAzureOnPrem(selfHostedURL)
+	asserts.Equal(t, selfHostedURL, updatedAPIURL)
+}
+
+func TestUpdateAPIURLForAzureOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(t *testing.T) {
+	cloudAPIURL := updateAPIURLForAzureOnPrem("")
+	asserts.Equal(t, azureCloudURL, cloudAPIURL)
+}
+
+func TestUpdateScmTokenForAzureOnPrem_whenUserNameIsSet_ShouldUpdateToken(t *testing.T) {
+	token := "token"
+	username := "username"
+	expectedToken := username + ":" + token
+	updatedToken := updateScmTokenForAzure(token, username)
+	asserts.Equal(t, expectedToken, updatedToken)
+}
+
+func TestUpdateScmTokenForAzureOnPrem_whenUserNameNotSet_ShouldNotUpdateToken(t *testing.T) {
+	token := "token"
+	username := ""
+	expectedToken := token
+	updatedToken := updateScmTokenForAzure(token, username)
+	asserts.Equal(t, expectedToken, updatedToken)
+}
+
+func TestCreateAzureNameSpace_ShouldCreateNamespace(t *testing.T) {
+	azureNamespace := createAzureNameSpace("organization", "project")
+	asserts.Equal(t, "organization/project", azureNamespace)
 }

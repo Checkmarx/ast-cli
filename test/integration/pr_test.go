@@ -27,10 +27,15 @@ const (
 	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
+	prAzureToken                  = "PR_AZURE_TOKEN"
+	prAzureNamespace              = "PR_AZURE_NAMESPACE"
+	prAzureProject                = "PR_AZURE_PROJECT"
+	prAzureNumber                 = "PR_AZURE_NUMBER"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
 	githubPRCommentCreated        = "github PR comment created successfully."
 	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
+	azurePRCommentCreated         = "azure PR comment created successfully."
 	outputFileName                = "test_output.log"
 	scans                         = "api/scans"
 )
@@ -221,6 +226,86 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 		os.Getenv(prGitlabProjectId),
 		flag(params.PRIidFlag),
 		os.Getenv(prGitlabIid),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "scan not found")
+}
+
+func TestPRAzureDecorationSuccessCase(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureNamespace),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureNamespace),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+		flag(params.CodeRepositoryFlag),
+		"https://azure.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
+		return azurePRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, azurePRCommentCreated), true, "Expected output: %s", azurePRCommentCreated)
+}
+
+func TestPRAzureDecorationFailure(t *testing.T) {
+
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		"fakeScanID",
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureNamespace),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
 	}
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, "scan not found")
