@@ -1551,7 +1551,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 //
 //}
 
-func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
+func TestScanCreate_WhenProjectExists_ShouldNotUpdateGroups(t *testing.T) {
 	projectID, projectName := getRootProject(t)
 	project := showProject(t, projectID)
 	groupsBeforeScanCreate := project.Groups
