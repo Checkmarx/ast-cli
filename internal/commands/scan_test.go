@@ -3,13 +3,19 @@
 package commands
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
+	"log"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -48,6 +54,8 @@ const (
 	InvalidEngineMessage          = "Please verify if engine is installed"
 	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	outputFileName              = "test_output.log"
+	noUpdatesForExistingProject = "No applicationId or tags to update. Skipping project update."
 )
 
 func TestScanHelp(t *testing.T) {
@@ -378,12 +386,29 @@ func TestCreateScanBranches(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "branch_defined")
 }
 
-func TestCreateScanWithProjectGroup(t *testing.T) {
+func TestCreateScan_WhenProjectNotExistsAndInvalidGroup_ShouldFail(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
+		"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
 	)
 	assert.Assert(t, err.Error() == "Failed updating a project: Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
+}
+
+func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssignGroup(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--project-groups", "existsGroup1", "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Updating project groups"), true, "Expected output: %s", "Updating project groups")
 }
 
 func TestScanWorkflowMissingID(t *testing.T) {
@@ -586,11 +611,18 @@ func TestCreateScanProjectTags(t *testing.T) {
 		"--project-tags", "test", "--debug")
 }
 
-func TestCreateScanProjecGroupsError(t *testing.T) {
+func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
-		"--debug", "--project-groups", "err"}
-	err := execCmdNotNilAssertion(t, baseArgs...)
-	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
+		"--debug", "--project-groups", "anyProjectGroup"}
+	execCmdNilAssertion(t, baseArgs...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
 }
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "notaniteger"}
@@ -1185,5 +1217,106 @@ func TestValidateContainerImageFormat(t *testing.T) {
 				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
 		})
+	}
+}
+
+func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAfterAddingToZip(t *testing.T) {
+	// Step 1: Create a temporary file to  simulate the SCA results file and check for errors.
+	tempFile, err := os.CreateTemp("", "sca_results_test")
+	assert.NilError(t, err)
+
+	// Step 2: Schedule deletion of the temporary file after the test completes.
+	defer os.Remove(tempFile.Name())
+
+	// Step 3: Define the path for scaResolverResultsFile, adding ".json" extension.
+	scaResolverResultsFile = tempFile.Name() + ".json"
+
+	// Step 4: Create scaResolverResultsFile on disk to simulate its existence before running addScaResults.
+	_, err = os.Create(scaResolverResultsFile)
+	assert.NilError(t, err, "Expected scaResolverResultsFile to be created")
+
+	// Step 5: Define and create scaResultsFile (without ".json" extension) to simulate another required file.
+	scaResultsFile := strings.TrimSuffix(scaResolverResultsFile, ".json")
+	_, err = os.Create(scaResultsFile)
+	assert.NilError(t, err, "Expected scaResultsFile to be created")
+
+	// Step 6: Set up a buffer to collect the zip file's contents.
+	var buffer bytes.Buffer
+	zipWriter := zip.NewWriter(&buffer)
+
+	// Step 7: Redirect log output to logBuffer to capture logs for validation.
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+
+	// Step 8 : Ensure log output is reset to standard error after the test completes.
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	// Step 9: Call addScaResults, which should add results to the zipWriter and delete temporary files.
+	err = addScaResults(zipWriter)
+	assert.NilError(t, err)
+
+	// Step 10: Close the zip writer to complete the writing process.
+	zipWriter.Close()
+
+	// Step 11: Check if scaResolverResultsFile was successfully deleted after addScaResults ran.
+	_, err = os.Stat(scaResolverResultsFile)
+	assert.Assert(t, os.IsNotExist(err), "Expected scaResolverResultsFile to be deleted")
+
+	// Step 12: Check if scaResultsFile was successfully deleted as well.
+	_, err = os.Stat(scaResultsFile)
+	assert.Assert(t, os.IsNotExist(err), "Expected scaResultsFile to be deleted")
+
+	// Step 13: Validate log output to confirm the success message for file removal is present.
+	logOutput := logBuffer.String()
+	t.Logf("Log output:\n%s", logOutput)
+	assert.Assert(t, strings.Contains(logOutput, "Successfully removed file"), "Expected success log for file removal")
+}
+
+func TestFilterMatched(t *testing.T) {
+	tests := []struct {
+		name     string
+		filters  []string
+		fileName string
+		expected bool
+	}{
+		{
+			name:     "whenFileMatchesInclusionFilter_shouldReturnTrue",
+			filters:  []string{"*.go"},
+			fileName: "main.go",
+			expected: true,
+		},
+		{
+			name:     "whenFileNoMatchesInclusionFilter_shouldReturnFalse",
+			filters:  []string{"*.go"},
+			fileName: "main.py",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterMatched(tt.filters, tt.fileName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func createOutputFile(t *testing.T, fileName string) *os.File {
+	file, err := os.Create(fileName)
+	if err != nil {
+		t.Fatalf("Failed to create log file: %v", err)
+	}
+	logger.SetOutput(file)
+	return file
+}
+
+func deleteOutputFile(file *os.File) {
+	file.Close()
+	err := os.Remove(file.Name())
+	if err != nil {
+		logger.Printf("Failed to remove log file: %v", err)
 	}
 }
