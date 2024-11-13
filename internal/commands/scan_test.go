@@ -396,7 +396,7 @@ func TestCreateScan_WhenProjectNotExistsAndInvalidGroup_ShouldFail(t *testing.T)
 
 func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssignGroup(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(t, file)
+	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 
 	baseArgs := []string{"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--project-groups", "existsGroup1", "--debug"}
@@ -613,7 +613,7 @@ func TestCreateScanProjectTags(t *testing.T) {
 
 func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(t, file)
+	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--debug", "--project-groups", "anyProjectGroup"}
@@ -1313,7 +1313,7 @@ func createOutputFile(t *testing.T, fileName string) *os.File {
 	return file
 }
 
-func deleteOutputFile(t *testing.T, file *os.File) {
+func deleteOutputFile(file *os.File) {
 	file.Close()
 	err := os.Remove(file.Name())
 	if err != nil {
