@@ -390,11 +390,11 @@ func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.P
 	}
 }
 
-func createAzureNameSpace(namespaceFlag string, projectNameFlag string) string {
+func createAzureNameSpace(namespaceFlag, projectNameFlag string) string {
 	return fmt.Sprintf("%s/%s", namespaceFlag, projectNameFlag)
 }
 
-func updateScmTokenForAzure(scmTokenFlag string, codeRepositoryUserName string) string {
+func updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName string) string {
 	if codeRepositoryUserName != "" {
 		return fmt.Sprintf("%s:%s", codeRepositoryUserName, scmTokenFlag)
 	}
