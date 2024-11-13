@@ -127,6 +127,7 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			isCloud, err := checkIsCloudAndValidateFlag(tt.apiURL, tt.namespaceFlag, tt.projectKey)
 			asserts.Equal(t, tt.expectedCloud, isCloud)

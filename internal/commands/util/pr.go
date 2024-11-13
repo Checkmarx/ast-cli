@@ -407,7 +407,6 @@ func isBitbucketCloud(apiURL string) bool {
 }
 
 func createPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFlag string, prIDFlag int, apiURL, projectKey string, policies []wrappers.PrPolicy) interface{} {
-
 	repoSlugFormatBB := repoSlugFormatBB(repoNameFlag)
 
 	if isCloud {
@@ -419,16 +418,15 @@ func createPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFl
 			PRID:      prIDFlag,
 			Policies:  policies,
 		}
-	} else {
-		return &wrappers.BitbucketServerPRModel{
-			ScanID:     scanID,
-			ScmToken:   scmTokenFlag,
-			ProjectKey: projectKey,
-			RepoName:   repoSlugFormatBB,
-			PRID:       prIDFlag,
-			Policies:   policies,
-			ServerURL:  apiURL,
-		}
+	}
+	return &wrappers.BitbucketServerPRModel{
+		ScanID:     scanID,
+		ScmToken:   scmTokenFlag,
+		ProjectKey: projectKey,
+		RepoName:   repoSlugFormatBB,
+		PRID:       prIDFlag,
+		Policies:   policies,
+		ServerURL:  apiURL,
 	}
 }
 
