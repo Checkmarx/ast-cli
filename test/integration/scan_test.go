@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -1551,7 +1552,9 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 //}
 
 func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
-	_, projectName := getRootProject(t)
+	projectID, projectName := getRootProject(t)
+	project := showProject(t, projectID)
+	groupsBeforeScanCreate := project.Groups
 
 	args := []string{
 		scanCommand, "create",
@@ -1561,10 +1564,20 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ProjectGroupList), "wrong_group",
+		"--async",
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed finding groups")
+	if err != nil {
+		assertError(t, err, "running a scan should pass")
+	}
+
+	project = showProject(t, projectID)
+	groupsAfterScanCreate := project.Groups
+	if !reflect.DeepEqual(groupsBeforeScanCreate, groupsAfterScanCreate) {
+		t.Errorf("When project exists, groups before and after scan creation should be equal. Got %v, want %v", groupsAfterScanCreate, groupsBeforeScanCreate)
+	}
+
 }
 func TestScanCreateExploitablePath(t *testing.T) {
 	_, projectName := getRootProject(t)
