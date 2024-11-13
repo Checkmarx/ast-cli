@@ -382,11 +382,11 @@ func repoSlugFormatBB(repoNameFlag string) string {
 
 func checkIsCloudAndValidateFlag(apiURL, namespaceFlag, projectKey string) (bool, error) {
 	isCloud := isBitbucketCloud(apiURL)
-	flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey, apiURL)
+	flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey)
 	return isCloud, flagRequiredErr
 }
 
-func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey, apiURL string) error {
+func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey string) error {
 	if isCloud {
 		if namespaceFlag == "" {
 			return errors.New("namespace is required for Bitbucket Cloud")
