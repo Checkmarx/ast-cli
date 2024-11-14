@@ -12,10 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -54,8 +52,6 @@ const (
 	InvalidEngineMessage          = "Please verify if engine is installed"
 	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
-	outputFileName              = "test_output.log"
-	noUpdatesForExistingProject = "No applicationId or tags to update. Skipping project update."
 )
 
 func TestScanHelp(t *testing.T) {
@@ -386,29 +382,12 @@ func TestCreateScanBranches(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "branch_defined")
 }
 
-func TestCreateScan_WhenProjectNotExistsAndInvalidGroup_ShouldFail(t *testing.T) {
+func TestCreateScanWithProjectGroup(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
+		"scan", "create", "--project-name", "invalidGroup", "-s", ".", "--branch", "main", "--project-groups", "invalidGroup",
 	)
 	assert.Assert(t, err.Error() == "Failed updating a project: Failed finding groups: [invalidGroup]", "\n the received error is:", err.Error())
-}
-
-func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssignGroup(t *testing.T) {
-	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
-	defer logger.SetOutput(os.Stdout)
-
-	baseArgs := []string{"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--project-groups", "existsGroup1", "--debug"}
-	execCmdNilAssertion(
-		t,
-		baseArgs...,
-	)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, "Updating project groups"), true, "Expected output: %s", "Updating project groups")
 }
 
 func TestScanWorkflowMissingID(t *testing.T) {
@@ -611,18 +590,11 @@ func TestCreateScanProjectTags(t *testing.T) {
 		"--project-tags", "test", "--debug")
 }
 
-func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
-	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
-	defer logger.SetOutput(os.Stdout)
+func TestCreateScanProjecGroupsError(t *testing.T) {
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
-		"--debug", "--project-groups", "anyProjectGroup"}
-	execCmdNilAssertion(t, baseArgs...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
+		"--debug", "--project-groups", "err"}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, "Failed updating a project: Failed finding groups: [err]", err.Error())
 }
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "notaniteger"}
@@ -1301,22 +1273,5 @@ func TestFilterMatched(t *testing.T) {
 			result := filterMatched(tt.filters, tt.fileName)
 			assert.Equal(t, tt.expected, result)
 		})
-	}
-}
-
-func createOutputFile(t *testing.T, fileName string) *os.File {
-	file, err := os.Create(fileName)
-	if err != nil {
-		t.Fatalf("Failed to create log file: %v", err)
-	}
-	logger.SetOutput(file)
-	return file
-}
-
-func deleteOutputFile(file *os.File) {
-	file.Close()
-	err := os.Remove(file.Name())
-	if err != nil {
-		logger.Printf("Failed to remove log file: %v", err)
 	}
 }
