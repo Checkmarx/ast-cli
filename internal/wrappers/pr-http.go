@@ -21,7 +21,7 @@ type PRHTTPWrapper struct {
 	azurePath  string
 }
 
-func NewHTTPPRWrapper(githubPath, gitlabPath string, azurePath string) PRWrapper {
+func NewHTTPPRWrapper(githubPath, gitlabPath, azurePath string) PRWrapper {
 	return &PRHTTPWrapper{
 		githubPath: githubPath,
 		gitlabPath: gitlabPath,

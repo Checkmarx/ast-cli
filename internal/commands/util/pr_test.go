@@ -8,6 +8,10 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	token = "token"
+)
+
 func TestNewGithubPRDecorationCommandMustExist(t *testing.T) {
 	cmd := PRDecorationGithub(nil, nil, nil)
 	assert.Assert(t, cmd != nil, "PR decoration command must exist")
@@ -87,7 +91,6 @@ func TestUpdateAPIURLForAzureOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(t
 }
 
 func TestUpdateScmTokenForAzureOnPrem_whenUserNameIsSet_ShouldUpdateToken(t *testing.T) {
-	token := "token"
 	username := "username"
 	expectedToken := username + ":" + token
 	updatedToken := updateScmTokenForAzure(token, username)
@@ -95,7 +98,6 @@ func TestUpdateScmTokenForAzureOnPrem_whenUserNameIsSet_ShouldUpdateToken(t *tes
 }
 
 func TestUpdateScmTokenForAzureOnPrem_whenUserNameNotSet_ShouldNotUpdateToken(t *testing.T) {
-	token := "token"
 	username := ""
 	expectedToken := token
 	updatedToken := updateScmTokenForAzure(token, username)
