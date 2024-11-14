@@ -5,6 +5,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const prCommentSuccess = "PR comment created successfully."
+
 type PRMockWrapper struct {
 }
 
@@ -15,7 +17,7 @@ func (pr *PRMockWrapper) PostPRDecoration(model interface{}) (
 ) {
 	switch model.(type) {
 	case *wrappers.PRModel:
-		return "PR comment created successfully.", nil, nil
+		return prCommentSuccess, nil, nil
 	case *wrappers.GitlabPRModel:
 		return "MR comment created successfully.", nil, nil
 	case *wrappers.BitbucketCloudPRModel:
@@ -23,7 +25,7 @@ func (pr *PRMockWrapper) PostPRDecoration(model interface{}) (
 	case *wrappers.BitbucketServerPRModel:
 		return "Bitbucket Server PR comment created successfully.", nil, nil
 	case *wrappers.AzurePRModel:
-		return "PR comment created successfully.", nil, nil
+		return prCommentSuccess, nil, nil
 
 	default:
 		return "", nil, errors.New("unsupported model type")
