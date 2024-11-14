@@ -21,6 +21,10 @@ REMOTE_PATH="/tmp"
 # HSM credentials
 HSM_CREDS=$SIGNING_HSM_CREDS
 
+# Certificate properties
+CERT_LABEL="CNGRSAPriv-cx-signing-2024"
+CERT_LOCATION="/home/ubuntu/checkmarx_2024.crt"
+
 # Check if OS is windows
 if [ "$OS_TYPE" != "windows" ]; then
   echo "The artifact is not a windows binary file, exiting."
@@ -53,7 +57,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Sign
-ssh -n -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "osslsigncode sign -certs /home/ubuntu/checkmarx.crt  -key 'pkcs11:object=CNGRSAPriv-cx-signing' -pass $HSM_CREDS -pkcs11module /opt/cloudhsm/lib/libcloudhsm_pkcs11.so -t http://timestamp.digicert.com -in '$REMOTE_PATH/$FILENAME' -out '$REMOTE_PATH/$FILENAME_SIGNED'"
+ssh -n -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_HOST" "osslsigncode sign -certs $CERT_LOCATION -key 'pkcs11:object=$CERT_LABEL' -pass $HSM_CREDS -pkcs11module /opt/cloudhsm/lib/libcloudhsm_pkcs11.so -t http://timestamp.digicert.com -in '$REMOTE_PATH/$FILENAME' -out '$REMOTE_PATH/$FILENAME_SIGNED'"
 # Check remote command status
 if [ $? -ne 0 ]; then
     echo "Failed to sign file $FILENAME"
