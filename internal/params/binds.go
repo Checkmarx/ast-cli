@@ -30,6 +30,7 @@ var EnvVarsBinds = []struct {
 	{PRDecorationGitlabPathKey, PRDecorationGitlabPathEnv, "api/flow-publisher/pr/gitlab"},
 	{PRDecorationBitbucketCloudPathKey, PRDecorationBitbucketCloudPathEnv, "api/flow-publisher/pr/bitbucket"},
 	{PRDecorationBitbucketServerPathKey, PRDecorationBitbucketServerPathEnv, "api/flow-publisher/pr/bitbucket-server"},
+	{PRDecorationAzurePathKey, PRDecorationAzurePathEnv, "api/flow-publisher/pr/azure"},
 	{DescriptionsPathKey, DescriptionsPathEnv, "api/queries/descriptions"},
 	{TenantConfigurationPathKey, TenantConfigurationPathEnv, "api/configuration/tenant"},
 	{UploadsPathKey, UploadsPathEnv, "api/uploads"},

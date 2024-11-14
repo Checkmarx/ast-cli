@@ -26,3 +26,7 @@ func (pr *PRMockWrapper) PostPRDecoration(model interface{}) (
 		return "", nil, errors.New("unsupported model type")
 	}
 }
+
+func (pr *PRMockWrapper) PostAzurePRDecoration(model *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
+	return "PR comment created successfully.", nil, nil
+}

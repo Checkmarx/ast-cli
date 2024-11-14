@@ -16,20 +16,25 @@ import (
 )
 
 const (
-	failedCreatingGithubPrDecoration    = "Failed creating github PR Decoration"
-	failedCreatingGitlabPrDecoration    = "Failed creating gitlab MR Decoration"
+	failedCreatingGithubPrDecoration = "Failed creating github PR Decoration"
+	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
 	failedCreatingBitbucketPrDecoration = "Failed creating bitbucket PR Decoration"
-	errorCodeFormat                     = "%s: CODE: %d, %s\n"
-	policyErrorFormat                   = "%s: Failed to get scanID policy information"
-	waitDelayDefault                    = 5
-	resultPolicyDefaultTimeout          = 1
-	failedGettingScanError              = "Failed showing a scan"
-	noPRDecorationCreated               = "A PR couldn't be created for this scan because it is still in progress."
-	githubOnPremURLSuffix               = "/api/v3/repos/"
-	gitlabOnPremURLSuffix               = "/api/v4/"
-	githubCloudURL                      = "https://api.github.com/repos/"
-	gitlabCloudURL                      = "https://gitlab.com" + gitlabOnPremURLSuffix
+	failedCreatingAzurePrDecoration  = "Failed creating azure PR Decoration"
+	failedCreatingGitlabPrDecoration = "Failed creating gitlab MR Decoration"
+	errorCodeFormat                  = "%s: CODE: %d, %s\n"
+	policyErrorFormat                = "%s: Failed to get scanID policy information"
+	waitDelayDefault                 = 5
+	resultPolicyDefaultTimeout       = 1
+	failedGettingScanError           = "Failed showing a scan"
+	noPRDecorationCreated            = "A PR couldn't be created for this scan because it is still in progress."
+	githubOnPremURLSuffix            = "/api/v3/repos/"
+	gitlabOnPremURLSuffix            = "/api/v4/"
+	githubCloudURL                   = "https://api.github.com/repos/"
+	gitlabCloudURL                   = "https://gitlab.com" + gitlabOnPremURLSuffix
+	azureCloudURL                    = "https://dev.azure.com/"
 	bitbucketCloudURL                   = "bitbucket.org"
+	errorAzureOnPremParams           = "code-repository-url must be set when code-repository-username is set"
+
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -46,10 +51,12 @@ func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers
 	prDecorationGithub := PRDecorationGithub(prWrapper, policyWrapper, scansWrapper)
 	prDecorationGitlab := PRDecorationGitlab(prWrapper, policyWrapper, scansWrapper)
 	prDecorationBitbucket := PRDecorationBitbucket(prWrapper, policyWrapper, scansWrapper)
+	prDecorationAzure := PRDecorationAzure(prWrapper, policyWrapper, scansWrapper)
 
 	cmd.AddCommand(prDecorationGithub)
 	cmd.AddCommand(prDecorationGitlab)
 	cmd.AddCommand(prDecorationBitbucket)
+	cmd.AddCommand(prDecorationAzure)
 	return cmd
 }
 
@@ -164,6 +171,47 @@ func PRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Pol
 	return prDecorationGitlab
 }
 
+func PRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	prDecorationAzure := &cobra.Command{
+		Use:   "azure",
+		Short: "Decorate azure PR with vulnerabilities",
+		Long:  "Decorate azure PR with vulnerabilities",
+		Example: heredoc.Doc(
+			`
+			$ cx utils pr azure --scan-id <scan-id> --token <AAD> --namespace <organization> --project <project-name or project-id>
+                --pr-number <pr number> --code-repository-url <code-repository-url>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`https://checkmarx.com/resource/documents/en/34965-68653-utils.html
+			`,
+			),
+		},
+		RunE: runPRDecorationAzure(prWrapper, policyWrapper, scansWrapper),
+	}
+
+	prDecorationAzure.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
+	prDecorationAzure.Flags().String(params.SCMTokenFlag, "", params.AzureTokenUsage)
+	prDecorationAzure.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Azure"))
+	prDecorationAzure.Flags().String(params.AzureProjectFlag, "", fmt.Sprintf(params.AzureProjectFlagUsage))
+	prDecorationAzure.Flags().Int(params.PRNumberFlag, 0, params.PRNumberFlagUsage)
+	prDecorationAzure.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
+	prDecorationAzure.Flags().String(params.CodeRespositoryUsernameFlag, "", fmt.Sprintf(params.CodeRespositoryUsernameFlagUsage))
+
+	// Set the value for token to mask the scm token
+	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationAzure.Flags().Lookup(params.SCMTokenFlag))
+
+	// mark some fields as required\
+	_ = prDecorationAzure.MarkFlagRequired(params.ScanIDFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.SCMTokenFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.NamespaceFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.AzureProjectFlag)
+	_ = prDecorationAzure.MarkFlagRequired(params.PRNumberFlag)
+
+	return prDecorationAzure
+}
+
 func PRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	prDecorationBitbucket := &cobra.Command{
 		Use:   "bitbucket ",
@@ -256,6 +304,45 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 		return nil
 	}
 }
+func PRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
+	prDecorationBitbucket := &cobra.Command{
+		Use:   "bitbucket ",
+		Short: "Decorate bitbucket PR with vulnerabilities",
+		Long:  "Decorate bitbucket PR with vulnerabilities",
+		Example: heredoc.Doc(
+			`
+			$ cx utils pr bitbucket --scan-id <scan-id> --token <PAT> --namespace <username (required for cloud services)> --repo-name <repository-slug>
+                --pr-id <pr number> --code-repository-url <bitbucket-server-url (required for self-hosted)>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+			`,
+			),
+		},
+		RunE: runPRDecorationBitbucket(prWrapper, policyWrapper, scansWrapper),
+	}
+
+	prDecorationBitbucket.Flags().String(params.ScanIDFlag, "", "Scan ID to retrieve results from")
+	prDecorationBitbucket.Flags().String(params.SCMTokenFlag, "", params.BitbucketTokenUsage)
+	prDecorationBitbucket.Flags().String(params.NamespaceFlag, "", fmt.Sprintf(params.NamespaceFlagUsage, "Bitbucket"))
+	prDecorationBitbucket.Flags().String(params.RepoNameFlag, "", fmt.Sprintf(params.RepoNameFlagUsage, "Bitbucket"))
+	prDecorationBitbucket.Flags().Int(params.PRBBIDFlag, 0, params.PRBBIDFlagUsage)
+	prDecorationBitbucket.Flags().String(params.ProjectKeyFlag, "", params.ProjectKeyFlagUsage)
+	prDecorationBitbucket.Flags().String(params.CodeRepositoryFlag, "", params.CodeRepositoryFlagUsage)
+
+	// Set the value for token to mask the scm token
+	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationBitbucket.Flags().Lookup(params.SCMTokenFlag))
+
+	// mark all fields as required\
+	_ = prDecorationBitbucket.MarkFlagRequired(params.ScanIDFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.SCMTokenFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.RepoNameFlag)
+	_ = prDecorationBitbucket.MarkFlagRequired(params.PRBBIDFlag)
+
+	return prDecorationBitbucket
+}
 
 func updateAPIURLForGithubOnPrem(apiURL string) string {
 	if apiURL != "" {
@@ -269,6 +356,13 @@ func updateAPIURLForGitlabOnPrem(apiURL string) string {
 		return apiURL + gitlabOnPremURLSuffix
 	}
 	return gitlabCloudURL
+}
+
+func getAzureAPIURL(apiURL string) string {
+	if apiURL != "" {
+		return apiURL
+	}
+	return azureCloudURL
 }
 
 func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
@@ -373,6 +467,85 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 		logger.Print(prResponse)
 		return nil
 	}
+}
+
+func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
+		scmTokenFlag, _ := cmd.Flags().GetString(params.SCMTokenFlag)
+		namespaceFlag, _ := cmd.Flags().GetString(params.NamespaceFlag)
+		projectNameFlag, _ := cmd.Flags().GetString(params.AzureProjectFlag)
+		prNumberFlag, _ := cmd.Flags().GetInt(params.PRNumberFlag)
+		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
+		codeRepositoryUserName, _ := cmd.Flags().GetString(params.CodeRespositoryUsernameFlag)
+
+		errParams := validateAzureOnPremParameters(apiURL, codeRepositoryUserName)
+		if errParams != nil {
+			return errParams
+		}
+
+		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
+
+		if err != nil {
+			return err
+		}
+
+		if scanRunningOrQueued {
+			log.Println(noPRDecorationCreated)
+			return nil
+		}
+
+		// Retrieve policies related to the scan and project to include in the PR decoration
+		policies, policyError := getScanViolatedPolicies(scansWrapper, policyWrapper, scanID, cmd)
+		if policyError != nil {
+			return errors.Errorf(policyErrorFormat, failedCreatingAzurePrDecoration)
+		}
+
+		// Build and post the pr decoration
+		updatedAPIURL := getAzureAPIURL(apiURL)
+		updatedScmToken := updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName)
+		azureNameSpace := createAzureNameSpace(namespaceFlag, projectNameFlag)
+
+		prModel := &wrappers.AzurePRModel{
+			ScanID:    scanID,
+			ScmToken:  updatedScmToken,
+			Namespace: azureNameSpace,
+			PrNumber:  prNumberFlag,
+			Policies:  policies,
+			APIURL:    updatedAPIURL,
+		}
+		prResponse, errorModel, err := prWrapper.PostAzurePRDecoration(prModel)
+		if err != nil {
+			return err
+		}
+
+		if errorModel != nil {
+			return errors.Errorf(errorCodeFormat, failedCreatingAzurePrDecoration, errorModel.Code, errorModel.Message)
+		}
+
+		logger.Print(prResponse)
+
+		return nil
+	}
+}
+
+func validateAzureOnPremParameters(apiURL, codeRepositoryUserName string) error {
+	if apiURL == "" && codeRepositoryUserName != "" {
+		log.Println(errorAzureOnPremParams)
+		return errors.New(errorAzureOnPremParams)
+	}
+	return nil
+}
+
+func createAzureNameSpace(namespace, projectName string) string {
+	return fmt.Sprintf("%s/%s", namespace, projectName)
+}
+
+func updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName string) string {
+	if codeRepositoryUserName != "" {
+		return fmt.Sprintf("%s:%s", codeRepositoryUserName, scmTokenFlag)
+	}
+	return scmTokenFlag
 }
 
 func formatRepoNameSlugBB(repoName string) string {

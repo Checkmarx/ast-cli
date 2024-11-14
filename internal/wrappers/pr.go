@@ -25,6 +25,15 @@ type GitlabPRModel struct {
 	APIURL          string     `json:"apiUrl"`
 }
 
+type AzurePRModel struct {
+	ScanID    string     `json:"scanId"`
+	ScmToken  string     `json:"scmToken"`
+	Namespace string     `json:"namespace"`
+	PrNumber  int        `json:"prNumber"`
+	Policies  []PrPolicy `json:"violatedPolicyList"`
+	APIURL    string     `json:"apiUrl"`
+}
+
 type BitbucketCloudPRModel struct {
 	ScanID    string     `json:"scanId"`
 	ScmToken  string     `json:"scmToken"`

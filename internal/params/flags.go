@@ -172,10 +172,15 @@ const (
 	PRIidFlagUsage           = "Gitlab IID (internal ID) of the merge request"
 	PRGitlabProjectFlag      = "gitlab-project-id"
 	PRGitlabProjectFlagUsage = "Gitlab project ID"
+	AzureProjectFlag                 = "project"
+	AzureProjectFlagUsage            = "Azure project name or project ID"
+	CodeRespositoryUsernameFlag      = "code-repository-username"
+	CodeRespositoryUsernameFlagUsage = "Azure username for code repository"
 	ProjectKeyFlag           = "project-key"
 	ProjectKeyFlagUsage      = "Key of the project containing the repository"
 	PRBBIDFlag               = "pr-id"
 	PRBBIDFlagUsage          = "Bitbucket PR ID"
+
 	// Chat (General)
 	ChatAPIKey         = "chat-apikey"
 	ChatConversationID = "conversation-id"

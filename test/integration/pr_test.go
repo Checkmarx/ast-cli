@@ -27,6 +27,10 @@ const (
 	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
+	prAzureToken                  = "AZURE_NEW_TOKEN"
+	prAzureOrganization           = "AZURE_NEW_ORG"
+	prAzureProject                = "AZURE_PROJECT_NAME"
+	prAzureNumber                 = "AZURE_PR_NUMBER"
 	prBBToken                     = "PR_BITBUCKET_TOKEN"
 	prBBNamespace                 = "PR_BITBUCKET_NAMESPACE"
 	prBBId                        = "PR_BITBUCKET_ID"
@@ -36,11 +40,13 @@ const (
 	githubPRCommentCreated        = "github PR comment created successfully."
 	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
 	BBPRCommentCreated            = "bitbucket PR comment created successfully."
+	azurePRCommentCreated         = "azure PR comment created successfully."
 	outputFileName                = "test_output.log"
 	scans                         = "api/scans"
 )
 
 var completedScanId = ""
+var runningScanId = ""
 
 func getCompletedScanID(t *testing.T) string {
 	if completedScanId != "" {
@@ -60,6 +66,19 @@ func getCompletedScanID(t *testing.T) string {
 		logger.PrintIfVerbose("Waiting for scan to finish. scan running: " + fmt.Sprintf("%t", isRunning))
 	}
 	completedScanId = scanID
+	return scanID
+}
+
+func getRunningScanId(t *testing.T) string {
+	scanWrapper := wrappers.NewHTTPScansWrapper(scans)
+	if runningScanId != "" {
+		isRunning, _ := util.IsScanRunningOrQueued(scanWrapper, runningScanId)
+		if isRunning {
+			return runningScanId
+		}
+	}
+	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
+	runningScanId = scanID
 	return scanID
 }
 
@@ -231,14 +250,93 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 	assert.ErrorContains(t, err, "scan not found")
 }
 
+func TestPRAzureDecorationSuccessCase(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureOrganization),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureOrganization),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+		flag(params.CodeRepositoryFlag),
+		"https://azure.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
+		return azurePRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, azurePRCommentCreated), true, "Expected output: %s", azurePRCommentCreated)
+}
+
+func TestPRAzureDecorationFailure(t *testing.T) {
+
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		"fakeScanID",
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureOrganization),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "scan not found")
+}
+
 func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getRunningScanId(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -247,29 +345,18 @@ func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		os.Getenv(prGithubNumber),
 		flag(params.RepoNameFlag),
 		os.Getenv(prGithubRepoName),
-		"--debug",
 	}
 
-	file := createOutputFile(t, outputFileName)
-	_, _ = executeCommand(t, args...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
-
-	defer deleteOutputFile(t, file)
-	defer logger.SetOutput(os.Stdout)
+	runPRTestForRunningScan(t, args)
 }
 
 func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getRunningScanId(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
@@ -282,16 +369,27 @@ func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		os.Getenv(prGitlabIid),
 	}
 
-	file := createOutputFile(t, outputFileName)
-	_, _ = executeCommand(t, args...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+	runPRTestForRunningScan(t, args)
+}
 
-	defer deleteOutputFile(t, file)
-	defer logger.SetOutput(os.Stdout)
+func TestPRAzureDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getRunningScanId(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureOrganization),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+	}
+
+	runPRTestForRunningScan(t, args)
 }
 
 func createOutputFile(t *testing.T, fileName string) *os.File {
@@ -309,6 +407,19 @@ func deleteOutputFile(t *testing.T, file *os.File) {
 	if err != nil {
 		logger.Printf("Failed to remove log file: %v", err)
 	}
+}
+
+func runPRTestForRunningScan(t *testing.T, args []string) {
+	file := createOutputFile(t, outputFileName)
+	_, _ = executeCommand(t, args...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
 }
 
 func TestPRBBOnCloudDecorationSuccessCase(t *testing.T) {
@@ -394,13 +505,12 @@ func TestPRBBDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
 	assert.Equal(t, strings.Contains(stdoutString, BBPRCommentCreated), true, "Expected output: %s", BBPRCommentCreated)
 }
 func TestPRBitbucketDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
 		"bitbucket",
 		flag(params.ScanIDFlag),
-		scanID,
+		getRunningScanId(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prBBToken),
 		flag(params.PRBBIDFlag),
@@ -410,15 +520,5 @@ func TestPRBitbucketDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(
 		flag(params.NamespaceFlag),
 		os.Getenv(prBBNamespace),
 	}
-
-	file := createOutputFile(t, outputFileName)
-	_, _ = executeCommand(t, args...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
-
-	defer deleteOutputFile(t, file)
-	defer logger.SetOutput(os.Stdout)
+	runPRTestForRunningScan(t, args)
 }
