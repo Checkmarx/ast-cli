@@ -75,6 +75,10 @@ jobs:
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_REPOS: ${{ secrets.AZURE_REPOS }}
           AZURE_TOKEN: ${{ secrets.AZURE_TOKEN }}
+          AZURE_NEW_ORG: "azureAccountTests"
+          AZURE_PROJECT_NAME: "testsProject"
+          AZURE_PR_NUMBER: 1
+          AZURE_NEW_TOKEN: ${{ secrets.AZURE_NEW_TOKEN }}
           BITBUCKET_WORKSPACE: ${{ secrets.BITBUCKET_WORKSPACE }}
           BITBUCKET_REPOS: ${{ secrets.BITBUCKET_REPOS }}
           BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
