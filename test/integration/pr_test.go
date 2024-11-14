@@ -289,10 +289,10 @@ func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T)
 		"https://azure.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return azurePRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)

@@ -22,11 +22,10 @@ func (pr *PRMockWrapper) PostPRDecoration(model interface{}) (
 		return "Bitbucket Cloud PR comment created successfully.", nil, nil
 	case *wrappers.BitbucketServerPRModel:
 		return "Bitbucket Server PR comment created successfully.", nil, nil
+	case *wrappers.AzurePRModel:
+		return "PR comment created successfully.", nil, nil
+
 	default:
 		return "", nil, errors.New("unsupported model type")
 	}
-}
-
-func (pr *PRMockWrapper) PostAzurePRDecoration(model *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
-	return "PR comment created successfully.", nil, nil
 }
