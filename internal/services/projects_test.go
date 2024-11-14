@@ -266,7 +266,6 @@ func Test_updateProject(t *testing.T) {
 				ttt.args.applicationsWrapper,
 				ttt.args.projectName,
 				ttt.args.applicationID,
-				ttt.args.projectGroups,
 				ttt.args.projectTags,
 				ttt.args.projectPrivatePackage,
 				ttt.args.featureFlagsWrapper)
