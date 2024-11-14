@@ -41,6 +41,7 @@ const (
 )
 
 var completedScanId = ""
+var runningScanId = ""
 
 func getCompletedScanID(t *testing.T) string {
 	if completedScanId != "" {
@@ -60,6 +61,19 @@ func getCompletedScanID(t *testing.T) string {
 		logger.PrintIfVerbose("Waiting for scan to finish. scan running: " + fmt.Sprintf("%t", isRunning))
 	}
 	completedScanId = scanID
+	return scanID
+}
+
+func getRunningScanId(t *testing.T) string {
+	scanWrapper := wrappers.NewHTTPScansWrapper(scans)
+	if runningScanId != "" {
+		isRunning, _ := util.IsScanRunningOrQueued(scanWrapper, runningScanId)
+		if isRunning {
+			return runningScanId
+		}
+	}
+	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
+	runningScanId = scanID
 	return scanID
 }
 
@@ -312,13 +326,12 @@ func TestPRAzureDecorationFailure(t *testing.T) {
 }
 
 func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
 		"github",
 		flag(params.ScanIDFlag),
-		scanID,
+		getRunningScanId(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGithubToken),
 		flag(params.NamespaceFlag),
@@ -327,29 +340,18 @@ func TestPRGithubDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		os.Getenv(prGithubNumber),
 		flag(params.RepoNameFlag),
 		os.Getenv(prGithubRepoName),
-		"--debug",
 	}
 
-	file := createOutputFile(t, outputFileName)
-	_, _ = executeCommand(t, args...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
-
-	defer deleteOutputFile(t, file)
-	defer logger.SetOutput(os.Stdout)
+	runPRTestForRunningScan(t, args)
 }
 
 func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
-	scanID, _ := createScanNoWait(t, Zip, Tags, getProjectNameForScanTests())
 	args := []string{
 		"utils",
 		"pr",
 		"gitlab",
 		flag(params.ScanIDFlag),
-		scanID,
+		getRunningScanId(t),
 		flag(params.SCMTokenFlag),
 		os.Getenv(prGitlabToken),
 		flag(params.NamespaceFlag),
@@ -362,16 +364,27 @@ func TestPRGitlabDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *
 		os.Getenv(prGitlabIid),
 	}
 
-	file := createOutputFile(t, outputFileName)
-	_, _ = executeCommand(t, args...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+	runPRTestForRunningScan(t, args)
+}
 
-	defer deleteOutputFile(t, file)
-	defer logger.SetOutput(os.Stdout)
+func TestPRAzureDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"azure",
+		flag(params.ScanIDFlag),
+		getRunningScanId(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prAzureToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prAzureNamespace),
+		flag(params.AzureProjectFlag),
+		os.Getenv(prAzureProject),
+		flag(params.PRNumberFlag),
+		os.Getenv(prAzureNumber),
+	}
+
+	runPRTestForRunningScan(t, args)
 }
 
 func createOutputFile(t *testing.T, fileName string) *os.File {
@@ -389,4 +402,17 @@ func deleteOutputFile(t *testing.T, file *os.File) {
 	if err != nil {
 		logger.Printf("Failed to remove log file: %v", err)
 	}
+}
+
+func runPRTestForRunningScan(t *testing.T, args []string) {
+	file := createOutputFile(t, outputFileName)
+	_, _ = executeCommand(t, args...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, prdDecorationForbiddenMessage), true, "Expected output: %s", prdDecorationForbiddenMessage)
+
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
 }
