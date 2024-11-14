@@ -79,14 +79,14 @@ func TestUpdateAPIURLForGitlabOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(
 	asserts.Equal(t, gitlabCloudURL, cloudAPIURL)
 }
 
-func TestUpdateAPIURLForAzureOnPrem_whenAPIURLIsSet_ShouldUpdateAPIURL(t *testing.T) {
+func TestGetAzureAPIURL_whenAPIURLIsSet_ShouldUpdateAPIURL(t *testing.T) {
 	selfHostedURL := "https://azure.example.com"
-	updatedAPIURL := updateAPIURLForAzureOnPrem(selfHostedURL)
+	updatedAPIURL := getAzureAPIURL(selfHostedURL)
 	asserts.Equal(t, selfHostedURL, updatedAPIURL)
 }
 
-func TestUpdateAPIURLForAzureOnPrem_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(t *testing.T) {
-	cloudAPIURL := updateAPIURLForAzureOnPrem("")
+func TestGetAzureAPIURL_whenAPIURLIsNotSet_ShouldReturnCloudAPIURL(t *testing.T) {
+	cloudAPIURL := getAzureAPIURL("")
 	asserts.Equal(t, azureCloudURL, cloudAPIURL)
 }
 

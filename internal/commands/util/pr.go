@@ -272,7 +272,7 @@ func updateAPIURLForGitlabOnPrem(apiURL string) string {
 	return gitlabCloudURL
 }
 
-func updateAPIURLForAzureOnPrem(apiURL string) string {
+func getAzureAPIURL(apiURL string) string {
 	if apiURL != "" {
 		return apiURL
 	}
@@ -369,7 +369,7 @@ func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.P
 		}
 
 		// Build and post the pr decoration
-		updatedAPIURL := updateAPIURLForAzureOnPrem(apiURL)
+		updatedAPIURL := getAzureAPIURL(apiURL)
 		updatedScmToken := updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName)
 		azureNameSpace := createAzureNameSpace(namespaceFlag, projectNameFlag)
 
@@ -404,8 +404,8 @@ func validateAzureOnPremParameters(apiURL, codeRepositoryUserName string) error 
 	return nil
 }
 
-func createAzureNameSpace(namespaceFlag, projectNameFlag string) string {
-	return fmt.Sprintf("%s/%s", namespaceFlag, projectNameFlag)
+func createAzureNameSpace(namespace, projectName string) string {
+	return fmt.Sprintf("%s/%s", namespace, projectName)
 }
 
 func updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName string) string {
