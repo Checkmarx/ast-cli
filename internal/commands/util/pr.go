@@ -171,7 +171,7 @@ func PRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Poli
 		Long:  "Decorate azure PR with vulnerabilities",
 		Example: heredoc.Doc(
 			`
-			$ cx utils pr azure --scan-id <scan-id> --token <AAD> --namespace <organization> --project <project-name>
+			$ cx utils pr azure --scan-id <scan-id> --token <AAD> --namespace <organization> --project <project-name or project-id>
                 --pr-number <pr number> --code-repository-url <code-repository-url>
 		`,
 		),
