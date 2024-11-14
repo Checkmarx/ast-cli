@@ -85,6 +85,14 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 			expectedError: "",
 		},
 		{
+			name:          "Bitbucket Cloud without https",
+			apiURL:        "bitbucket.org",
+			namespaceFlag: "namespace",
+			projectKey:    "",
+			expectedCloud: true,
+			expectedError: "",
+		},
+		{
 			name:          "Bitbucket Cloud with namespace",
 			apiURL:        "https://bitbucket.org",
 			namespaceFlag: "namespace",
@@ -161,12 +169,17 @@ func TestRepoSlugFormatBB(t *testing.T) {
 			repoNameFlag: "my awesome repository",
 			expectedSlug: "my-awesome-repository",
 		},
+		{
+			name:         "Repo name with leading and trailing spaces",
+			repoNameFlag: " my repository ",
+			expectedSlug: "my-repository",
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			slug := repoSlugFormatBB(tt.repoNameFlag)
+			slug := formatRepoNameSlugBB(tt.repoNameFlag)
 			asserts.Equal(t, tt.expectedSlug, slug)
 		})
 	}

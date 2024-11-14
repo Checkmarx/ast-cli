@@ -359,7 +359,7 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 			return errors.Errorf(policyErrorFormat, failedCreatingBitbucketPrDecoration)
 		}
 
-		prModel := createPRModel(isCloud, scanID, scmTokenFlag, namespaceFlag, repoNameFlag, prIDFlag, apiURL, projectKey, policies)
+		prModel := createBBPRModel(isCloud, scanID, scmTokenFlag, namespaceFlag, repoNameFlag, prIDFlag, apiURL, projectKey, policies)
 		prResponse, errorModel, err := prWrapper.PostPRDecoration(prModel)
 
 		if err != nil {
@@ -375,8 +375,8 @@ func runPRDecorationBitbucket(prWrapper wrappers.PRWrapper, policyWrapper wrappe
 	}
 }
 
-func repoSlugFormatBB(repoNameFlag string) string {
-	repoSlug := strings.Replace(repoNameFlag, " ", "-", -1)
+func formatRepoNameSlugBB(repoName string) string {
+	repoSlug := strings.Replace(strings.TrimSpace(repoName), " ", "-", -1)
 	return repoSlug
 }
 
@@ -406,15 +406,15 @@ func isBitbucketCloud(apiURL string) bool {
 	return false
 }
 
-func createPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFlag string, prIDFlag int, apiURL, projectKey string, policies []wrappers.PrPolicy) interface{} {
-	repoSlugFormatBB := repoSlugFormatBB(repoNameFlag)
+func createBBPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFlag string, prIDFlag int, apiURL, projectKey string, policies []wrappers.PrPolicy) interface{} {
+	formattedRepoNameSlug := formatRepoNameSlugBB(repoNameFlag)
 
 	if isCloud {
 		return &wrappers.BitbucketCloudPRModel{
 			ScanID:    scanID,
 			ScmToken:  scmTokenFlag,
 			Namespace: namespaceFlag,
-			RepoName:  repoSlugFormatBB,
+			RepoName:  formattedRepoNameSlug,
 			PRID:      prIDFlag,
 			Policies:  policies,
 		}
@@ -423,7 +423,7 @@ func createPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFl
 		ScanID:     scanID,
 		ScmToken:   scmTokenFlag,
 		ProjectKey: projectKey,
-		RepoName:   repoSlugFormatBB,
+		RepoName:   formattedRepoNameSlug,
 		PRID:       prIDFlag,
 		Policies:   policies,
 		ServerURL:  apiURL,

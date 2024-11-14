@@ -312,7 +312,6 @@ func deleteOutputFile(t *testing.T, file *os.File) {
 }
 
 func TestPRBBOnCloudDecorationSuccessCase(t *testing.T) {
-	//scanID, _ := getRootScan(t, params.SastType)
 	args := []string{
 		"utils",
 		"pr",
