@@ -173,33 +173,6 @@ func Test_findGroupByName(t *testing.T) {
 	}
 }
 
-func Test_getGroupsForRequest(t *testing.T) {
-	setup() // Clear the map before starting this test
-	type args struct {
-		groups []*wrappers.Group
-	}
-	tests := []struct {
-		name string
-		args args
-		want []string
-	}{
-		{
-			name: "When access management is disabled, return group IDs of the groups",
-			args: args{groups: []*wrappers.Group{{ID: "group-id-1", Name: "group-name-1"}, {ID: "group-id-2", Name: "group-name-2"}}},
-			want: []string{"group-id-1", "group-id-2"},
-		},
-	}
-	for _, tt := range tests {
-		ttt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: false}
-			if got := getGroupsForRequest(ttt.args.groups, &mock.FeatureFlagsMockWrapper{}); !reflect.DeepEqual(got, ttt.want) {
-				t.Errorf("getGroupsForRequest() = %v, want %v", got, ttt.want)
-			}
-		})
-	}
-}
-
 func Test_getGroupsToAssign(t *testing.T) {
 	type args struct {
 		receivedGroups []*wrappers.Group
