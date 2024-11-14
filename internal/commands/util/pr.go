@@ -195,7 +195,7 @@ func PRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Poli
 	// Set the value for token to mask the scm token
 	_ = viper.BindPFlag(params.SCMTokenFlag, prDecorationAzure.Flags().Lookup(params.SCMTokenFlag))
 
-	// mark all fields as required\
+	// mark some fields as required\
 	_ = prDecorationAzure.MarkFlagRequired(params.ScanIDFlag)
 	_ = prDecorationAzure.MarkFlagRequired(params.SCMTokenFlag)
 	_ = prDecorationAzure.MarkFlagRequired(params.NamespaceFlag)
