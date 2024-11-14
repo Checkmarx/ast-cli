@@ -8,15 +8,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetGroupMap(groupsWrapper wrappers.GroupsWrapper, projectGroups string, projModelResp *wrappers.ProjectResponseModel,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) ([]*wrappers.Group, []string, error) {
+func GetGroupMap(groupsWrapper wrappers.GroupsWrapper, projectGroups string, projModelResp *wrappers.ProjectResponseModel) ([]*wrappers.Group, []string, error) {
 	groupsMap, groupErr := CreateGroupsMap(projectGroups, groupsWrapper)
 	if groupErr != nil {
 		return nil, nil, errors.Errorf("%s: %v", failedUpdatingProj, groupErr)
 	}
-	groups := getGroupsForRequest(groupsMap, featureFlagsWrapper)
+	// we're not checking here status of the feature flag, because of refactoring in AM
+	groups := GetGroupIds(groupsMap)
 	if projModelResp != nil {
-		groups = append(getGroupsForRequest(groupsMap, featureFlagsWrapper), projModelResp.Groups...)
+		// we're not checking here status of the feature flag, because of refactoring in AM
+		groups = append(GetGroupIds(groupsMap), projModelResp.Groups...)
 		return groupsMap, groups, nil
 	}
 	return groupsMap, groups, nil
@@ -45,14 +46,6 @@ func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 		return nil, errors.Errorf("%s: %v", failedFindingGroup, groupsNotFound)
 	}
 	return groupsMap, nil
-}
-
-func getGroupsForRequest(groups []*wrappers.Group, featureFlagsWrapper wrappers.FeatureFlagsWrapper) []string {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	if !flagResponse.Status {
-		return GetGroupIds(groups)
-	}
-	return nil
 }
 
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
