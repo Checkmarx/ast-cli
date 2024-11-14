@@ -29,6 +29,7 @@ const (
 	githubCloudURL                   = "https://api.github.com/repos/"
 	gitlabCloudURL                   = "https://gitlab.com" + gitlabOnPremURLSuffix
 	azureCloudURL                    = "https://dev.azure.com/"
+	errorAzureOnPremParams           = "code-repository-url must be set when code-repository-username is set"
 )
 
 func NewPRDecorationCommand(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) *cobra.Command {
@@ -345,6 +346,11 @@ func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.P
 		apiURL, _ := cmd.Flags().GetString(params.CodeRepositoryFlag)
 		codeRepositoryUserName, _ := cmd.Flags().GetString(params.CodeRespositoryUsernameFlag)
 
+		errParams := validateAzureOnPremParameters(apiURL, codeRepositoryUserName)
+		if errParams != nil {
+			return errParams
+		}
+
 		scanRunningOrQueued, err := IsScanRunningOrQueued(scansWrapper, scanID)
 
 		if err != nil {
@@ -388,6 +394,14 @@ func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.P
 
 		return nil
 	}
+}
+
+func validateAzureOnPremParameters(apiURL, codeRepositoryUserName string) error {
+	if apiURL == "" && codeRepositoryUserName != "" {
+		log.Println(errorAzureOnPremParams)
+		return errors.New(errorAzureOnPremParams)
+	}
+	return nil
 }
 
 func createAzureNameSpace(namespaceFlag, projectNameFlag string) string {

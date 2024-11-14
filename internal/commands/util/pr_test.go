@@ -108,3 +108,13 @@ func TestCreateAzureNameSpace_ShouldCreateNamespace(t *testing.T) {
 	azureNamespace := createAzureNameSpace("organization", "project")
 	asserts.Equal(t, "organization/project", azureNamespace)
 }
+
+func TestValidateAzureOnPremParameters_WhenParametersAreValid_ShouldReturnNil(t *testing.T) {
+	err := validateAzureOnPremParameters("https://azure.example.com", "username")
+	asserts.Nil(t, err)
+}
+
+func TestValidateAzureOnPremParameters_WhenParametersAreNotValid_ShouldReturnError(t *testing.T) {
+	err := validateAzureOnPremParameters("", "username")
+	asserts.NotNil(t, err)
+}
