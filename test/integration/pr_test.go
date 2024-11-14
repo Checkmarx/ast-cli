@@ -27,10 +27,10 @@ const (
 	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
-	prAzureToken                  = "PR_AZURE_TOKEN"
-	prAzureNamespace              = "PR_AZURE_NAMESPACE"
-	prAzureProject                = "PR_AZURE_PROJECT"
-	prAzureNumber                 = "PR_AZURE_NUMBER"
+	prAzureToken                  = "AZURE_NEW_TOKEN"
+	prAzureOrganization           = "AZURE_NEW_ORG"
+	prAzureProject                = "AZURE_PROJECT_NAME"
+	prAzureNumber                 = "AZURE_PR_NUMBER"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
 	githubPRCommentCreated        = "github PR comment created successfully."
@@ -255,7 +255,7 @@ func TestPRAzureDecorationSuccessCase(t *testing.T) {
 		flag(params.SCMTokenFlag),
 		os.Getenv(prAzureToken),
 		flag(params.NamespaceFlag),
-		os.Getenv(prAzureNamespace),
+		os.Getenv(prAzureOrganization),
 		flag(params.AzureProjectFlag),
 		os.Getenv(prAzureProject),
 		flag(params.PRNumberFlag),
@@ -275,7 +275,7 @@ func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T)
 		flag(params.SCMTokenFlag),
 		os.Getenv(prAzureToken),
 		flag(params.NamespaceFlag),
-		os.Getenv(prAzureNamespace),
+		os.Getenv(prAzureOrganization),
 		flag(params.AzureProjectFlag),
 		os.Getenv(prAzureProject),
 		flag(params.PRNumberFlag),
@@ -315,7 +315,7 @@ func TestPRAzureDecorationFailure(t *testing.T) {
 		flag(params.SCMTokenFlag),
 		os.Getenv(prAzureToken),
 		flag(params.NamespaceFlag),
-		os.Getenv(prAzureNamespace),
+		os.Getenv(prAzureOrganization),
 		flag(params.AzureProjectFlag),
 		os.Getenv(prAzureProject),
 		flag(params.PRNumberFlag),
@@ -377,7 +377,7 @@ func TestPRAzureDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *t
 		flag(params.SCMTokenFlag),
 		os.Getenv(prAzureToken),
 		flag(params.NamespaceFlag),
-		os.Getenv(prAzureNamespace),
+		os.Getenv(prAzureOrganization),
 		flag(params.AzureProjectFlag),
 		os.Getenv(prAzureProject),
 		flag(params.PRNumberFlag),
