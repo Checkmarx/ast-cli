@@ -64,5 +64,7 @@ const (
 	AccessManagementPathEnv             = "CX_ACCESS_MANAGEMENT_PATH"
 	ByorPathEnv                         = "CX_BYOR_PATH"
 	IgnoreProxyEnv                      = "CX_IGNORE_PROXY"
+	AiProxyAzureAiRouteEnv              = "CX_AIPROXY_AZUREAI_ROUTE"
+	AiProxyCheckmarxAiRouteEnv          = "CX_AIPROXY_CHECKMARXAI_ROUTE"
 	ASCAPortEnv                         = "CX_ASCA_PORT"
 )

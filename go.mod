@@ -4,10 +4,10 @@ go 1.22.7
 
 require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
+	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/CheckmarxDev/containers-resolver v1.0.14
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
-	github.com/checkmarxDev/gpt-wrapper v0.0.0-20230721160222-85da2fd1cc4c
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -17,7 +17,7 @@ require (
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
-	github.com/spf13/viper v1.18.2
+	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -195,7 +195,7 @@ require (
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/pborman/indent v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.1 // indirect
+	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect

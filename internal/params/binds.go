@@ -65,5 +65,7 @@ var EnvVarsBinds = []struct {
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
 	{AccessManagementPathKey, AccessManagementPathEnv, "api/access-management"},
 	{ByorPathKey, ByorPathEnv, "api/byor"},
+	{AiProxyAzureAiRouteKey, AiProxyAzureAiRouteEnv, "api/ai-proxy/redirect/externalAzure"},
+	{AiProxyCheckmarxAiRouteKey, AiProxyCheckmarxAiRouteEnv, "api/ai-proxy/redirect/azure"},
 	{ASCAPortKey, ASCAPortEnv, ""},
 }
