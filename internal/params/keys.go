@@ -62,5 +62,7 @@ var (
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
 	AccessManagementPathKey             = strings.ToLower(AccessManagementPathEnv)
 	ByorPathKey                         = strings.ToLower(ByorPathEnv)
+	AiProxyAzureAiRouteKey              = strings.ToLower(AiProxyAzureAiRouteEnv)
+	AiProxyCheckmarxAiRouteKey          = strings.ToLower(AiProxyCheckmarxAiRouteEnv)
 	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
 )

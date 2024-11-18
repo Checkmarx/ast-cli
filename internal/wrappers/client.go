@@ -662,7 +662,7 @@ func GetAuthURI() (string, error) {
 	apiKey := viper.GetString(commonParams.AstAPIKey)
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
-		authURI, err = extractFromTokenClaims(apiKey, audienceClaimKey)
+		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
 		if err != nil {
 			return "", err
 		}
@@ -710,7 +710,7 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 	if accessToken != "" {
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
+		cleanURL, err = ExtractFromTokenClaims(accessToken, baseURLKey)
 		if err != nil {
 			return "", err
 		}
@@ -731,7 +731,7 @@ func GetURL(path, accessToken string) (string, error) {
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 
-func extractFromTokenClaims(accessToken, claim string) (string, error) {
+func ExtractFromTokenClaims(accessToken, claim string) (string, error) {
 	var value string
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {

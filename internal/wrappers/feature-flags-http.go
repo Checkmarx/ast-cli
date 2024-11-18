@@ -98,7 +98,7 @@ func (f FeatureFlagsHTTPWrapper) getTenantDetails() (params map[string]string, c
 		return nil, 0, tokenError
 	}
 
-	tenantIDFromClaims, extractError := extractFromTokenClaims(accessToken, tenantIDClaimKey)
+	tenantIDFromClaims, extractError := ExtractFromTokenClaims(accessToken, tenantIDClaimKey)
 	if extractError != nil {
 		return nil, 0, extractError
 	}
