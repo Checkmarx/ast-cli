@@ -34,7 +34,7 @@ const (
 	BranchFlagSh                 = "b"
 	ScanIDFlag                   = "scan-id"
 	CodeRepositoryFlag           = "code-repository-url"
-	CodeRepositoryFlagUsage      = "Code repository URL (optional for self-hosted SCMs)"
+	CodeRepositoryFlagUsage      = "Code repository URL (required for self-hosted SCMs)"
 	BranchFlagUsage              = "Branch to scan"
 	MainBranchFlag               = "branch"
 	ScaResolverFlag              = "sca-resolver"
@@ -121,6 +121,7 @@ const (
 	AzureTokenUsage              = "Azure DevOps personal access token. Requires “Connected server” and “Code“ scope."
 	GithubTokenUsage             = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage             = "GitLab OAuth token"
+	BitbucketTokenUsage          = "Bitbucket OAuth token"
 	BotCount                     = "Note: dependabot is not counted but other bots might be considered as contributors."
 	DisabledReposCount           = "Note: Disabled repositories are not counted."
 	URLFlag                      = "url"
@@ -175,6 +176,10 @@ const (
 	AzureProjectFlagUsage            = "Azure project name or project ID"
 	CodeRespositoryUsernameFlag      = "code-repository-username"
 	CodeRespositoryUsernameFlagUsage = "Azure username for code repository"
+	ProjectKeyFlag                   = "project-key"
+	ProjectKeyFlagUsage              = "Key of the project containing the repository"
+	PRBBIDFlag                       = "pr-id"
+	PRBBIDFlagUsage                  = "Bitbucket PR ID"
 
 	// Chat (General)
 	ChatAPIKey         = "chat-apikey"

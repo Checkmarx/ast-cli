@@ -31,10 +31,15 @@ const (
 	prAzureOrganization           = "AZURE_NEW_ORG"
 	prAzureProject                = "AZURE_PROJECT_NAME"
 	prAzureNumber                 = "AZURE_PR_NUMBER"
+	prBBToken                     = "PR_BITBUCKET_TOKEN"
+	prBBNamespace                 = "PR_BITBUCKET_NAMESPACE"
+	prBBId                        = "PR_BITBUCKET_ID"
+	prBBRepoName                  = "PR_BITBUCKET_REPO_NAME"
 	prdDecorationForbiddenMessage = "A PR couldn't be created for this scan because it is still in progress."
 	failedGettingScanError        = "Failed showing a scan"
 	githubPRCommentCreated        = "github PR comment created successfully."
 	gitlabPRCommentCreated        = "gitlab PR comment created successfully."
+	BBPRCommentCreated            = "bitbucket PR comment created successfully."
 	azurePRCommentCreated         = "azure PR comment created successfully."
 	outputFileName                = "test_output.log"
 	scans                         = "api/scans"
@@ -118,7 +123,7 @@ func TestPRGithubDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 		"https://github.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.PRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return githubPRCommentCreated, nil, nil
 	})
 	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
@@ -201,10 +206,10 @@ func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 		"https://gitlab.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.GitlabPRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return gitlabPRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostGitlabPRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)
@@ -284,10 +289,10 @@ func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T)
 		"https://azure.example.com",
 	}
 
-	monkey.Patch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration, func(*wrappers.PRHTTPWrapper, *wrappers.AzurePRModel) (string, *wrappers.WebError, error) {
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
 		return azurePRCommentCreated, nil, nil
 	})
-	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostAzurePRDecoration)
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
 
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(t, file)
@@ -415,4 +420,105 @@ func runPRTestForRunningScan(t *testing.T, args []string) {
 
 	defer deleteOutputFile(t, file)
 	defer logger.SetOutput(os.Stdout)
+}
+
+func TestPRBBOnCloudDecorationSuccessCase(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		"--debug",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+}
+
+func TestPRBBBDecorationFailure(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		"fakeScanID",
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		"--debug",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "scan not found")
+}
+
+func TestPRBBDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		getCompletedScanID(t),
+		flag(params.SCMTokenFlag),
+		"Token",
+		flag(params.ProjectKeyFlag),
+		"PROJECTKEY",
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		flag(params.CodeRepositoryFlag),
+		"https://bitbucket.example.com",
+	}
+
+	monkey.Patch((*wrappers.PRHTTPWrapper).PostPRDecoration, func(*wrappers.PRHTTPWrapper, interface{}) (string, *wrappers.WebError, error) {
+		return BBPRCommentCreated, nil, nil
+	})
+	defer monkey.Unpatch((*wrappers.PRHTTPWrapper).PostPRDecoration)
+
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(t, file)
+	defer logger.SetOutput(os.Stdout)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Error should be nil")
+
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+
+	assert.Equal(t, strings.Contains(stdoutString, BBPRCommentCreated), true, "Expected output: %s", BBPRCommentCreated)
+}
+func TestPRBitbucketDecoration_WhenScanIsRunning_ShouldAvoidPRDecorationCommand(t *testing.T) {
+	args := []string{
+		"utils",
+		"pr",
+		"bitbucket",
+		flag(params.ScanIDFlag),
+		getRunningScanId(t),
+		flag(params.SCMTokenFlag),
+		os.Getenv(prBBToken),
+		flag(params.PRBBIDFlag),
+		os.Getenv(prBBId),
+		flag(params.RepoNameFlag),
+		os.Getenv(prBBRepoName),
+		flag(params.NamespaceFlag),
+		os.Getenv(prBBNamespace),
+	}
+	runPRTestForRunningScan(t, args)
 }

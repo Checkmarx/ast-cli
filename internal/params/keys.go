@@ -28,6 +28,8 @@ var (
 	BflPathKey                          = strings.ToLower(BflPathEnv)
 	PRDecorationGithubPathKey           = strings.ToLower(PRDecorationGithubPathEnv)
 	PRDecorationGitlabPathKey           = strings.ToLower(PRDecorationGitlabPathEnv)
+	PRDecorationBitbucketCloudPathKey   = strings.ToLower(PRDecorationBitbucketCloudPathEnv)
+	PRDecorationBitbucketServerPathKey  = strings.ToLower(PRDecorationBitbucketServerPathEnv)
 	PRDecorationAzurePathKey            = strings.ToLower(PRDecorationAzurePathEnv)
 	UploadsPathKey                      = strings.ToLower(UploadsPathEnv)
 	SastRmPathKey                       = strings.ToLower(SastRmPathEnv)
