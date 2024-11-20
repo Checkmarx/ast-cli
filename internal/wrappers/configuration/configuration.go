@@ -130,40 +130,65 @@ func LoadConfiguration() {
 }
 
 func WriteSingleConfigKey(key string, value int) error {
-	// Construct the full path to the configuration file
+	// Get the configuration file path
 	fullPath, err := getConfigFilePath()
 	if err != nil {
-		return fmt.Errorf("error getting config file path: %w", err)
+		return fmt.Errorf("failed to get config file path: %w", err)
 	}
 
-	config := make(map[string]interface{})
-	file, err := os.Open(fullPath)
-	if err == nil {
-		defer file.Close()
-		decoder := yaml.NewDecoder(file)
-		if decodeErr := decoder.Decode(&config); decodeErr != nil {
-			return fmt.Errorf("error decoding YAML: %w", decodeErr)
-		}
-	} else if !os.IsNotExist(err) {
-		// If the error isn't "file not found," return it
-		return fmt.Errorf("error opening file: %w", err)
+	// Load existing configuration or initialize a new one
+	config, err := loadConfig(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Update or add the specific key
+	// Update the configuration key
 	config[key] = value
 
-	// Write the updated configuration back to the file
-	file, err = os.Create(fullPath)
-	if err != nil {
-		return fmt.Errorf("error creating file: %w", err)
+	// Save the updated configuration back to the file
+	if err := saveConfig(fullPath, config); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
 	}
-	defer file.Close()
+
+	return nil
+}
+
+// loadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
+func loadConfig(path string) (map[string]interface{}, error) {
+	config := make(map[string]interface{})
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil // Return an empty config if the file doesn't exist
+		}
+		return nil, err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	decoder := yaml.NewDecoder(file)
+	if err = decoder.Decode(&config); err != nil {
+		return nil, fmt.Errorf("error decoding YAML: %w", err)
+	}
+	return config, nil
+}
+
+// saveConfig writes the configuration to a file.
+func saveConfig(path string, config map[string]interface{}) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	encoder := yaml.NewEncoder(file)
-	if encodeErr := encoder.Encode(&config); encodeErr != nil {
-		return fmt.Errorf("error encoding YAML: %w", encodeErr)
+	if err = encoder.Encode(config); err != nil {
+		return fmt.Errorf("error encoding YAML: %w", err)
 	}
-
 	return nil
 }
 
