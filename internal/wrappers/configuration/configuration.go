@@ -10,6 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 const configDirName = "/.checkmarx"
@@ -126,6 +127,52 @@ func LoadConfiguration() {
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
+}
+
+func WriteSingleConfigKey(key string, value int) error {
+	// Construct the full path to the configuration file
+	fullPath, err := getConfigFilePath()
+	if err != nil {
+		return fmt.Errorf("error getting config file path: %w", err)
+	}
+
+	config := make(map[string]interface{})
+	file, err := os.Open(fullPath)
+	if err == nil {
+		defer file.Close()
+		decoder := yaml.NewDecoder(file)
+		if decodeErr := decoder.Decode(&config); decodeErr != nil {
+			return fmt.Errorf("error decoding YAML: %w", decodeErr)
+		}
+	} else if !os.IsNotExist(err) {
+		// If the error isn't "file not found," return it
+		return fmt.Errorf("error opening file: %w", err)
+	}
+
+	// Update or add the specific key
+	config[key] = value
+
+	// Write the updated configuration back to the file
+	file, err = os.Create(fullPath)
+	if err != nil {
+		return fmt.Errorf("error creating file: %w", err)
+	}
+	defer file.Close()
+
+	encoder := yaml.NewEncoder(file)
+	if encodeErr := encoder.Encode(&config); encodeErr != nil {
+		return fmt.Errorf("error encoding YAML: %w", encodeErr)
+	}
+
+	return nil
+}
+
+func getConfigFilePath() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", fmt.Errorf("error getting current user: %w", err)
+	}
+	return usr.HomeDir + configDirName + "/checkmarxcli.yaml", nil
 }
 
 func verifyConfigDir(fullPath string) {
