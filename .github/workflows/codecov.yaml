@@ -22,7 +22,7 @@ jobs:
       with:
         go-version: ${{ env.go-version }}
       env:
-        GITHUB_TOKEN: ${{ secrets.CX_ONE_CODECOV_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         GOPROXY: direct
         GONOSUMDB: "*"
         GOPRIVATE: https://github.com/CheckmarxDev/ # Add your private organization url here
