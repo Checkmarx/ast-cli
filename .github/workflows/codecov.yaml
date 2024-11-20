@@ -22,7 +22,7 @@ jobs:
       with:
         go-version: ${{ env.go-version }}
       env:
-        GITHUB_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         GOPROXY: direct
         GONOSUMDB: "*"
         GOPRIVATE: https://github.com/CheckmarxDev/ # Add your private organization url here
@@ -32,14 +32,14 @@ jobs:
 
     - name: Run tests and generate coverage 
       run: |
-        git config --global url."https://${{ secrets.CX_ONE_CODECOV_TOKEN }}@github.com".insteadOf "https://github.com"
+        git config --global url."https://${{ secrets.GH_TOKEN }}@github.com".insteadOf "https://github.com"
         go test ./... -coverpkg=./... -v -coverprofile cover.out
                   
          
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
       with:
-        token: ${{ secrets.CODECOV_TOKEN }} # create your CODECOV_TOKEN using the token from 'set repo' in codecov site
+        token: ${{ secrets.CHECKMARX_ORG_CODECOV_TOKEN }} # create your CODECOV_TOKEN using the token from 'set repo' in codecov site
         files: ./cover.out  
         flags: target=auto
         fail_ci_if_error: true
