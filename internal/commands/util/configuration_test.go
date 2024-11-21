@@ -10,6 +10,8 @@ import (
 	"gotest.tools/assert"
 )
 
+const cxAscaPort = "cx_asca_port"
+
 func TestNewConfigCommand(t *testing.T) {
 	cmd := NewConfigCommand()
 	assert.Assert(t, cmd != nil, "Config command must exist")
@@ -42,7 +44,7 @@ func TestGetConfigFilePath(t *testing.T) {
 
 func TestWriteSingleConfigKeyToExistingFile(t *testing.T) {
 	configFilePath, _ := configuration.GetConfigFilePath()
-	err := configuration.WriteSingleConfigKey(configFilePath, "cx_asca_port", 0)
+	err := configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
 }
 
@@ -53,7 +55,7 @@ func TestWriteSingleConfigKeyToNonExistingFile(t *testing.T) {
 	asserts.NotNil(t, err)
 	asserts.Nil(t, file)
 
-	err = configuration.WriteSingleConfigKey(configFilePath, "cx_asca_port", 0)
+	err = configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
 
 	file, err = os.Open(configFilePath)
@@ -72,16 +74,16 @@ func TestChangedOnlyAscaPortInConfigFile(t *testing.T) {
 	oldConfig, err := configuration.LoadConfig(configFilePath)
 	assert.NilError(t, err)
 
-	err = configuration.WriteSingleConfigKey(configFilePath, "cx_asca_port", -1)
+	err = configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, -1)
 	assert.NilError(t, err)
 
 	config, err := configuration.LoadConfig(configFilePath)
 	assert.NilError(t, err)
-	asserts.Equal(t, -1, config["cx_asca_port"])
+	asserts.Equal(t, -1, config[cxAscaPort])
 
 	// Assert all the other properties are the same
 	for key, value := range oldConfig {
-		if key != "cx_asca_port" {
+		if key != cxAscaPort {
 			asserts.Equal(t, value, config[key])
 		}
 	}
