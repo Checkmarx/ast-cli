@@ -135,14 +135,14 @@ func WriteSingleConfigKey(key string, value int) error {
 	// Get the configuration file path
 	fullPath, err := getConfigFilePath()
 	if err != nil {
-		return errors.Errorf("error getting config file path: %w", err)
+		return errors.Errorf("error getting config file path: %s", err.Error())
 	}
 
 	// Create a file lock
 	lock := flock.New(fullPath + ".lock")
 	locked, err := lock.TryLock()
 	if err != nil {
-		return errors.Errorf("error acquiring lock: %w", err)
+		return errors.Errorf("error acquiring lock: %s", err.Error())
 	}
 	if !locked {
 		return errors.Errorf("could not acquire lock")
@@ -154,7 +154,7 @@ func WriteSingleConfigKey(key string, value int) error {
 	// Load existing configuration or initialize a new one
 	config, err := loadConfig(fullPath)
 	if err != nil {
-		return errors.Errorf("error loading config: %w", err)
+		return errors.Errorf("error loading config: %s", err.Error())
 	}
 
 	// Update the configuration key
@@ -162,7 +162,7 @@ func WriteSingleConfigKey(key string, value int) error {
 
 	// Save the updated configuration back to the file
 	if err = saveConfig(fullPath, config); err != nil {
-		return errors.Errorf("error saving config: %w", err)
+		return errors.Errorf("error saving config: %s", err.Error())
 	}
 	return nil
 }
