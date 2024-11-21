@@ -43,6 +43,7 @@ func TestGetConfigFilePath(t *testing.T) {
 }
 
 func TestWriteSingleConfigKeyToExistingFile(t *testing.T) {
+	configuration.LoadConfiguration()
 	configFilePath, _ := configuration.GetConfigFilePath()
 	err := configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
@@ -69,6 +70,7 @@ func TestWriteSingleConfigKeyToNonExistingFile(t *testing.T) {
 }
 
 func TestChangedOnlyAscaPortInConfigFile(t *testing.T) {
+	configuration.LoadConfiguration()
 	configFilePath, _ := configuration.GetConfigFilePath()
 
 	oldConfig, err := configuration.LoadConfig(configFilePath)
