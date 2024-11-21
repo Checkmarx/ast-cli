@@ -29,28 +29,15 @@ func TestNewConfigCommand(t *testing.T) {
 }
 
 func TestGetConfigFilePath(t *testing.T) {
-	tests := []struct {
-		name    string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "Check if the config file path is correct",
-			want:    ".checkmarx/checkmarxcli.yaml",
-			wantErr: false,
-		},
+	want := ".checkmarx/checkmarxcli.yaml"
+	got, err := configuration.GetConfigFilePath()
+
+	if err != nil {
+		t.Errorf("GetConfigFilePath() error = %v, wantErr = false", err)
+		return
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			got, err := configuration.GetConfigFilePath()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetConfigFilePath() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			asserts.True(t, strings.HasSuffix(got, tt.want))
-		})
-	}
+
+	asserts.True(t, strings.HasSuffix(got, want), "Expected config file path to end with %q, but got %q", want, got)
 }
 
 func TestWriteSingleConfigKeyToExistingFile(t *testing.T) {
