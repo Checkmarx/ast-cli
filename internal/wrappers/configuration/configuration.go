@@ -133,7 +133,7 @@ func LoadConfiguration() {
 
 func WriteSingleConfigKey(key string, value int) {
 	// Get the configuration file path
-	fullPath, err := GetConfigFilePath()
+	fullPath, err := getConfigFilePath()
 	if err != nil {
 		logger.PrintfIfVerbose("failed to get config file path: %s", err.Error())
 		return
@@ -210,7 +210,7 @@ func saveConfig(path string, config map[string]interface{}) error {
 	return nil
 }
 
-func GetConfigFilePath() (string, error) {
+func getConfigFilePath() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("error getting current user: %w", err)
