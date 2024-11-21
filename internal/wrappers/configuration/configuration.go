@@ -10,6 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/go-errors/errors"
 	"github.com/gofrs/flock"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -131,24 +132,21 @@ func LoadConfiguration() {
 	_ = viper.ReadInConfig()
 }
 
-func WriteSingleConfigKey(key string, value int) {
+func WriteSingleConfigKey(key string, value int) error {
 	// Get the configuration file path
 	fullPath, err := getConfigFilePath()
 	if err != nil {
-		logger.PrintfIfVerbose("failed to get config file path: %s", err.Error())
-		return
+		return errors.Errorf("error getting config file path: %w", err)
 	}
 
 	// Create a file lock
 	lock := flock.New(fullPath + ".lock")
 	locked, err := lock.TryLock()
 	if err != nil {
-		logger.PrintfIfVerbose("failed to acquire lock: %s", err.Error())
-		return
+		return errors.Errorf("error acquiring lock: %w", err)
 	}
 	if !locked {
-		logger.PrintfIfVerbose("failed to acquire lock")
-		return
+		return errors.Errorf("could not acquire lock")
 	}
 	defer func() {
 		_ = lock.Unlock()
