@@ -8,7 +8,6 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/go-errors/errors"
 	"github.com/gofrs/flock"
@@ -155,8 +154,7 @@ func WriteSingleConfigKey(key string, value int) error {
 	// Load existing configuration or initialize a new one
 	config, err := loadConfig(fullPath)
 	if err != nil {
-		logger.PrintfIfVerbose("failed to load config: %s", err.Error())
-		return
+		return errors.Errorf("error loading config: %w", err)
 	}
 
 	// Update the configuration key
@@ -164,9 +162,9 @@ func WriteSingleConfigKey(key string, value int) error {
 
 	// Save the updated configuration back to the file
 	if err = saveConfig(fullPath, config); err != nil {
-		logger.PrintfIfVerbose("failed to save config: %s", err.Error())
-		return
+		return errors.Errorf("error saving config: %w", err)
 	}
+	return nil
 }
 
 // loadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
