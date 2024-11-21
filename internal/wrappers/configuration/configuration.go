@@ -134,14 +134,14 @@ func WriteSingleConfigKey(key string, value int) {
 	// Get the configuration file path
 	fullPath, err := getConfigFilePath()
 	if err != nil {
-		logger.PrintfIfVerbose("failed to get config file path: %w", err.Error())
+		logger.PrintfIfVerbose("failed to get config file path: %s", err.Error())
 		return
 	}
 
 	// Load existing configuration or initialize a new one
 	config, err := loadConfig(fullPath)
 	if err != nil {
-		logger.PrintfIfVerbose("failed to load config: %w", err.Error())
+		logger.PrintfIfVerbose("failed to load config: %s", err.Error())
 		return
 	}
 
@@ -150,7 +150,7 @@ func WriteSingleConfigKey(key string, value int) {
 
 	// Save the updated configuration back to the file
 	if err = saveConfig(fullPath, config); err != nil {
-		logger.PrintfIfVerbose("failed to save config: %w", err.Error())
+		logger.PrintfIfVerbose("failed to save config: %s", err.Error())
 		return
 	}
 }
