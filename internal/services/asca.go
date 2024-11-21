@@ -112,7 +112,11 @@ func findASCAPort() (int, error) {
 		return 0, err
 	}
 	viper.Set(params.ASCAPortKey, port)
-	err = configuration.WriteSingleConfigKey(params.ASCAPortKey, port)
+	configFilePath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		logger.PrintfIfVerbose("Error getting config file path: %v", err)
+	}
+	err = configuration.WriteSingleConfigKey(configFilePath, params.ASCAPortKey, port)
 	if err != nil {
 		logger.PrintfIfVerbose("Error writing ASCA port to config file: %v", err)
 	}

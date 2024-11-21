@@ -131,15 +131,9 @@ func LoadConfiguration() {
 	_ = viper.ReadInConfig()
 }
 
-func WriteSingleConfigKey(key string, value int) error {
-	// Get the configuration file path
-	fullPath, err := getConfigFilePath()
-	if err != nil {
-		return errors.Errorf("error getting config file path: %s", err.Error())
-	}
-
+func WriteSingleConfigKey(configFilePath, key string, value int) error {
 	// Create a file lock
-	lock := flock.New(fullPath + ".lock")
+	lock := flock.New(configFilePath + ".lock")
 	locked, err := lock.TryLock()
 	if err != nil {
 		return errors.Errorf("error acquiring lock: %s", err.Error())
@@ -152,7 +146,7 @@ func WriteSingleConfigKey(key string, value int) error {
 	}()
 
 	// Load existing configuration or initialize a new one
-	config, err := loadConfig(fullPath)
+	config, err := loadConfig(configFilePath)
 	if err != nil {
 		return errors.Errorf("error loading config: %s", err.Error())
 	}
@@ -161,7 +155,7 @@ func WriteSingleConfigKey(key string, value int) error {
 	config[key] = value
 
 	// Save the updated configuration back to the file
-	if err = saveConfig(fullPath, config); err != nil {
+	if err = saveConfig(configFilePath, config); err != nil {
 		return errors.Errorf("error saving config: %s", err.Error())
 	}
 	return nil
@@ -206,7 +200,7 @@ func saveConfig(path string, config map[string]interface{}) error {
 	return nil
 }
 
-func getConfigFilePath() (string, error) {
+func GetConfigFilePath() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("error getting current user: %w", err)
