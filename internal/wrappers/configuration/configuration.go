@@ -10,6 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gofrs/flock"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -132,11 +133,26 @@ func LoadConfiguration() {
 
 func WriteSingleConfigKey(key string, value int) {
 	// Get the configuration file path
-	fullPath, err := getConfigFilePath()
+	fullPath, err := GetConfigFilePath()
 	if err != nil {
 		logger.PrintfIfVerbose("failed to get config file path: %s", err.Error())
 		return
 	}
+
+	// Create a file lock
+	lock := flock.New(fullPath + ".lock")
+	locked, err := lock.TryLock()
+	if err != nil {
+		logger.PrintfIfVerbose("failed to acquire lock: %s", err.Error())
+		return
+	}
+	if !locked {
+		logger.PrintfIfVerbose("failed to acquire lock")
+		return
+	}
+	defer func() {
+		_ = lock.Unlock()
+	}()
 
 	// Load existing configuration or initialize a new one
 	config, err := loadConfig(fullPath)
@@ -194,7 +210,7 @@ func saveConfig(path string, config map[string]interface{}) error {
 	return nil
 }
 
-func getConfigFilePath() (string, error) {
+func GetConfigFilePath() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("error getting current user: %w", err)
