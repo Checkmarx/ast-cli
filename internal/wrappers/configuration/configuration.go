@@ -146,7 +146,7 @@ func WriteSingleConfigKey(configFilePath, key string, value int) error {
 	}()
 
 	// Load existing configuration or initialize a new one
-	config, err := loadConfig(configFilePath)
+	config, err := LoadConfig(configFilePath)
 	if err != nil {
 		return errors.Errorf("error loading config: %s", err.Error())
 	}
@@ -155,14 +155,14 @@ func WriteSingleConfigKey(configFilePath, key string, value int) error {
 	config[key] = value
 
 	// Save the updated configuration back to the file
-	if err = saveConfig(configFilePath, config); err != nil {
+	if err = SaveConfig(configFilePath, config); err != nil {
 		return errors.Errorf("error saving config: %s", err.Error())
 	}
 	return nil
 }
 
-// loadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
-func loadConfig(path string) (map[string]interface{}, error) {
+// LoadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
+func LoadConfig(path string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
 	file, err := os.Open(path)
 	if err != nil {
@@ -182,8 +182,8 @@ func loadConfig(path string) (map[string]interface{}, error) {
 	return config, nil
 }
 
-// saveConfig writes the configuration to a file.
-func saveConfig(path string, config map[string]interface{}) error {
+// SaveConfig writes the configuration to a file.
+func SaveConfig(path string, config map[string]interface{}) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
