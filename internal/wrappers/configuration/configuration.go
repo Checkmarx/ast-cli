@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -129,17 +130,19 @@ func LoadConfiguration() {
 	_ = viper.ReadInConfig()
 }
 
-func WriteSingleConfigKey(key string, value int) error {
+func WriteSingleConfigKey(key string, value int) {
 	// Get the configuration file path
 	fullPath, err := getConfigFilePath()
 	if err != nil {
-		return fmt.Errorf("failed to get config file path: %w", err)
+		logger.PrintfIfVerbose("failed to get config file path: %w", err)
+		return
 	}
 
 	// Load existing configuration or initialize a new one
 	config, err := loadConfig(fullPath)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		logger.PrintfIfVerbose("failed to load config: %w", err)
+		return
 	}
 
 	// Update the configuration key
@@ -147,10 +150,9 @@ func WriteSingleConfigKey(key string, value int) error {
 
 	// Save the updated configuration back to the file
 	if err := saveConfig(fullPath, config); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
+		logger.PrintfIfVerbose("failed to save config: %w", err)
+		return
 	}
-
-	return nil
 }
 
 // loadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
