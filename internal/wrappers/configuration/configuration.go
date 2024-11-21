@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/go-errors/errors"
 	"github.com/gofrs/flock"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
