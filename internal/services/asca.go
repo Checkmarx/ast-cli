@@ -14,6 +14,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	getport "github.com/jsumners/go-getport"
 	"github.com/spf13/viper"
@@ -110,7 +111,15 @@ func findASCAPort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	setConfigPropertyQuiet(params.ASCAPortKey, port)
+	viper.Set(params.ASCAPortKey, port)
+	configFilePath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		logger.PrintfIfVerbose("Error getting config file path: %v", err)
+	}
+	err = configuration.SafeWriteSingleConfigKey(configFilePath, params.ASCAPortKey, port)
+	if err != nil {
+		logger.PrintfIfVerbose("Error writing ASCA port to config file: %v", err)
+	}
 	return port, nil
 }
 
@@ -131,13 +140,6 @@ func configureASCAWrapper(existingASCAWrapper grpcs.AscaWrapper) (grpcs.AscaWrap
 		existingASCAWrapper.ConfigurePort(port)
 	}
 	return existingASCAWrapper, nil
-}
-
-func setConfigPropertyQuiet(propName string, propValue int) {
-	viper.Set(propName, propValue)
-	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
-		_ = viper.WriteConfig()
-	}
 }
 
 func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaScanParams) error {
