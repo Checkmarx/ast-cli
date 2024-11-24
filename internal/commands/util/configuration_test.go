@@ -30,7 +30,7 @@ func TestNewConfigCommand(t *testing.T) {
 	assert.Assert(t, err.Error() == "Failed to set property: unknown property or bad value")
 }
 
-func TestGetConfigFilePath(t *testing.T) {
+func TestGetConfigFilePath_CheckmarxConfigFileExists_Success(t *testing.T) {
 	want := ".checkmarx/checkmarxcli.yaml"
 	got, err := configuration.GetConfigFilePath()
 
@@ -42,21 +42,25 @@ func TestGetConfigFilePath(t *testing.T) {
 	asserts.True(t, strings.HasSuffix(got, want), "Expected config file path to end with %q, but got %q", want, got)
 }
 
-func TestWriteSingleConfigKeyToExistingFile(t *testing.T) {
+func TestWriteSingleConfigKeyToExistingFile_ChangeAscaPortToZero_Success(t *testing.T) {
 	configuration.LoadConfiguration()
 	configFilePath, _ := configuration.GetConfigFilePath()
-	err := configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, 0)
+	err := configuration.SafeWriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
+
+	config, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, 0, config[cxAscaPort])
 }
 
-func TestWriteSingleConfigKeyToNonExistingFile(t *testing.T) {
+func TestWriteSingleConfigKeyNonExistingFile_CreatingTheFileAndWritesTheKey_Success(t *testing.T) {
 	configFilePath := "non-existing-file"
 
 	file, err := os.Open(configFilePath)
 	asserts.NotNil(t, err)
 	asserts.Nil(t, file)
 
-	err = configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, 0)
+	err = configuration.SafeWriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
 
 	file, err = os.Open(configFilePath)
@@ -69,14 +73,14 @@ func TestWriteSingleConfigKeyToNonExistingFile(t *testing.T) {
 	asserts.NotNil(t, file)
 }
 
-func TestChangedOnlyAscaPortInConfigFile(t *testing.T) {
+func TestChangedOnlyAscaPortInConfigFile_ConfigFileExistsWithDefaultValues_OnlyAscaPortChangedSuccess(t *testing.T) {
 	configuration.LoadConfiguration()
 	configFilePath, _ := configuration.GetConfigFilePath()
 
 	oldConfig, err := configuration.LoadConfig(configFilePath)
 	assert.NilError(t, err)
 
-	err = configuration.WriteSingleConfigKey(configFilePath, cxAscaPort, -1)
+	err = configuration.SafeWriteSingleConfigKey(configFilePath, cxAscaPort, -1)
 	assert.NilError(t, err)
 
 	config, err := configuration.LoadConfig(configFilePath)

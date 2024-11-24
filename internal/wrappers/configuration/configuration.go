@@ -131,7 +131,7 @@ func LoadConfiguration() {
 	_ = viper.ReadInConfig()
 }
 
-func WriteSingleConfigKey(configFilePath, key string, value int) error {
+func SafeWriteSingleConfigKey(configFilePath, key string, value int) error {
 	// Create a file lock
 	lock := flock.New(configFilePath + ".lock")
 	locked, err := lock.TryLock()

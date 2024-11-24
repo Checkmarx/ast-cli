@@ -116,7 +116,7 @@ func findASCAPort() (int, error) {
 	if err != nil {
 		logger.PrintfIfVerbose("Error getting config file path: %v", err)
 	}
-	err = configuration.WriteSingleConfigKey(configFilePath, params.ASCAPortKey, port)
+	err = configuration.SafeWriteSingleConfigKey(configFilePath, params.ASCAPortKey, port)
 	if err != nil {
 		logger.PrintfIfVerbose("Error writing ASCA port to config file: %v", err)
 	}
