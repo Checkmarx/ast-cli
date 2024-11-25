@@ -8,7 +8,6 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )

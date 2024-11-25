@@ -5,7 +5,6 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 )
 
@@ -98,6 +97,7 @@ func prepareEngines(engines []string) map[string]bool {
 }
 
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
+
 	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, &JWTStruct{})
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)

@@ -19,6 +19,7 @@ linters-settings:
           - github.com/jsumners/go-getport
           - github.com/stretchr/testify/assert
           - github.com/gofrs/flock
+          - github.com/golang-jwt/jwt/v5
   dupl:
     threshold: 500
   funlen:
