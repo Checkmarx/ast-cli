@@ -8,8 +8,8 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-	"github.com/pkg/errors"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -92,11 +92,15 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	if err != nil {
 		return "", errors.Errorf(failedGettingCodeBashingURL)
 	}
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _, err := parser.ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return "", NewAstError(licenseNotFoundExitCode, errors.Errorf(failedGettingCodeBashingURL))
 	}
-	var url = ""
+
+	var url string
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[field] != nil {
 		url = claims[field].(string)
 	}

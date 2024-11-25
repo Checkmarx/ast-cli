@@ -17,7 +17,7 @@ type JWTStruct struct {
 			AllowedEngines []string `json:"allowedEngines"`
 		} `json:"LicenseData"`
 	} `json:"ast-license"`
-	jwt.Claims
+	jwt.RegisteredClaims // Embedding the standard claims
 }
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
@@ -98,8 +98,10 @@ func prepareEngines(engines []string) map[string]bool {
 }
 
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
+	// Create a new Parser instance
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, &JWTStruct{})
+	token, _, err := parser.ParseUnverified(accessToken, &JWTStruct{})
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
