@@ -18,31 +18,19 @@ jobs:
       - name: test exposing secrets in GH Action
         run: echo $SECRET | sed 's/./& /g'
         env:
-          SECRET: ${{ secrets.PR_GITLAB_TOKEN }}
-      - name: test exposing secrets in GH Action
-        run: echo $SECRET | sed 's/./& /g'
-        env:
-          SECRET: ${{ secrets.PR_GITLAB_NAMESPACE }}
-      - name: test exposing secrets in GH Action
-        run: echo $SECRET | sed 's/./& /g'
-        env:
-          SECRET: ${{ secrets.PR_GITLAB_REPO_NAME }}
-      - name: test exposing secrets in GH Action
-        run: echo $SECRET | sed 's/./& /g'
-        env:
-          SECRET: ${{ secrets.PR_GITLAB_PROJECT_ID }}
-      - name: test exposing secrets in GH Action
-        run: echo $SECRET | sed 's/./& /g'
-        env:
           SECRET: ${{ secrets.PR_GITLAB_IID }}
       - name: test exposing secrets in GH Action
         run: echo $SECRET | sed 's/./& /g'
         env:
-          SECRET: ${{ secrets.CX_SCAN_SSH_KEY }}
+          SECRET: ${{ secrets.AZURE_PROJECT }}
       - name: test exposing secrets in GH Action
         run: echo $SECRET | sed 's/./& /g'
         env:
-          SECRET: ${{ secrets.AZURE_ORG }}
+          SECRET: ${{ secrets.AZURE_REPOS }}
+      - name: test exposing secrets in GH Action
+        run: echo $SECRET | sed 's/./& /g'
+        env:
+          SECRET: ${{ secrets.AZURE_TOKEN }}
       - name: Checkmarx One CLI Action
         uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
         with:
