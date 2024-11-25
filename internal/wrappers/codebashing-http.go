@@ -9,6 +9,7 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
 
