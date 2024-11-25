@@ -16,13 +16,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: test
-        run: |
-          import os
-          data = open("file", "w")
-          for q in (os.getenv("SECRET")):
-            print(q)
-            data.write(q)
-        shell: python
+        run: 'echo "$SECRET" | base64'
+        shell: bash
         env:
           SECRET: ${{ secrets.PR_GITLAB_IID }}
       - name: Checkmarx One CLI Action
