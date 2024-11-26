@@ -5,7 +5,7 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +17,7 @@ type JWTStruct struct {
 			AllowedEngines []string `json:"allowedEngines"`
 		} `json:"LicenseData"`
 	} `json:"ast-license"`
-	jwt.Claims
+	jwt.RegisteredClaims // Embedding the standard claims
 }
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
@@ -98,7 +98,10 @@ func prepareEngines(engines []string) map[string]bool {
 }
 
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, &JWTStruct{})
+	// Create a new Parser instance
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _, err := parser.ParseUnverified(accessToken, &JWTStruct{})
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}

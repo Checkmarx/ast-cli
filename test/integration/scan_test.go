@@ -137,7 +137,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
@@ -162,7 +162,7 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
@@ -215,7 +215,7 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {

@@ -15,9 +15,8 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/golang-jwt/jwt"
-
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -733,15 +732,20 @@ func GetURL(path, accessToken string) (string, error) {
 
 func ExtractFromTokenClaims(accessToken, claim string) (string, error) {
 	var value string
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _, err := parser.ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
 		value = strings.TrimSpace(claims[claim].(string))
 	} else {
 		return "", errors.Errorf(jwtError, claim)
 	}
+
 	return value, nil
 }
 
