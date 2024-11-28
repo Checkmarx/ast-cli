@@ -79,7 +79,7 @@ func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlag
 			}
 		}
 	}
-	return false, nil
+	return true, nil
 }
 
 func prepareEngines(engines []string) map[string]bool {
