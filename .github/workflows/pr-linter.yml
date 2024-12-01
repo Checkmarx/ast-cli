@@ -23,7 +23,7 @@ jobs:
             exit 1
           fi
           
-          if ! [[ "$PR_BRANCH" =~ ^(bug|feature|other)/ ]]; then
+          if ! [[ "$PR_BRANCH" =~ ^(bug|fix|feature|other)/ ]]; then
             echo "::error::Branch name must start with 'bug/' or 'feature/' or 'other/'."
             exit 1
           fi
