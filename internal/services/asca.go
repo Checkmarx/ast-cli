@@ -165,7 +165,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
+		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
 		if err != nil {
 			return err
 		}
