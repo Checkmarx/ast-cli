@@ -78,6 +78,7 @@ func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlag
 				return true, nil
 			}
 		}
+		return false, nil
 	}
 	return true, nil
 }
