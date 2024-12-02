@@ -132,7 +132,7 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 	_ = wrapperParams.ASCAWrapper.ShutDown()
 }
 
-func TestCreateASCAScanRequest_EngineNotRunningAndPackageEnforcementFFOff_Success(t *testing.T) {
+func TestCreateASCAScanRequest_CheckLicenseWhenPackageEnforcementFFOff_SuccessWithNilError(t *testing.T) {
 	port, err := getAvailablePort()
 	if err != nil {
 		t.Fatalf("Failed to get available port: %v", err)
