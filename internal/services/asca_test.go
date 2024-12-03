@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
@@ -129,4 +130,21 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 	assert.Nil(t, err)
 	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
 	_ = wrapperParams.ASCAWrapper.ShutDown()
+}
+
+func TestCreateASCAScanRequest_whenCheckLicenseWithPackageEnforcementFFOff_shouldSuccess(t *testing.T) {
+	port, err := getAvailablePort()
+	if err != nil {
+		t.Fatalf("Failed to get available port: %v", err)
+	}
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.PackageEnforcementEnabled, Status: false}
+
+	wrapperParams := AscaWrappersParam{
+		JwtWrapper:          wrappers.NewJwtWrapper(),
+		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
+	}
+	err = checkLicense(false, wrapperParams)
+	assert.Nil(t, err)
 }

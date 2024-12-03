@@ -67,16 +67,18 @@ func getJwtStruct() (*JWTStruct, error) {
 // IsAllowedEngine will return if the engine is allowed in the user license
 func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error) {
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
-	if flagResponse.Status {
-		jwtStruct, err := getJwtStruct()
-		if err != nil {
-			return false, err
-		}
+	if !flagResponse.Status {
+		return true, nil
+	}
 
-		for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
-			if strings.EqualFold(allowedEngine, engine) {
-				return true, nil
-			}
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return false, err
+	}
+
+	for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
+		if strings.EqualFold(allowedEngine, engine) {
+			return true, nil
 		}
 	}
 	return false, nil
