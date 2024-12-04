@@ -708,20 +708,6 @@ func setupScanTypeProjectAndConfig(
 		return errors.Errorf("Project name is required")
 	}
 
-	//applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
-	//
-	//var applicationID []string
-	//if applicationName != "" {
-	//	application, getAppErr := getApplication(applicationName, applicationsWrapper)
-	//	if getAppErr != nil {
-	//		return getAppErr
-	//	}
-	//	if application == nil {
-	//		return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
-	//	}
-	//	applicationID = []string{application.ID}
-	//}
-
 	// We need to convert the project name into an ID
 	projectID, findProjectErr := services.FindProject(
 		/*applicationID,*/
