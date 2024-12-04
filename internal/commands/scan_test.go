@@ -55,7 +55,7 @@ const (
 	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName              = "test_output.log"
-	noUpdatesForExistingProject = "No applicationId or tags to update. Skipping project update."
+	noUpdatesForExistingProject = "No tags to update. Skipping project update."
 )
 
 func TestScanHelp(t *testing.T) {
