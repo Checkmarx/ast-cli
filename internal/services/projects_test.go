@@ -60,7 +60,6 @@ func TestFindProject(t *testing.T) {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := FindProject(
-				ttt.args.applicationID,
 				ttt.args.projectName,
 				ttt.args.cmd,
 				ttt.args.projectsWrapper,
@@ -240,19 +239,6 @@ func Test_updateProject(t *testing.T) {
 			projectPrivatePackage:   "true",
 			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-project-name", wantErr: false},
-		{name: "When called with mock fake error model return fake error from project create", args: args{
-			projectName: "mock-some-error-model",
-			resp: &wrappers.ProjectsCollectionResponseModel{
-				Projects: []wrappers.ProjectResponseModel{
-					{ID: "ID-mock-some-error-model", Name: "mock-some-error-model"}},
-			},
-			cmd:                     &cobra.Command{},
-			projectsWrapper:         &mock.ProjectsMockWrapper{},
-			groupsWrapper:           &mock.GroupsMockWrapper{},
-			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			applicationID:           []string{"1"},
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
-		}, want: "", wantErr: true},
 	}
 	for _, tt := range tests {
 		ttt := tt
@@ -261,11 +247,8 @@ func Test_updateProject(t *testing.T) {
 				ttt.args.resp,
 				ttt.args.cmd,
 				ttt.args.projectsWrapper,
-				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
-				ttt.args.applicationsWrapper,
 				ttt.args.projectName,
-				ttt.args.applicationID,
 				ttt.args.projectTags,
 				ttt.args.projectPrivatePackage,
 				ttt.args.featureFlagsWrapper)
