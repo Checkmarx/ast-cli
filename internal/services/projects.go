@@ -96,7 +96,7 @@ func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrap
 func getApplicationId(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) ([]string, error) {
 	var applicationID []string
 	if applicationName != "" {
-		application, getAppErr := getApplication(applicationName, applicationsWrapper)
+		application, getAppErr := GetApplication(applicationName, applicationsWrapper)
 		if getAppErr != nil {
 			return nil, getAppErr
 		}
@@ -108,7 +108,7 @@ func getApplicationId(applicationName string, applicationsWrapper wrappers.Appli
 	return applicationID, nil
 }
 
-func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
+func GetApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
 	if applicationName != "" {
 		params := make(map[string]string)
 		params["name"] = applicationName
