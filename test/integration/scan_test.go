@@ -1579,6 +1579,35 @@ func TestScanCreate_WhenProjectExists_ShouldNotUpdateGroups(t *testing.T) {
 	}
 
 }
+
+func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
+	projectID, projectName := getRootProject(t)
+	project := showProject(t, projectID)
+	applicationsBeforeScanCreate := project.ApplicationIds
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApplicationName), "wrong_application",
+		"--async",
+	}
+
+	err, _ := executeCommand(t, args...)
+	if err != nil {
+		assertError(t, err, "running a scan should pass")
+	}
+
+	project = showProject(t, projectID)
+	applicationsAfterScanCreate := project.ApplicationIds
+	if !reflect.DeepEqual(applicationsBeforeScanCreate, applicationsAfterScanCreate) {
+		t.Errorf("When project exists, applications before and after scan creation should be equal. Got %v, want %v", applicationsAfterScanCreate, applicationsBeforeScanCreate)
+	}
+
+}
 func TestScanCreateExploitablePath(t *testing.T) {
 	_, projectName := getRootProject(t)
 

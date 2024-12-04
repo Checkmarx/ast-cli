@@ -411,6 +411,23 @@ func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssignGroup(t *te
 	assert.Equal(t, strings.Contains(stdoutString, "Updating project groups"), true, "Expected output: %s", "Updating project groups")
 }
 
+func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssociateApplication(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--application-name", mock.ExistingApplication, "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "application association done successfully"), true, "Expected output: %s", "application association done successfully")
+}
+
 func TestScanWorkflowMissingID(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "workflow")
 	assert.Error(t, err, "Please provide a scan ID", err.Error())
@@ -617,6 +634,20 @@ func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
 	defer logger.SetOutput(os.Stdout)
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--debug", "--project-groups", "anyProjectGroup"}
+	execCmdNilAssertion(t, baseArgs...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
+}
+
+func TestCreateScan_WhenProjectExists_ShouldIgnoreApplication(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--debug", "--application-name", "anyApplication"}
 	execCmdNilAssertion(t, baseArgs...)
 	stdoutString, err := util.ReadFileAsString(file.Name())
 	if err != nil {
