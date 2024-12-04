@@ -44,11 +44,8 @@ func FindProject(
 				resp,
 				cmd,
 				projectsWrapper,
-				groupsWrapper,
 				accessManagementWrapper,
-				applicationWrapper,
 				projectName,
-				applicationID,
 				projectTags,
 				projectPrivatePackage,
 				featureFlagsWrapper)
@@ -178,18 +175,14 @@ func updateProject(
 	resp *wrappers.ProjectsCollectionResponseModel,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
 	projectName string,
-	applicationID []string,
 	projectTags string,
 	projectPrivatePackage string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 
 ) (string, error) {
 	var projectID string
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	for i := 0; i < len(resp.Projects); i++ {
 		if resp.Projects[i].Name == projectName {
@@ -202,8 +195,8 @@ func updateProject(
 			projModel.RepoURL = resp.Projects[i].RepoURL
 		}
 	}
-	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")
+	if projectTags == "" && projectPrivatePackage == "" {
+		logger.PrintIfVerbose("No tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
@@ -226,20 +219,10 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if len(applicationID) > 0 {
-		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
-	}
+
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-
-	if applicationName != "" || len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
-		if err != nil {
-			return projectID, err
-		}
 	}
 
 	return projectID, nil
