@@ -213,7 +213,8 @@ func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *te
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project",
+		"--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
