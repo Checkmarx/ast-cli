@@ -52,12 +52,12 @@ func (m *ScansMockWrapper) Create(scanModel *wrappers.Scan) (*wrappers.ScanRespo
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get(params map[string]string) (
+func (m *ScansMockWrapper) Get(scanParams map[string]string) (
 	*wrappers.ScansCollectionResponseModel,
 	*wrappers.ErrorModel,
 	error,
 ) {
-	if params["project-id"] == "non-existent-project" {
+	if scanParams["project-id"] == "non-existent-project" {
 		return &wrappers.ScansCollectionResponseModel{}, nil, nil
 	}
 
