@@ -1803,6 +1803,8 @@ func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 
 func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
+	scsRepoTokenEnvValue := os.Getenv(params.ScsRepoTokenEnv)
+	defer setEnvVars(map[string]string{params.ScsRepoTokenEnv: scsRepoTokenEnvValue})
 
 	setEnvVars(map[string]string{
 		params.ScsRepoTokenEnv: "",
