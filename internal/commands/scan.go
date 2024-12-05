@@ -1000,7 +1000,10 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		SCSMapConfig := make(map[string]interface{})
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
+		if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
+			scsRepoToken = token
+		}
 		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
