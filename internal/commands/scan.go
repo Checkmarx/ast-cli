@@ -710,7 +710,6 @@ func setupScanTypeProjectAndConfig(
 
 	// We need to convert the project name into an ID
 	projectID, findProjectErr := services.FindProject(
-		/*applicationID,*/
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
