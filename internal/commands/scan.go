@@ -834,6 +834,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	var allScansModel *wrappers.ScansCollectionResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
+	var config []wrappers.Config
 	params := make(map[string]string)
 	params["project-id"] = projectID
 	allScansModel, errorModel, err = scansWrapper.Get(params)
@@ -844,12 +845,16 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	if errorModel != nil {
 		return nil, errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
-	config := allScansModel.Scans[0].Metadata.Configs
-	engines := allScansModel.Scans[0].Engines
-	// Check if there are no scan types sent using the flags, and use the latest scan engine types
-	if userScanTypes == "" {
-		actualScanTypes = strings.Join(engines, ",")
+
+	if len(allScansModel.Scans) > 0 {
+		config = allScansModel.Scans[0].Metadata.Configs
+		engines := allScansModel.Scans[0].Engines
+		// Check if there are no scan types sent using the flags, and use the latest scan engine types
+		if userScanTypes == "" {
+			actualScanTypes = strings.Join(engines, ",")
+		}
 	}
+
 	return config, nil
 }
 

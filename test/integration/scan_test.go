@@ -1972,3 +1972,17 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
+
+func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithDefaultConfig(t *testing.T) {
+	projectName := GenerateRandomProjectNameForScan()
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.ScanResubmit),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+}
