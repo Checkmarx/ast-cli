@@ -28,13 +28,26 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		Name:        "MOCK",
 		Description: "This is a mock application",
 		Criticality: 2,
-		ProjectIds:  []string{"ProjectID1", "ProjectID2", "MOCK", "test_project", "ID-new-project-name"},
+		ProjectIds:  []string{"ProjectID1", "ProjectID2", "MOCK", "test_project", "ID-new-project-name", "ID-newProject"},
 		CreatedAt:   time.Now(),
+	}
+	if params["name"] == ExistingApplication {
+		mockApplication.Name = ExistingApplication
+		mockApplication.ID = "ID-newProject"
+		return &wrappers.ApplicationsResponseModel{
+			TotalCount:   1,
+			Applications: []wrappers.Application{mockApplication},
+		}, nil
 	}
 
 	response := &wrappers.ApplicationsResponseModel{
 		TotalCount:   1,
 		Applications: []wrappers.Application{mockApplication},
+	}
+
+	if params["name"] == "anyApplication" {
+		response.TotalCount = 0
+		response.Applications = []wrappers.Application{}
 	}
 
 	return response, nil

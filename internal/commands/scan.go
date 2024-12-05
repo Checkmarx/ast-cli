@@ -24,7 +24,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/constants"
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -709,23 +708,8 @@ func setupScanTypeProjectAndConfig(
 		return errors.Errorf("Project name is required")
 	}
 
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
-
-	var applicationID []string
-	if applicationName != "" {
-		application, getAppErr := getApplication(applicationName, applicationsWrapper)
-		if getAppErr != nil {
-			return getAppErr
-		}
-		if application == nil {
-			return errors.Errorf(errorConstants.ApplicationDoesntExistOrNoPermission)
-		}
-		applicationID = []string{application.ID}
-	}
-
 	// We need to convert the project name into an ID
 	projectID, findProjectErr := services.FindProject(
-		applicationID,
 		info["project"].(map[string]interface{})["id"].(string),
 		cmd,
 		projectsWrapper,
@@ -797,34 +781,6 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	return nil
-}
-
-func getApplication(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) (*wrappers.Application, error) {
-	if applicationName != "" {
-		params := make(map[string]string)
-		params["name"] = applicationName
-		resp, err := applicationsWrapper.Get(params)
-		if err != nil {
-			return nil, err
-		}
-		if resp.Applications != nil && len(resp.Applications) > 0 {
-			application := verifyApplicationNameExactMatch(applicationName, resp)
-
-			return application, nil
-		}
-	}
-	return nil, nil
-}
-
-func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.ApplicationsResponseModel) *wrappers.Application {
-	var application *wrappers.Application
-	for i := range resp.Applications {
-		if resp.Applications[i].Name == applicationName {
-			application = &resp.Applications[i]
-			break
-		}
-	}
-	return application
 }
 
 func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, userScanTypes string) (

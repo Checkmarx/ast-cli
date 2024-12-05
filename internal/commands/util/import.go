@@ -65,7 +65,7 @@ func runImportCommand(
 			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
 
-		projectID, err := services.FindProject(nil, projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, featureFlagsWrapper)
+		projectID, err := services.FindProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, featureFlagsWrapper)
 		if err != nil {
 			return err
 		}
