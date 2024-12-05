@@ -136,6 +136,7 @@ var BaseIncludeFilters = []string{
 	"*.cmp",
 	"Directory.Packages.props",
 	"*.rs",
+	"*.jsx",
 }
 
 var BaseExcludeFilters = []string{
