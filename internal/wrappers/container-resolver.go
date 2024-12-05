@@ -1,9 +1,5 @@
 package wrappers
 
-import (
-	containersResolver "github.com/CheckmarxDev/containers-resolver/pkg/containerResolver"
-)
-
 type ContainerResolverWrapper interface {
 	Resolve(scanPath string, resolutionFilePath string, images []string, isDebug bool) error
 }
@@ -16,5 +12,5 @@ func NewContainerResolverWrapper() ContainerResolverWrapper {
 }
 
 func (c *ContainerResolverImpl) Resolve(scanPath, resolutionFilePath string, images []string, isDebug bool) error {
-	return containersResolver.Resolve(scanPath, resolutionFilePath, images, isDebug)
+	return c.Resolve(scanPath, resolutionFilePath, images, isDebug)
 }
