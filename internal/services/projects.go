@@ -1,11 +1,11 @@
 package services
 
 import (
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"slices"
 	"strconv"
 	"time"
 
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -56,7 +56,7 @@ func FindProject(
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 
 	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
-	applicationID, appErr := getApplicationId(applicationName, applicationWrapper)
+	applicationID, appErr := getApplicationID(applicationName, applicationWrapper)
 	if appErr != nil {
 		return "", appErr
 	}
@@ -93,7 +93,7 @@ func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrap
 	return resp, nil
 }
 
-func getApplicationId(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) ([]string, error) {
+func getApplicationID(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper) ([]string, error) {
 	var applicationID []string
 	if applicationName != "" {
 		application, getAppErr := GetApplication(applicationName, applicationsWrapper)

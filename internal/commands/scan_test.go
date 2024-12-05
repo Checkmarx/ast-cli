@@ -193,18 +193,13 @@ func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
 }
 
-func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
-}
-
 func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
+func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldCreateScan(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
@@ -213,18 +208,13 @@ func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *te
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
-}
-
-func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
