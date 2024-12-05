@@ -347,15 +347,14 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
-func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+func TestScanCreate_WithNewProjectAndApplicationDoesntExist_ShouldFailScanWithError(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
-		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.ProjectName), "newProject",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.DebugFlag),
 	}
 
 	err, _ := executeCommand(t, args...)
