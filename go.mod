@@ -3,9 +3,11 @@ module github.com/checkmarx/ast-cli
 go 1.23.3
 
 require (
+	github.com/Checkmarx/containers-images-extractor v1.0.2
+	github.com/Checkmarx/containers-resolver v1.0.2
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.2
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
-	github.com/Checkmarx/containers-resolver v1.0.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/gofrs/flock v0.8.1
@@ -37,8 +39,6 @@ require (
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20240914100643-eb91380d8434 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/Checkmarx/containers-images-extractor v1.0.0 // indirect
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.1 // indirect
 	github.com/Checkmarx/containers-types v1.0.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.1 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.12.9 // indirect
-	github.com/ProtonMail/go-crypto v1.1.2 // indirect
+	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/acobaugh/osrelease v0.1.0 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/anchore/clio v0.0.0-20241115144204-29e89f9fa837 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/anchore/go-version v1.2.2-0.20200701162849-18adb9c92b9b // indirect
 	github.com/anchore/packageurl-go v0.1.1-0.20241018175412-5c22e6360c4f // indirect
 	github.com/anchore/stereoscope v0.0.10-0.20241126202235-be5deed44b7c // indirect
-	github.com/anchore/syft v1.17.1-0.20241202163009-c3619422bb0b // indirect
+	github.com/anchore/syft v1.17.1-0.20241204202107-25e5d555efcd // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
 	github.com/aquasecurity/go-version v0.0.0-20210121072130-637058cfe492 // indirect
