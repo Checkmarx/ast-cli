@@ -7,7 +7,7 @@ type ContainerResolverWrapper interface {
 }
 
 type ContainerResolverImpl struct {
-	containersResolver.ContainersResolver
+	resolver containersResolver.ContainersResolver
 }
 
 func NewContainerResolverWrapper() ContainerResolverWrapper {
@@ -17,5 +17,5 @@ func NewContainerResolverWrapper() ContainerResolverWrapper {
 }
 
 func (c *ContainerResolverImpl) Resolve(scanPath, resolutionFilePath string, images []string, isDebug bool) error {
-	return c.Resolve(scanPath, resolutionFilePath, images, isDebug)
+	return c.resolver.Resolve(scanPath, resolutionFilePath, images, isDebug)
 }

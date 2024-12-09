@@ -3,9 +3,7 @@ module github.com/checkmarx/ast-cli
 go 1.23.3
 
 require (
-	github.com/Checkmarx/containers-images-extractor v1.0.2
-	github.com/Checkmarx/containers-resolver v1.0.2
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.2
+	github.com/Checkmarx/containers-resolver v1.0.3
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -39,6 +37,8 @@ require (
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20240914100643-eb91380d8434 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/Checkmarx/containers-images-extractor v1.0.2 // indirect
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.2 // indirect
 	github.com/Checkmarx/containers-types v1.0.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.1 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
