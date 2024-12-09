@@ -37,8 +37,8 @@ require (
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20240914100643-eb91380d8434 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/Checkmarx/containers-images-extractor v1.0.2 // indirect
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.2 // indirect
+	github.com/Checkmarx/containers-images-extractor v1.0.3 // indirect
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.3 // indirect
 	github.com/Checkmarx/containers-types v1.0.0 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.1 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
