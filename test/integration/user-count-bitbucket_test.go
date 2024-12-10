@@ -112,6 +112,7 @@ func TestBitbucketUserCountReposDebug(t *testing.T) {
 		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
 		break
 	}
+
 	totalView := parsedJson[len(parsedJson)-1]
 	assert.Assert(t, len(parsedJson) >= 1)
 	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
