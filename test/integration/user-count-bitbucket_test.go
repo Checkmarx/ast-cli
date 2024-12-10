@@ -112,6 +112,7 @@ func TestBitbucketUserCountReposDebug(t *testing.T) {
 		json.Unmarshal([]byte(scanner.Text()), &parsedJson)
 		break
 	}
+
 	totalView := parsedJson[len(parsedJson)-1]
 	assert.Assert(t, len(parsedJson) >= 1)
 	assert.Assert(t, totalView.Name == usercount.TotalContributorsName)
@@ -128,7 +129,6 @@ func TestBitbucketCountWorkspaceFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one workspace")
 }
 
