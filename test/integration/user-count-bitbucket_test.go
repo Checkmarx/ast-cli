@@ -129,7 +129,6 @@ func TestBitbucketCountWorkspaceFailed(t *testing.T) {
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 	)
-
 	assertError(t, err, "Provide at least one workspace")
 }
 
