@@ -216,21 +216,6 @@ func updateProject(project *wrappers.ProjectResponseModel,
 	return projectID, nil
 }
 
-func findProjectByName(resp *wrappers.ProjectsCollectionResponseModel, projectName string) (string, wrappers.Project) {
-	var projectID string
-	var projModel wrappers.Project
-	for i := 0; i < len(resp.Projects); i++ {
-		project := resp.Projects[i]
-		if project.Name == projectName {
-			projectID = project.ID
-			projModel.MainBranch = project.MainBranch
-			projModel.RepoURL = project.RepoURL
-			break
-		}
-	}
-	return projectID, projModel
-}
-
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
