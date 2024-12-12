@@ -40,18 +40,7 @@ func FindProject(
 		if resp.Projects[i].Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(
-				resp,
-				cmd,
-				projectsWrapper,
-				groupsWrapper,
-				accessManagementWrapper,
-				applicationWrapper,
-				projectName,
-				applicationID,
-				projectTags,
-				projectPrivatePackage,
-				featureFlagsWrapper)
+			return updateProject(resp, cmd, projectsWrapper, applicationWrapper, projectName, applicationID, projectTags, projectPrivatePackage)
 		}
 	}
 
@@ -174,33 +163,30 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 }
 
 //nolint:gocyclo
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
-	projectName string,
-	applicationID []string,
-	projectTags string,
-	projectPrivatePackage string,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-
-) (string, error) {
+func updateProject(resp *wrappers.ProjectsCollectionResponseModel,
+	cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, applicationsWrapper wrappers.ApplicationsWrapper,
+	projectName string, applicationID []string, projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
 	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
+		project := resp.Projects[i]
+
+		if project.Name != projectName {
+			continue
 		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
+
+		projectID = project.ID
+
+		if project.MainBranch != "" {
+			projModel.MainBranch = project.MainBranch
 		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
+
+		if project.RepoURL != "" {
+			projModel.RepoURL = project.RepoURL
 		}
+
+		break
 	}
 	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
 		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")

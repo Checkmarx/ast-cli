@@ -257,18 +257,7 @@ func Test_updateProject(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateProject(
-				ttt.args.resp,
-				ttt.args.cmd,
-				ttt.args.projectsWrapper,
-				ttt.args.groupsWrapper,
-				ttt.args.accessManagementWrapper,
-				ttt.args.applicationsWrapper,
-				ttt.args.projectName,
-				ttt.args.applicationID,
-				ttt.args.projectTags,
-				ttt.args.projectPrivatePackage,
-				ttt.args.featureFlagsWrapper)
+			got, err := updateProject(ttt.args.resp, ttt.args.cmd, ttt.args.projectsWrapper, ttt.args.applicationsWrapper, ttt.args.projectName, ttt.args.applicationID, ttt.args.projectTags, ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
