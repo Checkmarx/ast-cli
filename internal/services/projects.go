@@ -171,22 +171,12 @@ func updateProject(resp *wrappers.ProjectsCollectionResponseModel,
 	var projModel = wrappers.Project{}
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
-
-		if project.Name != projectName {
-			continue
-		}
-
-		projectID = project.ID
-
-		if project.MainBranch != "" {
+		if project.Name == projectName {
+			projectID = project.ID
 			projModel.MainBranch = project.MainBranch
-		}
-
-		if project.RepoURL != "" {
 			projModel.RepoURL = project.RepoURL
+			break
 		}
-
-		break
 	}
 	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
 		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")
