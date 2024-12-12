@@ -37,10 +37,11 @@ func FindProject(
 	}
 
 	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
+		project := resp.Projects[i]
+		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(resp, cmd, projectsWrapper, applicationWrapper, projectName, applicationID, projectTags, projectPrivatePackage)
+			return updateProject(&project, cmd, projectsWrapper, applicationWrapper, applicationID, projectTags, projectPrivatePackage)
 		}
 	}
 
@@ -163,21 +164,15 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 }
 
 //nolint:gocyclo
-func updateProject(resp *wrappers.ProjectsCollectionResponseModel,
+func updateProject(project *wrappers.ProjectResponseModel,
 	cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, applicationsWrapper wrappers.ApplicationsWrapper,
-	projectName string, applicationID []string, projectTags string, projectPrivatePackage string) (string, error) {
+	applicationID []string, projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
 	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
-	for i := 0; i < len(resp.Projects); i++ {
-		project := resp.Projects[i]
-		if project.Name == projectName {
-			projectID = project.ID
-			projModel.MainBranch = project.MainBranch
-			projModel.RepoURL = project.RepoURL
-			break
-		}
-	}
+	projectID = project.ID
+	projModel.MainBranch = project.MainBranch
+	projModel.RepoURL = project.RepoURL
 	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
 		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")
 		return projectID, nil
@@ -219,6 +214,21 @@ func updateProject(resp *wrappers.ProjectsCollectionResponseModel,
 	}
 
 	return projectID, nil
+}
+
+func findProjectByName(resp *wrappers.ProjectsCollectionResponseModel, projectName string) (string, wrappers.Project) {
+	var projectID string
+	var projModel wrappers.Project
+	for i := 0; i < len(resp.Projects); i++ {
+		project := resp.Projects[i]
+		if project.Name == projectName {
+			projectID = project.ID
+			projModel.MainBranch = project.MainBranch
+			projModel.RepoURL = project.RepoURL
+			break
+		}
+	}
+	return projectID, projModel
 }
 
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
