@@ -1,4 +1,4 @@
-FROM checkmarx.jfrog.io/ast-docker/chainguard/bash:5.2.37-r2@sha256:423efc2e971a0dc620ab63e87a5b2577a32083563ff7290380f62e02aa7e0d2e
+FROM cgr.dev/chainguard/bash@sha256:1abc09ac352efdc60d855bd159b9b66df6596a174400752ae3c537b5350779a9
 USER nonroot
 
 COPY cx /app/bin/cx
