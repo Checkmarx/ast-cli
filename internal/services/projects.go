@@ -171,7 +171,7 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 
 //nolint:gocyclo
 func updateProject(project *wrappers.ProjectResponseModel,
-	cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
 	projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
 	var projModel = wrappers.Project{}
