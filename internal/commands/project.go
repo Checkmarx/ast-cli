@@ -233,7 +233,7 @@ func runCreateProjectCommand(
 		applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 		var applicationID []string
 		if applicationName != "" {
-			application, getAppErr := getApplication(applicationName, applicationsWrapper)
+			application, getAppErr := services.GetApplication(applicationName, applicationsWrapper)
 			if getAppErr != nil {
 				return getAppErr
 			}
