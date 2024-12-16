@@ -939,7 +939,6 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 		flag(params.TagList), formatTags(tags),
 		flag(params.BranchFlag), SlowRepoBranch,
 		flag(params.ProjectGroupList), formatGroups(groups),
-		flag(params.DebugFlag),
 	}
 
 	if strings.Contains(scanTypes, "scs") {
@@ -1803,6 +1802,28 @@ func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
+	_, projectName := getRootProject(t)
+	scsRepoTokenEnvValue := os.Getenv(params.ScsRepoTokenEnv)
+	defer setEnvVars(map[string]string{params.ScsRepoTokenEnv: scsRepoTokenEnvValue})
+
+	setEnvVars(map[string]string{
+		params.ScsRepoTokenEnv: "",
+	})
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security, scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
+func TestCreateScan_ScsRepoTokenEnvConfigured_Success(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
