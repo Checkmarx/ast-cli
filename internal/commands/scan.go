@@ -790,6 +790,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	var allScansModel *wrappers.ScansCollectionResponseModel
 	var errorModel *wrappers.ErrorModel
 	var err error
+	var config []wrappers.Config
 	params := make(map[string]string)
 	params["project-id"] = projectID
 	allScansModel, errorModel, err = scansWrapper.Get(params)
@@ -800,12 +801,17 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 	if errorModel != nil {
 		return nil, errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 	}
-	config := allScansModel.Scans[0].Metadata.Configs
-	engines := allScansModel.Scans[0].Engines
-	// Check if there are no scan types sent using the flags, and use the latest scan engine types
-	if userScanTypes == "" {
-		actualScanTypes = strings.Join(engines, ",")
+
+	if len(allScansModel.Scans) > 0 {
+		scanModelResponse := allScansModel.Scans[0]
+		config = scanModelResponse.Metadata.Configs
+		engines := scanModelResponse.Engines
+		// Check if there are no scan types sent using the flags, and use the latest scan engine types
+		if userScanTypes == "" {
+			actualScanTypes = strings.Join(engines, ",")
+		}
 	}
+
 	return config, nil
 }
 
@@ -956,7 +962,10 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		SCSMapConfig := make(map[string]interface{})
 		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
 		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		scsRepoToken, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag)
+		scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
+		if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
+			scsRepoToken = token
+		}
 		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
 		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
 		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value

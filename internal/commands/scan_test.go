@@ -1342,3 +1342,14 @@ func deleteOutputFile(file *os.File) {
 		logger.Printf("Failed to remove log file: %v", err)
 	}
 }
+
+func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
+	scanWrapper := mock.ScansMockWrapper{}
+	projectID := "non-existent-project"
+	userScanTypes := ""
+	cmd := createASTTestCommand()
+	cmd.PersistentFlags().String("project-name", "non-existent-project", "project name")
+	config, err := getResubmitConfiguration(&scanWrapper, projectID, userScanTypes)
+	assert.NilError(t, err)
+	assert.Equal(t, len(config), 0)
+}

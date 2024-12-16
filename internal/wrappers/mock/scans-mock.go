@@ -52,11 +52,15 @@ func (m *ScansMockWrapper) Create(scanModel *wrappers.Scan) (*wrappers.ScanRespo
 	}, nil, nil
 }
 
-func (m *ScansMockWrapper) Get(_ map[string]string) (
+func (m *ScansMockWrapper) Get(scanParams map[string]string) (
 	*wrappers.ScansCollectionResponseModel,
 	*wrappers.ErrorModel,
 	error,
 ) {
+	if scanParams["project-id"] == "non-existent-project" {
+		return &wrappers.ScansCollectionResponseModel{}, nil, nil
+	}
+
 	fmt.Println("Called Get in ScansMockWrapper")
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig["incremental"] = "trueSastIncremental"

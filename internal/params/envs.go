@@ -67,4 +67,5 @@ const (
 	AiProxyAzureAiRouteEnv              = "CX_AIPROXY_AZUREAI_ROUTE"
 	AiProxyCheckmarxAiRouteEnv          = "CX_AIPROXY_CHECKMARXAI_ROUTE"
 	ASCAPortEnv                         = "CX_ASCA_PORT"
+	ScsRepoTokenEnv                     = "SCS_REPO_TOKEN"
 )

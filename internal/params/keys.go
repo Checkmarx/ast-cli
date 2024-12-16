@@ -67,4 +67,5 @@ var (
 	AiProxyAzureAiRouteKey              = strings.ToLower(AiProxyAzureAiRouteEnv)
 	AiProxyCheckmarxAiRouteKey          = strings.ToLower(AiProxyCheckmarxAiRouteEnv)
 	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
+	ScsRepoTokenKey                     = strings.ToLower(ScsRepoTokenEnv)
 )

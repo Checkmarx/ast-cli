@@ -36,18 +36,11 @@ func FindProject(
 	}
 
 	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
+		project := resp.Projects[i]
+		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(
-				resp,
-				cmd,
-				projectsWrapper,
-				accessManagementWrapper,
-				projectName,
-				projectTags,
-				projectPrivatePackage,
-				featureFlagsWrapper)
+			return updateProject(&project, cmd, projectsWrapper, projectTags, projectPrivatePackage)
 		}
 	}
 
@@ -177,30 +170,14 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 }
 
 //nolint:gocyclo
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
-	projectsWrapper wrappers.ProjectsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	projectName string,
-	projectTags string,
-	projectPrivatePackage string,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-
-) (string, error) {
+func updateProject(project *wrappers.ProjectResponseModel,
+	cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper,
+	projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
 	var projModel = wrappers.Project{}
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
-		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
-		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
-		}
-	}
+	projectID = project.ID
+	projModel.MainBranch = project.MainBranch
+	projModel.RepoURL = project.RepoURL
 	if projectTags == "" && projectPrivatePackage == "" {
 		logger.PrintIfVerbose("No tags to update. Skipping project update.")
 		return projectID, nil
