@@ -40,7 +40,7 @@ func FindProject(
 		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(&project, cmd, projectsWrapper, projectTags, projectPrivatePackage)
+			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage)
 		}
 	}
 

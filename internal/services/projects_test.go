@@ -239,8 +239,8 @@ func Test_updateProject(t *testing.T) {
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateProject(ttt.args.project, ttt.args.cmd, ttt.args.projectsWrapper,
-				 ttt.args.projectTags, ttt.args.projectPrivatePackage)
+			got, err := updateProject(ttt.args.project, ttt.args.projectsWrapper,
+				ttt.args.projectTags, ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
