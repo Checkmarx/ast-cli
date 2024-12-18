@@ -394,6 +394,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		var errorModel *wrappers.ErrorModel
 
 		params, err := getFilters(cmd)
+		supportEmptyTags(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
@@ -414,6 +415,22 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		}
 		return nil
 	}
+}
+
+func supportEmptyTags(params map[string]string) {
+	if tagsAreEmpty(params) {
+		replaceParamsByEmptyTagsParam(params)
+	}
+}
+
+func tagsAreEmpty(params map[string]string) bool {
+	return params[commonParams.TagsKeyQueryParam] == "" && params[commonParams.TagsValueQueryParam] == ""
+}
+
+func replaceParamsByEmptyTagsParam(params map[string]string) {
+	delete(params, commonParams.TagsKeyQueryParam)
+	delete(params, commonParams.TagsValueQueryParam)
+	params[commonParams.TagsEmptyQueryParam] = "true"
 }
 
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
