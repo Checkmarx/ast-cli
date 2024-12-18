@@ -193,20 +193,16 @@ func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaP
 		}
 
 		resp, err = SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
-		if err == nil {
+		if err == nil && resp.StatusCode == http.StatusOK {
 			break
 		}
 		_ = resp.Body.Close()
 		time.Sleep(retryInterval)
 	}
 
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("unexpected response status code: %d", resp.StatusCode)
-	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
