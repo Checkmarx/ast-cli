@@ -419,17 +419,25 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 
 func supportEmptyTags(params map[string]string) {
 	if tagsAreEmpty(params) {
-		replaceParamsByEmptyTagsParam(params)
+		addEmptyTagsParam(params)
 	}
 }
 
 func tagsAreEmpty(params map[string]string) bool {
-	return params[commonParams.TagsKeyQueryParam] == "" && params[commonParams.TagsValueQueryParam] == ""
+	return hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasEmptyOption(params[commonParams.TagsValueQueryParam])
 }
 
-func replaceParamsByEmptyTagsParam(params map[string]string) {
-	delete(params, commonParams.TagsKeyQueryParam)
-	delete(params, commonParams.TagsValueQueryParam)
+func hasEmptyOption(AttributeList string) bool {
+	values := strings.Split(AttributeList, ",")
+	for _, value := range values {
+		if value == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func addEmptyTagsParam(params map[string]string) {
 	params[commonParams.TagsEmptyQueryParam] = "true"
 }
 
