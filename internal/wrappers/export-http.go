@@ -118,7 +118,7 @@ func (e *ExportHTTPWrapper) GetExportReportStatus(reportID string) (*ExportPolli
 
 		resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
 		if err != nil {
-			time.Sleep(time.Second)
+			time.Sleep(retryInterval)
 			continue
 		}
 
