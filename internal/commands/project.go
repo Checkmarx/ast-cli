@@ -427,8 +427,8 @@ func tagsAreEmpty(params map[string]string) bool {
 	return hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasEmptyOption(params[commonParams.TagsValueQueryParam])
 }
 
-func hasEmptyOption(AttributeList string) bool {
-	values := strings.Split(AttributeList, ",")
+func hasEmptyOption(attributeList string) bool {
+	values := strings.Split(attributeList, ",")
 	for _, value := range values {
 		if value == "" {
 			return true
