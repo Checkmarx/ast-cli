@@ -196,6 +196,7 @@ func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaP
 		if err == nil {
 			break
 		}
+		_ = resp.Body.Close()
 		time.Sleep(retryInterval)
 	}
 
