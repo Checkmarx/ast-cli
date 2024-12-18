@@ -418,7 +418,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 			`,
 			),
 		},
-		RunE: asca.RunScanASCACommand(jwtWrapper, featureFlagsWrapper),
+		RunE: asca.RunScanASCACommand(jwtWrapper),
 	}
 
 	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,

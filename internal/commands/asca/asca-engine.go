@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ASCALatestVersion, _ := cmd.Flags().GetBool(commonParams.ASCALatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -23,9 +23,8 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 			IsDefaultAgent:    agent == commonParams.DefaultAgent,
 		}
 		wrapperParams := services.AscaWrappersParam{
-			JwtWrapper:          jwtWrapper,
-			FeatureFlagsWrapper: featureFlagsWrapper,
-			ASCAWrapper:         ASCAWrapper,
+			JwtWrapper:  jwtWrapper,
+			ASCAWrapper: ASCAWrapper,
 		}
 		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 		if err != nil {

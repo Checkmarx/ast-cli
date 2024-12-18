@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
@@ -18,9 +17,8 @@ func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
 		IsDefaultAgent:    true,
 	}
 	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{},
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
 	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
@@ -39,9 +37,8 @@ func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testi
 		IsDefaultAgent:    true,
 	}
 	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{},
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         mock.NewASCAMockWrapper(1234),
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
 	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
@@ -61,9 +58,8 @@ func TestCreateASCAScanRequest_SpecialAgentAndNoLicense_Fail(t *testing.T) {
 		IsDefaultAgent:    false,
 	}
 	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         &mock.ASCAMockWrapper{Port: specialErrorPort},
+		JwtWrapper:  &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
+		ASCAWrapper: &mock.ASCAMockWrapper{Port: specialErrorPort},
 	}
 	_, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	assert.ErrorContains(t, err, errorconstants.NoASCALicense)
@@ -82,9 +78,8 @@ func TestCreateASCAScanRequest_EngineRunningAndSpecialAgentAndNoLicense_Fail(t *
 	}
 
 	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{},
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: grpcs.NewASCAGrpcWrapper(port),
 	}
 	err = manageASCAInstallation(ASCAParams, wrapperParams)
 	assert.Nil(t, err)
@@ -113,9 +108,8 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 	}
 
 	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          &mock.JWTMockWrapper{},
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: grpcs.NewASCAGrpcWrapper(port),
 	}
 	err = manageASCAInstallation(ASCAParams, wrapperParams)
 	assert.Nil(t, err)
@@ -130,21 +124,4 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 	assert.Nil(t, err)
 	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
 	_ = wrapperParams.ASCAWrapper.ShutDown()
-}
-
-func TestCreateASCAScanRequest_whenCheckLicenseWithPackageEnforcementFFOff_shouldSuccess(t *testing.T) {
-	port, err := getAvailablePort()
-	if err != nil {
-		t.Fatalf("Failed to get available port: %v", err)
-	}
-
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.PackageEnforcementEnabled, Status: false}
-
-	wrapperParams := AscaWrappersParam{
-		JwtWrapper:          wrappers.NewJwtWrapper(),
-		FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-		ASCAWrapper:         grpcs.NewASCAGrpcWrapper(port),
-	}
-	err = checkLicense(false, wrapperParams)
-	assert.Nil(t, err)
 }
