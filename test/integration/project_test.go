@@ -52,6 +52,18 @@ func TestProjectsE2E(t *testing.T) {
 	assert.Equal(t, len(response), 0, "Total projects should be 0 as the project was deleted")
 }
 
+func TestGetProjectByTagsFilter_whenProjectHasNoTags_shouldReturnProjectWithNoTags(t *testing.T) {
+	projectID, _ := createProject(t, nil, nil)
+
+	projects := listProjectByTagsAndLimit(t, "", "", "5")
+	fmt.Println("Projects length: ", len(projects))
+	for _, project := range projects {
+		assert.Equal(t, len(project.Tags), 0, "Project should have no tags")
+	}
+
+	deleteProject(t, projectID)
+}
+
 // Assert project contains created tags and groups
 func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, groups []string) {
 
@@ -217,6 +229,24 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 	fmt.Println("Listing project for id projects length: ", len(projects))
+
+	return projects
+}
+
+func listProjectByTagsAndLimit(t *testing.T, tagsKeys string, tagsValues string, limit string) []wrappers.ProjectResponseModel {
+	tagsFilter := fmt.Sprintf("%s=%s,%s=%s", params.TagsKeyQueryParam, tagsKeys, params.TagsValueQueryParam, tagsValues)
+	limitFilter := fmt.Sprintf("%s=%s", params.LimitQueryParam, limit)
+	fmt.Println("Listing project for filters: ", tagsFilter, ",", limitFilter)
+	filters := tagsFilter + "," + limitFilter
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting the project should pass",
+		"project", "list",
+		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), filters,
+	)
+	var projects []wrappers.ProjectResponseModel
+	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
+	fmt.Println("Listing project for tags projects length: ", len(projects))
 
 	return projects
 }

@@ -424,7 +424,14 @@ func supportEmptyTags(params map[string]string) {
 }
 
 func tagsAreEmpty(params map[string]string) bool {
-	return hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasEmptyOption(params[commonParams.TagsValueQueryParam])
+	hasTagsKeys := hasAttributeInFilter(params, commonParams.TagsKeyQueryParam)
+	hasTagsValues := hasAttributeInFilter(params, commonParams.TagsValueQueryParam)
+	return hasTagsKeys && hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasTagsValues && hasEmptyOption(params[commonParams.TagsValueQueryParam])
+}
+
+func hasAttributeInFilter(params map[string]string, attribute string) bool {
+	_, exists := params[attribute]
+	return exists
 }
 
 func hasEmptyOption(attributeList string) bool {

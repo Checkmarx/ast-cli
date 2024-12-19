@@ -197,3 +197,69 @@ func TestGetProjectByName(t *testing.T) {
 	assert.Equal(t, result.Name, projectName)
 	assert.Equal(t, result.ID, "3")
 }
+
+func TestSupportEmptyTags_whenTagsFlagsNotExists_shouldNotChangeParams(t *testing.T) {
+	params := map[string]string{
+		"limit": "10",
+		"ids":   "1,2,3",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, len(params), 2)
+}
+
+func TestSupportEmptyTags_whenTagsFlagsOnlyEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   "",
+		"tags-values": "",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, params["tags-keys"], "")
+	assert.Equal(t, params["tags-values"], "")
+	assert.Equal(t, params["empty-tags"], "true")
+	assert.Equal(t, len(params), 5)
+}
+
+func TestSupportEmptyTags_whenTagsFlagsHasAlsoEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   "key1,key2,",
+		"tags-values": ",value1",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, params["tags-keys"], "key1,key2,")
+	assert.Equal(t, params["tags-values"], ",value1")
+	assert.Equal(t, params["empty-tags"], "true")
+	assert.Equal(t, len(params), 5)
+}
+
+func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   "key1,key2,",
+		"tags-values": "value1",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, params["tags-keys"], "key1,key2,")
+	assert.Equal(t, params["tags-values"], "value1")
+	assert.Equal(t, len(params), 4)
+}
