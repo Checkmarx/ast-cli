@@ -1825,7 +1825,7 @@ func TestCreateScan_WithGitlabHost_SuccessAndOnlySecretDetectionScanned(t *testi
 	}
 	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if the host is gitlab", 4*time.Minute, args...)
 	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run")
-	assert.Assert(t, strings.Contains(output.String(), commands.ScsScorecardUnsupportedHostWarningMsg), "Scs scan should run")
+	assert.Assert(t, strings.Contains(output.String(), commands.ScsScorecardUnsupportedHostWarningMsg), "Should give a warning msg")
 }
 
 func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
