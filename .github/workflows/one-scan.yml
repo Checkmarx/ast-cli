@@ -16,7 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Log in to JFrog Container Registry
-        run:  docker login checkmarx.jfrog.io -u elchanan.arbiv@checkmarx.com -p ${{ secrets.JFROG_TOKEN }}
+        run:  echo ${{ secrets.JFROG_TOKEN }} | docker login checkmarx.jfrog.io -u elchanan.arbiv@checkmarx.com --password-stdin
+
+
+      - name: Run docker Pull checkmarx.jfrog.io/ast-docker/chainguard/go-fips
+        run:  docker pull checkmarx.jfrog.io/ast-docker/chainguard/go-fips:1.22.9-r0@sha256:632691ef054759e5702ba90777046498573340b65e1c9ccac0285b0ccb71775e
+
       - name: Checkmarx One CLI Action
         uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
         with:
