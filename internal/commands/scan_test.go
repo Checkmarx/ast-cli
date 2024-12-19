@@ -6,6 +6,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"reflect"
@@ -1037,6 +1038,12 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 }
 
 func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
 	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
@@ -1052,6 +1059,21 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
 
 	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -1069,6 +1091,12 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 }
 
 func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
 	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
@@ -1084,6 +1112,21 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
 
 	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
@@ -1101,6 +1144,12 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 }
 
 func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
 	var resubmitConfig []wrappers.Config
 	cmdCommand := &cobra.Command{
 		Use:   "scan",
@@ -1116,6 +1165,21 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecret
 	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
 
 	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms:     "true",
