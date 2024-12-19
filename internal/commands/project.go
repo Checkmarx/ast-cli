@@ -394,6 +394,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		var errorModel *wrappers.ErrorModel
 
 		params, err := getFilters(cmd)
+		supportEmptyTags(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
@@ -414,6 +415,37 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		}
 		return nil
 	}
+}
+
+func supportEmptyTags(params map[string]string) {
+	if tagsAreEmpty(params) {
+		addEmptyTagsParam(params)
+	}
+}
+
+func tagsAreEmpty(params map[string]string) bool {
+	hasTagsKeys := hasAttributeInFilter(params, commonParams.TagsKeyQueryParam)
+	hasTagsValues := hasAttributeInFilter(params, commonParams.TagsValueQueryParam)
+	return hasTagsKeys && hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasTagsValues && hasEmptyOption(params[commonParams.TagsValueQueryParam])
+}
+
+func hasAttributeInFilter(params map[string]string, attribute string) bool {
+	_, exists := params[attribute]
+	return exists
+}
+
+func hasEmptyOption(attributeList string) bool {
+	values := strings.Split(attributeList, ",")
+	for _, value := range values {
+		if value == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func addEmptyTagsParam(params map[string]string) {
+	params[commonParams.TagsEmptyQueryParam] = "true"
 }
 
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
