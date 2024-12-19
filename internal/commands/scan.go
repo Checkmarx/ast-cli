@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -106,6 +107,7 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to unsupported host. Currently, scorecard only supports https GitHub"
 )
 
 var (
@@ -975,6 +977,11 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
+		githubUrlPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`) // only for https
+		IsGithubUrl := githubUrlPattern.MatchString(scsRepoURL)
+		if !IsGithubUrl {
+			fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
+		}
 
 		scsSecretDetectionSelected := false
 		scsScoreCardSelected := false
@@ -1000,9 +1007,11 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		}
 		if scsScoreCardSelected {
 			if scsRepoToken != "" && scsRepoURL != "" {
-				scsConfig.Scorecard = trueString
-				scsConfig.RepoToken = scsRepoToken
-				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
+				if IsGithubUrl {
+					scsConfig.Scorecard = trueString
+					scsConfig.RepoToken = scsRepoToken
+					scsConfig.RepoURL = strings.ToLower(scsRepoURL)
+				}
 			} else {
 				if userScanTypes == "" {
 					fmt.Println(ScsRepoWarningMsg)
