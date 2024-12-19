@@ -1,6 +1,6 @@
 # Example: docker build . -t dsvw && docker run -p 65412:65412 dsvw
 
-FROM alpine:3.15.4
+FROM checkmarx.jfrog.io/ast-docker/chainguard/go-fips:latest
 
 RUN apk --no-cache add git python3 py-lxml \
     && rm -rf /var/cache/apk/*
