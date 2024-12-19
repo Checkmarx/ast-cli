@@ -977,9 +977,9 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 			SCSMapConfig[resultsMapValue] = &scsConfig
 			return SCSMapConfig, nil
 		}
-		githubUrlPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`) // only for https
-		IsGithubUrl := githubUrlPattern.MatchString(scsRepoURL)
-		if !IsGithubUrl {
+		githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`) // only for https
+		IsGithubURL := githubURLPattern.MatchString(scsRepoURL)
+		if !IsGithubURL {
 			fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
 		}
 
@@ -1007,7 +1007,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		}
 		if scsScoreCardSelected {
 			if scsRepoToken != "" && scsRepoURL != "" {
-				if IsGithubUrl {
+				if IsGithubURL {
 					scsConfig.Scorecard = trueString
 					scsConfig.RepoToken = scsRepoToken
 					scsConfig.RepoURL = strings.ToLower(scsRepoURL)
