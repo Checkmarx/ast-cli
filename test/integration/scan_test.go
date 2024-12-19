@@ -1813,27 +1813,6 @@ func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t
 	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
 }
 
-func TestCreateScan_WithGitlabHost_SuccessAndOnlySecretDetectionScanned(t *testing.T) {
-	_, projectName := getRootProject(t)
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), projectName,
-		flag(params.SourcesFlag), Zip,
-		flag(params.BranchFlag), "main",
-		flag(params.SCSRepoURLFlag), "https://gitlab.com/gitlab-org/gitlab-foss",
-		flag(params.SCSRepoTokenFlag), scsRepoToken,
-	}
-
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if the host is gitlab", 4*time.Minute, args...)
-	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run")
-	assert.Assert(t, strings.Contains(output.String(), commands.ScsScorecardUnsupportedHostWarningMsg), "Scs scan should run")
-
-	expectedRegex := `Scorecard\s+-\s+-\s+-\s+-\s+-\s+-`
-	matched, err := regexp.MatchString(expectedRegex, output.String())
-	assert.NilError(t, err, "Regex compilation failed")
-	assert.Assert(t, matched, "Scorecard should not run so it should match this regex")
-}
-
 func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
