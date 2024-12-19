@@ -32,9 +32,8 @@ type AscaScanParams struct {
 }
 
 type AscaWrappersParam struct {
-	JwtWrapper          wrappers.JWTWrapper
-	FeatureFlagsWrapper wrappers.FeatureFlagsWrapper
-	ASCAWrapper         grpcs.AscaWrapper
+	JwtWrapper  wrappers.JWTWrapper
+	ASCAWrapper grpcs.AscaWrapper
 }
 
 func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappersParam) (*grpcs.ScanResult, error) {
@@ -165,7 +164,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType, wrapperParams.FeatureFlagsWrapper)
+		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
 		if err != nil {
 			return err
 		}
