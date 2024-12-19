@@ -53,8 +53,9 @@ func NewExportHTTPWrapper(path string) ExportWrapper {
 }
 
 const (
-	retryInterval = 5 * time.Second
-	timeout       = 2 * time.Minute
+	retryInterval   = 5 * time.Second
+	timeout         = 2 * time.Minute
+	errorTimeoutMsg = "operation timed out: failed to retrieve export report"
 )
 
 func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload) (*ExportResponse, error) {
@@ -84,12 +85,12 @@ func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to parse response body")
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return &model, nil
 		case http.StatusBadRequest:
 			if time.Now().After(endTime) {
 				log.Printf("Timeout reached after %d attempts. Last response status code: %d", retryCount+1, resp.StatusCode)
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				return nil, errors.Errorf("failed to initiate export request - response status code %d", resp.StatusCode)
 			}
 			retryCount++
@@ -97,7 +98,7 @@ func (e *ExportHTTPWrapper) InitiateExportRequest(payload *ExportRequestPayload)
 			time.Sleep(retryInterval)
 		default:
 			logger.PrintfIfVerbose("Received unexpected status code %d", resp.StatusCode)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, errors.Errorf("response status code %d", resp.StatusCode)
 		}
 	}
@@ -107,27 +108,37 @@ func (e *ExportHTTPWrapper) GetExportReportStatus(reportID string) (*ExportPolli
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", e.path, "requests")
 	params := map[string]string{"returnUrl": "true", "exportId": reportID}
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
-	if err != nil {
-		return nil, err
-	}
 
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	start := time.Now()
 
-	decoder := json.NewDecoder(resp.Body)
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-		model := ExportPollingResponse{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse response body")
+	for {
+		if time.Since(start) > timeout {
+			return nil, errors.New(errorTimeoutMsg)
 		}
-		return &model, nil
-	default:
-		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+
+		resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
+		if err != nil {
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		decoder := json.NewDecoder(resp.Body)
+
+		switch resp.StatusCode {
+		case http.StatusOK:
+			model := ExportPollingResponse{}
+			if err = decoder.Decode(&model); err != nil {
+				_ = resp.Body.Close()
+				return nil, errors.Wrapf(err, "failed to parse response body")
+			}
+			return &model, nil
+		case http.StatusNotFound:
+			_ = resp.Body.Close()
+			time.Sleep(time.Second)
+		default:
+			_ = resp.Body.Close()
+			return nil, errors.Errorf("response status code %d", resp.StatusCode)
+		}
 	}
 }
 
@@ -151,7 +162,11 @@ func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) er
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create file %s", targetFile)
 	}
-	defer file.Close()
+
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
 	size, err := io.Copy(file, resp.Body)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to write file %s", targetFile)
@@ -162,30 +177,44 @@ func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) er
 }
 
 func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
+	const bomPrefix = "\xef\xbb\xbf"
+
 	accessToken, err := GetAccessToken()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get access token")
 	}
 
-	resp, err := SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
-	if err != nil {
-		return nil, err
+	start := time.Now()
+	var resp *http.Response
+
+	for {
+		if time.Since(start) > timeout {
+			return nil, errors.New(errorTimeoutMsg)
+		}
+
+		resp, err = SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+		_ = resp.Body.Close()
+		time.Sleep(retryInterval)
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read response body")
 	}
+	body = bytes.TrimPrefix(body, []byte(bomPrefix))
 
-	// Remove BOM if present
-	body = bytes.TrimPrefix(body, []byte("\xef\xbb\xbf"))
-
-	var scaPackageCollection ScaPackageCollectionExport
-	if err := json.Unmarshal(body, &scaPackageCollection); err != nil {
-		return nil, err
+	scaPackageCollection := &ScaPackageCollectionExport{}
+	if err = json.Unmarshal(body, scaPackageCollection); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal response body")
 	}
 
 	logger.PrintIfVerbose("Retrieved SCA package collection export successfully")
-	return &scaPackageCollection, nil
+	return scaPackageCollection, nil
 }

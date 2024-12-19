@@ -72,9 +72,8 @@ func Test_ExecuteAscaScan(t *testing.T) {
 				IsDefaultAgent:    true,
 			}
 			wrapperParams := services.AscaWrappersParam{
-				JwtWrapper:          &mock.JWTMockWrapper{},
-				FeatureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-				ASCAWrapper:         &mock.ASCAMockWrapper{},
+				JwtWrapper:  &mock.JWTMockWrapper{},
+				ASCAWrapper: &mock.ASCAMockWrapper{},
 			}
 			got, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
@@ -129,7 +128,7 @@ func Test_runScanASCACommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)
