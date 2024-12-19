@@ -107,7 +107,7 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
-	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to unsupported host. Currently, scorecard only supports https GitHub"
+	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to unsupported host. Currently, scorecard only supports https github"
 )
 
 var (
