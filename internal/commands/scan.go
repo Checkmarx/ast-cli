@@ -979,7 +979,7 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 		}
 		githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`) // only for https
 		IsGithubURL := githubURLPattern.MatchString(scsRepoURL)
-		if !IsGithubURL {
+		if scsRepoURL != "" && !IsGithubURL {
 			fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
 		}
 
