@@ -28,6 +28,7 @@ const (
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
 	KicsResultsPredicatesPathEnv        = "CX_KICS_RESULTS_PREDICATES_PATH"
+	ScsResultsPredicatesPathEnv         = "CX_SCS_RESULTS_PREDICATES_PATH"
 	BflPathEnv                          = "CX_BFL_PATH"
 	PRDecorationGithubPathEnv           = "CX_PR_DECORATION_GITHUB_PATH"
 	PRDecorationGitlabPathEnv           = "CX_PR_DECORATION_GITLAB_PATH"

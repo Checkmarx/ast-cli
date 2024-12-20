@@ -26,6 +26,7 @@ var EnvVarsBinds = []struct {
 	{SastResultsPredicatesPathKey, SastResultsPredicatesPathEnv, "api/sast-results-predicates"},
 	{KicsResultsPathKey, KicsResultsPathEnv, "api/kics-results"},
 	{KicsResultsPredicatesPathKey, KicsResultsPredicatesPathEnv, "api/kics-results-predicates"},
+	{ScsResultsPredicatesPathKey, ScsResultsPredicatesPathEnv, "api/micro-engines/predicates"},
 	{BflPathKey, BflPathEnv, "api/bfl"},
 	{PRDecorationGithubPathKey, PRDecorationGithubPathEnv, "api/flow-publisher/pr/github"},
 	{PRDecorationGitlabPathKey, PRDecorationGitlabPathEnv, "api/flow-publisher/pr/gitlab"},
