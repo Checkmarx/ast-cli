@@ -36,6 +36,8 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.ScsType) {
+		triageAPIPath = viper.GetString(params.ScsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.ScaType) {
 		return &PredicatesCollectionResponseModel{}, nil, nil
 	} else {
@@ -78,6 +80,8 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scanType), params.KicsType) || strings.EqualFold(strings.TrimSpace(scanType), params.IacType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScsType) {
+		triageAPIPath = viper.GetString(params.ScsResultsPredicatesPathKey)
 	} else {
 		return nil, errors.Errorf(invalidScanType, scanType)
 	}
