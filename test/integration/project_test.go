@@ -54,14 +54,13 @@ func TestProjectsE2E(t *testing.T) {
 
 func TestGetProjectByTagsFilter_whenProjectHasNoneTags_shouldReturnProjectWithNoTags(t *testing.T) {
 	projectID, _ := createProject(t, nil, nil)
+	defer deleteProject(t, projectID)
 
 	projects := listProjectByTagsAndLimit(t, "NONE", "NONE", "5")
 	fmt.Println("Projects length: ", len(projects))
 	for _, project := range projects {
 		assert.Equal(t, len(project.Tags), 0, "Project should have no tags")
 	}
-
-	deleteProject(t, projectID)
 }
 
 // Assert project contains created tags and groups

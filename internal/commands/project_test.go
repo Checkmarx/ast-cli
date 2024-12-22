@@ -208,7 +208,7 @@ func TestSupportEmptyTags_whenTagsFlagsNotExists_shouldNotChangeParams(t *testin
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, len(params), 2)
+	assert.Len(t, params, 2)
 }
 
 func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
@@ -226,10 +226,10 @@ func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParam
 	assert.Equal(t, params["tags-keys"], emptyTag)
 	assert.Equal(t, params["tags-values"], emptyTag)
 	assert.Equal(t, params["empty-tags"], "true")
-	assert.Equal(t, len(params), 5)
+	assert.Len(t, params, 5)
 }
 
-func TestSupportEmptyTags_whenTagsFlagsHasAlsoEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
@@ -244,7 +244,7 @@ func TestSupportEmptyTags_whenTagsFlagsHasAlsoEmptyValues_shouldAddEmptyTagParam
 	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
 	assert.Equal(t, params["tags-values"], emptyTag+",value1")
 	assert.Equal(t, params["empty-tags"], "true")
-	assert.Equal(t, len(params), 5)
+	assert.Len(t, params, 5)
 }
 
 func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t *testing.T) {
@@ -261,5 +261,5 @@ func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t 
 	assert.Equal(t, params["ids"], "1,2,3")
 	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
 	assert.Equal(t, params["tags-values"], "value1")
-	assert.Equal(t, len(params), 4)
+	assert.Len(t, params, 4)
 }

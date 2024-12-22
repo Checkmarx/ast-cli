@@ -395,10 +395,11 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		var errorModel *wrappers.ErrorModel
 
 		params, err := getFilters(cmd)
-		supportEmptyTags(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
+
+		supportEmptyTags(params)
 
 		allProjectsModel, errorModel, err = projectsWrapper.Get(params)
 		if err != nil {
