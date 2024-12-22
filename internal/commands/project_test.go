@@ -245,8 +245,8 @@ func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagPara
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	keys, _ := params["tags-keys"]
-	values, _ := params["tags-values"]
+	keys := params["tags-keys"]
+	values := params["tags-values"]
 	assert.Equal(t, keys, "key1,key2")
 	assert.Equal(t, values, "value1")
 	assert.Equal(t, params["empty-tags"], "true")
