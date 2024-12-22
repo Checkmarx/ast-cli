@@ -3,6 +3,7 @@
 package commands
 
 import (
+	asserts "github.com/stretchr/testify/assert"
 	"testing"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -211,7 +212,7 @@ func TestSupportEmptyTags_whenTagsFlagsNotExists_shouldNotChangeParams(t *testin
 	assert.Equal(t, len(params), 2)
 }
 
-func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParamAndRemoveNoneTags(t *testing.T) {
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
@@ -223,13 +224,15 @@ func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParam
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, params["tags-keys"], emptyTag)
-	assert.Equal(t, params["tags-values"], emptyTag)
 	assert.Equal(t, params["empty-tags"], "true")
-	assert.Equal(t, len(params), 5)
+	_, existsKey := params["tags-keys"]
+	_, existsValue := params["tags-values"]
+	asserts.False(t, existsKey, "tags-keys should not exist")
+	asserts.False(t, existsValue, "tags-values should not exist")
+	assert.Equal(t, len(params), 3)
 }
 
-func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagParamAndRemoveNoneTags(t *testing.T) {
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
@@ -241,8 +244,10 @@ func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagPara
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
-	assert.Equal(t, params["tags-values"], emptyTag+",value1")
+	keys, _ := params["tags-keys"]
+	values, _ := params["tags-values"]
+	assert.Equal(t, keys, "key1,key2")
+	assert.Equal(t, values, "value1")
 	assert.Equal(t, params["empty-tags"], "true")
 	assert.Equal(t, len(params), 5)
 }

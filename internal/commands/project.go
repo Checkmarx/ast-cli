@@ -437,7 +437,27 @@ func hasNoneValueInAttribute(params map[string]string, attribute string) bool {
 }
 
 func addEmptyTagsParam(params map[string]string) {
+	removeNoneKeyAndValue(params)
 	params[commonParams.TagsEmptyQueryParam] = "true"
+}
+
+func removeNoneKeyAndValue(params map[string]string) {
+	removeNoneAttribute(params, commonParams.TagsKeyQueryParam)
+	removeNoneAttribute(params, commonParams.TagsValueQueryParam)
+}
+
+func removeNoneAttribute(params map[string]string, attribute string) {
+	values, exists := params[attribute]
+	if exists {
+		values = strings.ReplaceAll(values, ","+emptyTag, "")
+		values = strings.ReplaceAll(values, emptyTag+",", "")
+		values = strings.ReplaceAll(values, emptyTag, "")
+		if values == "" {
+			delete(params, attribute)
+		} else {
+			params[attribute] = values
+		}
+	}
 }
 
 func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {
