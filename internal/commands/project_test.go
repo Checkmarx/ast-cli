@@ -3,8 +3,9 @@
 package commands
 
 import (
-	asserts "github.com/stretchr/testify/assert"
 	"testing"
+
+	asserts "github.com/stretchr/testify/assert"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
