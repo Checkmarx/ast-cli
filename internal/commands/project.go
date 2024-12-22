@@ -29,6 +29,7 @@ const (
 	sshConfKey            = "scan.handler.git.sshKey"
 	mandatoryRepoURLError = "flag --repo-url is mandatory when --ssh-key is provided"
 	invalidRepoURL        = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
+	emptyTag              = "NONE"
 )
 
 var (
@@ -418,30 +419,20 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 }
 
 func supportEmptyTags(params map[string]string) {
-	if tagsAreEmpty(params) {
+	if hasNoneKeyAndValue(params) {
 		addEmptyTagsParam(params)
 	}
 }
 
-func tagsAreEmpty(params map[string]string) bool {
-	hasTagsKeys := hasAttributeInFilter(params, commonParams.TagsKeyQueryParam)
-	hasTagsValues := hasAttributeInFilter(params, commonParams.TagsValueQueryParam)
-	return hasTagsKeys && hasEmptyOption(params[commonParams.TagsKeyQueryParam]) && hasTagsValues && hasEmptyOption(params[commonParams.TagsValueQueryParam])
+func hasNoneKeyAndValue(params map[string]string) bool {
+	hasNoneKey := hasNoneValueInAttribute(params, commonParams.TagsKeyQueryParam)
+	hasNoneValue := hasNoneValueInAttribute(params, commonParams.TagsValueQueryParam)
+	return hasNoneKey && hasNoneValue
 }
 
-func hasAttributeInFilter(params map[string]string, attribute string) bool {
-	_, exists := params[attribute]
-	return exists
-}
-
-func hasEmptyOption(attributeList string) bool {
-	values := strings.Split(attributeList, ",")
-	for _, value := range values {
-		if value == "" {
-			return true
-		}
-	}
-	return false
+func hasNoneValueInAttribute(params map[string]string, attribute string) bool {
+	values, exists := params[attribute]
+	return exists && strings.Contains(values, emptyTag)
 }
 
 func addEmptyTagsParam(params map[string]string) {

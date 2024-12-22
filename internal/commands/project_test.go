@@ -211,20 +211,20 @@ func TestSupportEmptyTags_whenTagsFlagsNotExists_shouldNotChangeParams(t *testin
 	assert.Equal(t, len(params), 2)
 }
 
-func TestSupportEmptyTags_whenTagsFlagsOnlyEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
+func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParam(t *testing.T) {
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
-		"tags-keys":   "",
-		"tags-values": "",
+		"tags-keys":   emptyTag,
+		"tags-values": emptyTag,
 	}
 
 	supportEmptyTags(params)
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, params["tags-keys"], "")
-	assert.Equal(t, params["tags-values"], "")
+	assert.Equal(t, params["tags-keys"], emptyTag)
+	assert.Equal(t, params["tags-values"], emptyTag)
 	assert.Equal(t, params["empty-tags"], "true")
 	assert.Equal(t, len(params), 5)
 }
@@ -233,16 +233,16 @@ func TestSupportEmptyTags_whenTagsFlagsHasAlsoEmptyValues_shouldAddEmptyTagParam
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
-		"tags-keys":   "key1,key2,",
-		"tags-values": ",value1",
+		"tags-keys":   "key1,key2," + emptyTag,
+		"tags-values": emptyTag + ",value1",
 	}
 
 	supportEmptyTags(params)
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, params["tags-keys"], "key1,key2,")
-	assert.Equal(t, params["tags-values"], ",value1")
+	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
+	assert.Equal(t, params["tags-values"], emptyTag+",value1")
 	assert.Equal(t, params["empty-tags"], "true")
 	assert.Equal(t, len(params), 5)
 }
@@ -251,7 +251,7 @@ func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t 
 	params := map[string]string{
 		"limit":       "10",
 		"ids":         "1,2,3",
-		"tags-keys":   "key1,key2,",
+		"tags-keys":   "key1,key2," + emptyTag,
 		"tags-values": "value1",
 	}
 
@@ -259,7 +259,7 @@ func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t 
 
 	assert.Equal(t, params["limit"], "10")
 	assert.Equal(t, params["ids"], "1,2,3")
-	assert.Equal(t, params["tags-keys"], "key1,key2,")
+	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
 	assert.Equal(t, params["tags-values"], "value1")
 	assert.Equal(t, len(params), 4)
 }
