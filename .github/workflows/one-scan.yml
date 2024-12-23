@@ -26,9 +26,7 @@ jobs:
         uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
-          permissions:
-            contents: read
-            pull-requests: write
+          permissions: true
         with:
           base_uri: ${{ secrets.AST_RND_SCANS_BASE_URI }}
           cx_tenant: ${{ secrets.AST_RND_SCANS_TENANT }}
