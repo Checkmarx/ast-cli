@@ -45,12 +45,12 @@ func (g BitBucketMockWrapper) GetRepositories(bitBucketURL, workspaceUUID, bitBu
 
 type SimulatedWrapper struct {
 }
-type RepositoryView struct {
+type RepositoryViewBitBucket struct {
 	Name               string `json:"name"`
 	UniqueContributors uint64 `json:"unique_contributors"`
 }
 
-type UserView struct {
+type UserViewBitBucket struct {
 	Name                       string `json:"name"`
 	UniqueContributorsUsername string `json:"unique_contributors_username"`
 }
@@ -81,9 +81,9 @@ func (g SimulatedWrapper) SearchRepos(
 	project string,
 	repos []string,
 	bitBucketToken string,
-) ([]RepositoryView, []UserView, error) {
-	var views []RepositoryView
-	var viewsUsers []UserView
+) ([]RepositoryViewBitBucket, []UserViewBitBucket, error) {
+	var views []RepositoryViewBitBucket
+	var viewsUsers []UserViewBitBucket
 
 	for _, repo := range repos {
 		_, err := g.GetCommits("mock-url", project, repo, bitBucketToken)
@@ -99,7 +99,7 @@ func (g SimulatedWrapper) SearchRepos(
 		}
 		views = append(
 			views,
-			RepositoryView{
+			RepositoryViewBitBucket{
 				Name:               fmt.Sprintf("%s/%s", project, repo),
 				UniqueContributors: uint64(len(uniqueContributors)),
 			},
@@ -107,7 +107,7 @@ func (g SimulatedWrapper) SearchRepos(
 		for email, name := range uniqueContributors {
 			viewsUsers = append(
 				viewsUsers,
-				UserView{
+				UserViewBitBucket{
 					Name:                       fmt.Sprintf("%s/%s", project, repo),
 					UniqueContributorsUsername: fmt.Sprintf("%s - %s", name, email),
 				},
