@@ -45,21 +45,21 @@ var (
 	ninetyDaysPast = time.Now().AddDate(0, -3, 0)
 )
 
-func NewBitbucketServerWrapper() Wrapper {
+func NewBitbucketServerWrapper() BitbucketServerWrapper {
 	return &HTTPWrapper{
 		client: wrappers.GetClient(viper.GetUint(params.ClientTimeoutKey)),
 	}
 }
 
 func (b HTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) (
-	[]Commit,
+	[]BitbucketServerCommit,
 	error,
 ) {
 	url := bitBucketURL + fmt.Sprintf(bitBucketServerCommitsURL, projectKey, repoSlug)
 
-	var acc []Commit
+	var acc []BitbucketServerCommit
 
-	pageHolder := CommitList{}
+	pageHolder := BitbucketServerCommitList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {
@@ -87,14 +87,14 @@ func (b HTTPWrapper) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPas
 }
 
 func (b HTTPWrapper) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) (
-	[]Repo,
+	[]BitbucketServerRepo,
 	error,
 ) {
 	url := bitBucketURL + fmt.Sprintf(bitBucketServerReposURL, projectKey)
 
-	var acc []Repo
+	var acc []BitbucketServerRepo
 
-	pageHolder := RepoList{}
+	pageHolder := BitbucketServerRepoList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {
@@ -116,9 +116,9 @@ func (b HTTPWrapper) GetProjects(bitBucketURL, bitBucketPassword string) (
 ) {
 	url := bitBucketURL + bitBucketServerProjectsURL
 
-	var acc []Project
+	var acc []BitbucketServerProject
 
-	pageHolder := ProjectList{}
+	pageHolder := BitbucketServerProjectList{}
 	pageHolder.IsLastPage = false
 	pageHolder.NextPageStart = 0
 	for !pageHolder.IsLastPage {

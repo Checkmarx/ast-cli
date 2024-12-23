@@ -30,7 +30,7 @@ func NewUtilsCommand(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	bitBucketServerWrapper bitbucketserver.Wrapper,
+	bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,

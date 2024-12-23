@@ -1,61 +1,61 @@
 package bitbucketserver
 
-type CommitList struct {
-	Commits       []Commit `json:"values,omitempty"`
-	IsLastPage    bool     `json:"isLastPage"`
-	Start         int      `json:"start"`
-	NextPageStart int      `json:"nextPageStart"`
-	Limit         int      `json:"limit"`
-	Size          int      `json:"size"`
+type BitbucketServerCommitList struct {
+	Commits       []BitbucketServerCommit `json:"values,omitempty"`
+	IsLastPage    bool                    `json:"isLastPage"`
+	Start         int                     `json:"start"`
+	NextPageStart int                     `json:"nextPageStart"`
+	Limit         int                     `json:"limit"`
+	Size          int                     `json:"size"`
 }
 
-type Commit struct {
-	Author          Author `json:"author,omitempty"`
-	AuthorTimestamp int64  `json:"authorTimestamp"`
+type BitbucketServerCommit struct {
+	Author          BitbucketServerAuthor `json:"author,omitempty"`
+	AuthorTimestamp int64                 `json:"authorTimestamp"`
 }
 
-type Author struct {
+type BitbucketServerAuthor struct {
 	Name  string `json:"name"`
 	Email string `json:"emailAddress"`
 }
 
-type Repo struct {
+type BitbucketServerRepo struct {
 	ID   int    `json:"id"`
 	Slug string `json:"slug"`
 	Name string `json:"name"`
 }
 
-type RepoList struct {
-	Repos         []Repo `json:"values"`
-	IsLastPage    bool   `json:"isLastPage"`
-	Start         int    `json:"start"`
-	NextPageStart int    `json:"nextPageStart"`
-	Limit         int    `json:"limit"`
-	Size          int    `json:"size"`
+type BitbucketServerRepoList struct {
+	Repos         []BitbucketServerRepo `json:"values"`
+	IsLastPage    bool                  `json:"isLastPage"`
+	Start         int                   `json:"start"`
+	NextPageStart int                   `json:"nextPageStart"`
+	Limit         int                   `json:"limit"`
+	Size          int                   `json:"size"`
 }
 
-type Project struct {
+type BitbucketServerProject struct {
 	Key  string `json:"key"`
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-type ProjectList struct {
-	Projects      []Project `json:"values"`
-	IsLastPage    bool      `json:"isLastPage"`
-	Start         int       `json:"start"`
-	NextPageStart int       `json:"nextPageStart"`
-	Limit         int       `json:"limit"`
-	Size          int       `json:"size"`
+type BitbucketServerProjectList struct {
+	Projects      []BitbucketServerProject `json:"values"`
+	IsLastPage    bool                     `json:"isLastPage"`
+	Start         int                      `json:"start"`
+	NextPageStart int                      `json:"nextPageStart"`
+	Limit         int                      `json:"limit"`
+	Size          int                      `json:"size"`
 }
 
-type Wrapper interface {
+type BitbucketServerWrapper interface {
 	GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) (
-		[]Commit,
+		[]BitbucketServerCommit,
 		error,
 	)
 	GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) (
-		[]Repo,
+		[]BitbucketServerRepo,
 		error,
 	)
 	GetProjects(bitBucketURL, bitBucketPassword string) (
