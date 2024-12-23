@@ -12,14 +12,26 @@ jobs:
   cx-scan:
     name: Checkmarx One Scan
     runs-on: ubuntu-latest
+    container:
+      image: node:18
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Log in to JFrog Container Registry
+        run:  echo ${{ secrets.JFROG_TOKEN }} | docker login checkmarx.jfrog.io -u elchanan.arbiv@checkmarx.com --password-stdin
+
+
+      - name: Run docker Pull checkmarx.jfrog.io/ast-docker/chainguard/go-fips
+        run:  docker pull checkmarx.jfrog.io/ast-docker/chainguard/go-fips:1.22.9-r0@sha256:632691ef054759e5702ba90777046498573340b65e1c9ccac0285b0ccb71775e
+
       - name: Checkmarx One CLI Action
         uses: checkmarx/ast-github-action@f0869bd1a37fddc06499a096101e6c900e815d81 # v.2.0.36
+
         with:
           base_uri: ${{ secrets.AST_RND_SCANS_BASE_URI }}
           cx_tenant: ${{ secrets.AST_RND_SCANS_TENANT }}
           cx_client_id: ${{ secrets.AST_RND_SCANS_CLIENT_ID }}
           cx_client_secret: ${{ secrets.AST_RND_SCANS_CLIENT_SECRET }}
-          additional_params: --tags phoenix --threshold "sca-critical=1;sca-high=1;sca-medium=1;sca-low=1;sast-critical=1;sast-high=1;sast-medium=1;sast-low=1;iac-security-critical=1;iac-security-high=1;iac-security-medium=1;iac-security-low=1"
+          additional_params: --debug --tags phoenix --threshold "sca-critical=1;sca-high=1;sca-medium=1;sca-low=1;sast-critical=1;sast-high=1;sast-medium=1;sast-low=1;iac-security-critical=1;iac-security-high=1;iac-security-medium=1;iac-security-low=1"
