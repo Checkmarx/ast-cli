@@ -1,6 +1,7 @@
 # Example: docker build . -t dsvw && docker run -p 65412:65412 dsvw
 
-FROM checkmarx.jfrog.io/ast-docker/cnas-mfe:0355519
+FROM checkmarx.jfrog.io/ast-docker/containers-triage:0.1.0
+
 
 RUN apk --no-cache add git python3 py-lxml \
     && rm -rf /var/cache/apk/*
