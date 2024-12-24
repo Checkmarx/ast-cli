@@ -80,7 +80,7 @@ const (
 	containerTempDirPattern         = "kics"
 	kicsContainerPrefixName         = "cli-kics-realtime-"
 	cleanupMaxRetries               = 3
-	cleanupRetryWaitSeconds         = 15
+	cleanupRetryWaitSeconds         = 30
 	DanglingSymlinkError            = "Skipping dangling symbolic link"
 	configFilterKey                 = "filter"
 	configFilterPlatforms           = "platforms"
