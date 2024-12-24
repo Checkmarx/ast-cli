@@ -8,9 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
 )
-
 func TestSearchReposWithCorruptedRepositories(t *testing.T) {
-
 	mockWrapper := mock.WrapperBitbucketServer{
 		CorruptedRepos: []string{"repo-2"},
 	}

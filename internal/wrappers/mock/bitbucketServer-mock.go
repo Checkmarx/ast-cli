@@ -53,9 +53,7 @@ func (m WrapperBitbucketServer) SearchRepos(
 ) ([]RepositoryView, []UserView, error) {
 	var views []RepositoryView
 	var viewsUsers []UserView
-
 	for _, repo := range repos {
-
 		_, err := m.GetCommits("mock-url", project, repo, bitBucketToken)
 		if err != nil {
 			log.Printf("Skipping repository %s/%s: Repository is corrupted (error: %v)", project, repo, err)
