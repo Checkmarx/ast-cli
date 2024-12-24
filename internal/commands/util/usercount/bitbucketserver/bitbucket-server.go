@@ -203,7 +203,8 @@ func searchRepos(
 			*bitbucketServerToken,
 		)
 		if err != nil {
-			return nil, nil, nil, err
+			log.Printf("Skipping repository %s/%s: Repository is corrupted (error: %v)", project, repo, err)
+			continue
 		}
 		totalCommits = append(totalCommits, commits...)
 
