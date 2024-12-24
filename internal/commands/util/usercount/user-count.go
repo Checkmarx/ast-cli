@@ -39,7 +39,7 @@ func NewUserCountCommand(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	bitBucketServerWrapper bitbucketServerWrapper.BitbucketServerWrapper,
+	bitBucketServerWrapper bitbucketServerWrapper.Wrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 ) *cobra.Command {
 	userCountCmd := &cobra.Command{

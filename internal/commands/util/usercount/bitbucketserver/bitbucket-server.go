@@ -50,7 +50,7 @@ var (
 	format                  string
 )
 
-func NewUserCountBitBucketServerCommand(bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper) *cobra.Command {
+func NewUserCountBitBucketServerCommand(bitBucketServerWrapper bitbucketserver.Wrapper) *cobra.Command {
 	userCountCmd := &cobra.Command{
 		Use:     bitBucketServerCommandName,
 		Short:   bitBucketServerCommandShort,
@@ -100,7 +100,7 @@ func preRunBitBucketServerUserCount(*cobra.Command, []string) error {
 	return nil
 }
 
-func createRunBitBucketServerUserCountFunc(bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper) func(
+func createRunBitBucketServerUserCountFunc(bitBucketServerWrapper bitbucketserver.Wrapper) func(
 	cmd *cobra.Command,
 	args []string,
 ) error {
@@ -126,7 +126,7 @@ func createRunBitBucketServerUserCountFunc(bitBucketServerWrapper bitbucketserve
 	}
 }
 
-func searchBitBucketServer(bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper) (
+func searchBitBucketServer(bitBucketServerWrapper bitbucketserver.Wrapper) (
 	[]repositoryView,
 	[]userView,
 	error,
@@ -152,11 +152,11 @@ func searchBitBucketServer(bitBucketServerWrapper bitbucketserver.BitbucketServe
 }
 
 func searchProjects(
-	bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper,
+	bitBucketServerWrapper bitbucketserver.Wrapper,
 ) ([]repositoryView, []userView, error) {
 	var views []repositoryView
 	var viewsUsers []userView
-	var totalCommits []bitbucketserver.BitbucketServerCommit
+	var totalCommits []bitbucketserver.Commit
 	for _, project := range bitBucketServerProjects {
 		err := getAllRepos(bitBucketServerWrapper, project)
 		if err != nil {
@@ -189,12 +189,12 @@ func searchProjects(
 }
 
 func searchRepos(
-	bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper,
+	bitBucketServerWrapper bitbucketserver.Wrapper,
 	project string,
 	views []repositoryView,
 	viewsUsers []userView,
-	totalCommits []bitbucketserver.BitbucketServerCommit,
-) ([]bitbucketserver.BitbucketServerCommit, []repositoryView, []userView, error) {
+	totalCommits []bitbucketserver.Commit,
+) ([]bitbucketserver.Commit, []repositoryView, []userView, error) {
 	for _, repo := range bitbucketServerRepos {
 		commits, err := bitBucketServerWrapper.GetCommits(
 			*bitbucketServerURL,
@@ -232,7 +232,7 @@ func searchRepos(
 	return totalCommits, views, viewsUsers, nil
 }
 
-func getAllRepos(bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper, project string) error {
+func getAllRepos(bitBucketServerWrapper bitbucketserver.Wrapper, project string) error {
 	if len(bitbucketServerRepos) == 0 {
 		bbRepos, err := bitBucketServerWrapper.GetRepositories(
 			*bitbucketServerURL,
@@ -249,7 +249,7 @@ func getAllRepos(bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper, 
 	return nil
 }
 
-func getUniqueContributorsBitBucketServer(commits []bitbucketserver.BitbucketServerCommit) map[string]string {
+func getUniqueContributorsBitBucketServer(commits []bitbucketserver.Commit) map[string]string {
 	var contributors = map[string]string{}
 	for _, commit := range commits {
 		name := commit.Author.Name
@@ -261,7 +261,7 @@ func getUniqueContributorsBitBucketServer(commits []bitbucketserver.BitbucketSer
 	return contributors
 }
 
-func bitBucketServerIsNotBot(commit bitbucketserver.BitbucketServerCommit) bool {
+func bitBucketServerIsNotBot(commit bitbucketserver.Commit) bool {
 	return strings.Contains(commit.Author.Name, bitBucketServerBot)
 }
 

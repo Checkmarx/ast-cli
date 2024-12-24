@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type MockWrapperBitbucketServer struct {
+type WrapperBitbucketServer struct {
 	CorruptedRepos []string
 }
 
@@ -22,7 +22,7 @@ type MockUserView struct {
 	UniqueContributorsUsername string `json:"unique_contributors_username"`
 }
 
-func (m MockWrapperBitbucketServer) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) ([]bitbucketserver.BitbucketServerCommit, error) {
+func (m WrapperBitbucketServer) GetCommits(bitBucketURL, projectKey, repoSlug, bitBucketPassword string) ([]bitbucketserver.Commit, error) {
 
 	for _, corruptedRepo := range m.CorruptedRepos {
 		if repoSlug == corruptedRepo {
@@ -30,29 +30,29 @@ func (m MockWrapperBitbucketServer) GetCommits(bitBucketURL, projectKey, repoSlu
 		}
 	}
 
-	return []bitbucketserver.BitbucketServerCommit{
+	return []bitbucketserver.Commit{
 		{
-			Author:          bitbucketserver.BitbucketServerAuthor{Name: "Mock Author", Email: "mock-author@example.com"},
+			Author:          bitbucketserver.Author{Name: "Mock Author", Email: "mock-author@example.com"},
 			AuthorTimestamp: 1625078400000,
 		},
 	}, nil
 }
 
-func (m MockWrapperBitbucketServer) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) ([]bitbucketserver.BitbucketServerRepo, error) {
+func (m WrapperBitbucketServer) GetRepositories(bitBucketURL, projectKey, bitBucketPassword string) ([]bitbucketserver.Repo, error) {
 
-	return []bitbucketserver.BitbucketServerRepo{
+	return []bitbucketserver.Repo{
 		{Slug: "repo-1", Name: "Repository 1"},
 		{Slug: "repo-2", Name: "Repository 2"},
 		{Slug: "repo-3", Name: "Repository 3"},
 	}, nil
 }
 
-func (m MockWrapperBitbucketServer) GetProjects(bitBucketURL, bitBucketPassword string) ([]string, error) {
+func (m WrapperBitbucketServer) GetProjects(bitBucketURL, bitBucketPassword string) ([]string, error) {
 	// Return mock projects
 	return []string{"project-1", "project-2"}, nil
 }
 
-func (m MockWrapperBitbucketServer) SearchRepos(
+func (m WrapperBitbucketServer) SearchRepos(
 	project string,
 	repos []string,
 	bitBucketToken string,

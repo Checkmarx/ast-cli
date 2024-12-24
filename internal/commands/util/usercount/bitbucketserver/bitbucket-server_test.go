@@ -10,7 +10,7 @@ import (
 
 func TestSearchReposWithCorruptedRepositories(t *testing.T) {
 
-	mockWrapper := mock.MockWrapperBitbucketServer{
+	mockWrapper := mock.WrapperBitbucketServer{
 		CorruptedRepos: []string{"repo-2"},
 	}
 

@@ -38,7 +38,7 @@ func NewAstCLI(
 	gitHubWrapper wrappers.GitHubWrapper,
 	azureWrapper wrappers.AzureWrapper,
 	bitBucketWrapper wrappers.BitBucketWrapper,
-	bitBucketServerWrapper bitbucketserver.BitbucketServerWrapper,
+	bitBucketServerWrapper bitbucketserver.Wrapper,
 	gitLabWrapper wrappers.GitLabWrapper,
 	bflWrapper wrappers.BflWrapper,
 	prWrapper wrappers.PRWrapper,
