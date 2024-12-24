@@ -1083,10 +1083,10 @@ func scanTypeEnabled(scanType string) bool {
 func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
-	defer outputFile.Close()
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
+	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
