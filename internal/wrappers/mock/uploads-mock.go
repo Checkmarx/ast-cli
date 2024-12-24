@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -9,8 +10,11 @@ import (
 type UploadsMockWrapper struct {
 }
 
-func (u *UploadsMockWrapper) UploadFile(_ string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (*string, error) {
+func (u *UploadsMockWrapper) UploadFile(filePath string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (*string, error) {
 	fmt.Println("Called Create in UploadsMockWrapper")
+	if filePath == "failureCase.zip" {
+		return nil, errors.New("error from UploadFile")
+	}
 	url := "/path/to/nowhere"
 	return &url, nil
 }
