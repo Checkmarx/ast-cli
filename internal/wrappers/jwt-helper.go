@@ -33,7 +33,7 @@ var defaultEngines = map[string]bool{
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
-	IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error)
+	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 }
 
@@ -65,12 +65,7 @@ func getJwtStruct() (*JWTStruct, error) {
 }
 
 // IsAllowedEngine will return if the engine is allowed in the user license
-func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error) {
-	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
-	if !flagResponse.Status {
-		return true, nil
-	}
-
+func (*JWTStruct) IsAllowedEngine(engine string) (bool, error) {
 	jwtStruct, err := getJwtStruct()
 	if err != nil {
 		return false, err

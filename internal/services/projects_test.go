@@ -60,7 +60,6 @@ func TestFindProject(t *testing.T) {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := FindProject(
-				ttt.args.applicationID,
 				ttt.args.projectName,
 				ttt.args.cmd,
 				ttt.args.projectsWrapper,
@@ -236,48 +235,12 @@ func Test_updateProject(t *testing.T) {
 			want:    "ID-project-name",
 			wantErr: false,
 		},
-		{
-			name: "When called with application ID",
-			args: args{
-				project: &wrappers.ProjectResponseModel{
-					ID:   "ID-project-name",
-					Name: "project-name",
-				},
-				cmd:                     &cobra.Command{},
-				projectsWrapper:         &mock.ProjectsMockWrapper{},
-				groupsWrapper:           &mock.GroupsMockWrapper{},
-				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-				projectName:             "project-name",
-				projectPrivatePackage:   "true",
-				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
-			},
-			want:    "ID-project-name",
-			wantErr: false,
-		},
-		{
-			name: "When called with mock fake error model return fake error from project create",
-			args: args{
-				projectName: "mock-some-error-model",
-				project: &wrappers.ProjectResponseModel{
-					ID:   "ID-mock-some-error-model",
-					Name: "mock-some-error-model",
-				},
-				cmd:                     &cobra.Command{},
-				projectsWrapper:         &mock.ProjectsMockWrapper{},
-				groupsWrapper:           &mock.GroupsMockWrapper{},
-				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-				applicationID:           []string{"1"},
-				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
-			},
-			want:    "",
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := updateProject(ttt.args.project, ttt.args.cmd, ttt.args.projectsWrapper,
-				ttt.args.applicationsWrapper, ttt.args.applicationID, ttt.args.projectTags, ttt.args.projectPrivatePackage)
+			got, err := updateProject(ttt.args.project, ttt.args.projectsWrapper,
+				ttt.args.projectTags, ttt.args.projectPrivatePackage)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return

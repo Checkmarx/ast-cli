@@ -22,7 +22,6 @@ const (
 )
 
 func FindProject(
-	applicationID []string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -41,12 +40,19 @@ func FindProject(
 		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(&project, cmd, projectsWrapper, applicationWrapper, applicationID, projectTags, projectPrivatePackage)
+			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage)
 		}
 	}
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
+	applicationID, appErr := getApplicationID(applicationName, applicationWrapper)
+	if appErr != nil {
+		return "", appErr
+	}
+
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper,
 		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper)
 	if err != nil {
@@ -165,16 +171,15 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 
 //nolint:gocyclo
 func updateProject(project *wrappers.ProjectResponseModel,
-	cmd *cobra.Command, projectsWrapper wrappers.ProjectsWrapper, applicationsWrapper wrappers.ApplicationsWrapper,
-	applicationID []string, projectTags string, projectPrivatePackage string) (string, error) {
+	projectsWrapper wrappers.ProjectsWrapper,
+	projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	projectID = project.ID
 	projModel.MainBranch = project.MainBranch
 	projModel.RepoURL = project.RepoURL
-	if projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No applicationId or tags to update. Skipping project update.")
+	if projectTags == "" && projectPrivatePackage == "" {
+		logger.PrintIfVerbose("No tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
@@ -197,20 +202,10 @@ func updateProject(project *wrappers.ProjectResponseModel,
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if len(applicationID) > 0 {
-		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
-	}
+
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
-	}
-
-	if applicationName != "" || len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
-		if err != nil {
-			return projectID, err
-		}
 	}
 
 	return projectID, nil

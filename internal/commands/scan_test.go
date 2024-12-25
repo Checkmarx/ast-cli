@@ -55,7 +55,7 @@ const (
 	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName              = "test_output.log"
-	noUpdatesForExistingProject = "No applicationId or tags to update. Skipping project update."
+	noUpdatesForExistingProject = "No tags to update. Skipping project update."
 )
 
 func TestScanHelp(t *testing.T) {
@@ -193,18 +193,13 @@ func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast", "--threshold", "sca-low=1 ; sast-medium=2")
 }
 
-func TestScanCreate_ExistingApplicationAndProject_CreateProjectUnderApplicationSuccessfully(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch")
-}
-
 func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", "MOC", "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
+func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldCreateScan(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
@@ -213,18 +208,14 @@ func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *te
 }
 
 func TestScanCreate_OnReceivingHttpBadRequestStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project", "--application-name", mock.FakeBadRequest400, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
 }
 
 func TestScanCreate_OnReceivingHttpInternalServerErrorStatusCode_FailedToCreateScan(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "non-existing-project",
+		"--application-name", mock.FakeInternalServerError500, "-s", dummyRepo, "-b", "dummy_branch")
 	assert.Assert(t, err.Error() == errorConstants.FailedToGetApplication)
-}
-
-func TestCreateScanInsideApplicationProjectExistNoPermissions(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
-	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
 func TestCreateScanSourceDirectory(t *testing.T) {
@@ -409,6 +400,23 @@ func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssignGroup(t *te
 		t.Fatalf("Failed to read log file: %v", err)
 	}
 	assert.Equal(t, strings.Contains(stdoutString, "Updating project groups"), true, "Expected output: %s", "Updating project groups")
+}
+
+func TestCreateScan_WhenProjectNotExists_ShouldCreateProjectAndAssociateApplication(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "newProject", "-s", ".", "--branch", "main", "--application-name", mock.ExistingApplication, "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "application association done successfully"), true, "Expected output: %s", "application association done successfully")
 }
 
 func TestScanWorkflowMissingID(t *testing.T) {
@@ -617,6 +625,20 @@ func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
 	defer logger.SetOutput(os.Stdout)
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--debug", "--project-groups", "anyProjectGroup"}
+	execCmdNilAssertion(t, baseArgs...)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
+}
+
+func TestCreateScan_WhenProjectExists_ShouldIgnoreApplication(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
+		"--debug", "--application-name", "anyApplication"}
 	execCmdNilAssertion(t, baseArgs...)
 	stdoutString, err := util.ReadFileAsString(file.Name())
 	if err != nil {
@@ -1319,4 +1341,49 @@ func deleteOutputFile(file *os.File) {
 	if err != nil {
 		logger.Printf("Failed to remove log file: %v", err)
 	}
+}
+
+func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
+	scanWrapper := mock.ScansMockWrapper{}
+	projectID := "non-existent-project"
+	userScanTypes := ""
+	cmd := createASTTestCommand()
+	cmd.PersistentFlags().String("project-name", "non-existent-project", "project name")
+	config, err := getResubmitConfiguration(&scanWrapper, projectID, userScanTypes)
+	assert.NilError(t, err)
+	assert.Equal(t, len(config), 0)
+}
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, true, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, false, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "test.zip")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, false, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "failureCase.zip")
 }
