@@ -1086,6 +1086,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
+	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
@@ -1462,6 +1463,9 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	var preSignedURL *string
 	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
 	if zipFilePathErr != nil {
+		if unzip || !userProvidedZip {
+			return "", zipFilePath, errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+		}
 		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 	}
 	if unzip || !userProvidedZip {
@@ -1616,6 +1620,7 @@ func runCreateScanCommand(
 			featureFlagsWrapper,
 			jwtWrapper,
 		)
+		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1681,7 +1686,6 @@ func runCreateScanCommand(
 			}
 		}
 
-		defer cleanUpTempZip(zipFilePath)
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
