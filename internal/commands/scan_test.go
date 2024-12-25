@@ -1353,3 +1353,37 @@ func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(config), 0)
 }
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, true, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, false, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "test.zip")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, false, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "failureCase.zip")
+}
