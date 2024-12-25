@@ -2635,9 +2635,9 @@ func cleanUpTempZip(zipFilePath string) {
 				)
 				tries--
 				// Calculate exponential backoff delay
-				waitSeconds := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
-				logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitSeconds))
-				time.Sleep(waitSeconds * time.Second)
+				waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+				logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
+				time.Sleep(waitDuration * time.Second)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
