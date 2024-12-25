@@ -80,7 +80,7 @@ const (
 	containerTempDirPattern         = "kics"
 	kicsContainerPrefixName         = "cli-kics-realtime-"
 	cleanupMaxRetries               = 3
-	cleanupRetryWaitSeconds         = 30
+	cleanupRetryWaitSeconds         = 15
 	DanglingSymlinkError            = "Skipping dangling symbolic link"
 	configFilterKey                 = "filter"
 	configFilterPlatforms           = "platforms"
@@ -2622,19 +2622,22 @@ func cleanUpTempZip(zipFilePath string) {
 	if zipFilePath != "" {
 		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
 		tries := cleanupMaxRetries
-		for tries > 0 {
+		for attempt := 1; tries > 0; attempt++ {
 			zipRemoveErr := os.Remove(zipFilePath)
 			if zipRemoveErr != nil {
 				logger.PrintIfVerbose(
 					fmt.Sprintf(
-						"Failed to remove temporary zip: %d in %d: %v",
-						cleanupMaxRetries-tries,
+						"Failed to remove temporary zip: Attempt %d/%d: %v",
+						attempt,
 						cleanupMaxRetries,
 						zipRemoveErr,
 					),
 				)
 				tries--
-				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+				// Calculate exponential backoff delay
+				waitSeconds := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+				logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitSeconds))
+				time.Sleep(waitSeconds * time.Second)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
