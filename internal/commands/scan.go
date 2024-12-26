@@ -2622,19 +2622,19 @@ func cleanUpTempZip(zipFilePath string) {
 	if zipFilePath != "" {
 		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
 		tries := cleanupMaxRetries
-		for tries > 0 {
+		for attempt := 1; tries > 0; attempt++ {
 			zipRemoveErr := os.Remove(zipFilePath)
 			if zipRemoveErr != nil {
 				logger.PrintIfVerbose(
 					fmt.Sprintf(
-						"Failed to remove temporary zip: %d in %d: %v",
-						cleanupMaxRetries-tries,
+						"Failed to remove temporary zip: Attempt %d/%d: %v",
+						attempt,
 						cleanupMaxRetries,
 						zipRemoveErr,
 					),
 				)
 				tries--
-				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+				Wait(attempt)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
@@ -2646,6 +2646,13 @@ func cleanUpTempZip(zipFilePath string) {
 	} else {
 		logger.PrintIfVerbose("No temporary zip to clean")
 	}
+}
+
+func Wait(attempt int) {
+	// Calculate exponential backoff delay
+	waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+	logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
+	time.Sleep(waitDuration * time.Second)
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
