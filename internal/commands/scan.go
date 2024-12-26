@@ -2634,10 +2634,7 @@ func cleanUpTempZip(zipFilePath string) {
 					),
 				)
 				tries--
-				// Calculate exponential backoff delay
-				waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
-				logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
-				time.Sleep(waitDuration * time.Second)
+				Wait(attempt)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
@@ -2649,6 +2646,13 @@ func cleanUpTempZip(zipFilePath string) {
 	} else {
 		logger.PrintIfVerbose("No temporary zip to clean")
 	}
+}
+
+func Wait(attempt int) {
+	// Calculate exponential backoff delay
+	waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+	logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
+	time.Sleep(waitDuration * time.Second)
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
