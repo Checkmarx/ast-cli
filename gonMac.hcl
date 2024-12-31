@@ -3,7 +3,7 @@ source = ["./dist/cx-mac-universal_darwin_all/cx"]
 bundle_id = "com.checkmarx.cli"
 
 apple_id {
-  username = "ben.alvo@checkmarx.com"
+  username = "astphoenix@checkmarx.com"
   provider = "Z68SAQG5BR"
 }
 
