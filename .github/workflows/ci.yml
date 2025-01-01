@@ -94,7 +94,7 @@ jobs:
           ./internal/commands/.scripts/integration_down.sh
 
       - name: Coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
           name: ${{ runner.os }}-coverage-latest
           path: coverage.html
