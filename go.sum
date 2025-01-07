@@ -64,8 +64,8 @@ github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63/go.mod h1:MI6lfLerXU+5eTV/EPTDavgnV3owz3GPT4g/msZBWPo=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2 h1:T6X40+4hYnwfDsvkjWs9VIcE6s1O+8DUu0+sDdCY3GI=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2/go.mod h1:xwRLefezwNNnRGu1EjGS6wNiR9FVV/eP9D+oXwLViVM=
-github.com/CheckmarxDev/containers-resolver v1.0.14 h1:jOc1POn6XVETZtXMyer6Rp6K/MLfkuGCKgMk6ZLEf/w=
-github.com/CheckmarxDev/containers-resolver v1.0.14/go.mod h1:ne5YunT/hKQ7fnZejFVGodlfOUReNE7hZW2KLbpQi48=
+github.com/CheckmarxDev/containers-resolver v1.0.15 h1:Kql6UJ3U2G2ZIyAT2f+arO1E9ZUhm4+3Diqk+ZdOzg8=
+github.com/CheckmarxDev/containers-resolver v1.0.15/go.mod h1:ne5YunT/hKQ7fnZejFVGodlfOUReNE7hZW2KLbpQi48=
 github.com/CycloneDX/cyclonedx-go v0.9.0 h1:inaif7qD8bivyxp7XLgxUYtOXWtDez7+j72qKTMQTb8=
 github.com/CycloneDX/cyclonedx-go v0.9.0/go.mod h1:NE/EWvzELOFlG6+ljX/QeMlVt9VKcTwu8u0ccsACEsw=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
