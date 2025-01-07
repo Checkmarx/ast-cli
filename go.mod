@@ -8,6 +8,7 @@ require (
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
+	github.com/go-git/go-git/v5 v5.13.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
@@ -226,7 +227,7 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/skeema/knownhosts v1.2.2 // indirect
+	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
