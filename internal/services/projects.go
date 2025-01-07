@@ -22,7 +22,6 @@ const (
 )
 
 func FindProject(
-	applicationID []string,
 	projectName string,
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -31,36 +30,29 @@ func FindProject(
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (string, error) {
-	params := make(map[string]string)
-	params["names"] = projectName
-	resp, _, err := projectsWrapper.Get(params)
+	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
 	if err != nil {
 		return "", err
 	}
 
 	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
+		project := resp.Projects[i]
+		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(
-				resp,
-				cmd,
-				projectsWrapper,
-				groupsWrapper,
-				accessManagementWrapper,
-				applicationWrapper,
-				projectName,
-				applicationID,
-				projectGroups,
-				projectTags,
-				projectPrivatePackage,
-				featureFlagsWrapper)
+			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage)
 		}
 	}
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
+
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
+	applicationID, appErr := getApplicationID(applicationName, applicationWrapper)
+	if appErr != nil {
+		return "", appErr
+	}
+
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper,
 		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper)
 	if err != nil {
@@ -68,6 +60,29 @@ func FindProject(
 		return "", err
 	}
 	return projectID, nil
+}
+
+func GetProjectsCollectionByProjectName(projectName string, projectsWrapper wrappers.ProjectsWrapper) (*wrappers.ProjectsCollectionResponseModel, error) {
+	params := make(map[string]string)
+	params["name"] = projectName
+	resp, _, err := projectsWrapper.Get(params)
+
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return nil, err
+	}
+
+	if resp == nil {
+		EmptyProjects := []wrappers.ProjectResponseModel{}
+		emptyProjectsCollection := &wrappers.ProjectsCollectionResponseModel{
+			TotalCount:         0,
+			FilteredTotalCount: 0,
+			Projects:           EmptyProjects,
+		}
+		return emptyProjectsCollection, nil
+	}
+
+	return resp, nil
 }
 
 func createProject(
@@ -91,7 +106,7 @@ func createProject(
 	if projectGroups != "" {
 		var groups []string
 		var groupErr error
-		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil, featureFlagsWrapper)
+		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil)
 		if groupErr != nil {
 			return "", groupErr
 		}
@@ -155,37 +170,16 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 }
 
 //nolint:gocyclo
-func updateProject(
-	resp *wrappers.ProjectsCollectionResponseModel,
-	cmd *cobra.Command,
+func updateProject(project *wrappers.ProjectResponseModel,
 	projectsWrapper wrappers.ProjectsWrapper,
-	groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper,
-	applicationsWrapper wrappers.ApplicationsWrapper,
-	projectName string,
-	applicationID []string,
-	projectGroups string,
-	projectTags string,
-	projectPrivatePackage string,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-
-) (string, error) {
+	projectTags string, projectPrivatePackage string) (string, error) {
 	var projectID string
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
-	for i := 0; i < len(resp.Projects); i++ {
-		if resp.Projects[i].Name == projectName {
-			projectID = resp.Projects[i].ID
-		}
-		if resp.Projects[i].MainBranch != "" {
-			projModel.MainBranch = resp.Projects[i].MainBranch
-		}
-		if resp.Projects[i].RepoURL != "" {
-			projModel.RepoURL = resp.Projects[i].RepoURL
-		}
-	}
-	if projectGroups == "" && projectTags == "" && projectPrivatePackage == "" && len(applicationID) == 0 {
-		logger.PrintIfVerbose("No groups, applicationId or tags to update. Skipping project update.")
+	projectID = project.ID
+	projModel.MainBranch = project.MainBranch
+	projModel.RepoURL = project.RepoURL
+	if projectTags == "" && projectPrivatePackage == "" {
+		logger.PrintIfVerbose("No tags to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
@@ -208,40 +202,13 @@ func updateProject(
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)
 	}
-	if len(applicationID) > 0 {
-		logger.PrintIfVerbose("Updating project applicationIds")
-		projModel.ApplicationIds = createApplicationIds(applicationID, projModelResp.ApplicationIds)
-	}
+
 	err = projectsWrapper.Update(projectID, &projModel)
 	if err != nil {
 		return "", errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
 
-	if applicationName != "" || len(applicationID) > 0 {
-		err = verifyApplicationAssociationDone(applicationName, projectID, applicationsWrapper)
-		if err != nil {
-			return projectID, err
-		}
-	}
-
-	if projectGroups != "" {
-		err = UpsertProjectGroupsByUpdateFlow(groupsWrapper, &projModel, projectsWrapper, accessManagementWrapper, projModelResp, projectGroups, projectID, projectName, featureFlagsWrapper)
-		if err != nil {
-			return projectID, err
-		}
-	}
 	return projectID, nil
-}
-
-func UpsertProjectGroupsByUpdateFlow(groupsWrapper wrappers.GroupsWrapper, projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper, projModelResp *wrappers.ProjectResponseModel,
-	projectGroups string, projectID string, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	groupsMap, groups, groupErr := GetGroupMap(groupsWrapper, projectGroups, projModelResp, featureFlagsWrapper)
-	if groupErr != nil {
-		return groupErr
-	}
-	projModel.Groups = groups
-	return UpsertProjectGroups(projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
 }
 
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,

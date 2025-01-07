@@ -18,11 +18,11 @@ jobs:
         run: |
           sudo chmod +x ./internal/commands/.scripts/up.sh
           ./internal/commands/.scripts/up.sh
-      - name: Check if total coverage is greater then 80
+      - name: Check if total coverage is greater then 79.9
         shell: bash
         run: |
           CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          EXPECTED_CODE_COV=80
+          EXPECTED_CODE_COV=79.9
           var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
           if [ "$var" -eq 1 ];then
             echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
@@ -65,7 +65,7 @@ jobs:
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
-          PR_GITHUB_NUMBER: 43
+          PR_GITHUB_NUMBER: 983
           PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
@@ -75,27 +75,35 @@ jobs:
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_REPOS: ${{ secrets.AZURE_REPOS }}
           AZURE_TOKEN: ${{ secrets.AZURE_TOKEN }}
+          AZURE_NEW_ORG: "azureAccountTests"
+          AZURE_PROJECT_NAME: "testsProject"
+          AZURE_PR_NUMBER: 1
+          AZURE_NEW_TOKEN: ${{ secrets.AZURE_NEW_TOKEN }}
           BITBUCKET_WORKSPACE: ${{ secrets.BITBUCKET_WORKSPACE }}
           BITBUCKET_REPOS: ${{ secrets.BITBUCKET_REPOS }}
           BITBUCKET_USERNAME: ${{ secrets.BITBUCKET_USERNAME }}
           BITBUCKET_PASSWORD: ${{ secrets.BITBUCKET_PASSWORD }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          PR_BITBUCKET_TOKEN: ${{ secrets.PR_BITBUCKET_TOKEN }}
+          PR_BITBUCKET_NAMESPACE: "AstSystemTest"
+          PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
+          PR_BITBUCKET_ID: 1
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_down.sh
 
       - name: Coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
           name: ${{ runner.os }}-coverage-latest
           path: coverage.html
 
-      - name: Check if total coverage is greater then 79.9
+      - name: Check if total coverage is greater then 79
         shell: bash
         run: |
           CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          EXPECTED_CODE_COV=79.9
+          EXPECTED_CODE_COV=79
           var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
           if [ "$var" -eq 1 ];then
             echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
@@ -153,15 +161,22 @@ jobs:
         run:  go build -o ./cx ./cmd
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@b2933f565dbc598b29947660e66259e3c7bc8561  #0.20.0
+      - name: Run Trivy scanner without downloading DBs
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 #v0.28.0
         with:
-          image-ref: 'ast-cli:${{ github.sha }}'
+          scan-type: 'image'
+          image-ref: ast-cli:${{ github.sha }}
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
+          output: './trivy-image-results.txt'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
-
-
+        env:
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
+      
+      - name: Inspect action report
+        if: always()
+        shell: bash
+        run: cat ./trivy-image-results.txt

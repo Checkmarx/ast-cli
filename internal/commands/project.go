@@ -29,6 +29,7 @@ const (
 	sshConfKey            = "scan.handler.git.sshKey"
 	mandatoryRepoURLError = "flag --repo-url is mandatory when --ssh-key is provided"
 	invalidRepoURL        = "provided repository url doesn't need a key. Make sure you are defining the right repository or remove the flag --ssh-key"
+	emptyTag              = "NONE"
 )
 
 var (
@@ -233,7 +234,7 @@ func runCreateProjectCommand(
 		applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 		var applicationID []string
 		if applicationName != "" {
-			application, getAppErr := getApplication(applicationName, applicationsWrapper)
+			application, getAppErr := services.GetApplication(applicationName, applicationsWrapper)
 			if getAppErr != nil {
 				return getAppErr
 			}
@@ -248,7 +249,7 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
-		groups, err := updateGroupValues(&input, cmd, groupsWrapper, featureFlagsWrapper)
+		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
@@ -398,6 +399,8 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 			return errors.Wrapf(err, "%s", failedGettingAll)
 		}
 
+		supportEmptyTags(params)
+
 		allProjectsModel, errorModel, err = projectsWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingAll)
@@ -413,6 +416,47 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 			}
 		}
 		return nil
+	}
+}
+
+func supportEmptyTags(params map[string]string) {
+	if hasNoneKeyAndValue(params) {
+		addEmptyTagsParam(params)
+	}
+}
+
+func hasNoneKeyAndValue(params map[string]string) bool {
+	hasNoneKey := hasNoneValueInAttribute(params, commonParams.TagsKeyQueryParam)
+	hasNoneValue := hasNoneValueInAttribute(params, commonParams.TagsValueQueryParam)
+	return hasNoneKey && hasNoneValue
+}
+
+func hasNoneValueInAttribute(params map[string]string, attribute string) bool {
+	values, exists := params[attribute]
+	return exists && strings.Contains(values, emptyTag)
+}
+
+func addEmptyTagsParam(params map[string]string) {
+	removeNoneKeyAndValue(params)
+	params[commonParams.TagsEmptyQueryParam] = "true"
+}
+
+func removeNoneKeyAndValue(params map[string]string) {
+	removeNoneAttribute(params, commonParams.TagsKeyQueryParam)
+	removeNoneAttribute(params, commonParams.TagsValueQueryParam)
+}
+
+func removeNoneAttribute(params map[string]string, attribute string) {
+	values, exists := params[attribute]
+	if exists {
+		values = strings.ReplaceAll(values, ","+emptyTag, "")
+		values = strings.ReplaceAll(values, emptyTag+",", "")
+		values = strings.ReplaceAll(values, emptyTag, "")
+		if values == "" {
+			delete(params, attribute)
+		} else {
+			params[attribute] = values
+		}
 	}
 }
 
@@ -433,6 +477,9 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", services.FailedGettingProj, errorModel.Code, errorModel.Message)
 		} else if projectResponseModel != nil {
+			resp := GetProjectByName(projectResponseModel.Name, projectsWrapper)
+
+			projectResponseModel.Groups = resp.Groups
 			err = printByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
@@ -440,6 +487,21 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 		}
 		return nil
 	}
+}
+
+func GetProjectByName(projectName string, projectsWrapper wrappers.ProjectsWrapper) wrappers.ProjectResponseModel {
+	resp, err := services.GetProjectsCollectionByProjectName(projectName, projectsWrapper)
+	if err != nil {
+		return wrappers.ProjectResponseModel{}
+	}
+
+	for i := range resp.Projects {
+		project := &resp.Projects[i]
+		if project.Name == projectName {
+			return *project
+		}
+	}
+	return wrappers.ProjectResponseModel{}
 }
 
 func runGetBranchesByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *cobra.Command, args []string) error {

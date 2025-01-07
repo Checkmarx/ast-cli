@@ -1,7 +1,8 @@
-FROM cgr.dev/chainguard/bash@sha256:f8e48690d991e6814c81f063833176439e8f0d4bc1c5f0a47f94858dea3e4f44
-
+FROM cgr.dev/chainguard/bash@sha256:1abc09ac352efdc60d855bd159b9b66df6596a174400752ae3c537b5350779a9
 USER nonroot
 
 COPY cx /app/bin/cx
 
 ENTRYPOINT ["/app/bin/cx"]
+
+HEALTHCHECK NONE

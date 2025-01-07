@@ -15,9 +15,9 @@ import (
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/golang-jwt/jwt"
-
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -248,7 +248,7 @@ func addReqMonitor(req *http.Request) *http.Request {
 }
 
 func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, username, password, adminClientID, adminClientSecret string) (*http.Response, error) {
-	u, err := getAuthURI()
+	u, err := GetAuthURI()
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	return request(client, customReq, true)
 }
 func GetAccessToken() (string, error) {
-	authURI, err := getAuthURI()
+	authURI, err := GetAuthURI()
 	if err != nil {
 		return "", err
 	}
@@ -402,7 +402,7 @@ func enrichWithPasswordCredentials(
 	request *http.Request, username, password,
 	adminClientID, adminClientSecret string,
 ) error {
-	authURI, err := getAuthURI()
+	authURI, err := GetAuthURI()
 	if err != nil {
 		return err
 	}
@@ -479,7 +479,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 	res, err := doPrivateRequest(client, req)
 	if err != nil {
-		authURL, _ := getAuthURI()
+		authURL, _ := GetAuthURI()
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
@@ -653,7 +653,7 @@ func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
-func getAuthURI() (string, error) {
+func GetAuthURI() (string, error) {
 	var authURI string
 	var err error
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
@@ -661,7 +661,7 @@ func getAuthURI() (string, error) {
 	apiKey := viper.GetString(commonParams.AstAPIKey)
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
-		authURI, err = extractFromTokenClaims(apiKey, audienceClaimKey)
+		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
 		if err != nil {
 			return "", err
 		}
@@ -709,7 +709,7 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 	if accessToken != "" {
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL, err = extractFromTokenClaims(accessToken, baseURLKey)
+		cleanURL, err = ExtractFromTokenClaims(accessToken, baseURLKey)
 		if err != nil {
 			return "", err
 		}
@@ -730,17 +730,22 @@ func GetURL(path, accessToken string) (string, error) {
 	return fmt.Sprintf("%s/%s", cleanURL, path), nil
 }
 
-func extractFromTokenClaims(accessToken, claim string) (string, error) {
+func ExtractFromTokenClaims(accessToken, claim string) (string, error) {
 	var value string
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _, err := parser.ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
 		value = strings.TrimSpace(claims[claim].(string))
 	} else {
 		return "", errors.Errorf(jwtError, claim)
 	}
+
 	return value, nil
 }
 

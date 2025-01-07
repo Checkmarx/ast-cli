@@ -17,8 +17,8 @@ const (
 	sort                    = "sort"
 	sortResultsDefault      = "-severity"
 	offset                  = "offset"
-	astAPIPageLen           = 1000
-	astAPIPagingValue       = "1000"
+	astAPIPageLen           = 10_000
+	astAPIPagingValue       = "10000"
 )
 
 type ResultsHTTPWrapper struct {

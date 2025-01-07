@@ -211,7 +211,6 @@ func NewAstCLI(
 		chatCmd,
 	)
 
-	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
 	return rootCmd
 }

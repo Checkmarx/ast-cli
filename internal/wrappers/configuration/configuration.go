@@ -9,7 +9,10 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gofrs/flock"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 const configDirName = "/.checkmarx"
@@ -126,6 +129,83 @@ func LoadConfiguration() {
 	viper.SetConfigName(configFile)
 	viper.SetConfigType("yaml")
 	_ = viper.ReadInConfig()
+}
+
+func SafeWriteSingleConfigKey(configFilePath, key string, value int) error {
+	// Create a file lock
+	lock := flock.New(configFilePath + ".lock")
+	locked, err := lock.TryLock()
+	if err != nil {
+		return errors.Errorf("error acquiring lock: %s", err.Error())
+	}
+	if !locked {
+		return errors.Errorf("could not acquire lock")
+	}
+	defer func() {
+		_ = lock.Unlock()
+	}()
+
+	// Load existing configuration or initialize a new one
+	config, err := LoadConfig(configFilePath)
+	if err != nil {
+		return errors.Errorf("error loading config: %s", err.Error())
+	}
+
+	// Update the configuration key
+	config[key] = value
+
+	// Save the updated configuration back to the file
+	if err = SaveConfig(configFilePath, config); err != nil {
+		return errors.Errorf("error saving config: %s", err.Error())
+	}
+	return nil
+}
+
+// LoadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
+func LoadConfig(path string) (map[string]interface{}, error) {
+	config := make(map[string]interface{})
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil // Return an empty config if the file doesn't exist
+		}
+		return nil, err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	decoder := yaml.NewDecoder(file)
+	if err = decoder.Decode(&config); err != nil {
+		return nil, fmt.Errorf("error decoding YAML: %w", err)
+	}
+	return config, nil
+}
+
+// SaveConfig writes the configuration to a file.
+func SaveConfig(path string, config map[string]interface{}) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+
+	encoder := yaml.NewEncoder(file)
+	if err = encoder.Encode(config); err != nil {
+		return fmt.Errorf("error encoding YAML: %w", err)
+	}
+	return nil
+}
+
+func GetConfigFilePath() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", fmt.Errorf("error getting current user: %w", err)
+	}
+	return usr.HomeDir + configDirName + "/checkmarxcli.yaml", nil
 }
 
 func verifyConfigDir(fullPath string) {

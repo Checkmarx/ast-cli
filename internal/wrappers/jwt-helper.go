@@ -5,7 +5,7 @@ import (
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 )
 
@@ -17,10 +17,10 @@ type JWTStruct struct {
 			AllowedEngines []string `json:"allowedEngines"`
 		} `json:"LicenseData"`
 	} `json:"ast-license"`
-	jwt.Claims
+	jwt.RegisteredClaims // Embedding the standard claims
 }
 
-var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers"}
+var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
 var defaultEngines = map[string]bool{
 	"sast":         true,
@@ -33,7 +33,7 @@ var defaultEngines = map[string]bool{
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
-	IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error)
+	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 }
 
@@ -65,18 +65,15 @@ func getJwtStruct() (*JWTStruct, error) {
 }
 
 // IsAllowedEngine will return if the engine is allowed in the user license
-func (*JWTStruct) IsAllowedEngine(engine string, featureFlagsWrapper FeatureFlagsWrapper) (bool, error) {
-	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
-	if flagResponse.Status {
-		jwtStruct, err := getJwtStruct()
-		if err != nil {
-			return false, err
-		}
+func (*JWTStruct) IsAllowedEngine(engine string) (bool, error) {
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return false, err
+	}
 
-		for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
-			if strings.EqualFold(allowedEngine, engine) {
-				return true, nil
-			}
+	for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
+		if strings.EqualFold(allowedEngine, engine) {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -86,6 +83,7 @@ func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
+		engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.EnterpriseSecretsLabel), commonParams.EnterpriseSecretsType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT
@@ -97,7 +95,10 @@ func prepareEngines(engines []string) map[string]bool {
 }
 
 func extractFromTokenToJwtStruct(accessToken string) (*JWTStruct, error) {
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, &JWTStruct{})
+	// Create a new Parser instance
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _, err := parser.ParseUnverified(accessToken, &JWTStruct{})
 	if err != nil {
 		return nil, errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}

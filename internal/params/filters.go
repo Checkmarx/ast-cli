@@ -135,12 +135,15 @@ var BaseIncludeFilters = []string{
 	"Podfile.lock",
 	"*.cmp",
 	"Directory.Packages.props",
+	"*.rs",
+	"*.jsx",
 }
 
 var BaseExcludeFilters = []string{
 	"!.vs",
 	"!.vscode",
 	"!.idea",
+	"!node_modules",
 }
 
 var KicsBaseFilters = []string{

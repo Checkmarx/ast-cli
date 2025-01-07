@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/policymanagement"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -98,6 +97,7 @@ const (
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
 	scaPrivatePackageVersionFlagDescription = "SCA project private package version. Example: 0.1.1"
+	scaHideDevAndTestDepFlagDescription     = "Filter SCA results to exclude dev and test dependencies"
 	policeManagementNoneStatus              = "none"
 	apiDocumentationFlagDescription         = "Swagger folder/file filter for API-Security scan. Example: ./swagger.json"
 	summaryCreatedAtLayout                  = "2006-01-02, 15:04:05"
@@ -107,61 +107,69 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
-	snoozeLabel                             = "Snooze"
-	muteLabel                               = "Muted"
+	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
+	ScaExcludeResultTypesParam              = "exclude-result-types"
+	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
 )
 
-var summaryFormats = []string{
-	printer.FormatSummaryConsole,
-	printer.FormatSummary,
-	printer.FormatSummaryJSON,
-	printer.FormatPDF,
-	printer.FormatSummaryMarkdown,
-	printer.FormatSbom,
-	printer.FormatGLSast,
-	printer.FormatGLSca,
-}
+var (
+	summaryFormats = []string{
+		printer.FormatSummaryConsole,
+		printer.FormatSummary,
+		printer.FormatSummaryJSON,
+		printer.FormatPDF,
+		printer.FormatSummaryMarkdown,
+		printer.FormatSbom,
+		printer.FormatGLSast,
+		printer.FormatGLSca,
+	}
 
-var filterResultsListFlagUsage = fmt.Sprintf(
-	"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
-	strings.Join(
-		[]string{
-			commonParams.ScanIDQueryParam,
-			commonParams.LimitQueryParam,
-			commonParams.OffsetQueryParam,
-			commonParams.SortQueryParam,
-			commonParams.IncludeNodesQueryParam,
-			commonParams.NodeIDsQueryParam,
-			commonParams.QueryQueryParam,
-			commonParams.GroupQueryParam,
-			commonParams.StatusQueryParam,
-			commonParams.SeverityQueryParam,
-			commonParams.StateQueryParam,
-		}, ",",
-	),
+	filterResultsListFlagUsage = fmt.Sprintf(
+		"Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				commonParams.ScanIDQueryParam,
+				commonParams.LimitQueryParam,
+				commonParams.OffsetQueryParam,
+				commonParams.SortQueryParam,
+				commonParams.IncludeNodesQueryParam,
+				commonParams.NodeIDsQueryParam,
+				commonParams.QueryQueryParam,
+				commonParams.GroupQueryParam,
+				commonParams.StatusQueryParam,
+				commonParams.SeverityQueryParam,
+				commonParams.StateQueryParam,
+			}, ",",
+		),
+	)
+
+	// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
+	securities = map[string]string{
+		infoCx:     "1.0",
+		lowCx:      "2.0",
+		mediumCx:   "4.0",
+		highCx:     "7.0",
+		criticalCx: "9.0",
+	}
+
+	// Match cx severity with sonar severity
+	sonarSeverities = map[string]string{
+		infoCx:     infoSonar,
+		lowCx:      lowSonar,
+		mediumCx:   mediumSonar,
+		highCx:     highSonar,
+		criticalCx: criticalSonar,
+	}
+
+	containerEngineUnsupportedAgents = []string{
+		commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
+	}
+
+	sscsEngineToOverviewEngineMap = map[string]string{
+		commonParams.SCSScorecardType:       commonParams.SCSScorecardOverviewType,
+		commonParams.SCSSecretDetectionType: commonParams.SCSSecretDetectionOverviewType,
+	}
 )
-
-// Follows: over 9.0 is critical, 7.0 to 8.9 is high, 4.0 to 6.9 is medium and 3.9 or less is low.
-var securities = map[string]string{
-	infoCx:     "1.0",
-	lowCx:      "2.0",
-	mediumCx:   "4.0",
-	highCx:     "7.0",
-	criticalCx: "9.0",
-}
-
-// Match cx severity with sonar severity
-var sonarSeverities = map[string]string{
-	infoCx:     infoSonar,
-	lowCx:      lowSonar,
-	mediumCx:   mediumSonar,
-	highCx:     highSonar,
-	criticalCx: criticalSonar,
-}
-
-var containerEngineUnsupportedAgents = []string{
-	commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent, commonParams.EclipseAgent,
-}
 
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
@@ -272,6 +280,8 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
+	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
+
 	return resultShowCmd
 }
 
@@ -509,8 +519,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	sastIssues := 0
 	scaIssues := 0
 	kicsIssues := 0
-	scsIssues := 0
 	var containersIssues *int
+	var scsIssues *int
 	enginesStatusCode := map[string]int{
 		commonParams.SastType:       0,
 		commonParams.ScaType:        0,
@@ -524,6 +534,11 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		*containersIssues = 0
 		enginesStatusCode[commonParams.ContainersType] = 0
 	}
+	if wrappers.IsSCSEnabled {
+		scsIssues = new(int)
+		*scsIssues = 0
+		enginesStatusCode[commonParams.ScsType] = 0
+	}
 
 	if len(scanInfo.StatusDetails) > 0 {
 		for _, statusDetailItem := range scanInfo.StatusDetails {
@@ -534,8 +549,8 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScsType {
-					scsIssues = notAvailableNumber
+				} else if statusDetailItem.Name == commonParams.ScsType && wrappers.IsSCSEnabled {
+					*scsIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
 					*containersIssues = notAvailableNumber
 				}
@@ -574,12 +589,14 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 			commonParams.ScaType:        {StatusCode: enginesStatusCode[commonParams.ScaType]},
 			commonParams.KicsType:       {StatusCode: enginesStatusCode[commonParams.KicsType]},
 			commonParams.APISecType:     {StatusCode: enginesStatusCode[commonParams.APISecType]},
-			commonParams.ScsType:        {StatusCode: enginesStatusCode[commonParams.ScsType]},
 			commonParams.ContainersType: {StatusCode: enginesStatusCode[commonParams.ContainersType]},
 		},
 	}
 	if wrappers.IsContainersEnabled {
 		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
+	}
+	if wrappers.IsSCSEnabled {
+		summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
 	}
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
@@ -618,11 +635,12 @@ func summaryReport(
 	}
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
+		// Getting the base SCS overview. Results counts are overwritten in enhanceWithScanSummary->countResult
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
 		if err != nil {
 			return nil, err
 		}
-		summary.SCSOverview = *SCSOverview
+		summary.SCSOverview = SCSOverview
 	}
 
 	if policies != nil {
@@ -637,7 +655,9 @@ func summaryReport(
 	if wrappers.IsContainersEnabled {
 		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
 	}
-	setNotAvailableNumberIfZero(summary, &summary.ScsIssues, commonParams.ScsType)
+	if wrappers.IsSCSEnabled {
+		setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
+	}
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -695,21 +715,17 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 
 	if summary.HasSCS() && wrappers.IsSCSEnabled {
-		summary.EnginesResult[commonParams.ScsType].Info = summary.SCSOverview.RiskSummary[infoLabel]
-		summary.EnginesResult[commonParams.ScsType].Low = summary.SCSOverview.RiskSummary[lowLabel]
-		summary.EnginesResult[commonParams.ScsType].Medium = summary.SCSOverview.RiskSummary[mediumLabel]
-		summary.EnginesResult[commonParams.ScsType].High = summary.SCSOverview.RiskSummary[highLabel]
-
-		summary.ScsIssues = summary.SCSOverview.TotalRisksCount
-
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
 		}
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.ScsType].Critical = notAvailableNumber
+			removeCriticalFromSCSOverview(summary)
 		}
-		summary.TotalIssues += summary.ScsIssues
+		if *summary.ScsIssues >= 0 {
+			summary.TotalIssues += *summary.ScsIssues
+		}
 	}
 	if wrappers.IsContainersEnabled {
 		if *summary.ContainersIssues >= 0 {
@@ -721,6 +737,19 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 		summary.EnginesResult[commonParams.KicsType].Critical = notAvailableNumber
 		summary.EnginesResult[commonParams.ScaType].Critical = notAvailableNumber
 		summary.EnginesResult[commonParams.ContainersType].Critical = notAvailableNumber
+	}
+}
+
+func removeCriticalFromSCSOverview(summary *wrappers.ResultSummary) {
+	criticalCount := summary.SCSOverview.RiskSummary[criticalLabel]
+	summary.SCSOverview.TotalRisksCount -= criticalCount
+	summary.SCSOverview.RiskSummary[criticalLabel] = notAvailableNumber
+	for _, microEngineOverview := range summary.SCSOverview.MicroEngineOverviews {
+		if microEngineOverview.RiskSummary != nil && microEngineOverview.RiskSummary[criticalLabel] != nil {
+			engineCriticalCount := microEngineOverview.RiskSummary[criticalLabel]
+			microEngineOverview.TotalRisks -= engineCriticalCount.(int)
+			microEngineOverview.RiskSummary[criticalLabel] = disabledString
+		}
 	}
 }
 
@@ -791,13 +820,20 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 }
 
 func printPoliciesSummary(summary *wrappers.ResultSummary) {
-	fmt.Printf(tableLine + "\n")
-	if summary.Policies.BreakBuild {
-		fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
-	} else {
-		fmt.Printf("            Policy Management Violation:                     \n")
+	hasViolations := false
+	for _, policy := range summary.Policies.Policies {
+		if len(policy.RulesViolated) > 0 {
+			hasViolations = true
+			break
+		}
 	}
-	if len(summary.Policies.Policies) > 0 {
+	if hasViolations {
+		fmt.Printf(tableLine + "\n")
+		if summary.Policies.BreakBuild {
+			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+		} else {
+			fmt.Printf("            Policy Management Violation:                     \n")
+		}
 		for _, police := range summary.Policies.Policies {
 			if len(police.RulesViolated) > 0 {
 				fmt.Printf("              Policy: %s | Break Build: %t | Violated Rules: ", police.Name, police.BreakBuild)
@@ -807,8 +843,8 @@ func printPoliciesSummary(summary *wrappers.ResultSummary) {
 			}
 			fmt.Printf("\n")
 		}
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
 }
 
 func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
@@ -850,7 +886,6 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
 	riskSummary := microEngineOverview.RiskSummary
-	riskSummary[criticalLabel] = getCriticalLabelSCS(riskSummary, featureFlagsWrapper)
 	microEngineName := microEngineOverview.FullName
 
 	switch microEngineOverview.Status {
@@ -860,15 +895,6 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
 			riskSummary[infoLabel], microEngineOverview.Status)
 	}
-}
-
-func getCriticalLabelSCS(riskSummary map[string]interface{}, featureFlagsWrapper wrappers.FeatureFlagsWrapper) interface{} {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
-	criticalEnabled := flagResponse.Status
-	if !criticalEnabled {
-		return disabledString
-	}
-	return riskSummary[criticalLabel]
 }
 
 func getCountValue(count int) interface{} {
@@ -884,7 +910,6 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalMediumIssues := summary.EnginesResult.GetMediumIssues()
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
-
 	fmt.Printf(tableLine + twoNewLines)
 	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
 	fmt.Println(tableLine)
@@ -934,15 +959,25 @@ func runGetResultCommand(
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
+		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
 			return errors.Errorf("%s: Please provide a scan ID", failedListingResults)
 		}
-		params, err := getFilters(cmd)
+
+		resultsParams, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingResults)
 		}
+
+		if scaHideDevAndTestDep {
+			resultsParams[ScaExcludeResultTypesParam] = ScaDevAndTestExclusionParam
+		}
+
 		scan, errorModel, scanErr := scanWrapper.GetByID(scanID)
 		if scanErr != nil {
 			return errors.Wrapf(scanErr, "%s", failedGetting)
@@ -951,42 +986,19 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel := &wrappers.PolicyResponseModel{}
-		policyOverrideFlag, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
-		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
-		if !policyOverrideFlag {
-			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			if policyTimeout < 0 {
-				return errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
-			}
-			policyResponseModel, err = policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
-			if err != nil {
-				return err
-			}
-		} else {
-			logger.PrintIfVerbose("Skipping policy evaluation")
-		}
-		if sastRedundancy {
-			params[commonParams.SastRedundancyFlag] = ""
+		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+		if err != nil {
+			return err
 		}
 
-		return CreateScanReport(
-			resultsWrapper,
-			risksOverviewWrapper,
-			scsScanOverviewWrapper,
-			exportWrapper,
-			policyResponseModel,
-			resultsPdfReportsWrapper,
-			scan,
-			format,
-			formatPdfToEmail,
-			formatPdfOptions,
-			formatSbomOptions,
-			targetFile,
-			targetPath,
-			agent,
-			params,
-			featureFlagsWrapper)
+		if sastRedundancy {
+			resultsParams[commonParams.SastRedundancyFlag] = ""
+		}
+
+		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+			policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+		return err
 	}
 }
 
@@ -1057,7 +1069,6 @@ func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes 
 
 func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
 	unsupportedTypesByAgent := map[string][]string{
-		commonParams.DefaultAgent:      {},
 		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
 		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
@@ -1092,45 +1103,44 @@ func CreateScanReport(
 	targetFile,
 	targetPath string,
 	agent string,
-	params map[string]string,
+	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) error {
+) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
 	setIsSCSEnabled(featureFlagsWrapper)
 	setIsContainersEnabled(agent, featureFlagsWrapper)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	scanPending := isScanPending(summary.Status)
 
 	err = createDirectory(targetPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, params)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
 		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
 			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return results, nil
 }
 
 func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
@@ -1153,6 +1163,17 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 			} else {
 				return
 			}
+		} else if strings.HasPrefix(engineType, commonParams.SscsType) {
+			if wrappers.IsSCSEnabled {
+				addResultToSCSOverview(summary, result)
+				engineType = commonParams.ScsType
+				*summary.ScsIssues++
+				summary.TotalIssues++
+			} else {
+				return
+			}
+		} else {
+			return
 		}
 
 		switch severity {
@@ -1167,7 +1188,26 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 		case infoLabel:
 			summary.InfoIssues++
 		}
+
 		summary.UpdateEngineResultSummary(engineType, severity)
+	}
+}
+
+func addResultToSCSOverview(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
+	if engineOverviewName, engineExists := sscsEngineToOverviewEngineMap[result.Type]; engineExists {
+		for _, microEngineOverview := range summary.SCSOverview.MicroEngineOverviews {
+			if microEngineOverview.Name == engineOverviewName {
+				if microEngineOverview.RiskSummary != nil {
+					severity := strings.ToLower(result.Severity)
+					if severityCount, exists := microEngineOverview.RiskSummary[severity]; exists {
+						summary.SCSOverview.RiskSummary[severity]++
+						microEngineOverview.TotalRisks++
+						summary.SCSOverview.TotalRisksCount++
+						microEngineOverview.RiskSummary[severity] = severityCount.(int) + 1
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -1230,6 +1270,19 @@ func getScanOverviewForSCSScanner(
 	if errorModel != nil {
 		return nil, errors.Errorf("SCS: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
 	} else if scsOverview != nil {
+		// Setting all counts to 0. Results are recounted in enhanceWithScanSummary->countResult
+		scsOverview.TotalRisksCount = 0
+		for key := range scsOverview.RiskSummary {
+			scsOverview.RiskSummary[key] = 0
+		}
+		for _, microEngineOverview := range scsOverview.MicroEngineOverviews {
+			microEngineOverview.TotalRisks = 0
+			if microEngineOverview.RiskSummary != nil {
+				for severity := range microEngineOverview.RiskSummary {
+					microEngineOverview.RiskSummary[severity] = 0
+				}
+			}
+		}
 		return scsOverview, nil
 	}
 	return nil, nil
@@ -1274,7 +1327,6 @@ func createReport(format,
 		return exportSonarResults(sonarRpt, results)
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
-		results = filterScsResultsByAgent(results, agent)
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
@@ -1350,15 +1402,18 @@ func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
-	params map[string]string,
+	resultsParams map[string]string,
+	agent string,
 ) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
 
-	params[commonParams.ScanIDQueryParam] = scan.ID
-	_, sastRedundancy := params[commonParams.SastRedundancyFlag]
+	resultsParams[commonParams.ScanIDQueryParam] = scan.ID
+	_, sastRedundancy := resultsParams[commonParams.SastRedundancyFlag]
 
-	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(params)
+	scaHideDevAndTestDep := resultsParams[ScaExcludeResultTypesParam] == ScaDevAndTestExclusionParam
+
+	resultsModel, errorModel, err = resultsWrapper.GetAllResultsByScanID(resultsParams)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
@@ -1372,9 +1427,17 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep)
 		if err != nil {
 			return nil, err
+		}
+
+		if slices.Contains(scan.Engines, commonParams.ScsType) {
+			if !wrappers.IsSCSEnabled {
+				resultsModel = removeResultsByType(resultsModel, commonParams.SscsType)
+			} else {
+				resultsModel = filterScsResultsByAgent(resultsModel, agent)
+			}
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -1387,9 +1450,10 @@ func enrichScaResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsModel *wrappers.ScanResultsCollection,
+	scaHideDevAndTestDep bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID)
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
@@ -1400,7 +1464,7 @@ func enrichScaResults(
 		}
 	}
 	if slices.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
-		resultsModel = removeContainerResults(resultsModel)
+		resultsModel = removeResultsByType(resultsModel, commonParams.ContainersType)
 	}
 	return resultsModel, nil
 }
@@ -1460,10 +1524,14 @@ func appendMainPackageToDependencyPath(dependencyPathArray *[][]wrappers.Depende
 	}})
 }
 
-func removeContainerResults(model *wrappers.ScanResultsCollection) *wrappers.ScanResultsCollection {
+func removeResultsByType(model *wrappers.ScanResultsCollection, resultType string) *wrappers.ScanResultsCollection {
 	var newResults []*wrappers.ScanResult
 	for _, result := range model.Results {
-		if result.Type != commonParams.ContainersType {
+		isResultType := result.Type == resultType
+		if resultType == commonParams.SscsType {
+			isResultType = strings.HasPrefix(result.Type, resultType)
+		}
+		if !isResultType {
 			newResults = append(newResults, result)
 		}
 	}
@@ -1639,21 +1707,8 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
-	var resultsToReport *wrappers.ResultSummary
 	log.Println("Creating summary JSON Report: ", targetFile)
-
-	// Remove SCS Result if it exists
-	_, scsExists := results.EnginesResult[commonParams.ScsType]
-	if scsExists {
-		resultsToReport, err = createReportWithoutScsSummary(results)
-		if err != nil {
-			return err
-		}
-	} else {
-		resultsToReport = results
-	}
-
-	resultsJSON, err = json.Marshal(resultsToReport)
+	resultsJSON, err = json.Marshal(results)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize results response ", failedGettingAll)
 	}
@@ -2030,6 +2085,9 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
+			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+				sscsSonarIssue := parseSscsSonar(result)
+				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
 		}
 	}
@@ -2047,6 +2105,28 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	textRange.EndLine = 2
 	auxLocation.TextRange = textRange
 	return auxLocation
+}
+
+func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
+	sonarIssue := initSonarIssue(result)
+
+	// overriding ruleID set by default in initSonarIssue
+	if result.ScanResultData.RuleID != nil {
+		sonarIssue.RuleID = *result.ScanResultData.RuleID
+	}
+
+	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
+	if result.ScanResultData.Snippet != "" {
+		sonarIssue.PrimaryLocation.Message = fmt.Sprintf("%s : %s", result.ScanResultData.Snippet, result.Description)
+	} else {
+		sonarIssue.PrimaryLocation.Message = result.Description
+	}
+	var textRange wrappers.SonarTextRange
+	textRange.StartColumn = 1
+	textRange.EndColumn = 2
+	textRange.StartLine = result.ScanResultData.Line
+	sonarIssue.PrimaryLocation.TextRange = textRange
+	return sonarIssue
 }
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
@@ -2145,7 +2225,7 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	sarifRule.ID, sarifRule.Name, _ = findRuleID(result)
 	sarifRule.FullDescription = findFullDescription(result)
 	sarifRule.Help = findHelp(result)
-	sarifRule.HelpURI = wrappers.SarifInformationURI
+	sarifRule.HelpURI = findHelpURI(result)
 	sarifRule.Properties = findProperties(result)
 
 	if !ruleIds[sarifRule.ID] {
@@ -2157,10 +2237,16 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 }
 
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
-	if result.ScanResultData.QueryID == nil {
+	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
 			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
+	}
+
+	if result.ScanResultData.RuleID != nil {
+		return fmt.Sprintf("%s (%s)", *result.ScanResultData.RuleID, result.Type),
+			result.ScanResultData.RuleName,
+			result.ScanResultData.RuleName
 	}
 
 	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
@@ -2176,10 +2262,20 @@ func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription 
 
 func findHelp(result *wrappers.ScanResult) wrappers.SarifHelp {
 	var sarifHelp wrappers.SarifHelp
-	sarifHelp.Text = findDescriptionText(result)
+	sarifHelp.Text = findHelpText(result)
 	sarifHelp.Markdown = findHelpMarkdownText(result)
 
 	return sarifHelp
+}
+
+func findHelpURI(result *wrappers.ScanResult) string {
+	if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		if result.ScanResultData.RemediationLink != "" {
+			return result.ScanResultData.RemediationLink
+		}
+	}
+
+	return wrappers.SarifInformationURI
 }
 
 func findDescriptionText(result *wrappers.ScanResult) string {
@@ -2188,9 +2284,19 @@ func findDescriptionText(result *wrappers.ScanResult) string {
 			"%s Value: %s Excepted value: %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		return result.ScanResultData.RuleDescription
 	}
 
 	return result.Description
+}
+
+func findHelpText(result *wrappers.ScanResult) string {
+	if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		return findHelpMarkdownText(result)
+	}
+
+	return findDescriptionText(result)
 }
 
 func findHelpMarkdownText(result *wrappers.ScanResult) string {
@@ -2199,6 +2305,8 @@ func findHelpMarkdownText(result *wrappers.ScanResult) string {
 			"%s <br><br><strong>Value:</strong> %s <br><strong>Excepted value:</strong> %s",
 			result.Description, result.ScanResultData.Value, result.ScanResultData.ExpectedValue,
 		)
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
+		return result.ScanResultData.Remediation
 	}
 
 	return result.Description
@@ -2244,6 +2352,8 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultsSca(result, scanResults)
 	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
 		scanResults = parseSarifResultsContainers(result, scanResults)
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) && wrappers.IsSCSEnabled {
+		scanResults = parseSarifResultsSscs(result, scanResults)
 	}
 
 	if len(scanResults) > 0 {
@@ -2330,6 +2440,41 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 			scanResult.Locations = append(scanResult.Locations, scanLocation)
 		}
 	}
+
+	scanResults = append(scanResults, scanResult)
+	return scanResults
+}
+
+func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.SarifScanResult) []wrappers.SarifScanResult {
+	var scanResult = initSarifResult(result)
+	scanResult.Message.Text = result.Description
+
+	var scanLocation wrappers.SarifLocation
+
+	trimOsSeparatorFromFileName(result)
+	if result.Type == commonParams.SCSScorecardType && result.ScanResultData.Filename == noFileForScorecardResultString {
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
+		scanLocation.PhysicalLocation.ArtifactLocation.Description = &wrappers.SarifMessage{}
+		scanLocation.PhysicalLocation.ArtifactLocation.Description.Text = result.ScanResultData.Filename
+	} else {
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = result.ScanResultData.Filename
+	}
+
+	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
+	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+	scanLocation.PhysicalLocation.Region.StartColumn = 1
+	scanLocation.PhysicalLocation.Region.EndColumn = 2
+	if result.ScanResultData.Snippet != "" {
+		scanLocation.PhysicalLocation.Region.Snippet = &wrappers.SarifSnippet{}
+		scanLocation.PhysicalLocation.Region.Snippet.Text = result.ScanResultData.Snippet
+	}
+
+	scanResult.Locations = append(scanResult.Locations, scanLocation)
+
+	var properties wrappers.SarifResultProperties
+	properties.Severity = result.Severity
+	properties.Validity = result.ScanResultData.Validity
+	scanResult.Properties = &properties
 
 	scanResults = append(scanResults, scanResult)
 	return scanResults
@@ -2498,32 +2643,17 @@ func filterViolatedRules(policyModel wrappers.PolicyResponseModel) *wrappers.Pol
 	return &policyModel
 }
 
+func trimOsSeparatorFromFileName(result *wrappers.ScanResult) {
+	if result.ScanResultData.Filename != "" {
+		result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "/")
+		result.ScanResultData.Filename = strings.TrimPrefix(result.ScanResultData.Filename, "\\")
+	}
+}
+
 type ScannerResponse struct {
 	ScanID    string `json:"ScanID,omitempty"`
 	Name      string `json:"Name,omitempty"`
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
-}
-
-func createReportWithoutScsSummary(results *wrappers.ResultSummary) (*wrappers.ResultSummary, error) {
-	var err error
-	var resultsJSON []byte
-	resultsJSON, err = json.Marshal(results)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s: failed to serialize results before removing scs ", failedGettingAll)
-	}
-
-	var resultsWithoutScs *wrappers.ResultSummary
-	err = json.Unmarshal(resultsJSON, &resultsWithoutScs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "%s: failed to deserialize results before removing scs ", failedGettingAll)
-	}
-
-	_, scsExists := resultsWithoutScs.EnginesResult[commonParams.ScsType]
-	if scsExists {
-		delete(resultsWithoutScs.EnginesResult, commonParams.ScsType)
-	}
-
-	return resultsWithoutScs, nil
 }

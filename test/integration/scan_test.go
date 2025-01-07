@@ -12,13 +12,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
-	"slices"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
 	realtime "github.com/checkmarx/ast-cli/internal/commands/scarealtime"
@@ -31,6 +29,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	asserts "github.com/stretchr/testify/assert"
@@ -48,13 +47,12 @@ const (
 	invalidEngineValue    = "invalidEngine"
 	scanList              = "list"
 	projectIDParams       = "project-id="
-	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy"
+	scsRepoURL            = "https://github.com/CheckmarxDev/easybuggy-scs-tests"
 	invalidClientID       = "invalidClientID"
 	invalidClientSecret   = "invalidClientSecret"
 	invalidAPIKey         = "invalidAPI"
 	invalidTenant         = "invalidTenant"
 	timeout               = 10 * time.Minute
-	ProjectNameFile       = "projectName.txt"
 )
 
 var (
@@ -139,7 +137,7 @@ func TestCreateScan_WithOnlyInvalidApikeyEnvVar_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
@@ -164,7 +162,7 @@ func TestCreateScan_WithOnlyInvalidApikeyFlag_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithValidClientCredentialsFlag_Success(t *testing.T) {
@@ -217,7 +215,7 @@ func TestCreateScan_WithInvalidClientCredentialsFlag_Fail(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "Error validating scan types: Token decoding error: token contains an invalid number of segments")
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 func TestCreateScan_WithValidClientCredentialsEnvVars_Success(t *testing.T) {
@@ -296,15 +294,16 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
-		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
 	}
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -348,11 +347,11 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
-func TestScanCreate_ApplicationDoesntExist_FailScanWithError(t *testing.T) {
+func TestScanCreate_WithNewProjectAndApplicationDoesntExist_ShouldFailScanWithError(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
-		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.ProjectName), "newProject",
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "dummy_branch",
@@ -492,9 +491,9 @@ func createScanWithFastScan(t *testing.T, source string, name string, tags map[s
 
 func TestScansUpdateProjectGroups(t *testing.T) {
 	cleanupCxZipFiles(t)
-	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType))
+	scanID, projectID := executeCreateScan(t, getCreateArgs(Zip, Tags, params.IacType), "timeout")
 	response := listScanByID(t, scanID)
-	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType))
+	scanID, projectID = executeCreateScan(t, getCreateArgsWithNameAndGroups(Zip, Tags, Groups, response[0].ProjectName, params.IacType), "timeout")
 
 	executeScanAssertions(t, projectID, scanID, Tags)
 	glob, err := filepath.Glob(filepath.Join(os.TempDir(), "cx*.zip"))
@@ -871,7 +870,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
 	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security, scs"))
+		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security,   container-security, scs"))
 	} else {
 		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
 	}
@@ -948,8 +947,13 @@ func getCreateArgsWithNameAndGroups(source string, tags map[string]string, group
 	return args
 }
 
-func executeCreateScan(t *testing.T, args []string) (string, string) {
-	buffer := executeScanGetBuffer(t, args)
+func executeCreateScan(t *testing.T, args []string, prop ...string) (string, string) {
+	var buffer *bytes.Buffer
+	if (prop != nil && len(prop) > 0) && prop[0] == "timeout" {
+		buffer = executeScanGetBufferWithSpecificTimeout(t, args, 12*time.Minute)
+	} else {
+		buffer = executeScanGetBuffer(t, args)
+	}
 
 	createdScan := wrappers.ScanResponseModel{}
 	_ = unmarshall(t, buffer, &createdScan, "Reading scan response JSON should pass")
@@ -964,6 +968,10 @@ func executeCreateScan(t *testing.T, args []string) (string, string) {
 
 func executeScanGetBuffer(t *testing.T, args []string) *bytes.Buffer {
 	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeout, args...)
+}
+
+func executeScanGetBufferWithSpecificTimeout(t *testing.T, args []string, timeOut time.Duration) *bytes.Buffer {
+	return executeCmdWithTimeOutNilAssertion(t, "Creating a scan should pass", timeOut, args...)
 }
 
 func deleteScan(t *testing.T, scanID string) {
@@ -1541,8 +1549,10 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 //
 //}
 
-func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
-	_, projectName := getRootProject(t)
+func TestScanCreate_WhenProjectExists_ShouldNotUpdateGroups(t *testing.T) {
+	projectID, projectName := getRootProject(t)
+	project := showProject(t, projectID)
+	groupsBeforeScanCreate := project.Groups
 
 	args := []string{
 		scanCommand, "create",
@@ -1552,10 +1562,49 @@ func TestScanCreateUsingWrongProjectGroups(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ProjectGroupList), "wrong_group",
+		"--async",
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "Failed finding groups")
+	if err != nil {
+		assertError(t, err, "running a scan should pass")
+	}
+
+	project = showProject(t, projectID)
+	groupsAfterScanCreate := project.Groups
+	if !reflect.DeepEqual(groupsBeforeScanCreate, groupsAfterScanCreate) {
+		t.Errorf("When project exists, groups before and after scan creation should be equal. Got %v, want %v", groupsAfterScanCreate, groupsBeforeScanCreate)
+	}
+
+}
+
+func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
+	projectID, projectName := getRootProject(t)
+	project := showProject(t, projectID)
+	applicationsBeforeScanCreate := project.ApplicationIds
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ApplicationName), "wrong_application",
+		"--async",
+	}
+
+	err, _ := executeCommand(t, args...)
+	if err != nil {
+		assertError(t, err, "running a scan should pass")
+	}
+
+	project = showProject(t, projectID)
+	applicationsAfterScanCreate := project.ApplicationIds
+	if !reflect.DeepEqual(applicationsBeforeScanCreate, applicationsAfterScanCreate) {
+		t.Errorf("When project exists, applications before and after scan creation should be equal. Got %v, want %v", applicationsAfterScanCreate, applicationsBeforeScanCreate)
+	}
+
 }
 func TestScanCreateExploitablePath(t *testing.T) {
 	_, projectName := getRootProject(t)
@@ -1692,7 +1741,6 @@ func TestScanWithPolicy(t *testing.T) {
 		flag(params.ScanTypes), params.IacType,
 		flag(params.BranchFlag), "main",
 		flag(params.TargetFormatFlag), "markdown,summaryConsole,summaryHTML"}
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
@@ -1720,12 +1768,23 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.BranchFlag), "main",
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatJSON,
+				printer.FormatSarif,
+				printer.FormatSonar,
+				printer.FormatSummaryConsole,
+				printer.FormatSummaryJSON,
+				printer.FormatPDF,
+				printer.FormatSummaryMarkdown,
+			}, ",",
+		),
 	}
 
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
 }
 
-func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
+func TestCreateScan_WithNoScanTypesAndScsFlagsNotPresent_SuccessAndScsScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1733,11 +1792,10 @@ func TestCreateScan_WithNoScanTypesFlag_SuccessAndScsNotScanned(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,
 		flag(params.BranchFlag), "main",
-		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
 
-	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified, even if missing scs-repo flags", timeout, args...)
-	assert.Assert(t, !strings.Contains(output.String(), params.ScsType), "Scs scan must not run if all required flags are not provided")
+	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and with missing scs-repo flags", timeout, args...)
+	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "SCS scan should run")
 }
 
 func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t *testing.T) {
@@ -1772,6 +1830,28 @@ func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 }
 
 func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
+	_, projectName := getRootProject(t)
+	scsRepoTokenEnvValue := os.Getenv(params.ScsRepoTokenEnv)
+	defer setEnvVars(map[string]string{params.ScsRepoTokenEnv: scsRepoTokenEnvValue})
+
+	setEnvVars(map[string]string{
+		params.ScsRepoTokenEnv: "",
+	})
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security, scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+}
+
+func TestCreateScan_ScsRepoTokenEnvConfigured_Success(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1871,14 +1951,16 @@ func addSCSDefaultFlagsToArgs(args *[]string) {
 func TestCreateScanAndValidateCheckmarxDomains(t *testing.T) {
 	wrappers.Domains = make(map[string]struct{})
 	_, _ = executeCreateScan(t, getCreateArgsWithGroups(Zip, Tags, Groups, "iac-security"))
-	usedDomainsInTests := []string{"deu.iam.checkmarx.net", "deu.ast.checkmarx.net"}
-	validateCheckmarxDomains(t, usedDomainsInTests)
+	baseUrl, _ := wrappers.GetURL("", "")
+	authUri, _ := wrappers.GetAuthURI()
+	usedDomainsFromConfig := []string{baseUrl, authUri}
+	validateCheckmarxDomains(t, usedDomainsFromConfig)
 }
 
 func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 	usedDomains := wrappers.Domains
 	for domain, _ := range usedDomains {
-		assert.Assert(t, slices.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
+		assert.Assert(t, utils.Contains(usedDomainsInTests, domain), "Domain "+domain+" not found in used domains")
 	}
 }
 
@@ -1935,26 +2017,21 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
 
-func GenerateRandomProjectNameForScan() string {
-	projectName := fmt.Sprintf("ast-cli-scan-%s", uuid.New().String())
-	_ = WriteProjectNameToFile(projectName)
-	return projectName
-}
-
-func WriteProjectNameToFile(projectName string) error {
-	f, err := os.OpenFile(ProjectNameFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
+func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithDefaultConfig(t *testing.T) {
+	projectName := GenerateRandomProjectNameForScan()
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.ScanResubmit),
 	}
-	defer f.Close()
-
-	if _, err := f.WriteString(projectName + "\n"); err != nil {
-		return err
-	}
-	return nil
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
 }

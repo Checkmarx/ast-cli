@@ -20,7 +20,8 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 		t, "Getting BFL should pass.", "results", "bfl",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.QueryIDFlag), queryID,
-		flag(params.FormatFlag), "json")
+		flag(params.FormatFlag), "json",
+		"--debug")
 
 	bflResult := []wrappers.ScanResultNode{}
 	_ = unmarshall(t, outputBuffer, &bflResult, "Reading BFL results should pass")
@@ -32,7 +33,7 @@ func TestRunGetBflWithInvalidScanIDandQueryID(t *testing.T) {
 	err, _ := executeCommand(
 		t, "results", "bfl",
 		flag(params.ScanIDFlag), "123456",
-		flag(params.QueryIDFlag), "abcd",
+		flag(params.QueryIDFlag), "1",
 		flag(params.FormatFlag), "json")
 
 	assertError(t, err, "Failed getting BFL: CODE: 5002, Failed getting BFL")
