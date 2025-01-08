@@ -221,6 +221,7 @@ const (
 	QueryIDQueryParam          = "query-id"
 	TagsKeyQueryParam          = "tags-keys"
 	TagsValueQueryParam        = "tags-values"
+	TagsEmptyQueryParam        = "empty-tags"
 	StatusesQueryParam         = "statuses"
 	StatusQueryParam           = "status"
 	BranchNameQueryParam       = "branch-name"

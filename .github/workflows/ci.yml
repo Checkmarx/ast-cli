@@ -65,7 +65,7 @@ jobs:
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
-          PR_GITHUB_NUMBER: 43
+          PR_GITHUB_NUMBER: 983
           PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
@@ -94,7 +94,7 @@ jobs:
           ./internal/commands/.scripts/integration_down.sh
 
       - name: Coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
           name: ${{ runner.os }}-coverage-latest
           path: coverage.html
