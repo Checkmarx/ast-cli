@@ -959,11 +959,11 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	return scsConfig
 }
 
-func getSCSEnginesSelected(SCSEngines string) (IsScorecardSelected bool, IsSecretDetectionSelected bool) {
-	if SCSEngines == "" {
+func getSCSEnginesSelected(scsEngines string) (IsScorecardSelected bool, IsSecretDetectionSelected bool) {
+	if scsEngines == "" {
 		return true, true
 	}
-	SCSEnginesTypes := strings.Split(SCSEngines, ",")
+	SCSEnginesTypes := strings.Split(scsEngines, ",")
 	for _, engineType := range SCSEnginesTypes {
 		engineType = strings.TrimSpace(engineType)
 		switch engineType {
@@ -976,7 +976,7 @@ func getSCSEnginesSelected(SCSEngines string) (IsScorecardSelected bool, IsSecre
 	return IsScorecardSelected, IsSecretDetectionSelected
 }
 
-func isUrlSupportedByScorecard(scsRepoURL string) bool {
+func isURLSupportedByScorecard(scsRepoURL string) bool {
 	// only for https; currently our scorecard solution doesn't support GitHub Enterprise Server hosts
 	githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`)
 	IsGithubURL := githubURLPattern.MatchString(scsRepoURL)
@@ -986,7 +986,7 @@ func isUrlSupportedByScorecard(scsRepoURL string) bool {
 	return IsGithubURL
 }
 
-func isScorecardRunnable(scsRepoToken string, scsRepoURL string, userScanTypes string) (bool, error) {
+func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
 		if userScanTypes != "" {
 			return false, errors.Errorf(ScsRepoRequiredMsg)
@@ -995,7 +995,7 @@ func isScorecardRunnable(scsRepoToken string, scsRepoURL string, userScanTypes s
 		return false, nil
 	}
 
-	return isUrlSupportedByScorecard(scsRepoURL), nil
+	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
