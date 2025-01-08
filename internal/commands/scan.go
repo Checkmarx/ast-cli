@@ -959,7 +959,7 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	return scsConfig
 }
 
-func getSCSEnginesSelected(scsEngines string) (isScorecardSelected bool, isSecretDetectionSelected bool) {
+func getSCSEnginesSelected(scsEngines string) (isScorecardSelected, isSecretDetectionSelected bool) {
 	if scsEngines == "" {
 		return true, true
 	}
