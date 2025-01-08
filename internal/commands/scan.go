@@ -959,31 +959,31 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	return scsConfig
 }
 
-func getSCSEnginesSelected(scsEngines string) (IsScorecardSelected bool, IsSecretDetectionSelected bool) {
+func getSCSEnginesSelected(scsEngines string) (isScorecardSelected bool, isSecretDetectionSelected bool) {
 	if scsEngines == "" {
 		return true, true
 	}
-	SCSEnginesTypes := strings.Split(scsEngines, ",")
-	for _, engineType := range SCSEnginesTypes {
+	scsEnginesTypes := strings.Split(scsEngines, ",")
+	for _, engineType := range scsEnginesTypes {
 		engineType = strings.TrimSpace(engineType)
 		switch engineType {
 		case ScsSecretDetectionType:
-			IsSecretDetectionSelected = true
+			isSecretDetectionSelected = true
 		case ScsScoreCardType:
-			IsScorecardSelected = true
+			isScorecardSelected = true
 		}
 	}
-	return IsScorecardSelected, IsSecretDetectionSelected
+	return isScorecardSelected, isSecretDetectionSelected
 }
 
 func isURLSupportedByScorecard(scsRepoURL string) bool {
 	// only for https; currently our scorecard solution doesn't support GitHub Enterprise Server hosts
 	githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`)
-	IsGithubURL := githubURLPattern.MatchString(scsRepoURL)
-	if scsRepoURL != "" && !IsGithubURL {
+	isGithubURL := githubURLPattern.MatchString(scsRepoURL)
+	if scsRepoURL != "" && !isGithubURL {
 		fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
 	}
-	return IsGithubURL
+	return isGithubURL
 }
 
 func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
