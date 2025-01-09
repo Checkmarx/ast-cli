@@ -15,7 +15,7 @@ var noPolicyEvaluatingIDEs = []string{commonParams.EclipseAgent, commonParams.Je
 
 func HandlePolicyEvaluation(cmd *cobra.Command, policyWrapper wrappers.PolicyWrapper, scan *wrappers.ScanResponseModel,
 	ignorePolicy bool, asyncFlag bool, agent string, waitDelay, policyTimeout int) (*wrappers.PolicyResponseModel, error) {
-	if !asyncFlag {
+	if asyncFlag {
 		policyResponseModel := &wrappers.PolicyResponseModel{}
 
 		if ignorePolicy || asyncFlag || slices.Contains(noPolicyEvaluatingIDEs, agent) {
