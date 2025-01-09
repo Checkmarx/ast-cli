@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -106,6 +107,7 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 )
 
 var (
@@ -956,69 +958,91 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	}
 	return scsConfig
 }
+
+func getSCSEnginesSelected(scsEngines string) (isScorecardSelected, isSecretDetectionSelected bool) {
+	if scsEngines == "" {
+		return true, true
+	}
+	scsEnginesTypes := strings.Split(scsEngines, ",")
+	for _, engineType := range scsEnginesTypes {
+		engineType = strings.TrimSpace(engineType)
+		switch engineType {
+		case ScsSecretDetectionType:
+			isSecretDetectionSelected = true
+		case ScsScoreCardType:
+			isScorecardSelected = true
+		}
+	}
+	return isScorecardSelected, isSecretDetectionSelected
+}
+
+func isURLSupportedByScorecard(scsRepoURL string) bool {
+	// only for https; currently our scorecard solution doesn't support GitHub Enterprise Server hosts
+	githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`)
+	isGithubURL := githubURLPattern.MatchString(scsRepoURL)
+	if scsRepoURL != "" && !isGithubURL {
+		fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
+	}
+	return isGithubURL
+}
+
+func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
+	if scsRepoToken == "" || scsRepoURL == "" {
+		if userScanTypes != "" {
+			return false, errors.Errorf(ScsRepoRequiredMsg)
+		}
+		fmt.Println(ScsRepoWarningMsg)
+		return false, nil
+	}
+
+	return isURLSupportedByScorecard(scsRepoURL), nil
+}
+
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
-		scsConfig := wrappers.SCSConfig{}
-		SCSMapConfig := make(map[string]interface{})
-		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
-		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
-		if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
-			scsRepoToken = token
-		}
-		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
-		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
-		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
-		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
-		if resubmitConfig != nil {
-			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
-			SCSMapConfig[resultsMapValue] = &scsConfig
-			return SCSMapConfig, nil
-		}
-
-		scsSecretDetectionSelected := false
-		scsScoreCardSelected := false
-
-		if SCSEngines != "" {
-			SCSEnginesTypes := strings.Split(SCSEngines, ",")
-			for _, engineType := range SCSEnginesTypes {
-				engineType = strings.TrimSpace(engineType)
-				switch engineType {
-				case ScsSecretDetectionType:
-					scsSecretDetectionSelected = true
-				case ScsScoreCardType:
-					scsScoreCardSelected = true
-				}
-			}
-		} else {
-			scsSecretDetectionSelected = true
-			scsScoreCardSelected = true
-		}
-
-		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
-			scsConfig.Twoms = trueString
-		}
-		if scsScoreCardSelected {
-			if scsRepoToken != "" && scsRepoURL != "" {
-				scsConfig.Scorecard = trueString
-				scsConfig.RepoToken = scsRepoToken
-				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
-			} else {
-				if userScanTypes == "" {
-					fmt.Println(ScsRepoWarningMsg)
-				} else {
-					return nil, errors.Errorf(ScsRepoRequiredMsg)
-				}
-			}
-		}
-		if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
-			return nil, nil
-		}
-
+	if !scanTypeEnabled(commonParams.ScsType) && !scanTypeEnabled(commonParams.MicroEnginesType) {
+		return nil, nil
+	}
+	scsConfig := wrappers.SCSConfig{}
+	SCSMapConfig := make(map[string]interface{})
+	SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
+	if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
+		scsRepoToken = token
+	}
+	viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
+	scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+	viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
+	SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+	if resubmitConfig != nil {
+		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
 		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
-	return nil, nil
+	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(SCSEngines)
+
+	if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+		scsConfig.Twoms = trueString
+	}
+
+	if scsScoreCardSelected {
+		canRunScorecard, err := isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes)
+		if err != nil {
+			return nil, err
+		}
+		if canRunScorecard {
+			scsConfig.Scorecard = trueString
+			scsConfig.RepoToken = scsRepoToken
+			scsConfig.RepoURL = strings.ToLower(scsRepoURL)
+		}
+	}
+
+	if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
+		return nil, nil
+	}
+
+	SCSMapConfig[resultsMapValue] = &scsConfig
+	return SCSMapConfig, nil
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
