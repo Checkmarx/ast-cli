@@ -1110,6 +1110,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
+	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
@@ -1486,6 +1487,9 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	var preSignedURL *string
 	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
 	if zipFilePathErr != nil {
+		if unzip || !userProvidedZip {
+			return "", zipFilePath, errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+		}
 		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 	}
 	if unzip || !userProvidedZip {
@@ -1640,6 +1644,7 @@ func runCreateScanCommand(
 			featureFlagsWrapper,
 			jwtWrapper,
 		)
+		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1705,7 +1710,6 @@ func runCreateScanCommand(
 			}
 		}
 
-		defer cleanUpTempZip(zipFilePath)
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
@@ -2642,19 +2646,19 @@ func cleanUpTempZip(zipFilePath string) {
 	if zipFilePath != "" {
 		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
 		tries := cleanupMaxRetries
-		for tries > 0 {
+		for attempt := 1; tries > 0; attempt++ {
 			zipRemoveErr := os.Remove(zipFilePath)
 			if zipRemoveErr != nil {
 				logger.PrintIfVerbose(
 					fmt.Sprintf(
-						"Failed to remove temporary zip: %d in %d: %v",
-						cleanupMaxRetries-tries,
+						"Failed to remove temporary zip: Attempt %d/%d: %v",
+						attempt,
 						cleanupMaxRetries,
 						zipRemoveErr,
 					),
 				)
 				tries--
-				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+				Wait(attempt)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
@@ -2666,6 +2670,13 @@ func cleanUpTempZip(zipFilePath string) {
 	} else {
 		logger.PrintIfVerbose("No temporary zip to clean")
 	}
+}
+
+func Wait(attempt int) {
+	// Calculate exponential backoff delay
+	waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+	logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
+	time.Sleep(waitDuration * time.Second)
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {

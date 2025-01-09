@@ -5,6 +5,8 @@ package commands
 import (
 	"testing"
 
+	asserts "github.com/stretchr/testify/assert"
+
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
@@ -196,4 +198,74 @@ func TestGetProjectByName(t *testing.T) {
 	// Verify the result
 	assert.Equal(t, result.Name, projectName)
 	assert.Equal(t, result.ID, "3")
+}
+
+func TestSupportEmptyTags_whenTagsFlagsNotExists_shouldNotChangeParams(t *testing.T) {
+	params := map[string]string{
+		"limit": "10",
+		"ids":   "1,2,3",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, len(params), 2)
+}
+
+func TestSupportEmptyTags_whenTagsFlagsHasOnlyEmptyValues_shouldAddEmptyTagParamAndRemoveNoneTags(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   emptyTag,
+		"tags-values": emptyTag,
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, params["empty-tags"], "true")
+	_, existsKey := params["tags-keys"]
+	_, existsValue := params["tags-values"]
+	asserts.False(t, existsKey, "tags-keys should not exist")
+	asserts.False(t, existsValue, "tags-values should not exist")
+	assert.Equal(t, len(params), 3)
+}
+
+func TestSupportEmptyTags_whenTagsFlagsHaveAlsoEmptyValues_shouldAddEmptyTagParamAndRemoveNoneTags(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   "key1,key2," + emptyTag,
+		"tags-values": emptyTag + ",value1",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	keys := params["tags-keys"]
+	values := params["tags-values"]
+	assert.Equal(t, keys, "key1,key2")
+	assert.Equal(t, values, "value1")
+	assert.Equal(t, params["empty-tags"], "true")
+	assert.Equal(t, len(params), 5)
+}
+
+func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t *testing.T) {
+	params := map[string]string{
+		"limit":       "10",
+		"ids":         "1,2,3",
+		"tags-keys":   "key1,key2," + emptyTag,
+		"tags-values": "value1",
+	}
+
+	supportEmptyTags(params)
+
+	assert.Equal(t, params["limit"], "10")
+	assert.Equal(t, params["ids"], "1,2,3")
+	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
+	assert.Equal(t, params["tags-values"], "value1")
+	assert.Equal(t, len(params), 4)
 }
