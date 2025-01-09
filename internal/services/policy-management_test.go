@@ -113,6 +113,7 @@ func TestHandlePolicyEvaluation(t *testing.T) {
 				tc.args.policyWrapper,
 				tc.args.scan,
 				tc.args.ignorePolicy,
+				tc.args.asyncFlag,
 				tc.args.agent,
 				tc.args.waitDelay,
 				tc.args.policyTimeout,
@@ -132,6 +133,7 @@ type args struct {
 	policyWrapper wrappers.PolicyWrapper
 	scan          *wrappers.ScanResponseModel
 	ignorePolicy  bool
+	asyncFlag     bool
 	agent         string
 	waitDelay     int
 	policyTimeout int

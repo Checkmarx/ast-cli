@@ -14,10 +14,10 @@ import (
 var noPolicyEvaluatingIDEs = []string{commonParams.EclipseAgent, commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent}
 
 func HandlePolicyEvaluation(cmd *cobra.Command, policyWrapper wrappers.PolicyWrapper, scan *wrappers.ScanResponseModel,
-	ignorePolicy bool, agent string, waitDelay, policyTimeout int) (*wrappers.PolicyResponseModel, error) {
+	ignorePolicy bool, asyncFlag bool, agent string, waitDelay, policyTimeout int) (*wrappers.PolicyResponseModel, error) {
 	policyResponseModel := &wrappers.PolicyResponseModel{}
 
-	if ignorePolicy || slices.Contains(noPolicyEvaluatingIDEs, agent) {
+	if ignorePolicy || asyncFlag || slices.Contains(noPolicyEvaluatingIDEs, agent) {
 		logger.PrintIfVerbose("Skipping policy evaluation")
 		return policyResponseModel, nil
 	}

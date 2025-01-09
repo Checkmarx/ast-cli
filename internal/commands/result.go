@@ -963,6 +963,7 @@ func runGetResultCommand(
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
+		asyncFlag, _ := cmd.Flags().GetBool(commonParams.AsyncFlag)
 
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 		if scanID == "" {
@@ -986,7 +987,7 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, asyncFlag, agent, waitDelay, policyTimeout)
 		if err != nil {
 			return err
 		}
