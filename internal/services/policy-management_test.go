@@ -108,7 +108,7 @@ func TestHandlePolicyEvaluation(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := HandlePolicyEvaluation(
+			result, err, _ := HandlePolicyEvaluation(
 				tc.args.cmd,
 				tc.args.policyWrapper,
 				tc.args.scan,
@@ -120,9 +120,9 @@ func TestHandlePolicyEvaluation(t *testing.T) {
 			)
 			assert.Equal(t, tc.expected, result)
 			if tc.expectError {
-				assert.Error(t, err)
+				assert.Error(t, err, "")
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, err, "")
 			}
 		})
 	}

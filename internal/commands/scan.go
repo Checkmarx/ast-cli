@@ -1662,7 +1662,7 @@ func runCreateScanCommand(
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 			ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, asyncFlag, agent, waitDelay, policyTimeout)
+			policyResponseModel, err, _ = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, asyncFlag, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}

@@ -14,20 +14,20 @@ import (
 var noPolicyEvaluatingIDEs = []string{commonParams.EclipseAgent, commonParams.JetbrainsAgent, commonParams.VSCodeAgent, commonParams.VisualStudioAgent}
 
 func HandlePolicyEvaluation(cmd *cobra.Command, policyWrapper wrappers.PolicyWrapper, scan *wrappers.ScanResponseModel,
-	ignorePolicy bool, asyncFlag bool, agent string, waitDelay, policyTimeout int) (*wrappers.PolicyResponseModel, error) {
+	ignorePolicy bool, asyncFlag bool, agent string, waitDelay, policyTimeout int) (*wrappers.PolicyResponseModel, error, string) {
 	if asyncFlag {
 		policyResponseModel := &wrappers.PolicyResponseModel{}
 
 		if ignorePolicy || asyncFlag || slices.Contains(noPolicyEvaluatingIDEs, agent) {
 			logger.PrintIfVerbose("Skipping policy evaluation")
-			return policyResponseModel, nil
+			return policyResponseModel, nil, ""
 		}
 
 		if policyTimeout < 0 {
-			return nil, errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag)
+			return nil, errors.Errorf("--%s should be equal or higher than 0", commonParams.PolicyTimeoutFlag), ""
 		}
 
 		return policymanagement.HandlePolicyWait(waitDelay, policyTimeout, policyWrapper, scan.ID, scan.ProjectID, cmd)
 	}
-	return nil, errors.Errorf("Scan executed in asynchronous mode or still running. Hence, no policy generated.")
+	return nil, nil, "Scan executed in asynchronous mode or still running. Hence, no policy generated."
 }

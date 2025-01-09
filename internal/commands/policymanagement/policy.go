@@ -28,7 +28,7 @@ func HandlePolicyWait(
 	scanID,
 	projectID string,
 	cmd *cobra.Command,
-) (*wrappers.PolicyResponseModel, error) {
+) (*wrappers.PolicyResponseModel, error, string) {
 	policyResponseModel, err := waitForPolicyCompletion(
 		waitDelay,
 		timeoutMinutes,
@@ -41,9 +41,9 @@ func HandlePolicyWait(
 		if verboseFlag {
 			logger.PrintIfVerbose("Policy evaluation failed")
 		}
-		return nil, err
+		return nil, err, ""
 	}
-	return policyResponseModel, nil
+	return policyResponseModel, nil, ""
 }
 
 func waitForPolicyCompletion(

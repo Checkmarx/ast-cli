@@ -988,7 +988,7 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, asyncFlag, agent, waitDelay, policyTimeout)
+		policyResponseModel, err, _ := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, asyncFlag, agent, waitDelay, policyTimeout)
 
 		if err != nil {
 			return err

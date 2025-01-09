@@ -572,7 +572,7 @@ func getScanViolatedPolicies(scansWrapper wrappers.ScansWrapper, policyWrapper w
 		return nil, err
 	}
 	// retrieve policy information to send to the PR service
-	policyResponseModel, err := policymanagement.HandlePolicyWait(waitDelayDefault,
+	policyResponseModel, err, _ := policymanagement.HandlePolicyWait(waitDelayDefault,
 		resultPolicyDefaultTimeout,
 		policyWrapper,
 		scanID,
