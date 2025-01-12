@@ -988,10 +988,12 @@ func runGetResultCommand(
 		}
 
 		policyResponseModel := &wrappers.PolicyResponseModel{}
-		if !async {
+		if async {
+			logger.PrintIfVerbose("Policy WILL running")
 			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
 		} else {
 			policyResponseModel = nil
+			logger.PrintIfVerbose("Policy WILL NOT running")
 		}
 
 		if err != nil {
