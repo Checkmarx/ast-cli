@@ -978,7 +978,7 @@ func getSCSEnginesSelected(scsEngines string) (isScorecardSelected, isSecretDete
 
 func isURLSupportedByScorecard(scsRepoURL string) bool {
 	// only for https; currently our scorecard solution doesn't support GitHub Enterprise Server hosts
-	githubURLPattern := regexp.MustCompile(`^(?:https?://)?github\.com/.+`)
+	githubURLPattern := regexp.MustCompile(`(?:https?://)?(?:^|[^.])github\.com/.+`)
 	isGithubURL := githubURLPattern.MatchString(scsRepoURL)
 	if scsRepoURL != "" && !isGithubURL {
 		fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
