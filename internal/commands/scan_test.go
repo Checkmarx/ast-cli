@@ -34,6 +34,8 @@ const (
 	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
 	dummyGitlabRepo               = "https://gitlab.com/dummy-org/gitlab-dummy"
 	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
+	dummyRepoWithToken            = "https://token@github.com/dummyuser/dummy_project"
+	dummyRepoWithTokenAndUsername = "https://username:token@github.com/dummyuser/dummy_project"
 	dummyShortenedGithubRepo      = "github.com/dummyuser/dummy_project.git"
 	dummyToken                    = "dummyToken"
 	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
@@ -1079,6 +1081,112 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 		Twoms:     "true",
 		Scorecard: "true",
 		RepoURL:   dummyShortenedGithubRepo,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepoWithToken,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepoWithTokenAndUsername,
 		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
