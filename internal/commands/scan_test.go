@@ -29,35 +29,37 @@ import (
 )
 
 const (
-	unknownFlag                   = "unknown flag: --chibutero"
-	blankSpace                    = " "
-	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
-	dummyGitlabRepo               = "https://gitlab.com/dummy-org/gitlab-dummy"
-	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
-	dummyRepoWithToken            = "https://token@github.com/dummyuser/dummy_project"
-	dummyRepoWithTokenAndUsername = "https://username:token@github.com/dummyuser/dummy_project"
-	dummyShortenedGithubRepo      = "github.com/dummyuser/dummy_project.git"
-	dummyToken                    = "dummyToken"
-	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
-	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
-	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
-	fileSourceFlag                = "--file"
-	fileSourceValueEmpty          = "data/empty.Dockerfile"
-	fileSourceValue               = "data/Dockerfile"
-	fileSourceIncorrectValue      = "data/source.zip"
-	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
-	fileSourceError               = "flag needs an argument: --file"
-	engineFlag                    = "--engine"
-	engineValue                   = "docker"
-	invalidEngineValue            = "invalidengine"
-	engineError                   = "flag needs an argument: --engine"
-	additionalParamsFlag          = "--additional-params"
-	additionalParamsValue         = "-v"
-	additionalParamsError         = "flag needs an argument: --additional-params"
-	scanCommand                   = "scan"
-	kicsRealtimeCommand           = "kics-realtime"
-	InvalidEngineMessage          = "Please verify if engine is installed"
-	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	unknownFlag                            = "unknown flag: --chibutero"
+	blankSpace                             = " "
+	errorMissingBranch                     = "Failed creating a scan: Please provide a branch"
+	dummyGitlabRepo                        = "https://gitlab.com/dummy-org/gitlab-dummy"
+	dummyRepo                              = "https://github.com/dummyuser/dummy_project.git"
+	dummyRepoWithToken                     = "https://token@github.com/dummyuser/dummy_project"
+	dummyRepoWithTokenAndUsername          = "https://username:token@github.com/dummyuser/dummy_project"
+	dummyShortenedRepoWithToken            = "token@github.com/dummyuser/dummy_project"
+	dummyShortenedRepoWithTokenAndUsername = "username:token@github.com/dummyuser/dummy_project"
+	dummyShortenedGithubRepo               = "github.com/dummyuser/dummy_project.git"
+	dummyToken                             = "dummyToken"
+	dummySSHRepo                           = "git@github.com:dummyRepo/dummyProject.git"
+	errorSourceBadFormat                   = "Failed creating a scan: Input in bad format: Sources input has bad format: "
+	scaPathError                           = "ScaResolver error: exec: \"resolver\": executable file not found in "
+	fileSourceFlag                         = "--file"
+	fileSourceValueEmpty                   = "data/empty.Dockerfile"
+	fileSourceValue                        = "data/Dockerfile"
+	fileSourceIncorrectValue               = "data/source.zip"
+	fileSourceIncorrectValueError          = "data/source.zip. Provided file is not supported by kics"
+	fileSourceError                        = "flag needs an argument: --file"
+	engineFlag                             = "--engine"
+	engineValue                            = "docker"
+	invalidEngineValue                     = "invalidengine"
+	engineError                            = "flag needs an argument: --engine"
+	additionalParamsFlag                   = "--additional-params"
+	additionalParamsValue                  = "-v"
+	additionalParamsError                  = "flag needs an argument: --additional-params"
+	scanCommand                            = "scan"
+	kicsRealtimeCommand                    = "kics-realtime"
+	InvalidEngineMessage                   = "Please verify if engine is installed"
+	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName              = "test_output.log"
 	noUpdatesForExistingProject = "No tags to update. Skipping project update."
@@ -1092,6 +1094,59 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 	}
 }
 
+func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyShortenedRepoWithToken,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
 func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
 	// Create a pipe for capturing stdout
 	r, w, _ := os.Pipe()
@@ -1187,6 +1242,59 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 		Twoms:     "true",
 		Scorecard: "true",
 		RepoURL:   dummyRepoWithTokenAndUsername,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyShortenedRepoWithTokenAndUsername,
 		RepoToken: dummyToken,
 	}
 	scsMapConfig := make(map[string]interface{})
