@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -118,11 +117,11 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	usr, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("Cannot file home directory.", err)
+		log.Fatal("Cannot find home directory.", err)
 	}
-	fullPath := usr.HomeDir + configDirName
+	fullPath := homeDir + configDirName
 	verifyConfigDir(fullPath)
 	viper.AddConfigPath(fullPath)
 	configFile := "checkmarxcli"
@@ -201,11 +200,11 @@ func SaveConfig(path string, config map[string]interface{}) error {
 }
 
 func GetConfigFilePath() (string, error) {
-	usr, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("error getting current user: %w", err)
+		return "", fmt.Errorf("error getting user home directory: %w", err)
 	}
-	return usr.HomeDir + configDirName + "/checkmarxcli.yaml", nil
+	return homeDir + configDirName + "/checkmarxcli.yaml", nil
 }
 
 func verifyConfigDir(fullPath string) {
@@ -213,7 +212,7 @@ func verifyConfigDir(fullPath string) {
 		fmt.Println("Creating directory")
 		err = os.Mkdir(fullPath, homeDirectoryPermissions)
 		if err != nil {
-			log.Fatal("Cannot file home directory.", err)
+			log.Fatal("Cannot create home directory.", err)
 		}
 	}
 }
