@@ -144,33 +144,13 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     if: inputs.dev == false
-    needs: build
     steps:
-      - name: Get latest release notes
-        id: release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/Checkmarx/ast-cli/releases/latest | jq -r '.body' )"
-          body_release="${body_release//$'\n'/'%0A'}"
-          echo "::set-output name=body_release::$body_release"
-
-      - name: Converts Markdown to HTML
-        id: convert
-        uses: lifepal/markdown-to-html@71ed74a56602597c05dd7dd0e561631557158ed5 #v1.1
-        with:
-          text: "${{ steps.release.outputs.body_release }}"
-
-      - name: Clean html
-        id: clean
-        run: |
-          clean="$(echo "${{ steps.convert.outputs.html }}" | awk '{gsub(/id=.[a-z]+/,"");print}' | tr -d '\n')"
-          echo "$clean"
-          echo "::set-output name=clean::$clean"
-
       - name: Send a Notification
         id: notify
-        uses: thechetantalwar/teams-notify@8a78811f5e8f58cdd204efebd79158006428c46b #v2
+        uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
         with:
-          teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
-          message: "${{ steps.clean.outputs.clean }}"
+          product_name: CLI
+          release_version: ${{ inputs.tag }}
+          cli_release_version: ""
+          release_author: "Phoenix Team"
+          release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
