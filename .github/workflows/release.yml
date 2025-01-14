@@ -54,13 +54,19 @@ jobs:
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      - name: Updating and upgrading brew
+      - name: Updating and upgrading brew to a specific version
         run: |
           git config --global pack.windowMemory "100m"
           git config --global pack.SizeLimit "100m" 
           git config --global pack.threads "1"
           git config --global pack.window "0"
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          # Clone Homebrew repository to a specific version
+          git clone https://github.com/Homebrew/brew.git /usr/local/Homebrew
+          cd /usr/local/Homebrew
+          # Checkout the specific tag or commit
+          git checkout 4.4.15
+          # Run Homebrew setup
+          /bin/bash bin/brew shellenv
           brew --version
       - name: Install gon
         run: |
