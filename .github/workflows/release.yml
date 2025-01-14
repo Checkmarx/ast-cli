@@ -56,18 +56,13 @@ jobs:
           p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Updating and upgrading brew to a specific version
         run: |
-          git config --global pack.windowMemory "100m"
-          git config --global pack.SizeLimit "100m" 
-          git config --global pack.threads "1"
-          git config --global pack.window "0"
-          # Clone Homebrew repository to a specific version
-          git clone https://github.com/Homebrew/brew.git /usr/local/Homebrew
-          cd /usr/local/Homebrew
-          # Checkout the specific tag or commit
-          git checkout 4.4.15
-          # Run Homebrew setup
-          /bin/bash bin/brew shellenv
           brew --version
+          cd $(brew --repo)
+          git fetch --tags
+          git checkout 4.4.15
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          brew --version
+
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
