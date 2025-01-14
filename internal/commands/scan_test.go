@@ -1765,3 +1765,60 @@ func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t 
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
 	assert.Equal(t, zipPath, "failureCase.zip")
 }
+
+func TestValidateScanTypes(t *testing.T) {
+	tests := []struct {
+		name                      string
+		userScanTypes             string
+		userSCSScanTypes          string
+		allowedEngines            map[string]bool
+		containerEngineCLIEnabled bool
+		expectedError             string
+	}{
+		{
+			name:                      "No licenses available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "sast,secret-detection",
+			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
+			containerEngineCLIEnabled: true,
+			expectedError:             "It looks like the \"scs\" scan type does",
+		},
+		{
+			name:                      "SCS license available, secret-detection not available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "secret-detection",
+			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": false},
+			containerEngineCLIEnabled: true,
+			expectedError:             "It looks like the \"secret-detection\" scan type does not exist",
+		},
+		{
+			name:                      "All licenses available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "secret-detection",
+			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": true},
+			containerEngineCLIEnabled: true,
+			expectedError:             "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
+			cmd.Flags().String(commonParams.SCSEnginesFlag, tt.userSCSScanTypes, "")
+
+			jwtWrapper := &mock.JWTMockWrapper{
+				CustomGetAllowedEngines: func(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]bool, error) {
+					return tt.allowedEngines, nil
+				},
+			}
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
+			if tt.expectedError != "" {
+				assert.ErrorContains(t, err, tt.expectedError)
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
+}
