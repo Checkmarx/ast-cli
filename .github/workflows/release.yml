@@ -86,11 +86,6 @@ jobs:
         run: |
           brew install sigstore/tap/cosign
 
-      - name: Add and Commit qemu.rb
-        if: inputs.dev == false
-        run: |
-          git add qemu.rb
-          git commit -m "Add qemu.rb"
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
