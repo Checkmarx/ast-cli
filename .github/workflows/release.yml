@@ -147,6 +147,8 @@ jobs:
     steps:
       - name: Send a Notification
         id: notify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
         with:
           product_name: CLI
