@@ -142,17 +142,12 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   notify:
-    runs-on: ubuntu-latest
-    if: inputs.dev == false
-    steps:
-      - name: Send a Notification
-        id: notify
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
-        with:
-          product_name: CLI
-          release_version: ${{ inputs.tag }}
-          cli_release_version: ""
-          release_author: "Phoenix Team"
-          release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
+    with:
+      product_name: CLI
+      release_version: ${{ inputs.tag }}
+      cli_release_version: ""
+      release_author: "Phoenix Team"
+      release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
