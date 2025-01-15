@@ -985,21 +985,33 @@ func runGetResultCommand(
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
+		if isScanFinished(scan.Status) {
+			policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+			if err != nil {
+				return err
+			}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
-		if err != nil {
+			if sastRedundancy {
+				resultsParams[commonParams.SastRedundancyFlag] = ""
+			}
+
+			_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+				policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+				formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 			return err
-		}
+		} else {
+			log.Printf("Scan executed in asynchronous mode or still running. Hence, no policy generated")
 
-		if sastRedundancy {
-			resultsParams[commonParams.SastRedundancyFlag] = ""
 		}
-
-		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-			policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
-			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
-		return err
+		return nil
 	}
+}
+
+func isScanFinished(status wrappers.ScanStatus) bool {
+	statusBytes, _ := json.Marshal(status)
+	statusString := string(statusBytes)
+	statusString = strings.Trim(statusString, `"`)
+	return strings.EqualFold(statusString, "Completed") || strings.EqualFold(statusString, "Partial")
 }
 
 func runGetCodeBashingCommand(
@@ -1973,7 +1985,7 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	} else {
 		location = ""
 	}
-	return (location)
+	return location
 }
 func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
