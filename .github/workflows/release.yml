@@ -31,7 +31,7 @@ permissions:
 jobs:
 
   notify:
-    needs: build
+
     uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
     with:
       product_name: CLI
