@@ -146,3 +146,4 @@ jobs:
       cli_release_version: ""
       release_author: "Phoenix Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+    secrets: inherit
