@@ -1765,3 +1765,119 @@ func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t 
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
 	assert.Equal(t, zipPath, "failureCase.zip")
 }
+
+func TestAddSastScan_ScanFlags(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	tests := []struct {
+		name                   string
+		requiredIncrementalSet bool
+		requiredFastScanSet    bool
+		fastScanFlag           string
+		incrementalFlag        string
+		expectedConfig         wrappers.SastConfig
+	}{
+		{
+			name:                   "Fast scan and Incremental scan both false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental scan both true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental not set",
+			requiredIncrementalSet: false,
+			requiredFastScanSet:    false,
+			expectedConfig:         wrappers.SastConfig{},
+		},
+		{
+			name:                   "Fast scan is true and Incremental is false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan is false and Incremental is true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan is not set and Incremental is true",
+			requiredIncrementalSet: true,
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				Incremental: "true",
+			},
+		},
+		{
+			name:                "Fast scan is true and Incremental is not set",
+			requiredFastScanSet: true,
+			fastScanFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
+			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+
+			_ = cmdCommand.Execute()
+
+			if tt.requiredFastScanSet {
+				_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, tt.fastScanFlag)
+			}
+			if tt.requiredIncrementalSet {
+				_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+
+			result := addSastScan(cmdCommand, resubmitConfig)
+
+			actualSastConfig := wrappers.SastConfig{}
+			for key, value := range result {
+				if key == resultsMapType {
+					assert.Equal(t, commonParams.SastType, value)
+				} else if key == resultsMapValue {
+					actualSastConfig = *value.(*wrappers.SastConfig)
+				}
+			}
+
+			if !reflect.DeepEqual(actualSastConfig, tt.expectedConfig) {
+				t.Errorf("Expected %+v, but got %+v", tt.expectedConfig, actualSastConfig)
+			}
+		})
+	}
+}

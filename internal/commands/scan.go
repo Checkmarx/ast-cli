@@ -86,6 +86,7 @@ const (
 	configFilterKey                 = "filter"
 	configFilterPlatforms           = "platforms"
 	configIncremental               = "incremental"
+	configFastScan                  = "fastScanMode"
 	configPresetName                = "presetName"
 	configEngineVerbose             = "engineVerbose"
 	configLanguageMode              = "languageMode"
@@ -818,45 +819,66 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 }
 
 func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) {
-		sastMapConfig := make(map[string]interface{})
-		sastConfig := wrappers.SastConfig{}
-		sastMapConfig[resultsMapType] = commonParams.SastType
-		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
-		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
-		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
-		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
-		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
-		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
-		for _, config := range resubmitConfig {
-			if config.Type != commonParams.SastType {
-				continue
-			}
-			resubmitIncremental := config.Value[configIncremental]
-			if resubmitIncremental != nil && !incrementalVal {
-				sastConfig.Incremental = resubmitIncremental.(string)
-			}
-			resubmitPreset := config.Value[configPresetName]
-			if resubmitPreset != nil && sastConfig.PresetName == "" {
-				sastConfig.PresetName = resubmitPreset.(string)
-			}
-			resubmitFilter := config.Value[configFilterKey]
-			if resubmitFilter != nil && sastConfig.Filter == "" {
-				sastConfig.Filter = resubmitFilter.(string)
-			}
-			resubmitEngineVerbose := config.Value[configEngineVerbose]
-			if resubmitEngineVerbose != nil {
-				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
-			}
-			resubmitLanguageMode := config.Value[configLanguageMode]
-			if resubmitLanguageMode != nil {
-				sastConfig.LanguageMode = resubmitLanguageMode.(string)
-			}
-		}
-		sastMapConfig[resultsMapValue] = &sastConfig
-		return sastMapConfig
+	// Check if SAST is enabled
+	if !scanTypeEnabled(commonParams.SastType) {
+		return nil
 	}
-	return nil
+
+	sastMapConfig := make(map[string]interface{})
+	sastConfig := wrappers.SastConfig{}
+	sastMapConfig[resultsMapType] = commonParams.SastType
+
+	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+
+	if sastFastScanChanged {
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
+	}
+
+	if sastIncrementalChanged {
+		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+	}
+
+	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
+	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+
+	for _, config := range resubmitConfig {
+		if config.Type != commonParams.SastType {
+			continue
+		}
+
+		overrideSastConfigValue(&sastConfig, config)
+	}
+
+	sastMapConfig[resultsMapValue] = &sastConfig
+	return sastMapConfig
+}
+
+func overrideSastConfigValue(sastConfig *wrappers.SastConfig, config wrappers.Config) {
+	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
+		if *configValue == "" && resubmitValue != nil {
+			*configValue = resubmitValue.(string)
+		}
+	}
+
+	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil {
+		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil {
+		sastConfig.FastScanMode = resubmitFastScan.(string)
+	}
+
+	setIfEmpty(&sastConfig.PresetName, config.Value[configPresetName])
+	setIfEmpty(&sastConfig.Filter, config.Value[configFilterKey])
+
+	if resubmitEngineVerbose := config.Value[configEngineVerbose]; resubmitEngineVerbose != nil {
+		sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+	}
+	if resubmitLanguageMode := config.Value[configLanguageMode]; resubmitLanguageMode != nil {
+		sastConfig.LanguageMode = resubmitLanguageMode.(string)
+	}
 }
 
 func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
