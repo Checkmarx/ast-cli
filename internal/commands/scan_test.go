@@ -1858,10 +1858,10 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			_ = cmdCommand.Execute()
 
 			if tt.requiredFastScanSet {
-				_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, tt.fastScanFlag)
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastFastScanFlag, tt.fastScanFlag)
 			}
 			if tt.requiredIncrementalSet {
-				_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
 			}
 
 			result := addSastScan(cmdCommand, resubmitConfig)
