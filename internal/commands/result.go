@@ -1000,8 +1000,12 @@ func runGetResultCommand(
 				formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 			return err
 		} else {
-			log.Printf("Scan executed in asynchronous mode or still running. Hence, no policy generated")
 
+			log.Printf("Scan executed in asynchronous mode or still running. Hence, no policy generated")
+			_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+				nil, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+				formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+			return err
 		}
 		return nil
 	}
