@@ -1845,6 +1845,12 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 		},
 	}
 
+	oldActualScanTypes := actualScanTypes
+
+	defer func() {
+		actualScanTypes = oldActualScanTypes
+	}()
+
 	for _, tt := range tests {
 		actualScanTypes = "sast,sca,kics,scs"
 		t.Run(tt.name, func(t *testing.T) {
