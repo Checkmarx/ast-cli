@@ -1846,6 +1846,7 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		actualScanTypes = "sast,sca,kics,scs"
 		t.Run(tt.name, func(t *testing.T) {
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
