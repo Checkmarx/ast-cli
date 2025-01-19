@@ -869,7 +869,7 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
-	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, true, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
 
 	_ = cmdCommand.Execute()
 
@@ -883,7 +883,7 @@ func TestAddSastScan(t *testing.T) {
 		PresetName:   "test",
 		Filter:       "test",
 		Incremental:  "true",
-		FastScanMode: "true",
+		FastScanMode: "",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
