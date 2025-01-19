@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/bash@sha256:1abc09ac352efdc60d855bd159b9b66df6596a174400752ae3c537b5350779a9
+FROM checkmarx/bash:5.2.37-r2-737d21762d3388@sha256:631b3b846c1744ff5ddc7114f8df0eaf771f0e8bea3acea05155e8e0caa8532e
 USER nonroot
 
 COPY cx /app/bin/cx
