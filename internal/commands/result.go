@@ -2237,9 +2237,11 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 }
 
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
+	caser := cases.Title(language.English)
+
 	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
-			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
+			caser.String(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
 
