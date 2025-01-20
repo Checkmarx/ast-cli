@@ -2244,14 +2244,16 @@ func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage str
 	}
 
 	if result.ScanResultData.RuleID != nil {
-		return fmt.Sprintf("%s (%s)", *result.ScanResultData.RuleID, result.Type),
-			result.ScanResultData.RuleName,
-			result.ScanResultData.RuleName
+		ruleName = strings.ReplaceAll(result.ScanResultData.RuleName, "_", " ")
+		return fmt.Sprintf("%s - %s (%s)", ruleName, *result.ScanResultData.RuleID, result.Type),
+			ruleName,
+			ruleName
 	}
 
-	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	ruleName = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	return fmt.Sprintf("%v - %s (%s)", ruleName, result.ScanResultData.QueryID, result.Type),
+		ruleName,
+		ruleName
 }
 
 func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription {
