@@ -2249,21 +2249,25 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 }
 
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
+	caser := cases.Title(language.English)
+
 	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
-			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
+			caser.String(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
 
 	if result.ScanResultData.RuleID != nil {
-		return fmt.Sprintf("%s (%s)", *result.ScanResultData.RuleID, result.Type),
-			result.ScanResultData.RuleName,
-			result.ScanResultData.RuleName
+		ruleName = strings.ReplaceAll(result.ScanResultData.RuleName, "_", " ")
+		return fmt.Sprintf("%s - %s (%s)", ruleName, *result.ScanResultData.RuleID, result.Type),
+			ruleName,
+			ruleName
 	}
 
-	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	ruleName = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	return fmt.Sprintf("%v - %s (%s)", ruleName, result.ScanResultData.QueryID, result.Type),
+		ruleName,
+		ruleName
 }
 
 func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription {
