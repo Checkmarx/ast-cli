@@ -146,5 +146,5 @@ jobs:
       cli_release_version: ""
       release_author: "Phoenix Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
-      jira_product_name: "ASTCLI_${{ inputs.tag }}"
+      jira_product_name: ASTCLI_${{ inputs.tag }}
     secrets: inherit
