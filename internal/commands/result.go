@@ -985,29 +985,25 @@ func runGetResultCommand(
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
+		policyResponseModel := &wrappers.PolicyResponseModel{}
 		if isScanFinished(scan.Status) {
-			policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
-			if err != nil {
-				return err
-			}
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+		} else {
+			policyResponseModel = nil
+		}
+		if err != nil {
+			return err
+		}
 
-			if sastRedundancy {
-				resultsParams[commonParams.SastRedundancyFlag] = ""
-			}
-
+		if sastRedundancy {
+			resultsParams[commonParams.SastRedundancyFlag] = ""
+		}
+		if isScanFinished(scan.Status) {
 			_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
 				policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
 				formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
-			return err
-		} else {
-
-			log.Printf("Scan executed in asynchronous mode or still running. Hence, no policy generated")
-			_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-				nil, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
-				formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
-			return err
 		}
-		return nil
+		return err
 	}
 }
 
