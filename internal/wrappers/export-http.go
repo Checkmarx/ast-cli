@@ -134,7 +134,7 @@ func (e *ExportHTTPWrapper) GetExportReportStatus(reportID string) (*ExportPolli
 			return &model, nil
 		case http.StatusNotFound:
 			_ = resp.Body.Close()
-			time.Sleep(time.Second)
+			time.Sleep(retryInterval)
 		default:
 			_ = resp.Body.Close()
 			return nil, errors.Errorf("response status code %d", resp.StatusCode)
