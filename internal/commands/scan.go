@@ -849,24 +849,27 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(&sastConfig, config)
+		overrideSastConfigValue(cmd, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(cmd *cobra.Command, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
 		}
 	}
 
-	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil {
+	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+
+	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
 		sastConfig.Incremental = resubmitIncremental.(string)
 	}
-	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil {
+	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
 	}
 
