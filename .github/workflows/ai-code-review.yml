@@ -1,0 +1,14 @@
+name: Code Review with OpenAI
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  code_review:
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@main
+    with:
+      OPENAI_API_MODEL: "gpt-4-1106-preview"
+      exclude: ""
+    secrets: inherit
