@@ -10,6 +10,6 @@ jobs:
   code_review:
     uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@add-ai-code-review
     with:
-      OPENAI_API_MODEL: "gpt-4-1106-preview"
-      exclude: ""
+      open_ai_model: "gpt-4-1106-preview"
+      exclude_pattern: ""
     secrets: inherit
