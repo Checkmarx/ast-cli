@@ -6,7 +6,6 @@ on:
       - opened
       - synchronize
 
-
 jobs:
   code_review:
     uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@add-ai-code-review
