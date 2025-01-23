@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -85,6 +86,7 @@ const (
 	configFilterKey                 = "filter"
 	configFilterPlatforms           = "platforms"
 	configIncremental               = "incremental"
+	configFastScan                  = "fastScanMode"
 	configPresetName                = "presetName"
 	configEngineVerbose             = "engineVerbose"
 	configLanguageMode              = "languageMode"
@@ -106,6 +108,7 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
+	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 )
 
 var (
@@ -816,45 +819,66 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 }
 
 func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) {
-		sastMapConfig := make(map[string]interface{})
-		sastConfig := wrappers.SastConfig{}
-		sastMapConfig[resultsMapType] = commonParams.SastType
-		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
-		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
-		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
-		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
-		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
-		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
-		for _, config := range resubmitConfig {
-			if config.Type != commonParams.SastType {
-				continue
-			}
-			resubmitIncremental := config.Value[configIncremental]
-			if resubmitIncremental != nil && !incrementalVal {
-				sastConfig.Incremental = resubmitIncremental.(string)
-			}
-			resubmitPreset := config.Value[configPresetName]
-			if resubmitPreset != nil && sastConfig.PresetName == "" {
-				sastConfig.PresetName = resubmitPreset.(string)
-			}
-			resubmitFilter := config.Value[configFilterKey]
-			if resubmitFilter != nil && sastConfig.Filter == "" {
-				sastConfig.Filter = resubmitFilter.(string)
-			}
-			resubmitEngineVerbose := config.Value[configEngineVerbose]
-			if resubmitEngineVerbose != nil {
-				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
-			}
-			resubmitLanguageMode := config.Value[configLanguageMode]
-			if resubmitLanguageMode != nil {
-				sastConfig.LanguageMode = resubmitLanguageMode.(string)
-			}
-		}
-		sastMapConfig[resultsMapValue] = &sastConfig
-		return sastMapConfig
+	// Check if SAST is enabled
+	if !scanTypeEnabled(commonParams.SastType) {
+		return nil
 	}
-	return nil
+
+	sastMapConfig := make(map[string]interface{})
+	sastConfig := wrappers.SastConfig{}
+	sastMapConfig[resultsMapType] = commonParams.SastType
+
+	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+
+	if sastFastScanChanged {
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
+	}
+
+	if sastIncrementalChanged {
+		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+	}
+
+	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
+	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+
+	for _, config := range resubmitConfig {
+		if config.Type != commonParams.SastType {
+			continue
+		}
+
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, &sastConfig, config)
+	}
+
+	sastMapConfig[resultsMapValue] = &sastConfig
+	return sastMapConfig
+}
+
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
+		if *configValue == "" && resubmitValue != nil {
+			*configValue = resubmitValue.(string)
+		}
+	}
+
+	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
+		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
+		sastConfig.FastScanMode = resubmitFastScan.(string)
+	}
+
+	setIfEmpty(&sastConfig.PresetName, config.Value[configPresetName])
+	setIfEmpty(&sastConfig.Filter, config.Value[configFilterKey])
+
+	if resubmitEngineVerbose := config.Value[configEngineVerbose]; resubmitEngineVerbose != nil {
+		sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+	}
+	if resubmitLanguageMode := config.Value[configLanguageMode]; resubmitLanguageMode != nil {
+		sastConfig.LanguageMode = resubmitLanguageMode.(string)
+	}
 }
 
 func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
@@ -956,69 +980,91 @@ func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRep
 	}
 	return scsConfig
 }
+
+func getSCSEnginesSelected(scsEngines string) (isScorecardSelected, isSecretDetectionSelected bool) {
+	if scsEngines == "" {
+		return true, true
+	}
+	scsEnginesTypes := strings.Split(scsEngines, ",")
+	for _, engineType := range scsEnginesTypes {
+		engineType = strings.TrimSpace(engineType)
+		switch engineType {
+		case ScsSecretDetectionType:
+			isSecretDetectionSelected = true
+		case ScsScoreCardType:
+			isScorecardSelected = true
+		}
+	}
+	return isScorecardSelected, isSecretDetectionSelected
+}
+
+func isURLSupportedByScorecard(scsRepoURL string) bool {
+	// only for https; currently our scorecard solution doesn't support GitHub Enterprise Server hosts
+	githubURLPattern := regexp.MustCompile(`(?:https?://)?(?:^|[^.])github\.com/.+`)
+	isGithubURL := githubURLPattern.MatchString(scsRepoURL)
+	if scsRepoURL != "" && !isGithubURL {
+		fmt.Println(ScsScorecardUnsupportedHostWarningMsg)
+	}
+	return isGithubURL
+}
+
+func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
+	if scsRepoToken == "" || scsRepoURL == "" {
+		if userScanTypes != "" {
+			return false, errors.Errorf(ScsRepoRequiredMsg)
+		}
+		fmt.Println(ScsRepoWarningMsg)
+		return false, nil
+	}
+
+	return isURLSupportedByScorecard(scsRepoURL), nil
+}
+
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	if scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.MicroEnginesType) {
-		scsConfig := wrappers.SCSConfig{}
-		SCSMapConfig := make(map[string]interface{})
-		SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
-		userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-		scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
-		if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
-			scsRepoToken = token
-		}
-		viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
-		scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
-		viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
-		SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
-		if resubmitConfig != nil {
-			scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
-			SCSMapConfig[resultsMapValue] = &scsConfig
-			return SCSMapConfig, nil
-		}
-
-		scsSecretDetectionSelected := false
-		scsScoreCardSelected := false
-
-		if SCSEngines != "" {
-			SCSEnginesTypes := strings.Split(SCSEngines, ",")
-			for _, engineType := range SCSEnginesTypes {
-				engineType = strings.TrimSpace(engineType)
-				switch engineType {
-				case ScsSecretDetectionType:
-					scsSecretDetectionSelected = true
-				case ScsScoreCardType:
-					scsScoreCardSelected = true
-				}
-			}
-		} else {
-			scsSecretDetectionSelected = true
-			scsScoreCardSelected = true
-		}
-
-		if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
-			scsConfig.Twoms = trueString
-		}
-		if scsScoreCardSelected {
-			if scsRepoToken != "" && scsRepoURL != "" {
-				scsConfig.Scorecard = trueString
-				scsConfig.RepoToken = scsRepoToken
-				scsConfig.RepoURL = strings.ToLower(scsRepoURL)
-			} else {
-				if userScanTypes == "" {
-					fmt.Println(ScsRepoWarningMsg)
-				} else {
-					return nil, errors.Errorf(ScsRepoRequiredMsg)
-				}
-			}
-		}
-		if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
-			return nil, nil
-		}
-
+	if !scanTypeEnabled(commonParams.ScsType) && !scanTypeEnabled(commonParams.MicroEnginesType) {
+		return nil, nil
+	}
+	scsConfig := wrappers.SCSConfig{}
+	SCSMapConfig := make(map[string]interface{})
+	SCSMapConfig[resultsMapType] = commonParams.MicroEnginesType // scs is still microengines in the scans API
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	scsRepoToken := viper.GetString(commonParams.ScsRepoTokenKey)
+	if token, _ := cmd.Flags().GetString(commonParams.SCSRepoTokenFlag); token != "" {
+		scsRepoToken = token
+	}
+	viper.Set(commonParams.SCSRepoTokenFlag, scsRepoToken) // sanitizeLogs uses viper to get the value
+	scsRepoURL, _ := cmd.Flags().GetString(commonParams.SCSRepoURLFlag)
+	viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL) // sanitizeLogs uses viper to get the value
+	SCSEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+	if resubmitConfig != nil {
+		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
 		SCSMapConfig[resultsMapValue] = &scsConfig
 		return SCSMapConfig, nil
 	}
-	return nil, nil
+	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(SCSEngines)
+
+	if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+		scsConfig.Twoms = trueString
+	}
+
+	if scsScoreCardSelected {
+		canRunScorecard, err := isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes)
+		if err != nil {
+			return nil, err
+		}
+		if canRunScorecard {
+			scsConfig.Scorecard = trueString
+			scsConfig.RepoToken = scsRepoToken
+			scsConfig.RepoURL = strings.ToLower(scsRepoURL)
+		}
+	}
+
+	if scsConfig.Scorecard != trueString && scsConfig.Twoms != trueString {
+		return nil, nil
+	}
+
+	SCSMapConfig[resultsMapValue] = &scsConfig
+	return SCSMapConfig, nil
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
@@ -1086,6 +1132,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot source code temp file.")
 	}
+	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
@@ -1462,6 +1509,9 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	var preSignedURL *string
 	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
 	if zipFilePathErr != nil {
+		if unzip || !userProvidedZip {
+			return "", zipFilePath, errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
+		}
 		return "", "", errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
 	}
 	if unzip || !userProvidedZip {
@@ -1616,6 +1666,7 @@ func runCreateScanCommand(
 			featureFlagsWrapper,
 			jwtWrapper,
 		)
+		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
@@ -1681,7 +1732,6 @@ func runCreateScanCommand(
 			}
 		}
 
-		defer cleanUpTempZip(zipFilePath)
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
@@ -2618,19 +2668,19 @@ func cleanUpTempZip(zipFilePath string) {
 	if zipFilePath != "" {
 		logger.PrintIfVerbose("Cleaning up temporary zip: " + zipFilePath)
 		tries := cleanupMaxRetries
-		for tries > 0 {
+		for attempt := 1; tries > 0; attempt++ {
 			zipRemoveErr := os.Remove(zipFilePath)
 			if zipRemoveErr != nil {
 				logger.PrintIfVerbose(
 					fmt.Sprintf(
-						"Failed to remove temporary zip: %d in %d: %v",
-						cleanupMaxRetries-tries,
+						"Failed to remove temporary zip: Attempt %d/%d: %v",
+						attempt,
 						cleanupMaxRetries,
 						zipRemoveErr,
 					),
 				)
 				tries--
-				time.Sleep(time.Duration(cleanupRetryWaitSeconds) * time.Second)
+				Wait(attempt)
 			} else {
 				logger.PrintIfVerbose("Removed temporary zip")
 				break
@@ -2642,6 +2692,13 @@ func cleanUpTempZip(zipFilePath string) {
 	} else {
 		logger.PrintIfVerbose("No temporary zip to clean")
 	}
+}
+
+func Wait(attempt int) {
+	// Calculate exponential backoff delay
+	waitDuration := time.Duration(cleanupRetryWaitSeconds * (1 << (attempt - 1))) // 2^(attempt-1)
+	logger.PrintIfVerbose(fmt.Sprintf("Waiting %d seconds before retrying...", waitDuration))
+	time.Sleep(waitDuration * time.Second)
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {

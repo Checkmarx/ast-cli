@@ -6,6 +6,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"reflect"
@@ -28,31 +29,37 @@ import (
 )
 
 const (
-	unknownFlag                   = "unknown flag: --chibutero"
-	blankSpace                    = " "
-	errorMissingBranch            = "Failed creating a scan: Please provide a branch"
-	dummyRepo                     = "https://github.com/dummyuser/dummy_project.git"
-	dummyToken                    = "dummyToken"
-	dummySSHRepo                  = "git@github.com:dummyRepo/dummyProject.git"
-	errorSourceBadFormat          = "Failed creating a scan: Input in bad format: Sources input has bad format: "
-	scaPathError                  = "ScaResolver error: exec: \"resolver\": executable file not found in "
-	fileSourceFlag                = "--file"
-	fileSourceValueEmpty          = "data/empty.Dockerfile"
-	fileSourceValue               = "data/Dockerfile"
-	fileSourceIncorrectValue      = "data/source.zip"
-	fileSourceIncorrectValueError = "data/source.zip. Provided file is not supported by kics"
-	fileSourceError               = "flag needs an argument: --file"
-	engineFlag                    = "--engine"
-	engineValue                   = "docker"
-	invalidEngineValue            = "invalidengine"
-	engineError                   = "flag needs an argument: --engine"
-	additionalParamsFlag          = "--additional-params"
-	additionalParamsValue         = "-v"
-	additionalParamsError         = "flag needs an argument: --additional-params"
-	scanCommand                   = "scan"
-	kicsRealtimeCommand           = "kics-realtime"
-	InvalidEngineMessage          = "Please verify if engine is installed"
-	SCSScoreCardError             = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	unknownFlag                            = "unknown flag: --chibutero"
+	blankSpace                             = " "
+	errorMissingBranch                     = "Failed creating a scan: Please provide a branch"
+	dummyGitlabRepo                        = "https://gitlab.com/dummy-org/gitlab-dummy"
+	dummyRepo                              = "https://github.com/dummyuser/dummy_project.git"
+	dummyRepoWithToken                     = "https://token@github.com/dummyuser/dummy_project"
+	dummyRepoWithTokenAndUsername          = "https://username:token@github.com/dummyuser/dummy_project"
+	dummyShortenedRepoWithToken            = "token@github.com/dummyuser/dummy_project"
+	dummyShortenedRepoWithTokenAndUsername = "username:token@github.com/dummyuser/dummy_project"
+	dummyShortenedGithubRepo               = "github.com/dummyuser/dummy_project.git"
+	dummyToken                             = "dummyToken"
+	dummySSHRepo                           = "git@github.com:dummyRepo/dummyProject.git"
+	errorSourceBadFormat                   = "Failed creating a scan: Input in bad format: Sources input has bad format: "
+	scaPathError                           = "ScaResolver error: exec: \"resolver\": executable file not found in "
+	fileSourceFlag                         = "--file"
+	fileSourceValueEmpty                   = "data/empty.Dockerfile"
+	fileSourceValue                        = "data/Dockerfile"
+	fileSourceIncorrectValue               = "data/source.zip"
+	fileSourceIncorrectValueError          = "data/source.zip. Provided file is not supported by kics"
+	fileSourceError                        = "flag needs an argument: --file"
+	engineFlag                             = "--engine"
+	engineValue                            = "docker"
+	invalidEngineValue                     = "invalidengine"
+	engineError                            = "flag needs an argument: --engine"
+	additionalParamsFlag                   = "--additional-params"
+	additionalParamsValue                  = "-v"
+	additionalParamsError                  = "flag needs an argument: --additional-params"
+	scanCommand                            = "scan"
+	kicsRealtimeCommand                    = "kics-realtime"
+	InvalidEngineMessage                   = "Please verify if engine is installed"
+	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName              = "test_output.log"
 	noUpdatesForExistingProject = "No tags to update. Skipping project update."
@@ -862,7 +869,7 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
-	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, true, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
 
 	_ = cmdCommand.Execute()
 
@@ -876,7 +883,7 @@ func TestAddSastScan(t *testing.T) {
 		PresetName:   "test",
 		Filter:       "test",
 		Incremental:  "true",
-		FastScanMode: "true",
+		FastScanMode: "",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
@@ -1024,6 +1031,377 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 
 	scsConfig := wrappers.SCSConfig{
 		Twoms: "true",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyShortenedGithubRepo,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyShortenedRepoWithToken,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepoWithToken,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyRepoWithTokenAndUsername,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "true",
+		RepoURL:   dummyShortenedRepoWithTokenAndUsername,
+		RepoToken: dummyToken,
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "",
+		RepoURL:   "",
+		RepoToken: "",
+	}
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
+func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	}
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms:     "true",
+		Scorecard: "",
+		RepoURL:   "",
+		RepoToken: "",
 	}
 	scsMapConfig := make(map[string]interface{})
 	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
@@ -1352,4 +1730,161 @@ func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
 	config, err := getResubmitConfiguration(&scanWrapper, projectID, userScanTypes)
 	assert.NilError(t, err)
 	assert.Equal(t, len(config), 0)
+}
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, true, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInSuccessCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, false, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "test.zip")
+}
+
+func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, false, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
+	assert.Equal(t, zipPath, "failureCase.zip")
+}
+
+func TestAddSastScan_ScanFlags(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	tests := []struct {
+		name                   string
+		requiredIncrementalSet bool
+		requiredFastScanSet    bool
+		fastScanFlag           string
+		incrementalFlag        string
+		expectedConfig         wrappers.SastConfig
+	}{
+		{
+			name:                   "Fast scan and Incremental scan both false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental scan both true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental not set",
+			requiredIncrementalSet: false,
+			requiredFastScanSet:    false,
+			expectedConfig:         wrappers.SastConfig{},
+		},
+		{
+			name:                   "Fast scan is true and Incremental is false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan is false and Incremental is true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan is not set and Incremental is true",
+			requiredIncrementalSet: true,
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				Incremental: "true",
+			},
+		},
+		{
+			name:                "Fast scan is true and Incremental is not set",
+			requiredFastScanSet: true,
+			fastScanFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+			},
+		},
+	}
+
+	oldActualScanTypes := actualScanTypes
+
+	defer func() {
+		actualScanTypes = oldActualScanTypes
+	}()
+
+	for _, tt := range tests {
+		actualScanTypes = "sast,sca,kics,scs"
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
+			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+
+			_ = cmdCommand.Execute()
+
+			if tt.requiredFastScanSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastFastScanFlag, tt.fastScanFlag)
+			}
+			if tt.requiredIncrementalSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+
+			result := addSastScan(cmdCommand, resubmitConfig)
+
+			actualSastConfig := wrappers.SastConfig{}
+			for key, value := range result {
+				if key == resultsMapType {
+					assert.Equal(t, commonParams.SastType, value)
+				} else if key == resultsMapValue {
+					actualSastConfig = *value.(*wrappers.SastConfig)
+				}
+			}
+
+			if !reflect.DeepEqual(actualSastConfig, tt.expectedConfig) {
+				t.Errorf("Expected %+v, but got %+v", tt.expectedConfig, actualSastConfig)
+			}
+		})
+	}
 }
