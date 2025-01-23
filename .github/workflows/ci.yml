@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           sudo chmod +x ./internal/commands/.scripts/up.sh
-          ./internal/commands/.scripts/up.sh
+          sudo ./internal/commands/.scripts/up.sh
       - name: Check if total coverage is greater then 79.9
         shell: bash
         run: |
