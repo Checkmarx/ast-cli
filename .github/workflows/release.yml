@@ -138,6 +138,7 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   notify:
+    if: inputs.dev == false
     needs: build
     uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
     with:
