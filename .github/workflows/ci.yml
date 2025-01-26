@@ -6,9 +6,6 @@ on:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -17,27 +14,9 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go version
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@cf09c5c41b299b55c366aff30022701412eb6ab0 #v1.0.0
-        with:
-          version: latest
-
-      - name: Set Docker permissions
-        run: |
-          sudo chmod 666 /var/run/docker.sock
-          sudo systemctl start docker
-          docker --version
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b #v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: go test with coverage
-        shell: bash
         run: |
+          docker info | grep "rootless"
           sudo chmod +x ./internal/commands/.scripts/up.sh
           ./internal/commands/.scripts/up.sh
       - name: Check if total coverage is greater then 79.9
@@ -88,7 +67,7 @@ jobs:
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
           PR_GITHUB_NUMBER: 983
-          PR_GITLAB_TOKEN: ${{ secrets.PR_GITLAB_TOKEN }}
+          PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
           PR_GITLAB_PROJECT_ID: ${{ secrets.PR_GITLAB_PROJECT_ID }}
@@ -180,7 +159,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build the project
-        run: go build -o ./cx ./cmd
+        run:  go build -o ./cx ./cmd
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
       - name: Run Trivy scanner without downloading DBs
