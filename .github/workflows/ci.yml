@@ -16,7 +16,7 @@ jobs:
       - run: go version
       - name: go test with coverage
         run: |
-          docker info | grep "rootless"
+          docker info
           sudo chmod +x ./internal/commands/.scripts/up.sh
           ./internal/commands/.scripts/up.sh
       - name: Check if total coverage is greater then 79.9
