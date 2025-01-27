@@ -138,6 +138,7 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   notify:
+    if: inputs.dev == false
     needs: build
     uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
     with:
@@ -146,4 +147,5 @@ jobs:
       cli_release_version: ""
       release_author: "Phoenix Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+      jira_product_name: ASTCLI
     secrets: inherit

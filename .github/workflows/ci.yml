@@ -171,7 +171,6 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           output: './trivy-image-results.txt'
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
         env:
           TRIVY_SKIP_DB_UPDATE: true
           TRIVY_SKIP_JAVA_DB_UPDATE: true
