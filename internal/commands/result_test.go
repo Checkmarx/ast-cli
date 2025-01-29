@@ -772,21 +772,7 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
-func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
-	clearFlags()
-	clearFlags()
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
-	assertTypePresentJSON(t, params.ContainersType, 1)
-	// Remove generated json file
-	removeFileBySuffix(t, printer.FormatJSON)
-}
-func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) {
-	clearFlags()
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
-	assertTypePresentJSON(t, params.ContainersType, 0)
-	// Remove generated json file
-	removeFileBySuffix(t, printer.FormatJSON)
-}
+
 func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
@@ -936,10 +922,7 @@ func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanTy
 		assert.Assert(t, false, "%s result summary should be present", scanType)
 	}
 }
-func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_NilAssertion(t *testing.T) {
-	clearFlags()
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "CONTAINERS_ONLY", "--report-format", "summaryConsole")
-}
+
 func TestRunGetResultsByScanIdGLSastAndAScaFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast,gl-sca")
 	// Run test for gl-sast report type
