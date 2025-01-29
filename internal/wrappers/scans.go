@@ -145,7 +145,7 @@ type ContainerConfig struct {
 	FilesFilter          string `json:"filesFilter,omitempty"`
 	ImagesFilter         string `json:"imagesFilter,omitempty"`
 	PackagesFilter       string `json:"packagesFilter,omitempty"`
-	NonFinalStagesFilter bool   `json:"nonFinalStagesFilter,omitempty"`
+	NonFinalStagesFilter string `json:"nonFinalStagesFilter,omitempty"`
 }
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`
