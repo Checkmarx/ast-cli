@@ -1047,10 +1047,8 @@ func setIsSCSEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
 	wrappers.IsSCSEnabled = scsEngineCLIEnabled.Status
 }
 
-func setIsContainersEnabled(agent string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	agentSupported := !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
-	wrappers.IsContainersEnabled = containerEngineCLIEnabled.Status && agentSupported
+func setIsContainersEnabled(agent string) {
+	wrappers.IsContainersEnabled = !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
 }
 
 func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes map[string]struct{}) *wrappers.ScanResultsCollection {
@@ -1109,7 +1107,7 @@ func CreateScanReport(
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
 	setIsSCSEnabled(featureFlagsWrapper)
-	setIsContainersEnabled(agent, featureFlagsWrapper)
+	setIsContainersEnabled(agent)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
 		return nil, err

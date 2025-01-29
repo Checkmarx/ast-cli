@@ -147,41 +147,35 @@ func TestCreateScan(t *testing.T) {
 
 func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
 }
 
 func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
 }
 
 func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
 	// When no container scan type is provided, we will ignore the container images flag and its value
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
 	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
 }
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
@@ -189,7 +183,6 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 
 func TestCreateContainersScan_ContainerFFIsOff_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "container-security"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	fmt.Println(err)
@@ -1891,36 +1884,32 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 
 func TestValidateScanTypes(t *testing.T) {
 	tests := []struct {
-		name                      string
-		userScanTypes             string
-		userSCSScanTypes          string
-		allowedEngines            map[string]bool
-		containerEngineCLIEnabled bool
-		expectedError             string
+		name             string
+		userScanTypes    string
+		userSCSScanTypes string
+		allowedEngines   map[string]bool
+		expectedError    string
 	}{
 		{
-			name:                      "No licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "sast,secret-detection",
-			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"scs\" scan type does",
+			name:             "No licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "sast,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"scs\" scan type does",
 		},
 		{
-			name:                      "SCS license available, secret-detection not available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"secret-detection\" scan type does not exist",
+			name:             "SCS license available, secret-detection not available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
 		},
 		{
-			name:                      "All licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": true},
-			containerEngineCLIEnabled: true,
-			expectedError:             "",
+			name:             "All licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			expectedError:    "",
 		},
 	}
 
