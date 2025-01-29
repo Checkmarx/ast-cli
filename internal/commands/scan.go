@@ -982,19 +982,19 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 			continue
 		}
 		resubmitFilesFilter := config.Value[configContainersFilesFilterKey]
-		if resubmitFilesFilter != nil && containerConfig.FilesFilter == "" {
+		if resubmitFilesFilter != nil && resubmitFilesFilter != "" {
 			containerConfig.FilesFilter = resubmitFilesFilter.(string)
 		}
 		resubmitPackagesFilter := config.Value[configContainersPackagesFilterKey]
-		if resubmitPackagesFilter != nil && containerConfig.PackagesFilter == "" {
+		if resubmitPackagesFilter != nil && resubmitPackagesFilter != "" {
 			containerConfig.PackagesFilter = resubmitPackagesFilter.(string)
 		}
 		resubmitNonFinalStagesFilter := config.Value[configContainersNonFinalStagesFilterKey]
-		if resubmitNonFinalStagesFilter != nil && containerConfig.NonFinalStagesFilter == "" {
+		if resubmitNonFinalStagesFilter != nil && resubmitNonFinalStagesFilter != "" {
 			containerConfig.NonFinalStagesFilter = resubmitNonFinalStagesFilter.(string)
 		}
 		resubmitImagesFilter := config.Value[configContainersImagesFilterKey]
-		if resubmitImagesFilter != nil && containerConfig.ImagesFilter == "" {
+		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
 	}
