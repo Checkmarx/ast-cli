@@ -773,6 +773,14 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
 
+func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
+	clearFlags()
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+	assertTypePresentJSON(t, params.ContainersType, 1)
+	// Remove generated json file
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
 func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
