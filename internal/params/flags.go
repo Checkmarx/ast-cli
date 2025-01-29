@@ -209,10 +209,10 @@ const (
 	SCSRepoURLFlag   = "scs-repo-url"
 
 	// Containers Config Flags
-	ContainersFileFolderFilterFlag      = "container-file-folder-filter"
-	ContainersImageTagFilterFlag        = "container-image-tag-filter"
-	ContainersPackageFilterFlag         = "container-package-filter"
-	ContainersExcludeNonFinalStagesFlag = "container-exclude-non-final-stages"
+	ContainersFileFolderFilterFlag      = "containers-file-folder-filter"
+	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
+	ContainersPackageFilterFlag         = "containers-package-filter"
+	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
 )
 
 // Parameter values
