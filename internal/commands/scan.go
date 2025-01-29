@@ -657,6 +657,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
+	// Container config flags
+	createScanCmd.PersistentFlags().String(commonParams.ContainerFileFolderFilterFlag, "", "Filter files and folders to scan in the container")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerPackageFilterFlag, "", "Filter packages to scan in the container")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerExcludeNonFinalSatgesFlag, "", "Exclude non-final stages from the container scan")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImageTagFilterFlag, "", "Filter image tags to scan in the container")
+
 	return createScanCmd
 }
 
@@ -764,7 +770,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan(containerEngineCLIEnabled.Status)
+	var containersConfig = addContainersScan(cmd, containerEngineCLIEnabled.Status)
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -935,14 +941,29 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan(containerEngineCLIEnabled bool) map[string]interface{} {
+func addContainersScan(cmd *cobra.Command, containerEngineCLIEnabled bool) map[string]interface{} {
 	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
-
 	containerConfig := wrappers.ContainerConfig{}
+	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainerFileFolderFilterFlag)
+	if fileFolderFilter != "" {
+		containerConfig.FilesFilter = fileFolderFilter
+	}
+	packageFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainerPackageFilterFlag)
+	if packageFilter != "" {
+		containerConfig.PackagesFilter = packageFilter
+	}
+	excludeNonFinalStages, _ := cmd.PersistentFlags().GetBool(commonParams.ContainerExcludeNonFinalSatgesFlag)
+	if cmd.PersistentFlags().Changed(commonParams.ContainerExcludeNonFinalSatgesFlag) {
+		containerConfig.NonFinalStagesFilter = excludeNonFinalStages
+	}
+	imageTagFilter, _ := cmd.Flags().GetString(commonParams.ContainerImageTagFilterFlag)
+	if imageTagFilter != "" {
+		containerConfig.ImagesFilter = imageTagFilter
+	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig

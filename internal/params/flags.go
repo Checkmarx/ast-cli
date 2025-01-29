@@ -207,6 +207,12 @@ const (
 	// SCS (Github)
 	SCSRepoTokenFlag = "scs-repo-token"
 	SCSRepoURLFlag   = "scs-repo-url"
+
+	// Containers Config Flags
+	ContainerFileFolderFilterFlag      = "container-file-folder-filter"
+	ContainerImageTagFilterFlag        = "container-image-tag-filter"
+	ContainerPackageFilterFlag         = "container-package-filter"
+	ContainerExcludeNonFinalSatgesFlag = "container-exclude-non-final-stages"
 )
 
 // Parameter values
