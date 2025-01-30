@@ -34,7 +34,7 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,7 +56,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -154,7 +154,7 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -201,7 +201,7 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -239,7 +239,7 @@ func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodGet, p.path+"/tags", http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 3, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
