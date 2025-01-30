@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -71,21 +70,23 @@ var cachedAccessToken string
 var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
-func retryHTTPRequest(fn func() (*http.Response, error), retries int, delayInMillis time.Duration) (*http.Response, error) {
-	var lastErr error
-	for i := 0; i < retries; i++ {
-		resp, err := fn()
+func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMillis time.Duration) (*http.Response, error) {
+
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; attempt < retries; attempt++ {
+		resp, err = requestFunc()
 		if err != nil {
-			lastErr = err
-			if resp != nil && resp.StatusCode == http.StatusBadGateway {
-				time.Sleep(time.Duration(math.Pow(2, float64(i))) * delayInMillis)
-				continue
-			}
 			return nil, err
 		}
-		return resp, nil
+		if resp.StatusCode != http.StatusBadGateway {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+		time.Sleep(baseDelayInMillis * (1 << attempt))
 	}
-	return nil, lastErr
+	return resp, nil
 }
 
 func setAgentName(req *http.Request) {

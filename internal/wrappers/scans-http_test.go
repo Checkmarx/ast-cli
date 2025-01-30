@@ -1,5 +1,3 @@
-//go:build !integration
-
 package wrappers
 
 import (
@@ -11,9 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type mockReadCloser struct{}
+
+func (m *mockReadCloser) Read(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (m *mockReadCloser) Close() error {
+	return nil
+}
+
 func TestRetryHTTPRequest_Success(t *testing.T) {
 	fn := func() (*http.Response, error) {
-		return &http.Response{StatusCode: http.StatusOK}, nil
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       &mockReadCloser{},
+		}, nil
 	}
 
 	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
@@ -27,9 +38,15 @@ func TestRetryHTTPRequest_RetryOnBadGateway(t *testing.T) {
 	fn := func() (*http.Response, error) {
 		attempts++
 		if attempts < 4 {
-			return &http.Response{StatusCode: http.StatusBadGateway}, nil
+			return &http.Response{
+				StatusCode: http.StatusBadGateway,
+				Body:       &mockReadCloser{},
+			}, nil
 		}
-		return &http.Response{StatusCode: http.StatusOK}, nil
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       &mockReadCloser{},
+		}, nil
 	}
 
 	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
@@ -39,7 +56,7 @@ func TestRetryHTTPRequest_RetryOnBadGateway(t *testing.T) {
 	assert.Equal(t, 4, attempts)
 }
 
-func TestRetryHTTPRequest_FailAfterRetries(t *testing.T) {
+func TestRetryHTTPRequest_Fail(t *testing.T) {
 	fn := func() (*http.Response, error) {
 		return nil, errors.New("network error")
 	}
@@ -51,7 +68,10 @@ func TestRetryHTTPRequest_FailAfterRetries(t *testing.T) {
 
 func TestRetryHTTPRequest_EndWithBadGateway(t *testing.T) {
 	fn := func() (*http.Response, error) {
-		return &http.Response{StatusCode: http.StatusBadGateway}, nil
+		return &http.Response{
+			StatusCode: http.StatusBadGateway,
+			Body:       &mockReadCloser{},
+		}, nil
 	}
 
 	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
