@@ -662,10 +662,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
-	createScanCmd.PersistentFlags().String(commonParams.ContainersFileFolderFilterFlag, "", "Filter files and folders to scan in the container")
-	createScanCmd.PersistentFlags().String(commonParams.ContainersPackageFilterFlag, "", "Filter packages to scan in the container")
-	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Exclude non-final stages from the container scan")
-	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Filter image tags to scan in the container")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersFileFolderFilterFlag, "", "Specify files and folders to be included or excluded from scans")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersPackageFilterFlag, "", "Exclude packages by package name or file path using regex")
+	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Scan only the final deployable image")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag")
 
 	return createScanCmd
 }
