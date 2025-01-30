@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -69,6 +70,23 @@ const audienceClaimKey = "aud"
 var cachedAccessToken string
 var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
+
+func retryHTTPRequest(fn func() (*http.Response, error), retries int, delay time.Duration) (*http.Response, error) {
+	var lastErr error
+	for i := 0; i < retries; i++ {
+		resp, err := fn()
+		if err != nil {
+			lastErr = err
+			if resp != nil && resp.StatusCode == http.StatusBadGateway {
+				time.Sleep(time.Duration(math.Pow(2, float64(i))) * delay)
+				continue
+			}
+			return nil, err
+		}
+		return resp, nil
+	}
+	return nil, lastErr
+}
 
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
