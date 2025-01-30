@@ -90,10 +90,10 @@ const (
 	configPresetName                        = "presetName"
 	configEngineVerbose                     = "engineVerbose"
 	configLanguageMode                      = "languageMode"
-	configContainersFilesFilterKey          = "filesFilter"
-	configContainersImagesFilterKey         = "imagesFilter"
-	configContainersPackagesFilterKey       = "packagesFilter"
-	configContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
+	ConfigContainersFilesFilterKey          = "filesFilter"
+	ConfigContainersImagesFilterKey         = "imagesFilter"
+	ConfigContainersPackagesFilterKey       = "packagesFilter"
+	ConfigContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
 	resultsMapValue                         = "value"
 	resultsMapType                          = "type"
 	trueString                              = "true"
@@ -981,19 +981,19 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 		if config.Type != commonParams.ContainersType {
 			continue
 		}
-		resubmitFilesFilter := config.Value[configContainersFilesFilterKey]
+		resubmitFilesFilter := config.Value[ConfigContainersFilesFilterKey]
 		if resubmitFilesFilter != nil && resubmitFilesFilter != "" {
 			containerConfig.FilesFilter = resubmitFilesFilter.(string)
 		}
-		resubmitPackagesFilter := config.Value[configContainersPackagesFilterKey]
+		resubmitPackagesFilter := config.Value[ConfigContainersPackagesFilterKey]
 		if resubmitPackagesFilter != nil && resubmitPackagesFilter != "" {
 			containerConfig.PackagesFilter = resubmitPackagesFilter.(string)
 		}
-		resubmitNonFinalStagesFilter := config.Value[configContainersNonFinalStagesFilterKey]
+		resubmitNonFinalStagesFilter := config.Value[ConfigContainersNonFinalStagesFilterKey]
 		if resubmitNonFinalStagesFilter != nil && resubmitNonFinalStagesFilter != "" {
 			containerConfig.NonFinalStagesFilter = resubmitNonFinalStagesFilter.(string)
 		}
-		resubmitImagesFilter := config.Value[configContainersImagesFilterKey]
+		resubmitImagesFilter := config.Value[ConfigContainersImagesFilterKey]
 		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
