@@ -1566,6 +1566,11 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			name:           "Valid compressed container image format",
+			containerImage: "nginx.tar",
+			expectedError:  nil,
+		},
+		{
 			name:           "Missing image name",
 			containerImage: ":latest",
 			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
