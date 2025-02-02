@@ -155,3 +155,47 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *WebError, error) {
 	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
 }
+
+
+type CustomStatesHTTPWrapper struct {
+path string
+}
+
+func NewCustomStatesHTTPWrapper() CustomStatesWrapper {
+	return &CustomStatesHTTPWrapper{
+		path: viper.GetString(params.CustomStatesAPIPathKey),
+	}
+}
+
+func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]CustomState, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+
+	if c.path == "" {
+		return nil, errors.New("CustomStatesAPIPathKey is not set")
+	}
+
+	requestURL := c.path
+	if includeDeleted {
+		requestURL += "?include-deleted=true"
+	}
+
+	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s", requestURL))
+
+	resp, err := SendHTTPRequest(http.MethodGet, requestURL, http.NoBody, true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("Failed to fetch custom states. HTTP status: %d", resp.StatusCode)
+	}
+
+	var states []CustomState
+	err = json.NewDecoder(resp.Body).Decode(&states)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to parse custom states response")
+	}
+
+	return states, nil
+}

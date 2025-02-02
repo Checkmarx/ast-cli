@@ -5,6 +5,7 @@ var EnvVarsBinds = []struct {
 	Env     string
 	Default string
 }{
+	{CustomStatesAPIPathKey, CustomStatesAPIPathEnv, "api/custom-states"},
 	{BaseURIKey, BaseURIEnv, ""},
 	{ProxyTypeKey, ProxyTypeEnv, "basic"},
 	{ProxyDomainKey, ProxyDomainEnv, ""},

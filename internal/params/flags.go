@@ -2,6 +2,7 @@ package params
 
 // Flags
 const (
+	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
