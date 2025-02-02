@@ -70,6 +70,25 @@ var cachedAccessToken string
 var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
+func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
+
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; attempt < retries; attempt++ {
+		resp, err = requestFunc()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusBadGateway {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+		time.Sleep(baseDelayInMilliSec * (1 << attempt))
+	}
+	return resp, nil
+}
+
 func setAgentName(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
