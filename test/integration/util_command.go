@@ -90,6 +90,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
+	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -125,6 +126,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
+		customStatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,
@@ -212,7 +214,7 @@ func executeCmdWithTimeOutNilAssertion(
 func executeWithTimeout(cmd *cobra.Command, timeout time.Duration, args ...string) error {
 
 	args = append(args, flag(params.RetryFlag), "3", flag(params.RetryDelayFlag), "5")
-	args = appendProxyArgs(args)
+	//args = appendProxyArgs(args)
 	cmd.SetArgs(args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
