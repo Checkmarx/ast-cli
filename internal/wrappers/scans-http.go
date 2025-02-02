@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"net/http"
 )
 
 const (
@@ -35,7 +34,11 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	if err != nil {
 		return nil, nil, err
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -49,7 +52,11 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 
 func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,7 +92,11 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 
 func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -100,7 +111,11 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorMod
 func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s/workflow", s.path, scanID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -141,7 +156,11 @@ func handleWorkflowResponseWithBody(resp *http.Response, err error) ([]*ScanTask
 
 func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +181,10 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 		return nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +198,11 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 
 func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, s.path+"/tags", http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodGet, s.path+"/tags", http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
