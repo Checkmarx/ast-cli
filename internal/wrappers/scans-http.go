@@ -16,6 +16,8 @@ const (
 	failedToParseGetAll   = "Failed to parse list response"
 	failedToParseTags     = "Failed to parse tags response"
 	failedToParseBranches = "Failed to parse branches response"
+	retryAttempts         = 4
+	retryDelay            = 500 * time.Millisecond
 )
 
 type ScansHTTPWrapper struct {
@@ -40,7 +42,7 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -58,7 +60,7 @@ func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionRespon
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequestWithQueryParams(http.MethodGet, s.path, params, nil, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,7 +100,7 @@ func (s *ScansHTTPWrapper) GetByID(scanID string) (*ScanResponseModel, *ErrorMod
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodGet, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -117,7 +119,7 @@ func (s *ScansHTTPWrapper) GetWorkflowByID(scanID string) ([]*ScanTaskResponseMo
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,7 +164,7 @@ func (s *ScansHTTPWrapper) Delete(scanID string) (*ErrorModel, error) {
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodDelete, s.path+"/"+scanID, http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +188,7 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +206,7 @@ func (s *ScansHTTPWrapper) Tags() (map[string][]string, *ErrorModel, error) {
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodGet, s.path+"/tags", http.NoBody, true, clientTimeout)
 	}
-	resp, err := retryHTTPRequest(fn, 4, 500*time.Millisecond)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
 		return nil, nil, err
 	}
