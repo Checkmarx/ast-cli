@@ -4,20 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
-
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"net/http"
 )
 
 const (
 	failedToParseGetAll   = "Failed to parse list response"
 	failedToParseTags     = "Failed to parse tags response"
 	failedToParseBranches = "Failed to parse branches response"
-	retryAttempts         = 4
-	retryDelay            = 500 * time.Millisecond
 )
 
 type ScansHTTPWrapper struct {
