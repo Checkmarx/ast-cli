@@ -70,7 +70,7 @@ var cachedAccessToken string
 var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
-func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMillis time.Duration) (*http.Response, error) {
+func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
 
 	var resp *http.Response
 	var err error
@@ -84,7 +84,7 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 			return resp, nil
 		}
 		_ = resp.Body.Close()
-		time.Sleep(baseDelayInMillis * (1 << attempt))
+		time.Sleep(baseDelayInMilliSec * (1 << attempt))
 	}
 	return resp, nil
 }

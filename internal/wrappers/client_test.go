@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type mockReadCloser struct{}
@@ -25,7 +26,7 @@ func TestRetryHTTPRequest_Success(t *testing.T) {
 		}, nil
 	}
 
-	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -47,7 +48,7 @@ func TestRetryHTTPRequest_RetryOnBadGateway(t *testing.T) {
 		}, nil
 	}
 
-	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -59,7 +60,7 @@ func TestRetryHTTPRequest_Fail(t *testing.T) {
 		return nil, errors.New("network error")
 	}
 
-	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
 }
@@ -72,7 +73,7 @@ func TestRetryHTTPRequest_EndWithBadGateway(t *testing.T) {
 		}, nil
 	}
 
-	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
