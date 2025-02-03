@@ -774,7 +774,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan()
+	var containersConfig = addContainersScan(cmd, resubmitConfig)
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -945,7 +945,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan() map[string]interface{} {
+func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if !scanTypeEnabled(commonParams.ContainersType) {
 		return nil
 	}
