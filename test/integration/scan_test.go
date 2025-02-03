@@ -2021,3 +2021,103 @@ func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithD
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
+func TestScanCreate_WithContainerFilterFlags_CreatingScanSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!*.log",
+		flag(params.ContainersExcludeNonFinalStagesFlag),
+		flag(params.ContainersImageTagFilterFlag), "*dev",
+		flag(params.ContainersPackageFilterFlag), "^internal-.*",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersFilesFilterKey], "!*.log", "File/Folder filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersNonFinalStagesFilterKey], "true", "Exclude non final stages should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersImagesFilterKey], "*dev", "Image tag filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
+
+}
+
+func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLatestScanConfigurationSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	projectName := GenerateRandomProjectNameForScan()
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!*.log",
+		flag(params.ContainersImageTagFilterFlag), "*dev",
+		flag(params.ContainersPackageFilterFlag), "^internal-.*",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+
+	_, projectID := executeCreateScan(t, args)
+
+	args = []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+		flag(params.ScanResubmit),
+	}
+
+	resubmitScanID, resubmitProjectID := executeCreateScan(t, args)
+
+	assert.Equal(t, projectID, resubmitProjectID, "Project ID should be equal")
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = resubmitProjectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == resubmitScanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersFilesFilterKey], "!dockerfile", "File/Folder filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersNonFinalStagesFilterKey], nil, "Exclude non final stages should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersImagesFilterKey], "*dev", "Image tag filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
+}

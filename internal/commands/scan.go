@@ -53,50 +53,54 @@ const (
 	notExploitable    = "NOT_EXPLOITABLE"
 	ignored           = "IGNORED"
 
-	git                             = "git"
-	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
-	errorUnzippingFile              = "an error occurred while unzipping file. Reason: "
-	containerRun                    = "run"
-	containerVolumeFlag             = "-v"
-	containerNameFlag               = "--name"
-	containerRemove                 = "--rm"
-	containerImage                  = "checkmarx/kics:v2.1.3"
-	containerScan                   = "scan"
-	containerScanPathFlag           = "-p"
-	containerScanPath               = "/path"
-	containerScanOutputFlag         = "-o"
-	containerScanOutput             = "/path"
-	containerScanFormatFlag         = "--report-formats"
-	containerScanFormatOutput       = "json"
-	containerStarting               = "Starting kics container"
-	containerFormatInfo             = "The report format and output path cannot be overridden."
-	containerFolderRemoving         = "Removing folder in temp"
-	containerCreateFolderError      = "Error creating temporary directory"
-	containerWriteFolderError       = " Error writing file to temporary directory"
-	containerFileSourceMissing      = "--file is required for kics-realtime command"
-	containerFileSourceIncompatible = ". Provided file is not supported by kics"
-	containerFileSourceError        = " Error reading file"
-	containerResultsFileFormat      = "%s/results.json"
-	containerVolumeFormat           = "%s:/path"
-	containerTempDirPattern         = "kics"
-	kicsContainerPrefixName         = "cli-kics-realtime-"
-	cleanupMaxRetries               = 3
-	cleanupRetryWaitSeconds         = 15
-	DanglingSymlinkError            = "Skipping dangling symbolic link"
-	configFilterKey                 = "filter"
-	configFilterPlatforms           = "platforms"
-	configIncremental               = "incremental"
-	configFastScan                  = "fastScanMode"
-	configPresetName                = "presetName"
-	configEngineVerbose             = "engineVerbose"
-	configLanguageMode              = "languageMode"
-	resultsMapValue                 = "value"
-	resultsMapType                  = "type"
-	trueString                      = "true"
-	configTwoms                     = "2ms"
-	falseString                     = "false"
-	maxPollingWaitTime              = 60
-	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
+	git                                     = "git"
+	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
+	errorUnzippingFile                      = "an error occurred while unzipping file. Reason: "
+	containerRun                            = "run"
+	containerVolumeFlag                     = "-v"
+	containerNameFlag                       = "--name"
+	containerRemove                         = "--rm"
+	containerImage                          = "checkmarx/kics:v2.1.3"
+	containerScan                           = "scan"
+	containerScanPathFlag                   = "-p"
+	containerScanPath                       = "/path"
+	containerScanOutputFlag                 = "-o"
+	containerScanOutput                     = "/path"
+	containerScanFormatFlag                 = "--report-formats"
+	containerScanFormatOutput               = "json"
+	containerStarting                       = "Starting kics container"
+	containerFormatInfo                     = "The report format and output path cannot be overridden."
+	containerFolderRemoving                 = "Removing folder in temp"
+	containerCreateFolderError              = "Error creating temporary directory"
+	containerWriteFolderError               = " Error writing file to temporary directory"
+	containerFileSourceMissing              = "--file is required for kics-realtime command"
+	containerFileSourceIncompatible         = ". Provided file is not supported by kics"
+	containerFileSourceError                = " Error reading file"
+	containerResultsFileFormat              = "%s/results.json"
+	containerVolumeFormat                   = "%s:/path"
+	containerTempDirPattern                 = "kics"
+	kicsContainerPrefixName                 = "cli-kics-realtime-"
+	cleanupMaxRetries                       = 3
+	cleanupRetryWaitSeconds                 = 15
+	DanglingSymlinkError                    = "Skipping dangling symbolic link"
+	configFilterKey                         = "filter"
+	configFilterPlatforms                   = "platforms"
+	configIncremental                       = "incremental"
+	configFastScan                          = "fastScanMode"
+	configPresetName                        = "presetName"
+	configEngineVerbose                     = "engineVerbose"
+	configLanguageMode                      = "languageMode"
+	ConfigContainersFilesFilterKey          = "filesFilter"
+	ConfigContainersImagesFilterKey         = "imagesFilter"
+	ConfigContainersPackagesFilterKey       = "packagesFilter"
+	ConfigContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
+	resultsMapValue                         = "value"
+	resultsMapType                          = "type"
+	trueString                              = "true"
+	configTwoms                             = "2ms"
+	falseString                             = "false"
+	maxPollingWaitTime                      = 60
+	engineNotAllowed                        = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
@@ -658,6 +662,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
+	// Container config flags
+	createScanCmd.PersistentFlags().String(commonParams.ContainersFileFolderFilterFlag, "", "Specify files and folders to be included or excluded from scans, ex: \"!*.log\"")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersPackageFilterFlag, "", "Exclude packages by package name or file path using regex, ex: \"^internal-.*\"")
+	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Scan only the final deployable image")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
+
 	return createScanCmd
 }
 
@@ -941,11 +951,53 @@ func addContainersScan() map[string]interface{} {
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
-
 	containerConfig := wrappers.ContainerConfig{}
+
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig)
+
+	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
+	if fileFolderFilter != "" {
+		containerConfig.FilesFilter = fileFolderFilter
+	}
+	packageFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersPackageFilterFlag)
+	if packageFilter != "" {
+		containerConfig.PackagesFilter = packageFilter
+	}
+	excludeNonFinalStages, _ := cmd.PersistentFlags().GetBool(commonParams.ContainersExcludeNonFinalStagesFlag)
+	if cmd.PersistentFlags().Changed(commonParams.ContainersExcludeNonFinalStagesFlag) {
+		containerConfig.NonFinalStagesFilter = strconv.FormatBool(excludeNonFinalStages)
+	}
+	imageTagFilter, _ := cmd.Flags().GetString(commonParams.ContainersImageTagFilterFlag)
+	if imageTagFilter != "" {
+		containerConfig.ImagesFilter = imageTagFilter
+	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig
+}
+
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
+	for _, config := range resubmitConfig {
+		if config.Type != commonParams.ContainersType {
+			continue
+		}
+		resubmitFilesFilter := config.Value[ConfigContainersFilesFilterKey]
+		if resubmitFilesFilter != nil && resubmitFilesFilter != "" {
+			containerConfig.FilesFilter = resubmitFilesFilter.(string)
+		}
+		resubmitPackagesFilter := config.Value[ConfigContainersPackagesFilterKey]
+		if resubmitPackagesFilter != nil && resubmitPackagesFilter != "" {
+			containerConfig.PackagesFilter = resubmitPackagesFilter.(string)
+		}
+		resubmitNonFinalStagesFilter := config.Value[ConfigContainersNonFinalStagesFilterKey]
+		if resubmitNonFinalStagesFilter != nil && resubmitNonFinalStagesFilter != "" {
+			containerConfig.NonFinalStagesFilter = resubmitNonFinalStagesFilter.(string)
+		}
+		resubmitImagesFilter := config.Value[ConfigContainersImagesFilterKey]
+		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
+			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
+		}
+	}
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
