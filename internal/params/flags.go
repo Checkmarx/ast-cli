@@ -282,3 +282,6 @@ const ScaAgent = "SCA_AGENT"
 var (
 	Version = "dev"
 )
+
+// Custom states
+const  IncludeDeleted = "?include-deleted=true"

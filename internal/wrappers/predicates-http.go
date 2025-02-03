@@ -176,7 +176,7 @@ func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]Cus
 
 	requestURL := c.path
 	if includeDeleted {
-		requestURL += "?include-deleted=true"
+		requestURL += params.IncludeDeleted
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s", requestURL))
