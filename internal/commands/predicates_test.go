@@ -65,12 +65,10 @@ func (m *MockCustomStatesWrapper) GetAllCustomStates(includeDeleted bool) ([]wra
 func TestTriageGetStatesFlag(t *testing.T) {
 	mockWrapper := &MockCustomStatesWrapper{}
 	cmd := triageGetStatesSubCommand(mockWrapper)
-
 	cmd.SetArgs([]string{})
 	err := cmd.Execute()
 	assert.NilError(t, err)
 	assert.Equal(t, mockWrapper.ReceivedIncludeDeleted, false)
-
 	cmd.SetArgs([]string{"--all"})
 	err = cmd.Execute()
 	assert.NilError(t, err)
