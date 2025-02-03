@@ -178,7 +178,7 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 	clearFlags()
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -1555,6 +1555,8 @@ func Test_validateThresholds(t *testing.T) {
 }
 
 func TestValidateContainerImageFormat(t *testing.T) {
+	var errMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar"
+
 	testCases := []struct {
 		name           string
 		containerImage string
@@ -1573,22 +1575,22 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Missing image name",
 			containerImage: ":latest",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.Errorf(errMessage),
 		},
 		{
 			name:           "Missing image tag",
 			containerImage: "nginx:",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.Errorf(errMessage),
 		},
 		{
 			name:           "Empty image name and tag",
 			containerImage: ":",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.Errorf(errMessage),
 		},
 		{
 			name:           "Extra colon",
 			containerImage: "nginx:latest:extra",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.Errorf(errMessage),
 		},
 	}
 
