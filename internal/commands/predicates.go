@@ -59,10 +59,7 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*
 			return errors.Wrap(err, "Failed to fetch custom states")
 		}
 		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}
 }
 
