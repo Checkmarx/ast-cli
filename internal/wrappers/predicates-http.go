@@ -167,30 +167,58 @@ func NewCustomStatesHTTPWrapper() CustomStatesWrapper {
 	}
 }
 
+//func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]CustomState, error) {
+//	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+//
+//	if c.path == "" {
+//		return nil, errors.New("CustomStatesAPIPathKey is not set")
+//	}
+//
+//	requestURL := c.path
+//	if includeDeleted {
+//		requestURL += params.IncludeDeletedQueryParam
+//	}
+//
+//	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s", requestURL))
+//
+//	resp, err := SendHTTPRequest(http.MethodGet, requestURL, http.NoBody, true, clientTimeout)
+//	if err != nil {
+//		return nil, err
+//	}
+//	defer resp.Body.Close()
+//
+//	if resp.StatusCode != http.StatusOK {
+//		return nil, errors.Errorf("Failed to fetch custom states. HTTP status: %d", resp.StatusCode)
+//	}
+//
+//	var states []CustomState
+//	err = json.NewDecoder(resp.Body).Decode(&states)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "Failed to parse custom states response")
+//	}
+//	return states, nil
+//}
+
 func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]CustomState, error) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 
 	if c.path == "" {
 		return nil, errors.New("CustomStatesAPIPathKey is not set")
 	}
-
-	requestURL := c.path
+	queryParams := make(map[string]string)
 	if includeDeleted {
-		requestURL += params.IncludeDeletedQueryParam
+		queryParams[params.IncludeDeletedQueryParam] = params.True
 	}
 
-	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s", requestURL))
-
-	resp, err := SendHTTPRequest(http.MethodGet, requestURL, http.NoBody, true, clientTimeout)
+	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s with params: %v", c.path, queryParams))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, c.path, queryParams, http.NoBody, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("Failed to fetch custom states. HTTP status: %d", resp.StatusCode)
 	}
-
 	var states []CustomState
 	err = json.NewDecoder(resp.Body).Decode(&states)
 	if err != nil {

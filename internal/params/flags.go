@@ -284,4 +284,5 @@ var (
 )
 
 // Custom states
-const  IncludeDeletedQueryParam = "?include-deleted=true"
+const  IncludeDeletedQueryParam = "include-deleted"
+const True 						= "true"
