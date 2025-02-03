@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -55,19 +54,18 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
 func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
-
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
 			return errors.Wrap(err, "Failed to fetch custom states")
 		}
-
-		for _, state := range states {
-			fmt.Println(strings.TrimSpace(state.Name))
+		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
+		if err != nil {
+			return err
 		}
-
 		return nil
 	}
 }
+
 
 
 func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
