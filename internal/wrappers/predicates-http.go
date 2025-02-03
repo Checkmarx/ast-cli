@@ -176,7 +176,7 @@ func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]Cus
 
 	requestURL := c.path
 	if includeDeleted {
-		requestURL += params.IncludeDeleted
+		requestURL += params.IncludeDeletedQueryParam
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s", requestURL))
@@ -196,6 +196,5 @@ func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]Cus
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse custom states response")
 	}
-
 	return states, nil
 }
