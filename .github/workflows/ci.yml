@@ -63,8 +63,8 @@ jobs:
           PROXY_USERNAME: ${{ secrets.PROXY_USER }}
           PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          PR_GITHUB_NAMESPACE: "checkmarx"
-          PR_GITHUB_REPO_NAME: "ast-cli"
+          PR_GITHUB_NAMESPACE: "CheckmarxDev"
+          PR_GITHUB_REPO_NAME: "ast-cli-fips"
           PR_GITHUB_NUMBER: 983
           PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
