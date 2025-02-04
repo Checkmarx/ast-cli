@@ -1,6 +1,7 @@
 package params
 
 const (
+	CustomStatesAPIPathEnv 				= "CX_CUSTOM_STATES_PATH"
 	TenantEnv                           = "CX_TENANT"
 	BranchEnv                           = "CX_BRANCH"
 	BaseURIEnv                          = "CX_BASE_URI"

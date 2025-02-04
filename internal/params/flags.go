@@ -2,6 +2,7 @@ package params
 
 // Flags
 const (
+	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
@@ -282,3 +283,7 @@ const ScaAgent = "SCA_AGENT"
 var (
 	Version = "dev"
 )
+
+// Custom states
+const  IncludeDeletedQueryParam = "include-deleted"
+const True 						= "true"
