@@ -55,6 +55,7 @@ func main() {
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
 
+	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
@@ -94,6 +95,7 @@ func main() {
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
+		customStatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,

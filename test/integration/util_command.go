@@ -90,6 +90,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
+	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -125,6 +126,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
+		customStatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,

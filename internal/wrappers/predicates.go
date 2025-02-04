@@ -39,6 +39,19 @@ type PredicatesCollectionResponseModel struct {
 	TotalCount                 int                `json:"totalCount"`
 }
 
+type CustomState struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+
+
+type CustomStatesWrapper interface {
+	GetAllCustomStates(includeDeleted bool) ([]CustomState, error)
+}
+
+
 type ResultsPredicatesWrapper interface {
 	PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
