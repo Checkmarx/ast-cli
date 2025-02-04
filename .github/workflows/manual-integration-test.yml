@@ -71,8 +71,8 @@ jobs:
           PROXY_PORT: 3128
           PROXY_USERNAME: ${{ github.event.inputs.proxyUser }}
           PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          PR_GITHUB_NAMESPACE: "CheckmarxDev"
-          PR_GITHUB_REPO_NAME: "ast-cli-fips"
+          PR_GITHUB_NAMESPACE: "checkmarx"
+          PR_GITHUB_REPO_NAME: "ast-cli"
           PR_GITHUB_NUMBER: 418
           AZURE_ORG: ${{ secrets.AZURE_ORG }}
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
