@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
@@ -20,15 +20,50 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper)
+	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper)
+
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{triageShowCmd},
 		printer.FormatList, printer.FormatTable, printer.FormatJSON,
 	)
 
-	triageCmd.AddCommand(triageShowCmd, triageUpdateCmd)
+	triageCmd.AddCommand(triageShowCmd, triageUpdateCmd, triageGetStatesCmd)
 	return triageCmd
 }
+
+func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
+	triageGetStatesCmd := &cobra.Command{
+		Use:   "get-states",
+		Short: "Fetch and display custom states.",
+		Long:  "Retrieves a list of custom states and prints their names.",
+		Example: heredoc.Doc(
+			`
+            $ cx triage get-states
+            $ cx triage get-states --all
+        `,
+		),
+		RunE: runTriageGetStates(customStatesWrapper),
+	}
+
+	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Include deleted states")
+
+	return triageGetStatesCmd
+}
+
+func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
+		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
+		if err != nil {
+			return errors.Wrap(err, "Failed to fetch custom states")
+		}
+		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
+		return err
+	}
+}
+
+
 
 func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
 	triageShowCmd := &cobra.Command{

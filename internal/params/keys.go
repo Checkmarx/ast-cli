@@ -3,6 +3,7 @@ package params
 import "strings"
 
 var (
+	CustomStatesAPIPathKey				= strings.ToLower(CustomStatesAPIPathEnv)
 	TenantKey                           = strings.ToLower(TenantEnv)
 	BranchKey                           = strings.ToLower(BranchEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)

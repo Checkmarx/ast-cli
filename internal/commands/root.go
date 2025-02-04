@@ -26,6 +26,7 @@ func NewAstCLI(
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
+	customStatesWrapper wrappers.CustomStatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -195,7 +196,7 @@ func NewAstCLI(
 	)
 
 	configCmd := util.NewConfigCommand()
-	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper)
+	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 
