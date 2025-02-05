@@ -16,7 +16,7 @@ jobs:
       - name: Request reviewers
         env:
           GH_REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
           PRAUTHOR: ${{ github.event.pull_request.user.login }}
         run: gh pr edit $PRNUM --add-reviewer Checkmarx/ast-phoenix-team
