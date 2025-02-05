@@ -1453,6 +1453,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType)
+	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
 	containerResolveLocallyFlag, _ := cmd.Flags().GetString(commonParams.ContainerResolveLocallyFlag)
 	containerResolveLocally := strings.EqualFold(containerResolveLocallyFlag, "true")
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
@@ -1487,8 +1488,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
-		if containerScanTriggered {
-			containerResolverError := runContainerResolver(cmd, directoryPath, containerResolveLocally)
+		if containerScanTriggered && (containerResolveLocally || containerImagesFlag != "") {
+			containerResolverError := runContainerResolver(cmd, directoryPath, containerImagesFlag, containerResolveLocally)
 			if containerResolverError != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
@@ -1497,7 +1498,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
-		if isSingleContainerScanTriggered() && containerResolveLocally {
+		if isSingleContainerScanTriggered() && (containerResolveLocally || containerImagesFlag != "") {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
@@ -1523,23 +1524,26 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-func runContainerResolver(cmd *cobra.Command, directoryPath string, containerResolveLocally bool) error {
-	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+func runContainerResolver(cmd *cobra.Command, directoryPath string, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
+	var validContainerImages []string
 
-	if containerImages != "" {
-		containerImagesList = strings.Split(strings.TrimSpace(containerImages), ",")
+	if containerImageFlag != "" {
+		containerImagesList = strings.Split(strings.TrimSpace(containerImageFlag), ",")
 		for _, containerImageName := range containerImagesList {
-			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
-				return containerImagesErr
+			containerImagesErr := validateContainerImageFormat(containerImageName)
+			if containerImagesErr != nil {
+				logger.Printf("Invalid container image format: %s, error: %s", containerImageName, containerImagesErr)
+			} else {
+				validContainerImages = append(validContainerImages, containerImageName)
 			}
 		}
-		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(validContainerImages, ", ")))
 	}
 
-	if containerResolveLocally || len(containerImagesList) > 0 {
-		containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
+	if containerResolveLocally || len(validContainerImages) > 0 {
+		containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, validContainerImages, debug)
 		if containerResolverERR != nil {
 			return containerResolverERR
 		}
