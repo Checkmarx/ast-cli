@@ -3,7 +3,7 @@ module github.com/checkmarx/ast-cli
 go 1.23.3
 
 require (
-	github.com/Checkmarx/containers-resolver v1.0.6-0.20250130184119-42af4015f216
+	github.com/Checkmarx/containers-resolver v1.0.6
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/MakeNowJust/heredoc v1.0.0
@@ -25,7 +25,7 @@ require (
 	golang.org/x/crypto v0.32.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.21.0
-	google.golang.org/grpc v1.67.3
+	google.golang.org/grpc v1.70.1-0.20250123180834-11fb3d8f570c
 	google.golang.org/protobuf v1.36.3
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
@@ -37,9 +37,9 @@ require (
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20240914100643-eb91380d8434 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/Checkmarx/containers-images-extractor v1.0.3 // indirect
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.6-0.20250130183701-3874a3497983 // indirect
-	github.com/Checkmarx/containers-types v1.0.0 // indirect
+	github.com/Checkmarx/containers-images-extractor v1.0.4 // indirect
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.6 // indirect
+	github.com/Checkmarx/containers-types v1.0.1 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/anchore/archiver/v3 v3.5.3-0.20241210171143-5b1d8d1c7c51 // indirect
 	github.com/anchore/clio v0.0.0-20241115144204-29e89f9fa837 // indirect
 	github.com/anchore/fangs v0.0.0-20241125225345-c73f048692d3 // indirect
-	github.com/anchore/go-collections v0.0.0-20240216214351-5baf374cca6f // indirect
+	github.com/anchore/go-collections v0.0.0-20241211140901-567f400e9a46 // indirect
 	github.com/anchore/go-logger v0.0.0-20230725134548-c21dafa1ec5a // indirect
 	github.com/anchore/go-macholibre v0.0.0-20220308212642-53e6d0aaf6fb // indirect
 	github.com/anchore/go-struct-converter v0.0.0-20240925125616-a0883641c664 // indirect
@@ -211,9 +211,9 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/profile v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.20.2 // indirect
+	github.com/prometheus/client_golang v1.20.4 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/common v0.62.1-0.20250120134357-7684929007b4 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
