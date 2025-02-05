@@ -1212,7 +1212,7 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 				TotalCount: 0,
 				ScanID:     "MOCK",
 			},
-			featureFlagsWrapper: mock.FeatureFlagsMockWrapper{},
+			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 			expectedIssues:      0,
 		},
 	}
