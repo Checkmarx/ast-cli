@@ -13,11 +13,12 @@ type BasePredicate struct {
 }
 
 type PredicateRequest struct {
-	SimilarityID string `json:"similarityId"`
-	ProjectID    string `json:"projectId"`
-	State        string `json:"state"`
-	Comment      string `json:"comment"`
-	Severity     string `json:"severity"`
+	SimilarityID  string `json:"similarityId"`
+	ProjectID     string `json:"projectId"`
+	State         string `json:"state"`
+	CustomStateID string `json:"customStateId"`
+	Comment       string `json:"comment"`
+	Severity      string `json:"severity"`
 }
 
 type Predicate struct {
@@ -45,12 +46,9 @@ type CustomState struct {
 	Type string `json:"type"`
 }
 
-
-
 type CustomStatesWrapper interface {
 	GetAllCustomStates(includeDeleted bool) ([]CustomState, error)
 }
-
 
 type ResultsPredicatesWrapper interface {
 	PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (*WebError, error)

@@ -156,9 +156,8 @@ func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseMod
 	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
 }
 
-
 type CustomStatesHTTPWrapper struct {
-path string
+	path string
 }
 
 func NewCustomStatesHTTPWrapper() CustomStatesWrapper {

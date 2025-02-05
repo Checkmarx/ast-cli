@@ -114,6 +114,7 @@ const (
 	SimilarityIDFlag             = "similarity-id"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
+	CustomStateIDFlag            = "state-id"
 	CommentFlag                  = "comment"
 	LanguageFlag                 = "language"
 	VulnerabilityTypeFlag        = "vulnerability-type"

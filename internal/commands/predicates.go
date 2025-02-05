@@ -12,16 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
+func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
 		Long:  "The 'triage' command enables the ability to manage results in Checkmarx One.",
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
-	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper)
+	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper)
-
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{triageShowCmd},
@@ -63,8 +62,6 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*
 	}
 }
 
-
-
 func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
 	triageShowCmd := &cobra.Command{
 		Use:   "show",
@@ -90,7 +87,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	return triageShowCmd
 }
 
-func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
 	triageUpdateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update the state, severity or comment for the given issue",
@@ -100,19 +97,21 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				$ cx triage update 
 				--similarity-id <SimilarityID> 
 				--project-id <ProjectID> 
-				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT> 
+				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|<CustomStateName>>
+				--custom-state-id <CustomStateID(Optional)>
 				--severity <CRITICAL|HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
 				--scan-type <SAST|IAC-SECURITY>
 		`,
 		),
-		RunE: runTriageUpdate(resultsPredicatesWrapper, featureFlagsWrapper),
+		RunE: runTriageUpdate(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper),
 	}
 
 	triageUpdateCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageUpdateCmd.PersistentFlags().String(params.SeverityFlag, "", "Severity")
 	triageUpdateCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
 	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "State")
+	triageUpdateCmd.PersistentFlags().String(params.CustomStateIDFlag, "", "State ID")
 	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment.")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
@@ -169,12 +168,13 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 	}
 }
 
-func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
+func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
+		customStateID, _ := cmd.Flags().GetString(params.CustomStateIDFlag)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		// check if the current tenant has critical severity available
@@ -183,12 +183,25 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		if !criticalEnabled && strings.EqualFold(severity, "critical") {
 			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
 		}
+		if isCustomState(state) {
+			if customStateID == "" {
+				var err error
+				customStateID, err = getCustomStateID(customStatesWrapper, state)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
+				}
+			}
+		} else {
+			customStateID = ""
+		}
+
 		predicate := &wrappers.PredicateRequest{
-			SimilarityID: similarityID,
-			ProjectID:    projectID,
-			Severity:     severity,
-			State:        state,
-			Comment:      comment,
+			SimilarityID:  similarityID,
+			ProjectID:     projectID,
+			Severity:      severity,
+			State:         state,
+			CustomStateID: customStateID,
+			Comment:       comment,
 		}
 
 		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
@@ -198,6 +211,28 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 
 		return nil
 	}
+}
+func isCustomState(state string) bool {
+	systemStates := []string{"TO_VERIFY", "NOT_EXPLOITABLE", "PROPOSED_NOT_EXPLOITABLE", "CONFIRMED", "URGENT"}
+	for _, customState := range systemStates {
+		if strings.EqualFold(state, customState) {
+			return false
+		}
+	}
+	return true
+}
+
+func getCustomStateID(customStatesWrapper wrappers.CustomStatesWrapper, state string) (string, error) {
+	customStates, err := customStatesWrapper.GetAllCustomStates(false)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to fetch custom states")
+	}
+	for _, customState := range customStates {
+		if customState.Name == state {
+			return strconv.Itoa(customState.ID), nil
+		}
+	}
+	return "", errors.Errorf("No matching state found for %s", state)
 }
 
 type predicateView struct {
