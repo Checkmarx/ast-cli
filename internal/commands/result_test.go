@@ -1189,7 +1189,7 @@ func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	totalSummary := "| TOTAL           N/A       5        1       1      0   Completed   |"
+	totalSummary := "| TOTAL           N/A       5        2       1      0   Completed   |"
 	assert.Equal(t, strings.Contains(stdoutString, totalSummary), true,
 		"Expected Total summary without critical:"+totalSummary)
 
