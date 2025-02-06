@@ -1208,7 +1208,7 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 			name:    "scan summary with no vulnerabilities",
 			summary: createEmptyResultSummary(),
 			results: &wrappers.ScanResultsCollection{
-				Results:    nil,
+				Results:    []*wrappers.ScanResult{},
 				TotalCount: 0,
 				ScanID:     "MOCK",
 			},
