@@ -119,7 +119,10 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	markFlagAsRequired(triageUpdateCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.SeverityFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
-	markFlagAsRequired(triageUpdateCmd, params.StateFlag)
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
+	if !flagResponse.Status {
+		markFlagAsRequired(triageUpdateCmd, params.StateFlag)
+	}
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
 
 	return triageUpdateCmd
@@ -184,16 +187,11 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		if !criticalEnabled && strings.EqualFold(severity, "critical") {
 			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
 		}
-		if isCustomState(state) {
-			if customStateID == "" {
-				var err error
-				customStateID, err = getCustomStateID(customStatesWrapper, state)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
-				}
-			}
-		} else {
-			customStateID = ""
+
+		var err error
+		state, customStateID, err = determineSystemOrCustomState(customStatesWrapper, featureFlagsWrapper, state, customStateID)
+		if err != nil {
+			return err
 		}
 
 		predicate := &wrappers.PredicateRequest{
@@ -205,7 +203,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 			Comment:       comment,
 		}
 
-		_, err := resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
+		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed updating the predicate")
 		}
@@ -213,7 +211,31 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		return nil
 	}
 }
+func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state, customStateID string) (string, string, error) {
+	if isCustomState(state) {
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
+		if !flagResponse.Status {
+			return "", "", errors.Errorf("%s", "Custom state is not available for your tenant.")
+		}
+
+		if customStateID == "" {
+			if state == "" {
+				return "", "", errors.Errorf("state-id is required when state is not provided")
+			}
+			var err error
+			customStateID, err = getCustomStateID(customStatesWrapper, state)
+			if err != nil {
+				return "", "", errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
+			}
+		}
+		return "", customStateID, nil
+	}
+	return state, "", nil
+}
 func isCustomState(state string) bool {
+	if state == "" {
+		return true
+	}
 	systemStates := []string{"TO_VERIFY", "NOT_EXPLOITABLE", "PROPOSED_NOT_EXPLOITABLE", "CONFIRMED", "URGENT"}
 	for _, customState := range systemStates {
 		if strings.EqualFold(state, customState) {
