@@ -10,7 +10,11 @@ import (
 	"gotest.tools/assert"
 )
 
-const cxAscaPort = "cx_asca_port"
+const (
+	cxAscaPort                 = "cx_asca_port"
+	cxScsScanOverviewPath      = "cx_scs_scan_overview_path"
+	defaultScsScanOverviewPath = "api/micro-engines/read/scans/%s/scan-overview"
+)
 
 func TestNewConfigCommand(t *testing.T) {
 	cmd := NewConfigCommand()
@@ -86,6 +90,59 @@ func TestChangedOnlyAscaPortInConfigFile_ConfigFileExistsWithDefaultValues_OnlyA
 	config, err := configuration.LoadConfig(configFilePath)
 	assert.NilError(t, err)
 	asserts.Equal(t, -1, config[cxAscaPort])
+
+	// Assert all the other properties are the same
+	for key, value := range oldConfig {
+		if key != cxAscaPort {
+			asserts.Equal(t, value, config[key])
+		}
+	}
+}
+
+func TestWriteSingleConfigKeyStringToExistingFile_UpdateScsScanOverviewPath_Success(t *testing.T) {
+	configuration.LoadConfiguration()
+	configFilePath, _ := configuration.GetConfigFilePath()
+	err := configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
+	assert.NilError(t, err)
+
+	config, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, defaultScsScanOverviewPath, config[cxScsScanOverviewPath])
+}
+
+func TestWriteSingleConfigKeyStringNonExistingFile_CreatingTheFileAndWritesTheKey_Success(t *testing.T) {
+	configFilePath := "non-existing-file"
+
+	file, err := os.Open(configFilePath)
+	asserts.NotNil(t, err)
+	asserts.Nil(t, file)
+
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
+	assert.NilError(t, err)
+
+	file, err = os.Open(configFilePath)
+	assert.NilError(t, err)
+	defer func(file *os.File) {
+		_ = file.Close()
+		_ = os.Remove(configFilePath)
+		_ = os.Remove(configFilePath + ".lock")
+	}(file)
+	asserts.NotNil(t, file)
+}
+
+func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultValues_OnlyAscaPortChangedSuccess(t *testing.T) {
+	configuration.LoadConfiguration()
+	configFilePath, _ := configuration.GetConfigFilePath()
+
+	oldConfig, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
+	assert.NilError(t, err)
+
+	config, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, defaultScsScanOverviewPath, config[cxScsScanOverviewPath])
 
 	// Assert all the other properties are the same
 	for key, value := range oldConfig {
