@@ -1466,7 +1466,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerResolveLocally) && userProvidedZip
+	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -1528,18 +1528,24 @@ func runContainerResolver(cmd *cobra.Command, directoryPath string, containerIma
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
 	var validContainerImages []string
+	var lastValidationError error
 
 	if containerImageFlag != "" {
 		containerImagesList = strings.Split(strings.TrimSpace(containerImageFlag), ",")
 		for _, containerImageName := range containerImagesList {
 			containerImagesErr := validateContainerImageFormat(containerImageName)
 			if containerImagesErr != nil {
+				lastValidationError = containerImagesErr
 				logger.Printf("Invalid container image format: %s, error: %s", containerImageName, containerImagesErr)
 			} else {
 				validContainerImages = append(validContainerImages, containerImageName)
 			}
 		}
-		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(validContainerImages, ", ")))
+		if len(validContainerImages) > 0 {
+			logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(validContainerImages, ", ")))
+		} else {
+			return lastValidationError
+		}
 	}
 
 	if containerResolveLocally || len(validContainerImages) > 0 {
