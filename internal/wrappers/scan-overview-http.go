@@ -19,7 +19,7 @@ type ScanOverviewHTTPWrapper struct {
 }
 
 func NewHTTPScanOverviewWrapper(path string) ScanOverviewWrapper {
-	validPath := configurePath(path)
+	validPath := setDefaultPath(path)
 	return &ScanOverviewHTTPWrapper{
 		path: validPath,
 	}
@@ -64,10 +64,9 @@ func (r *ScanOverviewHTTPWrapper) GetSCSOverviewByScanID(scanID string) (
 	}
 }
 
-// configurePath checks if the path is the default path, if not it writes the default path to the config file
-func configurePath(path string) string {
+// setDefaultPath checks if the path is the default path, if not it writes the default path to the config file
+func setDefaultPath(path string) string {
 	if path != defaultPath {
-		viper.Set(commonParams.ScsScanOverviewPathKey, defaultPath)
 		configFilePath, err := configuration.GetConfigFilePath()
 		if err != nil {
 			logger.PrintfIfVerbose("Error getting config file path: %v", err)

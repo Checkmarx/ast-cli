@@ -130,7 +130,7 @@ func TestWriteSingleConfigKeyStringNonExistingFile_CreatingTheFileAndWritesTheKe
 	asserts.NotNil(t, file)
 }
 
-func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultValues_OnlyAscaPortChangedSuccess(t *testing.T) {
+func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultValues_OnlyScsScanOverviewPathChangedSuccess(t *testing.T) {
 	configuration.LoadConfiguration()
 	configFilePath, _ := configuration.GetConfigFilePath()
 
@@ -146,7 +146,7 @@ func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultV
 
 	// Assert all the other properties are the same
 	for key, value := range oldConfig {
-		if key != cxAscaPort {
+		if key != cxScsScanOverviewPath {
 			asserts.Equal(t, value, config[key])
 		}
 	}
