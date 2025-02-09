@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var systemStates = []string{"TO_VERIFY", "NOT_EXPLOITABLE", "PROPOSED_NOT_EXPLOITABLE", "CONFIRMED", "URGENT"}
+
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
@@ -120,7 +122,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	markFlagAsRequired(triageUpdateCmd, params.SeverityFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
-	if !flagResponse.Status {
+	sastCustomStateEnabled := flagResponse.Status
+	if !sastCustomStateEnabled {
 		markFlagAsRequired(triageUpdateCmd, params.StateFlag)
 	}
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
@@ -214,7 +217,8 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state, customStateID string) (string, string, error) {
 	if isCustomState(state) {
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
-		if !flagResponse.Status {
+		sastCustomStateEnabled := flagResponse.Status
+		if !sastCustomStateEnabled {
 			return "", "", errors.Errorf("%s", "Custom state is not available for your tenant.")
 		}
 
@@ -236,7 +240,6 @@ func isCustomState(state string) bool {
 	if state == "" {
 		return true
 	}
-	systemStates := []string{"TO_VERIFY", "NOT_EXPLOITABLE", "PROPOSED_NOT_EXPLOITABLE", "CONFIRMED", "URGENT"}
 	for _, customState := range systemStates {
 		if strings.EqualFold(state, customState) {
 			return false

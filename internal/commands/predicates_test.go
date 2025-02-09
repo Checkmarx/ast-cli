@@ -278,7 +278,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name:                "Both state and state ID provided - invalid state",
+			name:                "Both state and state ID provided - invalid state name",
 			state:               "INVALID_STATE",
 			customStateID:       "2",
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
