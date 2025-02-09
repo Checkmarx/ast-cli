@@ -138,6 +138,7 @@ func TestRunTriageUpdateWithNotFoundCustomState(t *testing.T) {
 	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{
 		Name:   wrappers.SastCustomStateEnabled,
 		Status: true,
@@ -159,6 +160,7 @@ func TestRunTriageUpdateWithCustomState(t *testing.T) {
 	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{
 		Name:   wrappers.SastCustomStateEnabled,
 		Status: true,
@@ -221,6 +223,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			name:                "Custom state with valid state ID",
 			state:               "",
 			customStateID:       "2",
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
@@ -232,6 +235,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "TO_VERIFY",
 			customStateID:       "",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "TO_VERIFY",
 			expectedCustomState: "",
@@ -242,6 +246,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "",
 			customStateID:       "",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
 			expectedCustomState: "",
@@ -252,6 +257,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "INVALID_STATE",
 			customStateID:       "",
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
 			expectedCustomState: "",
@@ -262,6 +268,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "demo2",
 			customStateID:       "2",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
 			expectedCustomState: "2",
@@ -272,6 +279,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "TO_VERIFY",
 			customStateID:       "2",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "TO_VERIFY",
 			expectedCustomState: "",
@@ -282,6 +290,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "INVALID_STATE",
 			customStateID:       "2",
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
 			expectedCustomState: "2",
@@ -292,6 +301,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			state:               "demo2",
 			customStateID:       "",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
+			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: false},
 			expectedState:       "",
 			expectedCustomState: "",
@@ -302,6 +312,7 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			clearFlags()
 			mock.Flag = tt.flag
 			state, customStateID, err := determineSystemOrCustomState(tt.mockWrapper, tt.mockFeatureFlags, tt.state, tt.customStateID)
 			if tt.expectedError != "" {
