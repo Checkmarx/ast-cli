@@ -75,6 +75,7 @@ setx GOARCH=amd64
 go build -o ./bin/cx.exe ./cmd
 ```
 
+
 #### Linux
 
 ``` bash
