@@ -986,9 +986,14 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
-		if err != nil {
-			return err
+		var policyResponseModel *wrappers.PolicyResponseModel
+		if !isScanPending(string(scan.Status)) {
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.PrintIfVerbose("Policy violations aren't returned in the pipeline for scans run in async mode.")
 		}
 
 		if sastRedundancy {
