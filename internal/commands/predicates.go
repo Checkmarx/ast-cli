@@ -121,11 +121,6 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	markFlagAsRequired(triageUpdateCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.SeverityFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
-	sastCustomStateEnabled := flagResponse.Status
-	if !sastCustomStateEnabled {
-		markFlagAsRequired(triageUpdateCmd, params.StateFlag)
-	}
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
 
 	return triageUpdateCmd
