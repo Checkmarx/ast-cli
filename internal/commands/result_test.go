@@ -1217,7 +1217,6 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
 			assert.Equal(t, tt.expectedIssues, tt.summary.TotalIssues)
