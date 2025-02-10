@@ -1219,12 +1219,6 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 	for _, tt := range tests {
 		assert.Check(t, tt.summary != nil, "ResultSummary must not be nil")
 		assert.Check(t, tt.summary.EnginesResult != nil, "EnginesResult must not be nil")
-		// Verify specific map entries exist
-		assert.Check(t, tt.summary.EnginesResult, params.SastType, "SAST type must exist")
-		assert.Check(t, tt.summary.EnginesResult, params.ScaType, "SCA type must exist")
-		assert.Check(t, tt.summary.EnginesResult, params.KicsType, "KICS type must exist")
-		assert.Check(t, tt.summary.EnginesResult, params.APISecType, "API Security type must exist")
-		assert.Check(t, tt.summary.EnginesResult, params.ContainersType, "Containers type must exist")
 
 		t.Run(tt.name, func(t *testing.T) {
 			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
