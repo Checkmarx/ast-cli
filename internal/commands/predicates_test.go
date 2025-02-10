@@ -48,7 +48,7 @@ func TestRunUpdateTriageCommandWithNoInput(t *testing.T) {
 	fmt.Println(err)
 	assert.Assert(
 		t,
-		err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"severity\", \"similarity-id\", \"state\" not set")
+		err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"severity\", \"similarity-id\" not set")
 }
 
 func TestTriageGetStatesFlag(t *testing.T) {
