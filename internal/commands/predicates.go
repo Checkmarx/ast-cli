@@ -215,26 +215,28 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	}
 }
 func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state, customStateID string) (string, string, error) {
-	if isCustomState(state) {
-		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
-		sastCustomStateEnabled := flagResponse.Status
-		if !sastCustomStateEnabled {
-			return "", "", errors.Errorf("%s", "Custom state is not available for your tenant.")
+	if !isCustomState(state) {
+		return state, "", nil
+	}
+
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
+	sastCustomStateEnabled := flagResponse.Status
+	if !sastCustomStateEnabled {
+		return "", "", errors.Errorf("%s", "Custom state is not available for your tenant.")
+	}
+
+	if customStateID == "" {
+		if state == "" {
+			return "", "", errors.Errorf("state-id is required when state is not provided")
 		}
 
-		if customStateID == "" {
-			if state == "" {
-				return "", "", errors.Errorf("state-id is required when state is not provided")
-			}
-			var err error
-			customStateID, err = getCustomStateID(customStatesWrapper, state)
-			if err != nil {
-				return "", "", errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
-			}
+		var err error
+		customStateID, err = getCustomStateID(customStatesWrapper, state)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
 		}
-		return "", customStateID, nil
 	}
-	return state, "", nil
+	return "", customStateID, nil
 }
 func isCustomState(state string) bool {
 	if state == "" {
