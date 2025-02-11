@@ -636,7 +636,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), params.SastType,
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-critical=1;sast-high=1;sast-low=1;",
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -787,7 +787,7 @@ func TestScanTimeout(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SlowRepo,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "develop",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
