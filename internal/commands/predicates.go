@@ -20,7 +20,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper)
-	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper)
+	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper, featureFlagsWrapper)
 
 
 	addFormatFlagToMultipleCommands(
@@ -32,7 +32,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	return triageCmd
 }
 
-func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
+func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	triageGetStatesCmd := &cobra.Command{
 		Use:   "get-states",
 		Short: "Show the custom states that have been configured in your tenant",
@@ -43,7 +43,7 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
             $ cx triage get-states --all
         `,
 		),
-		RunE: runTriageGetStates(customStatesWrapper),
+		RunE: runTriageGetStates(customStatesWrapper, featureFlagsWrapper),
 	}
 
 	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Show all custom states, including the ones that have been deleted")
@@ -51,8 +51,12 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
 	return triageGetStatesCmd
 }
 
-func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
+func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
+		if !flagResponse.Status {
+			return errors.Errorf("%s", "Fetching custom states is not available for your tenant")
+		}
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
