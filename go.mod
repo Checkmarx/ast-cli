@@ -7,6 +7,7 @@ require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/bouk/monkey v1.0.0
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
