@@ -1527,29 +1527,19 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 func runContainerResolver(cmd *cobra.Command, directoryPath string, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
-	var validContainerImages []string
-	var lastValidationError error
 
 	if containerImageFlag != "" {
 		containerImagesList = strings.Split(strings.TrimSpace(containerImageFlag), ",")
 		for _, containerImageName := range containerImagesList {
-			containerImagesErr := validateContainerImageFormat(containerImageName)
-			if containerImagesErr != nil {
-				lastValidationError = containerImagesErr
-				logger.Printf("Invalid container image format: %s, error: %s", containerImageName, containerImagesErr)
-			} else {
-				validContainerImages = append(validContainerImages, containerImageName)
+			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
+				return containerImagesErr
 			}
 		}
-		if len(validContainerImages) > 0 {
-			logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(validContainerImages, ", ")))
-		} else {
-			return lastValidationError
-		}
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 	}
 
-	if containerResolveLocally || len(validContainerImages) > 0 {
-		containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, validContainerImages, debug)
+	if containerResolveLocally || len(containerImagesList) > 0 {
+		containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
 		if containerResolverERR != nil {
 			return containerResolverERR
 		}
@@ -2798,9 +2788,28 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+func validatePath(path string, resultChan chan<- bool) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		resultChan <- false
+		return
+	} else if err != nil {
+		resultChan <- false
+		return
+	}
+
+	// If path exists, return true
+	resultChan <- info.IsDir() || !info.IsDir()
+}
+
 func validateContainerImageFormat(containerImage string) error {
 	if strings.HasSuffix(containerImage, ".tar") {
-		return nil
+		resultChan := make(chan bool)
+		go validatePath(containerImage, resultChan)
+		isValid := <-resultChan
+		if isValid {
+			return nil
+		}
 	}
 
 	imageParts := strings.Split(containerImage, ":")
