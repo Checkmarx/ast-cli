@@ -636,7 +636,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), params.SastType,
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-critical=3;sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-critical=1;sast-high=1;sast-low=1;",
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
