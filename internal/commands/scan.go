@@ -2807,9 +2807,10 @@ func validateContainerImageFormat(containerImage string) error {
 		resultChan := make(chan bool)
 		go validatePath(containerImage, resultChan)
 		isValid := <-resultChan
-		if isValid {
-			return nil
+		if !isValid {
+			return errors.Errorf("--container-images flag. specified Tar file doesn't exists")
 		}
+		return nil
 	}
 
 	imageParts := strings.Split(containerImage, ":")
