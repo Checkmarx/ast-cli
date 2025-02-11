@@ -787,7 +787,7 @@ func TestScanTimeout(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SlowRepo,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "develop",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
