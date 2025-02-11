@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.23.3
+go 1.23.6
 
 require (
 	github.com/Checkmarx/containers-resolver v1.0.6
@@ -22,10 +22,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/crypto v0.32.0
-	golang.org/x/sync v0.10.0
-	golang.org/x/text v0.21.0
-	google.golang.org/grpc v1.70.1-0.20250123180834-11fb3d8f570c
+	golang.org/x/crypto v0.33.0
+	golang.org/x/sync v0.11.0
+	golang.org/x/text v0.22.0
+	google.golang.org/grpc v1.67.3
 	google.golang.org/protobuf v1.36.3
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
@@ -264,8 +264,8 @@ require (
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/term v0.28.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
