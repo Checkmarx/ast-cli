@@ -1217,9 +1217,7 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		assert.Check(t, tt.summary != nil, "ResultSummary must not be nil")
-		assert.Check(t, tt.summary.EnginesResult != nil, "EnginesResult must not be nil")
-
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			enhanceWithScanSummary(tt.summary, tt.results, tt.featureFlagsWrapper)
 			assert.Equal(t, tt.expectedIssues, tt.summary.TotalIssues)
@@ -1228,17 +1226,21 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 }
 
 func createEmptyResultSummary() *wrappers.ResultSummary {
+	var containersIssues = new(int)
+	*containersIssues = 0
+
 	return &wrappers.ResultSummary{
-		TotalIssues:    0,
-		CriticalIssues: 0,
-		HighIssues:     0,
-		MediumIssues:   0,
-		LowIssues:      0,
-		InfoIssues:     0,
-		SastIssues:     0,
-		ScaIssues:      0,
-		KicsIssues:     0,
-		SCSOverview:    &wrappers.SCSOverview{},
+		TotalIssues:      0,
+		CriticalIssues:   0,
+		HighIssues:       0,
+		MediumIssues:     0,
+		LowIssues:        0,
+		InfoIssues:       0,
+		SastIssues:       0,
+		ScaIssues:        0,
+		KicsIssues:       0,
+		ContainersIssues: containersIssues,
+		SCSOverview:      &wrappers.SCSOverview{},
 		APISecurity: wrappers.APISecResult{
 			APICount:        0,
 			TotalRisksCount: 0,
