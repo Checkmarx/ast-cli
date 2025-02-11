@@ -100,8 +100,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				$ cx triage update 
 				--similarity-id <SimilarityID> 
 				--project-id <ProjectID> 
-				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|<CustomStateName>>
-				--custom-state-id <CustomStateID(Optional)>
+				--state <Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account.>
+				--custom-state-id <Specify the ID of the custom state that you would like to apply to this result.>
 				--severity <CRITICAL|HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
 				--scan-type <SAST|IAC-SECURITY>
