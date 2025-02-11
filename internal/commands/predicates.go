@@ -38,7 +38,7 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
 	triageGetStatesCmd := &cobra.Command{
 		Use:   "get-states",
 		Short: "Show the custom states that have been configured in your tenant",
-		Long: "The get-states command shows information about each of the custom states that have been configured in your tenant account",
+		Long:  "The get-states command shows information about each of the custom states that have been configured in your tenant account",
 		Example: heredoc.Doc(
 			`
             $ cx triage get-states
@@ -237,8 +237,8 @@ func isCustomState(state string) bool {
 	if state == "" {
 		return true
 	}
-	for _, customState := range systemStates {
-		if strings.EqualFold(state, customState) {
+	for _, systemState := range systemStates {
+		if strings.EqualFold(state, systemState) {
 			return false
 		}
 	}
