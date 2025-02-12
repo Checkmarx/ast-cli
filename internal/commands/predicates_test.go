@@ -12,7 +12,7 @@ import (
 )
 
 func TestTriageHelp(t *testing.T) {
-	execCmdNilAssertion(t, "help", "triage", "update")
+	execCmdNilAssertion(t, "help", "triage")
 }
 
 func TestRunShowTriageCommand(t *testing.T) {
