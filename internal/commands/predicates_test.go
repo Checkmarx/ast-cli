@@ -12,7 +12,7 @@ import (
 )
 
 func TestTriageHelp(t *testing.T) {
-	execCmdNilAssertion(t, "help", "triage")
+	execCmdNilAssertion(t, "help", "triage", "update")
 }
 
 func TestRunShowTriageCommand(t *testing.T) {
@@ -73,27 +73,27 @@ func TestGetCustomStateID(t *testing.T) {
 		name                string
 		state               string
 		mockWrapper         wrappers.CustomStatesWrapper
-		expectedStateID     string
+		expectedStateID     int
 		expectedErrorString string
 	}{
 		{
 			name:            "State found",
 			state:           "demo3",
 			mockWrapper:     &mock.CustomStatesMockWrapper{},
-			expectedStateID: "3",
+			expectedStateID: 3,
 		},
 		{
 			name:                "State not found",
 			state:               "nonexistent",
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
-			expectedStateID:     "",
+			expectedStateID:     -1,
 			expectedErrorString: "No matching state found for nonexistent",
 		},
 		{
 			name:                "Error fetching states",
 			state:               "nonexistent",
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
-			expectedStateID:     "",
+			expectedStateID:     -1,
 			expectedErrorString: "Failed to fetch custom states",
 		},
 	}
@@ -200,111 +200,111 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 	tests := []struct {
 		name                string
 		state               string
-		customStateID       string
+		customStateID       int
 		mockWrapper         wrappers.CustomStatesWrapper
 		mockFeatureFlags    wrappers.FeatureFlagsWrapper
 		flag                wrappers.FeatureFlagResponseModel
 		expectedState       string
-		expectedCustomState string
+		expectedCustomState int
 		expectedError       string
 	}{
 		{
 			name:                "Custom state with valid state name",
 			state:               "demo2",
-			customStateID:       "",
+			customStateID:       -1,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "2",
+			expectedCustomState: 2,
 			expectedError:       "",
 		},
 		{
 			name:                "Custom state with valid state ID",
 			state:               "",
-			customStateID:       "2",
+			customStateID:       2,
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "2",
+			expectedCustomState: 2,
 			expectedError:       "",
 		},
 		{
 			name:                "System state",
 			state:               "TO_VERIFY",
-			customStateID:       "",
+			customStateID:       -1,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "TO_VERIFY",
-			expectedCustomState: "",
+			expectedCustomState: -1,
 			expectedError:       "",
 		},
 		{
 			name:                "State ID required when state is not provided",
 			state:               "",
-			customStateID:       "",
+			customStateID:       -1,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "",
+			expectedCustomState: -1,
 			expectedError:       "state-id is required when state is not provided",
 		},
 		{
 			name:                "Failed to get custom state ID",
 			state:               "INVALID_STATE",
-			customStateID:       "",
+			customStateID:       -1,
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "",
+			expectedCustomState: -1,
 			expectedError:       "Failed to get custom state ID for state: INVALID_STATE",
 		},
 		{
 			name:                "Both state and state ID provided - valid custom state",
 			state:               "demo2",
-			customStateID:       "2",
+			customStateID:       2,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "2",
+			expectedCustomState: 2,
 			expectedError:       "",
 		},
 		{
 			name:                "Both state and state ID provided - valid system state",
 			state:               "TO_VERIFY",
-			customStateID:       "2",
+			customStateID:       2,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "TO_VERIFY",
-			expectedCustomState: "",
+			expectedCustomState: -1,
 			expectedError:       "",
 		},
 		{
 			name:                "Both state and state ID provided - invalid state name",
 			state:               "INVALID_STATE",
-			customStateID:       "2",
+			customStateID:       2,
 			mockWrapper:         &mock.CustomStatesMockWrapperWithError{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: true},
 			expectedState:       "",
-			expectedCustomState: "2",
+			expectedCustomState: 2,
 			expectedError:       "",
 		},
 		{
 			name:                "Custom state not available",
 			state:               "demo2",
-			customStateID:       "",
+			customStateID:       -1,
 			mockWrapper:         &mock.CustomStatesMockWrapper{},
 			mockFeatureFlags:    &mock.FeatureFlagsMockWrapper{},
 			flag:                wrappers.FeatureFlagResponseModel{Name: wrappers.SastCustomStateEnabled, Status: false},
 			expectedState:       "",
-			expectedCustomState: "",
+			expectedCustomState: -1,
 			expectedError:       "Custom state is not available for your tenant.",
 		},
 	}

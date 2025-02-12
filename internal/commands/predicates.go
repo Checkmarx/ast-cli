@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"strconv"
 	"strings"
 	"time"
 
@@ -100,8 +99,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				$ cx triage update 
 				--similarity-id <SimilarityID> 
 				--project-id <ProjectID> 
-				--state <Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account.>
-				--custom-state-id <Specify the ID of the custom state that you would like to apply to this result.>
+				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|CUSTOM STATE>
+				--custom-state-id <custom state ID>
 				--severity <CRITICAL|HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
 				--scan-type <SAST|IAC-SECURITY>
@@ -113,8 +112,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	triageUpdateCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageUpdateCmd.PersistentFlags().String(params.SeverityFlag, "", "Severity")
 	triageUpdateCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
-	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "State")
-	triageUpdateCmd.PersistentFlags().String(params.CustomStateIDFlag, "", "State ID")
+	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account.")
+	triageUpdateCmd.PersistentFlags().Int(params.CustomStateIDFlag, -1, "Specify the ID of the states that you would like to apply to this result.")
 	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment.")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
@@ -176,7 +175,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
 		state, _ := cmd.Flags().GetString(params.StateFlag)
-		customStateID, _ := cmd.Flags().GetString(params.CustomStateIDFlag)
+		customStateID, _ := cmd.Flags().GetInt(params.CustomStateIDFlag)
 		comment, _ := cmd.Flags().GetString(params.CommentFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		// check if the current tenant has critical severity available
@@ -192,13 +191,24 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 			return err
 		}
 
-		predicate := &wrappers.PredicateRequest{
-			SimilarityID:  similarityID,
-			ProjectID:     projectID,
-			Severity:      severity,
-			State:         state,
-			CustomStateID: customStateID,
-			Comment:       comment,
+		var predicate *wrappers.PredicateRequest
+		if state != "" {
+			predicate = &wrappers.PredicateRequest{
+				SimilarityID: similarityID,
+				ProjectID:    projectID,
+				Severity:     severity,
+				State:        state,
+				Comment:      comment,
+			}
+		} else {
+			predicate = &wrappers.PredicateRequest{
+				SimilarityID:  similarityID,
+				ProjectID:     projectID,
+				Severity:      severity,
+				CustomStateID: customStateID,
+				Comment:       comment,
+			}
+
 		}
 
 		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
@@ -209,26 +219,26 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		return nil
 	}
 }
-func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state, customStateID string) (string, string, error) {
+func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state string, customStateID int) (string, int, error) {
 	if !isCustomState(state) {
-		return state, "", nil
+		return state, -1, nil
 	}
 
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SastCustomStateEnabled)
 	sastCustomStateEnabled := flagResponse.Status
 	if !sastCustomStateEnabled {
-		return "", "", errors.Errorf("%s", "Custom state is not available for your tenant.")
+		return "", -1, errors.Errorf("%s", "Custom state is not available for your tenant.")
 	}
 
-	if customStateID == "" {
+	if customStateID == -1 {
 		if state == "" {
-			return "", "", errors.Errorf("state-id is required when state is not provided")
+			return "", -1, errors.Errorf("state-id is required when state is not provided")
 		}
 
 		var err error
 		customStateID, err = getCustomStateID(customStatesWrapper, state)
 		if err != nil {
-			return "", "", errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
+			return "", -1, errors.Wrapf(err, "Failed to get custom state ID for state: %s", state)
 		}
 	}
 	return "", customStateID, nil
@@ -245,17 +255,17 @@ func isCustomState(state string) bool {
 	return true
 }
 
-func getCustomStateID(customStatesWrapper wrappers.CustomStatesWrapper, state string) (string, error) {
+func getCustomStateID(customStatesWrapper wrappers.CustomStatesWrapper, state string) (int, error) {
 	customStates, err := customStatesWrapper.GetAllCustomStates(false)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to fetch custom states")
+		return -1, errors.Wrap(err, "Failed to fetch custom states")
 	}
 	for _, customState := range customStates {
 		if customState.Name == state {
-			return strconv.Itoa(customState.ID), nil
+			return customState.ID, nil
 		}
 	}
-	return "", errors.Errorf("No matching state found for %s", state)
+	return -1, errors.Errorf("No matching state found for %s", state)
 }
 
 type predicateView struct {

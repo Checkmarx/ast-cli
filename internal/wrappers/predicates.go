@@ -16,7 +16,7 @@ type PredicateRequest struct {
 	SimilarityID  string `json:"similarityId"`
 	ProjectID     string `json:"projectId"`
 	State         string `json:"state"`
-	CustomStateID string `json:"customStateId"`
+	CustomStateID int    `json:"customStateId"`
 	Comment       string `json:"comment"`
 	Severity      string `json:"severity"`
 }
