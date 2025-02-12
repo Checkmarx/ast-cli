@@ -99,8 +99,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				$ cx triage update 
 				--similarity-id <SimilarityID> 
 				--project-id <ProjectID> 
-				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|CUSTOM STATE>
-				--custom-state-id <custom state ID>
+				--state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|custom state>
+				--state-id <custom state ID>
 				--severity <CRITICAL|HIGH|MEDIUM|LOW|INFO> 
 				--comment <Comment(Optional)> 
 				--scan-type <SAST|IAC-SECURITY>
@@ -191,24 +191,17 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 			return err
 		}
 
-		var predicate *wrappers.PredicateRequest
-		if state != "" {
-			predicate = &wrappers.PredicateRequest{
-				SimilarityID: similarityID,
-				ProjectID:    projectID,
-				Severity:     severity,
-				State:        state,
-				Comment:      comment,
-			}
-		} else {
-			predicate = &wrappers.PredicateRequest{
-				SimilarityID:  similarityID,
-				ProjectID:     projectID,
-				Severity:      severity,
-				CustomStateID: customStateID,
-				Comment:       comment,
-			}
+		predicate := &wrappers.PredicateRequest{
+			SimilarityID: similarityID,
+			ProjectID:    projectID,
+			Severity:     severity,
+			Comment:      comment,
+		}
 
+		if state != "" {
+			predicate.State = &state
+		} else {
+			predicate.CustomStateID = &customStateID
 		}
 
 		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
