@@ -6,3 +6,5 @@ COPY cx /app/bin/cx
 ENTRYPOINT ["/app/bin/cx"]
 
 HEALTHCHECK NONE
+
+
