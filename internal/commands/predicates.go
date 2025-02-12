@@ -12,6 +12,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var constantsStates = []wrappers.CustomState{
+	{ID: -1, Name: "Urgent", Type: ""},
+	{ID: -1, Name: "ToVerify", Type: ""},
+	{ID: -1, Name: "Confirmed", Type: ""},
+	{ID: -1, Name: "Proposed", Type: ""},
+	{ID: -1, Name: "NotExploitable", Type: ""},
+	{ID: -1, Name: "NotIgnored", Type: ""},
+	{ID: -1, Name: "Ignored", Type: ""},
+}
+
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
@@ -55,13 +65,14 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featur
 	return func(cmd *cobra.Command, _ []string) error {
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
 		if !flagResponse.Status {
-			return errors.Errorf("%s", "Fetching custom states is not available for your tenant")
+			return printer.Print(cmd.OutOrStdout(), constantsStates, printer.FormatJSON)
 		}
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
 			return errors.Wrap(err, "Failed to fetch custom states")
 		}
+		states = append(states, constantsStates...)
 		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
 		return err
 	}
