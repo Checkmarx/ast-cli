@@ -10,6 +10,7 @@ type BasePredicate struct {
 	State        string `json:"state"`
 	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
+	StateID      string `json:"StateId"`
 }
 
 type PredicateRequest struct {
@@ -45,12 +46,9 @@ type CustomState struct {
 	Type string `json:"type"`
 }
 
-
-
 type CustomStatesWrapper interface {
 	GetAllCustomStates(includeDeleted bool) ([]CustomState, error)
 }
-
 
 type ResultsPredicatesWrapper interface {
 	PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (*WebError, error)
