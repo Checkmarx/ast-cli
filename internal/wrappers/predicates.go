@@ -10,6 +10,7 @@ type BasePredicate struct {
 	State        string `json:"state"`
 	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
+	StateID      string `json:"StateId"`
 }
 
 type PredicateRequest struct {
