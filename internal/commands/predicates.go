@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var systemStates = []string{"TO_VERIFY", "NOT_EXPLOITABLE", "PROPOSED_NOT_EXPLOITABLE", "CONFIRMED", "URGENT"}
-
 var constantsStates = []wrappers.CustomState{
 	{ID: -1, Name: "To Verify", Type: ""},
 	{ID: -1, Name: "Not Exploitable", Type: ""},
@@ -22,7 +20,7 @@ var constantsStates = []wrappers.CustomState{
 	{ID: -1, Name: "Urgent", Type: ""},
 }
 
-func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
+func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
@@ -253,8 +251,8 @@ func isCustomState(state string) bool {
 	if state == "" {
 		return true
 	}
-	for _, systemState := range systemStates {
-		if strings.EqualFold(state, systemState) {
+	for _, systemState := range constantsStates {
+		if strings.EqualFold(state, systemState.Name) {
 			return false
 		}
 	}
