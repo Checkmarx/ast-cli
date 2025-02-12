@@ -269,6 +269,51 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 	assert.Assert(t, strings.Contains(err.Error(), scaPathError), err.Error())
 }
 
+func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
+	tests := []struct {
+		name              string
+		sourceDir         string
+		scaResolver       string
+		scaResolverParams string
+		projectName       string
+		expectedError     string
+	}{
+		{
+			name:              "ScaResolver wrong scaResolver path",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "params",
+			projectName:       "ProjectName",
+			expectedError:     "/ScaResolver: no such file or directory",
+		},
+		{
+			name:              "Invalid scaResolverParams format",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "\"unclosed quote",
+			projectName:       "ProjectName",
+			expectedError:     "EOF found when expecting closing quote", // Expected shlex error
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
+		})
+	}
+}
+
+func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
+	var sourceDir = "/sourceDir"
+	var scaResolver = ""
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	assert.Assert(t, err == nil)
+}
+
 func TestCreateScanWithScanTypes(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
