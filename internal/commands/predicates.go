@@ -206,6 +206,7 @@ type predicateView struct {
 	SimilarityID string `format:"name:Similarity ID"`
 	Severity     string
 	State        string
+	StateID      string
 	Comment      string
 	CreatedBy    string
 	CreatedAt    time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
@@ -236,6 +237,7 @@ func toSinglePredicateView(predicate *wrappers.Predicate) predicateView {
 		SimilarityID: predicate.SimilarityID,
 		Severity:     predicate.Severity,
 		State:        predicate.State,
+		StateID:      predicate.StateID,
 		Comment:      predicate.Comment,
 		CreatedBy:    predicate.CreatedBy,
 		CreatedAt:    predicate.CreatedAt,
