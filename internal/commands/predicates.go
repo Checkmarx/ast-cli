@@ -13,13 +13,11 @@ import (
 )
 
 var constantsStates = []wrappers.CustomState{
-	{ID: -1, Name: "Urgent", Type: ""},
-	{ID: -1, Name: "ToVerify", Type: ""},
+	{ID: -1, Name: "To Verify", Type: ""},
+	{ID: -1, Name: "Not Exploitable", Type: ""},
+	{ID: -1, Name: "Proposed Not Exploitable", Type: ""},
 	{ID: -1, Name: "Confirmed", Type: ""},
-	{ID: -1, Name: "Proposed", Type: ""},
-	{ID: -1, Name: "NotExploitable", Type: ""},
-	{ID: -1, Name: "NotIgnored", Type: ""},
-	{ID: -1, Name: "Ignored", Type: ""},
+	{ID: -1, Name: "Urgent", Type: ""},
 }
 
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
