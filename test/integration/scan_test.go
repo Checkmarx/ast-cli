@@ -636,7 +636,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), params.SastType,
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-critical=1;sast-high=1;sast-low=1;",
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -787,7 +787,7 @@ func TestScanTimeout(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SlowRepo,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "develop",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
@@ -2134,4 +2134,33 @@ func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLate
 	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersNonFinalStagesFilterKey], nil, "Exclude non final stages should be equal")
 	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersImagesFilterKey], "*dev", "Image tag filter should be equal")
 	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
+}
+
+func TestCreateScanWithAsyncFlag_TryShowResults_PolicyNotEvaluated(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast,iac-security,sca",
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, _ := executeCreateScan(t, args)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatSummaryConsole,
+		flag(params.DebugFlag),
+	)
+	log.SetOutput(os.Stderr)
+	assert.Assert(t, strings.Contains(buf.String(), "Policy violations aren't returned in the pipeline for scans run in async mode."), "policy shouldn't evaluate in running scan")
 }

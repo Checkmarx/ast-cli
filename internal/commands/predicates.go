@@ -35,8 +35,8 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
 	triageGetStatesCmd := &cobra.Command{
 		Use:   "get-states",
-		Short: "Fetch and display custom states.",
-		Long:  "Retrieves a list of custom states and prints their names.",
+		Short: "Show the custom states that have been configured in your tenant",
+		Long: "The get-states command shows information about each of the custom states that have been configured in your tenant account",
 		Example: heredoc.Doc(
 			`
             $ cx triage get-states
@@ -46,7 +46,7 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
 		RunE: runTriageGetStates(customStatesWrapper),
 	}
 
-	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Include deleted states")
+	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Show all custom states, including the ones that have been deleted")
 
 	return triageGetStatesCmd
 }
