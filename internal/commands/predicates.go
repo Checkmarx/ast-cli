@@ -12,6 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var constantsStates = []wrappers.CustomState{
+	{ID: -1, Name: "To Verify", Type: ""},
+	{ID: -1, Name: "Not Exploitable", Type: ""},
+	{ID: -1, Name: "Proposed Not Exploitable", Type: ""},
+	{ID: -1, Name: "Confirmed", Type: ""},
+	{ID: -1, Name: "Urgent", Type: ""},
+}
+
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper ) *cobra.Command {
 	triageCmd := &cobra.Command{
 		Use:   "triage",
@@ -20,7 +28,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper)
-	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper)
+	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper, featureFlagsWrapper)
 
 
 	addFormatFlagToMultipleCommands(
@@ -32,7 +40,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	return triageCmd
 }
 
-func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
+func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	triageGetStatesCmd := &cobra.Command{
 		Use:   "get-states",
 		Short: "Show the custom states that have been configured in your tenant",
@@ -43,7 +51,7 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
             $ cx triage get-states --all
         `,
 		),
-		RunE: runTriageGetStates(customStatesWrapper),
+		RunE: runTriageGetStates(customStatesWrapper, featureFlagsWrapper),
 	}
 
 	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Show all custom states, including the ones that have been deleted")
@@ -51,13 +59,18 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper)
 	return triageGetStatesCmd
 }
 
-func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
+func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
+		if !flagResponse.Status {
+			return printer.Print(cmd.OutOrStdout(), constantsStates, printer.FormatJSON)
+		}
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
 			return errors.Wrap(err, "Failed to fetch custom states")
 		}
+		states = append(states, constantsStates...)
 		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
 		return err
 	}
@@ -206,7 +219,7 @@ type predicateView struct {
 	SimilarityID string `format:"name:Similarity ID"`
 	Severity     string
 	State        string
-	StateID      string
+	StateID      int
 	Comment      string
 	CreatedBy    string
 	CreatedAt    time.Time `format:"name:Created at;time:01-02-06 15:04:05"`

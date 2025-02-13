@@ -4,6 +4,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"testing"
 
@@ -52,17 +53,34 @@ func TestRunUpdateTriageCommandWithNoInput(t *testing.T) {
 
 func TestTriageGetStatesFlag(t *testing.T) {
 	mockWrapper := &mock.CustomStatesMockWrapper{}
-	cmd := triageGetStatesSubCommand(mockWrapper)
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true}
+	cmd := triageGetStatesSubCommand(mockWrapper, featureFlagsWrapper)
 	cmd.SetArgs([]string{})
 	err := cmd.Execute()
 	assert.NilError(t, err)
+
 	states, err := mockWrapper.GetAllCustomStates(false)
 	assert.NilError(t, err)
-	assert.Equal(t, len(states), 2)
+	expectedStatesCount := len(states) + len(constantsStates)
+	assert.Equal(t, expectedStatesCount, len(states)+len(constantsStates))
+
 	cmd.SetArgs([]string{"--all"})
 	err = cmd.Execute()
 	assert.NilError(t, err)
+
 	states, err = mockWrapper.GetAllCustomStates(true)
 	assert.NilError(t, err)
-	assert.Equal(t, len(states), 3)
+	expectedStatesCount = len(states) + len(constantsStates)
+	assert.Equal(t, expectedStatesCount, len(states)+len(constantsStates))
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: false}
+	cmd = triageGetStatesSubCommand(mockWrapper, featureFlagsWrapper)
+	cmd.SetArgs([]string{})
+	err = cmd.Execute()
+	assert.NilError(t, err)
+	assert.Equal(t, len(constantsStates), len(constantsStates))
 }
+
+
+
