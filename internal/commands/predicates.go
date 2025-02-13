@@ -277,7 +277,7 @@ type predicateView struct {
 	SimilarityID string `format:"name:Similarity ID"`
 	Severity     string
 	State        string
-	StateID      string
+	StateID      int
 	Comment      string
 	CreatedBy    string
 	CreatedAt    time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
