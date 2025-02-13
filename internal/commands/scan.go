@@ -564,7 +564,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ContainerResolveLocallyFlag, "", "Execute container resolver locally.")
+	createScanCmd.PersistentFlags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Execute container resolver locally.")
 	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10.")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
@@ -1454,8 +1454,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType)
 	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	containerResolveLocallyFlag, _ := cmd.Flags().GetString(commonParams.ContainerResolveLocallyFlag)
-	containerResolveLocally := strings.EqualFold(containerResolveLocallyFlag, "true")
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
@@ -2788,27 +2787,12 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func validatePath(path string, resultChan chan<- bool) {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		resultChan <- false
-		return
-	} else if err != nil {
-		resultChan <- false
-		return
-	}
-
-	// If path exists, return true
-	resultChan <- info.IsDir() || !info.IsDir()
-}
-
 func validateContainerImageFormat(containerImage string) error {
 	if strings.HasSuffix(containerImage, ".tar") {
-		resultChan := make(chan bool)
-		go validatePath(containerImage, resultChan)
-		isValid := <-resultChan
-		if !isValid {
-			return errors.Errorf("--container-images flag. specified Tar file doesn't exists")
+
+		var err = util.FileExists(containerImage)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
 		}
 		return nil
 	}
