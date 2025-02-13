@@ -62,8 +62,8 @@ func TestTriageGetStatesFlag(t *testing.T) {
 
 	states, err := mockWrapper.GetAllCustomStates(false)
 	assert.NilError(t, err)
-	expectedStatesCount := len(states) + len(constantsStates)
-	assert.Equal(t, expectedStatesCount, len(states)+len(constantsStates))
+	expectedStatesCount := len(states) + len(systemStates)
+	assert.Equal(t, expectedStatesCount, len(states)+len(systemStates))
 
 	cmd.SetArgs([]string{"--all"})
 	err = cmd.Execute()
@@ -71,15 +71,15 @@ func TestTriageGetStatesFlag(t *testing.T) {
 
 	states, err = mockWrapper.GetAllCustomStates(true)
 	assert.NilError(t, err)
-	expectedStatesCount = len(states) + len(constantsStates)
-	assert.Equal(t, expectedStatesCount, len(states)+len(constantsStates))
+	expectedStatesCount = len(states) + len(systemStates)
+	assert.Equal(t, expectedStatesCount, len(states)+len(systemStates))
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: false}
 	cmd = triageGetStatesSubCommand(mockWrapper, featureFlagsWrapper)
 	cmd.SetArgs([]string{})
 	err = cmd.Execute()
 	assert.NilError(t, err)
-	assert.Equal(t, len(constantsStates), len(constantsStates))
+	assert.Equal(t, len(systemStates), len(systemStates))
 }
 func TestGetCustomStateID(t *testing.T) {
 	tests := []struct {

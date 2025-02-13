@@ -1,23 +1,22 @@
 package commands
 
 import (
-	"strings"
-	"time"
-
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"strings"
+	"time"
 )
 
-var constantsStates = []wrappers.CustomState{
-	{ID: -1, Name: "To Verify", Type: ""},
-	{ID: -1, Name: "Not Exploitable", Type: ""},
-	{ID: -1, Name: "Proposed Not Exploitable", Type: ""},
-	{ID: -1, Name: "Confirmed", Type: ""},
-	{ID: -1, Name: "Urgent", Type: ""},
+var systemStates = []wrappers.CustomState{
+	{ID: -1, Name: params.ToVerify, Type: ""},
+	{ID: -1, Name: params.NotExploitable, Type: ""},
+	{ID: -1, Name: params.ProposedNotExploitable, Type: ""},
+	{ID: -1, Name: params.CONFIRMED, Type: ""},
+	{ID: -1, Name: params.URGENT, Type: ""},
 }
 
 func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) *cobra.Command {
@@ -62,14 +61,14 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featur
 	return func(cmd *cobra.Command, _ []string) error {
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
 		if !flagResponse.Status {
-			return printer.Print(cmd.OutOrStdout(), constantsStates, printer.FormatJSON)
+			return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
 		}
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
 			return errors.Wrap(err, "Failed to fetch custom states")
 		}
-		states = append(states, constantsStates...)
+		states = append(states, systemStates...)
 		err = printer.Print(cmd.OutOrStdout(), states, printer.FormatJSON)
 		return err
 	}
@@ -251,7 +250,7 @@ func isCustomState(state string) bool {
 	if state == "" {
 		return true
 	}
-	for _, systemState := range constantsStates {
+	for _, systemState := range systemStates {
 		if strings.EqualFold(state, systemState.Name) {
 			return false
 		}
