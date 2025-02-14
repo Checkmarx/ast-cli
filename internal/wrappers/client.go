@@ -12,6 +12,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -42,6 +43,10 @@ const (
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
+)
+
+var (
+	credentialsMutex sync.Mutex
 )
 
 type ClientCredentialsInfo struct {
@@ -478,6 +483,9 @@ func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 }
 
 func writeCredentialsToCache(accessToken string) {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
 	cachedAccessToken = accessToken
