@@ -2246,8 +2246,8 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 }
 
 func getSastStartColumn(column uint) uint {
-	if column == 0 {
-		return column
+	if column <= 0 {
+		return 0
 	}
 	return column - 1
 }
