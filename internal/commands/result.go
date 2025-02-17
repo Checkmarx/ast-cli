@@ -2215,11 +2215,15 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	auxTextRange.StartColumn = results.Column
-	auxTextRange.EndColumn = results.Column + results.Length
+	startColumn := getSastStartColumn(results.Column)
+
+	auxTextRange.StartColumn = startColumn
+	auxTextRange.EndColumn = startColumn + results.Length
+
 	if auxTextRange.StartColumn == auxTextRange.EndColumn {
 		auxTextRange.EndColumn++
 	}
+
 	return auxTextRange
 }
 
@@ -2237,6 +2241,13 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	}
 
 	return nil
+}
+
+func getSastStartColumn(column uint) uint {
+	if column == 0 {
+		return 0
+	}
+	return column - 1
 }
 
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
