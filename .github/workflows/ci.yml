@@ -172,6 +172,7 @@ jobs:
           vuln-type: 'os,library'
           output: './trivy-image-results.txt'
         env:
+          TRIVY_SKIP_DB_UPDATE: ${{ github.run_number == 1 }}
           TRIVY_SKIP_JAVA_DB_UPDATE: true
       
       - name: Inspect action report
