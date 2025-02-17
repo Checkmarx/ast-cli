@@ -1615,7 +1615,7 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Valid compressed container image format",
 			containerImage: "nginx.tar",
-			expectedError:  errors.Errorf("--container-images flag. specified Tar file doesn't exists"),
+			expectedError:  errors.Errorf("--container-images flag error: nginx.tar does not exist"),
 		},
 		{
 			name:           "Missing image name",
