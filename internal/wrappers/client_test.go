@@ -113,3 +113,73 @@ func TestConcurrentWriteCredentialsToCache(t *testing.T) {
 	assert.True(t, testTokenNumber >= 0 && testTokenNumber < 1000,
 		"The token number should be within the expected range")
 }
+
+func TestExtractAZPFromToken(t *testing.T) {
+	// Test cases
+	tests := []struct {
+		name     string
+		token    string
+		expected string
+		hasError bool
+	}{
+		{
+			name:     "Valid token with azp claim",
+			token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ0ZXN0LWFwcCJ9.YqenXXXX", // token with azp: "test-app"
+			expected: "test-app",
+			hasError: false,
+		},
+		{
+			name:     "Invalid token format",
+			token:    "invalid-token",
+			expected: "ast-app", // Should return default value
+			hasError: false,
+		},
+		{
+			name:     "Valid token without azp claim",
+			token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.XXXXX",
+			expected: "ast-app", // Should return default value
+			hasError: false,
+		},
+	}
+
+	// Run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := extractAZPFromToken(tt.token)
+			
+			if tt.hasError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetAPIKeyPayload(t *testing.T) {
+	tests := []struct {
+		name     string
+		token    string
+		expected string
+	}{
+		{
+			name:     "Valid token with azp claim",
+			token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ0ZXN0LWFwcCJ9.YqenXXXX",
+			expected: "grant_type=refresh_token&client_id=test-app&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhenAiOiJ0ZXN0LWFwcCJ9.YqenXXXX",
+		},
+		{
+			name:     "Invalid token",
+			token:    "invalid-token",
+			expected: "grant_type=refresh_token&client_id=ast-app&refresh_token=invalid-token",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getAPIKeyPayload(tt.token)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
