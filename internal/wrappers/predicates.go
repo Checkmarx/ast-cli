@@ -14,11 +14,12 @@ type BasePredicate struct {
 }
 
 type PredicateRequest struct {
-	SimilarityID string `json:"similarityId"`
-	ProjectID    string `json:"projectId"`
-	State        string `json:"state"`
-	Comment      string `json:"comment"`
-	Severity     string `json:"severity"`
+	SimilarityID  string  `json:"similarityId"`
+	ProjectID     string  `json:"projectId"`
+	State         *string `json:"state,omitempty"`
+	CustomStateID *int    `json:"customStateId,omitempty"`
+	Comment       string  `json:"comment"`
+	Severity      string  `json:"severity"`
 }
 
 type Predicate struct {
