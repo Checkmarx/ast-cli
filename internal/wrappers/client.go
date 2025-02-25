@@ -555,7 +555,14 @@ func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 
 func getAPIKeyPayload(astToken string) string {
 	logger.PrintIfVerbose("Using API key credentials.")
-	return fmt.Sprintf("grant_type=refresh_token&client_id=ast-app&refresh_token=%s", astToken)
+	
+	clientID, err := extractAZPFromToken(astToken)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to extract azp from token, using default client_id")
+		clientID = "ast-app"
+	}
+	
+	return fmt.Sprintf("grant_type=refresh_token&client_id=%s&refresh_token=%s", clientID, astToken)
 }
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
@@ -781,4 +788,13 @@ func AppendIfNotExists(domainsMap map[string]struct{}, newDomain string) map[str
 		domainsMap[newDomain] = struct{}{}
 	}
 	return domainsMap
+}
+
+func extractAZPFromToken(astToken string) (string, error) {
+	const azpClaim = "azp"
+	azp, err := ExtractFromTokenClaims(astToken, azpClaim)
+	if err != nil {
+		return "ast-app", nil // default value in case of error
+	}
+	return azp, nil
 }
