@@ -121,7 +121,7 @@ const (
 	CweIDFlag                    = "cwe-id"
 	SCMTokenFlag                 = "token"
 	AzureTokenUsage              = "Azure DevOps personal access token. Requires “Connected server” and “Code“ scope."
-	GithubTokenUsage             = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
+	GithubTokenUsage             = "GitHub Personal Access Token (PAT). Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage             = "GitLab OAuth token"
 	BitbucketTokenUsage          = "Bitbucket OAuth token"
 	BotCount                     = "Note: dependabot is not counted but other bots might be considered as contributors."
@@ -285,12 +285,12 @@ var (
 )
 
 // Custom states
-const  IncludeDeletedQueryParam = "include-deleted"
-const True 						= "true"
+const IncludeDeletedQueryParam = "include-deleted"
+const True = "true"
 
 // System States
-const ToVerify               = "TO_VERIFY"
-const NotExploitable          = "NOT_EXPLOITABLE"
+const ToVerify = "TO_VERIFY"
+const NotExploitable = "NOT_EXPLOITABLE"
 const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
-const CONFIRMED               = "CONFIRMED"
-const URGENT                  = "URGENT"
+const CONFIRMED = "CONFIRMED"
+const URGENT = "URGENT"
