@@ -85,7 +85,12 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode != http.StatusBadGateway {
+		if resp.StatusCode == http.StatusBadGateway {
+			logger.PrintIfVerbose("Bad Gateway, retrying")
+		} else if resp.StatusCode == http.StatusUnauthorized {
+			logger.PrintIfVerbose("Unauthorized request, refreshing token")
+			_, _ = configureClientCredentialsAndGetNewToken()
+		} else {
 			return resp, nil
 		}
 		_ = resp.Body.Close()
@@ -398,27 +403,21 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	customReq = addReqMonitor(customReq)
 	return request(client, customReq, true)
 }
+
 func GetAccessToken() (string, error) {
-	authURI, err := GetAuthURI()
-	if err != nil {
-		return "", err
-	}
+	var err error
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
-	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astAPIKey := viper.GetString(commonParams.AstAPIKey)
-	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-	} else if accessKeySecret == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
-	}
+
 	if accessToken == "" {
-		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
+		logger.PrintIfVerbose("Fetching API access token.")
+		accessToken, err = configureClientCredentialsAndGetNewToken()
 		if err != nil {
 			return "", err
 		}
 	}
+
 	return accessToken, nil
 }
 
@@ -445,27 +444,34 @@ func enrichWithPasswordCredentials(
 	return nil
 }
 
-func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (string, error) {
-	logger.PrintIfVerbose("Fetching API access token.")
-	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+func configureClientCredentialsAndGetNewToken() (string, error) {
+	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+	var accessToken string
 
-	var err error
-	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
-
-	if accessToken == "" {
-		// If the token is present the default to that.
-		if astAPKey != "" {
-			accessToken, err = getNewToken(getAPIKeyPayload(astAPKey), authURI)
-		} else {
-			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
-		}
-
-		if err != nil {
-			return "", errors.Errorf("%s", err)
-		}
-
-		writeCredentialsToCache(accessToken)
+	if accessKeyID == "" && astAPIKey == "" {
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+	} else if accessKeySecret == "" && astAPIKey == "" {
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 	}
+
+	authURI, err := GetAuthURI()
+	if err != nil {
+		return "", err
+	}
+
+	if astAPIKey != "" {
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+	} else {
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	}
+
+	if err != nil {
+		return "", errors.Errorf("%s", err)
+	}
+
+	writeCredentialsToCache(accessToken)
 
 	return accessToken, nil
 }
@@ -555,13 +561,13 @@ func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 
 func getAPIKeyPayload(astToken string) string {
 	logger.PrintIfVerbose("Using API key credentials.")
-	
+
 	clientID, err := extractAZPFromToken(astToken)
 	if err != nil {
 		logger.PrintIfVerbose("Failed to extract azp from token, using default client_id")
 		clientID = "ast-app"
 	}
-	
+
 	return fmt.Sprintf("grant_type=refresh_token&client_id=%s&refresh_token=%s", clientID, astToken)
 }
 
