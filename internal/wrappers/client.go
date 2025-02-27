@@ -71,8 +71,8 @@ const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
-var cachedAccessToken string
-var cachedAccessTime time.Time
+var CachedAccessToken string
+var CachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
 func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
@@ -479,10 +479,10 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
 
-	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+	expired := time.Since(CachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
-		return cachedAccessToken
+		return CachedAccessToken
 	}
 	logger.PrintIfVerbose("API access token not found in cache!")
 	return ""
@@ -494,8 +494,8 @@ func writeCredentialsToCache(accessToken string) {
 
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
-	cachedAccessToken = accessToken
-	cachedAccessTime = time.Now()
+	CachedAccessToken = accessToken
+	CachedAccessTime = time.Now()
 }
 
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
