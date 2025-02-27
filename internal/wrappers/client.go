@@ -86,9 +86,9 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusBadGateway {
-			logger.PrintIfVerbose("Bad Gateway, retrying")
+			logger.PrintIfVerbose("Bad Gateway (502), retrying")
 		} else if resp.StatusCode == http.StatusUnauthorized {
-			logger.PrintIfVerbose("Unauthorized request, refreshing token")
+			logger.PrintIfVerbose("Unauthorized request (401), refreshing token")
 			_, _ = configureClientCredentialsAndGetNewToken()
 		} else {
 			return resp, nil
