@@ -2063,6 +2063,30 @@ func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithD
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 }
+
+func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/empty-folder.zip",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, _ := executeCreateScan(t, args)
+	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
+	wrappers.CachedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4"
+	wrappers.CachedAccessTime = time.Now()
+	viper.Set(params.TokenExpirySecondsKey, 300)
+	scan, _, err := scanWrapper.GetByID(scanID)
+	asserts.Nil(t, err)
+	assert.Assert(t, scan != nil, "Scan should not be nil")
+	assert.Equal(t, scan.ID, scanID, "Scan ID should be equal")
+}
+
 func TestScanCreate_WithContainerFilterFlags_CreatingScanSuccessfully(t *testing.T) {
 	bindKeysToEnvAndDefault(t)
 	var createdScan wrappers.ScanResponseModel

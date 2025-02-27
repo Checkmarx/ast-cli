@@ -57,6 +57,8 @@ var (
 	LogsEngineLogPathKey                = strings.ToLower(LogsEngineLogPathEnv)
 	SastResultsPredicatesPathKey        = strings.ToLower(SastResultsPredicatesPathEnv)
 	KicsResultsPredicatesPathKey        = strings.ToLower(KicsResultsPredicatesPathEnv)
+	ScsResultsReadPredicatesPathKey     = strings.ToLower(ScsResultsReadPredicatesPathEnv)
+	ScsResultsWritePredicatesPathKey    = strings.ToLower(ScsResultsWritePredicatesPathEnv)
 	DescriptionsPathKey                 = strings.ToLower(DescriptionsPathEnv)
 	TenantConfigurationPathKey          = strings.ToLower(TenantConfigurationPathEnv)
 	ResultsPdfReportPathKey             = strings.ToLower(ResultsPdfReportPathEnv)

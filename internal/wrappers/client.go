@@ -12,6 +12,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -44,6 +45,10 @@ const (
 	jsonContentType         = "application/json"
 )
 
+var (
+	credentialsMutex sync.Mutex
+)
+
 type ClientCredentialsInfo struct {
 	AccessToken      string `json:"access_token"`
 	ExpiresIn        int    `json:"expires_in"`
@@ -66,8 +71,8 @@ const baseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
-var cachedAccessToken string
-var cachedAccessTime time.Time
+var CachedAccessToken string
+var CachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
 func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
@@ -80,7 +85,12 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 		if err != nil {
 			return nil, err
 		}
-		if resp.StatusCode != http.StatusBadGateway {
+		if resp.StatusCode == http.StatusBadGateway {
+			logger.PrintIfVerbose("Bad Gateway (502), retrying")
+		} else if resp.StatusCode == http.StatusUnauthorized {
+			logger.PrintIfVerbose("Unauthorized request (401), refreshing token")
+			_, _ = configureClientCredentialsAndGetNewToken()
+		} else {
 			return resp, nil
 		}
 		_ = resp.Body.Close()
@@ -393,27 +403,21 @@ func GetWithQueryParamsAndCustomRequest(client *http.Client, customReq *http.Req
 	customReq = addReqMonitor(customReq)
 	return request(client, customReq, true)
 }
+
 func GetAccessToken() (string, error) {
-	authURI, err := GetAuthURI()
-	if err != nil {
-		return "", err
-	}
+	var err error
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
-	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astAPIKey := viper.GetString(commonParams.AstAPIKey)
-	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
-	} else if accessKeySecret == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
-	}
+
 	if accessToken == "" {
-		accessToken, err = getClientCredentials(accessKeyID, accessKeySecret, astAPIKey, authURI)
+		logger.PrintIfVerbose("Fetching API access token.")
+		accessToken, err = configureClientCredentialsAndGetNewToken()
 		if err != nil {
 			return "", err
 		}
 	}
+
 	return accessToken, nil
 }
 
@@ -440,27 +444,34 @@ func enrichWithPasswordCredentials(
 	return nil
 }
 
-func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string) (string, error) {
-	logger.PrintIfVerbose("Fetching API access token.")
-	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
+func configureClientCredentialsAndGetNewToken() (string, error) {
+	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
+	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+	var accessToken string
 
-	var err error
-	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
-
-	if accessToken == "" {
-		// If the token is present the default to that.
-		if astAPKey != "" {
-			accessToken, err = getNewToken(getAPIKeyPayload(astAPKey), authURI)
-		} else {
-			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
-		}
-
-		if err != nil {
-			return "", errors.Errorf("%s", err)
-		}
-
-		writeCredentialsToCache(accessToken)
+	if accessKeyID == "" && astAPIKey == "" {
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+	} else if accessKeySecret == "" && astAPIKey == "" {
+		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
 	}
+
+	authURI, err := GetAuthURI()
+	if err != nil {
+		return "", err
+	}
+
+	if astAPIKey != "" {
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+	} else {
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	}
+
+	if err != nil {
+		return "", errors.Errorf("%s", err)
+	}
+
+	writeCredentialsToCache(accessToken)
 
 	return accessToken, nil
 }
@@ -468,20 +479,23 @@ func getClientCredentials(accessKeyID, accessKeySecret, astAPKey, authURI string
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
 
-	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+	expired := time.Since(CachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
-		return cachedAccessToken
+		return CachedAccessToken
 	}
 	logger.PrintIfVerbose("API access token not found in cache!")
 	return ""
 }
 
 func writeCredentialsToCache(accessToken string) {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
-	cachedAccessToken = accessToken
-	cachedAccessTime = time.Now()
+	CachedAccessToken = accessToken
+	CachedAccessTime = time.Now()
 }
 
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
@@ -547,7 +561,14 @@ func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
 
 func getAPIKeyPayload(astToken string) string {
 	logger.PrintIfVerbose("Using API key credentials.")
-	return fmt.Sprintf("grant_type=refresh_token&client_id=ast-app&refresh_token=%s", astToken)
+
+	clientID, err := extractAZPFromToken(astToken)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to extract azp from token, using default client_id")
+		clientID = "ast-app"
+	}
+
+	return fmt.Sprintf("grant_type=refresh_token&client_id=%s&refresh_token=%s", clientID, astToken)
 }
 
 func getPasswordCredentialsPayload(username, password, adminClientID, adminClientSecret string) string {
@@ -773,4 +794,13 @@ func AppendIfNotExists(domainsMap map[string]struct{}, newDomain string) map[str
 		domainsMap[newDomain] = struct{}{}
 	}
 	return domainsMap
+}
+
+func extractAZPFromToken(astToken string) (string, error) {
+	const azpClaim = "azp"
+	azp, err := ExtractFromTokenClaims(astToken, azpClaim)
+	if err != nil {
+		return "ast-app", nil // default value in case of error
+	}
+	return azp, nil
 }
