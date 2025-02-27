@@ -76,8 +76,8 @@ github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63/go.mod h1:MI6lfLerXU+5eTV/EPTDavgnV3owz3GPT4g/msZBWPo=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2 h1:T6X40+4hYnwfDsvkjWs9VIcE6s1O+8DUu0+sDdCY3GI=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2/go.mod h1:xwRLefezwNNnRGu1EjGS6wNiR9FVV/eP9D+oXwLViVM=
-github.com/Checkmarx/secret-detection v0.0.3-0.20250226171627-17511d1c4c6b h1:p13RDhDD5mNNUHTTmqpRnxKWN0X0exbouRqKxYtMPFs=
-github.com/Checkmarx/secret-detection v0.0.3-0.20250226171627-17511d1c4c6b/go.mod h1:RSwD8/Rlvme4hEXbZ241gAm0bcPu7YPNBsg8E29llkU=
+github.com/Checkmarx/secret-detection v0.0.3-0.20250227154803-c62fe8ce1523 h1:F2aOPKbcCZPZBxfsJ1c7pNK0rjA8P9wPxBZ48YnZuw0=
+github.com/Checkmarx/secret-detection v0.0.3-0.20250227154803-c62fe8ce1523/go.mod h1:lLVCf7AT8v2LV+up7yIcj8aValbOSIJ+f453015/1P4=
 github.com/CycloneDX/cyclonedx-go v0.9.1 h1:yffaWOZsv77oTJa/SdVZYdgAgFioCeycBUKkqS2qzQM=
 github.com/CycloneDX/cyclonedx-go v0.9.1/go.mod h1:NE/EWvzELOFlG6+ljX/QeMlVt9VKcTwu8u0ccsACEsw=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
@@ -210,8 +210,8 @@ github.com/charmbracelet/x/ansi v0.4.5 h1:LqK4vwBNaXw2AyGIICa5/29Sbdq58GbGdFngSe
 github.com/charmbracelet/x/ansi v0.4.5/go.mod h1:dk73KoMTT5AX5BsX0KrqhsTqAnhZZoCBjs7dGWp4Ktw=
 github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQaGIAQ=
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
-github.com/checkmarx/2ms v1.4.1-0.20250226112840-71811c4d841e h1:ei8PsMBC2H8islNIw904eMH+cwxX7DPvEfRUo/zvwT0=
-github.com/checkmarx/2ms v1.4.1-0.20250226112840-71811c4d841e/go.mod h1:Bnd2YSh8LQSc4fHAFN0BKz8LYThB6qHg3Wn/+H+WZ4I=
+github.com/checkmarx/2ms v1.4.1-0.20250227102300-e162a8629579 h1:zfbP8DzU00h1bm7PhTBNQglr47qXV+5PdUY6+iJkvRI=
+github.com/checkmarx/2ms v1.4.1-0.20250227102300-e162a8629579/go.mod h1:Bnd2YSh8LQSc4fHAFN0BKz8LYThB6qHg3Wn/+H+WZ4I=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
