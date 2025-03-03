@@ -186,28 +186,22 @@ func TestGetAPIKeyPayload(t *testing.T) {
 }
 
 func TestSetAgentNameAndOrigin(t *testing.T) {
-	// Set up mock configuration values
 	viper.Set(commonParams.AgentNameKey, "TestAgent")
 	viper.Set(commonParams.OriginKey, "TestOrigin")
 	commonParams.Version = "1.0.0"
 
-	// Create a new HTTP request
 	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 
-	// Call the function to set headers
 	setAgentNameAndOrigin(req)
 
-	// Retrieve the headers
 	userAgent := req.Header.Get("User-Agent")
 	origin := req.Header.Get("Origin")
 
-	// Verify the User-Agent header
 	expectedUserAgent := "TestAgent/1.0.0"
 	if userAgent != expectedUserAgent {
 		t.Errorf("User-Agent header mismatch: got %v, want %v", userAgent, expectedUserAgent)
 	}
 
-	// Verify the Origin header
 	expectedOrigin := "TestOrigin"
 	if origin != expectedOrigin {
 		t.Errorf("Origin header mismatch: got %v, want %v", origin, expectedOrigin)
