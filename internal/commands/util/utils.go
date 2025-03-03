@@ -231,3 +231,11 @@ func CloseZipWriter(zipWriter *zip.Writer, outputFile *os.File) {
 		logger.PrintfIfVerbose("Failed to close zip writer: %s", outputFile.Name())
 	}
 }
+
+func FileExists(filename string) error {
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return errors.Errorf("%s does not exist", filename)
+	}
+	return err
+}
