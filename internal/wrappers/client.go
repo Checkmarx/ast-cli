@@ -99,9 +99,12 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 	return resp, nil
 }
 
-func setAgentName(req *http.Request) {
+func setAgentNameAndOrigin(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
+
+	originStr := viper.GetString(commonParams.OriginKey)
+	req.Header.Set("origin", originStr)
 }
 
 func GetClient(timeout uint) *http.Client {
@@ -231,7 +234,7 @@ func SendHTTPRequestByFullURLContentLength(
 		req.ContentLength = contentLength
 	}
 	client := GetClient(timeout)
-	setAgentName(req)
+	setAgentNameAndOrigin(req)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	}
@@ -283,7 +286,7 @@ func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, us
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentName(req)
+	setAgentNameAndOrigin(req)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +323,7 @@ func HTTPRequestWithQueryParams(
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentName(req)
+	setAgentNameAndOrigin(req)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +371,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	}
 	req, err := http.NewRequest(method, fullURL, body)
 	client := GetClient(timeout)
-	setAgentName(req)
+	setAgentNameAndOrigin(req)
 	req.Header.Add("Content-Type", jsonContentType)
 	if err != nil {
 		return nil, err
@@ -501,7 +504,7 @@ func writeCredentialsToCache(accessToken string) {
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
-	setAgentName(req)
+	setAgentNameAndOrigin(req)
 	if err != nil {
 		return "", err
 	}
