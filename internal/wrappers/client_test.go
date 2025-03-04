@@ -195,7 +195,7 @@ func TestSetAgentNameAndOrigin(t *testing.T) {
 	setAgentNameAndOrigin(req)
 
 	userAgent := req.Header.Get("User-Agent")
-	origin := req.Header.Get("Origin")
+	origin := req.Header.Get("origin")
 
 	expectedUserAgent := "TestAgent/1.0.0"
 	if userAgent != expectedUserAgent {
