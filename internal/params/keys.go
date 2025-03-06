@@ -3,7 +3,7 @@ package params
 import "strings"
 
 var (
-	CustomStatesAPIPathKey				= strings.ToLower(CustomStatesAPIPathEnv)
+	CustomStatesAPIPathKey              = strings.ToLower(CustomStatesAPIPathEnv)
 	TenantKey                           = strings.ToLower(TenantEnv)
 	BranchKey                           = strings.ToLower(BranchEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
@@ -71,4 +71,5 @@ var (
 	AiProxyCheckmarxAiRouteKey          = strings.ToLower(AiProxyCheckmarxAiRouteEnv)
 	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
 	ScsRepoTokenKey                     = strings.ToLower(ScsRepoTokenEnv)
+	RiskManagementPathKey               = strings.ToLower(RiskManagementPathEnv)
 )

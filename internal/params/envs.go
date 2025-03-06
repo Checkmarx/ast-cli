@@ -1,7 +1,7 @@
 package params
 
 const (
-	CustomStatesAPIPathEnv 				= "CX_CUSTOM_STATES_PATH"
+	CustomStatesAPIPathEnv              = "CX_CUSTOM_STATES_PATH"
 	TenantEnv                           = "CX_TENANT"
 	BranchEnv                           = "CX_BRANCH"
 	BaseURIEnv                          = "CX_BASE_URI"
@@ -71,4 +71,5 @@ const (
 	AiProxyCheckmarxAiRouteEnv          = "CX_AIPROXY_CHECKMARXAI_ROUTE"
 	ASCAPortEnv                         = "CX_ASCA_PORT"
 	ScsRepoTokenEnv                     = "SCS_REPO_TOKEN"
+	RiskManagementPathEnv               = "CX_RISK_MANAGEMENT_PATH"
 )
