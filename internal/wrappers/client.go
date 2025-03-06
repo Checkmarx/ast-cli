@@ -104,7 +104,7 @@ func setAgentNameAndOrigin(req *http.Request) {
 	req.Header.Set("User-Agent", agentStr)
 
 	originStr := viper.GetString(commonParams.OriginKey)
-	req.Header.Set("Origin", originStr)
+	req.Header.Set("Cx-Origin", originStr)
 }
 
 func GetClient(timeout uint) *http.Client {
