@@ -148,9 +148,9 @@ func GetSCAVulnerabilities(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) error
 
 			// Add pagination to avoid SCA limitation in requests length
 			if len(bodyRequest) >= chunkSize { //nolint:gomnd
-				first50 := bodyRequest[:chunkSize]
+				first20 := bodyRequest[:chunkSize]
 
-				vulnerabilitiesResponseModel, errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, first50)
+				vulnerabilitiesResponseModel, errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, first20)
 				bodyRequest = bodyRequest[chunkSize:]
 			} else {
 				vulnerabilitiesResponseModel, errorModel, errVulnerabilities = GetScaVulnerabilitiesPackages(scaRealTimeWrapper, bodyRequest)
