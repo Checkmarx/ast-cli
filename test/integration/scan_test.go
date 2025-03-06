@@ -1991,7 +1991,6 @@ func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.
 		assert.Equal(t, scan.Branch, "dummy_branch", "Branch name should be dummy_branch")
 	}
 }
-
 func listScanByProjectID(t *testing.T, projectID string) []wrappers.ScanResponseModel {
 	scanFilter := fmt.Sprintf("project-id=%s", projectID)
 	outputBuffer := executeCmdNilAssertion(
