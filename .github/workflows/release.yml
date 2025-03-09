@@ -138,6 +138,7 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
   notify:
+    name: Update Teams & JIRA About New Release
     if: inputs.dev == false
     needs: build
     uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
@@ -148,4 +149,13 @@ jobs:
       release_author: "Phoenix Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
       jira_product_name: ASTCLI
+    secrets: inherit
+
+  dispatch_auto_release:
+    name: Update Plugins With new Cli Version
+    if: inputs.dev == false
+    needs: notify
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
+    with:
+      cli_version: ${{ inputs.tag }}
     secrets: inherit
