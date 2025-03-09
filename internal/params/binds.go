@@ -12,6 +12,7 @@ var EnvVarsBinds = []struct {
 	{AstAPIKey, AstAPIKeyEnv, ""},
 	{IgnoreProxyKey, IgnoreProxyEnv, ""},
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
+	{OriginKey, OriginEnv, "CLI"},
 	{CodeBashingPathKey, ScansPathEnv, "api/codebashing/lessons"},
 	{CustomStatesAPIPathKey, CustomStatesAPIPathEnv, "api/custom-states"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},

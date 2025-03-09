@@ -1,22 +1,34 @@
-By submitting a PR to this repository, you agree to the terms within the [Checkmarx Code of Conduct](../docs/code_of_conduct.md). Please see the [contributing guidelines](../docs/contributing.md) for how to create and submit a high-quality PR for this repo.
+**By submitting this pull request, you agree to the terms within the [Checkmarx Code of Conduct](../docs/code_of_conduct.md). Please review the [contributing guidelines](../docs/contributing.md) for guidance on creating high-quality pull requests.**
 
-### Description
+## Description
 
-> Describe the purpose of this PR along with any background information and the impacts of the proposed change.
+*Please provide a summary of the changes and the related issue. Include relevant motivation and context.*
 
-### References
+## Type of Change
 
-> Include supporting link to GitHub Issue/PR number
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
 
-### Testing
+## Related Issues
 
-> Describe how this change was tested. Be specific about anything not tested and reasons why. If this solution has unit and/or integration testing, tests should be added for new functionality and existing tests should complete without errors.
->
-> Please include any manual steps for testing end-to-end or functionality not covered by unit/integration tests.
+*Link any related issues or tickets.*
 
-### Checklist
+## Checklist
 
-- [ ] I have added documentation for new/changed functionality in this PR (if applicable).
-- [ ] I have updated the CLI help for new/changed functionality in this PR (if applicable).
+- [ ] I have performed a self-review of my code
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] I have added necessary documentation (if appropriate)
+- [ ] Any dependent changes have been merged and published in downstream modules
+- [ ] I have updated the CLI help for new/changed functionality in this PR (if applicable)
 - [ ] All active GitHub checks for tests, formatting, and security are passing
 - [ ] The correct base branch is being used
+
+## Screenshots (if applicable)
+
+*Add screenshots to help explain your changes.*
+
+## Additional Notes
+
+*Add any other relevant information.*
