@@ -158,8 +158,6 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 	t.Skip("Skipping TestSastUpdateAndGetPredicateWithCustomStateID for now")
 
-	fmt.Println("Step 1: Testing the command 'triage update' with custom state-id to update an issue from the project.")
-
 	scanID, projectID := getRootScan(t)
 	_ = executeCmdNilAssertion(
 		t, "Results show generating JSON report with options should pass",
@@ -195,6 +193,34 @@ func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 	similarityID := result.Results[index].SimilarityID
 	scanType := result.Results[index].Type
 
+	fmt.Println("Step 1: Testing the command 'triage show' to get the initial predicate state.")
+	outputBufferInitial := executeCmdNilAssertion(
+		t, "Initial predicates should be fetched.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	predicateResultInitial := []wrappers.Predicate{}
+	_ = unmarshall(t, outputBufferInitial, &predicateResultInitial, "Reading initial results should pass")
+
+	var initialState string
+	foundInitial := false
+	for _, predicate := range predicateResultInitial {
+		if predicate.StateID == 324 {
+			initialState = predicate.State
+			foundInitial = true
+			break
+		}
+	}
+	if !foundInitial {
+		initialState = "Not set"
+	}
+	fmt.Printf("Initial state for state-id 324: %s\n", initialState)
+
+
+	fmt.Println("Step 2: Testing the command 'triage update' with custom state-id to update the predicate.")
 	severity := "HIGH"
 	comment := "Testing CLI Command with custom state-id."
 
@@ -209,32 +235,33 @@ func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 		flag(params.ScanTypeFlag), scanType,
 	}
 
-	err, outputBufferForStep1 := executeCommand(t, args...)
-	_, readingError := io.ReadAll(outputBufferForStep1)
-	assert.NilError(t, readingError, "Reading result should pass")
+	err, outputBufferUpdate := executeCommand(t, args...)
+	_, readingError := io.ReadAll(outputBufferUpdate)
+	assert.NilError(t, readingError, "Reading update result should pass")
 	assert.NilError(t, err, "Updating the predicate with custom state-id should pass.")
 
-	fmt.Println("Step 2: Testing the command 'triage show' to verify the updated predicate with state-id.")
-	outputBufferForStep2 := executeCmdNilAssertion(
-		t, "Predicates should be fetched.", "triage", "show",
+
+	fmt.Println("Step 3: Testing the command 'triage show' to verify the updated predicate.")
+	outputBufferFinal := executeCmdNilAssertion(
+		t, "Updated predicates should be fetched.", "triage", "show",
 		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.ScanTypeFlag), scanType,
 	)
 
-	predicateResult := []wrappers.Predicate{}
-	_ = unmarshall(t, outputBufferForStep2, &predicateResult, "Reading results should pass")
+	predicateResultFinal := []wrappers.Predicate{}
+	_ = unmarshall(t, outputBufferFinal, &predicateResultFinal, "Reading final results should pass")
 
-
-	assert.Assert(t, len(predicateResult) >= 1, "Should have at least 1 predicate as the result.")
-	found := false
-	for _, predicate := range predicateResult {
+	assert.Assert(t, len(predicateResultFinal) >= 1, "Should have at least 1 predicate as the result after update.")
+	foundFinal := false
+	for _, predicate := range predicateResultFinal {
 		if predicate.StateID == 324 {
 			assert.Equal(t, predicate.State, "triageTest", "The state name for state-id 324 should be updated to triageTest")
-			found = true
+			assert.NotEqual(t, predicate.State, initialState, "The state name for state-id 324 should have changed from initial state %s", initialState)
+			foundFinal = true
 			break
 		}
 	}
-	assert.Assert(t, found, "Predicate with state-id 324 should be found in the results")
+	assert.Assert(t, foundFinal, "Predicate with state-id 324 should be found in the results after update")
 }
