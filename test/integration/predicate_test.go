@@ -219,7 +219,6 @@ func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 	}
 	fmt.Printf("Initial state for state-id 324: %s\n", initialState)
 
-
 	fmt.Println("Step 2: Testing the command 'triage update' with custom state-id to update the predicate.")
 	severity := "HIGH"
 	comment := "Testing CLI Command with custom state-id."
@@ -240,7 +239,6 @@ func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 	assert.NilError(t, readingError, "Reading update result should pass")
 	assert.NilError(t, err, "Updating the predicate with custom state-id should pass.")
 
-
 	fmt.Println("Step 3: Testing the command 'triage show' to verify the updated predicate.")
 	outputBufferFinal := executeCmdNilAssertion(
 		t, "Updated predicates should be fetched.", "triage", "show",
@@ -258,7 +256,7 @@ func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
 	for _, predicate := range predicateResultFinal {
 		if predicate.StateID == 324 {
 			assert.Equal(t, predicate.State, "triageTest", "The state name for state-id 324 should be updated to triageTest")
-			assert.NotEqual(t, predicate.State, initialState, "The state name for state-id 324 should have changed from initial state %s", initialState)
+			assert.Assert(t, predicate.State != initialState, "The state name for state-id 324 should have changed from initial state %s", initialState)
 			foundFinal = true
 			break
 		}
