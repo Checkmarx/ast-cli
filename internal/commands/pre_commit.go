@@ -52,33 +52,30 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappe
 		),
 	}
 
-	preCommitCmd.AddCommand(secretsInstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
-	preCommitCmd.AddCommand(secretsUninstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
-	preCommitCmd.AddCommand(secretsUpdateGitHookCommand(jwtWrapper, featureFlagsWrapper))
-	preCommitCmd.AddCommand(secretsScanCommand(jwtWrapper, featureFlagsWrapper))
-	preCommitCmd.AddCommand(secretsIgnoreCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsInstallGitHookCommand(jwtWrapper))
+	preCommitCmd.AddCommand(secretsUninstallGitHookCommand(jwtWrapper))
+	preCommitCmd.AddCommand(secretsUpdateGitHookCommand(jwtWrapper))
+	preCommitCmd.AddCommand(secretsScanCommand(jwtWrapper))
+	preCommitCmd.AddCommand(secretsIgnoreCommand(jwtWrapper))
 	preCommitCmd.AddCommand(secretsHelpCommand())
 
 	return preCommitCmd
 }
 
-// validateLicense verifies the user has the required license for secret detection
-func validateLicense(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	userAllowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+// / validateLicense verifies the user has the required license for secret detection
+func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
 
+	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
 	if err != nil {
 		return errors.Wrapf(err, "Failed checking license")
 	}
-
-	// Enterprise Secrets is the license name as confirmed in the requirements
-	if !userAllowedEngines[params.EnterpriseSecretsType] {
+	if !allowed {
 		return errors.New("Error: License validation failed. Please verify your CxOne license includes Enterprise Secrets.")
 	}
-
 	return nil
 }
 
-func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-install-git-hook",
 		Short: "Install the pre-commit hook",
@@ -89,7 +86,7 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWr
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper, featureFlagsWrapper)
+			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Install()
@@ -99,7 +96,7 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWr
 	return cmd
 }
 
-func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-uninstall-git-hook",
 		Short: "Uninstall the pre-commit hook",
@@ -110,7 +107,7 @@ func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlags
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper, featureFlagsWrapper)
+			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Uninstall()
@@ -120,7 +117,7 @@ func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlags
 	return cmd
 }
 
-func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-update-git-hook",
 		Short: "Update the pre-commit hook",
@@ -131,7 +128,7 @@ func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWra
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper, featureFlagsWrapper)
+			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Update()
@@ -141,7 +138,7 @@ func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWra
 	return cmd
 }
 
-func secretsScanCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsScanCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	return &cobra.Command{
 		Use:   "secrets-scan",
 		Short: "Run the real-time secret detection scan",
@@ -152,7 +149,7 @@ func secretsScanCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper, featureFlagsWrapper)
+			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Scan()
@@ -160,7 +157,7 @@ func secretsScanCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	}
 }
 
-func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	var resultIds string
 	var all bool
 
@@ -175,7 +172,7 @@ func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wr
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateLicense(jwtWrapper, featureFlagsWrapper); err != nil {
+			if err := validateLicense(jwtWrapper); err != nil {
 				return err
 			}
 
