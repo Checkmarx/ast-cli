@@ -198,7 +198,8 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	preCommitCmd := PreCommitCommand()
+	//preCommitCmd := PreCommitCommand()
+	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,
@@ -210,7 +211,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
-		preCommitCmd,
+		hooksCmd,
 	)
 
 	rootCmd.SilenceUsage = true

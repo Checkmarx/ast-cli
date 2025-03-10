@@ -3,75 +3,182 @@ package commands
 import (
 	"fmt"
 	precommit "github.com/Checkmarx/secret-detection/pkg/hooks"
+	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"strings"
 )
 
-func PreCommitCommand() *cobra.Command {
+// NewHooksCommand creates the hooks command with pre-commit subcommand
+func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	hooksCmd := &cobra.Command{
+		Use:   "hooks",
+		Short: "Manage Git hooks",
+		Long:  "The hooks command enables the ability to manage Git hooks for Checkmarx One.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-install-git-hook
+            $ cx hooks pre-commit secrets-scan
+        `,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+                https://checkmarx.com/resource/documents/en/xxxxx-xxxxx-hooks.html
+            `,
+			),
+		},
+	}
+
+	// Add pre-commit subcommand
+	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper, featureFlagsWrapper))
+
+	return hooksCmd
+}
+
+// PreCommitCommand creates the pre-commit subcommand
+func PreCommitCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	preCommitCmd := &cobra.Command{
 		Use:   "pre-commit",
 		Short: "Manage pre-commit hooks and run secret detection scans",
+		Long:  "The pre-commit command enables the ability to manage Git pre-commit hooks for secret detection.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-install-git-hook
+            $ cx hooks pre-commit secrets-scan
+        `,
+		),
 	}
 
-	preCommitCmd.AddCommand(installCommand())
-	preCommitCmd.AddCommand(uninstallCommand())
-	preCommitCmd.AddCommand(updateCommand())
-	preCommitCmd.AddCommand(scanCommand())
-	preCommitCmd.AddCommand(ignoreCommand())
-	preCommitCmd.AddCommand(helpCommand())
+	preCommitCmd.AddCommand(secretsInstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsUninstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsUpdateGitHookCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsScanCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsIgnoreCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsHelpCommand())
 
 	return preCommitCmd
 }
 
-func installCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "install",
+// validateLicense verifies the user has the required license for secret detection
+func validateLicense(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	userAllowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+
+	if err != nil {
+		return errors.Wrapf(err, "Failed checking license")
+	}
+
+	// Enterprise Secrets is the license name as confirmed in the requirements
+	if !userAllowedEngines[params.EnterpriseSecretsType] {
+		return errors.New("Error: License validation failed. Please verify your CxOne license includes Enterprise Secrets.")
+	}
+
+	return nil
+}
+
+func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "secrets-install-git-hook",
 		Short: "Install the pre-commit hook",
+		Long:  "Install the pre-commit hook for secret detection in your repository.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-install-git-hook
+        `,
+		),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateLicense(jwtWrapper, featureFlagsWrapper)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Install()
 		},
 	}
+
+	return cmd
 }
 
-func uninstallCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "uninstall",
+func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "secrets-uninstall-git-hook",
 		Short: "Uninstall the pre-commit hook",
+		Long:  "Uninstall the pre-commit hook for secret detection from your repository.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-uninstall-git-hook
+        `,
+		),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateLicense(jwtWrapper, featureFlagsWrapper)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Uninstall()
 		},
 	}
+
+	return cmd
 }
 
-func updateCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "update",
+func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "secrets-update-git-hook",
 		Short: "Update the pre-commit hook",
+		Long:  "Update the pre-commit hook for secret detection to the latest version.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-update-git-hook
+        `,
+		),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateLicense(jwtWrapper, featureFlagsWrapper)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Update()
 		},
 	}
+
+	return cmd
 }
 
-func scanCommand() *cobra.Command {
+func secretsScanCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	return &cobra.Command{
-		Use:   "scan",
+		Use:   "secrets-scan",
 		Short: "Run the real-time secret detection scan",
+		Long:  "Run a real-time scan to detect secrets in your code before committing.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-scan
+        `,
+		),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return validateLicense(jwtWrapper, featureFlagsWrapper)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Scan()
 		},
 	}
 }
 
-func ignoreCommand() *cobra.Command {
+func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	var resultIds string
 	var all bool
 
 	cmd := &cobra.Command{
-		Use:   "ignore",
+		Use:   "secrets-ignore",
 		Short: "Ignore one or more detected secrets",
-		Args:  cobra.NoArgs,
+		Long:  "Add detected secrets to the ignore list so they won't be flagged in future scans.",
+		Example: heredoc.Doc(
+			`
+            $ cx hooks pre-commit secrets-ignore --resultIds=a1b2c3d4e5f6,f1e2d3c4b5a6
+            $ cx hooks pre-commit secrets-ignore --all
+        `,
+		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateLicense(jwtWrapper, featureFlagsWrapper); err != nil {
+				return err
+			}
+
 			if all && len(resultIds) > 0 {
 				return fmt.Errorf("--all cannot be used with --resultIds")
 			}
@@ -101,12 +208,13 @@ func ignoreCommand() *cobra.Command {
 	return cmd
 }
 
-func helpCommand() *cobra.Command {
+func secretsHelpCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "help",
-		Short: "Display help for commands",
+		Use:   "secrets-help",
+		Short: "Display help for pre-commit commands",
+		Long:  "Display detailed information about the pre-commit commands and options.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+			return cmd.Parent().Help()
 		},
 	}
 }
