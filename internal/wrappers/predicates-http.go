@@ -36,6 +36,8 @@ func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarit
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.ScsType) {
+		triageAPIPath = viper.GetString(params.ScsResultsReadPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scannerType), params.ScaType) {
 		return &PredicatesCollectionResponseModel{}, nil, nil
 	} else {
@@ -78,6 +80,8 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scanType), params.KicsType) || strings.EqualFold(strings.TrimSpace(scanType), params.IacType) {
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScsType) {
+		triageAPIPath = viper.GetString(params.ScsResultsWritePredicatesPathKey)
 	} else {
 		return nil, errors.Errorf(invalidScanType, scanType)
 	}
@@ -154,4 +158,42 @@ func handleResponseWithBody(resp *http.Response, err error) (*PredicatesCollecti
 
 func responsePredicateParsingFailed(err error) (*PredicatesCollectionResponseModel, *WebError, error) {
 	return nil, nil, errors.Wrapf(err, failedToParsePredicates)
+}
+
+type CustomStatesHTTPWrapper struct {
+	path string
+}
+
+func NewCustomStatesHTTPWrapper() CustomStatesWrapper {
+	return &CustomStatesHTTPWrapper{
+		path: viper.GetString(params.CustomStatesAPIPathKey),
+	}
+}
+
+func (c *CustomStatesHTTPWrapper) GetAllCustomStates(includeDeleted bool) ([]CustomState, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+
+	if c.path == "" {
+		return nil, errors.New("CustomStatesAPIPathKey is not set")
+	}
+	queryParams := make(map[string]string)
+	if includeDeleted {
+		queryParams[params.IncludeDeletedQueryParam] = params.True
+	}
+
+	logger.PrintIfVerbose(fmt.Sprintf("Fetching custom states from: %s with params: %v", c.path, queryParams))
+	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, c.path, queryParams, http.NoBody, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("Failed to fetch custom states. HTTP status: %d", resp.StatusCode)
+	}
+	var states []CustomState
+	err = json.NewDecoder(resp.Body).Decode(&states)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to parse custom states response")
+	}
+	return states, nil
 }

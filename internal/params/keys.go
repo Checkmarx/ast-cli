@@ -3,6 +3,7 @@ package params
 import "strings"
 
 var (
+	CustomStatesAPIPathKey              = strings.ToLower(CustomStatesAPIPathEnv)
 	TenantKey                           = strings.ToLower(TenantEnv)
 	BranchKey                           = strings.ToLower(BranchEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
@@ -15,6 +16,7 @@ var (
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	GroupsPathKey                       = strings.ToLower(GroupsPathEnv)
 	AgentNameKey                        = strings.ToLower(AgentNameEnv)
+	OriginKey                           = strings.ToLower(OriginEnv)
 	IgnoreProxyKey                      = strings.ToLower(IgnoreProxyEnv)
 	CodeBashingPathKey                  = strings.ToLower(CodeBashingPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
@@ -56,6 +58,8 @@ var (
 	LogsEngineLogPathKey                = strings.ToLower(LogsEngineLogPathEnv)
 	SastResultsPredicatesPathKey        = strings.ToLower(SastResultsPredicatesPathEnv)
 	KicsResultsPredicatesPathKey        = strings.ToLower(KicsResultsPredicatesPathEnv)
+	ScsResultsReadPredicatesPathKey     = strings.ToLower(ScsResultsReadPredicatesPathEnv)
+	ScsResultsWritePredicatesPathKey    = strings.ToLower(ScsResultsWritePredicatesPathEnv)
 	DescriptionsPathKey                 = strings.ToLower(DescriptionsPathEnv)
 	TenantConfigurationPathKey          = strings.ToLower(TenantConfigurationPathEnv)
 	ResultsPdfReportPathKey             = strings.ToLower(ResultsPdfReportPathEnv)

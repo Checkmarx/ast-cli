@@ -161,6 +161,36 @@ func SafeWriteSingleConfigKey(configFilePath, key string, value int) error {
 	return nil
 }
 
+func SafeWriteSingleConfigKeyString(configFilePath, key string, value string) error {
+	// Create a file lock
+	lock := flock.New(configFilePath + ".lock")
+	locked, err := lock.TryLock()
+	if err != nil {
+		return errors.Errorf("error acquiring lock: %s", err.Error())
+	}
+	if !locked {
+		return errors.Errorf("could not acquire lock")
+	}
+	defer func() {
+		_ = lock.Unlock()
+	}()
+
+	// Load existing configuration or initialize a new one
+	config, err := LoadConfig(configFilePath)
+	if err != nil {
+		return errors.Errorf("error loading config: %s", err.Error())
+	}
+
+	// Update the configuration key
+	config[key] = value
+
+	// Save the updated configuration back to the file
+	if err = SaveConfig(configFilePath, config); err != nil {
+		return errors.Errorf("error saving config: %s", err.Error())
+	}
+	return nil
+}
+
 // LoadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
 func LoadConfig(path string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})

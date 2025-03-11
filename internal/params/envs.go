@@ -1,6 +1,7 @@
 package params
 
 const (
+	CustomStatesAPIPathEnv              = "CX_CUSTOM_STATES_PATH"
 	TenantEnv                           = "CX_TENANT"
 	BranchEnv                           = "CX_BRANCH"
 	BaseURIEnv                          = "CX_BASE_URI"
@@ -17,6 +18,7 @@ const (
 	CodeBashingPathEnv                  = "CX_CODEBASHING_PATH"
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
+	OriginEnv                           = "CX_ORIGIN"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
 	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
@@ -27,6 +29,8 @@ const (
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
 	KicsResultsPredicatesPathEnv        = "CX_KICS_RESULTS_PREDICATES_PATH"
+	ScsResultsReadPredicatesPathEnv     = "CX_SCS_RESULTS_PREDICATES_READ_PATH"
+	ScsResultsWritePredicatesPathEnv    = "CX_SCS_RESULTS_PREDICATES_WRITE_PATH"
 	BflPathEnv                          = "CX_BFL_PATH"
 	PRDecorationGithubPathEnv           = "CX_PR_DECORATION_GITHUB_PATH"
 	PRDecorationGitlabPathEnv           = "CX_PR_DECORATION_GITLAB_PATH"

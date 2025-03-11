@@ -869,7 +869,7 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
-	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, true, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
 
 	_ = cmdCommand.Execute()
 
@@ -883,7 +883,7 @@ func TestAddSastScan(t *testing.T) {
 		PresetName:   "test",
 		Filter:       "test",
 		Incremental:  "true",
-		FastScanMode: "true",
+		FastScanMode: "",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
@@ -1764,4 +1764,184 @@ func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t 
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
 	assert.Equal(t, zipPath, "failureCase.zip")
+}
+
+func TestAddSastScan_ScanFlags(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	tests := []struct {
+		name                   string
+		requiredIncrementalSet bool
+		requiredFastScanSet    bool
+		fastScanFlag           string
+		incrementalFlag        string
+		expectedConfig         wrappers.SastConfig
+	}{
+		{
+			name:                   "Fast scan and Incremental scan both false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental scan both true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan and Incremental not set",
+			requiredIncrementalSet: false,
+			requiredFastScanSet:    false,
+			expectedConfig:         wrappers.SastConfig{},
+		},
+		{
+			name:                   "Fast scan is true and Incremental is false",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "true",
+			incrementalFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+				Incremental:  "false",
+			},
+		},
+		{
+			name:                   "Fast scan is false and Incremental is true",
+			requiredIncrementalSet: true,
+			requiredFastScanSet:    true,
+			fastScanFlag:           "false",
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "false",
+				Incremental:  "true",
+			},
+		},
+		{
+			name:                   "Fast scan is not set and Incremental is true",
+			requiredIncrementalSet: true,
+			incrementalFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				Incremental: "true",
+			},
+		},
+		{
+			name:                "Fast scan is true and Incremental is not set",
+			requiredFastScanSet: true,
+			fastScanFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode: "true",
+			},
+		},
+	}
+
+	oldActualScanTypes := actualScanTypes
+
+	defer func() {
+		actualScanTypes = oldActualScanTypes
+	}()
+
+	for _, tt := range tests {
+		actualScanTypes = "sast,sca,kics,scs"
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
+			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+
+			_ = cmdCommand.Execute()
+
+			if tt.requiredFastScanSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastFastScanFlag, tt.fastScanFlag)
+			}
+			if tt.requiredIncrementalSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+
+			result := addSastScan(cmdCommand, resubmitConfig)
+
+			actualSastConfig := wrappers.SastConfig{}
+			for key, value := range result {
+				if key == resultsMapType {
+					assert.Equal(t, commonParams.SastType, value)
+				} else if key == resultsMapValue {
+					actualSastConfig = *value.(*wrappers.SastConfig)
+				}
+			}
+
+			if !reflect.DeepEqual(actualSastConfig, tt.expectedConfig) {
+				t.Errorf("Expected %+v, but got %+v", tt.expectedConfig, actualSastConfig)
+			}
+		})
+	}
+}
+
+func TestValidateScanTypes(t *testing.T) {
+	tests := []struct {
+		name                      string
+		userScanTypes             string
+		userSCSScanTypes          string
+		allowedEngines            map[string]bool
+		containerEngineCLIEnabled bool
+		expectedError             string
+	}{
+		{
+			name:                      "No licenses available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "sast,secret-detection",
+			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
+			containerEngineCLIEnabled: true,
+			expectedError:             "It looks like the \"scs\" scan type does",
+		},
+		{
+			name:                      "SCS license available, secret-detection not available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "secret-detection",
+			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": false},
+			containerEngineCLIEnabled: true,
+			expectedError:             "It looks like the \"secret-detection\" scan type does not exist",
+		},
+		{
+			name:                      "All licenses available",
+			userScanTypes:             "scs",
+			userSCSScanTypes:          "secret-detection",
+			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": true},
+			containerEngineCLIEnabled: true,
+			expectedError:             "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
+			cmd.Flags().String(commonParams.SCSEnginesFlag, tt.userSCSScanTypes, "")
+
+			jwtWrapper := &mock.JWTMockWrapper{
+				CustomGetAllowedEngines: func(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]bool, error) {
+					return tt.allowedEngines, nil
+				},
+			}
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
+			if tt.expectedError != "" {
+				assert.ErrorContains(t, err, tt.expectedError)
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
 }

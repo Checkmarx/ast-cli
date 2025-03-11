@@ -29,148 +29,133 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    runs-on: macos-13
-    env:
-      AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
-      APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
-      APPLE_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
-        with:
-          fetch-depth: 0
-      - name: Install Go
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
-        with:
-          go-version-file: go.mod
-      - name: Import Code-Signing Certificates
-        uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
-        with:
-          # The certificates in a PKCS12 file encoded as a base64 string
-          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
-          # The password used to import the PKCS12 file.
-          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      - name: Updating and upgrading brew
-        run: |
-          git config --global pack.windowMemory "100m"
-          git config --global pack.SizeLimit "100m" 
-          git config --global pack.threads "1"
-          git config --global pack.window "0"
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          brew --version
-      - name: Install gon
-        run: |
-          brew install Bearer/tap/gon
-      - name: Setup Docker on macOS
-        if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@8d5fa43892aed7eee4effcdea113fd53e4d4bf83  #v1-alpha
-      - name: Test docker
-        if: inputs.dev == false
-        run: |
-          docker version
-          docker info
-      - name: Login to Docker Hub
-        if: inputs.dev == false
-        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+  # build:
+  #   runs-on: macos-13
+  #   env:
+  #     AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+  #     APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+  #     APPLE_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+  #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+  #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+  #     COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Install Go
+  #       uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+  #       with:
+  #         go-version-file: go.mod
+  #     - name: Import Code-Signing Certificates
+  #       uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
+  #       with:
+  #         # The certificates in a PKCS12 file encoded as a base64 string
+  #         p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+  #         # The password used to import the PKCS12 file.
+  #         p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+  #     - name: Updating and upgrading brew to a specific version
+  #       run: |
+  #         brew --version
+  #         cd $(brew --repo)
+  #         git fetch --tags
+  #         git checkout 4.4.15
+  #         export HOMEBREW_NO_AUTO_UPDATE=1
+  #         brew --version
 
-      - name: Install Cosign
-        if: inputs.dev == false
-        run: |
-          brew install sigstore/tap/cosign
+  #     - name: Install gon
+  #       run: |
+  #         brew install Bearer/tap/gon
+  #     - name: Setup Docker on macOS
+  #       if: inputs.dev == false
+  #       uses: douglascamata/setup-docker-macos-action@4fe96839fcba8a2d746e020d00a89a37afbc7dc9  #v1-alpha.15
+  #     - name: Test docker
+  #       if: inputs.dev == false
+  #       run: |
+  #         docker version
+  #         docker info
+  #     - name: Login to Docker Hub
+  #       if: inputs.dev == false
+  #       uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 #v1
+  #       with:
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Add and Commit qemu.rb
-        if: inputs.dev == false
-        run: |
-          git add qemu.rb
-          git commit -m "Add qemu.rb"
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
-        with:
-          role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
-      - name: Tag
-        run: |
-          echo ${{ inputs.tag }}
-          echo "NEXT_VERSION=${{ inputs.tag }}" >> $GITHUB_ENV
-          tag=${{ inputs.tag }}
-          message='${{ inputs.tag }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          git tag -a "${tag}" -m "${message}"
-          git push origin "${tag}"
-      - name: Build GoReleaser Args
-        run: |
-          args='release --clean --debug'
-          if [ ${{ inputs.dev }} = true ]; then
-            args=${args}' --config=".goreleaser-dev.yml"'
-          fi
-          echo "GR_ARGS=${args}" >> $GITHUB_ENV
-      - name: Echo GoReleaser Args
-        run: echo ${{ env.GR_ARGS }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
-        with:
-          version: v1.18.2
-          args: ${{ env.GR_ARGS }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-          S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
-          SIGNING_REMOTE_SSH_USER: ${{ secrets.SIGNING_REMOTE_SSH_USER }}
-          SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
-          SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
-          SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
-      - name: Sign Docker Image with Cosign
-        if: inputs.dev == false
-        run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
+  #     - name: Install Cosign
+  #       if: inputs.dev == false
+  #       run: |
+  #         brew install sigstore/tap/cosign
 
-      - name: Verify Docker image signature
-        if: inputs.dev == false
-        run: |
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
-          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
+  #         aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
+  #     - name: Tag
+  #       run: |
+  #         echo ${{ inputs.tag }}
+  #         echo "NEXT_VERSION=${{ inputs.tag }}" >> $GITHUB_ENV
+  #         tag=${{ inputs.tag }}
+  #         message='${{ inputs.tag }}: PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}'
+  #         git config user.name "${GITHUB_ACTOR}"
+  #         git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+  #         git tag -a "${tag}" -m "${message}"
+  #         git push origin "${tag}"
+  #     - name: Build GoReleaser Args
+  #       run: |
+  #         args='release --clean --debug'
+  #         if [ ${{ inputs.dev }} = true ]; then
+  #           args=${args}' --config=".goreleaser-dev.yml"'
+  #         fi
+  #         echo "GR_ARGS=${args}" >> $GITHUB_ENV
+  #     - name: Echo GoReleaser Args
+  #       run: echo ${{ env.GR_ARGS }}
+  #     - name: Run GoReleaser
+  #       uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
+  #       with:
+  #         version: v1.18.2
+  #         args: ${{ env.GR_ARGS }}
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+  #         S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+  #         S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
+  #         SIGNING_REMOTE_SSH_USER: ${{ secrets.SIGNING_REMOTE_SSH_USER }}
+  #         SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
+  #         SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
+  #         SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
+  #     - name: Sign Docker Image with Cosign
+  #       if: inputs.dev == false
+  #       run: |
+  #         cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
-  notify:
-    runs-on: ubuntu-latest
+  #     - name: Verify Docker image signature
+  #       if: inputs.dev == false
+  #       run: |
+  #         echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+  #         cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
+  #       env:
+  #         COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+
+  # notify:
+  #   name: Update Teams & JIRA About New Release
+  #   if: inputs.dev == false
+  #   needs: build
+  #   uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
+  #   with:
+  #     product_name: CLI
+  #     release_version: ${{ inputs.tag }}
+  #     cli_release_version: ""
+  #     release_author: "Phoenix Team"
+  #     release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+  #     jira_product_name: ASTCLI
+  #   secrets: inherit
+
+  dispatch_auto_release:
+    name: Update Plugins With new Cli Version
     if: inputs.dev == false
-    needs: build
-    steps:
-      - name: Get latest release notes
-        id: release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          body_release="$(gh api -H "Accept: application/vnd.github.v3+json" /repos/Checkmarx/ast-cli/releases/latest | jq -r '.body' )"
-          body_release="${body_release//$'\n'/'%0A'}"
-          echo "::set-output name=body_release::$body_release"
-
-      - name: Converts Markdown to HTML
-        id: convert
-        uses: lifepal/markdown-to-html@71ed74a56602597c05dd7dd0e561631557158ed5 #v1.1
-        with:
-          text: "${{ steps.release.outputs.body_release }}"
-
-      - name: Clean html
-        id: clean
-        run: |
-          clean="$(echo "${{ steps.convert.outputs.html }}" | awk '{gsub(/id=.[a-z]+/,"");print}' | tr -d '\n')"
-          echo "$clean"
-          echo "::set-output name=clean::$clean"
-
-      - name: Send a Notification
-        id: notify
-        uses: thechetantalwar/teams-notify@8a78811f5e8f58cdd204efebd79158006428c46b #v2
-        with:
-          teams_webhook_url: ${{ secrets.TEAMS_WEBHOOK_URI }}
-          message: "${{ steps.clean.outputs.clean }}"
+    #needs: notify
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
+    with:
+      cli_version: ${{ inputs.tag }}
+    secrets: inherit

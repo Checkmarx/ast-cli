@@ -10,14 +10,16 @@ type BasePredicate struct {
 	State        string `json:"state"`
 	Severity     string `json:"severity"`
 	Comment      string `json:"comment"`
+	StateID      int    `json:"stateId"`
 }
 
 type PredicateRequest struct {
-	SimilarityID string `json:"similarityId"`
-	ProjectID    string `json:"projectId"`
-	State        string `json:"state"`
-	Comment      string `json:"comment"`
-	Severity     string `json:"severity"`
+	SimilarityID  string  `json:"similarityId"`
+	ProjectID     string  `json:"projectId"`
+	State         *string `json:"state,omitempty"`
+	CustomStateID *int    `json:"customStateId,omitempty"`
+	Comment       string  `json:"comment"`
+	Severity      string  `json:"severity"`
 }
 
 type Predicate struct {
@@ -37,6 +39,16 @@ type PredicateHistory struct {
 type PredicatesCollectionResponseModel struct {
 	PredicateHistoryPerProject []PredicateHistory `json:"predicateHistoryPerProject"`
 	TotalCount                 int                `json:"totalCount"`
+}
+
+type CustomState struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type CustomStatesWrapper interface {
+	GetAllCustomStates(includeDeleted bool) ([]CustomState, error)
 }
 
 type ResultsPredicatesWrapper interface {
