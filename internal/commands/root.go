@@ -122,6 +122,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(params.BaseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(params.AstAPIKeyFlag))
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
+	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))

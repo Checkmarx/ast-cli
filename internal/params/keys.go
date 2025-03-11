@@ -16,6 +16,7 @@ var (
 	ScansPathKey                        = strings.ToLower(ScansPathEnv)
 	GroupsPathKey                       = strings.ToLower(GroupsPathEnv)
 	AgentNameKey                        = strings.ToLower(AgentNameEnv)
+	OriginKey                           = strings.ToLower(OriginEnv)
 	IgnoreProxyKey                      = strings.ToLower(IgnoreProxyEnv)
 	CodeBashingPathKey                  = strings.ToLower(CodeBashingPathEnv)
 	ProjectsPathKey                     = strings.ToLower(ProjectsPathEnv)
