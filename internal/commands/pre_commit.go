@@ -185,7 +185,6 @@ func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If the "all" flag is set, ignore all detected secrets.
 			if all {
 				return precommit.IgnoreAll()
 			}

@@ -200,7 +200,6 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	//preCommitCmd := PreCommitCommand()
 	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
 
 	rootCmd.AddCommand(
