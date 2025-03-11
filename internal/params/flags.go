@@ -4,6 +4,7 @@ package params
 const (
 	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
+	OriginFlag                   = "origin"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
 	DefaultAgent                 = "ASTCLI"

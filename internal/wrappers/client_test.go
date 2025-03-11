@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"sync"
@@ -146,13 +147,13 @@ func TestExtractAZPFromToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := extractAZPFromToken(tt.token)
-			
+
 			if tt.hasError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			
+
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -181,5 +182,28 @@ func TestGetAPIKeyPayload(t *testing.T) {
 			result := getAPIKeyPayload(tt.token)
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func TestSetAgentNameAndOrigin(t *testing.T) {
+	viper.Set(commonParams.AgentNameKey, "TestAgent")
+	viper.Set(commonParams.OriginKey, "TestOrigin")
+	commonParams.Version = "1.0.0"
+
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+
+	setAgentNameAndOrigin(req)
+
+	userAgent := req.Header.Get("User-Agent")
+	origin := req.Header.Get("origin")
+
+	expectedUserAgent := "TestAgent/1.0.0"
+	if userAgent != expectedUserAgent {
+		t.Errorf("User-Agent header mismatch: got %v, want %v", userAgent, expectedUserAgent)
+	}
+
+	expectedOrigin := "TestOrigin"
+	if origin != expectedOrigin {
+		t.Errorf("Origin header mismatch: got %v, want %v", origin, expectedOrigin)
 	}
 }

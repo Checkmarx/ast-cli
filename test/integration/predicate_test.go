@@ -152,3 +152,114 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 	_ = unmarshall(t, responseKics, &kicsPredicate, "Reading predicate should pass")
 	assert.Assert(t, kicsPredicate.TotalCount == 0, "Predicate with invalid values should have 0 as the result.")
 }
+
+
+
+func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
+	t.Skip("Skipping TestSastUpdateAndGetPredicateWithCustomStateID for now")
+
+	scanID, projectID := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	index := 0
+	for i := range result.Results {
+		if strings.EqualFold(result.Results[i].Type, params.SastType) {
+			index = i
+			break
+		}
+	}
+
+	similarityID := result.Results[index].SimilarityID
+	scanType := result.Results[index].Type
+
+	fmt.Println("Step 1: Testing the command 'triage show' to get the initial predicate state.")
+	outputBufferInitial := executeCmdNilAssertion(
+		t, "Initial predicates should be fetched.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	predicateResultInitial := []wrappers.Predicate{}
+	_ = unmarshall(t, outputBufferInitial, &predicateResultInitial, "Reading initial results should pass")
+
+	var initialState string
+	foundInitial := false
+	for _, predicate := range predicateResultInitial {
+		if predicate.StateID == 324 {
+			initialState = predicate.State
+			foundInitial = true
+			break
+		}
+	}
+	if !foundInitial {
+		initialState = "Not set"
+	}
+	fmt.Printf("Initial state for state-id 324: %s\n", initialState)
+
+	fmt.Println("Step 2: Testing the command 'triage update' with custom state-id to update the predicate.")
+	severity := "HIGH"
+	comment := "Testing CLI Command with custom state-id."
+
+	args := []string{
+		"triage", "update",
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.CustomStateIDFlag), "324",
+		flag(params.StateFlag), "triageTest",
+		flag(params.SeverityFlag), severity,
+		flag(params.CommentFlag), comment,
+		flag(params.ScanTypeFlag), scanType,
+	}
+
+	err, outputBufferUpdate := executeCommand(t, args...)
+	_, readingError := io.ReadAll(outputBufferUpdate)
+	assert.NilError(t, readingError, "Reading update result should pass")
+	assert.NilError(t, err, "Updating the predicate with custom state-id should pass.")
+
+	fmt.Println("Step 3: Testing the command 'triage show' to verify the updated predicate.")
+	outputBufferFinal := executeCmdNilAssertion(
+		t, "Updated predicates should be fetched.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	predicateResultFinal := []wrappers.Predicate{}
+	_ = unmarshall(t, outputBufferFinal, &predicateResultFinal, "Reading final results should pass")
+
+	assert.Assert(t, len(predicateResultFinal) >= 1, "Should have at least 1 predicate as the result after update.")
+	foundFinal := false
+	for _, predicate := range predicateResultFinal {
+		if predicate.StateID == 324 {
+			assert.Equal(t, predicate.State, "triageTest", "The state name for state-id 324 should be updated to triageTest")
+			assert.Assert(t, predicate.State != initialState, "The state name for state-id 324 should have changed from initial state %s", initialState)
+			foundFinal = true
+			break
+		}
+	}
+	assert.Assert(t, foundFinal, "Predicate with state-id 324 should be found in the results after update")
+}

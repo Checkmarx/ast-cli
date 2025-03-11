@@ -18,6 +18,7 @@ const (
 	CodeBashingPathEnv                  = "CX_CODEBASHING_PATH"
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
+	OriginEnv                           = "CX_ORIGIN"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
 	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
