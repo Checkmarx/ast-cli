@@ -4,43 +4,17 @@ import (
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/pkg/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockJWTWrapper struct {
-	allowedEngine bool
-	returnError   error
-}
-
-func (m *mockJWTWrapper) IsAllowedEngine(engine string) (bool, error) {
-	return m.allowedEngine, m.returnError
-}
-
-func (m *mockJWTWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]bool, error) {
-	return map[string]bool{}, nil
-}
-
-func (m *mockJWTWrapper) ExtractTenantFromToken() (string, error) {
-	return "test-tenant", nil
-}
-
-type mockFeatureFlagsWrapper struct{}
-
-func (m *mockFeatureFlagsWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, error) {
-	return &wrappers.FeatureFlagsResponseModel{}, nil
-}
-
-func (m *mockFeatureFlagsWrapper) GetSpecificFlag(specificFlag string) (*wrappers.FeatureFlagResponseModel, error) {
-	return &wrappers.FeatureFlagResponseModel{
-		Name:   specificFlag,
-		Status: true,
-	}, nil
-}
-
 func TestNewHooksCommand(t *testing.T) {
-	mockJWT := &mockJWTWrapper{}
-	mockFeatureFlags := &mockFeatureFlagsWrapper{}
+	mockJWT := &mock.JWTMockWrapper{}
+	mockFeatureFlags := &mock.FeatureFlagsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   "test-flag",
+		Status: true,
+	}
 
 	cmd := NewHooksCommand(mockJWT, mockFeatureFlags)
 
@@ -50,8 +24,12 @@ func TestNewHooksCommand(t *testing.T) {
 }
 
 func TestPreCommitCommand(t *testing.T) {
-	mockJWT := &mockJWTWrapper{}
-	mockFeatureFlags := &mockFeatureFlagsWrapper{}
+	mockJWT := &mock.JWTMockWrapper{}
+	mockFeatureFlags := &mock.FeatureFlagsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   "test-flag",
+		Status: true,
+	}
 
 	cmd := PreCommitCommand(mockJWT, mockFeatureFlags)
 
@@ -80,21 +58,26 @@ func TestPreCommitCommand(t *testing.T) {
 
 func TestValidateLicense(t *testing.T) {
 	tests := []struct {
-		name        string
-		allowed     bool
-		returnError error
-		wantError   bool
+		name      string
+		aiEnabled int
+		wantError bool
 	}{
-		{"License is valid", true, nil, false},
-		{"License is invalid", false, nil, true},
-		{"Error checking license", false, errors.New("failed to check license"), true},
+		{
+			name:      "License is valid",
+			aiEnabled: 0,
+			wantError: false,
+		},
+		{
+			name:      "License is invalid",
+			aiEnabled: mock.AIProtectionDisabled,
+			wantError: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockJWT := &mockJWTWrapper{
-				allowedEngine: tt.allowed,
-				returnError:   tt.returnError,
+			mockJWT := &mock.JWTMockWrapper{
+				AIEnabled: tt.aiEnabled,
 			}
 
 			err := validateLicense(mockJWT)
@@ -109,11 +92,7 @@ func TestValidateLicense(t *testing.T) {
 }
 
 func TestSecretsIgnoreCommand(t *testing.T) {
-	mockJWT := &mockJWTWrapper{
-		allowedEngine: true,
-		returnError:   nil,
-	}
-
+	mockJWT := &mock.JWTMockWrapper{}
 	cmd := secretsIgnoreCommand(mockJWT)
 	assert.NotNil(t, cmd)
 
