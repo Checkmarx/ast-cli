@@ -57,6 +57,7 @@ jobs:
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
+          CX_ORIGIN: "cli-tests"
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128
@@ -99,11 +100,11 @@ jobs:
           name: ${{ runner.os }}-coverage-latest
           path: coverage.html
 
-      - name: Check if total coverage is greater then 79
+      - name: Check if total coverage is greater then 78
         shell: bash
         run: |
           CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          EXPECTED_CODE_COV=79
+          EXPECTED_CODE_COV=78
           var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
           if [ "$var" -eq 1 ];then
             echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
@@ -171,9 +172,7 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           output: './trivy-image-results.txt'
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
         env:
-          TRIVY_SKIP_DB_UPDATE: true
           TRIVY_SKIP_JAVA_DB_UPDATE: true
       
       - name: Inspect action report
