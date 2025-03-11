@@ -19,8 +19,8 @@ type RiskManagementResults struct {
 }
 
 type ApplicationScore struct {
-	ApplicationID string `json:"applicationID"`
-	Score         int    `json:"score"`
+	ApplicationID string  `json:"applicationID"`
+	Score         float64 `json:"score"`
 }
 
 type ASPMResult struct {
