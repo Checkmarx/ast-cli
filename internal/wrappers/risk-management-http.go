@@ -27,7 +27,7 @@ func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID s
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf(r.path, projectID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout) //auth??
+	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -1558,41 +1558,6 @@ func TestFilterScsResultsByAgent_ShouldExcludeSCSAndContainers(t *testing.T) {
 	assert.Equal(t, len(filteredResults.Results), 3, "Expected only 3 results after filtering for Jetbrains agent")
 }
 
-func TestLimitRiskManagementResults(t *testing.T) {
-	results := []wrappers.RiskManagementResults{
-		{ID: "1"},
-		{ID: "2"},
-		{ID: "3"},
-		{ID: "4"},
-		{ID: "5"},
-	}
-
-	tests := []struct {
-		name     string
-		limit    int
-		expected []wrappers.RiskManagementResults
-	}{
-		{
-			name:     "Limit greater than length",
-			limit:    10,
-			expected: results,
-		},
-		{
-			name:     "Limit less than or equal to zero",
-			limit:    0,
-			expected: results,
-		},
-		{
-			name:     "Limit within range",
-			limit:    3,
-			expected: results[:3],
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual := LimitRiskManagementResults(results, tt.limit)
-			assert.Equal(t, len(tt.expected), len(actual))
-		})
-	}
+func TestRiskManagementHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "results", "risk-management")
 }

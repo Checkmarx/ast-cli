@@ -22,6 +22,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -358,17 +359,10 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) fun
 		if err != nil {
 			return err
 		}
-		results.Results = LimitRiskManagementResults(results.Results, limit)
+		results.Results = utils.LimitSlice(results.Results, limit)
 		err = printByFormat(cmd, results)
 		return err
 	}
-}
-
-func LimitRiskManagementResults(results []wrappers.RiskManagementResults, limit int) []wrappers.RiskManagementResults {
-	if limit <= 0 || limit >= len(results) {
-		return results
-	}
-	return results[:limit]
 }
 
 func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID string) (*wrappers.ASPMResult, error) {
