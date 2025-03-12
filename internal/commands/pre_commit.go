@@ -12,7 +12,7 @@ import (
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
-func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
 		Short: "Manage Git hooks",
@@ -33,13 +33,13 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	}
 
 	// Add pre-commit subcommand
-	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper, featureFlagsWrapper))
+	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper))
 
 	return hooksCmd
 }
 
 // PreCommitCommand creates the pre-commit subcommand
-func PreCommitCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preCommitCmd := &cobra.Command{
 		Use:   "pre-commit",
 		Short: "Manage pre-commit hooks and run secret detection scans",

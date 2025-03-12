@@ -3,20 +3,13 @@ package commands
 import (
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHooksCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	mockFeatureFlags := &mock.FeatureFlagsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   "test-flag",
-		Status: true,
-	}
-
-	cmd := NewHooksCommand(mockJWT, mockFeatureFlags)
+	cmd := NewHooksCommand(mockJWT)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "hooks", cmd.Use)
@@ -25,13 +18,7 @@ func TestNewHooksCommand(t *testing.T) {
 
 func TestPreCommitCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	mockFeatureFlags := &mock.FeatureFlagsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   "test-flag",
-		Status: true,
-	}
-
-	cmd := PreCommitCommand(mockJWT, mockFeatureFlags)
+	cmd := PreCommitCommand(mockJWT)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "pre-commit", cmd.Use)
