@@ -1,10 +1,28 @@
 package wrappers
 
+import "time"
+
 type RiskManagementWrapper interface {
 	GetTopVulnerabilitiesByProjectID(projectID string) (*ASPMResult, *WebError, error)
 }
 
-type RiskManagementResults struct {
+type ApplicationScore struct {
+	ApplicationID string  `json:"applicationID"`
+	Score         float64 `json:"score"`
+}
+
+type RiskManagementApplication struct {
+	ApplicationID   string  `json:"applicationID"`
+	ApplicationName string  `json:"applicationName"`
+	Score           float64 `json:"score"`
+}
+
+type EnrichmentSource struct {
+	CNAS               string `json:"CNAS"`
+	CorrelationSastSca string `json:"Correlation_SastSca"`
+}
+
+type RiskManagementResult struct {
 	ID                 string             `json:"id"`
 	Name               string             `json:"name"`
 	Hash               string             `json:"hash"`
@@ -13,19 +31,14 @@ type RiskManagementResults struct {
 	Engine             string             `json:"engine"`
 	Severity           string             `json:"severity"`
 	RiskScore          float64            `json:"riskScore"`
-	EnrichmentSources  map[string]string  `json:"enrichmentSources"`
-	CreatedAt          string             `json:"createdAt"`
+	EnrichmentSources  EnrichmentSource   `json:"enrichmentSources"`
+	CreatedAt          time.Time          `json:"createdAt"`
 	ApplicationsScores []ApplicationScore `json:"applicationsScores"`
 }
 
-type ApplicationScore struct {
-	ApplicationID string  `json:"applicationID"`
-	Score         float64 `json:"score"`
-}
-
 type ASPMResult struct {
-	ProjectID            string                  `json:"projectID"`
-	ScanID               string                  `json:"scanID"`
-	ApplicationNameIDMap map[string]string       `json:"applicationNameIDMap"`
-	Results              []RiskManagementResults `json:"results"`
+	ProjectID            string                      `json:"projectID"`
+	ScanID               string                      `json:"scanID"`
+	ApplicationNameIDMap []RiskManagementApplication `json:"applicationNameIDMap"`
+	Results              []RiskManagementResult      `json:"results"`
 }
