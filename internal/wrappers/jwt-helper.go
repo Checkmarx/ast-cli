@@ -23,12 +23,13 @@ type JWTStruct struct {
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
 var defaultEngines = map[string]bool{
-	"sast":         true,
-	"sca":          true,
-	"api-security": true,
-	"iac-security": true,
-	"containers":   true,
-	"scs":          true,
+	"sast":               true,
+	"sca":                true,
+	"api-security":       true,
+	"iac-security":       true,
+	"containers":         true,
+	"scs":                true,
+	"enterprise-secrets": true,
 }
 
 type JWTWrapper interface {
