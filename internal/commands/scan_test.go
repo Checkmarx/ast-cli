@@ -1901,7 +1901,7 @@ func TestValidateScanTypes(t *testing.T) {
 		{
 			name:                      "No licenses available",
 			userScanTypes:             "scs",
-			userSCSScanTypes:          "sast,secret-detection",
+			userSCSScanTypes:          "scs,secret-detection",
 			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
 			containerEngineCLIEnabled: true,
 			expectedError:             "It looks like the \"scs\" scan type does",
