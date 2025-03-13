@@ -99,3 +99,64 @@ func TestContains(t *testing.T) {
 		})
 	}
 }
+func TestLimitSlice(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []int
+		limit    int
+		expected []int
+	}{
+		{
+			name:     "Limit greater than slice length",
+			input:    []int{1, 2, 3, 4, 5},
+			limit:    10,
+			expected: []int{1, 2, 3, 4, 5},
+		},
+		{
+			name:     "Limit less than slice length",
+			input:    []int{1, 2, 3, 4, 5},
+			limit:    3,
+			expected: []int{1, 2, 3},
+		},
+		{
+			name:     "Limit equal to zero",
+			input:    []int{1, 2, 3, 4, 5},
+			limit:    0,
+			expected: []int{1, 2, 3, 4, 5},
+		},
+		{
+			name:     "Limit equal to slice length",
+			input:    []int{1, 2, 3, 4, 5},
+			limit:    5,
+			expected: []int{1, 2, 3, 4, 5},
+		},
+		{
+			name:     "Empty slice",
+			input:    []int{},
+			limit:    3,
+			expected: []int{},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result := LimitSlice(tc.input, tc.limit)
+			if !equal(result, tc.expected) {
+				t.Errorf("Expected %v but got %v for input %v and limit %d", tc.expected, result, tc.input, tc.limit)
+			}
+		})
+	}
+}
+
+func equal(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}

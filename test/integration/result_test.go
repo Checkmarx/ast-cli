@@ -614,3 +614,41 @@ func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
 	err = json.Unmarshal(file, v)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
 }
+
+func TestRiskManagementResults_ReturnResults(t *testing.T) {
+	projectName := "ast-phoenix-test-project"
+	_ = executeCmdNilAssertion(
+		t, "Create project should pass",
+		"project", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.ApplicationName), "ast-phoenix-test", //exist app in deu env.
+	)
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data/sources.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.ScanTypes), params.SastType,
+	}
+	_, projectID := executeCreateScan(t, args)
+
+	defer func() {
+		_ = executeCmdNilAssertion(
+			t, "Delete project should pass",
+			"project", "delete",
+			flag(params.ProjectIDFlag), projectID,
+		)
+	}()
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results risk-management generating JSON report should pass",
+		"results", "risk-management",
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.LimitFlag), "20",
+	)
+	result := wrappers.ASPMResult{}
+	_ = unmarshall(t, outputBuffer, &result, "Reading results should pass")
+
+	assert.Assert(t, (len(result.Results) <= 20), "Should have results")
+}

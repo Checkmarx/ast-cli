@@ -24,3 +24,10 @@ func Contains(s []string, str string) bool {
 	}
 	return false
 }
+
+func LimitSlice[T any](slice []T, limit int) []T {
+	if limit <= 0 || limit >= len(slice) {
+		return slice
+	}
+	return slice[:limit]
+}
