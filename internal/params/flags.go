@@ -4,6 +4,7 @@ package params
 const (
 	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
+	OriginFlag                   = "origin"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
 	DefaultAgent                 = "ASTCLI"
@@ -287,16 +288,12 @@ var (
 )
 
 // Custom states
-const (
-	IncludeDeletedQueryParam = "include-deleted"
-	True                     = "true"
-)
+const IncludeDeletedQueryParam = "include-deleted"
+const True = "true"
 
 // System States
-const (
-	ToVerify               = "TO_VERIFY"
-	NotExploitable         = "NOT_EXPLOITABLE"
-	ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
-	CONFIRMED              = "CONFIRMED"
-	URGENT                 = "URGENT"
-)
+const ToVerify = "TO_VERIFY"
+const NotExploitable = "NOT_EXPLOITABLE"
+const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
+const CONFIRMED = "CONFIRMED"
+const URGENT = "URGENT"

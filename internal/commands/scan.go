@@ -136,7 +136,7 @@ var (
 		),
 	)
 	aditionalParameters []string
-	kicsErrorCodes      = []string{"50", "40", "30", "20"}
+	kicsErrorCodes      = []string{"60", "50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
 )
 
