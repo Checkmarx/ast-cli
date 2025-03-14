@@ -139,6 +139,8 @@ const (
 	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
 	IacsPlatformsFlag            = "iac-security-platforms"
 	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
+	IacsPresetIDFlag             = "iac-security-preset-id"
+	IacsPresetIDUsage            = "The ID of the IaC Security Preset to use (must be a valid UUID)."
 	ApikeyOverrideFlag           = "apikey-override"
 	ExploitablePathFlag          = "sca-exploitable-path"
 	LastSastScanTime             = "sca-last-sast-scan-time"
@@ -285,12 +287,16 @@ var (
 )
 
 // Custom states
-const  IncludeDeletedQueryParam = "include-deleted"
-const True 						= "true"
+const (
+	IncludeDeletedQueryParam = "include-deleted"
+	True                     = "true"
+)
 
 // System States
-const ToVerify               = "TO_VERIFY"
-const NotExploitable          = "NOT_EXPLOITABLE"
-const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
-const CONFIRMED               = "CONFIRMED"
-const URGENT                  = "URGENT"
+const (
+	ToVerify               = "TO_VERIFY"
+	NotExploitable         = "NOT_EXPLOITABLE"
+	ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
+	CONFIRMED              = "CONFIRMED"
+	URGENT                 = "URGENT"
+)
