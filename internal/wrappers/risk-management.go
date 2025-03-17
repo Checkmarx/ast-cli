@@ -17,11 +17,6 @@ type RiskManagementApplication struct {
 	Score           float64 `json:"score"`
 }
 
-type EnrichmentSource struct {
-	CNAS               string `json:"CNAS"`
-	CorrelationSastSca string `json:"Correlation_SastSca"`
-}
-
 type RiskManagementResult struct {
 	ID                 string             `json:"id"`
 	Name               string             `json:"name"`
@@ -31,7 +26,7 @@ type RiskManagementResult struct {
 	Engine             string             `json:"engine"`
 	Severity           string             `json:"severity"`
 	RiskScore          float64            `json:"riskScore"`
-	EnrichmentSources  EnrichmentSource   `json:"enrichmentSources"`
+	EnrichmentSources  map[string]string  `json:"enrichmentSources"`
 	CreatedAt          time.Time          `json:"createdAt"`
 	ApplicationsScores []ApplicationScore `json:"applicationsScores"`
 }
