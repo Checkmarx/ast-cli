@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -109,6 +110,12 @@ func createProject(
 		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil)
 		if groupErr != nil {
 			return "", groupErr
+		}
+		// Validate groups access before assigning them to the project.
+		// This validation will only be performed if the ACCESS_MANAGEMENT_PHASE2 flag is ON.
+		err := ValidateGroupsAccessPhase2(groupsMap, accessManagementWrapper, featureFlagsWrapper)
+		if err != nil {
+			return "", err
 		}
 		projModel.Groups = groups
 	}
@@ -224,5 +231,36 @@ func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.P
 	if err != nil {
 		return errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
+	return nil
+}
+
+func ValidateGroupsAccessPhase2(groups []*wrappers.Group, accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	// Check if ACCESS_MANAGEMENT_PHASE2 is ON
+	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
+	if !amPhase2Flag.Status {
+		return nil
+	}
+
+	// If no groups to validate, return
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// Extract group IDs
+	var groupIDs []string
+	for _, group := range groups {
+		groupIDs = append(groupIDs, group.ID)
+	}
+
+	// Validate groups access
+	hasAccess, err := accessManagementWrapper.HasEntityAccessToGroups(groupIDs)
+	if err != nil {
+		return errors.Wrap(err, "Failed to validate groups access")
+	}
+
+	if !hasAccess {
+		return errors.New("One or more groups are not authorized for assignment")
+	}
+
 	return nil
 }

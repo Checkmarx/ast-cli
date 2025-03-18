@@ -253,6 +253,13 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
+		// Validate groups access before creating the project.
+		// This validation will only be performed if the ACCESS_MANAGEMENT_PHASE2 flag is ON.
+		err = services.ValidateGroupsAccessPhase2(groups, accessManagementWrapper, featureFlagsWrapper)
+		if err != nil {
+			return err
+		}
+
 		setupScanTags(&input, cmd)
 		err = validateConfiguration(cmd)
 		if err != nil {

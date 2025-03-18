@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -14,8 +15,9 @@ import (
 
 const (
 	// APIs
-	createAssignmentPath = ""
-	entitiesForPath      = "entities-for"
+	createAssignmentPath  = ""
+	entitiesForPath       = "entities-for"
+	hasAccessToGroupsPath = "has-access-to-groups"
 	// EntityTypes
 	groupEntityType     = "group"
 	projectResourceType = "project"
@@ -85,4 +87,33 @@ func (a *AccessManagementHTTPWrapper) GetGroups(projectID string) ([]*Group, err
 		}
 	}
 	return groups, nil
+}
+
+func (a *AccessManagementHTTPWrapper) HasEntityAccessToGroups(groupIDs []string) (bool, error) {
+	if len(groupIDs) == 0 {
+		return true, nil
+	}
+
+	path := fmt.Sprintf("%s/%s?group-ids=%s", a.path, hasAccessToGroupsPath, strings.Join(groupIDs, ","))
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, a.clientTimeout)
+	if err != nil {
+		return false, errors.Wrapf(err, "Failed to validate groups access")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, errors.Errorf("Failed to validate groups access, status code: %d", resp.StatusCode)
+	}
+
+	var result struct {
+		HasAccess bool `json:"accessGranted"`
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&result)
+	if err != nil {
+		return false, errors.Wrapf(err, "Failed to parse response body")
+	}
+
+	return result.HasAccess, nil
 }

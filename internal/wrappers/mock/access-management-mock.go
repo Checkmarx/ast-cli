@@ -17,3 +17,8 @@ func (a AccessManagementMockWrapper) GetGroups(projectID string) ([]*wrappers.Gr
 	fmt.Println("Called GetGroups in AccessManagementMockWrapper")
 	return nil, nil
 }
+
+func (a AccessManagementMockWrapper) HasEntityAccessToGroups(groupIDs []string) (bool, error) {
+	fmt.Println("Called HasEntityAccessToGroups in AccessManagementMockWrapper")
+	return true, nil
+}
