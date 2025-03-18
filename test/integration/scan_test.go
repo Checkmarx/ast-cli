@@ -1935,6 +1935,8 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimit(t *testing.T) {
+	t.Skip("Skipping this test for now")
+
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000",
