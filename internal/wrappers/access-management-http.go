@@ -23,6 +23,10 @@ const (
 	projectResourceType = "project"
 )
 
+type HasAccessResponse struct {
+	HasAccess bool `json:"accessGranted"`
+}
+
 type AccessManagementHTTPWrapper struct {
 	path          string
 	clientTimeout uint
@@ -105,10 +109,7 @@ func (a *AccessManagementHTTPWrapper) HasEntityAccessToGroups(groupIDs []string)
 		return false, errors.Errorf("Failed to validate groups access, status code: %d", resp.StatusCode)
 	}
 
-	var result struct {
-		HasAccess bool `json:"accessGranted"`
-	}
-
+	var result HasAccessResponse
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(&result)
 	if err != nil {

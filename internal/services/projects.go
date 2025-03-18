@@ -235,14 +235,13 @@ func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.P
 }
 
 func ValidateGroupsAccessPhase2(groups []*wrappers.Group, accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	// Check if ACCESS_MANAGEMENT_PHASE2 is ON
-	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
-	if !amPhase2Flag.Status {
+	// If no groups to validate, return
+	if len(groups) == 0 {
 		return nil
 	}
 
-	// If no groups to validate, return
-	if len(groups) == 0 {
+	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
+	if !amPhase2Flag.Status {
 		return nil
 	}
 
