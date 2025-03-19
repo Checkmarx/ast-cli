@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -318,6 +319,55 @@ func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfull
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
+}
+
+func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+
+	// The createPreset(...) function requires these feature flags to be ON.
+	// If ast-cli runs with these flags OFF, the KICS engine in CxOne will ignore
+	// the submitted preset and perform a full scan instead.
+	// Since this test is only meaningful when the flags are ON, it is skipped otherwise.
+	if !isFFEnabled(t, "NEW_PRESET_MANAGEMENT_ENABLED") || !isFFEnabled(t, "KICS_PRESETS_MANAGER_ENABLED") {
+		t.Skip("Preset FFs are not enabled... Skipping test")
+	}
+
+	requestData := CreatePresetRequest{
+		Name: fmt.Sprintf("ast-cli-preset-%s", time.Now().Format("060102_15_04_05")),
+		Queries: []PresetQueries{
+			{
+				FamilyName: "Dockerfile",
+				QueryIDs:   []string{"67fd0c4a-68cf-46d7-8c41-bc9fba7e40ae"},
+			},
+		},
+	}
+
+	presetID, err := createPreset("iac", requestData)
+	assert.NilError(t, err)
+	defer deletePreset("iac", presetID)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), "data/iac-insecure.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.IacsPresetIDFlag), presetID,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	scanID, projectID := executeCreateScan(t, args)
+
+	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
+	allScansModel, _, _ := scanWrapper.Get(map[string]string{"project-id": projectID})
+
+	createdScan := allScansModel.Scans[0]
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig := createdScan.Metadata.Configs[0]
+	assert.Equal(t, createdScanConfig.Type, params.KicsType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value["presetId"], presetID, "IaC scan is not using the created presetID")
 }
 
 func TestScanCreate_FolderWithSymbolicLinkWithRelativePath_CreateScanSuccessfully(t *testing.T) {
@@ -2188,4 +2238,65 @@ func TestCreateScanWithAsyncFlag_TryShowResults_PolicyNotEvaluated(t *testing.T)
 	)
 	log.SetOutput(os.Stderr)
 	assert.Assert(t, strings.Contains(buf.String(), "Policy violations aren't returned in the pipeline for scans run in async mode."), "policy shouldn't evaluate in running scan")
+}
+
+type PresetQueries struct {
+	FamilyName string   `json:"familyName"`
+	QueryIDs   []string `json:"queryIds"`
+}
+
+type CreatePresetRequest struct {
+	Name    string          `json:"name"`
+	Queries []PresetQueries `json:"queries"`
+}
+
+type CreatePresetResponse struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+}
+
+func createPreset(engine string, body CreatePresetRequest) (string, error) {
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return "", errors.Wrap(err, "Error marshalling JSON")
+	}
+
+	resp, err := wrappers.SendHTTPRequest(
+		http.MethodPost,
+		fmt.Sprintf("api/preset-manager/%s/presets", engine),
+		bytes.NewBuffer(jsonData), true, 20,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "Request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	var responseData CreatePresetResponse
+	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+		return "", errors.Wrap(err, "Error decoding response")
+	}
+
+	return responseData.ID, err
+}
+
+func deletePreset(engine, presetID string) error {
+	resp, err := wrappers.SendHTTPRequest(
+		http.MethodDelete,
+		fmt.Sprintf("api/preset-manager/%s/presets/%s", engine, presetID),
+		http.NoBody, true, 20,
+	)
+	if err != nil {
+		return errors.Wrap(err, "Request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	return nil
 }

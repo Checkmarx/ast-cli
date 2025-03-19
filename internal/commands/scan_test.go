@@ -510,15 +510,13 @@ func TestScanWorkFlowWithKicsPlatforms(t *testing.T) {
 
 func TestScanWorkFlowWithKicsPlatformsDeprecated(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "kicsPlatformsMock", "-b", "dummy_branch", "-s", dummyRepo, "--kics-platforms", "Dockerfile"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
+	err := executeTestCommand(createASTTestCommand(), baseArgs...)
 	assert.NilError(t, err)
 }
 
 func TestScanWorkFlowWithKicsPresetID(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "kicsPresetIDMock", "-b", "dummy_branch", "-s", dummyRepo, "--iac-security-preset-id", "4801dea3-b365-4934-a810-ebf481f646c3"}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
+	err := executeTestCommand(createASTTestCommand(), baseArgs...)
 	assert.NilError(t, err)
 }
 
