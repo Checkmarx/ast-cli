@@ -1123,7 +1123,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
-	containerEngineCLIEnabled, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
+	runContainerEngineCLI := isContainersEngineEnabled(featureFlagsWrapper)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -1140,7 +1140,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
-			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
+			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(runContainerEngineCLI)) {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
@@ -1167,6 +1167,19 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
 	return nil
+}
+
+func isContainersEngineEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) bool {
+	runContainerEngineCLI := true
+
+	containerEngineCLIEnabled, err := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
+	if err != nil {
+		logger.PrintfIfVerbose("could not get CONTAINER_ENGINE_CLI_ENABLED FF. defaulting to `false` error: %s", err)
+		runContainerEngineCLI = false
+	} else {
+		runContainerEngineCLI = containerEngineCLIEnabled.Status
+	}
+	return runContainerEngineCLI
 }
 
 func scanTypeEnabled(scanType string) bool {
