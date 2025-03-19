@@ -341,7 +341,6 @@ func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
 			},
 		},
 	}
-
 	presetID, err := createPreset("iac", requestData)
 	assert.NilError(t, err)
 	defer deletePreset("iac", presetID)
@@ -355,11 +354,11 @@ func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
 		flag(params.IacsPresetIDFlag), presetID,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-
 	scanID, projectID := executeCreateScan(t, args)
 
 	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
-	allScansModel, _, _ := scanWrapper.Get(map[string]string{"project-id": projectID})
+	allScansModel, _, err := scanWrapper.Get(map[string]string{"project-id": projectID})
+	asserts.Nil(t, err)
 
 	createdScan := allScansModel.Scans[0]
 	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
