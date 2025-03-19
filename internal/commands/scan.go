@@ -1156,7 +1156,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 	} else {
 		for k := range allowedEngines {
-			if k == commonParams.ContainersType && !(containerEngineCLIEnabled.Status) {
+			if k == commonParams.ContainersType && !(runContainerEngineCLI) {
 				continue
 			}
 			scanTypes = append(scanTypes, k)
