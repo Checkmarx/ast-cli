@@ -616,7 +616,6 @@ func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
 }
 
 func TestRiskManagementResults_ReturnResults(t *testing.T) {
-	t.Skip("Skipping this test")
 	projectName := "ast-phoenix-test-project"
 	_ = executeCmdNilAssertion(
 		t, "Create project should pass",
