@@ -1170,16 +1170,13 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 }
 
 func isContainersEngineEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) bool {
-	runContainerEngineCLI := true
-
 	containerEngineCLIEnabled, err := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
 	if err != nil {
-		logger.PrintfIfVerbose("could not get CONTAINER_ENGINE_CLI_ENABLED FF. defaulting to `false` error: %s", err)
-		runContainerEngineCLI = false
-	} else {
-		runContainerEngineCLI = containerEngineCLIEnabled.Status
+		logger.PrintfIfVerbose("Failed to fetch CONTAINER_ENGINE_CLI_ENABLED FF, defaulting to `false`. Error: %s", err)
+		return false
 	}
-	return runContainerEngineCLI
+
+	return containerEngineCLIEnabled.Status
 }
 
 func scanTypeEnabled(scanType string) bool {
