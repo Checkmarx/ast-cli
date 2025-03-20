@@ -1945,3 +1945,22 @@ func TestValidateScanTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
+	mockWrapper := mock.FeatureFlagsMockWrapper{
+		FlagResponse: wrappers.FeatureFlagResponseModel{Status: true},
+		Err:          nil,
+	}
+
+	result := isContainersEngineEnabled(mockWrapper)
+	assert.True(t, result, "Expected isContainersEngineEnabled to return true when the flag is enabled")
+}
+
+func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
+	mockWrapper := mock.FeatureFlagsMockWrapper{
+		Err: errors.New("network error"),
+	}
+
+	result := isContainersEngineEnabled(mockWrapper)
+	assert.False(t, result, "Expected isContainersEngineEnabled to return false when flag retrieval fails")
+}
