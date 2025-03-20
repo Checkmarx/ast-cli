@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -16,4 +17,9 @@ func (a AccessManagementMockWrapper) CreateGroupsAssignment(projectID, projectNa
 func (a AccessManagementMockWrapper) GetGroups(projectID string) ([]*wrappers.Group, error) {
 	fmt.Println("Called GetGroups in AccessManagementMockWrapper")
 	return nil, nil
+}
+
+func (a AccessManagementMockWrapper) HasEntityAccessToGroups(groupIDs []string) (bool, error) {
+	logger.PrintfIfVerbose("Called HasEntityAccessToGroups in AccessManagementMockWrapper")
+	return true, nil
 }
