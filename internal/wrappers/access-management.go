@@ -13,6 +13,7 @@ type AssignmentResponse struct {
 type AccessManagementWrapper interface {
 	CreateGroupsAssignment(projectID, projectName string, groups []*Group) error
 	GetGroups(projectID string) ([]*Group, error)
+	HasEntityAccessToGroups(groupIDs []string) (bool, error)
 }
 
 type AssignmentPayload struct {
