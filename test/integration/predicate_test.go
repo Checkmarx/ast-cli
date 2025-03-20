@@ -155,111 +155,65 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 
 
 
-func TestSastUpdateAndGetPredicateWithCustomStateID(t *testing.T) {
-	t.Skip("Skipping TestSastUpdateAndGetPredicateWithCustomStateID for now")
+func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
+	t.Skip("Skipping this test temporarily until the API becomes available in the DEU environment.")
+	fmt.Println("Step 1: Testing the command 'triage show' with predefined values.")
+	// After the api/custom-states becomes available in the DEU environment, replace the hardcoded value with getRootScan(t) and create "state2" as a custom state in DEU.
+	projectID := "a2d52ac9-d007-4d95-a65e-bbe61c3451a4"
+	similarityID := "-1213859962"
+	scanType := "sast"
 
-	scanID, projectID := getRootScan(t)
-	_ = executeCmdNilAssertion(
-		t, "Results show generating JSON report with options should pass",
-		"results", "show",
-		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
-		flag(params.TargetPathFlag), resultsDirectory,
-		flag(params.TargetFlag), fileName,
-	)
-
-	defer func() {
-		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
-	}()
-
-	result := wrappers.ScanResultsCollection{}
-
-	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
-	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
-
-	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
-	assert.NilError(t, err, "error reading file")
-
-	err = json.Unmarshal(file, &result)
-	assert.NilError(t, err, "error unmarshalling file")
-
-	index := 0
-	for i := range result.Results {
-		if strings.EqualFold(result.Results[i].Type, params.SastType) {
-			index = i
-			break
-		}
-	}
-
-	similarityID := result.Results[index].SimilarityID
-	scanType := result.Results[index].Type
-
-	fmt.Println("Step 1: Testing the command 'triage show' to get the initial predicate state.")
-	outputBufferInitial := executeCmdNilAssertion(
-		t, "Initial predicates should be fetched.", "triage", "show",
+	outputBuffer := executeCmdNilAssertion(
+		t, "Fetching predicates should work.", "triage", "show",
 		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.ScanTypeFlag), scanType,
 	)
 
-	predicateResultInitial := []wrappers.Predicate{}
-	_ = unmarshall(t, outputBufferInitial, &predicateResultInitial, "Reading initial results should pass")
+	predicateResult := []wrappers.Predicate{}
+	fmt.Println(outputBuffer)
+	_ = unmarshall(t, outputBuffer, &predicateResult, "Reading results should pass")
+	assert.Assert(t, len(predicateResult) >= 1, "Should have at least 1 predicate as the result.")
 
-	var initialState string
-	foundInitial := false
-	for _, predicate := range predicateResultInitial {
-		if predicate.StateID == 324 {
-			initialState = predicate.State
-			foundInitial = true
-			break
-		}
-	}
-	if !foundInitial {
-		initialState = "Not set"
-	}
-	fmt.Printf("Initial state for state-id 324: %s\n", initialState)
+	fmt.Println("Step 2: Updating the predicate state.")
+	newState := "state2"
+	newSeverity := "HIGH"
+	comment := ""
 
-	fmt.Println("Step 2: Testing the command 'triage update' with custom state-id to update the predicate.")
-	severity := "HIGH"
-	comment := "Testing CLI Command with custom state-id."
-
-	args := []string{
-		"triage", "update",
+	err, _ := executeCommand(
+		t, "triage", "update",
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
-		flag(params.CustomStateIDFlag), "324",
-		flag(params.StateFlag), "triageTest",
-		flag(params.SeverityFlag), severity,
+		flag(params.StateFlag), newState,
+		flag(params.SeverityFlag), newSeverity,
 		flag(params.CommentFlag), comment,
 		flag(params.ScanTypeFlag), scanType,
-	}
+	)
 
-	err, outputBufferUpdate := executeCommand(t, args...)
-	_, readingError := io.ReadAll(outputBufferUpdate)
-	assert.NilError(t, readingError, "Reading update result should pass")
-	assert.NilError(t, err, "Updating the predicate with custom state-id should pass.")
+	assert.NilError(t, err, "Updating the predicate should pass.")
 
-	fmt.Println("Step 3: Testing the command 'triage show' to verify the updated predicate.")
-	outputBufferFinal := executeCmdNilAssertion(
-		t, "Updated predicates should be fetched.", "triage", "show",
+	fmt.Println("Step 3: Fetching predicates again to validate update.")
+	outputBufferAfterUpdate := executeCmdNilAssertion(
+		t, "Fetching predicates after update should work.", "triage", "show",
 		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,
 		flag(params.ScanTypeFlag), scanType,
 	)
 
-	predicateResultFinal := []wrappers.Predicate{}
-	_ = unmarshall(t, outputBufferFinal, &predicateResultFinal, "Reading final results should pass")
+	updatedPredicateResult := []wrappers.Predicate{}
+	fmt.Println(outputBufferAfterUpdate)
+	_ = unmarshall(t, outputBufferAfterUpdate, &updatedPredicateResult, "Reading updated results should pass")
+	assert.Assert(t, len(updatedPredicateResult) >= 1, "Should have at least 1 predicate after update.")
 
-	assert.Assert(t, len(predicateResultFinal) >= 1, "Should have at least 1 predicate as the result after update.")
-	foundFinal := false
-	for _, predicate := range predicateResultFinal {
-		if predicate.StateID == 324 {
-			assert.Equal(t, predicate.State, "triageTest", "The state name for state-id 324 should be updated to triageTest")
-			assert.Assert(t, predicate.State != initialState, "The state name for state-id 324 should have changed from initial state %s", initialState)
-			foundFinal = true
+	found := false
+	for _, pred := range updatedPredicateResult {
+		if pred.SimilarityID == similarityID && pred.State == newState {
+			found = true
 			break
 		}
 	}
-	assert.Assert(t, foundFinal, "Predicate with state-id 324 should be found in the results after update")
+
+	assert.Assert(t, found, "Updated predicate should have state set to state2")
 }
