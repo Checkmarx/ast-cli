@@ -361,7 +361,7 @@ func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
 	asserts.Nil(t, err)
 
 	createdScan := allScansModel.Scans[0]
-	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, createdScan.ID, scanID, "Scan ID should be equal")
 	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
 
 	createdScanConfig := createdScan.Metadata.Configs[0]
