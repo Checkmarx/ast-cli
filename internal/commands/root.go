@@ -202,6 +202,7 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,
@@ -213,6 +214,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
+		hooksCmd,
 	)
 
 	rootCmd.SilenceUsage = true
