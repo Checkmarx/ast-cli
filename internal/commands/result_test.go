@@ -1561,3 +1561,7 @@ func TestFilterScsResultsByAgent_ShouldExcludeSCSAndContainers(t *testing.T) {
 func TestRiskManagementHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results", "risk-management")
 }
+
+func TestRiskManagement(t *testing.T) {
+	execCmdNilAssertion(t, "results", "risk-management")
+}
