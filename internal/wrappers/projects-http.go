@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"net/http"
+	"time"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -30,7 +30,10 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 		return nil, nil, err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -49,7 +52,10 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 		return nil
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return err
 	}
@@ -79,7 +85,10 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 		commonParams.ProjectIDFlag: projectID,
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequestWithQueryParams(http.MethodPatch, "api/configuration/project", params, bytes.NewBuffer(jsonBytes), clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +109,10 @@ func (p *ProjectsHTTPWrapper) Get(params map[string]string) (
 		params[limit] = limitValue
 	}
 
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequestWithQueryParams(http.MethodGet, p.path, params, nil, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,7 +149,11 @@ func (p *ProjectsHTTPWrapper) GetByID(projectID string) (
 	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodGet, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -180,7 +196,11 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 	var request = "/branches?project-id=" + projectID
 
 	params["limit"] = limitValue
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequestWithQueryParams(http.MethodGet, p.path+request, params, nil, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -215,7 +235,10 @@ func (p *ProjectsHTTPWrapper) GetBranchesByID(projectID string, params map[strin
 
 func (p *ProjectsHTTPWrapper) Delete(projectID string) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodDelete, p.path+"/"+projectID, http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +255,11 @@ func (p *ProjectsHTTPWrapper) Tags() (
 	*ErrorModel,
 	error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequest(http.MethodGet, p.path+"/tags", http.NoBody, true, clientTimeout)
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequest(http.MethodGet, p.path+"/tags", http.NoBody, true, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
 		return nil, nil, err
 	}

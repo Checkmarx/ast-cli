@@ -50,8 +50,13 @@ func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	if !flagResponse.Status {
+
+	amEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
+	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
+
+	// If ACCESS_MANAGEMENT_PHASE2 flag is ON and if the ACCESS_MANAGEMENT_ENABLED flag is OFF
+	// In both cases, we do not need to assign groups through the CreateGroupsAssignment call.
+	if !amEnabledFlag.Status || amPhase2Flag.Status {
 		return nil
 	}
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)

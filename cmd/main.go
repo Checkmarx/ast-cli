@@ -36,6 +36,7 @@ func main() {
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	riskManagement := viper.GetString(params.RiskManagementPathKey)
 	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
@@ -55,6 +56,7 @@ func main() {
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
 
+	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
@@ -64,6 +66,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
@@ -94,11 +97,13 @@ func main() {
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
+		customStatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		riskManagementWrapper,
 		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,

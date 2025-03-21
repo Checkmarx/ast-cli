@@ -53,49 +53,54 @@ const (
 	notExploitable    = "NOT_EXPLOITABLE"
 	ignored           = "IGNORED"
 
-	git                             = "git"
-	invalidSSHSource                = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
-	errorUnzippingFile              = "an error occurred while unzipping file. Reason: "
-	containerRun                    = "run"
-	containerVolumeFlag             = "-v"
-	containerNameFlag               = "--name"
-	containerRemove                 = "--rm"
-	containerImage                  = "checkmarx/kics:latest"
-	containerScan                   = "scan"
-	containerScanPathFlag           = "-p"
-	containerScanPath               = "/path"
-	containerScanOutputFlag         = "-o"
-	containerScanOutput             = "/path"
-	containerScanFormatFlag         = "--report-formats"
-	containerScanFormatOutput       = "json"
-	containerStarting               = "Starting kics container"
-	containerFormatInfo             = "The report format and output path cannot be overridden."
-	containerFolderRemoving         = "Removing folder in temp"
-	containerCreateFolderError      = "Error creating temporary directory"
-	containerWriteFolderError       = " Error writing file to temporary directory"
-	containerFileSourceMissing      = "--file is required for kics-realtime command"
-	containerFileSourceIncompatible = ". Provided file is not supported by kics"
-	containerFileSourceError        = " Error reading file"
-	containerResultsFileFormat      = "%s/results.json"
-	containerVolumeFormat           = "%s:/path"
-	containerTempDirPattern         = "kics"
-	kicsContainerPrefixName         = "cli-kics-realtime-"
-	cleanupMaxRetries               = 3
-	cleanupRetryWaitSeconds         = 15
-	DanglingSymlinkError            = "Skipping dangling symbolic link"
-	configFilterKey                 = "filter"
-	configFilterPlatforms           = "platforms"
-	configIncremental               = "incremental"
-	configPresetName                = "presetName"
-	configEngineVerbose             = "engineVerbose"
-	configLanguageMode              = "languageMode"
-	resultsMapValue                 = "value"
-	resultsMapType                  = "type"
-	trueString                      = "true"
-	configTwoms                     = "2ms"
-	falseString                     = "false"
-	maxPollingWaitTime              = 60
-	engineNotAllowed                = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
+	git                                     = "git"
+	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
+	errorUnzippingFile                      = "an error occurred while unzipping file. Reason: "
+	containerRun                            = "run"
+	containerVolumeFlag                     = "-v"
+	containerNameFlag                       = "--name"
+	containerRemove                         = "--rm"
+	containerImage                          = "checkmarx/kics:v2.1.5"
+	containerScan                           = "scan"
+	containerScanPathFlag                   = "-p"
+	containerScanPath                       = "/path"
+	containerScanOutputFlag                 = "-o"
+	containerScanOutput                     = "/path"
+	containerScanFormatFlag                 = "--report-formats"
+	containerScanFormatOutput               = "json"
+	containerStarting                       = "Starting kics container"
+	containerFormatInfo                     = "The report format and output path cannot be overridden."
+	containerFolderRemoving                 = "Removing folder in temp"
+	containerCreateFolderError              = "Error creating temporary directory"
+	containerWriteFolderError               = " Error writing file to temporary directory"
+	containerFileSourceMissing              = "--file is required for kics-realtime command"
+	containerFileSourceIncompatible         = ". Provided file is not supported by kics"
+	containerFileSourceError                = " Error reading file"
+	containerResultsFileFormat              = "%s/results.json"
+	containerVolumeFormat                   = "%s:/path"
+	containerTempDirPattern                 = "kics"
+	kicsContainerPrefixName                 = "cli-kics-realtime-"
+	cleanupMaxRetries                       = 3
+	cleanupRetryWaitSeconds                 = 15
+	DanglingSymlinkError                    = "Skipping dangling symbolic link"
+	configFilterKey                         = "filter"
+	configFilterPlatforms                   = "platforms"
+	configIncremental                       = "incremental"
+	configFastScan                          = "fastScanMode"
+	configPresetName                        = "presetName"
+	configEngineVerbose                     = "engineVerbose"
+	configLanguageMode                      = "languageMode"
+	ConfigContainersFilesFilterKey          = "filesFilter"
+	ConfigContainersImagesFilterKey         = "imagesFilter"
+	ConfigContainersPackagesFilterKey       = "packagesFilter"
+	ConfigContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
+	resultsMapValue                         = "value"
+	resultsMapType                          = "type"
+	trueString                              = "true"
+	configTwoms                             = "2ms"
+	falseString                             = "false"
+	maxPollingWaitTime                      = 60
+	engineNotAllowed                        = "It looks like the \"%s\" scan type does not exist or you are trying to run a scan without the \"%s\" package license." +
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
@@ -130,7 +135,7 @@ var (
 		),
 	)
 	aditionalParameters []string
-	kicsErrorCodes      = []string{"50", "40", "30", "20"}
+	kicsErrorCodes      = []string{"60", "50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
 )
 
@@ -559,7 +564,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10. (Not supported yet)")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10.")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
@@ -655,6 +660,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
+
+	// Container config flags
+	createScanCmd.PersistentFlags().String(commonParams.ContainersFileFolderFilterFlag, "", "Specify files and folders to be included or excluded from scans, ex: \"!*.log\"")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersPackageFilterFlag, "", "Exclude packages by package name or file path using regex, ex: \"^internal-.*\"")
+	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Scan only the final deployable image")
+	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
 
 	return createScanCmd
 }
@@ -763,7 +774,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan(containerEngineCLIEnabled.Status)
+	var containersConfig = addContainersScan(cmd, resubmitConfig, containerEngineCLIEnabled.Status)
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -818,45 +829,66 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 }
 
 func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
-	if scanTypeEnabled(commonParams.SastType) {
-		sastMapConfig := make(map[string]interface{})
-		sastConfig := wrappers.SastConfig{}
-		sastMapConfig[resultsMapType] = commonParams.SastType
-		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
-		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
-		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
-		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
-		sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
-		sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
-		for _, config := range resubmitConfig {
-			if config.Type != commonParams.SastType {
-				continue
-			}
-			resubmitIncremental := config.Value[configIncremental]
-			if resubmitIncremental != nil && !incrementalVal {
-				sastConfig.Incremental = resubmitIncremental.(string)
-			}
-			resubmitPreset := config.Value[configPresetName]
-			if resubmitPreset != nil && sastConfig.PresetName == "" {
-				sastConfig.PresetName = resubmitPreset.(string)
-			}
-			resubmitFilter := config.Value[configFilterKey]
-			if resubmitFilter != nil && sastConfig.Filter == "" {
-				sastConfig.Filter = resubmitFilter.(string)
-			}
-			resubmitEngineVerbose := config.Value[configEngineVerbose]
-			if resubmitEngineVerbose != nil {
-				sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
-			}
-			resubmitLanguageMode := config.Value[configLanguageMode]
-			if resubmitLanguageMode != nil {
-				sastConfig.LanguageMode = resubmitLanguageMode.(string)
-			}
-		}
-		sastMapConfig[resultsMapValue] = &sastConfig
-		return sastMapConfig
+	// Check if SAST is enabled
+	if !scanTypeEnabled(commonParams.SastType) {
+		return nil
 	}
-	return nil
+
+	sastMapConfig := make(map[string]interface{})
+	sastConfig := wrappers.SastConfig{}
+	sastMapConfig[resultsMapType] = commonParams.SastType
+
+	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+
+	if sastFastScanChanged {
+		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
+		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
+	}
+
+	if sastIncrementalChanged {
+		incrementalVal, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
+	}
+
+	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
+	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
+
+	for _, config := range resubmitConfig {
+		if config.Type != commonParams.SastType {
+			continue
+		}
+
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, &sastConfig, config)
+	}
+
+	sastMapConfig[resultsMapValue] = &sastConfig
+	return sastMapConfig
+}
+
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
+		if *configValue == "" && resubmitValue != nil {
+			*configValue = resubmitValue.(string)
+		}
+	}
+
+	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
+		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
+		sastConfig.FastScanMode = resubmitFastScan.(string)
+	}
+
+	setIfEmpty(&sastConfig.PresetName, config.Value[configPresetName])
+	setIfEmpty(&sastConfig.Filter, config.Value[configFilterKey])
+
+	if resubmitEngineVerbose := config.Value[configEngineVerbose]; resubmitEngineVerbose != nil {
+		sastConfig.EngineVerbose = resubmitEngineVerbose.(string)
+	}
+	if resubmitLanguageMode := config.Value[configLanguageMode]; resubmitLanguageMode != nil {
+		sastConfig.LanguageMode = resubmitLanguageMode.(string)
+	}
 }
 
 func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
@@ -913,17 +945,59 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan(containerEngineCLIEnabled bool) map[string]interface{} {
+func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, containerEngineCLIEnabled bool) map[string]interface{} {
 	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
 		return nil
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
-
 	containerConfig := wrappers.ContainerConfig{}
+
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig)
+
+	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
+	if fileFolderFilter != "" {
+		containerConfig.FilesFilter = fileFolderFilter
+	}
+	packageFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersPackageFilterFlag)
+	if packageFilter != "" {
+		containerConfig.PackagesFilter = packageFilter
+	}
+	excludeNonFinalStages, _ := cmd.PersistentFlags().GetBool(commonParams.ContainersExcludeNonFinalStagesFlag)
+	if cmd.PersistentFlags().Changed(commonParams.ContainersExcludeNonFinalStagesFlag) {
+		containerConfig.NonFinalStagesFilter = strconv.FormatBool(excludeNonFinalStages)
+	}
+	imageTagFilter, _ := cmd.Flags().GetString(commonParams.ContainersImageTagFilterFlag)
+	if imageTagFilter != "" {
+		containerConfig.ImagesFilter = imageTagFilter
+	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig
+}
+
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
+	for _, config := range resubmitConfig {
+		if config.Type != commonParams.ContainersType {
+			continue
+		}
+		resubmitFilesFilter := config.Value[ConfigContainersFilesFilterKey]
+		if resubmitFilesFilter != nil && resubmitFilesFilter != "" {
+			containerConfig.FilesFilter = resubmitFilesFilter.(string)
+		}
+		resubmitPackagesFilter := config.Value[ConfigContainersPackagesFilterKey]
+		if resubmitPackagesFilter != nil && resubmitPackagesFilter != "" {
+			containerConfig.PackagesFilter = resubmitPackagesFilter.(string)
+		}
+		resubmitNonFinalStagesFilter := config.Value[ConfigContainersNonFinalStagesFilterKey]
+		if resubmitNonFinalStagesFilter != nil && resubmitNonFinalStagesFilter != "" {
+			containerConfig.NonFinalStagesFilter = resubmitNonFinalStagesFilter.(string)
+		}
+		resubmitImagesFilter := config.Value[ConfigContainersImagesFilterKey]
+		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
+			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
+		}
+	}
 }
 
 func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
@@ -1064,13 +1138,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
 		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
 
-		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
-		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
-			return err
-		}
-
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
 			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
@@ -1079,6 +1146,14 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 				return err
 			}
 		}
+
+		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
+		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
+			return err
+		}
+
 	} else {
 		for k := range allowedEngines {
 			if k == commonParams.ContainersType && !(containerEngineCLIEnabled.Status) {

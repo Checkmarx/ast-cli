@@ -2,7 +2,9 @@ package params
 
 // Flags
 const (
+	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
+	OriginFlag                   = "origin"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
 	DefaultAgent                 = "ASTCLI"
@@ -113,6 +115,7 @@ const (
 	SimilarityIDFlag             = "similarity-id"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
+	CustomStateIDFlag            = "state-id"
 	CommentFlag                  = "comment"
 	LanguageFlag                 = "language"
 	VulnerabilityTypeFlag        = "vulnerability-type"
@@ -150,6 +153,7 @@ const (
 	JetbrainsAgent               = "Jetbrains"
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
+	LimitFlag                    = "limit"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
@@ -207,6 +211,12 @@ const (
 	// SCS (Github)
 	SCSRepoTokenFlag = "scs-repo-token"
 	SCSRepoURLFlag   = "scs-repo-url"
+
+	// Containers Config Flags
+	ContainersFileFolderFilterFlag      = "containers-file-folder-filter"
+	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
+	ContainersPackageFilterFlag         = "containers-package-filter"
+	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
 )
 
 // Parameter values
@@ -275,3 +285,14 @@ const ScaAgent = "SCA_AGENT"
 var (
 	Version = "dev"
 )
+
+// Custom states
+const IncludeDeletedQueryParam = "include-deleted"
+const True = "true"
+
+// System States
+const ToVerify = "TO_VERIFY"
+const NotExploitable = "NOT_EXPLOITABLE"
+const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
+const CONFIRMED = "CONFIRMED"
+const URGENT = "URGENT"
