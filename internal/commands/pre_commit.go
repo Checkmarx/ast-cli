@@ -76,6 +76,7 @@ func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
 }
 
 func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+	var global bool
 	cmd := &cobra.Command{
 		Use:   "secrets-install-git-hook",
 		Short: "Install the pre-commit hook",
@@ -89,9 +90,10 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command
 			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return precommit.Install()
+			return precommit.Install(global)
 		},
 	}
+	cmd.Flags().BoolVar(&global, "global", false, "Install the hook globally for all repositories")
 
 	return cmd
 }
