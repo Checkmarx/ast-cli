@@ -88,6 +88,7 @@ const (
 	configIncremental                       = "incremental"
 	configFastScan                          = "fastScanMode"
 	configPresetName                        = "presetName"
+	configPresetID                          = "presetId"
 	configEngineVerbose                     = "engineVerbose"
 	configLanguageMode                      = "languageMode"
 	ConfigContainersFilesFilterKey          = "filesFilter"
@@ -553,7 +554,10 @@ func scanCreateSubCommand(
 		false,
 		"Incremental SAST scan should be performed.",
 	)
+
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
+	createScanCmd.PersistentFlags().String(commonParams.IacsPresetIDFlag, "", commonParams.IacsPresetIDUsage)
+
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
@@ -898,6 +902,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		kicsMapConfig[resultsMapType] = commonParams.KicsType
 		kicsConfig.Filter = deprecatedFlagValue(cmd, commonParams.KicsFilterFlag, commonParams.IacsFilterFlag)
 		kicsConfig.Platforms = deprecatedFlagValue(cmd, commonParams.KicsPlatformsFlag, commonParams.IacsPlatformsFlag)
+		kicsConfig.PresetID, _ = cmd.Flags().GetString(commonParams.IacsPresetIDFlag)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.KicsType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -907,6 +912,10 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 				resubmitPlatforms := config.Value[configFilterPlatforms]
 				if resubmitPlatforms != nil && kicsConfig.Platforms == "" {
 					kicsConfig.Platforms = resubmitPlatforms.(string)
+				}
+				resubmitPresetID := config.Value[configPresetID]
+				if resubmitPresetID != nil && kicsConfig.PresetID == "" {
+					kicsConfig.PresetID = resubmitPresetID.(string)
 				}
 			}
 		}
@@ -2799,6 +2808,12 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	err = validateBooleanString(projectPrivatePackage)
 	if err != nil {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	}
+
+	if kicsPresetID, _ := cmd.Flags().GetString(commonParams.IacsPresetIDFlag); kicsPresetID != "" {
+		if _, err := uuid.Parse(kicsPresetID); err != nil {
+			return fmt.Errorf("Invalid value for --%s flag. Must be a valid UUID.", commonParams.IacsPresetIDFlag)
+		}
 	}
 
 	return nil
