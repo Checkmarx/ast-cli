@@ -204,6 +204,7 @@ func assertError(t *testing.T, err error, expectedMessage string) {
 func clearFlags() {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{}
 	mock.Flag = wrappers.FeatureFlagResponseModel{}
+	mock.FFErr = nil
 	wrappers.ClearCache()
 }
 

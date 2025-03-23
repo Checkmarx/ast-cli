@@ -1,5 +1,3 @@
-//go:build !integration
-
 package commands
 
 import (
@@ -1947,20 +1945,20 @@ func TestValidateScanTypes(t *testing.T) {
 }
 
 func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
-	mockWrapper := mock.FeatureFlagsMockWrapper{
-		FlagResponse: wrappers.FeatureFlagResponseModel{Status: true},
-		Err:          nil,
-	}
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.FFErr = nil
 
-	result := isContainersEngineEnabled(mockWrapper)
-	assert.True(t, result, "Expected isContainersEngineEnabled to return true when the flag is enabled")
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+	assert.Assert(t, result, "expected result to be true")
 }
 
 func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
-	mockWrapper := mock.FeatureFlagsMockWrapper{
-		Err: errors.New("network error"),
-	}
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	mock.FFErr = errors.New("something went wrong while fetching ff")
 
-	result := isContainersEngineEnabled(mockWrapper)
-	assert.False(t, result, "Expected isContainersEngineEnabled to return false when flag retrieval fails")
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+
+	assert.Assert(t, !result, "expected result to be false")
 }
