@@ -1958,3 +1958,22 @@ func TestValidateScanTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.FFErr = nil
+
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+	assert.Assert(t, result, "expected result to be true")
+}
+
+func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	mock.FFErr = errors.New("something went wrong while fetching ff")
+
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+
+	assert.Assert(t, !result, "expected result to be false")
+}

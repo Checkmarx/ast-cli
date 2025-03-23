@@ -8,6 +8,7 @@ import (
 
 var Flags wrappers.FeatureFlagsResponseModel
 var Flag wrappers.FeatureFlagResponseModel
+var FFErr error
 
 type FeatureFlagsMockWrapper struct {
 }
@@ -22,5 +23,8 @@ func (f FeatureFlagsMockWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, 
 
 func (f FeatureFlagsMockWrapper) GetSpecificFlag(specificFlag string) (*wrappers.FeatureFlagResponseModel, error) {
 	fmt.Println("Called GetSpecificFlag in FeatureFlagsMockWrapper with flag:", specificFlag)
+	if FFErr != nil {
+		return nil, FFErr
+	}
 	return &Flag, nil
 }
