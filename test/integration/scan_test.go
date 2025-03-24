@@ -1833,6 +1833,34 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "SCS scan must complete successfully", 4*time.Minute, args...)
 }
 
+func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "scs",
+		flag(params.BranchFlag), "main",
+		flag(params.SCSRepoURLFlag), scsRepoURL,
+		flag(params.SCSRepoTokenFlag), scsRepoToken,
+		flag(params.SCSEnginesFlag), commands.ScsScoreCardType,
+		flag(params.TargetFormatFlag), strings.Join(
+			[]string{
+				printer.FormatJSON,
+				printer.FormatSarif,
+				printer.FormatSonar,
+				printer.FormatSummaryConsole,
+				printer.FormatSummaryJSON,
+				printer.FormatPDF,
+				printer.FormatSummaryMarkdown,
+			}, ",",
+		),
+	}
+
+	executeCmdWithTimeOutNilAssertion(t, "SCS scan with only Scorecard must complete successfully", 4*time.Minute, args...)
+}
+
 func TestCreateScan_WithNoScanTypesAndScsFlagsNotPresent_SuccessAndScsScanned(t *testing.T) {
 	_, projectName := getRootProject(t)
 
