@@ -1174,7 +1174,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 	actualScanTypes = strings.Join(scanTypes, ",")
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
-
 	return nil
 }
 
