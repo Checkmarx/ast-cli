@@ -164,7 +164,6 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
-	t.Skip("Skipping this test for now")
 	args := []string{
 		"utils",
 		"pr",
