@@ -122,7 +122,7 @@ const (
 	CweIDFlag                    = "cwe-id"
 	SCMTokenFlag                 = "token"
 	AzureTokenUsage              = "Azure DevOps personal access token. Requires “Connected server” and “Code“ scope."
-	GithubTokenUsage             = "GitHub OAuth token. Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
+	GithubTokenUsage             = "GitHub Personal Access Token (PAT). Requires “Repo” scope and organization SSO authorization, if enforced by the organization"
 	GitLabTokenUsage             = "GitLab OAuth token"
 	BitbucketTokenUsage          = "Bitbucket OAuth token"
 	BotCount                     = "Note: dependabot is not counted but other bots might be considered as contributors."
