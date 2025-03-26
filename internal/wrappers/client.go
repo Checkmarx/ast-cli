@@ -420,7 +420,8 @@ func GetAccessToken() (string, error) {
 			return "", err
 		}
 	}
-
+	fmt.Sprintf("token accessTokenTTT%s", accessToken)
+	logger.PrintIfVerbose(accessToken)
 	return accessToken, nil
 }
 
