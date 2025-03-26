@@ -57,6 +57,7 @@ jobs:
           CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
+          CX_ORIGIN: "cli-tests"
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128

@@ -12,6 +12,7 @@ var EnvVarsBinds = []struct {
 	{AstAPIKey, AstAPIKeyEnv, ""},
 	{IgnoreProxyKey, IgnoreProxyEnv, ""},
 	{AgentNameKey, AgentNameEnv, "ASTCLI"},
+	{OriginKey, OriginEnv, "CLI"},
 	{CodeBashingPathKey, ScansPathEnv, "api/codebashing/lessons"},
 	{CustomStatesAPIPathKey, CustomStatesAPIPathEnv, "api/custom-states"},
 	{ScansPathKey, ScansPathEnv, "api/scans"},
@@ -72,4 +73,5 @@ var EnvVarsBinds = []struct {
 	{AiProxyCheckmarxAiRouteKey, AiProxyCheckmarxAiRouteEnv, "api/ai-proxy/redirect/azure"},
 	{ASCAPortKey, ASCAPortEnv, ""},
 	{ScsRepoTokenKey, ScsRepoTokenEnv, ""},
+	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results"},
 }

@@ -1535,3 +1535,11 @@ func TestFilterScsResultsByAgent_ShouldExcludeSCSAndContainers(t *testing.T) {
 	assert.Assert(t, hasSAST, "Expected SAST type to be included in Jetbrains agent results")
 	assert.Equal(t, len(filteredResults.Results), 3, "Expected only 3 results after filtering for Jetbrains agent")
 }
+
+func TestRiskManagementHelp(t *testing.T) {
+	execCmdNilAssertion(t, "help", "results", "risk-management")
+}
+
+func TestRiskManagement(t *testing.T) {
+	execCmdNilAssertion(t, "results", "risk-management")
+}

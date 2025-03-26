@@ -58,6 +58,7 @@ const (
 	additionalParamsError                  = "flag needs an argument: --additional-params"
 	scanCommand                            = "scan"
 	kicsRealtimeCommand                    = "kics-realtime"
+	kicsPresetIDIncorrectValueError        = "Invalid value for --iac-security-preset-id flag. Must be a valid UUID."
 	InvalidEngineMessage                   = "Please verify if engine is installed"
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
@@ -542,6 +543,18 @@ func TestScanWorkFlowWithKicsPlatformsDeprecated(t *testing.T) {
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
+}
+
+func TestScanWorkFlowWithKicsPresetID(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "kicsPresetIDMock", "-b", "dummy_branch", "-s", dummyRepo, "--iac-security-preset-id", "4801dea3-b365-4934-a810-ebf481f646c3"}
+	err := executeTestCommand(createASTTestCommand(), baseArgs...)
+	assert.NilError(t, err)
+}
+
+func TestScanWorkFlowWithInvalidKicsPresetID(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "kicsPresetIDMock", "-b", "dummy_branch", "-s", dummyRepo, "--iac-security-preset-id", "invalid uuid"}
+	err := executeTestCommand(createASTTestCommand(), baseArgs...)
+	assert.Error(t, err, kicsPresetIDIncorrectValueError, err.Error())
 }
 
 func TestScanWorkFlowWithScaFilter(t *testing.T) {
@@ -1977,4 +1990,23 @@ func TestValidateScanTypes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
+	mock.FFErr = nil
+
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+	assert.Assert(t, result, "expected result to be true")
+}
+
+func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
+	mock.FFErr = errors.New("something went wrong while fetching ff")
+
+	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+
+	assert.Assert(t, !result, "expected result to be false")
 }
