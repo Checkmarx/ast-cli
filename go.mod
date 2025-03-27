@@ -6,7 +6,7 @@ require (
 	github.com/Checkmarx/containers-resolver v1.0.6-0.20250130184119-42af4015f216
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
-	github.com/Checkmarx/secret-detection v0.0.3-0.20250326164603-8624624d698c
+	github.com/Checkmarx/secret-detection v0.0.3-0.20250327122518-1e6c4edfce56
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/gofrs/flock v0.12.1
@@ -28,7 +28,6 @@ require (
 	golang.org/x/text v0.22.0
 	google.golang.org/grpc v1.67.3
 	google.golang.org/protobuf v1.36.3
-	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
 )
@@ -286,6 +285,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm/v3 v3.17.0 // indirect
 	k8s.io/api v0.32.0 // indirect
 	k8s.io/apiextensions-apiserver v0.32.0 // indirect
