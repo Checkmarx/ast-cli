@@ -28,7 +28,6 @@ var (
 		params.AccessKeyIDFlag,
 		params.AccessKeySecretFlag,
 		params.InsecureFlag,
-		params.ProfileFlag,
 		params.RetryFlag,
 		params.RetryDelayFlag,
 		params.TenantFlag,
