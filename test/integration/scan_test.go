@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -318,6 +319,54 @@ func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfull
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
+}
+
+func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+
+	// The createPreset(...) function requires these feature flags to be ON.
+	// If ast-cli runs with these flags OFF, the KICS engine in CxOne will ignore
+	// the submitted preset and perform a full scan instead.
+	// Since this test is only meaningful when the flags are ON, it is skipped otherwise.
+	if !isFFEnabled(t, "NEW_PRESET_MANAGEMENT_ENABLED") || !isFFEnabled(t, "KICS_PRESETS_MANAGER_ENABLED") {
+		t.Skip("Preset FFs are not enabled... Skipping test")
+	}
+
+	requestData := CreatePresetRequest{
+		Name: fmt.Sprintf("ast-cli-preset-%s", time.Now().Format("060102_15_04_05")),
+		Queries: []PresetQueries{
+			{
+				FamilyName: "Dockerfile",
+				QueryIDs:   []string{"67fd0c4a-68cf-46d7-8c41-bc9fba7e40ae"},
+			},
+		},
+	}
+	presetID, err := createPreset("iac", requestData)
+	assert.NilError(t, err)
+	defer deletePreset("iac", presetID)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), "data/iac-insecure.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.IacsPresetIDFlag), presetID,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
+	allScansModel, _, err := scanWrapper.Get(map[string]string{"project-id": projectID})
+	asserts.Nil(t, err)
+
+	createdScan := allScansModel.Scans[0]
+	assert.Equal(t, createdScan.ID, scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig := createdScan.Metadata.Configs[0]
+	assert.Equal(t, createdScanConfig.Type, params.KicsType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value["presetId"], presetID, "IaC scan is not using the created presetID")
 }
 
 func TestScanCreate_FolderWithSymbolicLinkWithRelativePath_CreateScanSuccessfully(t *testing.T) {
@@ -636,7 +685,7 @@ func TestScanCreateWithThresholdShouldBlock(t *testing.T) {
 		flag(params.SourcesFlag), Zip,
 		flag(params.ScanTypes), params.SastType,
 		flag(params.PresetName), "Checkmarx Default",
-		flag(params.Threshold), "sast-high=1;sast-low=1;",
+		flag(params.Threshold), "sast-critical=1;sast-high=1;sast-low=1;",
 		flag(params.KicsFilterFlag), "!Dockerfile",
 		flag(params.BranchFlag), "dummy_branch",
 	}
@@ -787,7 +836,7 @@ func TestScanTimeout(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), SlowRepo,
-		flag(params.ScanTypes), "sast",
+		flag(params.ScanTypes), "sca",
 		flag(params.BranchFlag), "develop",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTimeoutFlag), "1",
@@ -1937,7 +1986,7 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 func TestScanListWithBigLimit(t *testing.T) {
 	args := []string{
 		"scan", "list",
-		flag(params.FilterFlag), "limit=10000",
+		flag(params.FilterFlag), "limit=5000",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -1991,6 +2040,7 @@ func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.
 		assert.Equal(t, scan.Branch, "dummy_branch", "Branch name should be dummy_branch")
 	}
 }
+
 func listScanByProjectID(t *testing.T, projectID string) []wrappers.ScanResponseModel {
 	scanFilter := fmt.Sprintf("project-id=%s", projectID)
 	outputBuffer := executeCmdNilAssertion(
@@ -2034,4 +2084,218 @@ func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithD
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
+}
+
+func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/empty-folder.zip",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, _ := executeCreateScan(t, args)
+	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
+	wrappers.CachedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4"
+	wrappers.CachedAccessTime = time.Now()
+	viper.Set(params.TokenExpirySecondsKey, 300)
+	scan, _, err := scanWrapper.GetByID(scanID)
+	asserts.Nil(t, err)
+	assert.Assert(t, scan != nil, "Scan should not be nil")
+	assert.Equal(t, scan.ID, scanID, "Scan ID should be equal")
+}
+
+func TestScanCreate_WithContainerFilterFlags_CreatingScanSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!*.log",
+		flag(params.ContainersExcludeNonFinalStagesFlag),
+		flag(params.ContainersImageTagFilterFlag), "*dev",
+		flag(params.ContainersPackageFilterFlag), "^internal-.*",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersFilesFilterKey], "!*.log", "File/Folder filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersNonFinalStagesFilterKey], "true", "Exclude non final stages should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersImagesFilterKey], "*dev", "Image tag filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
+
+}
+
+func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLatestScanConfigurationSuccessfully(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	projectName := GenerateRandomProjectNameForScan()
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!*.log",
+		flag(params.ContainersImageTagFilterFlag), "*dev",
+		flag(params.ContainersPackageFilterFlag), "^internal-.*",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+
+	_, projectID := executeCreateScan(t, args)
+
+	args = []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), ".",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainersFileFolderFilterFlag), "!dockerfile",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+		flag(params.ScanResubmit),
+	}
+
+	resubmitScanID, resubmitProjectID := executeCreateScan(t, args)
+
+	assert.Equal(t, projectID, resubmitProjectID, "Project ID should be equal")
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = resubmitProjectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == resubmitScanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersFilesFilterKey], "!dockerfile", "File/Folder filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersNonFinalStagesFilterKey], nil, "Exclude non final stages should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersImagesFilterKey], "*dev", "Image tag filter should be equal")
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
+}
+
+func TestCreateScanWithAsyncFlag_TryShowResults_PolicyNotEvaluated(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "sast,iac-security,sca",
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, _ := executeCreateScan(t, args)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatSummaryConsole,
+		flag(params.DebugFlag),
+	)
+	log.SetOutput(os.Stderr)
+	assert.Assert(t, strings.Contains(buf.String(), "Policy violations aren't returned in the pipeline for scans run in async mode."), "policy shouldn't evaluate in running scan")
+}
+
+type PresetQueries struct {
+	FamilyName string   `json:"familyName"`
+	QueryIDs   []string `json:"queryIds"`
+}
+
+type CreatePresetRequest struct {
+	Name    string          `json:"name"`
+	Queries []PresetQueries `json:"queries"`
+}
+
+type CreatePresetResponse struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+}
+
+func createPreset(engine string, body CreatePresetRequest) (string, error) {
+	jsonData, err := json.Marshal(body)
+	if err != nil {
+		return "", errors.Wrap(err, "Error marshalling JSON")
+	}
+
+	resp, err := wrappers.SendHTTPRequest(
+		http.MethodPost,
+		fmt.Sprintf("api/preset-manager/%s/presets", engine),
+		bytes.NewBuffer(jsonData), true, 20,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "Request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	var responseData CreatePresetResponse
+	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+		return "", errors.Wrap(err, "Error decoding response")
+	}
+
+	return responseData.ID, err
+}
+
+func deletePreset(engine, presetID string) error {
+	resp, err := wrappers.SendHTTPRequest(
+		http.MethodDelete,
+		fmt.Sprintf("api/preset-manager/%s/presets/%s", engine, presetID),
+		http.NoBody, true, 20,
+	)
+	if err != nil {
+		return errors.Wrap(err, "Request failed")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	return nil
 }

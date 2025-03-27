@@ -132,6 +132,7 @@ type SastConfig struct {
 type KicsConfig struct {
 	Filter    string `json:"filter,omitempty"`
 	Platforms string `json:"platforms,omitempty"`
+	PresetID  string `json:"presetId,omitempty"`
 }
 
 type ScaConfig struct {
@@ -142,6 +143,10 @@ type ScaConfig struct {
 	EnableContainersScan  bool   `json:"enableContainersScan,omitempty"`
 }
 type ContainerConfig struct {
+	FilesFilter          string `json:"filesFilter,omitempty"`
+	ImagesFilter         string `json:"imagesFilter,omitempty"`
+	PackagesFilter       string `json:"packagesFilter,omitempty"`
+	NonFinalStagesFilter string `json:"nonFinalStagesFilter,omitempty"`
 }
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`

@@ -152,3 +152,66 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 	_ = unmarshall(t, responseKics, &kicsPredicate, "Reading predicate should pass")
 	assert.Assert(t, kicsPredicate.TotalCount == 0, "Predicate with invalid values should have 0 as the result.")
 }
+
+func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
+	t.Skip("Skipping this test temporarily until the API becomes available in the DEU environment.")
+	fmt.Println("Step 1: Testing the command 'triage show' with predefined values.")
+	// After the api/custom-states becomes available in the DEU environment, replace the hardcoded value with getRootScan(t) and create "state2" as a custom state in DEU.
+	projectID := "a2d52ac9-d007-4d95-a65e-bbe61c3451a4"
+	similarityID := "-1213859962"
+	scanType := "sast"
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Fetching predicates should work.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	predicateResult := []wrappers.Predicate{}
+	fmt.Println(outputBuffer)
+	_ = unmarshall(t, outputBuffer, &predicateResult, "Reading results should pass")
+	assert.Assert(t, len(predicateResult) >= 1, "Should have at least 1 predicate as the result.")
+
+	fmt.Println("Step 2: Updating the predicate state.")
+	newState := "state2"
+	newSeverity := "HIGH"
+	comment := ""
+
+	err, _ := executeCommand(
+		t, "triage", "update",
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.StateFlag), newState,
+		flag(params.SeverityFlag), newSeverity,
+		flag(params.CommentFlag), comment,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	assert.NilError(t, err, "Updating the predicate should pass.")
+
+	fmt.Println("Step 3: Fetching predicates again to validate update.")
+	outputBufferAfterUpdate := executeCmdNilAssertion(
+		t, "Fetching predicates after update should work.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.ScanTypeFlag), scanType,
+	)
+
+	updatedPredicateResult := []wrappers.Predicate{}
+	fmt.Println(outputBufferAfterUpdate)
+	_ = unmarshall(t, outputBufferAfterUpdate, &updatedPredicateResult, "Reading updated results should pass")
+	assert.Assert(t, len(updatedPredicateResult) >= 1, "Should have at least 1 predicate after update.")
+
+	found := false
+	for _, pred := range updatedPredicateResult {
+		if pred.SimilarityID == similarityID && pred.State == newState {
+			found = true
+			break
+		}
+	}
+
+	assert.Assert(t, found, "Updated predicate should have state set to state2")
+}

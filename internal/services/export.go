@@ -17,7 +17,7 @@ const (
 	delayValueForReport = 3
 	pendingStatus       = "Pending"
 	completedStatus     = "Completed"
-	pollingTimeout      = 5 // minutes
+	pollingTimeout      = 15 // minutes
 )
 
 func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string, scaHideDevAndTestDep bool) (*wrappers.ScaPackageCollectionExport, error) {
@@ -112,6 +112,9 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 	logger.PrintIfVerbose("Polling for export report generation completion")
 
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
+
+		logger.Printf("SCA Export Status is: %s", pollingResp.ExportStatus)
+
 		select {
 		case <-timeout:
 			return nil, errors.Errorf("export generating failed - Timed out after 5 minutes")

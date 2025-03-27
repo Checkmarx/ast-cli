@@ -6,10 +6,12 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
+const CustomStatesFeatureFlag = "CUSTOM_STATES_ENABLED"
 const tenantIDClaimKey = "tenant_id"
 const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const CVSSV3Enabled = "CVSS_V3_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
+const SastCustomStateEnabled = "SAST_CUSTOM_STATES_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const SCSEngineCLIEnabled = "NEW_2MS_SCORECARD_RESULTS_CLI_ENABLED"
 const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
@@ -28,6 +30,15 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    MinioEnabled,
 				Default: true,
+			},
+		},
+	},
+	{
+		CommandName: "cx triage get-states",
+		FeatureFlags: []FlagBase{
+			{
+				Name:    CustomStatesFeatureFlag,
+				Default: false,
 			},
 		},
 	},
@@ -57,6 +68,10 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		FeatureFlags: []FlagBase{
 			{
 				Name:    CVSSV3Enabled,
+				Default: false,
+			},
+			{
+				Name:    SastCustomStateEnabled,
 				Default: false,
 			},
 		},

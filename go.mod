@@ -6,7 +6,7 @@ require (
 	github.com/Checkmarx/containers-resolver v1.0.6-0.20250130184119-42af4015f216
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
-	github.com/Checkmarx/secret-detection v0.0.3-0.20250327122518-1e6c4edfce56
+	github.com/Checkmarx/secret-detection v0.0.3-0.20250227154803-c62fe8ce1523
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/gofrs/flock v0.12.1
@@ -82,7 +82,7 @@ require (
 	github.com/chai2010/gettext-go v1.0.3 // indirect
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.4.5 // indirect
-	github.com/checkmarx/2ms v1.4.1-0.20250321154831-0c1d88dd59a4 // indirect
+	github.com/checkmarx/2ms v1.4.1-0.20250227102300-e162a8629579 // indirect
 	github.com/cloudflare/circl v1.3.8 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/containerd v1.7.24 // indirect

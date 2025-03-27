@@ -66,6 +66,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummmaryPath := viper.GetString(params.ScanSummaryPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	riskManagement := viper.GetString(params.RiskManagementPathKey)
 	scsScanOverviewPath := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
@@ -90,6 +91,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
+	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -97,6 +99,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummmaryPath)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverviewPath)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	logsWrapper := wrappers.NewLogsWrapper(logs)
@@ -125,11 +128,13 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,
+		customStatesWrapper,
 		codeBashingWrapper,
 		uploadsWrapper,
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		riskManagementWrapper,
 		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,

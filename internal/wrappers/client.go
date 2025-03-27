@@ -412,6 +412,7 @@ func GetAccessToken() (string, error) {
 	tokenExpirySeconds := viper.GetInt(commonParams.TokenExpirySecondsKey)
 
 	accessToken := getClientCredentialsFromCache(tokenExpirySeconds)
+
 	if accessToken == "" {
 		logger.PrintIfVerbose("Fetching API access token.")
 		accessToken, err = configureClientCredentialsAndGetNewToken()

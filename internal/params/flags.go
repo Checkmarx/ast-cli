@@ -2,7 +2,9 @@ package params
 
 // Flags
 const (
+	AllStatesFlag                = "all"
 	AgentFlag                    = "agent"
+	OriginFlag                   = "origin"
 	AgentFlagUsage               = "Scan origin name"
 	ApplicationName              = "application-name"
 	DefaultAgent                 = "ASTCLI"
@@ -75,8 +77,6 @@ const (
 	UsernameSh                   = "u"
 	PasswordFlag                 = "password"
 	PasswordSh                   = "p"
-	ProfileFlag                  = "profile"
-	ProfileFlagUsage             = "The default configuration profile"
 	Help                         = "help"
 	TargetFlag                   = "output-name"
 	TargetPathFlag               = "output-path"
@@ -113,6 +113,7 @@ const (
 	SimilarityIDFlag             = "similarity-id"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
+	CustomStateIDFlag            = "state-id"
 	CommentFlag                  = "comment"
 	LanguageFlag                 = "language"
 	VulnerabilityTypeFlag        = "vulnerability-type"
@@ -137,6 +138,8 @@ const (
 	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
 	IacsPlatformsFlag            = "iac-security-platforms"
 	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
+	IacsPresetIDFlag             = "iac-security-preset-id"
+	IacsPresetIDUsage            = "The ID of the IaC Security Preset to use (must be a valid UUID)."
 	ApikeyOverrideFlag           = "apikey-override"
 	ExploitablePathFlag          = "sca-exploitable-path"
 	LastSastScanTime             = "sca-last-sast-scan-time"
@@ -150,6 +153,7 @@ const (
 	JetbrainsAgent               = "Jetbrains"
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
+	LimitFlag                    = "limit"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
@@ -207,6 +211,12 @@ const (
 	// SCS (Github)
 	SCSRepoTokenFlag = "scs-repo-token"
 	SCSRepoURLFlag   = "scs-repo-url"
+
+	// Containers Config Flags
+	ContainersFileFolderFilterFlag      = "containers-file-folder-filter"
+	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
+	ContainersPackageFilterFlag         = "containers-package-filter"
+	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
 )
 
 // Parameter values
@@ -275,3 +285,14 @@ const ScaAgent = "SCA_AGENT"
 var (
 	Version = "dev"
 )
+
+// Custom states
+const IncludeDeletedQueryParam = "include-deleted"
+const True = "true"
+
+// System States
+const ToVerify = "TO_VERIFY"
+const NotExploitable = "NOT_EXPLOITABLE"
+const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
+const CONFIRMED = "CONFIRMED"
+const URGENT = "URGENT"

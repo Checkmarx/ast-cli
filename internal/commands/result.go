@@ -22,6 +22,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -179,6 +180,7 @@ func NewResultsCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	riskManagementWrapper wrappers.RiskManagementWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -199,8 +201,9 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
+	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper)
 	resultCmd.AddCommand(
-		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand,
+		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand, riskManagementSubCommand,
 	)
 	return resultCmd
 }
@@ -222,6 +225,26 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	exitCodeCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
 
 	return exitCodeCmd
+}
+func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper) *cobra.Command {
+	riskManagementCmd := &cobra.Command{
+		Use:   "risk-management",
+		Short: "Show risk-management results of a project",
+		Long:  "The risk-management command displays risk management results for a specific project in Checkmarx One",
+		Example: heredoc.Doc(
+			`
+			$ cx results risk-management --project-id <project Id> --limit <limit> (1-50, default: 50)
+		`,
+		),
+		RunE: runRiskManagementCommand(riskManagement),
+	}
+
+	riskManagementCmd.PersistentFlags().String(commonParams.ProjectIDFlag, "", "Project ID")
+	riskManagementCmd.PersistentFlags().Int(commonParams.LimitFlag, -1, "Limit")
+
+	addFormatFlag(riskManagementCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
+
+	return riskManagementCmd
 }
 
 func resultShowSubCommand(
@@ -325,6 +348,32 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 
 		return printer.Print(cmd.OutOrStdout(), results, printer.FormatIndentedJSON)
 	}
+}
+
+func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
+		limit, _ := cmd.Flags().GetInt(commonParams.LimitFlag)
+
+		results, err := getRiskManagementResults(riskManagement, projectID)
+		if err != nil {
+			return err
+		}
+		results.Results = utils.LimitSlice(results.Results, limit)
+		err = printByFormat(cmd, results)
+		return err
+	}
+}
+
+func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID string) (*wrappers.ASPMResult, error) {
+	ASPMResult, errorModel, err := riskManagement.GetTopVulnerabilitiesByProjectID(projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	}
+	return ASPMResult, nil
 }
 
 func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID, scanTypesFlagValue string) ([]ScannerResponse, error) {
@@ -986,9 +1035,14 @@ func runGetResultCommand(
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingScan, errorModel.Code, errorModel.Message)
 		}
 
-		policyResponseModel, err := services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
-		if err != nil {
-			return err
+		var policyResponseModel *wrappers.PolicyResponseModel
+		if !isScanPending(string(scan.Status)) {
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.PrintIfVerbose("Policy violations aren't returned in the pipeline for scans run in async mode.")
 		}
 
 		if sastRedundancy {
@@ -2212,11 +2266,15 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.Line
-	auxTextRange.StartColumn = results.Column
-	auxTextRange.EndColumn = results.Column + results.Length
+	startColumn := getSastStartColumn(results.Column)
+
+	auxTextRange.StartColumn = startColumn
+	auxTextRange.EndColumn = startColumn + results.Length
+
 	if auxTextRange.StartColumn == auxTextRange.EndColumn {
 		auxTextRange.EndColumn++
 	}
+
 	return auxTextRange
 }
 
@@ -2236,22 +2294,33 @@ func findRule(ruleIds map[interface{}]bool, result *wrappers.ScanResult) *wrappe
 	return nil
 }
 
+func getSastStartColumn(column uint) uint {
+	if column == 0 {
+		return 0
+	}
+	return column - 1
+}
+
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
+	caser := cases.Title(language.English)
+
 	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
-			strings.Title(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
+			caser.String(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
 			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
 	}
 
 	if result.ScanResultData.RuleID != nil {
-		return fmt.Sprintf("%s (%s)", *result.ScanResultData.RuleID, result.Type),
-			result.ScanResultData.RuleName,
-			result.ScanResultData.RuleName
+		ruleName = strings.ReplaceAll(result.ScanResultData.RuleName, "_", " ")
+		return fmt.Sprintf("%s - %s (%s)", ruleName, *result.ScanResultData.RuleID, result.Type),
+			ruleName,
+			ruleName
 	}
 
-	return fmt.Sprintf("%v (%s)", result.ScanResultData.QueryID, result.Type),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " "),
-		strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	ruleName = strings.ReplaceAll(result.ScanResultData.QueryName, "_", " ")
+	return fmt.Sprintf("%v - %s (%s)", ruleName, result.ScanResultData.QueryID, result.Type),
+		ruleName,
+		ruleName
 }
 
 func findFullDescription(result *wrappers.ScanResult) wrappers.SarifDescription {
