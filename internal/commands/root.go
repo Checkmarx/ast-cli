@@ -89,7 +89,6 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TimeoutFlag, "", params.TimeoutFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseURIFlag, params.BaseURI, params.BaseURIFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseAuthURIFlag, params.BaseIAMURI, params.BaseAuthURIFlagUsage)
-	rootCmd.PersistentFlags().String(params.ProfileFlag, params.Profile, params.ProfileFlagUsage)
 	rootCmd.PersistentFlags().String(params.AstAPIKeyFlag, "", params.AstAPIKeyUsage)
 	rootCmd.PersistentFlags().String(params.AgentFlag, params.DefaultAgent, params.AgentFlagUsage)
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)

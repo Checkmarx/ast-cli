@@ -77,8 +77,6 @@ const (
 	UsernameSh                   = "u"
 	PasswordFlag                 = "password"
 	PasswordSh                   = "p"
-	ProfileFlag                  = "profile"
-	ProfileFlagUsage             = "The default configuration profile"
 	Help                         = "help"
 	TargetFlag                   = "output-name"
 	TargetPathFlag               = "output-path"
