@@ -2,6 +2,8 @@ module github.com/checkmarx/ast-cli
 
 go 1.23.6
 
+toolchain go1.24.1
+
 require (
 	github.com/Checkmarx/containers-resolver v1.0.6-0.20250130184119-42af4015f216
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
@@ -26,9 +28,8 @@ require (
 	golang.org/x/crypto v0.35.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/text v0.22.0
-	google.golang.org/grpc v1.67.3
-	google.golang.org/protobuf v1.36.3
-	gopkg.in/yaml.v2 v2.4.0
+	google.golang.org/grpc v1.71.0
+	google.golang.org/protobuf v1.36.4
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
 )
@@ -267,9 +268,9 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0 // indirect
-	go.opentelemetry.io/otel v1.33.0 // indirect
-	go.opentelemetry.io/otel/metric v1.33.0 // indirect
-	go.opentelemetry.io/otel/trace v1.33.0 // indirect
+	go.opentelemetry.io/otel v1.34.0 // indirect
+	go.opentelemetry.io/otel/metric v1.34.0 // indirect
+	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.22.0 // indirect
@@ -281,11 +282,12 @@ require (
 	golang.org/x/tools v0.29.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm/v3 v3.17.0 // indirect
 	k8s.io/api v0.32.0 // indirect
 	k8s.io/apiextensions-apiserver v0.32.0 // indirect
