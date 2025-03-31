@@ -187,3 +187,21 @@ MOCK CONTENT`
 		assert.Contains(t, output.String(), "No secrets detected")
 	})
 }
+
+func setupTempDir(t *testing.T) (tmpDir string, cleanup func()) {
+	origWD, err := os.Getwd()
+	assert.NoError(t, err)
+
+	// Create a temporary directory for the test
+	tmpDir = t.TempDir()
+
+	// Change working directory to the temporary directory
+	err = os.Chdir(tmpDir)
+	assert.NoError(t, err)
+
+	// Return a cleanup function to restore the original working directory
+	cleanup = func() {
+		assert.NoError(t, os.Chdir(origWD))
+	}
+	return
+}
