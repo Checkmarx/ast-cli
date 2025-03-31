@@ -45,6 +45,7 @@ func createASTTestCommand() *cobra.Command {
 	projectsMockWrapper := &mock.ProjectsMockWrapper{}
 	resultsMockWrapper := &mock.ResultsMockWrapper{}
 	risksOverviewMockWrapper := &mock.RisksOverviewMockWrapper{}
+	riskManagementMockWrapper := &mock.RiskManagementMockWrapper{}
 	scsScanOverviewMockWrapper := &mock.ScanOverviewMockWrapper{}
 	authWrapper := &mock.AuthMockWrapper{}
 	logsWrapper := &mock.LogsMockWrapper{}
@@ -79,6 +80,7 @@ func createASTTestCommand() *cobra.Command {
 		projectsMockWrapper,
 		resultsMockWrapper,
 		risksOverviewMockWrapper,
+		riskManagementMockWrapper,
 		scsScanOverviewMockWrapper,
 		authWrapper,
 		logsWrapper,
@@ -204,6 +206,7 @@ func assertError(t *testing.T, err error, expectedMessage string) {
 func clearFlags() {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{}
 	mock.Flag = wrappers.FeatureFlagResponseModel{}
+	mock.FFErr = nil
 	wrappers.ClearCache()
 }
 

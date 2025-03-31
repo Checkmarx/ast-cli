@@ -32,6 +32,7 @@ func NewAstCLI(
 	projectsWrapper wrappers.ProjectsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
+	riskManagementWrapper wrappers.RiskManagementWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
@@ -88,7 +89,6 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TimeoutFlag, "", params.TimeoutFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseURIFlag, params.BaseURI, params.BaseURIFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseAuthURIFlag, params.BaseIAMURI, params.BaseAuthURIFlagUsage)
-	rootCmd.PersistentFlags().String(params.ProfileFlag, params.Profile, params.ProfileFlagUsage)
 	rootCmd.PersistentFlags().String(params.AstAPIKeyFlag, "", params.AstAPIKeyUsage)
 	rootCmd.PersistentFlags().String(params.AgentFlag, params.DefaultAgent, params.AgentFlagUsage)
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
@@ -168,6 +168,7 @@ func NewAstCLI(
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
+		riskManagementWrapper,
 		scsScanOverviewWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
@@ -200,6 +201,7 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper)
 
 	rootCmd.AddCommand(
 		scanCmd,
@@ -211,6 +213,7 @@ func NewAstCLI(
 		utilsCmd,
 		configCmd,
 		chatCmd,
+		hooksCmd,
 	)
 
 	rootCmd.SilenceUsage = true

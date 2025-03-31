@@ -77,8 +77,6 @@ const (
 	UsernameSh                   = "u"
 	PasswordFlag                 = "password"
 	PasswordSh                   = "p"
-	ProfileFlag                  = "profile"
-	ProfileFlagUsage             = "The default configuration profile"
 	Help                         = "help"
 	TargetFlag                   = "output-name"
 	TargetPathFlag               = "output-path"
@@ -140,6 +138,8 @@ const (
 	KicsPlatformsFlagUsage       = "KICS Platform Flag. Use ',' as the delimiter for arrays."
 	IacsPlatformsFlag            = "iac-security-platforms"
 	IacsPlatformsFlagUsage       = "IaC Security Platform Flag"
+	IacsPresetIDFlag             = "iac-security-preset-id"
+	IacsPresetIDUsage            = "The ID of the IaC Security Preset to use (must be a valid UUID)."
 	ApikeyOverrideFlag           = "apikey-override"
 	ExploitablePathFlag          = "sca-exploitable-path"
 	LastSastScanTime             = "sca-last-sast-scan-time"
@@ -153,6 +153,7 @@ const (
 	JetbrainsAgent               = "Jetbrains"
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
+	LimitFlag                    = "limit"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"

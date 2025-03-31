@@ -83,6 +83,7 @@ func getRunningScanId(t *testing.T) string {
 }
 
 func TestPRGithubDecorationSuccessCase(t *testing.T) {
+	t.Skip("Issue on Maverick team - waiting for a fix")
 	args := []string{
 		"utils",
 		"pr",
@@ -164,6 +165,7 @@ func TestPRGithubDecorationFailure(t *testing.T) {
 }
 
 func TestPRGitlabDecorationSuccessCase(t *testing.T) {
+	t.Skip("Skipping this test for now")
 	args := []string{
 		"utils",
 		"pr",

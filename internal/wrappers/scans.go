@@ -132,6 +132,7 @@ type SastConfig struct {
 type KicsConfig struct {
 	Filter    string `json:"filter,omitempty"`
 	Platforms string `json:"platforms,omitempty"`
+	PresetID  string `json:"presetId,omitempty"`
 }
 
 type ScaConfig struct {
