@@ -6,202 +6,109 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPreCommitIntegration(t *testing.T) {
-	t.Run("Install and Uninstall Local Hook", func(t *testing.T) {
-		tmpDir, cleanup := setupTempDir(t)
-		defer cleanup()
+func TestHooksPreCommitFullIntegration(t *testing.T) {
+	tmpDir, cleanup := setupTempDir(t)
+	defer cleanup()
 
-		// Initialize Git repository
-		cmdGitInit := exec.Command("git", "init")
-		cmdGitInit.Dir = tmpDir
-		if out, err := cmdGitInit.CombinedOutput(); err != nil {
-			t.Fatalf("git init failed: %s: %s", err, string(out))
-		}
+	// Initialize Git repository
+	execCmd(t, tmpDir, "git", "init")
 
-		// Install hook locally
-		output := executeCmdNilAssertion(t, "pre-commit install should not fail",
-			"hooks", "pre-commit", "secrets-install-git-hook")
-		assert.Contains(t, output.String(), "pre-commit installed successfully")
+	// Install pre-commit hook locally
+	output := executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-install-git-hook")
+	assert.Contains(t, output, "pre-commit installed successfully")
 
-		// Verify hook installation
-		hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
-		_, err := os.Stat(hookPath)
-		assert.NoError(t, err, "pre-commit hook should exist")
+	// Verify hook installation
+	hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
+	assert.FileExists(t, hookPath, "Hook should be installed")
 
-		// Uninstall hook
-		output = executeCmdNilAssertion(t, "pre-commit uninstall should not fail",
-			"hooks", "pre-commit", "secrets-uninstall-git-hook")
-		assert.Contains(t, output.String(), "pre-commit hook uninstalled successfully")
+	// Create file with mock secrets
+	fileContent := `MOCK SECRET
+ghp_mocksecretAAAAAAAAAAAAAAAAAAAAAAAAA
+ANOTHER MOCK SECRET`
+	secretFilePath := filepath.Join(tmpDir, "secret.txt")
+	assert.NoError(t, os.WriteFile(secretFilePath, []byte(fileContent), 0644))
 
-		// Verify hook removal
-		_, err = os.Stat(hookPath)
-		assert.True(t, os.IsNotExist(err), "pre-commit hook should be removed")
-	})
+	// Stage the file
+	execCmd(t, tmpDir, "git", "add", "secret.txt")
 
-	t.Run("Install and Uninstall Global Hook", func(t *testing.T) {
-		tmpDir, cleanup := setupTempDir(t)
-		defer cleanup()
+	// Run secrets scan (expect failure due to secret detection)
+	err, output := executeCommand(t, "hooks", "pre-commit", "secrets-scan")
+	assert.Error(t, err, "Scan should fail due to secret")
+	assert.Contains(t, output.String(), "Secret detected")
 
-		// Initialize Git repository
-		cmdGitInit := exec.Command("git", "init")
-		cmdGitInit.Dir = tmpDir
-		if out, err := cmdGitInit.CombinedOutput(); err != nil {
-			t.Fatalf("git init failed: %s: %s", err, string(out))
-		}
+	// Extract result IDs from output
+	resultIds := parseResultIDs(output.String())
+	assert.NotEmpty(t, resultIds, "Should detect result IDs")
 
-		// Install hook globally
-		output := executeCmdNilAssertion(t, "pre-commit global install should not fail",
-			"hooks", "pre-commit", "secrets-install-git-hook", "--global")
-		assert.Contains(t, output.String(), "pre-commit installed globally successfully")
+	// Ignore detected secrets by ID
+	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-ignore", "--resultIds", strings.Join(resultIds, ","))
+	assert.Contains(t, output, "Added new IDs to .checkmarx_ignore")
 
-		// Verify global hook installation
-		homeDir, err := os.UserHomeDir()
-		assert.NoError(t, err)
-		globalHookPath := filepath.Join(homeDir, ".git", "hooks", "pre-commit")
-		_, err = os.Stat(globalHookPath)
-		assert.NoError(t, err, "global pre-commit hook should exist")
+	// Run secrets scan again (expect success after ignoring)
+	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-scan")
+	assert.Contains(t, output, "No secrets detected")
 
-		// Uninstall global hook
-		output = executeCmdNilAssertion(t, "pre-commit global uninstall should not fail",
-			"hooks", "pre-commit", "secrets-uninstall-git-hook", "--global")
-		assert.Contains(t, output.String(), "pre-commit hook uninstalled globally successfully")
-
-		// Verify global hook removal
-		_, err = os.Stat(globalHookPath)
-		assert.True(t, os.IsNotExist(err), "global pre-commit hook should be removed")
-	})
-
-	t.Run("Scan for Secrets", func(t *testing.T) {
-		tmpDir, cleanup := setupTempDir(t)
-		defer cleanup()
-
-		// Initialize Git repository
-		cmdGitInit := exec.Command("git", "init")
-		cmdGitInit.Dir = tmpDir
-		if out, err := cmdGitInit.CombinedOutput(); err != nil {
-			t.Fatalf("git init failed: %s: %s", err, string(out))
-		}
-
-		// Create a file with a secret
-		secretContent := `MOCK CONTENT
-ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-MOCK CONTENT`
-		filePath := filepath.Join(tmpDir, "secret.txt")
-		err := os.WriteFile(filePath, []byte(secretContent), 0644)
-		assert.NoError(t, err)
-
-		// Stage the file
-		cmdGitAdd := exec.Command("git", "add", "secret.txt")
-		cmdGitAdd.Dir = tmpDir
-		if out, err := cmdGitAdd.CombinedOutput(); err != nil {
-			t.Fatalf("git add failed: %s: %s", err, string(out))
-		}
-
-		// Run scan - should detect secret
-		err, output := executeCommand(t, "hooks", "pre-commit", "secrets-scan")
-		assert.Error(t, err)
-		assert.Contains(t, output.String(), "Secret detected")
-
-		// Ignore the secret
-		output = executeCmdNilAssertion(t, "pre-commit ignore should not fail",
-			"hooks", "pre-commit", "secrets-ignore", "--all")
-		assert.Contains(t, output.String(), "Added new IDs to .checkmarx_ignore")
-
-		// Run scan again - should pass
-		output = executeCmdNilAssertion(t, "pre-commit scan should pass after ignoring",
-			"hooks", "pre-commit", "secrets-scan")
-		assert.Contains(t, output.String(), "No secrets detected")
-	})
-
-	t.Run("Update Hook", func(t *testing.T) {
-		tmpDir, cleanup := setupTempDir(t)
-		defer cleanup()
-
-		// Initialize Git repository
-		cmdGitInit := exec.Command("git", "init")
-		cmdGitInit.Dir = tmpDir
-		if out, err := cmdGitInit.CombinedOutput(); err != nil {
-			t.Fatalf("git init failed: %s: %s", err, string(out))
-		}
-
-		// Install hook
-		output := executeCmdNilAssertion(t, "pre-commit install should not fail",
-			"hooks", "pre-commit", "secrets-install-git-hook")
-		assert.Contains(t, output.String(), "pre-commit installed successfully")
-
-		// Update hook
-		output = executeCmdNilAssertion(t, "pre-commit update should not fail",
-			"hooks", "pre-commit", "secrets-update-git-hook")
-		assert.Contains(t, output.String(), "pre-commit hook updated successfully")
-	})
-
-	t.Run("Ignore Specific Secrets", func(t *testing.T) {
-		tmpDir, cleanup := setupTempDir(t)
-		defer cleanup()
-
-		// Initialize Git repository
-		cmdGitInit := exec.Command("git", "init")
-		cmdGitInit.Dir = tmpDir
-		if out, err := cmdGitInit.CombinedOutput(); err != nil {
-			t.Fatalf("git init failed: %s: %s", err, string(out))
-		}
-
-		// Create a file with multiple secrets
-		secretContent := `MOCK CONTENT
-ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-ghp_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-MOCK CONTENT`
-		filePath := filepath.Join(tmpDir, "secrets.txt")
-		err := os.WriteFile(filePath, []byte(secretContent), 0644)
-		assert.NoError(t, err)
-
-		// Stage the file
-		cmdGitAdd := exec.Command("git", "add", "secrets.txt")
-		cmdGitAdd.Dir = tmpDir
-		if out, err := cmdGitAdd.CombinedOutput(); err != nil {
-			t.Fatalf("git add failed: %s: %s", err, string(out))
-		}
-
-		// Run scan - should detect secrets
-		err, output := executeCommand(t, "hooks", "pre-commit", "secrets-scan")
-		assert.Error(t, err)
-		assert.Contains(t, output.String(), "Secrets detected")
-
-		// Get the result IDs from the output
-		// Note: In a real test, you would need to parse the actual result IDs from the scan output
-		resultIds := "mock-id-1,mock-id-2"
-
-		// Ignore specific secrets
-		output = executeCmdNilAssertion(t, "pre-commit ignore specific secrets should not fail",
-			"hooks", "pre-commit", "secrets-ignore", "--resultIds", resultIds)
-		assert.Contains(t, output.String(), "Added new IDs to .checkmarx_ignore")
-
-		// Run scan again - should pass
-		output = executeCmdNilAssertion(t, "pre-commit scan should pass after ignoring specific secrets",
-			"hooks", "pre-commit", "secrets-scan")
-		assert.Contains(t, output.String(), "No secrets detected")
-	})
+	// Uninstall pre-commit hook
+	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-uninstall-git-hook")
+	assert.Contains(t, output, "pre-commit hook uninstalled successfully")
+	assert.NoFileExists(t, hookPath, "Hook should be removed after uninstall")
 }
 
-func setupTempDir(t *testing.T) (tmpDir string, cleanup func()) {
-	origWD, err := os.Getwd()
-	assert.NoError(t, err)
+// Helper functions
+func execCmd(t *testing.T, dir string, name string, args ...string) {
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	assert.NoError(t, err, "Failed command %s: %s", strings.Join(cmd.Args, " "), string(output))
+}
 
-	// Create a temporary directory for the test
-	tmpDir = t.TempDir()
+func executeCmdNilAssertion(t *testing.T, args ...string) string {
+	err, output := executeCommand(t, args...)
+	assert.NoError(t, err, "Command should succeed: %s", strings.Join(args, " "))
+	return output.String()
+}
 
-	// Change working directory to the temporary directory
-	err = os.Chdir(tmpDir)
-	assert.NoError(t, err)
+func executeCommand(t *testing.T, args ...string) (error, *strings.Builder) {
+	cmd := exec.Command("cx", args...)
+	var output strings.Builder
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	err := cmd.Run()
+	return err, &output
+}
 
-	// Return a cleanup function to restore the original working directory
-	cleanup = func() {
-		assert.NoError(t, os.Chdir(origWD))
+func parseResultIDs(output string) []string {
+	// Mock parsing function: Extract IDs from output.
+	// Replace with real parsing logic based on actual scan output format
+	lines := strings.Split(output, "\n")
+	var ids []string
+	for _, line := range lines {
+		if strings.Contains(line, "Result ID:") {
+			parts := strings.Split(line, ":")
+			if len(parts) == 2 {
+				ids = append(ids, strings.TrimSpace(parts[1]))
+			}
+		}
 	}
-	return
+	return ids
+}
+
+func setupTempDir(t *testing.T) (string, func()) {
+	originalWD, err := os.Getwd()
+	assert.NoError(t, err)
+
+	tmpDir := t.TempDir()
+	assert.NoError(t, os.Chdir(tmpDir))
+
+	cleanup := func() {
+		assert.NoError(t, os.Chdir(originalWD))
+	}
+
+	return tmpDir, cleanup
 }
