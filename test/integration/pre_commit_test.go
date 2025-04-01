@@ -20,8 +20,8 @@ func TestHooksPreCommitFullIntegration(t *testing.T) {
 	execCmd(t, tmpDir, "git", "init")
 
 	// Install pre-commit hook locally
-	output := executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-install-git-hook")
-	assert.Contains(t, output, "pre-commit installed successfully")
+	output := executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
+	assert.Contains(t, output.String(), "pre-commit installed successfully")
 
 	// Verify hook installation
 	hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
@@ -47,16 +47,16 @@ ANOTHER MOCK SECRET`
 	assert.NotEmpty(t, resultIds, "Should detect result IDs")
 
 	// Ignore detected secrets by ID
-	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-ignore", "--resultIds", strings.Join(resultIds, ","))
-	assert.Contains(t, output, "Added new IDs to .checkmarx_ignore")
+	output = executeCmdNilAssertion(t, "Ignoring detected secrets", "hooks", "pre-commit", "secrets-ignore", "--resultIds", strings.Join(resultIds, ","))
+	assert.Contains(t, output.String(), "Added new IDs to .checkmarx_ignore")
 
 	// Run secrets scan again (expect success after ignoring)
-	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-scan")
-	assert.Contains(t, output, "No secrets detected")
+	output = executeCmdNilAssertion(t, "Running secrets scan after ignoring", "hooks", "pre-commit", "secrets-scan")
+	assert.Contains(t, output.String(), "No secrets detected")
 
 	// Uninstall pre-commit hook
-	output = executeCmdNilAssertion(t, "hooks", "pre-commit", "secrets-uninstall-git-hook")
-	assert.Contains(t, output, "pre-commit hook uninstalled successfully")
+	output = executeCmdNilAssertion(t, "Uninstalling pre-commit hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
+	assert.Contains(t, output.String(), "pre-commit hook uninstalled successfully")
 	assert.NoFileExists(t, hookPath, "Hook should be removed after uninstall")
 }
 
@@ -66,21 +66,6 @@ func execCmd(t *testing.T, dir string, name string, args ...string) {
 	cmd.Dir = dir
 	output, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "Failed command %s: %s", strings.Join(cmd.Args, " "), string(output))
-}
-
-func executeCmdNilAssertion(t *testing.T, args ...string) string {
-	err, output := executeCommand(t, args...)
-	assert.NoError(t, err, "Command should succeed: %s", strings.Join(args, " "))
-	return output.String()
-}
-
-func executeCommand(t *testing.T, args ...string) (error, *strings.Builder) {
-	cmd := exec.Command("cx", args...)
-	var output strings.Builder
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-	err := cmd.Run()
-	return err, &output
 }
 
 func parseResultIDs(output string) []string {
