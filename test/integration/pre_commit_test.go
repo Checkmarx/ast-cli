@@ -42,27 +42,27 @@ func TestHooksPreCommitLicenseValidation(t *testing.T) {
 	// Initialize Git repository
 	execCmd(t, tmpDir, "git", "init")
 
-	//// Test case 1: Without license (should fail)
-	//t.Run("Without Enterprise License", func(t *testing.T) {
-	//	// Set environment to simulate no license
-	//	originalEnv := os.Getenv("CX_LICENSE")
-	//	os.Setenv("CX_LICENSE", "")
-	//	defer os.Setenv("CX_LICENSE", originalEnv)
-	//
-	//	// Try to install pre-commit hook
-	//	args := []string{"hooks", "pre-commit", "secrets-install-git-hook"}
-	//	err, output := executeCommand(t, args...)
-	//
-	//	// Verify error message
-	//	assert.Error(t, err)
-	//	assert.Contains(t, output.String(), "License validation failed")
-	//	assert.Contains(t, output.String(), "Please verify your CxOne License includes Enterprise Secrets")
-	//
-	//	// Verify hook was not installed
-	//	hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
-	//	_, err = os.Stat(hookPath)
-	//	assert.True(t, os.IsNotExist(err), "Hook should not be installed without license")
-	//})
+	// Test case 1: Without license (should fail)
+	t.Run("Without Enterprise License", func(t *testing.T) {
+		// Set environment to simulate no license
+		originalEnv := os.Getenv("CX_LICENSE")
+		os.Setenv("CX_LICENSE", "")
+		defer os.Setenv("CX_LICENSE", originalEnv)
+
+		// Try to install pre-commit hook
+		args := []string{"hooks", "pre-commit", "secrets-install-git-hook"}
+		err, output := executeCommand(t, args...)
+
+		// Verify error message
+		assert.Error(t, err)
+		assert.Contains(t, output.String(), "License validation failed")
+		assert.Contains(t, output.String(), "Please verify your CxOne License includes Enterprise Secrets")
+
+		// Verify hook was not installed
+		hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
+		_, err = os.Stat(hookPath)
+		assert.True(t, os.IsNotExist(err), "Hook should not be installed without license")
+	})
 
 	// Test case 2: With license (should succeed)
 	t.Run("With Enterprise License", func(t *testing.T) {
