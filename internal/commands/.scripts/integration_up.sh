@@ -27,6 +27,7 @@ go test \
     -timeout 210m \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
     -coverprofile cover.out \
+    -run "^TestHooksPreCommitFullIntegration$" \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
 
 # Generate the initial HTML coverage report
