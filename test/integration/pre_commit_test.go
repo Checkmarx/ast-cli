@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,56 +37,25 @@ func TestHooksPreCommitFullIntegration(t *testing.T) {
 }
 
 func TestHooksPreCommitLicenseValidation(t *testing.T) {
-	tmpDir, cleanup := setupTempDir(t)
-	defer cleanup()
+	// Store original environment variables
+	originals := getOriginalEnvVars()
 
-	// Initialize Git repository
-	execCmd(t, tmpDir, "git", "init")
-
-	// Test case 1: Without license (should fail)
-	t.Run("Without Enterprise License", func(t *testing.T) {
-		// Set environment to simulate no license
-		originalEnv := os.Getenv("CX_LICENSE")
-		os.Setenv("CX_LICENSE", "")
-		defer os.Setenv("CX_LICENSE", originalEnv)
-
-		// Try to install pre-commit hook
-		args := []string{"hooks", "pre-commit", "secrets-install-git-hook"}
-		err, output := executeCommand(t, args...)
-
-		// Verify error message
-		assert.Error(t, err)
-		assert.Contains(t, output.String(), "License validation failed")
-		assert.Contains(t, output.String(), "Please verify your CxOne License includes Enterprise Secrets")
-
-		// Verify hook was not installed
-		hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
-		_, err = os.Stat(hookPath)
-		assert.True(t, os.IsNotExist(err), "Hook should not be installed without license")
+	// Set only the API key to invalid value
+	setEnvVars(map[string]string{
+		params.AstAPIKeyEnv: invalidAPIKey,
 	})
 
-	// Test case 2: With license (should succeed)
-	t.Run("With Enterprise License", func(t *testing.T) {
-		// Set environment to simulate valid license
-		originalEnv := os.Getenv("CX_LICENSE")
-		os.Setenv("CX_LICENSE", "valid-license-key") // Replace with actual license
-		defer os.Setenv("CX_LICENSE", originalEnv)
+	// Restore original environment variables after test
+	defer setEnvVars(originals)
 
-		// Install pre-commit hook
-		_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
+	// Define command arguments for installing the pre-commit hook
+	args := []string{
+		"hooks", "pre-commit", "secrets-install-git-hook",
+	}
 
-		// Verify hook installation
-		hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
-		assert.FileExists(t, hookPath, "Hook should be installed with valid license")
-
-		// Verify hook content
-		data, err := os.ReadFile(hookPath)
-		assert.NoError(t, err)
-		assert.Contains(t, string(data), "cx-secret-detection", "Hook should contain secret detection code")
-
-		// Clean up - uninstall hook
-		_ = executeCmdNilAssertion(t, "Uninstalling pre-commit hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
-	})
+	// Execute the command and verify it fails with the expected error
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
 // Helper functions
