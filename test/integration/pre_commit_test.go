@@ -57,7 +57,9 @@ func TestHooksPreCommitFullIntegration(t *testing.T) {
 	_ = executeCmdNilAssertion(t, "Uninstalling pre-commit hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
 
 	// Verify hook removal
-	assert.NoFileExists(t, hookPath, "Hook should be removed after uninstall")
+	data, err := os.ReadFile(hookPath)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "cx-secret-detection", "Hook content should be cleared after uninstall")
 }
 
 // Helper functions
