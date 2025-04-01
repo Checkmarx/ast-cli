@@ -58,6 +58,40 @@ func TestHooksPreCommitLicenseValidation(t *testing.T) {
 	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
 }
 
+func TestHooksPreCommitSecretDetection(t *testing.T) {
+	// Create a temporary directory and initialize git repository
+	tmpDir, cleanup := setupTempDir(t)
+	defer cleanup()
+
+	// Initialize Git repository
+	execCmd(t, tmpDir, "git", "init")
+
+	// Install pre-commit hook
+	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
+
+	// Copy the mock secret file to the temporary directory
+	mockSecretPath := filepath.Join("data", "mock-secret")
+	targetPath := filepath.Join(tmpDir, "mock-secret")
+
+	// Read the mock secret file
+	secretContent, err := os.ReadFile(mockSecretPath)
+	assert.NoError(t, err, "Failed to read mock secret file")
+
+	// Write the content to the target file
+	err = os.WriteFile(targetPath, secretContent, 0644)
+	assert.NoError(t, err, "Failed to write secret file")
+
+	// Add the file to git
+	execCmd(t, tmpDir, "git", "add", "mock-secret")
+
+	// Try to commit the file - should fail due to secret detection
+	cmd := exec.Command("git", "commit", "-m", "Add secret file")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	assert.Error(t, err, "Commit should fail due to secret detection")
+	assert.Contains(t, string(output), "Secret detection failed", "Error message should indicate secret detection failure")
+}
+
 // Helper functions
 func execCmd(t *testing.T, dir string, name string, args ...string) {
 	cmd := exec.Command(name, args...)
