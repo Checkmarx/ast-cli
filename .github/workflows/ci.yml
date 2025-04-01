@@ -45,6 +45,10 @@ jobs:
         run: go build -o ./bin/cx ./cmd
       - name: Install gocovmerge
         run: go install github.com/wadey/gocovmerge@latest
+      - name: Install pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit install
       - name: Go Integration test
         shell: bash
         env:
