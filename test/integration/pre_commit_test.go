@@ -20,8 +20,7 @@ func TestHooksPreCommitFullIntegration(t *testing.T) {
 	execCmd(t, tmpDir, "git", "init")
 
 	// Install pre-commit hook locally
-	output := executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
-	assert.Contains(t, output.String(), "pre-commit installed")
+	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
 
 	// Verify hook installation
 	hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
@@ -55,9 +54,10 @@ func TestHooksPreCommitFullIntegration(t *testing.T) {
 	//	assert.Contains(t, output.String(), "No secrets detected")
 
 	// Uninstall pre-commit hook
-	output = executeCmdNilAssertion(t, "Uninstalling pre-commit hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
-	assert.Contains(t, output.String(), "hook uninstalled successfully")
-	//assert.NoFileExists(t, hookPath, "Hook should be removed after uninstall")
+	_ = executeCmdNilAssertion(t, "Uninstalling pre-commit hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
+
+	// Verify hook removal
+	assert.NoFileExists(t, hookPath, "Hook should be removed after uninstall")
 }
 
 // Helper functions
