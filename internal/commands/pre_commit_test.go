@@ -67,7 +67,7 @@ func TestValidateLicense(t *testing.T) {
 				AIEnabled: tt.aiEnabled,
 			}
 
-			err := validateLicense(mockJWT)
+			err := ValidateLicense(mockJWT)
 
 			if tt.wantError {
 				assert.Error(t, err)
