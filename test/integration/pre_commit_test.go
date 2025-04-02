@@ -42,16 +42,12 @@ func TestHooksPreCommitInstallAndUninstallPreCommitHook(t *testing.T) {
 func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
 	tmpDir, cleanup := setupTempDir(t)
 	defer cleanup()
-
 	// Initialize Git repository
 	execCmd(t, tmpDir, "git", "init")
-
 	// Install pre-commit hook locally
 	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
-
 	// Update pre-commit hook
-	err := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
-	assert.NoError(t, err, "Hook should update successfully")
+	_ = executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
 }
 
 // Helper functions
