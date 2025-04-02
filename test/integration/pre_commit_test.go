@@ -38,30 +38,29 @@ func TestHooksPreCommitInstallAndUninstallPreCommitHook(t *testing.T) {
 }
 
 func TestHooksPreCommitValidateLicenseIntegration(t *testing.T) {
-	mockJWT := &mock.JWTMockWrapper{
-		AIEnabled: mock.AIProtectionDisabled,
-	}
+	// Test case for invalid license
+	t.Run("Invalid License", func(t *testing.T) {
+		mockJWT := &mock.JWTMockWrapper{
+			AIEnabled: mock.AIProtectionDisabled,
+		}
 
-	err := commands.ValidateLicense(mockJWT)
+		err := commands.ValidateLicense(mockJWT)
 
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "License validation failed")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "License validation failed")
+	})
+
+	// Test case for valid license
+	t.Run("Valid License", func(t *testing.T) {
+		mockJWT := &mock.JWTMockWrapper{
+			AIEnabled: 0, // 0 means AI is enabled, which means valid license
+		}
+
+		err := commands.ValidateLicense(mockJWT)
+
+		assert.NoError(t, err)
+	})
 }
-
-//func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
-//	tmpDir, cleanup := setupTempDir(t)
-//	defer cleanup()
-//
-//	// Initialize Git repository
-//	execCmd(t, tmpDir, "git", "init")
-//
-//	// Install pre-commit hook locally
-//	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
-//
-//	// Update pre-commit hook
-//	err := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
-//	assert.NoError(t, err, "Hook should update successfully")
-//}
 
 // Helper functions
 func execCmd(t *testing.T, dir string, name string, args ...string) {
