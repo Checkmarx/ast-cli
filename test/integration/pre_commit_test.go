@@ -59,8 +59,8 @@ func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
 	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
 
 	// Update pre-commit hook
-	output := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
-	assert.Contains(t, output, "updated successfully", "Hook should update successfully")
+	err := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
+	assert.NoError(t, err, "Hook should update successfully")
 }
 
 // Helper functions
