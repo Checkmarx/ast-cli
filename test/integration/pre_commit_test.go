@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInstallAndUninstallPreCommitHook(t *testing.T) {
+func TestHooksPreCommitInstallAndUninstallPreCommitHook(t *testing.T) {
 	tmpDir, cleanup := setupTempDir(t)
 	defer cleanup()
 
@@ -35,7 +35,18 @@ func TestInstallAndUninstallPreCommitHook(t *testing.T) {
 	assert.NotContains(t, string(data), "cx-secret-detection", "Hook content should be cleared after uninstall")
 }
 
-func TestUpdatePreCommitHook(t *testing.T) {
+func TestHooksPreCommitValidateLicenseIntegration(t *testing.T) {
+	mockJWT := &mock.JWTMockWrapper{
+		AIEnabled: mock.AIProtectionDisabled,
+	}
+
+	err := validateLicense(mockJWT)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "License validation failed")
+}
+
+func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
 	tmpDir, cleanup := setupTempDir(t)
 	defer cleanup()
 
@@ -43,34 +54,12 @@ func TestUpdatePreCommitHook(t *testing.T) {
 	execCmd(t, tmpDir, "git", "init")
 
 	// Install pre-commit hook locally
-	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hookss")
+	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
 
 	// Update pre-commit hook
 	output := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
 	assert.Contains(t, output, "updated successfully", "Hook should update successfully")
 }
-
-//func TestHooksPreCommitLicenseValidation(t *testing.T) {
-//	// Store original environment variables
-//	originals := getOriginalEnvVars()
-//
-//	// Set only the API key to invalid value
-//	setEnvVars(map[string]string{
-//		params.AstAPIKeyEnv: invalidAPIKey,
-//	})
-//
-//	// Restore original environment variables after test
-//	defer setEnvVars(originals)
-//
-//	// Define command arguments for installing the pre-commit hook
-//	args := []string{
-//		"hooks", "pre-commit", "secrets-install-git-hook",
-//	}
-//
-//	// Execute the command and verify it fails with the expected error
-//	err, _ := executeCommand(t, args...)
-//	assert.Error(t, err, "Error validating scan types: Token decoding error: token is malformed: token contains an invalid number of segments")
-//}
 
 // Helper functions
 func execCmd(t *testing.T, dir string, name string, args ...string) {
