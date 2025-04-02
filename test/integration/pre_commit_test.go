@@ -43,7 +43,7 @@ func TestUpdatePreCommitHook(t *testing.T) {
 	execCmd(t, tmpDir, "git", "init")
 
 	// Install pre-commit hook locally
-	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
+	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hookss")
 
 	// Update pre-commit hook
 	output := executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
