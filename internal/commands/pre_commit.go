@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	precommit "github.com/Checkmarx/secret-detection/pkg/hooks"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
@@ -63,9 +64,8 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	return preCommitCmd
 }
 
-// / validateLicense verifies the user has the required license for secret detection
-func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
-
+// ValidateLicense verifies the user has the required license for secret detection
+func ValidateLicense(jwtWrapper wrappers.JWTWrapper) error {
 	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
 	if err != nil {
 		return errors.Wrapf(err, "Failed checking license")
@@ -87,7 +87,7 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper)
+			return ValidateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			global, _ := cmd.Flags().GetBool("global")
@@ -128,7 +128,7 @@ func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command 
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper)
+			return ValidateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			global, _ := cmd.Flags().GetBool("global")
@@ -150,7 +150,7 @@ func secretsScanCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper)
+			return ValidateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return precommit.Scan()
@@ -173,7 +173,7 @@ func secretsIgnoreCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateLicense(jwtWrapper); err != nil {
+			if err := ValidateLicense(jwtWrapper); err != nil {
 				return err
 			}
 

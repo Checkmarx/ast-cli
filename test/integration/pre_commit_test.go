@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,7 +42,7 @@ func TestHooksPreCommitValidateLicenseIntegration(t *testing.T) {
 		AIEnabled: mock.AIProtectionDisabled,
 	}
 
-	err := validateLicense(mockJWT)
+	err := commands.ValidateLicense(mockJWT)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "License validation failed")
