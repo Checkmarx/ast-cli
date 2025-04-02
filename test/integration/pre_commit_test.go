@@ -35,6 +35,8 @@ func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
 	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
 	// Update pre-commit hook
 	_ = executeCmdNilAssertion(t, "Updating pre-commit hook", "hooks", "pre-commit", "secrets-update-git-hook")
+	// Uninstall pre-commit hook
+	_ = executeCmdNilAssertion(t, "Uninstalling cx-secret-detection hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
 }
 
 // Helper functions
