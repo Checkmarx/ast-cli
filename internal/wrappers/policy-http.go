@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 
@@ -16,12 +18,14 @@ const (
 )
 
 type PolicyHTTPWrapper struct {
-	path string
+	path               string
+	featureFlagWrapper FeatureFlagsWrapper
 }
 
-func NewHTTPPolicyWrapper(path string) PolicyWrapper {
+func NewHTTPPolicyWrapper(path string, featureFlagsWrapper FeatureFlagsWrapper) PolicyWrapper {
 	return &PolicyHTTPWrapper{
-		path: path,
+		path:               path,
+		featureFlagWrapper: featureFlagsWrapper,
 	}
 }
 
@@ -57,6 +61,19 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 			return nil, nil, errors.Wrapf(err, failedToParseGetPolicies)
 		}
 		return &model, nil, nil
+	case http.StatusUnauthorized:
+		amPhase1Enabled, errFF := r.featureFlagWrapper.GetSpecificFlag(featureFlagsConstants.AccessManagementPhase2)
+		if errFF != nil {
+			return nil, nil, errFF
+		}
+
+		if amPhase1Enabled.Status {
+			logger.Printf("This user doesn’t have the necessary permissions to view the Policy Management evaluation for this scan.")
+			return nil, nil, nil
+		}
+
+		fallthrough
+
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
