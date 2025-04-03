@@ -360,7 +360,7 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, fea
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RiskManagementEnabled)
 		ASPMEnabled := flagResponse.Status
 		if !ASPMEnabled {
-			return errors.Errorf("%s", "Risk management results is not available for your tenant.")
+			return errors.Errorf("%s", "Risk management results are currently unavailable for your tenant.")
 		}
 		results, err := getRiskManagementResults(riskManagement, projectID)
 		if err != nil {
