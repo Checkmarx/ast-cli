@@ -1543,11 +1543,13 @@ func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackag
 	for _, pkg := range packages {
 		pkg := pkg
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
-			ID:                  pkg.ID,
-			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
-			Outdated:            pkg.Outdated,
-			IsDirectDependency:  pkg.IsDirectDependency,
+			ID:                      pkg.ID,
+			Locations:               pkg.Locations,
+			DependencyPathArray:     parsePackagePathToDependencyPath(&pkg),
+			Outdated:                pkg.Outdated,
+			IsDirectDependency:      pkg.IsDirectDependency,
+			IsDevelopmentDependency: pkg.IsDevelopmentDependency,
+			IsTestDependency:        pkg.IsTestDependency,
 		})
 	}
 	return &scaPackages
