@@ -116,7 +116,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scaRealtimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath, featureFlagsWrapper)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastIncrementalPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
