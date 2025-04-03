@@ -20,6 +20,7 @@ type ScaPackage struct {
 	Outdated                bool            `json:"Outdated,omitempty"`
 	IsDirectDependency      bool            `json:"IsDirectDependency"`
 	IsDevelopmentDependency bool            `json:"IsDevelopmentDependency"`
+	IsTestDependency        bool            `json:"IsTestDependency"`
 	SupportsQuickFix        bool
 	FixLink                 string
 	TypeOfDependency        string
