@@ -62,12 +62,9 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 		}
 		return &model, nil, nil
 	case http.StatusUnauthorized:
-		amPhase1Enabled, errFF := r.featureFlagWrapper.GetSpecificFlag(featureFlagsConstants.AccessManagementPhase2)
-		if errFF != nil {
-			return nil, nil, errFF
-		}
+		amPhase1Enabled, _ := r.featureFlagWrapper.GetSpecificFlag(featureFlagsConstants.AccessManagementPhase2)
 
-		if amPhase1Enabled.Status {
+		if amPhase1Enabled != nil && amPhase1Enabled.Status {
 			logger.Printf("This user doesn’t have the necessary permissions to view the Policy Management evaluation for this scan.")
 			return nil, nil, nil
 		}
