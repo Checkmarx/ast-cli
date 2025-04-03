@@ -85,7 +85,7 @@ func main() {
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath, featureFlagsWrapper)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
