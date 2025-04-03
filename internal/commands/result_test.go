@@ -1562,6 +1562,13 @@ func TestRiskManagementHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results", "risk-management")
 }
 
+func TestRiskManagement_ShouldFFBeFalseAndReturnError(t *testing.T) {
+	clearFlags()
+	err := execCmdNotNilAssertion(t, "results", "risk-management")
+	assert.Equal(t, err.Error(), "Risk management results are currently unavailable for your tenant.", "Expected error message")
+
+}
+
 func TestRiskManagement(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.RiskManagementEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "risk-management")
