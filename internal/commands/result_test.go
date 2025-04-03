@@ -1570,6 +1570,7 @@ func TestRiskManagement_ShouldFFBeFalseAndReturnError(t *testing.T) {
 }
 
 func TestRiskManagement(t *testing.T) {
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.RiskManagementEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "risk-management")
 }
