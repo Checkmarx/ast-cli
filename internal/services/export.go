@@ -112,7 +112,7 @@ func pollForCompletion(exportWrapper wrappers.ExportWrapper, exportID string) (*
 	logger.PrintIfVerbose("Polling for export report generation completion")
 
 	for pollingResp.ExportStatus == exportingStatus || pollingResp.ExportStatus == pendingStatus {
-		
+
 		logger.Printf("SCA Export Status is: %s", pollingResp.ExportStatus)
 
 		select {
