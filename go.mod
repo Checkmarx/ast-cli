@@ -4,14 +4,14 @@ go 1.24.1
 
 require (
 	github.com/Checkmarx/containers-resolver v1.0.8
-	github.com/Checkmarx/gen-ai-prompts v0.0.0-20250109183514-730ae7984b59
+	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
-	github.com/gomarkdown/markdown v0.0.0-20250311123330-531bef5e742b
+	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.5.4
@@ -19,14 +19,14 @@ require (
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.1
+	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.36.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/text v0.23.0
-	google.golang.org/grpc v1.73.0-dev
+	google.golang.org/grpc v1.72.0-dev
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
